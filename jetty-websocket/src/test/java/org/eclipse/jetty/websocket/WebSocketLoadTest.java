@@ -24,6 +24,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -87,14 +88,14 @@ public class WebSocketLoadTest
                 clients[i].open();
             }
 
-            long start = System.nanoTime();
+            //long start = System.nanoTime();
             for (WebSocketClient client : clients)
                 threadPool.execute(client);
 
             int parallelism = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
             long maxTimePerIteration = 5;
             assertTrue(latch.await(iterations * (count / parallelism + 1) * maxTimePerIteration, TimeUnit.MILLISECONDS));
-            long end = System.nanoTime();
+            //long end = System.nanoTime();
             // System.err.println("Elapsed: " + TimeUnit.NANOSECONDS.toMillis(end - start) + " ms");
 
             for (WebSocketClient client : clients)
@@ -107,16 +108,16 @@ public class WebSocketLoadTest
         }
     }
 
-    private static class EchoWebSocket implements WebSocket
+    private static class EchoWebSocket implements WebSocket.OnTextMessage
     {
-        private volatile Outbound outbound;
+        private volatile Connection outbound;
 
-        public void onConnect(Outbound outbound)
+        public void onConnect(Connection outbound)
         {
             this.outbound = outbound;
         }
 
-        public void onMessage(byte frame, String data)
+        public void onMessage(String data)
         {
             try
             {
@@ -125,19 +126,11 @@ public class WebSocketLoadTest
             }
             catch (IOException x)
             {
-                outbound.disconnect();
+                outbound.disconnect(0,"");
             }
         }
 
-        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
-        {
-        }
-
-        public void onMessage(byte frame, byte[] data, int offset, int length)
-        {
-        }
-
-        public void onDisconnect()
+        public void onDisconnect(int closeCode, String message)
         {
         }
     }
@@ -154,9 +147,13 @@ public class WebSocketLoadTest
         private final WebSocketParserD06 _parser;
         private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
         {
-            public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+            public void onFrame(byte flags, byte opcode, Buffer buffer)
             {
                 _response=buffer;
+            }
+
+            public void close(int code,String message)
+            {
             }
         };
         private volatile Buffer _response;
@@ -205,7 +202,8 @@ public class WebSocketLoadTest
                 String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
                 for (int i = 0; i < iterations; ++i)
                 {
-                    _generator.addFrame(WebSocket.OP_TEXT,message,10000);
+                    byte[] data = message.getBytes(StringUtil.__UTF8);
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,0,data.length,10000);
                     _generator.flush(10000);
                     
                     //System.err.println("-> "+message);

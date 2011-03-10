@@ -384,6 +384,12 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
+    public static String toHexString(byte b)
+    {
+        return toHexString(new byte[]{b}, 0, 1);
+    }
+    
+    /* ------------------------------------------------------------ */
     public static String toHexString(byte[] b)
     {
         return toHexString(b, 0, b.length);

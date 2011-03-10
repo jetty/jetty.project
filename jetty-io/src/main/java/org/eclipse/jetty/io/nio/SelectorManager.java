@@ -15,6 +15,7 @@ package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -605,6 +606,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                     });
                 }
+            }
+            catch (ClosedSelectorException e)
+            {
+                if (isRunning())
+                    Log.warn(e);
+                else
+                    Log.ignore(e);
             }
             catch (CancelledKeyException e)
             {

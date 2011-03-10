@@ -4,11 +4,12 @@ import static junit.framework.Assert.assertEquals;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
- * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
+ * @version $Revision$ $Date$
  */
 public class WebSocketGeneratorD00Test
 {
@@ -28,7 +29,8 @@ public class WebSocketGeneratorD00Test
     @Test
     public void testOneString() throws Exception
     {
-        _generator.addFrame((byte)0x04,"Hell\uFF4F W\uFF4Frld",0);
+        byte[] data="Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
+        _generator.addFrame((byte)0x0,(byte)0x04,data,0,data.length,0);
         _generator.flush();
         assertEquals(4,_out.get());
         assertEquals(15,_out.get());
@@ -56,7 +58,7 @@ public class WebSocketGeneratorD00Test
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
 
-        _generator.addFrame((byte)0xf,b,0,b.length,0);
+        _generator.addFrame((byte)0x0,(byte)0xf,b,0,b.length,0);
 
         _generator.flush();
         assertEquals(0x0f,_out.get());
@@ -74,7 +76,7 @@ public class WebSocketGeneratorD00Test
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
 
-        _generator.addFrame((byte)0xf,b,0,b.length,0);
+        _generator.addFrame((byte)0x0,(byte)0xf,b,0,b.length,0);
 
         _generator.flush();
         assertEquals(0x8f,_out.get()&0xff);

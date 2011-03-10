@@ -13,7 +13,6 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -95,6 +94,22 @@ public class WebSocketParserD06Test
     }
 
     @Test
+    public void testFlagsOppcode() throws Exception
+    {
+        _in.sendMask();
+        _in.put((byte)0xff);
+        _in.put((byte)0);
+
+        int filled =_parser.parseNext();
+
+        assertEquals(6,filled);
+        assertEquals(0xf,_handler._flags);
+        assertEquals(0xf,_handler._opcode);
+        assertTrue(_parser.isBufferEmpty());
+        assertTrue(_parser.getBuffer()==null);
+    }
+    
+    @Test
     public void testShortText() throws Exception
     {
         _in.sendMask();
@@ -107,6 +122,8 @@ public class WebSocketParserD06Test
 
         assertEquals(17,filled);
         assertEquals("Hello World",_handler._data.get(0));
+        assertEquals(0x8,_handler._flags);
+        assertEquals(0x4,_handler._opcode);
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
     }
@@ -126,6 +143,8 @@ public class WebSocketParserD06Test
 
         assertEquals(bytes.length+6,filled);
         assertEquals(string,_handler._data.get(0));
+        assertEquals(0x8,_handler._flags);
+        assertEquals(0x4,_handler._opcode);
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
     }
@@ -138,8 +157,8 @@ public class WebSocketParserD06Test
             string = string+string;
         string += ". The end.";
         
-        byte[] bytes = string.getBytes("UTF-8");
-
+        byte[] bytes = string.getBytes(StringUtil.__UTF8);
+        
         _in.sendMask();
         _in.put((byte)0x84);
         _in.put((byte)0x7E);
@@ -151,6 +170,8 @@ public class WebSocketParserD06Test
 
         assertEquals(bytes.length+8,filled);
         assertEquals(string,_handler._data.get(0));
+        assertEquals(0x8,_handler._flags);
+        assertEquals(0x4,_handler._opcode);
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
     }
@@ -158,13 +179,11 @@ public class WebSocketParserD06Test
     @Test
     public void testLongText() throws Exception
     {
-
         WebSocketBuffers buffers = new WebSocketBuffers(0x20000);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         WebSocketParser parser=new WebSocketParserD06(buffers, endPoint,_handler,false);
         ByteArrayBuffer in = new ByteArrayBuffer(0x20000);
         endPoint.setIn(in);
-        
         
         String string = "Hell\uFF4f Big W\uFF4Frld ";
         for (int i=0;i<12;i++)
@@ -221,15 +240,59 @@ public class WebSocketParserD06Test
         assertTrue(_parser.getBuffer()==null);
     }
 
+    @Test
+    public void testFrameTooLarge() throws Exception
+    {
+        _in.sendMask();
+        _in.put((byte)0x84);
+        _in.put((byte)0x7E);
+        _in.put((byte)(2048>>8));
+        _in.put((byte)(2048&0xff));
+
+        int filled =_parser.parseNext();
+
+        assertEquals(8,filled);
+       
+        assertEquals(WebSocketConnectionD06.CLOSE_LARGE,_handler._code);
+        for (int i=0;i<2048;i++)
+            _in.put((byte)'a');
+        filled =_parser.parseNext();
+
+        assertEquals(2048,filled);
+        assertEquals(0,_handler._data.size());
+        assertEquals(0,_handler._utf8.length());
+        
+        _handler._code=0;
+        _handler._message=null;
+
+        _in.sendMask();
+        _in.put((byte)0x84);
+        _in.put((byte)0x7E);
+        _in.put((byte)(1024>>8));
+        _in.put((byte)(1024&0xff));
+        for (int i=0;i<1024;i++)
+            _in.put((byte)'a');
+
+        filled =_parser.parseNext();
+        assertEquals(1024+8,filled);
+        assertEquals(1,_handler._data.size());
+        assertEquals(1024,_handler._data.get(0).length());
+    }
 
     private class Handler implements WebSocketParser.FrameHandler
     {
         Utf8StringBuilder _utf8 = new Utf8StringBuilder();
         public List<String> _data = new ArrayList<String>();
+        private byte _flags;
+        private byte _opcode;
+        int _code;
+        String _message;
 
-        public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+        public void onFrame(byte flags, byte opcode, Buffer buffer)
         {
-            if (more)
+            _flags=flags;
+            _opcode=opcode;
+            if ((flags&0x8)==0)
                 _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
             else if (_utf8.length()==0)
                 _data.add(buffer.toString("utf-8"));
@@ -239,6 +302,12 @@ public class WebSocketParserD06Test
                 _data.add(_utf8.toString());
                 _utf8.reset();
             }
+        }
+
+        public void close(int code,String message)
+        {
+            _code=code;
+            _message=message;
         }
     }
 }

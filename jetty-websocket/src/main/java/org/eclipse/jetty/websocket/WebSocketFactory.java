@@ -133,4 +133,17 @@ public class WebSocketFactory
         // Tell jetty about the new connection 
         request.setAttribute("org.eclipse.jetty.io.Connection",connection);
      }
+
+    public static String[] parseProtocols(String protocol)
+    {
+        if (protocol==null)
+            return new String[]{null};
+        protocol=protocol.trim();
+        if (protocol==null || protocol.length()==0)
+            return new String[]{null};
+        String[] passed = protocol.split("\\s*,\\s*"); 
+        String[] protocols = new String[passed.length+1];
+        System.arraycopy(passed,0,protocols,0,passed.length);
+        return protocols;
+    }
 }

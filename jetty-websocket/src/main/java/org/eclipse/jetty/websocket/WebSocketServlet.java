@@ -67,7 +67,17 @@ public abstract class WebSocketServlet extends HttpServlet
             String protocol=request.getHeader("Sec-WebSocket-Protocol");
             if (protocol==null) // TODO remove once draft period is over
                 protocol=request.getHeader("WebSocket-Protocol");
-            WebSocket websocket=doWebSocketConnect(request,protocol);
+            
+            WebSocket websocket=null;
+            for (String p :WebSocketFactory.parseProtocols(protocol))
+            {
+                websocket=doWebSocketConnect(request,p);
+                if (websocket!=null)
+                {
+                    protocol=p;
+                    break;
+                }
+            }
 
             String host=request.getHeader("Host");
             String origin=request.getHeader("Origin");

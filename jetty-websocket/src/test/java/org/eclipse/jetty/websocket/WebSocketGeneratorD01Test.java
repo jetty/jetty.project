@@ -9,7 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
+ * @version $Revision$ $Date$
  */
 public class WebSocketGeneratorD01Test
 {
@@ -29,7 +29,8 @@ public class WebSocketGeneratorD01Test
     @Test
     public void testOneString() throws Exception
     {
-        _generator.addFrame((byte)0x04,"Hell\uFF4F W\uFF4Frld",0);
+        byte[] data = "Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
+        _generator.addFrame((byte)0,(byte)0x04,data,0,data.length,0);
         _generator.flush();
         assertEquals(4,_out.get());
         assertEquals('H',_out.get());
@@ -55,7 +56,7 @@ public class WebSocketGeneratorD01Test
     {
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x84,bytes,0,bytes.length,0);
+        _generator.addFrame((byte)0,(byte)0x84,bytes,0,bytes.length,0);
         _generator.flush();
         assertEquals(0x84,0xff&_out.get());
         assertEquals(15,0xff&_out.get());
@@ -83,7 +84,7 @@ public class WebSocketGeneratorD01Test
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
 
-        _generator.addFrame((byte)0x85,b,0,b.length,0);
+        _generator.addFrame((byte)0,(byte)0x85,b,0,b.length,0);
 
         _generator.flush();
         assertEquals(0x85,0xff&_out.get());

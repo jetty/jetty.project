@@ -145,7 +145,7 @@ public class WebSocketParserD00 implements WebSocketParser
                         {
                             _state=STATE_START;
                             int l=_buffer.getIndex()-_buffer.markIndex()-1;
-                            _handler.onFrame(false,(byte)0,_opcode,_buffer.sliceFromMark(l));
+                            _handler.onFrame((byte)0,_opcode,_buffer.sliceFromMark(l));
                             _buffer.setMarkIndex(-1);
                             if (_buffer.length()==0)
                             {
@@ -173,7 +173,7 @@ public class WebSocketParserD00 implements WebSocketParser
                         Buffer data=_buffer.sliceFromMark(_length);
                         _buffer.skip(_length);
                         _state=STATE_START;
-                        _handler.onFrame(false,(byte)0, _opcode, data);
+                        _handler.onFrame((byte)0, _opcode, data);
 
                         if (_buffer.length()==0)
                         {

@@ -28,10 +28,16 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 
-public class WebSocketConnectionD00 extends AbstractConnection implements WebSocketConnection, WebSocket.Outbound
+public class WebSocketConnectionD00 extends AbstractConnection implements WebSocketConnection, WebSocket.Connection
 {
+    public final static byte LENGTH_FRAME=(byte)0x80;
+    public final static byte SENTINEL_FRAME=(byte)0x00;
+
+    
     final IdleCheck _idle;
     final WebSocketParser _parser;
     final WebSocketGenerator _generator;
@@ -63,7 +69,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         {
             case 1:
                 _generator = new WebSocketGeneratorD01(buffers, _endp);
-                _parser = new WebSocketParserD01(buffers, endpoint, new FrameHandlerD1(this,_websocket));
+                _parser = new WebSocketParserD01(buffers, endpoint, new FrameHandlerD1(_websocket));
                 break;
             default:
                 _generator = new WebSocketGeneratorD00(buffers, _endp);
@@ -215,59 +221,60 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
     public void closed()
     {
-        _websocket.onDisconnect();
+        _websocket.onDisconnect(0,"");
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * {@inheritDoc}
      */
     public void sendMessage(String content) throws IOException
     {
-        sendMessage(WebSocket.SENTINEL_FRAME,content);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * {@inheritDoc}
-     */
-    public void sendMessage(byte frame, String content) throws IOException
-    {
-        _generator.addFrame(frame,content,_endp.getMaxIdleTime());
+        byte[] data = content.getBytes(StringUtil.__UTF8);
+        _generator.addFrame((byte)0,SENTINEL_FRAME,data,0,data.length,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * {@inheritDoc}
-     */
-    public void sendMessage(byte opcode, byte[] content, int offset, int length) throws IOException
+    public void sendMessage(byte[] data, int offset, int length) throws IOException
     {
-        _generator.addFrame(opcode,content,offset,length,_endp.getMaxIdleTime());
+        _generator.addFrame((byte)0,LENGTH_FRAME,data,offset,length,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
     }
 
     /* ------------------------------------------------------------ */
+    public boolean isMore(byte flags)
+    {
+        return (flags&0x8) != 0;
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * {@inheritDoc}
      */
-    public void sendFragment(boolean more,byte opcode, byte[] content, int offset, int length) throws IOException
+    public void sendControl(byte code, byte[] content, int offset, int length) throws IOException
     {
-        _generator.addFragment(!more,opcode,content,offset,length,_endp.getMaxIdleTime());
+    }
+
+    /* ------------------------------------------------------------ */
+    public void sendFrame(byte flags,byte opcode, byte[] content, int offset, int length) throws IOException
+    {
+        _generator.addFrame((byte)0,opcode,content,offset,length,_endp.getMaxIdleTime());
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
     }
 
+    /* ------------------------------------------------------------ */
     public void disconnect(int code, String message)
     {
         throw new UnsupportedOperationException();
     }
-    
+
+    /* ------------------------------------------------------------ */
     public void disconnect()
     {
         try
@@ -379,4 +386,148 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
     }
 
+    public void setMaxTextMessageSize(int size)
+    {
+    }
+
+    public void setMaxBinaryMessageSize(int size)
+    {
+    }
+
+    public int getMaxTextMessageSize()
+    {
+        return -1;
+    }
+
+    public int getMaxBinaryMessageSize()
+    {
+        return -1;
+    }
+
+    class FrameHandlerD0 implements WebSocketParser.FrameHandler
+    {
+        final WebSocket _websocket;
+        final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
+
+        FrameHandlerD0(WebSocket websocket)
+        {
+            _websocket=websocket;
+        }
+        
+        public void onFrame(byte flags, byte opcode, Buffer buffer)
+        {
+            try
+            {
+                byte[] array=buffer.array();
+                
+                if (opcode==0)
+                {
+                    if (_websocket instanceof WebSocket.OnTextMessage)
+                        ((WebSocket.OnTextMessage)_websocket).onMessage(buffer.toString(StringUtil.__UTF8));
+                }
+                else
+                {
+                    if (_websocket instanceof WebSocket.OnBinaryMessage)
+                        ((WebSocket.OnBinaryMessage)_websocket).onMessage(array,buffer.getIndex(),buffer.length());
+                }
+            }
+            catch(ThreadDeath th)
+            {
+                throw th;
+            }
+            catch(Throwable th)
+            {
+                Log.warn(th);
+            }
+        }
+        
+        public void close(int code,String message)
+        {
+            disconnect(code,message);
+        }
+    }
+    
+    class FrameHandlerD1 implements WebSocketParser.FrameHandler
+    {
+        public final static byte PING=1;
+        public final static byte PONG=1;
+
+        final WebSocket _websocket;
+        final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
+        boolean _fragmented=false;
+
+        FrameHandlerD1(WebSocket websocket)
+        {
+            _websocket=websocket;
+        }
+        
+        public void onFrame(byte flags, byte opcode, Buffer buffer)
+        {
+            try
+            {
+                byte[] array=buffer.array();
+                
+                if (opcode==0)
+                {
+                    if (isMore(flags))
+                    {
+                        _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
+                        _fragmented=true;
+                    }
+                    else if (_fragmented)
+                    {
+                        _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
+                        if (_websocket instanceof WebSocket.OnTextMessage)
+                            ((WebSocket.OnTextMessage)_websocket).onMessage(_utf8.toString());
+                        _utf8.reset();
+                        _fragmented=false;
+                    }
+                    else
+                    {
+                        if (_websocket instanceof WebSocket.OnTextMessage)
+                            ((WebSocket.OnTextMessage)_websocket).onMessage(buffer.toString(StringUtil.__UTF8));
+                    }
+                }
+                else if (opcode==PING)
+                {
+                    sendFrame(flags,PONG,buffer.array(),buffer.getIndex(),buffer.length());
+                }
+                else if (opcode==PONG)
+                {
+                    
+                }
+                else
+                {
+                    if (isMore(flags))
+                    {
+                        if (_websocket instanceof WebSocket.OnFrame)
+                            ((WebSocket.OnFrame)_websocket).onFrame(flags,opcode,array,buffer.getIndex(),buffer.length());
+                    }
+                    else if (_fragmented)
+                    {
+                        if (_websocket instanceof WebSocket.OnFrame)
+                            ((WebSocket.OnFrame)_websocket).onFrame(flags,opcode,array,buffer.getIndex(),buffer.length());
+                    }
+                    else
+                    {
+                        if (_websocket instanceof WebSocket.OnBinaryMessage)
+                            ((WebSocket.OnBinaryMessage)_websocket).onMessage(array,buffer.getIndex(),buffer.length());
+                    }
+                }
+            }
+            catch(ThreadDeath th)
+            {
+                throw th;
+            }
+            catch(Throwable th)
+            {
+                Log.warn(th);
+            }
+        }
+
+        public void close(int code,String message)
+        {
+            disconnect(code,message);
+        }
+    }
 }

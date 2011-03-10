@@ -32,14 +32,14 @@ public class WebSocketChatServlet extends WebSocketServlet
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    class ChatWebSocket implements WebSocket
+    class ChatWebSocket implements WebSocket.OnTextMessage
     {
-        Outbound _outbound;
+        Connection _connection;
 
-        public void onConnect(Outbound outbound)
+        public void onConnect(Connection connection)
         {
             // Log.info(this+" onConnect");
-            _outbound=outbound;
+            _connection=connection;
             _members.add(this);
         }
         
@@ -48,10 +48,10 @@ public class WebSocketChatServlet extends WebSocketServlet
             // Log.info(this+" onMessage: "+TypeUtil.toHexString(data,offset,length));
         }
 
-        public void onMessage(byte frame, String data)
+        public void onMessage(String data)
         {
             if (data.indexOf("disconnect")>=0)
-                _outbound.disconnect();
+                _connection.disconnect(0,"");
             else
             {
                 // Log.info(this+" onMessage: "+data);
@@ -59,7 +59,7 @@ public class WebSocketChatServlet extends WebSocketServlet
                 {
                     try
                     {
-                        member._outbound.sendMessage(frame,data);
+                        member._connection.sendMessage(data);
                     }
                     catch(IOException e)
                     {
@@ -69,14 +69,11 @@ public class WebSocketChatServlet extends WebSocketServlet
             }
         }
 
-        public void onDisconnect()
+        public void onDisconnect(int code, String message)
         {
             // Log.info(this+" onDisconnect");
             _members.remove(this);
         }
 
-        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
-        {
-        }
     }
 }

@@ -20,6 +20,7 @@ import java.util.Random;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.TypeUtil;
 
 
 /* ------------------------------------------------------------ */
@@ -108,34 +109,30 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
         _maskGen=maskGen;
     }
 
-    public synchronized void addFrame(byte opcode,byte[] content, int blockFor) throws IOException
+    public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length, int blockFor) throws IOException
     {
-        _opsent=false;
-        addFrame(opcode,content,0,content.length,blockFor);
-    }
-    
-
-    public synchronized void addFrame(byte opcode,byte[] content, int offset, int length, int blockFor) throws IOException
-    {
-        _opsent=false;
-        addFragment(true,opcode,content,offset,length,blockFor);
-    }
-
-    public synchronized void addFragment(boolean last, byte opcode, byte[] content, int offset, int length, int blockFor) throws IOException
-    {
+        // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
+        
         if (_buffer==null)
             _buffer=(_maskGen!=null)?_buffers.getBuffer():_buffers.getDirectBuffer();
             
+        boolean last=WebSocketConnectionD06.isLastFrame(flags);
+        opcode=(byte)(((0xf&flags)<<4)+0xf&opcode);
+        
         int space=(_maskGen!=null)?14:10;
         
         do
         {
-            opcode = _opsent?WebSocket.OP_CONTINUATION:(byte)(opcode & 0x0f);
+            opcode = _opsent?WebSocketConnectionD06.OP_CONTINUATION:opcode;
             _opsent=true;
             
             int payload=length;
             if (payload+space>_buffer.capacity())
+            {
+                // We must fragement, so clear FIN bit
+                opcode&=(byte)0x7F; // Clear the FIN bit
                 payload=_buffer.capacity()-space;
+            }
             else if (last)
                 opcode|=(byte)0x80; // Set the FIN bit
 
@@ -150,7 +147,7 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
                 _m=0;
                 _buffer.put(_mask);
             }
-            
+
             // write the opcode and length
             if (payload>0xffff)
             {
@@ -230,12 +227,6 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
     private synchronized void bufferPut(byte data) throws IOException
     {
         _buffer.put((byte)(data^_mask[+_m++%4]));
-    }
-
-    public synchronized void addFrame(byte frame, String content, int blockFor) throws IOException
-    {
-        byte[] bytes = content.getBytes("UTF-8");
-        addFrame(frame, bytes, 0, bytes.length, blockFor);
     }
 
     public synchronized int flush(int blockFor) throws IOException

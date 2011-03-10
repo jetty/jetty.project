@@ -40,7 +40,7 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
         _endp=endp;
     }
     
-    public synchronized void addFrame(byte opcode,byte[] content, int offset, int length, int blockFor) throws IOException
+    public synchronized void addFrame(byte flags, byte opcode,byte[] content, int offset, int length, int blockFor) throws IOException
     {
         if (_buffer==null)
             _buffer=_buffers.getDirectBuffer();
@@ -98,7 +98,7 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
 
     private synchronized boolean isLengthFrame(byte frame)
     {
-        return (frame & WebSocket.LENGTH_FRAME) == WebSocket.LENGTH_FRAME;
+        return (frame & WebSocketConnectionD00.LENGTH_FRAME) == WebSocketConnectionD00.LENGTH_FRAME;
     }
 
     private synchronized void bufferPut(byte datum, long blockFor) throws IOException
@@ -108,12 +108,6 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
         _buffer.put(datum);
         if (_buffer.space() == 0)
             expelBuffer(blockFor);
-    }
-
-    public synchronized void addFrame(byte frame, String content, int blockFor) throws IOException
-    {
-        byte[] bytes = content.getBytes("UTF-8");
-        addFrame(frame, bytes, 0, bytes.length, blockFor);
     }
 
     public synchronized int flush(int blockFor) throws IOException
@@ -169,13 +163,6 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
     public synchronized boolean isBufferEmpty()
     {
         return _buffer==null || _buffer.length()==0;
-    }
-
-    public void addFragment(boolean last,byte opcode, byte[] content, int offset, int length, int maxIdleTime) throws IOException
-    {
-        if (!last)
-            throw new UnsupportedOperationException("fragmented");
-        addFrame(opcode,content,offset,length,maxIdleTime);
     }
     
 }

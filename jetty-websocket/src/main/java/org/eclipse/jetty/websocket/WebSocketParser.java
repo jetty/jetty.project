@@ -30,7 +30,8 @@ public interface WebSocketParser
     /* ------------------------------------------------------------ */
     public interface FrameHandler
     {
-        void onFrame(boolean more,byte flags, byte opcode, Buffer buffer);
+        void onFrame(byte flags, byte opcode, Buffer buffer);
+        void close(int code,String message);
     }
 
     Buffer getBuffer();
