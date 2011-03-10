@@ -111,7 +111,7 @@ public class WebSocketFactory
         switch(draft)
         {
             case 6:
-                connection=new WebSocketConnectionD06(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
+                connection=new WebSocketConnectionD06(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,subprotocol,draft);
                 break;
             case 5:
             case 4:
@@ -119,7 +119,7 @@ public class WebSocketFactory
             case 2:
                 throw new HttpException(400,"Unsupported draft specification: "+draft);
             default:
-                connection=new WebSocketConnectionD00(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,draft);
+                connection=new WebSocketConnectionD00(websocket,endp,_buffers,http.getTimeStamp(), _maxIdleTime,subprotocol,draft);
         }
         
         // Let the connection finish processing the handshake

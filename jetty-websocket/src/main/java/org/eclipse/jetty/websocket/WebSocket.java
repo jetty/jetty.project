@@ -15,33 +15,91 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 
+/**
+ * WebSocket Interface.
+ * <p>
+ * This interface provides the signature for a server-side end point of a websocket connection.
+ * The Interface has several nested interfaces, for each type of message that may be received.
+ */
 public interface WebSocket
 {   
-    void onConnect(Connection outbound);
+    /**
+     * Called when a new websocket connection is accepted.
+     * @param connection The Connection object to use to send messages.
+     */
+    void onConnect(Connection connection);
+    
+    /**
+     * Called when an established websocket connection closes
+     * @param closeCode
+     * @param message
+     */
     void onDisconnect(int closeCode, String message);
 
+    /**
+     * A nested WebSocket interface for receiving text messages
+     */
     interface OnTextMessage extends WebSocket
     {
+        /**
+         * Called with a complete text message when all fragments have been received.
+         * The maximum size of text message that may be aggregated from multiple frames is set with {@link Connection#setMaxTextMessageSize(int)}.
+         * @param data The message
+         */
         void onMessage(String data);
     }
-    
+
+    /**
+     * A nested WebSocket interface for receiving binary messages
+     */
     interface OnBinaryMessage extends WebSocket
     {
+        /**
+         * Called with a complete binary message when all fragments have been received.
+         * The maximum size of binary message that may be aggregated from multiple frames is set with {@link Connection#setMaxBinaryMessageSize(int)}.
+         * @param data
+         * @param offset
+         * @param length
+         */
         void onMessage(byte[] data, int offset, int length);
     }
     
+    /**
+     * A nested WebSocket interface for receiving control messages
+     */
     interface OnControl extends WebSocket
     {
+        /** 
+         * Called when a control message has been received.
+         * @param controlCode
+         * @param data
+         * @param offset
+         * @param length
+         * @return true if this call has completely handled the control message and no further processing is needed.
+         */
         boolean onControl(byte controlCode,byte[] data, int offset, int length);
     }
     
+    /**
+     * A nested WebSocket interface for receiving any websocket frame
+     */
     interface OnFrame extends WebSocket
     {
+        /**
+         * Called when any websocket frame is received.
+         * @param flags
+         * @param opcode
+         * @param data
+         * @param offset
+         * @param length
+         * @return true if this call has completely handled the frame and no further processing is needed (including aggregation and/or message delivery)
+         */
         boolean onFrame(byte flags,byte opcode,byte[] data, int offset, int length);
     }
     
     public interface Connection
     {
+        String getProtocol();
         void sendMessage(String data) throws IOException;
         void sendMessage(byte[] data, int offset, int length) throws IOException;
         void sendControl(byte control,byte[] data, int offset, int length) throws IOException;

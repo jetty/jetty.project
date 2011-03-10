@@ -42,17 +42,12 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     final WebSocketParser _parser;
     final WebSocketGenerator _generator;
     final WebSocket _websocket;
+    final String _protocol;
     String _key1;
     String _key2;
     ByteArrayBuffer _hixieBytes;
-
-    public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint,int draft)
-        throws IOException
-    {
-        this(websocket,endpoint,new WebSocketBuffers(8192),System.currentTimeMillis(),300000,draft);
-    }
     
-    public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, int draft)
+    public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, int draft)
         throws IOException
     {
         super(endpoint,timestamp);
@@ -63,6 +58,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         _endp.setMaxIdleTime(maxIdleTime);
         
         _websocket = websocket;
+        _protocol=protocol;
 
         // Select the parser/generators to use
         switch(draft)
@@ -404,6 +400,11 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         return -1;
     }
 
+    public String getProtocol()
+    {
+        return _protocol;
+    }
+    
     class FrameHandlerD0 implements WebSocketParser.FrameHandler
     {
         final WebSocket _websocket;
@@ -530,4 +531,5 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             disconnect(code,message);
         }
     }
+
 }

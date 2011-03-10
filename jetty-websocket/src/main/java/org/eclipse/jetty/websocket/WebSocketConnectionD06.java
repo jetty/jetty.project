@@ -80,6 +80,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     private final OnBinaryMessage _onBinaryMessage;
     private final OnTextMessage _onTextMessage;
     private final OnControl _onControl;
+    private final String _protocol;
     private boolean _closedIn;
     private boolean _closedOut;
     private int _maxTextMessageSize;
@@ -413,17 +414,17 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             return _maxBinaryMessage;
         }
 
+        /* ------------------------------------------------------------ */
+        public String getProtocol()
+        {
+            return _protocol;
+        }
+
     };
     
-    /* ------------------------------------------------------------ */
-    public WebSocketConnectionD06(WebSocket websocket, EndPoint endpoint,int draft)
-        throws IOException
-    {
-        this(websocket,endpoint,new WebSocketBuffers(8192),System.currentTimeMillis(),300000,draft);
-    }
 
     /* ------------------------------------------------------------ */
-    public WebSocketConnectionD06(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, int draft)
+    public WebSocketConnectionD06(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, int draft)
         throws IOException
     {
         super(endpoint,timestamp);
@@ -441,6 +442,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         _onControl=_webSocket instanceof OnControl ? (OnControl)_webSocket : null;
         _generator = new WebSocketGeneratorD06(buffers, _endp,null);
         _parser = new WebSocketParserD06(buffers, endpoint, _frameHandler,true);
+        _protocol=protocol;
 
         // TODO should these be AsyncEndPoint checks/calls?
         if (_endp instanceof SelectChannelEndPoint)
