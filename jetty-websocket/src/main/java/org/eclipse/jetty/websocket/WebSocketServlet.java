@@ -59,8 +59,8 @@ public abstract class WebSocketServlet extends HttpServlet
      */
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-    {
-        if ("WebSocket".equals(request.getHeader("Upgrade")))
+    {   
+        if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {
             boolean hixie = request.getHeader("Sec-WebSocket-Key1")!=null;
             

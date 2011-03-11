@@ -2,8 +2,6 @@ jetty-7.3.2-SNAPSHOT
  + 338819 Externally control Deployment Manager application lifecycle
  + Ensure generated fragment names are unique
  + 339187 In the OSGi manifest of the jetty-all-server aggregate, mark javax.annotation as optional 
-
-jetty-7.3.2-SNAPSHOT
  + 337685 Update websocket API in preparation for draft -07
 
 jetty-7.3.1.v20110307 7 March 2011
