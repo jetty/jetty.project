@@ -29,19 +29,29 @@ import org.eclipse.jetty.server.HttpConnection;
  */
 public class WebSocketFactory
 {
+    /* ------------------------------------------------------------ */
+    interface Acceptor
+    {
+         WebSocket doWebSocketConnect(HttpServletRequest request,String protocol);
+         String checkOrigin(HttpServletRequest request, String host, String origin);
+    };
+    
+    private final Acceptor _acceptor;
     private WebSocketBuffers _buffers;
     private int _maxIdleTime=300000;
 
     /* ------------------------------------------------------------ */
-    public WebSocketFactory()
+    public WebSocketFactory(Acceptor acceptor)
     {
-        _buffers=new WebSocketBuffers(8192);
+        _buffers=new WebSocketBuffers(64*1024);
+        _acceptor=acceptor;
     }
 
     /* ------------------------------------------------------------ */
-    public WebSocketFactory(int bufferSize)
+    public WebSocketFactory(Acceptor acceptor,int bufferSize)
     {
         _buffers=new WebSocketBuffers(bufferSize);
+        _acceptor=acceptor;
     }
 
     /* ------------------------------------------------------------ */
@@ -145,5 +155,41 @@ public class WebSocketFactory
         String[] protocols = new String[passed.length+1];
         System.arraycopy(passed,0,protocols,0,passed.length);
         return protocols;
+    }
+    
+    public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) 
+        throws IOException
+    {
+        if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
+        {
+            String protocol=request.getHeader("Sec-WebSocket-Protocol");
+            if (protocol==null) // TODO remove once draft period is over
+                protocol=request.getHeader("WebSocket-Protocol");
+            
+            WebSocket websocket=null;
+            for (String p :WebSocketFactory.parseProtocols(protocol))
+            {
+                websocket=_acceptor.doWebSocketConnect(request,p);
+                if (websocket!=null)
+                {
+                    protocol=p;
+                    break;
+                }
+            }
+
+            String host=request.getHeader("Host");
+            String origin=request.getHeader("Origin");
+            origin=_acceptor.checkOrigin(request,host,origin);
+
+            if (websocket!=null)
+            {
+                upgrade(request,response,websocket,origin,protocol);
+                return true;
+            }
+             
+            response.sendError(503);
+        }
+        
+        return false;
     }
 }

@@ -52,8 +52,7 @@ public class WebSocketLoadTest
 
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
-            @Override
-            protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 return new EchoWebSocket();
             }

@@ -24,8 +24,7 @@ public class WebSocketChatServlet extends WebSocketServlet
         getServletContext().getNamedDispatcher("default").forward(request,response);
     };
     
-    @Override
-    protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+    public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
     {
         return new ChatWebSocket();
     }

@@ -43,8 +43,7 @@ public class WebSocketMessageD00Test
         _server.addConnector(_connector);
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
-            @Override
-            protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 _serverWebSocket = new TestWebSocket();
                 _serverWebSocket.onConnect=("onConnect".equals(protocol));

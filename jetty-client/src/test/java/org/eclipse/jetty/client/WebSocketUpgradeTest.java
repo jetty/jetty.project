@@ -189,8 +189,7 @@ public class WebSocketUpgradeTest extends TestCase
         newServer();
         _handler= new WebSocketHandler()
         {
-            @Override
-            protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 _websocket = new TestWebSocket();
                 return _websocket;

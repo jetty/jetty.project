@@ -29,8 +29,7 @@ public class TestServer extends Server
         addConnector(_connector);
         _handler = new WebSocketHandler()
         {
-            @Override
-            protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 if ("org.ietf.websocket.test-echo".equals(protocol) || "echo".equals(protocol) || "lws-mirror-protocol".equals(protocol))
                 {
