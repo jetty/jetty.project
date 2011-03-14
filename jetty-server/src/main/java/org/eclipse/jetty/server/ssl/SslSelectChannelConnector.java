@@ -27,6 +27,8 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.Buffers.Type;
+import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ThreadLocalBuffers;
@@ -610,31 +612,11 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         
         SSLSession sslSession = sslEngine.getSession();
 
-        ThreadLocalBuffers buffers = new ThreadLocalBuffers()
-        {
-            @Override
-            protected Buffer newBuffer(int size)
-            {
-                if (getUseDirectBuffers())
-                    return new DirectNIOBuffer(size);
-                return new IndirectNIOBuffer(size);
-            }
-            @Override
-            protected Buffer newHeader(int size)
-            {
-                if (getUseDirectBuffers())
-                    return new DirectNIOBuffer(size);
-                return new IndirectNIOBuffer(size);
-            }
-            @Override
-            protected boolean isHeader(Buffer buffer)
-            {
-                return true;
-            }
-        };
-        buffers.setBufferSize(sslSession.getApplicationBufferSize());
-        buffers.setHeaderSize(sslSession.getApplicationBufferSize());
-        _sslBuffers=buffers;
+        _sslBuffers = BuffersFactory.newBuffers(
+                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,sslSession.getApplicationBufferSize(),
+                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,sslSession.getApplicationBufferSize(),
+                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,getMaxBuffers()
+        );
 
         if (getRequestHeaderSize()<sslSession.getApplicationBufferSize())
             setRequestHeaderSize(sslSession.getApplicationBufferSize());
@@ -652,7 +634,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     protected void doStop() throws Exception
     {
         _sslContextFactory.stop(); 
-
+        _sslBuffers=null;
         super.doStop();
     }
 

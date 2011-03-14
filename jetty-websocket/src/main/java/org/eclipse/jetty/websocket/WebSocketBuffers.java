@@ -14,6 +14,9 @@
 package org.eclipse.jetty.websocket;
 
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.BuffersFactory;
+import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.ThreadLocalBuffers;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
@@ -25,36 +28,18 @@ import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
  * The normal buffers are byte array buffers so that user processes
  * can access directly.   However the generator uses direct buffers
  * for the final output stage as they are filled in bulk and are more
- * effecient to flush.
+ * efficient to flush.
  */
 public class WebSocketBuffers
 {
     final private int _bufferSize;
-    final private ThreadLocalBuffers _buffers;
+    final private Buffers _buffers;
+    final private int _maxBuffers=1024;
     
     public WebSocketBuffers(final int bufferSize)
     {
         _bufferSize=bufferSize;
-        _buffers = new ThreadLocalBuffers()
-        {
-            @Override
-            protected Buffer newHeader(int size)
-            {
-                return new DirectNIOBuffer(bufferSize);
-            }
-            
-            @Override
-            protected Buffer newBuffer(int size)
-            {
-                return new IndirectNIOBuffer(bufferSize);
-            }
-            
-            @Override
-            protected boolean isHeader(Buffer buffer)
-            {
-                return buffer instanceof DirectNIOBuffer;
-            }
-        };    
+        _buffers = BuffersFactory.newBuffers(Type.DIRECT,bufferSize,Type.INDIRECT,bufferSize,Type.INDIRECT,_maxBuffers);
     }
     
     public Buffer getBuffer()

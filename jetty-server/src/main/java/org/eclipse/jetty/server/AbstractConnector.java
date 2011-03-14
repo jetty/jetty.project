@@ -100,48 +100,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public Buffer newRequestBuffer(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Buffer newRequestHeader(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Buffer newResponseBuffer(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Buffer newResponseHeader(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected boolean isRequestHeader(Buffer buffer)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected boolean isResponseHeader(Buffer buffer)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
     /*
      */
     public Server getServer()

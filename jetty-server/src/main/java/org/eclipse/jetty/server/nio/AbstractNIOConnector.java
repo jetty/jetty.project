@@ -16,9 +16,7 @@
  */
 package org.eclipse.jetty.server.nio;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.server.AbstractConnector;
 
 /* ------------------------------------------------------------ */
@@ -28,12 +26,17 @@ import org.eclipse.jetty.server.AbstractConnector;
  */
 public abstract class AbstractNIOConnector extends AbstractConnector implements NIOConnector
 {
-    private boolean _useDirectBuffers=true;
+    {
+        setRequestBufferType(Type.DIRECT);
+        setRequestHeaderType(Type.INDIRECT);
+        setResponseBufferType(Type.DIRECT);
+        setResponseHeaderType(Type.INDIRECT);
+    }
  
     /* ------------------------------------------------------------------------------- */
     public boolean getUseDirectBuffers()
     {
-        return _useDirectBuffers;
+        return getRequestBufferType()==Type.DIRECT;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -43,48 +46,8 @@ public abstract class AbstractNIOConnector extends AbstractConnector implements 
      */
     public void setUseDirectBuffers(boolean direct)
     {
-        _useDirectBuffers=direct;
+        setRequestBufferType(direct?Type.DIRECT:Type.INDIRECT);
+        setResponseBufferType(direct?Type.DIRECT:Type.INDIRECT);
     }
 
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    public Buffer newRequestBuffer(int size)
-    {
-        return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
-    }
-    
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    public Buffer newRequestHeader(int size)
-    {
-        return new IndirectNIOBuffer(size);
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    public Buffer newResponseBuffer(int size)
-    {
-        return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
-    }
-    
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    public Buffer newResponseHeader(int size)
-    {
-        return new IndirectNIOBuffer(size);
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    protected boolean isRequestHeader(Buffer buffer)
-    {
-        return buffer instanceof IndirectNIOBuffer;
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    protected boolean isResponseHeader(Buffer buffer)
-    {
-        return buffer instanceof IndirectNIOBuffer;
-    }
 }

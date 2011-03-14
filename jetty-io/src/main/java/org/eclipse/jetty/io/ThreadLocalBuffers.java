@@ -13,17 +13,17 @@
 
 package org.eclipse.jetty.io;
 
+import org.eclipse.jetty.io.nio.DirectNIOBuffer;
+import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+
 
 /* ------------------------------------------------------------ */
 /** Abstract Buffer pool.
  * simple unbounded pool of buffers for header, request and response sizes.
  *
  */
-public abstract class ThreadLocalBuffers implements Buffers
+public class ThreadLocalBuffers extends AbstractBuffers 
 {
-    private int _bufferSize=12*1024;
-    private int _headerSize=6*1024;
-
     /* ------------------------------------------------------------ */
     private final ThreadLocal<ThreadBuffers> _buffers=new ThreadLocal<ThreadBuffers>()
     {
@@ -35,8 +35,9 @@ public abstract class ThreadLocalBuffers implements Buffers
     };
 
     /* ------------------------------------------------------------ */
-    public ThreadLocalBuffers()
-    {   
+    public ThreadLocalBuffers(Buffers.Type headerType, int headerSize, Buffers.Type bufferType, int bufferSize, Buffers.Type otherType)
+    {
+        super(headerType,headerSize,bufferType,bufferSize,otherType);
     }
 
     /* ------------------------------------------------------------ */
@@ -50,14 +51,14 @@ public abstract class ThreadLocalBuffers implements Buffers
             return b;
         }
 
-        if (buffers._other!=null && buffers._other.capacity()==_bufferSize)
+        if (buffers._other!=null && isBuffer(buffers._other))
         {
             Buffer b=buffers._other;
             buffers._other=null;
             return b;
         }
 
-        return newBuffer(_bufferSize);
+        return newBuffer();
     }
 
     /* ------------------------------------------------------------ */
@@ -71,14 +72,14 @@ public abstract class ThreadLocalBuffers implements Buffers
             return b;
         }
 
-        if (buffers._other!=null && buffers._other.capacity()==_headerSize && isHeader(buffers._other))
+        if (buffers._other!=null && isHeader(buffers._other))
         {
             Buffer b=buffers._other;
             buffers._other=null;
             return b;
         }
 
-        return newHeader(_headerSize);
+        return newHeader();
     }
 
     /* ------------------------------------------------------------ */
@@ -101,79 +102,17 @@ public abstract class ThreadLocalBuffers implements Buffers
         buffer.clear();
         if (buffer.isVolatile() || buffer.isImmutable())
             return;
-
-        int size=buffer.capacity();
         
         ThreadBuffers buffers = _buffers.get();
         
-        if (buffers._header==null && size==_headerSize && isHeader(buffer))
+        if (buffers._header==null && isHeader(buffer))
             buffers._header=buffer;
-        else if (size==_bufferSize && buffers._buffer==null)
+        else if (buffers._buffer==null && isBuffer(buffer))
             buffers._buffer=buffer;
         else
             buffers._other=buffer;
     }
 
-
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the buffer size in bytes.
-     */
-    public int getBufferSize()
-    {
-        return _bufferSize;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the header size in bytes.
-     */
-    public int getHeaderSize()
-    {
-        return _headerSize;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Create a new content Buffer
-     * @param size
-     * @return new Buffer
-     */
-    protected abstract Buffer newBuffer(int size);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Create a new header Buffer
-     * @param size
-     * @return new Buffer
-     */
-    protected abstract Buffer newHeader(int size);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param buffer
-     * @return True if the buffer is the correct type to be a Header buffer
-     */
-    protected abstract boolean isHeader(Buffer buffer);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param size The buffer size in bytes
-     */
-    public void setBufferSize( int size )
-    {
-        _bufferSize = size;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param size The header size in bytes
-     */
-    public void setHeaderSize( int size )
-    {
-        _headerSize = size;
-    }
 
     /* ------------------------------------------------------------ */
     @Override

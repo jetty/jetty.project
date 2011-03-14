@@ -5,6 +5,7 @@ jetty-7.3.2-SNAPSHOT
  + 339187 In the OSGi manifest of the jetty-all-server aggregate, mark javax.annotation as optional
  + 339543 Add configuration options for Certificate Revocation checking
  + Ensure generated fragment names are unique
+ + JETTY-1245 Pooled Buffers implementation
 
 jetty-7.3.1.v20110307 7 March 2011
  + 316382 Support a more strict SSL option with certificates
