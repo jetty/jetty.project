@@ -42,19 +42,11 @@ public class TestServer extends Server
                 }
                 else if ("org.ietf.websocket.test-echo-assemble".equals(protocol))
                 {
-
+                    _websocket = new TestEchoAssembleWebSocket();
                 }
                 else if ("org.ietf.websocket.test-echo-fragment".equals(protocol))
                 {
-
-                }
-                else if ("org.ietf.websocket.test-consume".equals(protocol))
-                {
-
-                }
-                else if ("org.ietf.websocket.test-produce".equals(protocol))
-                {
-
+                    _websocket = new TestEchoFragmentWebSocket();
                 }
                 else if (protocol==null)
                 {
@@ -202,6 +194,7 @@ public class TestServer extends Server
             }
         }
     }
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     class TestEchoAssembleWebSocket extends TestWebSocket
@@ -236,6 +229,53 @@ public class TestServer extends Server
             try
             {
                 getOutbound().sendMessage(data); 
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    class TestEchoFragmentWebSocket extends TestWebSocket
+    {
+        
+        @Override
+        public void onConnect(Connection connection)
+        {
+            super.onConnect(connection);
+            connection.setMaxTextMessageSize(64*1024);
+            connection.setMaxBinaryMessageSize(64*1024);
+        }
+
+        @Override
+        public void onMessage(byte[] data, int offset, int length)
+        {
+            super.onMessage(data,offset,length);
+            try
+            {
+                getOutbound().sendFrame((byte)0x0,WebSocketConnectionD06.OP_BINARY,data,offset,length/2); 
+                getOutbound().sendFrame((byte)0x8,WebSocketConnectionD06.OP_BINARY,data,offset+length/2,length-length/2); 
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void onMessage(final String message)
+        {
+            super.onMessage(message);
+            try
+            {
+                byte[] data = message.getBytes(StringUtil.__UTF8);
+                int offset=0;
+                int length=data.length;
+                getOutbound().sendFrame((byte)0x0,WebSocketConnectionD06.OP_TEXT,data,offset,length/2); 
+                getOutbound().sendFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,offset+length/2,length-length/2); 
             }
             catch (IOException e)
             {

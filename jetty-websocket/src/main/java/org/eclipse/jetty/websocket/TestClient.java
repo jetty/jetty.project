@@ -35,21 +35,25 @@ public class TestClient
     private final SocketEndPoint _endp;
     private final WebSocketGeneratorD06 _generator;
     private final WebSocketParserD06 _parser;
-    private int _sent;
-    private int _received;
+    private int _framesSent;
+    private int _messagesSent;
+    private int _framesReceived;
+    private int _messagesReceived;
     private long _totalTime;
     private long _minDuration=Long.MAX_VALUE;
     private long _maxDuration=Long.MIN_VALUE;
     private long _start;
     private BlockingQueue<Long> _starts = new LinkedBlockingQueue<Long>();
-    private BlockingQueue<String> _pending = new LinkedBlockingQueue<String>();
-    
+    int _messageBytes;
+    int _frames;
     private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
     {
         public synchronized void onFrame(byte flags, byte opcode, Buffer buffer)
         {
             try
             {
+                _framesReceived++;
+                _frames++;
                 if (opcode == WebSocketConnectionD06.OP_CLOSE)
                 {
                     byte[] data=buffer.asArray();
@@ -61,25 +65,24 @@ public class TestClient
                     return;
                 }
                 
-                Long start=_starts.take();
-                String data=_pending.take();
-
-                while (!data.equals(TypeUtil.toHexString(buffer.asArray())) && !_starts.isEmpty() && !_pending.isEmpty())
+                _messageBytes+=buffer.length();
+                
+                if (WebSocketConnectionD06.isLastFrame(flags))
                 {
-                    // Missed response
-                    start=_starts.take();
-                    data=_pending.take();
+                    _messagesReceived++;
+                    Long start=_starts.take();
+
+
+                    long duration = System.nanoTime()-start.longValue();
+                    if (duration>_maxDuration)
+                        _maxDuration=duration;
+                    if (duration<_minDuration)
+                        _minDuration=duration;
+                    _totalTime+=duration;
+                    System.out.printf("%d bytes from %s: frames=%d req=%d time=%.1fms opcode=0x%s\n",_messageBytes,_host,_frames,_messagesReceived,((double)duration/1000000.0),TypeUtil.toHexString(opcode));
+                    _frames=0;
+                    _messageBytes=0;
                 }
-
-                _received++;
-
-                long duration = System.nanoTime()-start.longValue();
-                if (duration>_maxDuration)
-                    _maxDuration=duration;
-                if (duration<_minDuration)
-                    _minDuration=duration;
-                _totalTime+=duration;
-                System.out.printf("%d bytes from %s: req=%d time=%.1fms opcode=0x%s\n",buffer.length(),_host,_received,((double)duration/1000000.0),TypeUtil.toHexString(opcode));
             }
             catch(Exception e)
             {
@@ -183,23 +186,36 @@ public class TestClient
                 break;
             try
             {
-                byte data[] = new byte[_size];
-                __random.nextBytes(data);
+                byte data[]=null;
                 
+                if (opcode==WebSocketConnectionD06.OP_TEXT)
+                {
+                    StringBuilder b = new StringBuilder();
+                    while (b.length()<_size)
+                        b.append('A'+__random.nextInt(26));
+                    data=b.toString().getBytes(StringUtil.__UTF8);
+                }
+                else
+                {             
+                    data= new byte[_size];
+                    __random.nextBytes(data);
+                }
                 _starts.add(System.nanoTime());
-                _pending.add(TypeUtil.toHexString(data));
                 
                 int off=0;
                 int len=data.length;
                 if (fragment>0&& len>fragment)
                     len=fragment;
+                _messagesSent++;
                 while(off<data.length)
-                {
-                    _generator.addFrame((byte)(off==0?0x8:0),(byte)(off==0?opcode:WebSocketConnectionD06.OP_CONTINUATION),data,off,len,_socket.getSoTimeout());
-                    _sent++;
+                {                    
+                    _framesSent++;
+                    _generator.addFrame((byte)(off+len==data.length?0x8:0),(byte)(off==0?opcode:WebSocketConnectionD06.OP_CONTINUATION),data,off,len,_socket.getSoTimeout());
                     off+=len;
                     if(data.length-off>len)
                         len=data.length-off;
+                    if (fragment>0&& len>fragment)
+                        len=fragment;
                 }
                 _generator.flush(_socket.getSoTimeout());
 
@@ -219,10 +235,10 @@ public class TestClient
         _socket.close();
         long duration=System.currentTimeMillis()-_start;
         System.out.println("--- "+_host+" websocket ping statistics using 1 connection ---");
-        System.out.println(_sent+" packets transmitted, "+_received+" received, "+
-                (_sent>0?String.format("%d",100*(_sent-_received)/_sent)+"% loss, ":"")+
+        System.out.println(_framesSent+" frames transmitted, "+_framesReceived+" received, "+
+                _messagesSent+" messages transmitted, "+_messagesReceived+" received, "+
                 "time "+duration+"ms");
-        System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",_minDuration/1000000.0,_received==0?0.0:(_totalTime/_received/1000000.0),_maxDuration/1000000.0);
+        System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",_minDuration/1000000.0,_messagesReceived==0?0.0:(_totalTime/_messagesReceived/1000000.0),_maxDuration/1000000.0);
     }
     
 
@@ -232,11 +248,12 @@ public class TestClient
         System.err.println("USAGE: java -cp CLASSPATH "+TestClient.class+" [ OPTIONS ]");
         System.err.println("  -h|--host HOST  (default localhost)");
         System.err.println("  -p|--port PORT  (default 8080)");
+        System.err.println("  -b|--binary");
         System.err.println("  -v|--verbose");
         System.err.println("  -c|--count n    (default 10)");
         System.err.println("  -s|--size n     (default 64)");
         System.err.println("  -f|--fragment n (default 4000) ");
-        System.err.println("  -P|--protocol echo|echo-assemble|echo-fragment");
+        System.err.println("  -P|--protocol echo|echo-assemble|echo-fragment|echo-broadcast");
         System.exit(1);
     }
     
@@ -251,6 +268,7 @@ public class TestClient
             int count=10;
             int size=64;
             int fragment=4000;
+            boolean binary=false;
             
             for (int i=0;i<args.length;i++)
             {
@@ -269,6 +287,8 @@ public class TestClient
                     protocol=args[++i];
                 else if ("-v".equals(a)||"--verbose".equals(a))
                     verbose=true;
+                else if ("-b".equals(a)||"--binary".equals(a))
+                    binary=true;
                 else if (a.startsWith("-"))
                     usage(args);
             }
@@ -280,8 +300,8 @@ public class TestClient
             try
             {
                 client.open();
-                if ("echo".equals(protocol))
-                    client.ping(count,WebSocketConnectionD06.OP_BINARY,fragment);
+                if (protocol.startsWith("echo"))
+                    client.ping(count,binary?WebSocketConnectionD06.OP_BINARY:WebSocketConnectionD06.OP_TEXT,fragment);
                 else
                     client.ping(count,WebSocketConnectionD06.OP_PING,-1);
             }

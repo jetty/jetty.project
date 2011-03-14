@@ -25,12 +25,15 @@ Without a protocol specified, the client will just send/receive websocket PING/P
 aspects of websocket.  Specifically the server and client understand the following protocols:
 
     org.ietf.websocket.test-echo
-        Websocket TEXT messages are sent by the client and the server will echo every frame.
+        Websocket messages are sent by the client and the server will echo every frame.
+
+    org.ietf.websocket.test-echo-broadcast
+        Websocket messages are sent by the client and the server will echo every frame to every connection.
 
     org.ietf.websocket.test-echo-assemble
-        Websocket BINARY messages are sent (see --fragment)  and the server will echo assembled messages as a single frame.
+        Websocket messages are sent by the client and the server will echo assembled messages as a single frame.
 
     org.ietf.websocket.test-echo-fragment
-        Websocket BINARY messages are sent and the server will echo each message fragmented into 2 frames.
+        Websocket messages are sent and the server will echo each message fragmented into 2 frames.
 
 
