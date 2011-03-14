@@ -105,6 +105,7 @@ public class WebSocketParserD06 implements WebSocketParser
             _buffer=_buffers.getBuffer();
 
         int total_filled=0;
+        int events=0;
 
         // Loop until an datagram call back or can't fill anymore
         while(true)
@@ -126,14 +127,14 @@ public class WebSocketParserD06 implements WebSocketParser
                 {
                     int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
                     if (filled<=0)
-                        return total_filled>0?total_filled:filled;
+                        return (total_filled+events)>0?(total_filled+events):filled;
                     total_filled+=filled;
                     available=_buffer.length();
                 }
                 catch(IOException e)
                 {
                     Log.debug(e);
-                    return total_filled>0?total_filled:-1;
+                    return (total_filled+events)>0?(total_filled+events):-1;
                 }
             }
 
@@ -169,6 +170,7 @@ public class WebSocketParserD06 implements WebSocketParser
                         if (WebSocketConnectionD06.isControlFrame(_opcode)&&!WebSocketConnectionD06.isLastFrame(_flags))
                         {
                             _state=State.SKIP;
+                            events++;
                             _handler.close(WebSocketConnectionD06.CLOSE_PROTOCOL,"fragmented control");
                         }
                         else
@@ -213,6 +215,7 @@ public class WebSocketParserD06 implements WebSocketParser
                             if (_length>_buffer.capacity())
                             {
                                 _state=State.SKIP;
+                                events++;
                                 _handler.close(WebSocketConnectionD06.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
                             }
                             else
@@ -234,6 +237,7 @@ public class WebSocketParserD06 implements WebSocketParser
                             if (_length>=_buffer.capacity())
                             {
                                 _state=State.SKIP;
+                                events++;
                                 _handler.close(WebSocketConnectionD06.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
                             }
                             else
@@ -268,6 +272,7 @@ public class WebSocketParserD06 implements WebSocketParser
                 }
 
                 // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
+                events++;
                 _handler.onFrame(_flags, _opcode, data);
                 _bytesNeeded=0;
                 _state=State.START;
@@ -278,8 +283,7 @@ public class WebSocketParserD06 implements WebSocketParser
                     _buffer=null;
                 }
 
-                return total_filled;
-
+                return total_filled+events;
             }
         }
     }

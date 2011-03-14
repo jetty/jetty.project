@@ -36,6 +36,9 @@ public interface WebSocketParser
 
     Buffer getBuffer();
 
+    /**
+     * @return an indication of progress, normally bytes filled plus events parsed, or -1 for EOF
+     */
     int parseNext();
 
     boolean isBufferEmpty();

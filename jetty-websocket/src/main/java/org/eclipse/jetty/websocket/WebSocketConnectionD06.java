@@ -491,7 +491,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                 int filled=_parser.parseNext();
 
                 progress = flushed>0 || filled>0;
-
+                
                 if (filled<0 || flushed<0)
                 {
                     _endp.close();

@@ -247,10 +247,11 @@ public class TestClient
 
     public void dump() throws Exception
     {
-        for (int i=0;i<25;i++)
+        for (int i=0;i<250;i++)
         {
             if (_messagesSent==_messagesReceived)
                 break;
+            _generator.flush(10);
             Thread.sleep(100);
         }
         

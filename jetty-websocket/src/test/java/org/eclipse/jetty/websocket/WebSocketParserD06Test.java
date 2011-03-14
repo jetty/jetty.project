@@ -102,7 +102,7 @@ public class WebSocketParserD06Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(6,filled);
+        assertEquals(7,filled);
         assertEquals(0xf,_handler._flags);
         assertEquals(0xf,_handler._opcode);
         assertTrue(_parser.isBufferEmpty());
@@ -120,7 +120,7 @@ public class WebSocketParserD06Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(17,filled);
+        assertEquals(18,filled);
         assertEquals("Hello World",_handler._data.get(0));
         assertEquals(0x8,_handler._flags);
         assertEquals(0x4,_handler._opcode);
@@ -141,7 +141,7 @@ public class WebSocketParserD06Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(bytes.length+6,filled);
+        assertEquals(bytes.length+7,filled);
         assertEquals(string,_handler._data.get(0));
         assertEquals(0x8,_handler._flags);
         assertEquals(0x4,_handler._opcode);
@@ -168,7 +168,7 @@ public class WebSocketParserD06Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(bytes.length+8,filled);
+        assertEquals(bytes.length+9,filled);
         assertEquals(string,_handler._data.get(0));
         assertEquals(0x8,_handler._flags);
         assertEquals(0x4,_handler._opcode);
@@ -207,7 +207,7 @@ public class WebSocketParserD06Test
 
         int filled =parser.parseNext();
 
-        assertEquals(bytes.length+10,filled);
+        assertEquals(bytes.length+11,filled);
         assertEquals(string,_handler._data.get(0));
         assertTrue(parser.isBufferEmpty());
         assertTrue(parser.getBuffer()==null);
@@ -227,14 +227,14 @@ public class WebSocketParserD06Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(23,filled);
+        assertEquals(24,filled);
         assertEquals(0,_handler._data.size());
         assertFalse(_parser.isBufferEmpty());
         assertFalse(_parser.getBuffer()==null);
 
         filled =_parser.parseNext();
 
-        assertEquals(0,filled);
+        assertEquals(1,filled);
         assertEquals("Hello World",_handler._data.get(0));
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
@@ -251,7 +251,7 @@ public class WebSocketParserD06Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(8,filled);
+        assertEquals(9,filled);
        
         assertEquals(WebSocketConnectionD06.CLOSE_LARGE,_handler._code);
         for (int i=0;i<2048;i++)
@@ -274,7 +274,7 @@ public class WebSocketParserD06Test
             _in.put((byte)'a');
 
         filled =_parser.parseNext();
-        assertEquals(1024+8,filled);
+        assertEquals(1024+8+1,filled);
         assertEquals(1,_handler._data.size());
         assertEquals(1024,_handler._data.get(0).length());
     }
