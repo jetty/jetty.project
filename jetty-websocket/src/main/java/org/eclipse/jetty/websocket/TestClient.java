@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.log.Log;
 public class TestClient
 {
     private final static Random __random = new SecureRandom();
+    private static boolean _verbose=false;
     private final String _host;
     private final int _port;
     private final String _protocol;
@@ -46,6 +47,7 @@ public class TestClient
     private BlockingQueue<Long> _starts = new LinkedBlockingQueue<Long>();
     int _messageBytes;
     int _frames;
+    byte _opcode=-1;
     private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
     {
         public synchronized void onFrame(byte flags, byte opcode, Buffer buffer)
@@ -67,6 +69,10 @@ public class TestClient
                 
                 _messageBytes+=buffer.length();
                 
+                if (_opcode==-1)
+                    _opcode=opcode;
+                
+
                 if (WebSocketConnectionD06.isLastFrame(flags))
                 {
                     _messagesReceived++;
@@ -79,10 +85,12 @@ public class TestClient
                     if (duration<_minDuration)
                         _minDuration=duration;
                     _totalTime+=duration;
-                    System.out.printf("%d bytes from %s: frames=%d req=%d time=%.1fms opcode=0x%s\n",_messageBytes,_host,_frames,_messagesReceived,((double)duration/1000000.0),TypeUtil.toHexString(opcode));
+                    System.out.printf("%d bytes from %s: frames=%d req=%d time=%.1fms opcode=0x%s\n",_messageBytes,_host,_frames,_messagesReceived,((double)duration/1000000.0),TypeUtil.toHexString(_opcode));
                     _frames=0;
                     _messageBytes=0;
+                    _opcode=-1;
                 }
+                
             }
             catch(Exception e)
             {
@@ -108,7 +116,7 @@ public class TestClient
         _input = new BufferedReader(new InputStreamReader(_socket.getInputStream(), "ISO-8859-1"));
 
         _endp=new SocketEndPoint(_socket);
-        _generator = new WebSocketGeneratorD06(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD06.FixedMaskGen());
+        _generator = new WebSocketGeneratorD06(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD06.FixedMaskGen(new byte[4]));
         _parser = new WebSocketParserD06(new WebSocketBuffers(32*1024),_endp,_handler,false);
     }
 
@@ -172,22 +180,24 @@ public class TestClient
             public void run()
             {
                 while (_endp.isOpen())
+                {
                     _parser.parseNext();
+                }
             }
         }.start();
     }
 
     public void ping(int count,byte opcode,int fragment)
     {
-        _start=System.currentTimeMillis();
-        for (int i=0;i<count && !_socket.isClosed();i++)
+        try
         {
-            if (_socket.isClosed())
-                break;
-            try
+            _start=System.currentTimeMillis();
+            for (int i=0;i<count && !_socket.isClosed();i++)
             {
+                if (_socket.isClosed())
+                    break;
                 byte data[]=null;
-                
+
                 if (opcode==WebSocketConnectionD06.OP_TEXT)
                 {
                     StringBuilder b = new StringBuilder();
@@ -201,7 +211,7 @@ public class TestClient
                     __random.nextBytes(data);
                 }
                 _starts.add(System.nanoTime());
-                
+
                 int off=0;
                 int len=data.length;
                 if (fragment>0&& len>fragment)
@@ -210,28 +220,40 @@ public class TestClient
                 while(off<data.length)
                 {                    
                     _framesSent++;
-                    _generator.addFrame((byte)(off+len==data.length?0x8:0),(byte)(off==0?opcode:WebSocketConnectionD06.OP_CONTINUATION),data,off,len,_socket.getSoTimeout());
+                    byte flags= (byte)(off+len==data.length?0x8:0);
+                    byte op=(byte)(off==0?opcode:WebSocketConnectionD06.OP_CONTINUATION);
+
+                    if (_verbose)                
+                        System.err.printf("%s#addFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
+                    _generator.addFrame(flags,op,data,off,len,_socket.getSoTimeout());
+
                     off+=len;
                     if(data.length-off>len)
                         len=data.length-off;
                     if (fragment>0&& len>fragment)
                         len=fragment;
                 }
+
                 _generator.flush(_socket.getSoTimeout());
 
                 Thread.sleep(1000);
-               
             }
-            catch (Exception x)
-            {
-                throw new RuntimeException(x);
-            }
+        }
+        catch (Exception x)
+        {
+            throw new RuntimeException(x);
         }
     }
 
-
-    public void dump() throws IOException
+    public void dump() throws Exception
     {
+        for (int i=0;i<25;i++)
+        {
+            if (_messagesSent==_messagesReceived)
+                break;
+            Thread.sleep(100);
+        }
+        
         _socket.close();
         long duration=System.currentTimeMillis()-_start;
         System.out.println("--- "+_host+" websocket ping statistics using 1 connection ---");
@@ -263,7 +285,6 @@ public class TestClient
         {
             String host="localhost";
             int port=8080;
-            boolean verbose=false;
             String protocol=null;
             int count=10;
             int size=64;
@@ -286,7 +307,7 @@ public class TestClient
                 else if ("-P".equals(a)||"--protocol".equals(a))
                     protocol=args[++i];
                 else if ("-v".equals(a)||"--verbose".equals(a))
-                    verbose=true;
+                    _verbose=true;
                 else if ("-b".equals(a)||"--binary".equals(a))
                     binary=true;
                 else if (a.startsWith("-"))
@@ -300,7 +321,7 @@ public class TestClient
             try
             {
                 client.open();
-                if (protocol.startsWith("echo"))
+                if (protocol!=null && protocol.startsWith("echo"))
                     client.ping(count,binary?WebSocketConnectionD06.OP_BINARY:WebSocketConnectionD06.OP_TEXT,fragment);
                 else
                     client.ping(count,WebSocketConnectionD06.OP_PING,-1);

@@ -241,7 +241,6 @@ public class TestServer extends Server
     /* ------------------------------------------------------------ */
     class TestEchoFragmentWebSocket extends TestWebSocket
     {
-        
         @Override
         public void onConnect(Connection connection)
         {

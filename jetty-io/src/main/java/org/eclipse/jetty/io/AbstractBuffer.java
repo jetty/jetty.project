@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -587,28 +588,16 @@ public abstract class AbstractBuffer implements Buffer
         {
             for (int i = markIndex(); i < getIndex(); i++)
             {
-                char c = (char) peek(i);
-                if (Character.isISOControl(c))
-                {
-                    buf.append(c < 16 ? "\\0" : "\\");
-                    buf.append(Integer.toString(c, 16));
-                }
-                else
-                    buf.append(c);
+                byte b =  peek(i);
+                TypeUtil.toHex(b,buf);
             }
             buf.append("}{");
         }
         int count = 0;
         for (int i = getIndex(); i < putIndex(); i++)
         {
-            char c = (char) peek(i);
-            if (Character.isISOControl(c))
-            {
-                buf.append(c < 16 ? "\\0" : "\\");
-                buf.append(Integer.toString(c, 16));
-            }
-            else
-                buf.append(c);
+            byte b =  peek(i);
+            TypeUtil.toHex(b,buf);
             if (count++ == 50)
             {
                 if (putIndex() - i > 20)
