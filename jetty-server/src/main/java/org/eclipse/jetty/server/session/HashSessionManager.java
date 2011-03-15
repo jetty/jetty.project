@@ -179,7 +179,7 @@ public class HashSessionManager extends AbstractSessionManager
       if (_idleSavePeriodMs <= 0)
         return 0;
 
-      return _idleSavePeriodMs;
+      return _idleSavePeriodMs / 1000;
     }
     
     /* ------------------------------------------------------------ */

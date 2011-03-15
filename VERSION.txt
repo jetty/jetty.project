@@ -1,5 +1,6 @@
 jetty-7.3.2-SNAPSHOT
  + 337685 Update websocket API in preparation for draft -07
+ + 338627 HashSessionManager.getIdleSavePeriod returns milliseconds instead of seconds
  + 338819 Externally control Deployment Manager application lifecycle
  + 339150 Validate client certificate when it is used for authentication
  + 339187 In the OSGi manifest of the jetty-all-server aggregate, mark javax.annotation as optional
