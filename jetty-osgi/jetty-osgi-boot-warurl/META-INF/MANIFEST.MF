@@ -5,7 +5,7 @@ Bundle-SymbolicName: org.eclipse.jetty.osgi.boot.warurl;singleton:=true
 Bundle-Version: 8.0.0.qualifier
 Bundle-Activator: org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator
 Bundle-Vendor: Mort Bay Consulting
-Bundle-RequiredExecutionEnvironment: J2SE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Import-Package: org.eclipse.jetty.util,
  org.osgi.framework,
  org.osgi.service.url
