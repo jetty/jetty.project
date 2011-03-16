@@ -122,7 +122,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
      * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
      * does not have CVE-2009-3555 fixed, then re-negotiation should
-     * not be allowed.
+     * not be allowed.  CVE-2009-3555 was fixed in Sun java 1.6 with a ban 
+     * of renegotiate in u19 and with RFC5746 in u22.
      * @param allowRenegotiate true if re-negotiation is allowed (default false)
      * @deprecated
      */
