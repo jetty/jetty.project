@@ -32,6 +32,7 @@ import java.security.cert.X509CertSelector;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -109,8 +110,9 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _needClientAuth = false;
     /** Set to true if client certificate authentication is desired */
     private boolean _wantClientAuth = false;
+    
     /** Set to true if renegotiation is allowed */
-    private boolean _allowRenegotiate = false;
+    private boolean _allowRenegotiate = true;
 
     /** Keystore password */
     private transient Password _keyStorePassword;
@@ -532,9 +534,11 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered a vulnerability
-     * in SSL/TLS with re-negotiation. If your JVM does not have CVE-2009-3555 fixed,
-     * then re-negotiation should not be allowed.
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should
+     * not be allowed.  CVE-2009-3555 was fixed in Sun java 1.6 with a ban 
+     * of renegotiates in u19 and with RFC5746 in u22.
      * 
      * @param allowRenegotiate
      *            true if re-negotiation is allowed (default false)
