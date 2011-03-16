@@ -1,4 +1,5 @@
 jetty-7.3.2-SNAPSHOT
+ + 324110 Added test harnesses for merging of QueryStrings. 
  + 337685 Update websocket API in preparation for draft -07
  + 338627 HashSessionManager.getIdleSavePeriod returns milliseconds instead of seconds
  + 338819 Externally control Deployment Manager application lifecycle
