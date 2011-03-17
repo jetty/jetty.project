@@ -18,9 +18,8 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Dictionary;
-import java.util.Hashtable;
 import java.util.Enumeration;
-import java.util.Properties;
+import java.util.Hashtable;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
@@ -129,7 +128,9 @@ public class DefaultJettyAtJettyHomeHelper {
     	}
     	if (jettyHome == null && jettyHomeBundle == null)
     	{
-    		Log.warn("No default jetty started.");
+    		Log.warn("No default jetty started as none of" +
+    				" the system properties 'jetty.home' and 'jetty.home.bundle'" +
+    				" are defined");
     		return;
     	}
 		try
