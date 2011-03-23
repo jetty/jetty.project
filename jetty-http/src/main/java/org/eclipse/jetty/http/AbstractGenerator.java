@@ -31,8 +31,6 @@ import org.eclipse.jetty.util.log.Log;
  * two optional writer to byte conversions. buffer.writers=true will probably be 
  * faster, but will consume more memory.   This option is just for testing and tuning.
  * 
- * 
- * 
  */
 public abstract class AbstractGenerator implements Generator
 {

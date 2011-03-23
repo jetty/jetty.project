@@ -87,10 +87,11 @@ public class HttpExchangeTest extends TestCase
 
     public void testPerf() throws Exception
     {
+        sender(1,false);
+        sender(1,true);
+        
         if (Stress.isEnabled())
         {
-            sender(1,false);
-            sender(1,true);
             sender(100,false);
             sender(100,true);
             sender(10000,false);
@@ -98,8 +99,6 @@ public class HttpExchangeTest extends TestCase
         }
         else
         {
-            sender(1,false);
-            sender(1,true);
             sender(10,false);
             sender(10,true);
         }
@@ -168,7 +167,9 @@ public class HttpExchangeTest extends TestCase
                     if (len==2009)
                         latch.countDown();
                     else
+                    {
                         System.err.println(n+" ONLY "+len);
+                    }
                     complete.countDown();
                 }
 
@@ -223,7 +224,7 @@ public class HttpExchangeTest extends TestCase
         if(elapsed>0)
             System.err.println(nb+"/"+_count+" c="+close+" rate="+(nb*1000/elapsed));
             */
-
+        
         assertEquals("nb="+nb+" close="+close,0,latch.getCount());
     }
 

@@ -69,6 +69,8 @@ public class HttpGeneratorTest
         Handler handler = new Handler();
         HttpParser parser=null;
 
+        
+        
         // For HTTP version
         for (int v=9;v<=11;v++)
         {
@@ -81,8 +83,7 @@ public class HttpGeneratorTest
                     // For none, keep-alive, close
                     for (int c=0;c<(v==11?connect.length:(connect.length-1));c++)
                     {
-
-                        String t="v="+v+",r="+r+",chunks="+chunks+",connect="+connect[c]+",tr="+tr[r];
+                        String t="v="+v+",r="+r+",chunks="+chunks+",connect="+c+",tr="+tr[r];
                         // System.err.println(t);
 
                         hb.reset(true);
@@ -91,39 +92,45 @@ public class HttpGeneratorTest
 
                         tr[r].build(v,hb,"OK\r\nTest",connect[c],null,chunks, fields);
                         String response=endp.getOut().toString();
-                        // System.out.println("RESPONSE: "+t+"\n"+response+(hb.isPersistent()?"...\n":"---\n"));
+                        //System.out.println("RESPONSE: "+t+"\n"+response+(hb.isPersistent()?"...\n":"---\n"));
 
                         if (v==9)
                         {
                             assertFalse(t,hb.isPersistent());
-                            if (tr[r].body!=null)
-                                assertEquals(t,tr[r].body, response);
+                            if (tr[r]._body!=null)
+                                assertEquals(t,tr[r]._body, response);
                             continue;
                         }
 
                         parser=new HttpParser(new ByteArrayBuffer(response.getBytes()), handler);
+                        parser.setHeadResponse(tr[r]._head);
+                                
                         try
                         {
                             parser.parse();
                         }
                         catch(IOException e)
                         {
-                            if (tr[r].body!=null)
+                            if (tr[r]._body!=null)
                                 throw new Exception(t,e);
                             continue;
                         }
 
-                        if (tr[r].body!=null)
-                            assertEquals(t,tr[r].body, this.content);
+                        if (tr[r]._body!=null)
+                            assertEquals(t,tr[r]._body, this.content);
+                        
                         if (v==10)
-                            assertTrue(t,hb.isPersistent() || tr[r].values[1]==null || c==2 || c==0);
+                            assertTrue(t,hb.isPersistent() || tr[r]._contentLength==null || c==2 || c==0);
                         else
                             assertTrue(t,hb.isPersistent() ||  c==2 || c==3);
 
                         if (v>9)
                             assertEquals("OK  Test",f2);
 
-                        assertTrue(t,tr[r].values[1]==null || content.length()==Integer.parseInt(tr[r].values[1]));
+                        if (content==null)
+                            assertTrue(t,tr[r]._body==null);
+                        else
+                            assertTrue(t,tr[r]._contentLength==null || content.length()==Integer.parseInt(tr[r]._contentLength));
                     }
                 }
             }
@@ -133,37 +140,48 @@ public class HttpGeneratorTest
     private static final String[] headers= { "Content-Type","Content-Length","Connection","Transfer-Encoding","Other"};
     private class TR
     {
-        private int code;
-        private String[] values=new String[headers.length];
-        private String body;
+        private int _code;
+        private String _body;
+        private boolean _head;
+        String _contentType;
+        String _contentLength;
+        String _connection;
+        String _te;
+        String _other;
 
-        private TR(int code,String ct, String cl ,String content)
+        private TR(int code,String contentType, String contentLength ,String content,boolean head)
         {
-            this.code=code;
-            values[0]=ct;
-            values[1]=cl;
-            values[4]="value";
-            this.body=content;
+            _code=code;
+            _contentType=contentType;
+            _contentLength=contentLength;
+            _other="value";
+            _body=content;
+            _head=head;
         }
 
         private void build(int version,HttpGenerator hb,String reason, String connection, String te, int chunks, HttpFields fields) throws Exception
         {
-            values[2]=connection;
-            values[3]=te;
+            _connection=connection;
+            _te=te;
             hb.setVersion(version);
-            hb.setResponse(code,reason);
-
-            for (int i=0;i<headers.length;i++)
+            hb.setResponse(_code,reason);
+            hb.setHead(_head);
+           
+            if (_contentType!=null)
+                fields.put(new ByteArrayBuffer("Content-Type"),new ByteArrayBuffer(_contentType));
+            if (_contentLength!=null)
+                fields.put(new ByteArrayBuffer("Content-Length"),new ByteArrayBuffer(_contentLength));
+            if (_connection!=null)
+                fields.put(new ByteArrayBuffer("Connection"),new ByteArrayBuffer(_connection));
+            if (_te!=null)
+                fields.put(new ByteArrayBuffer("Transfer-Encoding"),new ByteArrayBuffer(_te));
+            if (_other!=null)
+                fields.put(new ByteArrayBuffer("Other"),new ByteArrayBuffer(_other));
+            
+            if (_body!=null)
             {
-                if (values[i]==null)
-                    continue;
-                fields.put(new ByteArrayBuffer(headers[i]),new ByteArrayBuffer(values[i]));
-            }
-
-            if (body!=null)
-            {
-                int inc=1+body.length()/chunks;
-                Buffer buf=new ByteArrayBuffer(body);
+                int inc=1+_body.length()/chunks;
+                Buffer buf=new ByteArrayBuffer(_body);
                 View view = new View(buf);
                 for (int i=1;i<chunks;i++)
                 {
@@ -198,20 +216,20 @@ public class HttpGeneratorTest
         @Override
         public String toString()
         {
-            return "["+code+","+values[0]+","+values[1]+","+(body==null?"none":"_content")+"]";
+            return "["+_code+","+_contentType+","+_contentLength+","+(_body==null?"null":"content")+"]";
         }
     }
 
     private final TR[] tr =
     {
-      /* 0 */  new TR(200,null,null,null),
-      /* 1 */  new TR(200,null,null,CONTENT),
-      /* 2 */  new TR(200,null,""+CONTENT.length(),null),
-      /* 3 */  new TR(200,null,""+CONTENT.length(),CONTENT),
-      /* 4 */  new TR(200,"text/html",null,null),
-      /* 5 */  new TR(200,"text/html",null,CONTENT),
-      /* 6 */  new TR(200,"text/html",""+CONTENT.length(),null),
-      /* 7 */  new TR(200,"text/html",""+CONTENT.length(),CONTENT),
+      /* 0 */  new TR(200,null,null,null,false),
+      /* 1 */  new TR(200,null,null,CONTENT,false),
+      /* 2 */  new TR(200,null,""+CONTENT.length(),null,true),
+      /* 3 */  new TR(200,null,""+CONTENT.length(),CONTENT,false),
+      /* 4 */  new TR(200,"text/html",null,null,true),
+      /* 5 */  new TR(200,"text/html",null,CONTENT,false),
+      /* 6 */  new TR(200,"text/html",""+CONTENT.length(),null,true),
+      /* 7 */  new TR(200,"text/html",""+CONTENT.length(),CONTENT,false),
     };
 
     private String content;

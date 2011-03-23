@@ -301,10 +301,9 @@ public class RFC2616Test
 
             offset=0;
             response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"\n"+
-
             "GET /R2 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n"+
-
             "GET /R3 HTTP/1.1\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
+            
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","8.1.2 default")+1;
             offset=checkContains(response,offset,"/R1","8.1.2 default")+1;
 
@@ -322,82 +321,84 @@ public class RFC2616Test
     }
 
     @Test
-    public void test8_2()
+    public void test8_2() throws Exception
     {
-        try
-        {
-            String response;
-            int offset=0;
-            // No Expect 100
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+
-                                            "Host: localhost\n"+
-                                            "Content-Type: text/plain\n"+
-                                            "Content-Length: 8\n"+
-                                            "\n",true);
+        String response;
+        int offset=0;
+        // No Expect 100
+        offset=0;
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Content-Type: text/plain\n"+
+                "Content-Length: 8\n"+
+                "\n",true);
 
-            assertTrue("8.2.3 no expect 100",response==null || response.length()==0);
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+
-                                            "Host: localhost\n"+
-                                            "Content-Type: text/plain\n"+
-                                            "Content-Length: 8\n"+
-                                            "\n"+
-                                            "AbCdEf\015\012",true);
-            offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 no expect 100")+1;
-            offset=checkContains(response,offset,"AbCdEf","8.2.3 no expect 100")+1;
+        assertTrue("8.2.3 no expect 100",response==null || response.length()==0);
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Content-Type: text/plain\n"+
+                "Content-Length: 8\n"+
+                "\n"+
+                "AbCdEf\015\012",true);
+        offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 no expect 100")+1;
+        offset=checkContains(response,offset,"AbCdEf","8.2.3 no expect 100")+1;
 
-            // Expect Failure
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Expect: unknown\n"+"Content-Type: text/plain\n"+"Content-Length: 8\n"
-                    +"\n");
-            offset=checkContains(response,offset,"HTTP/1.1 417","8.2.3 expect failure")+1;
+        // Expect Failure
+        offset=0;
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Expect: unknown\n"+"Content-Type: text/plain\n"+"Content-Length: 8\n"
+                +"\n");
+        offset=checkContains(response,offset,"HTTP/1.1 417","8.2.3 expect failure")+1;
 
-            // Expect with body
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Expect: 100-continue\n"+"Content-Type: text/plain\n"
-                    +"Content-Length: 8\n"+"Connection: close\n"+"\n"+"123456\015\012");
-            checkNotContained(response,offset,"HTTP/1.1 100 ","8.2.3 expect 100");
-            offset=checkContains(response,offset,"HTTP/1.1 200 OK","8.2.3 expect with body")+1;
+        // Expect with body
+        offset=0;
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+"Host: localhost\n"+"Expect: 100-continue\n"+"Content-Type: text/plain\n"
+                +"Content-Length: 8\n"+"Connection: close\n"+"\n"+"123456\015\012");
+        checkNotContained(response,offset,"HTTP/1.1 100 ","8.2.3 expect 100");
+        offset=checkContains(response,offset,"HTTP/1.1 200 OK","8.2.3 expect with body")+1;
+    }
 
-            // Expect 100
-            ((StdErrLog)Log.getLog()).setHideStacks(true);
-            offset=0;
-            response=connector.getResponses("GET /R1 HTTP/1.1\n"+
-                                            "Host: localhost\n"+
-                                            "Connection: close\n"+
-                                            "Expect: 100-continue\n"+
-                                            "Content-Type: text/plain\n"+
-                                            "Content-Length: 8\n"+
-                                            "\n",true);
-            offset=checkContains(response,offset,"HTTP/1.1 100 ","8.2.3 expect 100")+1;
-            checkNotContained(response,offset,"HTTP/1.1 200","8.2.3 expect 100");
-            /* can't test this with localconnector.
+    @Test
+    public void test8_2_3() throws Exception
+    {
+        String response;
+        int offset=0;
+        // Expect 100
+        response=connector.getResponses("GET /R1 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Connection: close\n"+
+                "Expect: 100-continue\n"+
+                "Content-Type: text/plain\n"+
+                "Content-Length: 8\n"+
+                "\n",true);
+        offset=checkContains(response,offset,"HTTP/1.1 100 ","8.2.3 expect 100")+1;
+        checkNotContained(response,offset,"HTTP/1.1 200","8.2.3 expect 100");
+        /* can't test this with localconnector.
             response=connector.getResponses("654321\015\012");
             offset=checkContains(response,offset,"HTTP/1.1 200","8.2.3 expect 100")+1;
             offset=checkContains(response,offset,"654321","8.2.3 expect 100")+1;
-            */
+         */
+    }
+    
+    @Test
+    public void test8_2_4() throws Exception
+    {
+        String response;
+        int offset=0;
+        // Expect 100 not sent
+        ((StdErrLog)Log.getLog()).setHideStacks(true);
+        offset=0;
 
-            // Expect 100 not sent
-            ((StdErrLog)Log.getLog()).setHideStacks(true);
-            offset=0;
+        response=connector.getResponses("GET /R1?error=401 HTTP/1.1\n"+
+                "Host: localhost\n"+
+                "Expect: 100-continue\n"+
+                "Content-Type: text/plain\n"+
+                "Content-Length: 8\n"+
+                "\n",true);
+        checkNotContained(response,offset,"HTTP/1.1 100","8.2.3 expect 100");
+        offset=checkContains(response,offset,"HTTP/1.1 401 ","8.2.3 expect 100")+1;
+        offset=checkContains(response,offset,"Connection: close","8.2.3 expect 100")+1;
 
-            response=connector.getResponses("GET /R1?error=401 HTTP/1.1\n"+
-                                            "Host: localhost\n"+
-                                            "Expect: 100-continue\n"+
-                                            "Content-Type: text/plain\n"+
-                                            "Content-Length: 8\n"+
-                                            "\n",true);
-            checkNotContained(response,offset,"HTTP/1.1 100","8.2.3 expect 100");
-            offset=checkContains(response,offset,"HTTP/1.1 401 ","8.2.3 expect 100")+1;
-            offset=checkContains(response,offset,"Connection: close","8.2.3 expect 100")+1;
-
-            ((StdErrLog)Log.getLog()).setHideStacks(false);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            assertTrue(false);
-        }
+        ((StdErrLog)Log.getLog()).setHideStacks(false);
     }
 
     @Test

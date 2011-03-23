@@ -250,12 +250,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     protected void idleExpired()
     {
         if (_connection instanceof Idleable)
+        {
             ((Idleable)_connection).idleExpired();
+        }
         else
         {
             try
             {
-                close();
+                shutdownOutput();
             }
             catch(IOException e)
             {
@@ -415,8 +417,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             if (getChannel().isOpen())
             {
                 _interestOps =
-                    ((!_dispatched || _readBlocked)  ? SelectionKey.OP_READ  : 0)
-                |   ((!_writable   || _writeBlocked) ? SelectionKey.OP_WRITE : 0);
+                    ((!_socket.isInputShutdown() && (!_dispatched || _readBlocked))  ? SelectionKey.OP_READ  : 0)
+                |   ((!_socket.isOutputShutdown()&& (!_writable   || _writeBlocked)) ? SelectionKey.OP_WRITE : 0);
                 try
                 {
                     ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);

@@ -623,6 +623,12 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         }
         
         @Override
+        public void shutdownInput() throws IOException
+        {
+            close();
+        }
+        
+        @Override
         public void run()
         {
             try

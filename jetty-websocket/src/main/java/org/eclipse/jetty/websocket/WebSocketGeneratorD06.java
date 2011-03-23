@@ -247,21 +247,13 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
 
     private synchronized int flushBuffer() throws IOException
     {
-        try
-        {
-            if (!_endp.isOpen())
-                throw new EofException();
+        if (!_endp.isOpen())
+            throw new EofException();
 
-            if (_buffer!=null)
-                return _endp.flush(_buffer);
+        if (_buffer!=null)
+            return _endp.flush(_buffer);
 
-            return 0;
-        }
-        catch(IOException e)
-        {
-            System.err.println("FAILED to flush: "+_buffer.toDetailString());
-            throw e;
-        }
+        return 0;
     }
 
     private synchronized int expelBuffer(long blockFor) throws IOException

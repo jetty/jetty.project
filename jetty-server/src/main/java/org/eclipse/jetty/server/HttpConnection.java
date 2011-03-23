@@ -395,8 +395,9 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                             handleRequest();
                         else if (!_parser.isComplete())
                         {
-                            long parsed=_parser.parseAvailable();
-                            progress|=parsed>0;
+                            int parsed=_parser.parseAvailable();
+                            if (parsed>0)
+                                progress=true;
                         }
 
                         if (_generator.isCommitted() && !_generator.isComplete())
@@ -408,7 +409,11 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                     {
                         // If we are not ended then parse available
                         if (!_parser.isComplete())
-                            progress|=_parser.parseAvailable()>0;
+                        {
+                            int parsed=_parser.parseAvailable();
+                            if (parsed>0)
+                                progress=true;
+                        }
 
                         // Do we have more generating to do?
                         // Loop here because some writes may take multiple steps and
@@ -453,7 +458,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                 finally
                 {
                     more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-
+                    
                     // Is this request/response round complete?
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
@@ -471,7 +476,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                         else
                         {
                             // No switch, so cleanup and reset
-                            if (!_generator.isPersistent())
+                            if (!_generator.isPersistent() || _endp.isInputShutdown())
                             {
                                 _parser.reset(true);
                                 more_in_buffer=false;
@@ -487,6 +492,11 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                                 reset(true);
                             progress=true;
                         }
+                    }
+                    else if (_parser.isIdle() && _endp.isInputShutdown())
+                    {
+                        more_in_buffer=false;
+                        _endp.close();
                     }
 
                     if (_request.isAsyncStarted())

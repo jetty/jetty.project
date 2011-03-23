@@ -101,6 +101,19 @@ public class ChannelEndPoint implements EndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
+    public void shutdownInput() throws IOException
+    {
+        if (_channel.isOpen() && _channel instanceof SocketChannel)
+        {
+            Socket socket= ((SocketChannel)_channel).socket();
+            if (!socket.isClosed()&&!socket.isInputShutdown())
+                socket.shutdownInput();
+        }
+    }
+    
+    /* (non-Javadoc)
+     * @see org.eclipse.io.EndPoint#close()
+     */
     public void shutdownOutput() throws IOException
     {
         if (_channel.isOpen() && _channel instanceof SocketChannel)
@@ -109,6 +122,16 @@ public class ChannelEndPoint implements EndPoint
             if (!socket.isClosed()&&!socket.isOutputShutdown())
                 socket.shutdownOutput();
         }
+    }
+    
+    public boolean isOutputShutdown()
+    {
+        return _channel.isOpen() && _socket!=null && _socket.isOutputShutdown();
+    }
+    
+    public boolean isInputShutdown()
+    {
+        return _channel.isOpen() && _socket!=null && _socket.isInputShutdown();
     }
 
     /* (non-Javadoc)
@@ -148,8 +171,25 @@ public class ChannelEndPoint implements EndPoint
                 {
                     bbuf.position(buffer.putIndex());
                     len=_channel.read(bbuf);
-                    if (len<0)
-                        _channel.close();  // Don't call this.close() as that may recurse in SSL land and call fill again
+                    if (len<0 && isOpen() && !isInputShutdown())
+                    {
+                        try
+                        {
+                            shutdownInput();
+                        }
+                        catch(IOException e)
+                        {
+                            Log.ignore(e);
+                            try
+                            {
+                                close();
+                            }
+                            catch(IOException e2)
+                            {
+                                Log.ignore(e2);
+                            }
+                        }
+                    }
                 }
                 finally
                 {
@@ -318,6 +358,7 @@ public class ChannelEndPoint implements EndPoint
         return length;
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * @return Returns the channel.
      */

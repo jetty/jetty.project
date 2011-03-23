@@ -120,7 +120,7 @@ public class WebSocketParserD01 implements WebSocketParser
                 {
                     int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
                     if (filled<=0)
-                        return total_filled;
+                        return total_filled>0?total_filled:-1;
                     total_filled+=filled;
                     available=_buffer.length();
                 }

@@ -80,6 +80,7 @@ public class WebSocketParserD06Test
     {
         WebSocketBuffers buffers = new WebSocketBuffers(1024);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
+        endPoint.setNonBlocking(true);
         _handler = new Handler();
         _parser=new WebSocketParserD06(buffers, endPoint,_handler,true);
         _in = new MaskedByteArrayBuffer();
@@ -243,6 +244,8 @@ public class WebSocketParserD06Test
     @Test
     public void testFrameTooLarge() throws Exception
     {
+        // Buffers are only 1024, so this frame is too large
+        
         _in.sendMask();
         _in.put((byte)0x84);
         _in.put((byte)0x7E);

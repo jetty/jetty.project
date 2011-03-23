@@ -125,7 +125,7 @@ public class AbstractConnectorTest
         doInit(connections);
 
         sendRequest(1, 1);
-
+        
         doClose(connections);
 
         assertEquals(connections, _connector.getConnections());
@@ -216,12 +216,6 @@ public class AbstractConnectorTest
     {
         for (int idx=0; idx < count; idx++)
         {
-            if (_out[idx] != null)
-                _out[idx].close();
-
-            if (_in[idx] != null)
-                _in[idx].close();
-
             if (_socket[idx] != null)
                 _socket[idx].close();
         }
