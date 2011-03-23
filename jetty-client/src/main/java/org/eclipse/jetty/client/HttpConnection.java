@@ -338,7 +338,15 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                             }
                         }
                     }
-
+                    
+                    // TODO - this needs to be greatly improved.
+                    if (_endp.isOpen() && _endp.isInputShutdown() && _generator.isComplete())
+                    {
+                        complete=true;
+                        close=true;
+                        close();
+                    }
+                    
                     if (complete || failed)
                     {
                         synchronized (this)
@@ -353,6 +361,8 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                             {
                                 HttpExchange exchange=_exchange;
                                 _exchange.disassociate();
+                                    
+                                    
                                 if (_exchange.getTimeout()>0 && _exchange.getTimeout()!=getDestination().getHttpClient().getTimeout())
                                     _endp.setMaxIdleTime((int)getDestination().getHttpClient().getTimeout());
                                 _exchange = null;
