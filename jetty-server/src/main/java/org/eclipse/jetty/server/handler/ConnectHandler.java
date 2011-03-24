@@ -509,7 +509,12 @@ public class ConnectHandler extends HandlerWrapper
                     if (read == -1)
                     {
                         _logger.debug("{}: server closed connection {}", this, _endp);
-                        close();
+
+                        if (_endp.isOutputShutdown() || !_endp.isOpen())
+                            _toClient.getEndPoint().close();
+                        else
+                            _toClient.getEndPoint().shutdownOutput();
+
                         break;
                     }
 
@@ -654,7 +659,12 @@ public class ConnectHandler extends HandlerWrapper
                     if (read == -1)
                     {
                         _logger.debug("{}: client closed connection {}", this, _endp);
-                        close();
+
+                        if (_endp.isOutputShutdown() || !_endp.isOpen())
+                            _toServer.getEndPoint().close();
+                        else
+                            _toServer.getEndPoint().shutdownOutput();
+
                         break;
                     }
 

@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @version $Revision$ $Date$
  */
-public class ConnectHandlerConnectTest extends AbstractProxyHandlerTest
+public class ConnectHandlerTest extends AbstractConnectHandlerTest
 {
     @BeforeClass
     public static void init() throws Exception
@@ -480,6 +480,82 @@ public class ConnectHandlerConnectTest extends AbstractProxyHandlerTest
         }
     }
 
+    @Test
+    public void testCONNECTAndGETPipelinedAndOutputShutdown() throws Exception
+    {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n" +
+                "GET /echo" + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        try
+        {
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+            socket.shutdownOutput();
+
+            // Expect 200 OK from the CONNECT request
+            Response response = readResponse(input);
+            assertEquals("200", response.getCode());
+
+            // The pipelined request must have gone up to the server as is
+            response = readResponse(input);
+            assertEquals("200", response.getCode());
+            assertEquals("GET /echo", response.getBody());
+        }
+        finally
+        {
+            socket.close();
+        }
+    }
+
+    @Test
+    public void testCONNECTAndGETAndOutputShutdown() throws Exception
+    {
+        String hostPort = "localhost:" + serverConnector.getLocalPort();
+        String request = "" +
+                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+                "Host: " + hostPort + "\r\n" +
+                "\r\n";
+        Socket socket = newSocket();
+        try
+        {
+            OutputStream output = socket.getOutputStream();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            // Expect 200 OK from the CONNECT request
+            Response response = readResponse(input);
+            assertEquals("200", response.getCode());
+
+            request = "" +
+                    "GET /echo" + " HTTP/1.1\r\n" +
+                    "Host: " + hostPort + "\r\n" +
+                    "\r\n";
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+            socket.shutdownOutput();
+
+            // The pipelined request must have gone up to the server as is
+            response = readResponse(input);
+            assertEquals("200", response.getCode());
+            assertEquals("GET /echo", response.getBody());
+        }
+        finally
+        {
+            socket.close();
+        }
+    }
+
     private static class ServerHandler extends AbstractHandler
     {
         public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
@@ -500,7 +576,7 @@ public class ConnectHandlerConnectTest extends AbstractProxyHandlerTest
                 while ((read = input.read()) >= 0)
                     baos.write(read);
                 baos.close();
-                
+
                 ServletOutputStream output = httpResponse.getOutputStream();
                 output.println(builder.toString());
                 output.write(baos.toByteArray());

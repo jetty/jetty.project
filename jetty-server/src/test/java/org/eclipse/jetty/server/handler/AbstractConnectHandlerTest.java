@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @version $Revision$ $Date$
  */
-public abstract class AbstractProxyHandlerTest
+public abstract class AbstractConnectHandlerTest
 {
     protected static Server server;
     protected static Connector serverConnector;
