@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.Principal;
 import java.security.cert.CRL;
@@ -96,10 +97,10 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                 
                 if (_validateCerts)
                 {
-                    KeyStore trustStore = CertificateUtils.getKeyStore(null,
+                    KeyStore trustStore = getKeyStore(null,
                             _trustStorePath, _trustStoreType, _trustStoreProvider,
                             _trustStorePassword == null ? null :_trustStorePassword.toString());
-                    Collection<? extends CRL> crls = CertificateUtils.loadCRL(_crlPath);
+                    Collection<? extends CRL> crls = loadCRL(_crlPath);
                     CertificateValidator validator = new CertificateValidator(trustStore, crls);
                     validator.validate(certs);
                 }
@@ -136,6 +137,43 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e.getMessage());
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Loads keystore using an input stream or a file path in the same
+     * order of precedence.
+     *
+     * Required for integrations to be able to override the mechanism
+     * used to load a keystore in order to provide their own implementation.
+     *
+     * @param storeStream keystore input stream
+     * @param storePath path of keystore file
+     * @param storeType keystore type
+     * @param storeProvider keystore provider
+     * @param storePassword keystore password
+     * @return created keystore
+     * @throws Exception
+     */
+    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
+    {
+        return CertificateUtils.getKeyStore(storeStream, storePath, storeType, storeProvider, storePassword);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Loads certificate revocation list (CRL) from a file.
+     *
+     * Required for integrations to be able to override the mechanism used to
+     * load CRL in order to provide their own implementation.
+     *
+     * @param crlPath path of certificate revocation list file
+     * @return
+     * @throws Exception
+     */
+    protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
+    {
+        return CertificateUtils.loadCRL(crlPath);
     }
 
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException

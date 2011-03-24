@@ -32,7 +32,6 @@ import java.security.cert.X509CertSelector;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -774,11 +773,11 @@ public class SslContextFactory extends AbstractLifeCycle
         // parameters are set up correctly  
         checkConfig();
         
-        KeyStore keyStore = CertificateUtils.getKeyStore(_keyStoreInputStream, _keyStorePath, _keyStoreType, 
+        KeyStore keyStore = getKeyStore(_keyStoreInputStream, _keyStorePath, _keyStoreType, 
                 _keyStoreProvider, _keyStorePassword==null? null: _keyStorePassword.toString());
-        KeyStore trustStore = CertificateUtils.getKeyStore(_trustStoreInputStream, _trustStorePath, _trustStoreType, 
+        KeyStore trustStore = getKeyStore(_trustStoreInputStream, _trustStorePath, _trustStoreType, 
                 _trustStoreProvider, _trustStorePassword==null? null: _trustStorePassword.toString());
-        Collection<? extends CRL> crls = CertificateUtils.loadCRL(_crlPath);
+        Collection<? extends CRL> crls = loadCRL(_crlPath);
 
         if (_validateCerts && keyStore != null)
         {
@@ -808,6 +807,43 @@ public class SslContextFactory extends AbstractLifeCycle
         SecureRandom secureRandom = _secureRandomAlgorithm == null?null:SecureRandom.getInstance(_secureRandomAlgorithm);
         _context = _sslProvider == null?SSLContext.getInstance(_sslProtocol):SSLContext.getInstance(_sslProtocol,_sslProvider);
         _context.init(keyManagers,trustManagers,secureRandom);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Loads keystore using an input stream or a file path in the same
+     * order of precedence.
+     *
+     * Required for integrations to be able to override the mechanism
+     * used to load a keystore in order to provide their own implementation.
+     *
+     * @param storeStream keystore input stream
+     * @param storePath path of keystore file
+     * @param storeType keystore type
+     * @param storeProvider keystore provider
+     * @param storePassword keystore password
+     * @return created keystore
+     * @throws Exception
+     */
+    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
+    {
+        return CertificateUtils.getKeyStore(storeStream, storePath, storeType, storeProvider, storePassword);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Loads certificate revocation list (CRL) from a file.
+     *
+     * Required for integrations to be able to override the mechanism used to
+     * load CRL in order to provide their own implementation.
+     *
+     * @param crlPath path of certificate revocation list file
+     * @return
+     * @throws Exception
+     */
+    protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
+    {
+        return CertificateUtils.loadCRL(crlPath);
     }
 
     /* ------------------------------------------------------------ */

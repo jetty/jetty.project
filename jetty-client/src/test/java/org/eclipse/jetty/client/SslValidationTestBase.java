@@ -1,6 +1,10 @@
 package org.eclipse.jetty.client;
 
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.security.KeyStore;
+import java.security.cert.CRL;
+import java.util.Collection;
 
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Handler;
@@ -11,6 +15,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.security.CertificateUtils;
 
 public abstract class SslValidationTestBase extends ContentExchangeTest
 {
@@ -30,7 +35,19 @@ public abstract class SslValidationTestBase extends ContentExchangeTest
     {
         setProtocol("https");
 
-        SslContextFactory srvFactory = new SslContextFactory();
+        SslContextFactory srvFactory = new SslContextFactory() {
+            @Override
+            protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
+            {
+                return CertificateUtils.getKeyStore(storeStream, storePath, storeType, storeProvider, storePassword);
+            }
+
+            @Override
+            protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
+            {
+                return CertificateUtils.loadCRL(crlPath);
+            }
+        };
         srvFactory.setValidateCerts(true);
         srvFactory.setCrlPath(_crlpath);
         srvFactory.setNeedClientAuth(true);
