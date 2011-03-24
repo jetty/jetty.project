@@ -6,7 +6,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -15,9 +14,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -59,7 +58,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public ConnectHandler(String[] white, String[] black)
     {
-        this(null, white,  black);
+        this(null, white, black);
     }
 
     public ConnectHandler(Handler handler)
@@ -111,12 +110,12 @@ public class ConnectHandler extends HandlerWrapper
     {
         super.setServer(server);
 
-        server.getContainer().update(this,null,_selectorManager,"selectManager");
+        server.getContainer().update(this, null, _selectorManager, "selectManager");
 
         if (_privateThreadPool)
-            server.getContainer().update(this,null,_privateThreadPool,"threadpool",true);
+            server.getContainer().update(this, null, _privateThreadPool, "threadpool", true);
         else
-            _threadPool=server.getThreadPool();
+            _threadPool = server.getThreadPool();
     }
 
     /**
@@ -132,10 +131,10 @@ public class ConnectHandler extends HandlerWrapper
      */
     public void setThreadPool(ThreadPool threadPool)
     {
-        if (getServer()!=null)
-            getServer().getContainer().update(this,_privateThreadPool?_threadPool:null,threadPool,"threadpool",true);
-        _privateThreadPool=threadPool!=null;
-        _threadPool=threadPool;
+        if (getServer() != null)
+            getServer().getContainer().update(this, _privateThreadPool ? _threadPool : null, threadPool, "threadpool", true);
+        _privateThreadPool = threadPool != null;
+        _threadPool = threadPool;
     }
 
     @Override
@@ -143,10 +142,10 @@ public class ConnectHandler extends HandlerWrapper
     {
         super.doStart();
 
-        if (_threadPool==null)
+        if (_threadPool == null)
         {
-            _threadPool=getServer().getThreadPool();
-            _privateThreadPool=false;
+            _threadPool = getServer().getThreadPool();
+            _privateThreadPool = false;
         }
         if (_threadPool instanceof LifeCycle && !((LifeCycle)_threadPool).isRunning())
             ((LifeCycle)_threadPool).start();
@@ -202,12 +201,12 @@ public class ConnectHandler extends HandlerWrapper
      * <p>CONNECT requests may have authentication headers such as <code>Proxy-Authorization</code>
      * that authenticate the client with the proxy.</p>
      *
-     * @param baseRequest Jetty-specific http request
-     * @param request the http request
-     * @param response the http response
+     * @param baseRequest   Jetty-specific http request
+     * @param request       the http request
+     * @param response      the http response
      * @param serverAddress the remote server address in the form {@code host:port}
      * @throws ServletException if an application error occurs
-     * @throws IOException if an I/O error occurs
+     * @throws IOException      if an I/O error occurs
      */
     protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress) throws ServletException, IOException
     {
@@ -226,7 +225,7 @@ public class ConnectHandler extends HandlerWrapper
 
         if (!validateDestination(host))
         {
-            Log.info("ProxyHandler: Forbidden destination "+host);
+            Log.info("ProxyHandler: Forbidden destination " + host);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             baseRequest.setHandled(true);
             return;
@@ -281,7 +280,7 @@ public class ConnectHandler extends HandlerWrapper
     {
         HttpConnection httpConnection = HttpConnection.getCurrentConnection();
         ClientToProxyConnection clientToProxy = newClientToProxyConnection(context, channel, httpConnection.getEndPoint(), httpConnection.getTimeStamp());
-        ProxyToServerConnection proxyToServer = newProxyToServerConnection(context, buffer,clientToProxy);
+        ProxyToServerConnection proxyToServer = newProxyToServerConnection(context, buffer, clientToProxy);
         clientToProxy.setConnection(proxyToServer);
         return clientToProxy;
     }
@@ -290,12 +289,12 @@ public class ConnectHandler extends HandlerWrapper
      * <p>Handles the authentication before setting up the tunnel to the remote server.</p>
      * <p>The default implementation returns true.</p>
      *
-     * @param request the HTTP request
+     * @param request  the HTTP request
      * @param response the HTTP response
-     * @param address the address of the remote server in the form {@code host:port}.
+     * @param address  the address of the remote server in the form {@code host:port}.
      * @return true to allow to connect to the remote host, false otherwise
      * @throws ServletException to report a server error to the caller
-     * @throws IOException to report a server error to the caller
+     * @throws IOException      to report a server error to the caller
      */
     protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) throws ServletException, IOException
     {
@@ -307,9 +306,9 @@ public class ConnectHandler extends HandlerWrapper
         return new ClientToProxyConnection(context, channel, endPoint, timeStamp);
     }
 
-    protected ProxyToServerConnection newProxyToServerConnection(ConcurrentMap<String, Object> context, Buffer buffer,ClientToProxyConnection toProxy)
+    protected ProxyToServerConnection newProxyToServerConnection(ConcurrentMap<String, Object> context, Buffer buffer, ClientToProxyConnection toProxy)
     {
-        return new ProxyToServerConnection(context, buffer,toProxy);
+        return new ProxyToServerConnection(context, buffer, toProxy);
     }
 
     private SocketChannel connectToServer(HttpServletRequest request, String host, int port) throws IOException
@@ -321,9 +320,10 @@ public class ConnectHandler extends HandlerWrapper
 
     /**
      * <p>Establishes a connection to the remote server.</p>
+     *
      * @param request the HTTP request that initiated the tunnel
-     * @param host the host to connect to
-     * @param port the port to connect to
+     * @param host    the host to connect to
+     * @param port    the port to connect to
      * @return a {@link SocketChannel} connected to the remote server
      * @throws IOException if the connection cannot be established
      */
@@ -359,11 +359,12 @@ public class ConnectHandler extends HandlerWrapper
 
     /**
      * <p>Reads (with non-blocking semantic) into the given {@code buffer} from the given {@code endPoint}.</p>
+     *
      * @param endPoint the endPoint to read from
-     * @param buffer the buffer to read data into
-     * @param context the context information related to the connection
+     * @param buffer   the buffer to read data into
+     * @param context  the context information related to the connection
      * @return the number of bytes read (possibly 0 since the read is non-blocking)
-     * or -1 if the channel has been closed remotely
+     *         or -1 if the channel has been closed remotely
      * @throws IOException if the endPoint cannot be read
      */
     protected int read(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
@@ -375,10 +376,10 @@ public class ConnectHandler extends HandlerWrapper
      * <p>Writes (with blocking semantic) the given buffer of data onto the given endPoint.</p>
      *
      * @param endPoint the endPoint to write to
-     * @param buffer the buffer to write
-     * @param context the context information related to the connection
-     * @throws IOException if the buffer cannot be written
+     * @param buffer   the buffer to write
+     * @param context  the context information related to the connection
      * @return the number of bytes written
+     * @throws IOException if the buffer cannot be written
      */
     protected int write(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
@@ -421,7 +422,7 @@ public class ConnectHandler extends HandlerWrapper
         protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
         {
             ProxyToServerConnection proxyToServer = (ProxyToServerConnection)endpoint.getSelectionKey().attachment();
-            proxyToServer = new ProxyToServerConnection(endpoint,proxyToServer);
+            proxyToServer = new ProxyToServerConnection(endpoint, proxyToServer);
             return proxyToServer;
         }
 
@@ -451,7 +452,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public class ProxyToServerConnection extends AbstractConnection implements Connection
     {
-        private final CountDownLatch _ready ;
+        private final CountDownLatch _ready;
         private final Buffer _buffer;
         private final ConcurrentMap<String, Object> _context;
         private final ClientToProxyConnection _toClient;
@@ -464,20 +465,20 @@ public class ConnectHandler extends HandlerWrapper
             _data = data;
             _ready = new CountDownLatch(1);
             _buffer = new IndirectNIOBuffer(1024);
-            _toClient=toClient;
+            _toClient = toClient;
         }
-        
-        public ProxyToServerConnection(EndPoint endp,ProxyToServerConnection connection)
+
+        public ProxyToServerConnection(EndPoint endp, ProxyToServerConnection connection)
         {
             super(endp);
-            _ready=connection._ready;
-            _buffer=connection._buffer;
-            _context=connection._context;
-            _data=connection._data;
-            _toClient=connection._toClient;
-            if (_toClient!=null)
+            _ready = connection._ready;
+            _buffer = connection._buffer;
+            _context = connection._context;
+            _data = connection._data;
+            _toClient = connection._toClient;
+            if (_toClient != null)
                 _toClient.setConnection(this);
-            
+
         }
 
         @Override
@@ -571,7 +572,10 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch (final InterruptedException x)
             {
-                throw new IOException(){{initCause(x);}};
+                throw new IOException()
+                {{
+                        initCause(x);
+                    }};
             }
         }
 
@@ -617,7 +621,7 @@ public class ConnectHandler extends HandlerWrapper
 
         public ClientToProxyConnection(ConcurrentMap<String, Object> context, SocketChannel channel, EndPoint endPoint, long timestamp)
         {
-            super(endPoint,timestamp);
+            super(endPoint, timestamp);
             _context = context;
             _channel = channel;
         }
@@ -739,6 +743,7 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
+
     /**
      * Add a whitelist entry to an existing handler configuration
      *
@@ -750,6 +755,7 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
+
     /**
      * Add a blacklist entry to an existing handler configuration
      *
@@ -761,6 +767,7 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
+
     /**
      * Re-initialize the whitelist of existing handler object
      *
@@ -772,6 +779,7 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
+
     /**
      * Re-initialize the blacklist of existing handler object
      *
@@ -783,6 +791,7 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
+
     /**
      * Helper method to process a list of new entries and replace
      * the content of the specified host map
@@ -790,13 +799,13 @@ public class ConnectHandler extends HandlerWrapper
      * @param entries new entries
      * @param hostMap target host map
      */
-    protected void set(String[] entries,  HostMap<String> hostMap)
+    protected void set(String[] entries, HostMap<String> hostMap)
     {
         hostMap.clear();
 
         if (entries != null && entries.length > 0)
         {
-            for (String addrPath:entries)
+            for (String addrPath : entries)
             {
                 add(addrPath, hostMap);
             }
@@ -804,12 +813,13 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     /* ------------------------------------------------------------ */
+
     /**
      * Helper method to process the new entry and add it to
      * the specified host map.
      *
-     * @param entry new entry
-     * @param patternMap target host map
+     * @param entry      new entry
+     * @param hostMap target host map
      */
     private void add(String entry, HostMap<String> hostMap)
     {
@@ -818,12 +828,13 @@ public class ConnectHandler extends HandlerWrapper
             entry = entry.trim();
             if (hostMap.get(entry) == null)
             {
-                hostMap.put(entry,entry);
+                hostMap.put(entry, entry);
             }
         }
     }
 
     /* ------------------------------------------------------------ */
+
     /**
      * Check the request hostname against white- and blacklist.
      *
@@ -832,7 +843,7 @@ public class ConnectHandler extends HandlerWrapper
      */
     public boolean validateDestination(String host)
     {
-        if (_white.size()>0)
+        if (_white.size() > 0)
         {
             Object whiteObj = _white.getLazyMatches(host);
             if (whiteObj == null)
@@ -858,10 +869,8 @@ public class ConnectHandler extends HandlerWrapper
     {
         dumpThis(out);
         if (_privateThreadPool)
-            dump(out,indent,Arrays.asList(new Object[]{_threadPool,_selectorManager}),TypeUtil.asList(getHandlers()),getBeans());
+            dump(out, indent, Arrays.asList(_threadPool, _selectorManager), TypeUtil.asList(getHandlers()), getBeans());
         else
-            dump(out,indent,Collections.singletonList(_selectorManager),TypeUtil.asList(getHandlers()),getBeans());
+            dump(out, indent, Arrays.asList(_selectorManager), TypeUtil.asList(getHandlers()), getBeans());
     }
-    
-    
 }
