@@ -7,10 +7,11 @@ jetty-7.3.2-SNAPSHOT
  + 339187 In the OSGi manifest of the jetty-all-server aggregate, mark javax.annotation as optional
  + 339543 Add configuration options for Certificate Revocation checking
  + 340265 Improve handling of io shutdown in SSL
+ + 340838 Update ConnectHandler to perform half closes properly
  + 340878 Integrations should be able to load their own keystores
+ + 340920 Dynamically assign RMI registry port for integration testing
  + Ensure generated fragment names are unique
  + JETTY-1245 Pooled Buffers implementation
- + 340838 Update ConnectHandler to perform half closes properly
 
 jetty-7.3.1.v20110307 7 March 2011
  + 316382 Support a more strict SSL option with certificates

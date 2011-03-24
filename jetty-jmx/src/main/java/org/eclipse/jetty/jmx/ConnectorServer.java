@@ -14,6 +14,11 @@
 package org.eclipse.jetty.jmx;
 
 import java.lang.management.ManagementFactory;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Map;
 
 import javax.management.MBeanServer;
@@ -34,6 +39,7 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 public class ConnectorServer extends AbstractLifeCycle
 {
     JMXConnectorServer _connectorServer;
+    Registry _registry;
     
     /* ------------------------------------------------------------ */
     /**
@@ -55,7 +61,7 @@ public class ConnectorServer extends AbstractLifeCycle
     /**
      * Constructs connector server
      * 
-     * @param serviceURL the address of the new connector server.
+     * @param svcUrl the address of the new connector server.
      * The actual address of the new connector server, as returned 
      * by its getAddress method, will not necessarily be exactly the same.
      * @param environment  a set of attributes to control the new connector
@@ -65,15 +71,26 @@ public class ConnectorServer extends AbstractLifeCycle
      * @param name object name string to be assigned to connector server bean
      * @throws Exception
      */
-    public ConnectorServer(JMXServiceURL serviceURL, Map<String,?> environment, String name)
+    public ConnectorServer(JMXServiceURL svcUrl, Map<String,?> environment, String name)
          throws Exception
     {
+    	String urlPath = svcUrl.getURLPath();
+    	int idx = urlPath.indexOf("rmi://");
+    	if (idx > 0)
+    	{
+    	    String hostPort = urlPath.substring(idx+6, urlPath.indexOf('/', idx+6));
+    	    String regHostPort = startRegistry(hostPort);
+    	    if (regHostPort != null) {
+    	        urlPath = urlPath.replace(hostPort,regHostPort);
+    	        svcUrl = new JMXServiceURL(svcUrl.getProtocol(), svcUrl.getHost(), svcUrl.getPort(), urlPath);
+    	    }
+    	}
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-        _connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(serviceURL, environment, mbeanServer);
+        _connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(svcUrl, environment, mbeanServer);
         mbeanServer.registerMBean(_connectorServer,new ObjectName(name));
     }
 
-    /* ------------------------------------------------------------ */
+	/* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
@@ -97,5 +114,74 @@ public class ConnectorServer extends AbstractLifeCycle
     {
         ShutdownThread.deregister(this);
         _connectorServer.stop();
+        stopRegistry();
+    }
+
+    /**
+     * Check that local RMI registry is used, and ensure it is started. If local RMI registry is being used and not started, start it.
+     * 
+     * @param hostPath
+     *            hostname and port number of RMI registry
+     * @throws Exception
+     */
+    private String startRegistry(String hostPath) throws Exception
+    {
+        int rmiPort = 1099; // default RMI registry port
+        String rmiHost = hostPath;
+
+        int idx = hostPath.indexOf(':');
+        if (idx > 0)
+        {
+            rmiPort = Integer.parseInt(hostPath.substring(idx + 1));
+            rmiHost = hostPath.substring(0,idx);
+        }
+
+        // Verify that local registry is being used
+        InetAddress hostAddress = InetAddress.getByName(rmiHost);
+        if(hostAddress.isLoopbackAddress())
+        {
+            if (rmiPort == 0)
+            {
+                ServerSocket socket = new ServerSocket(0);
+                rmiPort = socket.getLocalPort();
+                socket.close();
+            }
+            else
+            {
+                try
+                {
+                    // Check if a local registry is already running
+                    LocateRegistry.getRegistry(rmiPort).list();
+                    return null;
+                }
+                catch (Exception ex)
+                {
+                    Log.ignore(ex);
+                }
+            }
+
+            _registry = LocateRegistry.createRegistry(rmiPort);
+            Thread.sleep(1000);
+            
+            rmiHost = InetAddress.getLocalHost().getCanonicalHostName();
+            return rmiHost + ':' + Integer.toString(rmiPort);
+        }
+        
+        return null;
+    }
+
+    private void stopRegistry()
+    {
+        if (_registry != null)
+        {
+            try
+            {
+                UnicastRemoteObject.unexportObject(_registry,true);
+            }
+            catch (Exception ex)
+            {
+                Log.ignore(ex);
+            }
+        }
     }
 }
