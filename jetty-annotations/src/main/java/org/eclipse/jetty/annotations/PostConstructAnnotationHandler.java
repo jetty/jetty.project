@@ -22,6 +22,7 @@ import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectab
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
 import org.eclipse.jetty.webapp.MetaData;
+import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnotationHandler
@@ -58,11 +59,11 @@ public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnota
                     //ServletSpec 3.0 p80 If web.xml declares even one post-construct then all post-constructs
                     //in fragments must be ignored. Otherwise, they are additive.
                     MetaData metaData = _context.getMetaData();
-                    MetaData.Origin origin = metaData.getOrigin("post-construct");
+                    Origin origin = metaData.getOrigin("post-construct");
                     if (origin != null && 
-                        (origin == MetaData.Origin.WebXml ||
-                         origin == MetaData.Origin.WebDefaults || 
-                         origin == MetaData.Origin.WebOverride))
+                        (origin == Origin.WebXml ||
+                         origin == Origin.WebDefaults || 
+                         origin == Origin.WebOverride))
                         return;
                                         
                     PostConstructCallback callback = new PostConstructCallback();

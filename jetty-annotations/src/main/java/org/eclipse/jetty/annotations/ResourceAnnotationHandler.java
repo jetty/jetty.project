@@ -28,7 +28,6 @@ import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.MetaData.Origin;
 
 public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {

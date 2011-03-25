@@ -42,7 +42,6 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.MetaData.Origin;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**

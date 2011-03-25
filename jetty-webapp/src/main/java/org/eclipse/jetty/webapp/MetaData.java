@@ -35,8 +35,6 @@ public class MetaData
 {        
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
 
-    public enum Origin {NotSet, WebXml, WebDefaults, WebOverride, WebFragment, Annotation};
-    
     protected Map<String, OriginInfo> _origins  =new HashMap<String,OriginInfo>();
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
@@ -161,7 +159,7 @@ public class MetaData
     {
         _webXmlRoot = new WebDescriptor(webXml);
         _webXmlRoot.parse();
-        _metaDataComplete=_webXmlRoot.getMetaDataComplete() == WebDescriptor.MetaDataComplete.True;
+        _metaDataComplete=_webXmlRoot.getMetaDataComplete() == MetaDataComplete.True;
         
         if (_webXmlRoot.isOrdered())
         {
