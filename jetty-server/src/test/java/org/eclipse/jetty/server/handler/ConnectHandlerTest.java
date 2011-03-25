@@ -1,5 +1,7 @@
 package org.eclipse.jetty.server.handler;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,6 +11,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentMap;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -20,8 +23,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * @version $Revision$ $Date$

@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 
 import org.eclipse.jetty.http.EncodedHttpURI;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class EncodedHttpURITest
 {

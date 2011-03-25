@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.resource;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -27,7 +26,6 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.jar.JarInputStream;
 
 import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;

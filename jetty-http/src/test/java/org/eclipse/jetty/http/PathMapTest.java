@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import junit.framework.TestCase;
+
 import org.junit.Test;
 
 /**

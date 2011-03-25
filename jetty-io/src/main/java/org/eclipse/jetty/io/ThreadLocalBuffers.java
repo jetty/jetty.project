@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 
 
 /* ------------------------------------------------------------ */

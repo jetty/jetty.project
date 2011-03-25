@@ -22,7 +22,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -380,6 +379,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          */
         public void doSelect() throws IOException
         {
+            Log.debug("doSelect "+SelectorManager.this.isRunning());
             try
             {
                 _selecting=Thread.currentThread();

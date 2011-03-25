@@ -198,7 +198,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 if(!dispatched)
                 {
                     _dispatched = false;
-                    Log.warn("Dispatched Failed!");
+                    Log.warn("Dispatched Failed! "+this+" to "+_manager);
+                    new Throwable().printStackTrace();
                     updateKey();
                 }
             }

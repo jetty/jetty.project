@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
 
 /* ------------------------------------------------------------ */
 /** Idleable.

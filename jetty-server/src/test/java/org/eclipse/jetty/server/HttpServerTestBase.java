@@ -24,13 +24,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.Writer;
 import java.net.Socket;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 
 import javax.servlet.ServletException;
@@ -42,7 +39,6 @@ import junit.framework.Assert;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Test;
 
 /**

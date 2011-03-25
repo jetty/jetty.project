@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.io;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 public class ThreadLocalBuffersTest
 {

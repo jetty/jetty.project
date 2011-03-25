@@ -161,7 +161,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStarting()
     {
-        Log.debug("Starting {}",this);
+        Log.debug("starting {}",this);
         _state = __STARTING;
         if (_listeners != null)
         {
@@ -174,6 +174,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStopping()
     {
+        Log.debug("stopping {}",this);
         _state = __STOPPING;
         if (_listeners != null)
         {

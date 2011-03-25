@@ -1,15 +1,8 @@
 package org.eclipse.jetty.io;
 
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 
 public class PooledBuffers extends AbstractBuffers
 {

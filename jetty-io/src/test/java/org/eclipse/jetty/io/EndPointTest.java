@@ -1,25 +1,12 @@
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.rmi.server.ServerCloneException;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
-import javax.net.ServerSocketFactory;
 
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager;
-import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.junit.Assert;
 import org.junit.Test;
 
