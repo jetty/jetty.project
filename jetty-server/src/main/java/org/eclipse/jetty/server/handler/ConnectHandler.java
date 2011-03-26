@@ -540,9 +540,18 @@ public class ConnectHandler extends HandlerWrapper
             {
                 if (_data != null)
                 {
-                    int written = write(_endPoint, _data, _context);
-                    _logger.debug("{}: written to server {} bytes", this, written);
-                    _data = null;
+                    try
+                    {
+                        int written = write(_endPoint, _data, _context);
+                        _logger.debug("{}: written to server {} bytes", this, written);
+                    }
+                    finally
+                    {
+                        // Attempt once to write the data; if the write fails (for example
+                        // because the connection is already closed), clear the data and
+                        // give up to avoid to continue to write data to a closed connection
+                        _data = null;
+                    }
                 }
             }
         }
