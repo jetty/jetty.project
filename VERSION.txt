@@ -11,6 +11,7 @@ jetty-7.3.2-SNAPSHOT
  + 340878 Integrations should be able to load their own keystores
  + 340920 Dynamically assign RMI registry port for integration testing
  + 341006 Move inner enums out into separate file
+ + 341105 Stack trace is printed for an ignored exception 
  + Ensure generated fragment names are unique
  + JETTY-1245 Pooled Buffers implementation
 
