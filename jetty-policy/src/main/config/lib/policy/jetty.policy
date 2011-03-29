@@ -54,6 +54,8 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.util.PropertyPermission "jetty.home", "read, write";
      
    permission java.util.PropertyPermission "user.home", "read";
+   permission java.util.PropertyPermission "user.dir", "read";
+   
      
    permission java.util.PropertyPermission "jetty.class.path", "read, write";
    permission java.util.PropertyPermission "java.class.path", "read, write";
@@ -76,6 +78,8 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.util.PropertyPermission "org.eclipse.jetty.util.TypeUtil.IntegerCacheSize", "read, write";
        
    permission java.util.PropertyPermission "org.eclipse.jetty.util.TypeUtil.LongCacheSize", "read";
+       
+   permission java.util.PropertyPermission "org.eclipse.jetty.io.AbstractBuffer.boundsChecking", "read";
        
    // provides access to webapps
    permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
