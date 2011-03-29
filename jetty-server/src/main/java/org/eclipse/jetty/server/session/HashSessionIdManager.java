@@ -50,7 +50,8 @@ public class HashSessionIdManager extends AbstractSessionIdManager
      */
     public String getNodeId(String clusterId,HttpServletRequest request) 
     {
-        String worker=request==null?null:(String)request.getAttribute("org.eclipse.http.ajp.JVMRoute");
+        // used in Ajp13Parser
+        String worker=request==null?null:(String)request.getAttribute("org.eclipse.jetty.ajp.JVMRoute");
         if (worker!=null) 
             return clusterId+'.'+worker; 
         

@@ -16,6 +16,7 @@ jetty-7.3.2-SNAPSHOT
  + Ensure generated fragment names are unique
  + JETTY-1245 Pooled Buffers implementation
  + 341206 Stop order is wrong in HandlerWrapper
+ + 341255 org.eclipse.http usage in AJP/SessionId linkage
 
 jetty-7.3.1.v20110307 7 March 2011
  + 316382 Support a more strict SSL option with certificates

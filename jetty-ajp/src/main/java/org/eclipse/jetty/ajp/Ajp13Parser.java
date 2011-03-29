@@ -384,11 +384,9 @@ public class Ajp13Parser implements Parser
                         break;
 
                     case Ajp13RequestHeaders.JVM_ROUTE_ATTR:
-                        // XXX Using old Jetty 5 key,
-                        // should change!
-                        // Note used in
-                        // org.eclipse.jetty.servlet.HashSessionIdManager
-                        _handler.parsedRequestAttribute("org.eclipse.http.ajp.JVMRoute", Ajp13RequestPacket.getString(_buffer, _tok1));
+                        // moved to Eclipse naming usage
+                        // used in org.eclipse.jetty.servlet.HashSessionIdManager
+                        _handler.parsedRequestAttribute("org.eclipse.jetty.ajp.JVMRoute", Ajp13RequestPacket.getString(_buffer, _tok1));
                         break;
 
                     case Ajp13RequestHeaders.SSL_CERT_ATTR:
