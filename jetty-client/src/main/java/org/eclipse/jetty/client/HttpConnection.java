@@ -77,7 +77,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
     {
         _endp=endp;
         _timeStamp = System.currentTimeMillis();
-   
+
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
@@ -197,7 +197,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                         no_progress = 0;
                         commitRequest();
                     }
-                    
+
                     long io = 0;
                     _endp.flush();
 
@@ -285,7 +285,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                         throw (ThreadDeath)e;
 
                     failed = true;
-                    
+
                     synchronized (this)
                     {
                         if (_exchange != null)
@@ -337,15 +337,18 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                             }
                         }
                     }
-                    
+
                     // TODO - this needs to be greatly improved.
-                    if (_endp.isOpen() && _endp.isInputShutdown() && _generator.isComplete())
+                    if (_generator.isComplete() && !_parser.isComplete())
                     {
-                        complete=true;
-                        close=true;
-                        close();
+                        if (!_endp.isOpen() || _endp.isInputShutdown())
+                        {
+                            complete=true;
+                            close=true;
+                            close();
+                        }
                     }
-                    
+
                     if (complete || failed)
                     {
                         synchronized (this)
@@ -360,12 +363,10 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                             {
                                 HttpExchange exchange=_exchange;
                                 _exchange.disassociate();
-                                    
-                                    
+
                                 if (_exchange.getTimeout()>0 && _exchange.getTimeout()!=getDestination().getHttpClient().getTimeout())
                                     _endp.setMaxIdleTime((int)getDestination().getHttpClient().getTimeout());
                                 _exchange = null;
-                                
 
                                 if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                                 {
@@ -720,7 +721,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
             }
         }
     }
-    
+
 
 
     // TODO remove and use AbstractConnection for 7.4
