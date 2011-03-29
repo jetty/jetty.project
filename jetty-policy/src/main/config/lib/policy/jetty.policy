@@ -9,7 +9,7 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.lang.RuntimePermission "getClassLoader";
 	 
    permission java.util.PropertyPermission "org.eclipse.jetty.webapp.WebAppClassLoader.extensions", "read";
-   permission java.util.PropertyPermission "org.eclipse.http.PathMap.separators", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.ajp.PathMap.separators", "read";
  
    permission java.util.PropertyPermission "ROLLOVERFILE_BACKUP_FORMAT", "read";
 	 
