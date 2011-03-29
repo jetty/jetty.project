@@ -1,52 +1,14 @@
+// This file governs the permissions directly granted to all jar files
+// listed under the jetty.home/lib directory.
 //
-//
-// Default security policy for jetty
-//
-// Note: this is still a work in progress
+// Review of this file is recommended and possible tweaking of the codeBase
+// is likely in the future.
 
-// start.jar
-grant codeBase "file:${jetty.home}/start.jar" {
-
-   permission java.io.FilePermission "${jetty.home}${/}-", "read";
-   
-   permission java.lang.RuntimePermission "createClassLoader";
-   permission java.lang.RuntimePermission "setContextClassLoader";    
-   permission java.security.SecurityPermission "getPolicy";
-   permission java.lang.RuntimePermission "accessDeclaredMembers";
-   
-   permission java.util.PropertyPermission "jetty.home", "read, write";
-    
-   permission java.util.PropertyPermission "user.home", "read";
-     
-   permission java.util.PropertyPermission "jetty.class.path", "read, write";
-   permission java.util.PropertyPermission "java.class.path", "read, write";
-     
-   permission java.util.PropertyPermission "repository", "read, write";
-     
-   permission java.util.PropertyPermission "jetty.lib", "read";
-   permission java.util.PropertyPermission "jetty.server", "read";
-   permission java.util.PropertyPermission "jetty.host", "read";
-   permission java.util.PropertyPermission "jetty.port", "read";
-   permission java.util.PropertyPermission "start.class", "read";
-     
-   permission java.util.PropertyPermission "main.class", "read";  
-   permission java.util.PropertyPermission "ISO_8859_1", "read";	 
-   permission javax.security.auth.AuthPermission "modifyPrincipals";
-	 
-	permission javax.security.auth.AuthPermission "modifyPrivateCredentials";
-	permission javax.security.auth.AuthPermission "setReadOnly"; 	 
-	permission java.lang.RuntimePermission "getClassLoader";	
-}
-
-
-//
-// jetty system classes
-//
 grant codeBase "file:${jetty.home}/lib/-" {
 	 
-	permission java.lang.RuntimePermission "getClassLoader";
+   permission java.lang.RuntimePermission "getClassLoader";
 	 
-	permission java.util.PropertyPermission "org.eclipse.jetty.webapp.WebAppClassLoader.extensions", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.webapp.WebAppClassLoader.extensions", "read";
    permission java.util.PropertyPermission "org.eclipse.http.PathMap.separators", "read";
  
    permission java.util.PropertyPermission "ROLLOVERFILE_BACKUP_FORMAT", "read";
@@ -63,6 +25,8 @@ grant codeBase "file:${jetty.home}/lib/-" {
    permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read, write";
    permission java.io.FilePermission "${/}private${/}${java.io.tmpdir}", "read, write";
    permission java.io.FilePermission "${/}private${/}${java.io.tmpdir}${/}-", "read, write";
+   permission java.io.FilePermission "${jetty.home}${/}lib${/}policy${/}-", "read";
+   
    
    permission java.io.FilePermission "${java.io.tmpdir}${/}-", "delete";
 
@@ -123,104 +87,5 @@ grant codeBase "file:${jetty.home}/lib/-" {
    
     // jsp support   
    permission java.net.SocketPermission "java.sun.com:80", "connect,resolve";
-   
-   // TEST WEBAPP PERMISSIONS
-   permission java.util.PropertyPermission "__ALLOWED_READ_PROPERTY", "read";   
-   permission java.util.PropertyPermission "__ALLOWED_WRITE_PROPERTY", "read, write";
 	 
 };
-
-
-// TODO template these, maybe make them setup based on OS or something
-
-//
-// the tmp directory is where webapps are unpacked by default so setup their restricted permissions
-//
-grant codeBase "file:${java.io.tmpdir}/-" {
-
-   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebases
-   permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";   
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";   
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";
-   
-   // TEST WEBAPP PERMISSIONS
-   permission java.util.PropertyPermission "__ALLOWED_READ_PROPERTY", "read";   
-   permission java.util.PropertyPermission "__ALLOWED_WRITE_PROPERTY", "read, write";  
-};
-
-//
-// some operating systems have tmp as a symbolic link to /private/tmp
-//
-grant codeBase "file:/private${java.io.tmpdir}/-" {
-
-   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
-   permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read";
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";
-   
-};
-
-//
-// The work directory can be used for unpacking war files so should have the same default 
-// permissions as the tmp directory
-//
-grant codeBase "file:${jetty.home}/work/-" {
-   permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
-   permission java.io.FilePermission "${jetty.home}${/}work${/}-", "read";
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
-   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";
-   
-};
-
-
-
-// 
-// 
-// default permissions granted to all domains
-//
-//
-grant { 
-   permission java.io.FilePermission "${jetty.home}${/}lib${/}policy${/}-", "read";
-
-   // allows anyone to listen on un-privileged ports
-   permission java.net.SocketPermission "localhost:1024-", "listen";
-   permission java.net.SocketPermission "localhost:1024-", "accept"; 
-
-   permission java.security.SecurityPermission "putProviderProperty.SunJCE";
-   permission java.util.PropertyPermission "org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD", "read, write";
-
-   // "standard" properties that can be read by anyone
-   permission java.util.PropertyPermission "entityExpansionLimit", "read";
-   permission java.util.PropertyPermission "elementAttributeLimit", "read";
-   permission java.util.PropertyPermission "maxOccurLimit", "read";
-   permission java.util.PropertyPermission "java.version", "read";
-   permission java.util.PropertyPermission "java.vendor", "read";
-   permission java.util.PropertyPermission "java.vendor.url", "read";
-   permission java.util.PropertyPermission "java.class.version", "read";
-   permission java.util.PropertyPermission "os.name", "read";
-   permission java.util.PropertyPermission "os.version", "read";
-   permission java.util.PropertyPermission "os.arch", "read";
-   permission java.util.PropertyPermission "file.separator", "read";
-   permission java.util.PropertyPermission "path.separator", "read";
-   permission java.util.PropertyPermission "line.separator", "read";
-   permission java.util.PropertyPermission "java.io.tmpdir", "read";
-     
-   permission java.util.PropertyPermission "java.specification.version", "read";
-   permission java.util.PropertyPermission "java.specification.vendor", "read";
-   permission java.util.PropertyPermission "java.specification.name", "read";
- 
-   permission java.util.PropertyPermission "java.vm.specification.version", "read";
-   permission java.util.PropertyPermission "java.vm.specification.vendor", "read";
-   permission java.util.PropertyPermission "java.vm.specification.name", "read";
-   permission java.util.PropertyPermission "java.vm.version", "read";
-   permission java.util.PropertyPermission "java.vm.vendor", "read";
-   permission java.util.PropertyPermission "java.vm.name", "read";
-
-   // TEST WEBAPP PERMISSIONS
-   permission java.util.PropertyPermission "user.dir", "read";  
-};
-
-
