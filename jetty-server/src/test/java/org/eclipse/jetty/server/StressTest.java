@@ -13,16 +13,12 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +34,9 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class StressTest
 {
@@ -86,7 +85,7 @@ public class StressTest
         _server.setThreadPool(_threads);
 
         _connector = new SelectChannelConnector();
-        _connector.setAcceptors(Runtime.getRuntime().availableProcessors()/2);
+        _connector.setAcceptors(Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
         _connector.setAcceptQueueSize(5000);
         _connector.setMaxIdleTime(30000);
         _server.addConnector(_connector);
@@ -244,7 +243,7 @@ public class StressTest
             final int other[] = new int[_latencies.length];
 
             long total=0;
-            
+
             for (int i=0;i<_latencies.length;i++)
             {
                 Queue<Long> latencies=_latencies[i];
@@ -264,7 +263,7 @@ public class StressTest
                         }
                     }
                     other[i]++;
-                    
+
                 }
             }
 
