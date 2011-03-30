@@ -385,8 +385,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
     protected static class TestHttpExchange extends ContentExchange
     {
         private boolean responseCompleted;
-        private boolean failed;
-        private boolean expired;
+        private boolean failed = false;
+        private boolean expired = false;
 
         protected TestHttpExchange()
         {
