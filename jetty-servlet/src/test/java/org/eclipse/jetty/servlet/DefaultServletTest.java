@@ -378,13 +378,18 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
-        deleteFile(index);
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
-        assertResponseContains("<h1>Hello Inde</h1>", response);
+        // In Windows it's impossible to delete files that are somehow in use
+        // Avoid to fail the test if we're on Windows
+        if (!OS.IS_WINDOWS)
+        {
+            deleteFile(index);
+            response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+            assertResponseContains("<h1>Hello Inde</h1>", response);
 
-        deleteFile(inde);
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
-        assertResponseContains("JSP support not configured", response);
+            deleteFile(inde);
+            response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+            assertResponseContains("JSP support not configured", response);
+        }
     }
 
     @Test
@@ -421,13 +426,18 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
         assertResponseContains("<h1>Hello Index</h1>", response);
 
-        assertTrue(index.delete());
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
-        assertResponseContains("<h1>Hello Inde</h1>", response);
+        // In Windows it's impossible to delete files that are somehow in use
+        // Avoid to fail the test if we're on Windows
+        if (!OS.IS_WINDOWS)
+        {
+            deleteFile(index);
+            response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+            assertResponseContains("<h1>Hello Inde</h1>", response);
 
-        assertTrue(inde.delete());
-        response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
-        assertResponseContains("JSP support not configured", response);
+            deleteFile(inde);
+            response = connector.getResponses("GET /context/ HTTP/1.0\r\n\r\n");
+            assertResponseContains("JSP support not configured", response);
+        }
     }
 
     @Test
