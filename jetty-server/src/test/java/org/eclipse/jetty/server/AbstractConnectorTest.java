@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -23,7 +20,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,6 +33,9 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AbstractConnectorTest
 {
@@ -122,16 +121,15 @@ public class AbstractConnectorTest
     @Test
     public void testSingleRequest() throws Exception
     {
-        int connections = 1;
-        doInit(connections);
+        doInit(1);
 
         sendRequest(1, 1);
-        
-        doClose(connections);
 
-        assertEquals(connections, _connector.getConnections());
+        doClose(1);
+
+        assertEquals(1, _connector.getConnections());
         assertEquals(0, _connector.getConnectionsOpen());
-        assertEquals(connections, _connector.getConnectionsOpenMax());
+        assertEquals(1, _connector.getConnectionsOpenMax());
         assertTrue(_connector.getConnectionsOpen() <= _connector.getConnectionsOpenMax());
 
         assertTrue(_connector.getConnectionsDurationMean() > 0);
