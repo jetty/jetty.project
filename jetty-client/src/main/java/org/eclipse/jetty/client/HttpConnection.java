@@ -175,13 +175,20 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                         }
                         else
                         {
-                            // Hopefully just space?
-                            _parser.fill();
-                            _parser.skipCRLF();
-                            if (_parser.isMoreInBuffer())
+                            long filled = _parser.fill();
+                            if (filled < 0)
                             {
-                                Log.warn("Unexpected data received but no request sent");
                                 close();
+                            }
+                            else
+                            {
+                                // Hopefully just space?
+                                _parser.skipCRLF();
+                                if (_parser.isMoreInBuffer())
+                                {
+                                    Log.warn("Unexpected data received but no request sent");
+                                    close();
+                                }
                             }
                             return this;
                         }
