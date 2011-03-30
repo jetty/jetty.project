@@ -13,12 +13,13 @@ jetty-7.3.2-SNAPSHOT
  + 341006 Move inner enums out into separate file
  + 341105 Stack trace is printed for an ignored exception
  + 341145 WebAppContext MBean attribute serverClasses returns empty value
- + Ensure generated fragment names are unique
- + JETTY-1245 Pooled Buffers implementation
  + 341206 Stop order is wrong in HandlerWrapper
  + 341255 org.eclipse.http usage in AJP/SessionId linkage
- + Added extra session removal test
  + 341386 Remote close not detected by HttpClient
+ + 341394 Remove 'Unavailable' JMX attributes of WebAppContext MBean
+ + JETTY-1245 Pooled Buffers implementation
+ + Ensure generated fragment names are unique
+ + Added extra session removal test
 
 jetty-7.3.1.v20110307 7 March 2011
  + 316382 Support a more strict SSL option with certificates
