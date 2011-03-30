@@ -623,8 +623,7 @@ public class HttpConnection  extends AbstractConnection implements Connection
                         throw (ThreadDeath)e;
 
                     error=true;
-                    Log.warn(_uri+": "+e);
-                    Log.debug(e);
+                    Log.warn(String.valueOf(_uri),e);
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
                 }

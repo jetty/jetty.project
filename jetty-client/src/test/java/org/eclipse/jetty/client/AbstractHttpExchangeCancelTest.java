@@ -30,6 +30,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 
 /**
  * @version $Revision$ $Date$
@@ -292,6 +294,7 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
     {
         try
         {
+            ((StdErrLog)Log.getLog()).setHideStacks(!Log.isDebugEnabled());
             TestHttpExchange exchange = new TestHttpExchange();
             exchange.setAddress(newAddress());
             exchange.setURI("/?action=throw");
@@ -306,6 +309,7 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         }
         finally
         {
+            ((StdErrLog)Log.getLog()).setHideStacks(false);
         }
     }
 
@@ -320,14 +324,17 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         exchange.setAddress(newAddress());
         exchange.setURI("/?action=wait5000");
 
+        long start = System.currentTimeMillis();
         httpClient.send(exchange);
 
         int status = exchange.waitForDone();
+        long end = System.currentTimeMillis();
         
         assertTrue(HttpExchange.STATUS_EXPIRED==status||HttpExchange.STATUS_EXCEPTED==status);
         assertFalse(exchange.isResponseCompleted());
-        assertFalse(exchange.isFailed());
+        assertTrue(end-start<4000);
         assertTrue(exchange.isExpired());
+        assertFalse(exchange.isFailed());
         assertFalse(exchange.isAssociated());
     }
 
@@ -359,9 +366,12 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
                 else if (action.startsWith("wait"))
                 {
                     long sleep = Long.valueOf(action.substring("wait".length()));
+                    long start=System.currentTimeMillis();
                     try
                     {
                         Thread.sleep(sleep);
+                        long end=System.currentTimeMillis();
+                        assertTrue("Duration "+(end-start)+" >~ "+sleep,(end-start)>sleep-100);
                     }
                     catch (InterruptedException x)
                     {
@@ -374,9 +384,9 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
 
     protected static class TestHttpExchange extends ContentExchange
     {
-        private volatile boolean responseCompleted;
-        private volatile boolean failed;
-        private volatile boolean expired;
+        private boolean responseCompleted;
+        private boolean failed;
+        private boolean expired;
 
         protected TestHttpExchange()
         {
@@ -384,18 +394,18 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         }
 
         @Override
-        protected void onResponseComplete() throws IOException
+        protected synchronized void onResponseComplete() throws IOException
         {
             this.responseCompleted = true;
         }
 
-        public boolean isResponseCompleted()
+        public synchronized boolean isResponseCompleted()
         {
             return responseCompleted;
         }
 
         @Override
-        protected void onException(Throwable ex)
+        protected synchronized void onException(Throwable ex)
         {
             if (ex instanceof SocketTimeoutException ||
                 ex.getCause() instanceof SocketTimeoutException)
@@ -404,18 +414,18 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
                 failed = true;
         }
 
-        public boolean isFailed()
+        public synchronized boolean isFailed()
         {
             return failed;
         }
 
         @Override
-        protected void onExpire()
+        protected synchronized void onExpire()
         {
             this.expired = true;
         }
 
-        public boolean isExpired()
+        public synchronized boolean isExpired()
         {
             return expired;
         }
