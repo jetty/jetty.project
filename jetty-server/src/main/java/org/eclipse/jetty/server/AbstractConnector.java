@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -746,7 +747,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         if (dot > 0)
             name = name.substring(dot + 1);
 
-        return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort());
+        return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort()) + " "+AbstractLifeCycle.getState(this);
     }
 
     

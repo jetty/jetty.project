@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
@@ -87,7 +88,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </p>
  *
  */
-public class HttpConnection /* TODO extends AbstractConnection*/ implements Connection
+public class HttpConnection  extends AbstractConnection implements Connection
 {
     private static final int UNKNOWN = -2;
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
@@ -142,9 +143,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
      */
     public HttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
-        _endp=endpoint;
-        _timeStamp = System.currentTimeMillis();
-   
+        super(endpoint);
         _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         HttpBuffers ab = (HttpBuffers)_connector;
@@ -162,8 +161,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
     protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
-        _endp=endpoint;
-        _timeStamp = System.currentTimeMillis();
+        super(endpoint);
         
         _uri = URIUtil.__CHARSET.equals(StringUtil.__UTF8)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
@@ -1282,16 +1280,4 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
     }
 
     
-
-    // TODO remove and use AbstractConnection for 7.4
-    private final long _timeStamp;
-    protected final EndPoint _endp;
-    public long getTimeStamp()
-    {
-        return _timeStamp;
-    }
-    public EndPoint getEndPoint()
-    {
-        return _endp;
-    }
 }

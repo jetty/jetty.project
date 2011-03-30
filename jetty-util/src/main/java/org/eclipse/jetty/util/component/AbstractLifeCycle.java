@@ -145,6 +145,15 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
         return null;
     }
+    
+    public static String getState(LifeCycle lc)
+    {
+        if (lc.isStarting()) return STARTING;
+        if (lc.isStarted()) return STARTED;
+        if (lc.isStopping()) return STOPPING;
+        if (lc.isStopped()) return STOPPED;
+        return FAILED;
+    }
 
     private void setStarted()
     {

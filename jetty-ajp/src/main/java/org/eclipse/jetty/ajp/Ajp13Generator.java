@@ -92,7 +92,7 @@ public class Ajp13Generator extends AbstractGenerator
     private static final byte[] AJP13_MORE_CONTENT =
     { 'A', 'B', 0, 3, 6, 31, -7 };
 
-    private static String SERVER = "Server: Jetty(6.0.x)";
+    private static String SERVER = "Server: Jetty(7.x.x)";
 
     public static void setServerVersion(String version)
     {

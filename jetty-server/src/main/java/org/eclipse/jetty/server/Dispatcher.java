@@ -283,7 +283,7 @@ public class Dispatcher implements RequestDispatcher
                 
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
                 
-                if (baseRequest.getConnection().getResponse().isWriting())
+                if (baseRequest.getResponse().isWriting())
                 {
                     try {response.getWriter().close();}
                     catch(IllegalStateException e) 
