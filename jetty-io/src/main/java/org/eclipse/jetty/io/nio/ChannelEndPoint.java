@@ -110,7 +110,7 @@ public class ChannelEndPoint implements EndPoint
                 socket.shutdownInput();
         }
     }
-    
+
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
@@ -123,12 +123,12 @@ public class ChannelEndPoint implements EndPoint
                 socket.shutdownOutput();
         }
     }
-    
+
     public boolean isOutputShutdown()
     {
         return _channel.isOpen() && _socket!=null && _socket.isOutputShutdown();
     }
-    
+
     public boolean isInputShutdown()
     {
         return _channel.isOpen() && _socket!=null && _socket.isInputShutdown();
@@ -177,19 +177,31 @@ public class ChannelEndPoint implements EndPoint
                         {
                             shutdownInput();
                         }
-                        catch(IOException e)
+                        catch(IOException x)
                         {
-                            Log.ignore(e);
+                            Log.ignore(x);
                             try
                             {
                                 close();
                             }
-                            catch(IOException e2)
+                            catch (IOException xx)
                             {
-                                Log.ignore(e2);
+                                Log.ignore(xx);
                             }
                         }
                     }
+                }
+                catch (IOException x)
+                {
+                    try
+                    {
+                        close();
+                    }
+                    catch (IOException xx)
+                    {
+                        Log.ignore(xx);
+                    }
+                    throw x;
                 }
                 finally
                 {
