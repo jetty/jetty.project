@@ -14,6 +14,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -239,13 +240,11 @@ public class HttpWriterTest
         }
         String source = sb.toString();
 
-        byte[] bytes = source.getBytes("UTF-8"/* StringUtil.__UTF81 */);
+        byte[] bytes = source.getBytes(StringUtil.__UTF8);
         _writer.write(source.toCharArray(),0,source.toCharArray().length);
 
-        java.io.ByteArrayOutputStream baos = new
-java.io.ByteArrayOutputStream();
-        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos/*
-,StringUtil.__UTF8 */);
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos,StringUtil.__UTF8);
         osw.write(source.toCharArray(),0,source.toCharArray().length);
         osw.flush();
 
@@ -254,6 +253,8 @@ java.io.ByteArrayOutputStream();
         myReportBytes(_bytes.asArray());
 
         assertArrayEquals(bytes,_bytes.asArray());
+        System.err.println(TypeUtil.toHexString(baos.toByteArray()));
+        System.err.println(TypeUtil.toHexString(_bytes.asArray()));
         assertArrayEquals(baos.toByteArray(),_bytes.asArray());
     }
 
