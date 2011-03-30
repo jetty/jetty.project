@@ -253,8 +253,6 @@ public class HttpWriterTest
         myReportBytes(_bytes.asArray());
 
         assertArrayEquals(bytes,_bytes.asArray());
-        System.err.println(TypeUtil.toHexString(baos.toByteArray()));
-        System.err.println(TypeUtil.toHexString(_bytes.asArray()));
         assertArrayEquals(baos.toByteArray(),_bytes.asArray());
     }
 
