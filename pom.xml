@@ -307,17 +307,11 @@
     <module>jetty-rewrite</module>
     <module>jetty-policy</module>
     <module>jetty-start</module>
-    <!-- Moved to profile 'osgi' below (default active)
-    <module>jetty-osgi</module>
-      -->
+    <module>jetty-nested</module>
     <module>test-continuation</module>
     <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
     <module>test-jetty-webapp</module>
-    <!-- Moved to profile 'aggregates' below (default active)
-    <module>jetty-aggregate</module>
-    <module>jetty-distribution</module>
-      -->
     <module>example-jetty-embedded</module>
     <module>tests</module>
   </modules>
