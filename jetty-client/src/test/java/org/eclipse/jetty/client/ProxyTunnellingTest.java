@@ -1,13 +1,9 @@
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -30,12 +26,16 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.After;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class ProxyTunnellingTest
 {
     private Server server;
     private Connector serverConnector;
     private Server proxy;
     private Connector proxyConnector;
+    private int serverConnectTimeout = 1000;
 
     private void startSSLServer(Handler handler) throws Exception
     {
@@ -62,8 +62,11 @@ public class ProxyTunnellingTest
         proxy = new Server();
         proxyConnector = new SelectChannelConnector();
         proxy.addConnector(proxyConnector);
-        ConnectHandler proxyHandler = new ConnectHandler();
-        proxy.setHandler(proxyHandler);
+        ConnectHandler connectHandler = new ConnectHandler();
+        // Under Windows, it takes a while to detect that a connection
+        // attempt fails, so use an explicit timeout
+        connectHandler.setConnectTimeout(serverConnectTimeout);
+        proxy.setHandler(connectHandler);
         proxy.start();
     }
 
@@ -219,7 +222,7 @@ public class ProxyTunnellingTest
             exchange.setURL("https://localhost:" + serverPort + "/echo?body=" + URLEncoder.encode(body, "UTF-8"));
 
             httpClient.send(exchange);
-            assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(serverConnectTimeout * 2, TimeUnit.MILLISECONDS));
         }
         finally
         {
