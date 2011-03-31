@@ -21,7 +21,6 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -55,7 +54,9 @@ public class PutFilterTest
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
         FilterHolder holder = tester.addFilter(PutFilter.class,"/*",0);
         holder.setInitParameter("delAllowed","true");
-        holder.setInitParameter("putAtomic","true");
+        // Bloody Windows does not allow file renaming
+        if (!System.getProperty("os.name").toLowerCase().contains("windows"))
+            holder.setInitParameter("putAtomic","true");
         tester.start();
     }
 
@@ -95,7 +96,7 @@ public class PutFilterTest
         File file=new File(_dir,"file.txt");
         assertTrue(file.exists());
         assertEquals(data0,IO.toString(new FileInputStream(file)));
-        
+
         // test GET1
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
@@ -136,9 +137,9 @@ public class PutFilterTest
         Thread.sleep(100);
         out.write(to_send.substring(l-10,l-5).getBytes());
         out.flush();
-        
-        
-        // loop until the resource is hidden (ie the PUT is starting to 
+
+
+        // loop until the resource is hidden (ie the PUT is starting to
         // read the file
         do
         {
@@ -262,10 +263,10 @@ public class PutFilterTest
         response.parse(tester.getResponses(request.generate()));
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-        
+
         Set<String> options = new HashSet<String>();
         options.addAll(Arrays.asList(response.getHeader("Allow").split(" *, *")));
-              
+
         assertTrue(options.contains("GET"));
         assertTrue(options.contains("POST"));
         assertTrue(options.contains("PUT"));
