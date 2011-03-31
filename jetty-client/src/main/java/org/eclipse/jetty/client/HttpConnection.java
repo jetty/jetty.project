@@ -712,6 +712,9 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
             }
             finally
             {
+                if (ex != null && ex.getStatus() < HttpExchange.STATUS_COMPLETED)
+                    ex.setStatus(HttpExchange.STATUS_EXPIRED);
+                
                 try
                 {
                     close();
@@ -721,10 +724,6 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                     Log.ignore(e);
                 }
 
-                if (ex != null && ex.getStatus() < HttpExchange.STATUS_COMPLETED)
-                {
-                    ex.setStatus(HttpExchange.STATUS_EXPIRED);
-                }
             }
         }
     }

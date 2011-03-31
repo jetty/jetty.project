@@ -17,6 +17,7 @@ jetty-7.3.2-SNAPSHOT
  + 341255 org.eclipse.http usage in AJP/SessionId linkage
  + 341386 Remote close not detected by HttpClient
  + 341394 Remove 'Unavailable' JMX attributes of WebAppContext MBean
+ + 341439 Blocking HttpClient does not use soTimeout for timeouts
  + JETTY-1245 Pooled Buffers implementation
  + Ensure generated fragment names are unique
  + Added extra session removal test
