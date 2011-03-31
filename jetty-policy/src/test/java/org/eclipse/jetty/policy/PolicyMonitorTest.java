@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,6 +51,11 @@ public class PolicyMonitorTest
     @Test
     public void testSimpleReloading() throws Exception
     {
+        if (OS.IS_WINDOWS)
+        {
+            return;
+        }
+        
         final AtomicInteger count = new AtomicInteger(0);
         
         PolicyMonitor monitor = new PolicyMonitor( MavenTestingUtils.getTestResourceDir("monitor-test-2").getAbsolutePath())
@@ -73,7 +79,7 @@ public class PolicyMonitorTest
         File permFile = MavenTestingUtils.getTestResourceFile("monitor-test-2/global-all-permission.policy");
         
         permFile.setLastModified(System.currentTimeMillis());
-                
+                        
         monitor.waitForScan();
 
         Assert.assertEquals(2,count.get());
