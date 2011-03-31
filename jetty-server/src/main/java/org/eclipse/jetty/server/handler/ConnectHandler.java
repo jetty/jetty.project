@@ -329,13 +329,29 @@ public class ConnectHandler extends HandlerWrapper
      */
     protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
     {
-        _logger.debug("Establishing connection to {}:{}", host, port);
-        // Connect to remote server
         SocketChannel channel = SocketChannel.open();
-        channel.socket().setTcpNoDelay(true);
-        channel.socket().connect(new InetSocketAddress(host, port), getConnectTimeout());
-        _logger.debug("Established connection to {}:{}", host, port);
-        return channel;
+        try
+        {
+            // Connect to remote server
+            _logger.debug("Establishing connection to {}:{}", host, port);
+            channel.socket().setTcpNoDelay(true);
+            channel.socket().connect(new InetSocketAddress(host, port), getConnectTimeout());
+            _logger.debug("Established connection to {}:{}", host, port);
+            return channel;
+        }
+        catch (IOException x)
+        {
+            _logger.debug("Failed to establish connection to " + host + ":" + port, x);
+            try
+            {
+                channel.close();
+            }
+            catch (IOException xx)
+            {
+                Log.ignore(xx);
+            }
+            throw x;
+        }
     }
 
     protected void prepareContext(HttpServletRequest request, ConcurrentMap<String, Object> context)
