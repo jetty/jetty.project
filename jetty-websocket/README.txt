@@ -14,10 +14,11 @@ WebSocketServlet class, both of which delegate to the WebSocketFactory class.
 A TestServer and TestClient class are available, and can be run either directly from an IDE (if jetty source is
 imported), or from the command line with
 
-  java -cp jetty-aggregate/jetty-all/target/jetty-all-7.3.2-SNAPSHOT.jar:jetty-distribution/target/distribution/lib/servlet-api-2.5.jar
+
+  java -cp jetty-aggregate/jetty-all/target/jetty-all-7.x.y.jar:jetty-distribution/target/distribution/lib/servlet-api-2.5.jar
   org.eclipse.jetty.websocket.TestServer  --help 
 
-  java -cp jetty-aggregate/jetty-all/target/jetty-all-7.3.2-SNAPSHOT.jar:jetty-distribution/target/distribution/lib/servlet-api-2.5.jar
+  java -cp jetty-aggregate/jetty-all/target/jetty-all-7.x.y.jar:jetty-distribution/target/distribution/lib/servlet-api-2.5.jar
   org.eclipse.jetty.websocket.TestClient --help
 
 
