@@ -514,7 +514,7 @@ public class HttpParser implements Parser
                                     switch (ho)
                                     {
                                         case HttpHeaders.CONTENT_LENGTH_ORDINAL:
-                                            if (_contentLength != HttpTokens.CHUNKED_CONTENT)
+                                            if (_contentLength != HttpTokens.CHUNKED_CONTENT && _responseStatus!=304 && _responseStatus!=204 && (_responseStatus<100 || _responseStatus>=200))
                                             {
                                                 try
                                                 {
