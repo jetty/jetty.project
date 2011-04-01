@@ -14,11 +14,9 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.util.Random;
-
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.ContentExchange;
@@ -27,34 +25,23 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
  * AbstractWebAppObjectInSessionTest
- * 
+ *
  * Target of this test is to check that when a webapp on nodeA puts in the session
  * an object of a class loaded from the war (and hence with a WebAppClassLoader),
  * the same webapp on nodeB is able to load that object from the session.
- * 
+ *
  * This test is only appropriate for clustered session managers.
  */
 public abstract class AbstractWebAppObjectInSessionTest
 {
     public abstract AbstractTestServer createServer(int port);
 
-
-    private void copy(File source, File target) throws Exception
-    {
-        FileInputStream input = new FileInputStream(source);
-        FileOutputStream output = new FileOutputStream(target);
-        int read = -1;
-        byte[] bytes = new byte[64];
-        while ((read = input.read(bytes)) >= 0) output.write(bytes, 0, read);
-        input.close();
-        output.close();
-    }
-    
     @Test
     public void testWebappObjectInSession() throws Exception
     {
@@ -85,24 +72,21 @@ public abstract class AbstractWebAppObjectInSessionTest
         String packageName = WebAppObjectInSessionServlet.class.getPackage().getName();
         File packageDirs = new File(classesDir, packageName.replace('.', File.separatorChar));
         packageDirs.mkdirs();
-        String resourceName = WebAppObjectInSessionServlet.class.getName().replace('.', File.separatorChar) + ".class";
-        
-        
-        Resource res = Resource.newResource(getClass().getClassLoader().getResource(resourceName));
-       
-        //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());       
-        File targetFile = new File(packageDirs, resourceName.substring(packageName.length()));
+
+        String resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + ".class";
+        Resource resource = Resource.newResource(getClass().getResource(resourceName));
+
+        //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
+        File targetFile = new File(packageDirs, resourceName);
         //copy(sourceFile, targetFile);
-        resourceName = WebAppObjectInSessionServlet.TestSharedNonStatic.class.getName().replace('.', File.separatorChar) + ".class";
-        IO.copy(res.getInputStream(), new FileOutputStream(targetFile));
-     
-        
-        resourceName = WebAppObjectInSessionServlet.TestSharedStatic.class.getName().replace('.', File.separatorChar) + ".class";
-        res = Resource.newResource(getClass().getClassLoader().getResource(resourceName));
+        IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
+
+        resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + "$" + WebAppObjectInSessionServlet.TestSharedStatic.class.getSimpleName() + ".class";
+        resource = Resource.newResource(getClass().getResource(resourceName));
         //sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
-        targetFile = new File(packageDirs, resourceName.substring(packageName.length()));
+        targetFile = new File(packageDirs, resourceName);
         //copy(sourceFile, targetFile);
-        IO.copy(res.getInputStream(), new FileOutputStream(targetFile));
+        IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
         Random random = new Random(System.nanoTime());
 
         int port1 = random.nextInt(50000) + 10000;
@@ -141,7 +125,7 @@ public abstract class AbstractWebAppObjectInSessionTest
                     exchange2.getRequestFields().add("Cookie", sessionCookie);
                     client.send(exchange2);
                     exchange2.waitForDone();
-                    
+
                     assertEquals(HttpServletResponse.SC_OK,exchange2.getResponseStatus());
                 }
                 finally
