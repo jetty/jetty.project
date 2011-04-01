@@ -718,7 +718,7 @@ public class DoSFilter implements Filter
      * 
      * @return number of requests
      */
-    public long getThrottledRequests()
+    public int getThrottledRequests()
     {
         return _throttledRequests;
     }

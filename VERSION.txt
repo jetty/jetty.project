@@ -18,6 +18,7 @@ jetty-7.3.2-SNAPSHOT
  + 341386 Remote close not detected by HttpClient
  + 341394 Remove 'Unavailable' JMX attributes of WebAppContext MBean
  + 341439 Blocking HttpClient does not use soTimeout for timeouts
+ + 341561 Exception when adding o.e.j.s.DoSFilter as managed attribute
  + JETTY-1245 Pooled Buffers implementation
  + JETTY-1354 Added jetty-nested
  + Ensure generated fragment names are unique
