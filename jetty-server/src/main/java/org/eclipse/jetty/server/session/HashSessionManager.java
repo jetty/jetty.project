@@ -307,16 +307,6 @@ public class HashSessionManager extends AbstractSessionManager
         {
             if (_loader!=null)
                 thread.setContextClassLoader(_loader);
-
-            try
-            {
-                if (!_sessionsLoaded && _lazyLoad)
-                    restoreSessions();
-            }
-            catch(Exception e)
-            {
-                Log.debug(e);
-            }
             
             // For each session
             long now=System.currentTimeMillis();
