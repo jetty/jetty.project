@@ -1,6 +1,5 @@
 package org.eclipse.jetty.util;
 
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,9 +9,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.util.Scanner.Notification;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -22,7 +21,7 @@ public class ScannerTest
     static Scanner _scanner;
     static BlockingQueue<Event> _queue = new LinkedBlockingQueue<Event>();
     static BlockingQueue<List<String>> _bulk = new LinkedBlockingQueue<List<String>>();
-    
+
     @BeforeClass
     public static void setUpBeforeClass() throws Exception
     {
@@ -30,7 +29,7 @@ public class ScannerTest
         _directory.delete();
         _directory.mkdir();
         _directory.deleteOnExit();
-        
+
         _scanner = new Scanner();
         _scanner.addScanDir(_directory);
         _scanner.setScanInterval(1);
@@ -40,12 +39,12 @@ public class ScannerTest
             {
                 _queue.add(new Event(filename,Notification.REMOVED));
             }
-            
+
             public void fileChanged(String filename) throws Exception
             {
                 _queue.add(new Event(filename,Notification.CHANGED));
             }
-            
+
             public void fileAdded(String filename) throws Exception
             {
                 _queue.add(new Event(filename,Notification.ADDED));
@@ -59,7 +58,7 @@ public class ScannerTest
             }
         });
         _scanner.start();
-        
+
         Assert.assertTrue(_queue.isEmpty());
         Assert.assertTrue(_bulk.isEmpty());
     }
@@ -70,12 +69,12 @@ public class ScannerTest
         _scanner.stop();
         IO.delete(_directory);
     }
-    
+
     static class Event
     {
         String _filename;
         Scanner.Notification _notification;
-        
+
         public Event(String filename, Notification notification)
         {
             _filename=filename;
@@ -83,9 +82,16 @@ public class ScannerTest
         }
     }
 
+    private void assumeNotWindows()
+    {
+        Assume.assumeTrue(!System.getProperty("os.name").toLowerCase().contains("windows"));
+    }
+
     @Test
     public void testAddedChangeRemove() throws Exception
     {
+        assumeNotWindows();
+
         touch("a0");
 
         // takes 2s to notice a0 and check that it is stable
@@ -98,7 +104,7 @@ public class ScannerTest
         touch("a1");
         touch("a2");
         touch("a3");
-        
+
         // not stable after 1s so should not be seen yet.
         event = _queue.poll(1100,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event==null);
@@ -106,23 +112,23 @@ public class ScannerTest
         // Keep a2 unstable and remove a3 before it stabalized
         touch("a2");
         delete("a3");
-        
+
         // only a1 is stable so it should be seen.
         event = _queue.poll(1100,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a1",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
-        
+
         // Now a2 is stable
         event = _queue.poll(1100,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
-        
+
         // We never see a3 as it was deleted before it stabalised
-        
+
         // touch a1 and a2
         touch("a1");
         touch("a2");
@@ -130,7 +136,7 @@ public class ScannerTest
         event = _queue.poll(1100,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event==null);
 
-        // Keep a2 unstable 
+        // Keep a2 unstable
         touch("a2");
 
         // only a1 is stable so it should be seen.
@@ -146,8 +152,8 @@ public class ScannerTest
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
-        
-        
+
+
         // delete a1 and a2
         delete("a1");
         delete("a2");
@@ -155,7 +161,7 @@ public class ScannerTest
         event = _queue.poll(1100,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event==null);
 
-        // readd a2  
+        // readd a2
         touch("a2");
 
         // only a1 is stable so it should be seen.
@@ -171,12 +177,14 @@ public class ScannerTest
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
-        
+
     }
-    
+
     @Test
     public void testSizeChange() throws Exception
     {
+        assumeNotWindows();
+
         touch("tsc0");
 
         // takes 2s to notice tsc0 and check that it is stable.  This syncs us with the scan
@@ -184,8 +192,8 @@ public class ScannerTest
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/tsc0",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
-        
-        
+
+
         // Create a new file by writing to it.
         long now = System.currentTimeMillis();
         File file = new File(_directory,"st");
@@ -197,12 +205,12 @@ public class ScannerTest
         // Not stable yet so no notification.
         event = _queue.poll(1100,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event==null);
-        
+
         // Modify size only
         out.write('x');
         out.flush();
         file.setLastModified(now);
-        
+
         // Still not stable yet so no notification.
         event = _queue.poll(1100,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event==null);
@@ -217,7 +225,7 @@ public class ScannerTest
         out.write('x');
         out.flush();
         file.setLastModified(now);
-        
+
 
         // Still not stable yet so no notification.
         event = _queue.poll(1100,TimeUnit.MILLISECONDS);
@@ -228,7 +236,7 @@ public class ScannerTest
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/st",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
-        
+
     }
 
     private void delete(String string) throws IOException
@@ -237,7 +245,7 @@ public class ScannerTest
         if (file.exists())
             IO.delete(file);
     }
-    
+
     private void touch(String string) throws IOException
     {
         File file = new File(_directory,string);
