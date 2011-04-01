@@ -10,6 +10,7 @@ jetty-7.3.2-SNAPSHOT
  + 340838 Update ConnectHandler to perform half closes properly
  + 340878 Integrations should be able to load their own keystores
  + 340920 Dynamically assign RMI registry port for integration testing
+ + 340949 Scanner delays file notifications until files are stable
  + 341006 Move inner enums out into separate file
  + 341105 Stack trace is printed for an ignored exception
  + 341145 WebAppContext MBean attribute serverClasses returns empty value

@@ -36,6 +36,7 @@ public class PolicyMonitorTest
                 count.incrementAndGet();
             }
         };
+        monitor.setScanInterval(1);
         
         monitor.start();
         

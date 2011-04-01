@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -38,16 +39,15 @@ import org.eclipse.jetty.util.log.Log;
  * Utility for scanning a directory for added, removed and changed
  * files and reporting these events via registered Listeners.
  *
- * TODO AbstractLifeCycle
  */
-public class Scanner
+public class Scanner extends AbstractLifeCycle
 {
     private static int __scannerId=0;
     private int _scanInterval;
     private int _scanCount = 0;
     private final List<Listener> _listeners = new ArrayList<Listener>();
-    private final Map<String,Long> _prevScan = new HashMap<String,Long> ();
-    private final Map<String,Long> _currentScan = new HashMap<String,Long> ();
+    private final Map<String,TimeNSize> _prevScan = new HashMap<String,TimeNSize> ();
+    private final Map<String,TimeNSize> _currentScan = new HashMap<String,TimeNSize> ();
     private FilenameFilter _filter;
     private final List<File> _scanDirs = new ArrayList<File>();
     private volatile boolean _running = false;
@@ -56,8 +56,45 @@ public class Scanner
     private Timer _timer;
     private TimerTask _task;
     private int _scanDepth=0;
+    
+    public enum Notification { ADDED, CHANGED, REMOVED };
+    private final Map<String,Notification> _notifications = new HashMap<String,Notification>();
 
-
+    static class TimeNSize
+    {
+        final long _lastModified;
+        final long _size;
+        
+        public TimeNSize(long lastModified, long size)
+        {
+            _lastModified = lastModified;
+            _size = size;
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            return (int)_lastModified^(int)_size;
+        }
+        
+        @Override
+        public boolean equals(Object o)
+        {
+            if (o instanceof TimeNSize)
+            {
+                TimeNSize tns = (TimeNSize)o;
+                return tns._lastModified==_lastModified && tns._size==_size;
+            }
+            return false;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return "[lm="+_lastModified+",s="+_size+"]";
+        }
+    }
+    
     /**
      * Listener
      * 
@@ -274,7 +311,7 @@ public class Scanner
     /**
      * Start the scanning action.
      */
-    public synchronized void start ()
+    public synchronized void doStart()
     {
         if (_running)
             return;
@@ -285,6 +322,7 @@ public class Scanner
         {
             // if files exist at startup, report them
             scan();
+            scan(); // scan twice so files reported as stable
         }
         else
         {
@@ -321,14 +359,14 @@ public class Scanner
             {
                 _timer = newTimer();
                 _task = newTimerTask();
-                _timer.schedule(_task, 1000L*getScanInterval(),1000L*getScanInterval());
+                _timer.schedule(_task, 1010L*getScanInterval(),1010L*getScanInterval());
             }
         }
     }
     /**
      * Stop the scanning.
      */
-    public synchronized void stop ()
+    public synchronized void doStop()
     {
         if (_running)
         {
@@ -388,45 +426,97 @@ public class Scanner
      * @param currentScan the info from the most recent pass
      * @param oldScan info from the previous pass
      */
-    public void reportDifferences (Map<String,Long> currentScan, Map<String,Long> oldScan) 
+    public synchronized void reportDifferences (Map<String,TimeNSize> currentScan, Map<String,TimeNSize> oldScan) 
     {
-        List<String> bulkChanges = new ArrayList<String>();
-        
+        // scan the differences and add what was found to the map of notifications:
+
         Set<String> oldScanKeys = new HashSet<String>(oldScan.keySet());
-        Iterator<Entry<String, Long>> itor = currentScan.entrySet().iterator();
-        while (itor.hasNext())
+        
+        // Look for new and changed files
+        for (Map.Entry<String, TimeNSize> entry: currentScan.entrySet())
         {
-            Map.Entry<String, Long> entry = itor.next();
-            if (!oldScanKeys.contains(entry.getKey()))
+            String file = entry.getKey(); 
+            if (!oldScanKeys.contains(file))
             {
-                Log.debug("File added: "+entry.getKey());
-                reportAddition ((String)entry.getKey());
-                bulkChanges.add(entry.getKey());
+                Notification old=_notifications.put(file,Notification.ADDED);
+                if (old!=null)
+                { 
+                    switch(old)
+                    {
+                        case REMOVED: 
+                        case CHANGED:
+                            _notifications.put(file,Notification.CHANGED);
+                    }
+                }
             }
-            else if (!oldScan.get(entry.getKey()).equals(entry.getValue()))
+            else if (!oldScan.get(file).equals(currentScan.get(file)))
             {
-                Log.debug("File changed: "+entry.getKey());
-                reportChange((String)entry.getKey());
-                oldScanKeys.remove(entry.getKey());
-                bulkChanges.add(entry.getKey());
-            }
-            else
-                oldScanKeys.remove(entry.getKey());
-        }
-
-        if (!oldScanKeys.isEmpty())
-        {
-
-            Iterator<String> keyItor = oldScanKeys.iterator();
-            while (keyItor.hasNext())
-            {
-                String filename = (String)keyItor.next();
-                Log.debug("File removed: "+filename);
-                reportRemoval(filename);
-                bulkChanges.add(filename);
+                Notification old=_notifications.put(file,Notification.CHANGED);
+                if (old!=null)
+                {
+                    switch(old)
+                    {
+                        case ADDED:
+                            _notifications.put(file,Notification.ADDED);
+                    }
+                }
             }
         }
         
+        // Look for deleted files
+        for (String file : oldScan.keySet())
+        {
+            if (!currentScan.containsKey(file))
+            {
+                Notification old=_notifications.put(file,Notification.REMOVED);
+                if (old!=null)
+                {
+                    switch(old)
+                    {
+                        case ADDED:
+                            _notifications.remove(file);
+                    }
+                }
+            }
+        }
+        
+        if (Log.isDebugEnabled())
+            Log.debug("scanned "+_notifications);
+                
+        // Process notifications
+        // Only process notifications that are for stable files (ie same in old and current scan).
+        List<String> bulkChanges = new ArrayList<String>();
+        for (Iterator<Entry<String,Notification>> iter = _notifications.entrySet().iterator();iter.hasNext();)
+        {
+            Entry<String,Notification> entry=iter.next();
+            String file=entry.getKey();
+            
+            // Is the file stable?
+            if (oldScan.containsKey(file))
+            {
+                if (!oldScan.get(file).equals(currentScan.get(file)))
+                    continue;
+            }
+            else if (currentScan.containsKey(file))
+                continue;
+                            
+            // File is stable so notify
+            Notification notification=entry.getValue();
+            iter.remove();
+            bulkChanges.add(file);
+            switch(notification)
+            {
+                case ADDED:
+                    reportAddition(file);
+                    break;
+                case CHANGED:
+                    reportChange(file);
+                    break;
+                case REMOVED:
+                    reportRemoval(file);
+                    break;
+            }
+        }
         if (!bulkChanges.isEmpty())
             reportBulkChanges(bulkChanges);
     }
@@ -438,7 +528,7 @@ public class Scanner
      * @param f file or directory
      * @param scanInfoMap map of filenames to last modified times
      */
-    private void scanFile (File f, Map<String,Long> scanInfoMap, int depth)
+    private void scanFile (File f, Map<String,TimeNSize> scanInfoMap, int depth)
     {
         try
         {
@@ -450,8 +540,7 @@ public class Scanner
                 if ((_filter == null) || ((_filter != null) && _filter.accept(f.getParentFile(), f.getName())))
                 {
                     String name = f.getCanonicalPath();
-                    long lastModified = f.lastModified();
-                    scanInfoMap.put(name, new Long(lastModified));
+                    scanInfoMap.put(name, new TimeNSize(f.lastModified(),f.length()));
                 }
             }
             

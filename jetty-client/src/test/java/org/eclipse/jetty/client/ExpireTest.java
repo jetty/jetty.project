@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -60,7 +61,6 @@ public class ExpireTest
                 }
                 catch (InterruptedException x)
                 {
-                    throw new ServletException(x);
                 }
             }
         });
