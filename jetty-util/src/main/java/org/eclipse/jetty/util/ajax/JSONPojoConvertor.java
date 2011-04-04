@@ -37,7 +37,6 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JSONPojoConvertor implements JSON.Convertor
 {
-    
     public static final Object[] GETTER_ARG = new Object[]{}, NULL_ARG = new Object[]{null};
     private static final Map<Class<?>, NumberType> __numberTypes = new HashMap<Class<?>, NumberType>();
     
@@ -245,7 +244,7 @@ public class JSONPojoConvertor implements JSON.Convertor
     public static class Setter
     {
         protected String _propertyName;
-        protected Method _method;
+        protected Method _setter;
         protected NumberType _numberType;
         protected Class<?> _type;
         protected Class<?> _componentType;
@@ -253,7 +252,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         public Setter(String propertyName, Method method)
         {
             _propertyName = propertyName;
-            _method = method;
+            _setter = method;
             _type = method.getParameterTypes()[0];
             _numberType = __numberTypes.get(_type);
             if(_numberType==null && _type.isArray())
@@ -270,7 +269,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         
         public Method getMethod()
         {
-            return _method;
+            return _setter;
         }
         
         public NumberType getNumberType()
@@ -297,7 +296,7 @@ public class JSONPojoConvertor implements JSON.Convertor
         IllegalAccessException, InvocationTargetException
         {
             if(value==null)
-                _method.invoke(obj, NULL_ARG);
+                _setter.invoke(obj, NULL_ARG);
             else
                 invokeObject(obj, value);
         }
@@ -309,13 +308,17 @@ public class JSONPojoConvertor implements JSON.Convertor
             if (_type.isEnum())
             {
                 if (value instanceof Enum)
-                    _method.invoke(obj, new Object[]{value});
+                    _setter.invoke(obj, new Object[]{value});
                 else
-                    _method.invoke(obj, new Object[]{Enum.valueOf((Class<? extends Enum>)_type,value.toString())});
+                    _setter.invoke(obj, new Object[]{Enum.valueOf((Class<? extends Enum>)_type,value.toString())});
             }
             else if(_numberType!=null && value instanceof Number)
             {
-                _method.invoke(obj, new Object[]{_numberType.getActualValue((Number)value)});
+                _setter.invoke(obj, new Object[]{_numberType.getActualValue((Number)value)});
+            }
+            else if (Character.TYPE.equals(_type) || Character.class.equals(_type))
+            {
+                _setter.invoke(obj, new Object[]{String.valueOf(value).charAt(0)});
             }
             else if(_componentType!=null && value.getClass().isArray())
             {
@@ -331,10 +334,10 @@ public class JSONPojoConvertor implements JSON.Convertor
                     {                        
                         // unusual array with multiple types
                         Log.ignore(e);
-                        _method.invoke(obj, new Object[]{value});
+                        _setter.invoke(obj, new Object[]{value});
                         return;
                     }                    
-                    _method.invoke(obj, new Object[]{array});
+                    _setter.invoke(obj, new Object[]{array});
                 }
                 else
                 {
@@ -349,14 +352,14 @@ public class JSONPojoConvertor implements JSON.Convertor
                     {                        
                         // unusual array with multiple types
                         Log.ignore(e);
-                        _method.invoke(obj, new Object[]{value});
+                        _setter.invoke(obj, new Object[]{value});
                         return;
                     }
-                    _method.invoke(obj, new Object[]{array});
+                    _setter.invoke(obj, new Object[]{array});
                 }
             }
             else
-                _method.invoke(obj, new Object[]{value});
+                _setter.invoke(obj, new Object[]{value});
         }
     }
     
