@@ -95,7 +95,7 @@ public class ScannerTest
         touch("a0");
 
         // takes 2s to notice a0 and check that it is stable
-        Event event = _queue.poll(2100,TimeUnit.MILLISECONDS);
+        Event event = _queue.poll(10000,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a0",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
@@ -114,14 +114,14 @@ public class ScannerTest
         delete("a3");
 
         // only a1 is stable so it should be seen.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a1",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
 
         // Now a2 is stable
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
@@ -140,14 +140,14 @@ public class ScannerTest
         touch("a2");
 
         // only a1 is stable so it should be seen.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a1",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
 
         // Now a2 is stable
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
@@ -165,14 +165,14 @@ public class ScannerTest
         touch("a2");
 
         // only a1 is stable so it should be seen.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a1",event._filename);
         Assert.assertEquals(Notification.REMOVED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
 
         // Now a2 is stable and is a changed file rather than a remove
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
@@ -188,7 +188,7 @@ public class ScannerTest
         touch("tsc0");
 
         // takes 2s to notice tsc0 and check that it is stable.  This syncs us with the scan
-        Event event = _queue.poll(2100,TimeUnit.MILLISECONDS);
+        Event event = _queue.poll(10000,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/tsc0",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
@@ -216,7 +216,7 @@ public class ScannerTest
         Assert.assertTrue(event==null);
 
         // now stable so finally see the ADDED
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/st",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
@@ -232,7 +232,7 @@ public class ScannerTest
         Assert.assertTrue(event==null);
 
         // now stable so finally see the ADDED
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/st",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
