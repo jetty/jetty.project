@@ -10,6 +10,7 @@
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
+
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 
 /**
- *
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
 public class HttpDestination
@@ -81,7 +81,8 @@ public class HttpDestination
         _ssl = ssl;
         _maxConnections = maxConnections;
         String addressString = address.getHost();
-        if (address.getPort() != (_ssl ? 443 : 80)) addressString += ":" + address.getPort();
+        if (address.getPort() != (_ssl ? 443 : 80))
+            addressString += ":" + address.getPort();
         _hostHeader = new ByteArrayBuffer(addressString);
     }
 
@@ -149,35 +150,40 @@ public class HttpDestination
      * Get a connection. We either get an idle connection if one is available, or
      * we make a new connection, if we have not yet reached maxConnections. If we
      * have reached maxConnections, we wait until the number reduces.
+     *
      * @param timeout max time prepared to block waiting to be able to get a connection
-     * @return
-     * @throws IOException
+     * @return a HttpConnection for this destination
+     * @throws IOException if an I/O error occurs
      */
     private HttpConnection getConnection(long timeout) throws IOException
     {
         HttpConnection connection = null;
 
-        while ((connection == null) && (connection = getIdleConnection()) == null && timeout>0)
+        while ((connection == null) && (connection = getIdleConnection()) == null && timeout > 0)
         {
-            boolean starting = false;
+            boolean startConnection = false;
             synchronized (this)
             {
                 int totalConnections = _connections.size() + _pendingConnections;
                 if (totalConnections < _maxConnections)
                 {
                     _newConnection++;
-                    startNewConnection();
-                    starting = true;
+                    startConnection = true;
                 }
             }
 
-            if (!starting)
+            if (startConnection)
             {
+                startNewConnection();
                 try
                 {
-                    Thread.currentThread();
-                    Thread.sleep(200);
-                    timeout-=200;
+                    Object o = _newQueue.take();
+                    if (o instanceof HttpConnection)
+                    {
+                        connection = (HttpConnection)o;
+                    }
+                    else
+                        throw (IOException)o;
                 }
                 catch (InterruptedException e)
                 {
@@ -186,21 +192,17 @@ public class HttpDestination
             }
             else
             {
-               try
-               {
-                   Object o = _newQueue.take();
-                   if (o instanceof HttpConnection)
-                   {
-                       connection = (HttpConnection)o;
-                   }
-                   else
-                       throw (IOException)o;
-               }
-               catch (InterruptedException e)
-               {
-                   Log.ignore(e);
-               }
-           }
+                try
+                {
+                    Thread.currentThread();
+                    Thread.sleep(200);
+                    timeout -= 200;
+                }
+                catch (InterruptedException e)
+                {
+                    Log.ignore(e);
+                }
+            }
         }
         return connection;
     }
@@ -220,17 +222,17 @@ public class HttpDestination
         {
             synchronized (this)
             {
-                if (connection!=null)
+                if (connection != null)
                 {
                     _connections.remove(connection);
                     connection.close();
-                    connection=null;
+                    connection = null;
                 }
                 if (_idle.size() > 0)
-                    connection = _idle.remove(_idle.size()-1);
+                    connection = _idle.remove(_idle.size() - 1);
             }
 
-            if (connection==null)
+            if (connection == null)
                 return null;
 
             // Check if the connection was idle,
@@ -248,8 +250,8 @@ public class HttpDestination
             {
                 _pendingConnections++;
             }
-            final Connector connector=_client._connector;
-            if (connector!=null)
+            final Connector connector = _client._connector;
+            if (connector != null)
                 connector.startConnection(this);
         }
         catch (Exception e)
@@ -263,6 +265,7 @@ public class HttpDestination
     {
         Throwable connect_failure = null;
 
+        boolean startConnection = false;
         synchronized (this)
         {
             _pendingConnections--;
@@ -280,9 +283,12 @@ public class HttpDestination
                 // Since an existing connection had failed, we need to create a
                 // connection if the  queue is not empty and client is running.
                 if (!_queue.isEmpty() && _client.isStarted())
-                    startNewConnection();
+                    startConnection = true;
             }
         }
+
+        if (startConnection)
+            startNewConnection();
 
         if (connect_failure != null)
         {
@@ -401,12 +407,16 @@ public class HttpDestination
         }
         else
         {
+            boolean startConnection = false;
             synchronized (this)
             {
                 _connections.remove(connection);
                 if (!_queue.isEmpty())
-                    startNewConnection();
+                    startConnection = true;
             }
+
+            if (startConnection)
+                startNewConnection();
         }
     }
 
@@ -421,14 +431,18 @@ public class HttpDestination
             Log.ignore(e);
         }
 
+        boolean startConnection = false;
         synchronized (this)
         {
             _idle.remove(connection);
             _connections.remove(connection);
 
             if (!_queue.isEmpty() && _client.isStarted())
-                startNewConnection();
+                startConnection = true;
         }
+
+        if (startConnection)
+            startNewConnection();
     }
 
     public void send(HttpExchange ex) throws IOException
@@ -509,14 +523,16 @@ public class HttpDestination
         }
         else
         {
+            boolean startConnection = false;
             synchronized (this)
             {
                 _queue.add(ex);
                 if (_connections.size() + _pendingConnections < _maxConnections)
-                {
-                    startNewConnection();
-                }
+                    startConnection = true;
             }
+
+            if (startConnection)
+                startNewConnection();
         }
     }
 
@@ -526,7 +542,7 @@ public class HttpDestination
         {
             // If server closes the connection, put the exchange back
             // to the exchange queue and recycle the connection
-            if(!connection.send(exchange))
+            if (!connection.send(exchange))
             {
                 _queue.addFirst(exchange);
                 returnIdleConnection(connection);
