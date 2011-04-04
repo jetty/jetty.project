@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.component;
 import java.util.EventListener;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
@@ -37,16 +38,16 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Container
 {
-    private Object _listeners;
+    private final CopyOnWriteArrayList<Container.Listener> _listeners=new CopyOnWriteArrayList<Container.Listener>();
     
-    public synchronized void addEventListener(Container.Listener listener)
+    public void addEventListener(Container.Listener listener)
     {
-        _listeners=LazyList.add(_listeners,listener);
+        _listeners.add(listener);
     }
     
-    public synchronized void removeEventListener(Container.Listener listener)
+    public void removeEventListener(Container.Listener listener)
     {
-        _listeners=LazyList.remove(_listeners,listener);
+        _listeners.remove(listener);
     }
     
     /* ------------------------------------------------------------ */
@@ -56,7 +57,7 @@ public class Container
      * @param child The current child. If this is non null and differs from <code>oldChild</code>, then an add event is generated.
      * @param relationship The name of the relationship
      */
-    public synchronized void update(Object parent, Object oldChild, final Object child, String relationship)
+    public void update(Object parent, Object oldChild, final Object child, String relationship)
     {
         if (oldChild!=null && !oldChild.equals(child))
             remove(parent,oldChild,relationship);
@@ -72,7 +73,7 @@ public class Container
      * @param relationship The name of the relationship
      * @param addRemove If true add/remove is called for the new/old children as well as the relationships
      */
-    public synchronized void update(Object parent, Object oldChild, final Object child, String relationship,boolean addRemove)
+    public void update(Object parent, Object oldChild, final Object child, String relationship,boolean addRemove)
     {
         if (oldChild!=null && !oldChild.equals(child))
         {
@@ -97,7 +98,7 @@ public class Container
      * @param children The current array of children. An add event is generated for any child in this array but not in the <code>oldChildren</code> array.
      * @param relationship The name of the relationship
      */
-    public synchronized void update(Object parent, Object[] oldChildren, final Object[] children, String relationship)
+    public void update(Object parent, Object[] oldChildren, final Object[] children, String relationship)
     {
         update(parent,oldChildren,children,relationship,false);
     }
@@ -111,7 +112,7 @@ public class Container
      * @param relationship The name of the relationship
      * @param addRemove If true add/remove is called for the new/old children as well as the relationships
      */
-    public synchronized void update(Object parent, Object[] oldChildren, final Object[] children, String relationship, boolean addRemove)
+    public void update(Object parent, Object[] oldChildren, final Object[] children, String relationship, boolean addRemove)
     {
         Object[] newChildren = null;
         if (children!=null)
@@ -293,6 +294,5 @@ public class Container
         public void removeBean(Object bean);
         public void add(Container.Relationship relationship);
         public void remove(Container.Relationship relationship);
-        
     }
 }
