@@ -4,6 +4,7 @@ jetty-7.4.0-SNAPSHOT
  + 338627 HashSessionManager.getIdleSavePeriod returns milliseconds instead of seconds
  + 338807 Ignore content length in 1xx, 204, 304 responses
  + 338819 Externally control Deployment Manager application lifecycle
+ + 339084 Fixed NPE with servlet 3.0 async listener
  + 339150 Validate client certificate when it is used for authentication
  + 339187 In the OSGi manifest of the jetty-all-server aggregate, mark javax.annotation as optional
  + 339543 Add configuration options for Certificate Revocation checking
