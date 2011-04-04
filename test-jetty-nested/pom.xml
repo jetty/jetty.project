@@ -6,9 +6,9 @@
     <artifactId>jetty-project</artifactId>
     <version>7.4.0-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-nested</artifactId>
-  <name>Jetty :: Nested</name>
-  <packaging>jar</packaging>
+  <artifactId>test-jetty-nested</artifactId>
+  <name>Jetty :: Nested Test</name>
+  <packaging>war</packaging>
   <build>
     <plugins>
     </plugins>
@@ -16,7 +16,12 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <artifactId>jetty-nested</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>

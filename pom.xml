@@ -312,6 +312,7 @@
     <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
     <module>test-jetty-webapp</module>
+    <module>test-jetty-nested</module>
     <module>example-jetty-embedded</module>
     <module>tests</module>
   </modules>

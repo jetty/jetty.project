@@ -26,7 +26,7 @@ public class NestedConnection extends HttpConnection
         super(connector,
               endp,
               connector.getServer(),
-              new NestedParser(request),
+              new NestedParser(),
               new NestedGenerator(connector.getResponseBuffers(),endp,response,nestedIn),
               new NestedRequest());
 
@@ -56,7 +56,7 @@ public class NestedConnection extends HttpConnection
         // System.err.println(fields.toString());
     }
 
-    public void handle2() throws IOException, ServletException
+    void service() throws IOException, ServletException
     {
         setCurrentConnection(this);
         try
@@ -79,6 +79,15 @@ public class NestedConnection extends HttpConnection
     public ServletInputStream getInputStream() throws IOException
     {
         return ((NestedEndPoint)_endp).getServletInputStream();
+    }
+
+    /* (non-Javadoc)
+     * @see org.eclipse.jetty.server.HttpConnection#handle()
+     */
+    @Override
+    public Connection handle() throws IOException
+    {
+        throw new IllegalStateException();
     }
 
 }

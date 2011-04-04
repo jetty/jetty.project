@@ -102,11 +102,7 @@ public class NestedJettyServlet implements Servlet
 
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
     {
-        HttpServletRequest request = (HttpServletRequest)req;
-        HttpServletResponse response = (HttpServletResponse)res;
-        
-        NestedConnection connection=new NestedConnection(_connector,new NestedEndPoint(request,response),request,response,_context.getServerInfo());
-        connection.handle2();
+        _connector.service(req,res);
     }
 
     public String getServletInfo()
