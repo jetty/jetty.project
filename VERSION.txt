@@ -17,20 +17,20 @@ jetty-7.4.0-SNAPSHOT
  + 341006 Move inner enums out into separate file
  + 341105 Stack trace is printed for an ignored exception
  + 341145 WebAppContext MBean attribute serverClasses returns empty value
+ + 341171 Locking in HttpDestination blocks all requests to the same address
  + 341206 Stop order is wrong in HandlerWrapper
  + 341255 org.eclipse.http usage in AJP/SessionId linkage
  + 341386 Remote close not detected by HttpClient
  + 341394 Remove 'Unavailable' JMX attributes of WebAppContext MBean
  + 341439 Blocking HttpClient does not use soTimeout for timeouts
  + 341561 Exception when adding o.e.j.s.DoSFilter as managed attribute
+ + 341692 Fixed deadlock if stopped while starting
  + 341736 Split jetty-nested out of war module
  + 341726 JSONPojoConverter handles characters
- + 341692 Fixed deadlock if stopped while starting
  + JETTY-1245 Pooled Buffers implementation
  + JETTY-1354 Added jetty-nested
  + Ensure generated fragment names are unique
  + Added extra session removal test
- + 341171 Locking in HttpDestination blocks all requests to the same address
 
 jetty-7.3.1.v20110307 7 March 2011
  + 316382 Support a more strict SSL option with certificates

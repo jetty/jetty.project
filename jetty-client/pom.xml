@@ -12,8 +12,7 @@
 
     <properties>
         <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
-        <jetty.test.keystore>1.2-SNAPSHOT</jetty.test.keystore>
-        <jetty.test.keystore.loc>target/test-policy</jetty.test.keystore.loc>
+        <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
     </properties>
 
     <build>
@@ -70,11 +69,11 @@
                       <artifactItem>
                         <groupId>org.eclipse.jetty.toolchain</groupId>
                         <artifactId>jetty-test-policy</artifactId>
-                        <version>${jetty.test.keystore}</version>
+                        <version>${jetty.test.policy}</version>
                         <type>jar</type>
                         <overWrite>true</overWrite>
                         <includes>**/*.keystore,**/*.pem</includes>
-                        <outputDirectory>${jetty.test.keystore.loc}</outputDirectory>
+                        <outputDirectory>${jetty.test.policy.loc}</outputDirectory>
                       </artifactItem>
                     </artifactItems>
                   </configuration>
