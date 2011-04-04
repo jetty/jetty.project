@@ -32,7 +32,7 @@ public class ScannerTest
 
         _scanner = new Scanner();
         _scanner.addScanDir(_directory);
-        _scanner.setScanInterval(1);
+        _scanner.setScanInterval(0);
         _scanner.addListener(new Scanner.DiscreteListener()
         {
             public void fileRemoved(String filename) throws Exception
@@ -59,6 +59,8 @@ public class ScannerTest
         });
         _scanner.start();
 
+        _scanner.scan();
+        
         Assert.assertTrue(_queue.isEmpty());
         Assert.assertTrue(_bulk.isEmpty());
     }
@@ -94,34 +96,41 @@ public class ScannerTest
 
         touch("a0");
 
-        // takes 2s to notice a0 and check that it is stable
-        Event event = _queue.poll(10000,TimeUnit.MILLISECONDS);
+        // takes 2 scans to notice a0 and check that it is stable
+        _scanner.scan();
+        _scanner.scan();
+        Event event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a0",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
 
         // add 3 more files
+        Thread.sleep(1100); // make sure time in seconds changes
         touch("a1");
         touch("a2");
         touch("a3");
 
-        // not stable after 1s so should not be seen yet.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        // not stable after 1 scan so should not be seen yet.
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event==null);
 
         // Keep a2 unstable and remove a3 before it stabalized
+        Thread.sleep(1100); // make sure time in seconds changes
         touch("a2");
         delete("a3");
 
         // only a1 is stable so it should be seen.
-        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a1",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
 
         // Now a2 is stable
-        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
@@ -130,24 +139,29 @@ public class ScannerTest
         // We never see a3 as it was deleted before it stabalised
 
         // touch a1 and a2
+        Thread.sleep(1100); // make sure time in seconds changes
         touch("a1");
         touch("a2");
-        // not stable after 1s so nothing should not be seen yet.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        // not stable after 1scan so nothing should not be seen yet.
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event==null);
 
         // Keep a2 unstable
+        Thread.sleep(1100); // make sure time in seconds changes
         touch("a2");
 
         // only a1 is stable so it should be seen.
-        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a1",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
 
         // Now a2 is stable
-        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
@@ -157,22 +171,25 @@ public class ScannerTest
         // delete a1 and a2
         delete("a1");
         delete("a2");
-        // not stable after 1s so nothing should not be seen yet.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        // not stable after 1scan so nothing should not be seen yet.
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event==null);
 
         // readd a2
         touch("a2");
 
         // only a1 is stable so it should be seen.
-        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a1",event._filename);
         Assert.assertEquals(Notification.REMOVED,event._notification);
         Assert.assertTrue(_queue.isEmpty());
 
         // Now a2 is stable and is a changed file rather than a remove
-        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/a2",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
@@ -186,9 +203,11 @@ public class ScannerTest
         assumeNotWindows();
 
         touch("tsc0");
+        _scanner.scan();
+        _scanner.scan();
 
         // takes 2s to notice tsc0 and check that it is stable.  This syncs us with the scan
-        Event event = _queue.poll(10000,TimeUnit.MILLISECONDS);
+        Event event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/tsc0",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
@@ -203,7 +222,8 @@ public class ScannerTest
         file.setLastModified(now);
 
         // Not stable yet so no notification.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event==null);
 
         // Modify size only
@@ -212,11 +232,13 @@ public class ScannerTest
         file.setLastModified(now);
 
         // Still not stable yet so no notification.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event==null);
 
         // now stable so finally see the ADDED
-        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/st",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
@@ -228,11 +250,13 @@ public class ScannerTest
 
 
         // Still not stable yet so no notification.
-        event = _queue.poll(1100,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event==null);
 
         // now stable so finally see the ADDED
-        event = _queue.poll(1900,TimeUnit.MILLISECONDS);
+        _scanner.scan();
+        event = _queue.poll();
         Assert.assertTrue(event!=null);
         Assert.assertEquals(_directory+"/st",event._filename);
         Assert.assertEquals(Notification.CHANGED,event._notification);
