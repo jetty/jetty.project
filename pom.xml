@@ -22,6 +22,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>1.5.11</slf4j-version>
     <build-support-version>1.0</build-support-version>
+    <jetty.test.helper>1.3</jetty.test.helper>
     <jetty.test.policy>1.2</jetty.test.policy>
   </properties>
   <scm>
@@ -332,7 +333,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>1.3-SNAPSHOT</version>
+        <version>${jetty.test.helper}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
