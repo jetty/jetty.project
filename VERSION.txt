@@ -1,4 +1,4 @@
-jetty-7.4.0-SNAPSHOT
+jetty-7.4.0.RC0
  + 324110 Added test harnesses for merging of QueryStrings.
  + 337685 Update websocket API in preparation for draft -07
  + 338627 HashSessionManager.getIdleSavePeriod returns milliseconds instead of seconds
