@@ -310,6 +310,7 @@
     <module>jetty-policy</module>
     <module>jetty-start</module>
     <module>jetty-nested</module>
+    <module>jetty-overlay-deployer</module>
     <module>test-continuation</module>
     <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
