@@ -9,8 +9,49 @@
   <artifactId>jetty-nested</artifactId>
   <name>Jetty :: Nested</name>
   <packaging>jar</packaging>
+  <description>Local Servlet Connector for jetty.</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.nested</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>${felix.bundle.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Import-Package>javax.servlet;version="2.5",*</Import-Package>
+              </instructions>
+            </configuration>
+           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!--
+        Required for OSGI
+        -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <configuration>
+          <onlyAnalyze>org.eclipse.jetty.nested.*</onlyAnalyze>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
