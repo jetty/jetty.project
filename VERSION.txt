@@ -28,6 +28,7 @@ jetty-7.4.0.RC0
  + 341736 Split jetty-nested out of war module
  + 341726 JSONPojoConverter handles characters
  + 341992 Overlayed context deployer
+ + 341850 Protect QTP dump from bad stacks
  + JETTY-1245 Pooled Buffers implementation
  + JETTY-1354 Added jetty-nested
  + Ensure generated fragment names are unique

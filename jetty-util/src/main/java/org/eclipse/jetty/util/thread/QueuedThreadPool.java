@@ -489,7 +489,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, E
             }
             else
             {
-                dump.add(thread.getId()+" "+thread.getName()+" "+thread.getState()+" @ "+trace[0]+(idle?" IDLE":""));
+                dump.add(thread.getId()+" "+thread.getName()+" "+thread.getState()+" @ "+(trace.length>0?trace[0]:"???")+(idle?" IDLE":""));
             }
         }
 
