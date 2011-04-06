@@ -33,8 +33,9 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
-public class QueuedThreadPool extends AbstractLifeCycle implements ThreadPool, Executor, Dumpable
+public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPool, Executor, Dumpable
 {
     private final AtomicInteger _threadsStarted = new AtomicInteger();
     private final AtomicInteger _threadsIdle = new AtomicInteger();

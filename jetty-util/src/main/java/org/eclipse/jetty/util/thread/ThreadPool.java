@@ -48,4 +48,15 @@ public interface ThreadPool
      * @return True if the pool is low on threads
      */
     public boolean isLowOnThreads();
+    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public interface SizedThreadPool extends ThreadPool
+    {
+        public int getMinThreads();
+        public int getMaxThreads();
+        public void setMinThreads(int threads);
+        public void setMaxThreads(int threads);
+    }
 }

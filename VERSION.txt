@@ -9,6 +9,7 @@ jetty-7.4.0.RC0
  + 339187 In the OSGi manifest of the jetty-all-server aggregate, mark javax.annotation as optional
  + 339543 Add configuration options for Certificate Revocation checking
  + 340265 Improve handling of io shutdown in SSL
+ + 340621 Added SizedThreadPool interface
  + 340636 HashSessionManager lazy loads all sessions
  + 340838 Update ConnectHandler to perform half closes properly
  + 340878 Integrations should be able to load their own keystores
