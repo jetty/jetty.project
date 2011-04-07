@@ -216,6 +216,7 @@ public class ProxyTunnellingTest
                 {
                     latch.countDown();
                 }
+                
             };
             exchange.setMethod(HttpMethods.GET);
             String body = "BODY";

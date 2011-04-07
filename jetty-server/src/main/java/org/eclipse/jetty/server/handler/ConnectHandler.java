@@ -187,7 +187,15 @@ public class ConnectHandler extends HandlerWrapper
         if (HttpMethods.CONNECT.equalsIgnoreCase(request.getMethod()))
         {
             _logger.debug("CONNECT request for {}", request.getRequestURI());
-            handleConnect(baseRequest, request, response, request.getRequestURI());
+            try
+            {
+                handleConnect(baseRequest, request, response, request.getRequestURI());
+            }
+            catch(Exception e)
+            {
+                _logger.warn("ConnectHandler "+baseRequest.getUri()+" "+ e);
+                _logger.debug(e);
+            }
         }
         else
         {
