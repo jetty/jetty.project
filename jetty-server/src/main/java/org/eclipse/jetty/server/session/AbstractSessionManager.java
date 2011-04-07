@@ -566,6 +566,9 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.SessionManager#setSessionPath(java.lang.String)
+     */
     public void setSessionPath(String path)
     {
         _sessionPath=path;
