@@ -288,6 +288,11 @@ public class ResourceCache
         try
         {
             int len=(int)resource.length();
+            if (len<0)
+            {
+                Log.warn("invalid resource: "+String.valueOf(resource)+" "+len);
+                return null;
+            }
             Buffer buffer = new IndirectNIOBuffer(len);
             InputStream is = resource.getInputStream();
             buffer.readFrom(is,len);
@@ -310,6 +315,11 @@ public class ResourceCache
                 return new DirectNIOBuffer(resource.getFile());
 
             int len=(int)resource.length();
+            if (len<0)
+            {
+                Log.warn("invalid resource: "+String.valueOf(resource)+" "+len);
+                return null;
+            }
             Buffer buffer = new DirectNIOBuffer(len);
             InputStream is = resource.getInputStream();
             buffer.readFrom(is,len);
@@ -435,14 +445,14 @@ public class ResourceCache
             Buffer buffer = _indirectBuffer.get();
             if (buffer==null)
             {
-                synchronized (_indirectBuffer)
-                {
-                    if (_indirectBuffer.get()==null)
-                    {
-                        buffer=ResourceCache.this.getIndirectBuffer(_resource);
-                        _indirectBuffer.set(buffer);
-                    }
-                }
+                Buffer buffer2=ResourceCache.this.getIndirectBuffer(_resource);
+                
+                if (buffer2==null)
+                    Log.warn("Could not load "+this);
+                else if (_indirectBuffer.compareAndSet(null,buffer2))
+                    buffer=buffer2;
+                else
+                    buffer=_indirectBuffer.get();
             }
             if (buffer==null)
                 return null;
@@ -456,14 +466,14 @@ public class ResourceCache
             Buffer buffer = _directBuffer.get();
             if (buffer==null)
             {
-                synchronized (_directBuffer)
-                {
-                    if (_directBuffer.get()==null)
-                    {
-                        buffer=ResourceCache.this.getDirectBuffer(_resource);
-                        _directBuffer.set(buffer);
-                    }
-                }
+                Buffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
+
+                if (buffer2==null)
+                    Log.warn("Could not load "+this);
+                else if (_directBuffer.compareAndSet(null,buffer2))
+                    buffer=buffer2;
+                else
+                    buffer=_directBuffer.get();
             }
             if (buffer==null)
                 return null;
@@ -491,7 +501,7 @@ public class ResourceCache
         @Override
         public String toString()
         {
-            return "{"+_resource+","+_contentType+","+_lastModifiedBytes+"}";
+            return String.format("%s %s %d %s %s",_resource,_resource.exists(),_resource.lastModified(),_contentType,_lastModifiedBytes);
         }   
     }
 }
