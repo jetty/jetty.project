@@ -13,9 +13,13 @@ package org.eclipse.jetty.client;
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,8 +31,6 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test contributed by: Michiel Thuys for JETTY-806
@@ -59,7 +61,6 @@ public class ExpireTest
                 }
                 catch (InterruptedException x)
                 {
-                    throw new ServletException(x);
                 }
             }
         });

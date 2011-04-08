@@ -87,7 +87,7 @@ public class Ajp13SocketConnector extends SocketConnector
     }
 
     /* ------------------------------------------------------------ */
-    @Override
+    @Deprecated
     public void setHeaderBufferSize(int headerBufferSize)
     {
         Log.debug(Log.IGNORED);

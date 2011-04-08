@@ -17,17 +17,18 @@ import java.io.IOException;
 
 /**
  * Abstract interface for a connection Parser for use by Jetty.
- * 
- *
  */
 public interface Parser
 {
-
     void reset(boolean returnBuffers);
 
     boolean isComplete();
 
-    long parseAvailable() throws IOException;
+    /**
+     * @return An indication of progress, typically the number of bytes filled plus the events parsed: -1 means EOF read, 0 no progress, >0 progress
+     * @throws IOException
+     */
+    int parseAvailable() throws IOException;
 
     boolean isMoreInBuffer() throws IOException;
 

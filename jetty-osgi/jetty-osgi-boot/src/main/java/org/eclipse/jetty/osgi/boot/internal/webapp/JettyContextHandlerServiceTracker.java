@@ -74,7 +74,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
     	_registry = registry;
     }
 
-    public void stop()
+    public void stop() throws Exception
     {
         if (_scanner != null)
         {

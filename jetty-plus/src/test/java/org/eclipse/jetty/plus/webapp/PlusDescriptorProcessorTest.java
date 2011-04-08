@@ -28,10 +28,10 @@ import javax.naming.InitialContext;
 
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
+import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
-import org.eclipse.jetty.webapp.MetaData.Origin;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

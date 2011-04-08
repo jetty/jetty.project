@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.File;
 import java.io.FileInputStream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;

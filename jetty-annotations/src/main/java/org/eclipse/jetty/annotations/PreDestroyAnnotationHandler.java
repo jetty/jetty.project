@@ -22,6 +22,7 @@ import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectab
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
 import org.eclipse.jetty.webapp.MetaData;
+import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotationHandler
@@ -57,11 +58,11 @@ public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotatio
                     //ServletSpec 3.0 p80 If web.xml declares even one predestroy then all predestroys
                     //in fragments must be ignored. Otherwise, they are additive.                    
                     MetaData metaData = _context.getMetaData();
-                    MetaData.Origin origin = metaData.getOrigin("pre-destroy");
+                    Origin origin = metaData.getOrigin("pre-destroy");
                     if (origin != null && 
-                            (origin == MetaData.Origin.WebXml ||
-                             origin == MetaData.Origin.WebDefaults || 
-                             origin == MetaData.Origin.WebOverride))
+                            (origin == Origin.WebXml ||
+                             origin == Origin.WebDefaults || 
+                             origin == Origin.WebOverride))
                             return;
                     
                     PreDestroyCallback callback = new PreDestroyCallback();

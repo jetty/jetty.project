@@ -92,7 +92,7 @@ public class Ajp13Generator extends AbstractGenerator
     private static final byte[] AJP13_MORE_CONTENT =
     { 'A', 'B', 0, 3, 6, 31, -7 };
 
-    private static String SERVER = "Server: Jetty(6.0.x)";
+    private static String SERVER = "Server: Jetty(7.x.x)";
 
     public static void setServerVersion(String version)
     {
@@ -162,7 +162,28 @@ public class Ajp13Generator extends AbstractGenerator
        _buffer = null; // Buffer for copy of passed _content
        _content = null; // Buffer passed to addContent
 
+    }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public int getContentBufferSize()
+    {
+        try
+        {
+            initContent();
+        }
+        catch(IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        return super.getContentBufferSize()-7;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void increaseContentBufferSize(int contentBufferSize)
+    {
+        // Not supported with AJP
     }
 
     /* ------------------------------------------------------------ */

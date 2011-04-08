@@ -92,7 +92,7 @@ public class Servlet3Continuation implements Continuation
             }
         };
         
-        if (_context==null)
+        if (_context!=null)
             _context.addListener(wrapped);
         else
             _listeners.add(wrapped);

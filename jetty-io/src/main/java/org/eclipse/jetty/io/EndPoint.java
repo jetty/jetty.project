@@ -26,6 +26,15 @@ public interface EndPoint
      * Shutdown any backing output stream associated with the endpoint
      */
     void shutdownOutput() throws IOException;
+
+    boolean isOutputShutdown();
+    
+    /**
+     * Shutdown any backing input stream associated with the endpoint
+     */
+    void shutdownInput() throws IOException;
+    
+    boolean isInputShutdown();
     
     /**
      * Close any backing stream associated with the endpoint

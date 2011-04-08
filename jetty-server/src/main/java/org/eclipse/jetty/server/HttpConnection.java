@@ -88,7 +88,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </p>
  *
  */
-public class HttpConnection /* TODO extends AbstractConnection*/ implements Connection
+public class HttpConnection  extends AbstractConnection implements Connection
 {
     private static final int UNKNOWN = -2;
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
@@ -143,9 +143,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
      */
     public HttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
-        _endp=endpoint;
-        _timeStamp = System.currentTimeMillis();
-   
+        super(endpoint);
         _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         HttpBuffers ab = (HttpBuffers)_connector;
@@ -163,8 +161,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
     protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
-        _endp=endpoint;
-        _timeStamp = System.currentTimeMillis();
+        super(endpoint);
         
         _uri = URIUtil.__CHARSET.equals(StringUtil.__UTF8)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
@@ -396,8 +393,9 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                             handleRequest();
                         else if (!_parser.isComplete())
                         {
-                            long parsed=_parser.parseAvailable();
-                            progress|=parsed>0;
+                            int parsed=_parser.parseAvailable();
+                            if (parsed>0)
+                                progress=true;
                         }
 
                         if (_generator.isCommitted() && !_generator.isComplete())
@@ -409,7 +407,11 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                     {
                         // If we are not ended then parse available
                         if (!_parser.isComplete())
-                            progress|=_parser.parseAvailable()>0;
+                        {
+                            int parsed=_parser.parseAvailable();
+                            if (parsed>0)
+                                progress=true;
+                        }
 
                         // Do we have more generating to do?
                         // Loop here because some writes may take multiple steps and
@@ -454,7 +456,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                 finally
                 {
                     more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-
+                    
                     // Is this request/response round complete?
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
@@ -472,7 +474,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                         else
                         {
                             // No switch, so cleanup and reset
-                            if (!_generator.isPersistent())
+                            if (!_generator.isPersistent() || _endp.isInputShutdown())
                             {
                                 _parser.reset(true);
                                 more_in_buffer=false;
@@ -488,6 +490,11 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                                 reset(true);
                             progress=true;
                         }
+                    }
+                    else if (_parser.isIdle() && _endp.isInputShutdown())
+                    {
+                        more_in_buffer=false;
+                        _endp.close();
                     }
 
                     if (_request.isAsyncStarted())
@@ -621,8 +628,7 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
                     async_exception=e;
                     
                     error=true;
-                    Log.warn(_uri+": "+e);
-                    Log.debug(e);
+                    Log.warn(String.valueOf(_uri),e);
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
                 }
@@ -1279,16 +1285,4 @@ public class HttpConnection /* TODO extends AbstractConnection*/ implements Conn
     }
 
     
-
-    // TODO remove and use AbstractConnection for 7.4
-    private final long _timeStamp;
-    protected final EndPoint _endp;
-    public long getTimeStamp()
-    {
-        return _timeStamp;
-    }
-    public EndPoint getEndPoint()
-    {
-        return _endp;
-    }
 }

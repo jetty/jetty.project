@@ -41,8 +41,7 @@ public class WebSocketMessageW75Test
         _server.addConnector(_connector);
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
-            @Override
-            protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 return _serverWebSocket = new TestWebSocket();
             }
@@ -147,7 +146,7 @@ public class WebSocketMessageW75Test
         for (int i = 0; i < 64 * 1024 / text.length(); ++i)
             message.append(text);
         byte[] data = message.toString().getBytes("UTF-8");
-        _serverWebSocket.outbound.sendMessage(WebSocket.LENGTH_FRAME, data,0,data.length);
+        _serverWebSocket.outbound.sendMessage(data,0,data.length);
 
         // Length of the message is 65536, so the length will be encoded as 0x84 0x80 0x00
         int frame = input.read();
@@ -170,9 +169,9 @@ public class WebSocketMessageW75Test
     private static class TestWebSocket implements WebSocket
     {
         private final CountDownLatch latch = new CountDownLatch(1);
-        private volatile Outbound outbound;
+        private volatile Connection outbound;
 
-        public void onConnect(Outbound outbound)
+        public void onConnect(Connection outbound)
         {
             this.outbound = outbound;
             latch.countDown();
@@ -183,20 +182,9 @@ public class WebSocketMessageW75Test
             return latch.await(time, TimeUnit.MILLISECONDS);
         }
 
-        public void onMessage(byte frame, String data)
+        public void onDisconnect(int code,String data)
         {
         }
 
-        public void onMessage(byte frame, byte[] data, int offset, int length)
-        {
-        }
-
-        public void onDisconnect()
-        {
-        }
-
-        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
-        {
-        }
     }
 }

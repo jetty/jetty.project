@@ -25,17 +25,16 @@ import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
@@ -97,48 +96,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      */
     public AbstractConnector()
     {
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Buffer newRequestBuffer(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Buffer newRequestHeader(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Buffer newResponseBuffer(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public Buffer newResponseHeader(int size)
-    {
-        return new ByteArrayBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected boolean isRequestHeader(Buffer buffer)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected boolean isResponseHeader(Buffer buffer)
-    {
-        return true;
     }
 
     /* ------------------------------------------------------------ */
@@ -790,7 +747,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         if (dot > 0)
             name = name.substring(dot + 1);
 
-        return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort());
+        return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort()) + " "+AbstractLifeCycle.getState(this);
     }
 
     

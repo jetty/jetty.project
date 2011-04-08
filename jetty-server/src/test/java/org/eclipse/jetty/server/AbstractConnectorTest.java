@@ -121,16 +121,15 @@ public class AbstractConnectorTest
     @Test
     public void testSingleRequest() throws Exception
     {
-        int connections = 1;
-        doInit(connections);
+        doInit(1);
 
         sendRequest(1, 1);
 
-        doClose(connections);
+        doClose(1);
 
-        assertEquals(connections, _connector.getConnections());
+        assertEquals(1, _connector.getConnections());
         assertEquals(0, _connector.getConnectionsOpen());
-        assertEquals(connections, _connector.getConnectionsOpenMax());
+        assertEquals(1, _connector.getConnectionsOpenMax());
         assertTrue(_connector.getConnectionsOpen() <= _connector.getConnectionsOpenMax());
 
         assertTrue(_connector.getConnectionsDurationMean() > 0);
@@ -216,12 +215,6 @@ public class AbstractConnectorTest
     {
         for (int idx=0; idx < count; idx++)
         {
-            if (_out[idx] != null)
-                _out[idx].close();
-
-            if (_in[idx] != null)
-                _in[idx].close();
-
             if (_socket[idx] != null)
                 _socket[idx].close();
         }

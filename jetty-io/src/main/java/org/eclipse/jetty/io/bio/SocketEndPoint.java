@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  *
@@ -67,7 +68,21 @@ public class SocketEndPoint extends StreamEndPoint
     @Override
     public boolean isOpen()
     {
-        return super.isOpen() && _socket!=null && !_socket.isClosed() && !_socket.isInputShutdown() && !_socket.isOutputShutdown();
+        return super.isOpen() && _socket!=null && !_socket.isClosed();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isInputShutdown()
+    {
+        return !super.isOpen() || _socket!=null && _socket.isInputShutdown();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isOutputShutdown()
+    {
+        return !super.isOpen() || _socket!=null && _socket.isOutputShutdown();
     }
 
     /* ------------------------------------------------------------ */
@@ -79,6 +94,18 @@ public class SocketEndPoint extends StreamEndPoint
     {    
         if (!_socket.isClosed() && !_socket.isOutputShutdown())
             _socket.shutdownOutput();
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.io.bio.StreamEndPoint#shutdownOutput()
+     */
+    @Override
+    public void shutdownInput() throws IOException
+    {    
+        if (!_socket.isClosed() && !_socket.isInputShutdown())
+            _socket.shutdownInput();
     }
     
     /* ------------------------------------------------------------ */
@@ -190,6 +217,22 @@ public class SocketEndPoint extends StreamEndPoint
             _socket.setSoTimeout(timeMs>0?timeMs:0);
         super.setMaxIdleTime(timeMs);
     }
-    
+
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void idleExpired() throws IOException
+    {
+        try
+        {
+            if (!isInputShutdown())
+                shutdownInput();
+        }
+        catch(IOException e)
+        {
+            Log.ignore(e);
+            _socket.close();
+        }
+    }
     
 }

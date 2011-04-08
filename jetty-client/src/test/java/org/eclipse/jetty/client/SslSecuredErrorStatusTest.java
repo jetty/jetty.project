@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.client.ContentExchangeTest.TestHandler;
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.security.Constraint;

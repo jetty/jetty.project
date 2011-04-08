@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.io;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 import org.eclipse.jetty.util.IO;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  *

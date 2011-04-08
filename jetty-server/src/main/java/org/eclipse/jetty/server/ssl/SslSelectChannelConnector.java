@@ -25,14 +25,12 @@ import javax.net.ssl.SSLSocket;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
-import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.Buffers.Type;
+import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ThreadLocalBuffers;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
@@ -120,7 +118,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
      * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
      * does not have CVE-2009-3555 fixed, then re-negotiation should
-     * not be allowed.
+     * not be allowed.  CVE-2009-3555 was fixed in Sun java 1.6 with a ban 
+     * of renegotiate in u19 and with RFC5746 in u22.
      * @param allowRenegotiate true if re-negotiation is allowed (default false)
      * @deprecated
      */
@@ -610,31 +609,11 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         
         SSLSession sslSession = sslEngine.getSession();
 
-        ThreadLocalBuffers buffers = new ThreadLocalBuffers()
-        {
-            @Override
-            protected Buffer newBuffer(int size)
-            {
-                if (getUseDirectBuffers())
-                    return new DirectNIOBuffer(size);
-                return new IndirectNIOBuffer(size);
-            }
-            @Override
-            protected Buffer newHeader(int size)
-            {
-                if (getUseDirectBuffers())
-                    return new DirectNIOBuffer(size);
-                return new IndirectNIOBuffer(size);
-            }
-            @Override
-            protected boolean isHeader(Buffer buffer)
-            {
-                return true;
-            }
-        };
-        buffers.setBufferSize(sslSession.getApplicationBufferSize());
-        buffers.setHeaderSize(sslSession.getApplicationBufferSize());
-        _sslBuffers=buffers;
+        _sslBuffers = BuffersFactory.newBuffers(
+                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,sslSession.getApplicationBufferSize(),
+                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,sslSession.getApplicationBufferSize(),
+                getUseDirectBuffers()?Type.DIRECT:Type.INDIRECT,getMaxBuffers()
+        );
 
         if (getRequestHeaderSize()<sslSession.getApplicationBufferSize())
             setRequestHeaderSize(sslSession.getApplicationBufferSize());
@@ -652,7 +631,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     protected void doStop() throws Exception
     {
         _sslContextFactory.stop(); 
-
+        _sslBuffers=null;
         super.doStop();
     }
 

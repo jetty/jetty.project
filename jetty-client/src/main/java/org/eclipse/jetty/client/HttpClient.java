@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.client.security.Authentication;
@@ -30,10 +31,7 @@ import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -97,14 +95,38 @@ public class HttpClient extends HttpBuffers implements Attributes
 
     private AttributesMap _attributes=new AttributesMap();
 
+
+    /* ------------------------------------------------------------------------------- */
+    private void setBufferTypes()
+    {
+        if (_connectorType==CONNECTOR_SOCKET)
+        {
+            setRequestBufferType(Type.BYTE_ARRAY);
+            setRequestHeaderType(Type.BYTE_ARRAY);
+            setResponseBufferType(Type.BYTE_ARRAY);
+            setResponseHeaderType(Type.BYTE_ARRAY);
+        }
+        else
+        {
+            setRequestBufferType(Type.DIRECT);
+            setRequestHeaderType(_useDirectBuffers?Type.DIRECT:Type.INDIRECT);
+            setResponseBufferType(Type.DIRECT);
+            setResponseHeaderType(_useDirectBuffers?Type.DIRECT:Type.INDIRECT);
+        }
+    }
+
+    /* ------------------------------------------------------------------------------- */
     public HttpClient()
     {
         this(new SslContextFactory());
+        setBufferTypes();
     }
 
+    /* ------------------------------------------------------------------------------- */
     public HttpClient(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
+        setBufferTypes();
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -341,6 +363,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     public void setUseDirectBuffers(boolean direct)
     {
         _useDirectBuffers = direct;
+        setBufferTypes();
     }
 
     /* ------------------------------------------------------------ */
@@ -356,74 +379,8 @@ public class HttpClient extends HttpBuffers implements Attributes
     public void setConnectorType(int connectorType)
     {
         this._connectorType = connectorType;
+        setBufferTypes();
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.HttpBuffers#newRequestBuffer(int)
-     */
-    @Override
-    protected Buffer newRequestBuffer(int size)
-    {
-        if (_connectorType == CONNECTOR_SOCKET)
-            return new ByteArrayBuffer(size);
-        return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.HttpBuffers#newRequestHeader(int)
-     */
-    @Override
-    protected Buffer newRequestHeader(int size)
-    {
-        if (_connectorType == CONNECTOR_SOCKET)
-            return new ByteArrayBuffer(size);
-        return new IndirectNIOBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.HttpBuffers#newResponseBuffer(int)
-     */
-    @Override
-    protected Buffer newResponseBuffer(int size)
-    {
-        if (_connectorType == CONNECTOR_SOCKET)
-            return new ByteArrayBuffer(size);
-        return _useDirectBuffers?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.HttpBuffers#newResponseHeader(int)
-     */
-    @Override
-    protected Buffer newResponseHeader(int size)
-    {
-        if (_connectorType == CONNECTOR_SOCKET)
-            return new ByteArrayBuffer(size);
-        return new IndirectNIOBuffer(size);
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    protected boolean isRequestHeader(Buffer buffer)
-    {
-        if (_connectorType == CONNECTOR_SOCKET)
-            return buffer instanceof ByteArrayBuffer;
-        return buffer instanceof IndirectNIOBuffer;
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    protected boolean isResponseHeader(Buffer buffer)
-    {
-        if (_connectorType == CONNECTOR_SOCKET)
-            return buffer instanceof ByteArrayBuffer;
-        return buffer instanceof IndirectNIOBuffer;
-    }
-
 
     /* ------------------------------------------------------------ */
     public int getMaxConnectionsPerAddress()
@@ -441,8 +398,9 @@ public class HttpClient extends HttpBuffers implements Attributes
     @Override
     protected void doStart() throws Exception
     {
+        setBufferTypes();
         super.doStart();
-
+        
         _timeoutQ.setDuration(_timeout);
         _timeoutQ.setNow();
         _idleTimeoutQ.setDuration(_idleTimeout);

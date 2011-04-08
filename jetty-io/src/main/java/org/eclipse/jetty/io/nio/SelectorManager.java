@@ -15,13 +15,13 @@ package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -379,6 +379,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          */
         public void doSelect() throws IOException
         {
+            Log.debug("doSelect "+SelectorManager.this.isRunning());
             try
             {
                 _selecting=Thread.currentThread();
@@ -605,6 +606,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                     });
                 }
+            }
+            catch (ClosedSelectorException e)
+            {
+                if (isRunning())
+                    Log.warn(e);
+                else
+                    Log.ignore(e);
             }
             catch (CancelledKeyException e)
             {

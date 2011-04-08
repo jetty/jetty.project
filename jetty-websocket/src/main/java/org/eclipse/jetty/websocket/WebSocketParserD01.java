@@ -52,7 +52,6 @@ public class WebSocketParserD01 implements WebSocketParser
     private final FrameHandler _handler;
     private State _state=State.START;
     private Buffer _buffer;
-    private boolean _more;
     private byte _flags;
     private byte _opcode;
     private int _count;
@@ -121,7 +120,7 @@ public class WebSocketParserD01 implements WebSocketParser
                 {
                     int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
                     if (filled<=0)
-                        return total_filled;
+                        return total_filled>0?total_filled:-1;
                     total_filled+=filled;
                     available=_buffer.length();
                 }
@@ -142,7 +141,6 @@ public class WebSocketParserD01 implements WebSocketParser
                         b=_buffer.get();
                         _opcode=(byte)(b&0xf);
                         _flags=(byte)(b>>4);
-                        _more=(_flags&8)!=0;
                         _state=State.LENGTH_7;
                         continue;
 
@@ -195,7 +193,7 @@ public class WebSocketParserD01 implements WebSocketParser
 
             if (_state==State.DATA && available>=_count)
             {
-                _handler.onFrame(_more,_flags, _opcode, _buffer.get(_count));
+                _handler.onFrame(_flags, _opcode, _buffer.get(_count));
                 _count=0;
                 _state=State.START;
 

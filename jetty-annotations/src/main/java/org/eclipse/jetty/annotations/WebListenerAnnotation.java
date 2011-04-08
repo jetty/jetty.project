@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.MetaData.Origin;
+import org.eclipse.jetty.webapp.Origin;
 
 /**
  * WebListenerAnnotation

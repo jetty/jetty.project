@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 
@@ -33,7 +35,8 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private final Object _lock = new Object();
     private final int __FAILED = -1, __STOPPED = 0, __STARTING = 1, __STARTED = 2, __STOPPING = 3;
     private volatile int _state = __STOPPED;
-    protected LifeCycle.Listener[] _listeners;
+    
+    protected final CopyOnWriteArrayList<LifeCycle.Listener> _listeners=new CopyOnWriteArrayList<LifeCycle.Listener>();
 
     protected void doStart() throws Exception
     {
@@ -125,12 +128,12 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     public void addLifeCycleListener(LifeCycle.Listener listener)
     {
-        _listeners = (LifeCycle.Listener[])LazyList.addToArray(_listeners,listener,LifeCycle.Listener.class);
+        _listeners.add(listener);
     }
 
     public void removeLifeCycleListener(LifeCycle.Listener listener)
     {
-        _listeners = (LifeCycle.Listener[])LazyList.removeFromArray(_listeners,listener);
+        _listeners.remove(listener);
     }
     
     public String getState()
@@ -145,70 +148,55 @@ public abstract class AbstractLifeCycle implements LifeCycle
         }
         return null;
     }
+    
+    public static String getState(LifeCycle lc)
+    {
+        if (lc.isStarting()) return STARTING;
+        if (lc.isStarted()) return STARTED;
+        if (lc.isStopping()) return STOPPING;
+        if (lc.isStopped()) return STOPPED;
+        return FAILED;
+    }
 
     private void setStarted()
     {
-        Log.debug(STARTED+" {}",this);
         _state = __STARTED;
-        if (_listeners != null)
-        {
-            for (int i = 0; i < _listeners.length; i++)
-            {
-                _listeners[i].lifeCycleStarted(this);
-            }
-        }
+        Log.debug(STARTED+" {}",this);
+        for (Listener listener : _listeners)
+            listener.lifeCycleStarted(this);
     }
 
     private void setStarting()
     {
-        Log.debug("Starting {}",this);
+        Log.debug("starting {}",this);
         _state = __STARTING;
-        if (_listeners != null)
-        {
-            for (int i = 0; i < _listeners.length; i++)
-            {
-                _listeners[i].lifeCycleStarting(this);
-            }
-        }
+        for (Listener listener : _listeners)
+            listener.lifeCycleStarting(this);
     }
 
     private void setStopping()
     {
+        Log.debug("stopping {}",this);
         _state = __STOPPING;
-        if (_listeners != null)
-        {
-            for (int i = 0; i < _listeners.length; i++)
-            {
-                _listeners[i].lifeCycleStopping(this);
-            }
-        }
+        for (Listener listener : _listeners)
+            listener.lifeCycleStopping(this);
     }
 
     private void setStopped()
     {
-        Log.debug(STOPPED+" {}",this);
         _state = __STOPPED;
-        if (_listeners != null)
-        {
-            for (int i = 0; i < _listeners.length; i++)
-            {
-                _listeners[i].lifeCycleStopped(this);
-            }
-        }
+        Log.debug(STOPPED+" {}",this);
+        for (Listener listener : _listeners)
+            listener.lifeCycleStopped(this);
     }
 
     private void setFailed(Throwable th)
     {
+        _state = __FAILED;
         Log.warn(FAILED+" " + this+": "+th);
         Log.debug(th);
-        _state = __FAILED;
-        if (_listeners != null)
-        {
-            for (int i = 0; i < _listeners.length; i++)
-            {
-                _listeners[i].lifeCycleFailure(this,th);
-            }
-        }
+        for (Listener listener : _listeners)
+            listener.lifeCycleFailure(this,th);
     }
 
     public static abstract class AbstractLifeCycleListener implements LifeCycle.Listener

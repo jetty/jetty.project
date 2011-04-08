@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.UnsupportedEncodingException;
 
 import org.eclipse.jetty.io.Buffer;
@@ -21,9 +24,6 @@ import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.io.bio.StringEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -453,6 +453,7 @@ public class HttpParserTest
         assertTrue(headerCompleted);
         assertTrue(messageCompleted);
     }
+    
     @Test
     public void testResponseParse4() throws Exception
     {
@@ -476,6 +477,29 @@ public class HttpParserTest
         assertTrue(headerCompleted);
         assertTrue(messageCompleted);
     }
+    
+    @Test
+    public void testResponse304WithContentLength() throws Exception
+    {
+        StringEndPoint io=new StringEndPoint();
+        io.setInput(
+        "HTTP/1.1 304 found\015\012"
+        + "Content-Length: 10\015\012"
+        + "\015\012");
+        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser(buffers,io, handler);
+        parser.parse();
+        assertEquals("HTTP/1.1", f0);
+        assertEquals("304", f1);
+        assertEquals("found", f2);
+        assertEquals(null,_content);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
+    }
+    
     private String _content;
     private String f0;
     private String f1;

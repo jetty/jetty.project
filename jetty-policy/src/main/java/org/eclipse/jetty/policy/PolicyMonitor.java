@@ -40,7 +40,7 @@ public abstract class PolicyMonitor extends AbstractLifeCycle
     /**
      * scan interval in seconds for policy file changes
      */
-    private int _scanInterval = 10;
+    private int _scanInterval = 1;
             
     /**
      * specialized listener enabling waitForScan() functionality
@@ -72,6 +72,7 @@ public abstract class PolicyMonitor extends AbstractLifeCycle
      */
     public PolicyMonitor( String directory )
     {
+        this();
         _policyDirectory = directory;
     }
     
@@ -144,7 +145,8 @@ public abstract class PolicyMonitor extends AbstractLifeCycle
      */
     public synchronized void waitForScan() throws Exception
     {
-        CountDownLatch latch = new CountDownLatch(1);
+        // wait for 2 scans for stable files
+        CountDownLatch latch = new CountDownLatch(2);
         
        _scanningListener.setScanningLatch(latch);
        _scanner.scan();

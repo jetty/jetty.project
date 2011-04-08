@@ -209,7 +209,6 @@ public class XmlConfiguration
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
                     Log.ignore(e);
                 }
                 if (_processor!=null)

@@ -163,7 +163,7 @@ public class ClasspathPattern
     {
         String[] patterns = null;
         
-        if (_patterns!=null)
+        if (_patterns!=null && _patterns.size() > 0)
         {
             patterns = _patterns.toArray(new String[_patterns.size()]);
         }

@@ -22,12 +22,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 
-public abstract class WebSocketHandler extends HandlerWrapper
+public abstract class WebSocketHandler extends HandlerWrapper implements WebSocketFactory.Acceptor
 {
-    private WebSocketFactory _websocket;
-    private int _bufferSize=8192;
+    private WebSocketFactory _webSocketFactory;
+    private int _bufferSize=64*1024;
     private int _maxIdleTime=-1;
-    
     
     /* ------------------------------------------------------------ */
     /** Get the bufferSize.
@@ -53,7 +52,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
      */
     public int getMaxIdleTime()
     {
-        return (int)(_websocket==null?_maxIdleTime:_websocket.getMaxIdleTime());
+        return (int)(_webSocketFactory==null?_maxIdleTime:_webSocketFactory.getMaxIdleTime());
     }
 
     /* ------------------------------------------------------------ */
@@ -63,8 +62,8 @@ public abstract class WebSocketHandler extends HandlerWrapper
     public void setMaxIdleTime(int maxIdleTime)
     {
         _maxIdleTime = maxIdleTime;
-        if (_websocket!=null)
-            _websocket.setMaxIdleTime(maxIdleTime);
+        if (_webSocketFactory!=null)
+            _webSocketFactory.setMaxIdleTime(maxIdleTime);
     }
 
     /* ------------------------------------------------------------ */
@@ -74,9 +73,9 @@ public abstract class WebSocketHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
-        _websocket=new WebSocketFactory(_bufferSize);
+        _webSocketFactory=new WebSocketFactory(this,_bufferSize);
         if (_maxIdleTime>=0)
-            _websocket.setMaxIdleTime(_maxIdleTime);
+            _webSocketFactory.setMaxIdleTime(_maxIdleTime);
         super.doStart();
     }
 
@@ -88,44 +87,24 @@ public abstract class WebSocketHandler extends HandlerWrapper
     protected void doStop() throws Exception
     {
         super.doStop();
-        _websocket=null;
+        _webSocketFactory=null;
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
-        {
-            String subprotocol=request.getHeader("Sec-WebSocket-Protocol");
-            if (subprotocol==null) // TODO remove once draft period is over
-                subprotocol=request.getHeader("WebSocket-Protocol");
-            WebSocket websocket=doWebSocketConnect(request,subprotocol);
-
-            String host=request.getHeader("Host");
-            String origin=request.getHeader("Origin");
-            origin=checkOrigin(request,host,origin);
-
-            if (websocket!=null)
-                _websocket.upgrade(request,response,websocket,origin,subprotocol);
-            else
-                response.sendError(503);
-        }
-        else
-        {
-            super.handle(target,baseRequest,request,response);
-        }
+        if (_webSocketFactory.acceptWebSocket(request,response) || response.isCommitted())
+            return;
+        super.handle(target,baseRequest,request,response);
     }
     
     /* ------------------------------------------------------------ */
-    protected String checkOrigin(HttpServletRequest request, String host, String origin)
+    public String checkOrigin(HttpServletRequest request, String host, String origin)
     {
         if (origin==null)
             origin=host;
         return origin;
     }
-    /* ------------------------------------------------------------ */
-
-    abstract protected WebSocket doWebSocketConnect(HttpServletRequest request,String protocol);
     
 }

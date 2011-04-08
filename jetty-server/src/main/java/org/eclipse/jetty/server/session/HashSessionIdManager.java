@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Random;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,8 +21,6 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.session.AbstractSessionManager.Session;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /**
@@ -54,7 +50,8 @@ public class HashSessionIdManager extends AbstractSessionIdManager
      */
     public String getNodeId(String clusterId,HttpServletRequest request) 
     {
-        String worker=request==null?null:(String)request.getAttribute("org.eclipse.http.ajp.JVMRoute");
+        // used in Ajp13Parser
+        String worker=request==null?null:(String)request.getAttribute("org.eclipse.jetty.ajp.JVMRoute");
         if (worker!=null) 
             return clusterId+'.'+worker; 
         

@@ -23,7 +23,7 @@ import javax.security.auth.login.LoginContext;
 /* ---------------------------------------------------- */
 /** JAASUserPrincipal
  * <p>Implements the JAAS version of the 
- *  org.eclipse.http.UserPrincipal interface.
+ *  org.eclipse.jetty.http.UserPrincipal interface.
  *
  * @version $Id: JAASUserPrincipal.java 4780 2009-03-17 15:36:08Z jesse $
  * 

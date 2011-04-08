@@ -19,6 +19,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -27,12 +28,11 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.Buffers.Type;
+import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ThreadLocalBuffers;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
@@ -47,6 +47,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
+    private int _maxBuffers=1024;
 
     /**
      * @param httpClient
@@ -68,40 +69,10 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 
         SSLEngine sslEngine=_selectorManager.newSslEngine();
         final SSLSession ssl_session=sslEngine.getSession();
-        ThreadLocalBuffers ssl_buffers = new ThreadLocalBuffers()
-        {
-            {
-                super.setBufferSize(ssl_session.getApplicationBufferSize());
-                super.setHeaderSize(ssl_session.getApplicationBufferSize());
-            }
-
-            @Override
-            protected Buffer newBuffer(int size)
-            {
-                return direct?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
-            }
-            @Override
-            protected Buffer newHeader(int size)
-            {
-                return direct?new DirectNIOBuffer(size):new IndirectNIOBuffer(size);
-            }
-            @Override
-            protected boolean isHeader(Buffer buffer)
-            {
-                return true;
-            }
-
-            @Override
-            public void setBufferSize(int size)
-            {
-            }
-
-            @Override
-            public void setHeaderSize(int size)
-            {
-            }
-        };
-        _sslBuffers=ssl_buffers;
+        _sslBuffers = BuffersFactory.newBuffers(
+                direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
+                direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
+                direct?Type.DIRECT:Type.INDIRECT,_maxBuffers); 
 
         _httpClient._threadPool.dispatch(this);
     }

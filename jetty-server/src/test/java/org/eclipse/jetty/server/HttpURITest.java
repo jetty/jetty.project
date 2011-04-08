@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.junit.Test;
 
 public class HttpURITest
 {

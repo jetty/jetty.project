@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -383,6 +382,12 @@ public class TypeUtil
         }
     }
 
+    /* ------------------------------------------------------------ */
+    public static String toHexString(byte b)
+    {
+        return toHexString(new byte[]{b}, 0, 1);
+    }
+    
     /* ------------------------------------------------------------ */
     public static String toHexString(byte[] b)
     {

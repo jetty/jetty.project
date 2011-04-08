@@ -17,6 +17,7 @@ package org.eclipse.jetty.io.bio;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketTimeoutException;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
@@ -77,6 +78,20 @@ public class StreamEndPoint implements EndPoint
     {    
     }
     
+    public boolean isInputShutdown()
+    {
+        return !isOpen();
+    }
+
+    public void shutdownInput() throws IOException
+    {    
+    }
+    
+    public boolean isOutputShutdown()
+    {
+        return !isOpen();
+    }
+    
     /*
      * @see org.eclipse.io.BufferIO#close()
      */
@@ -90,6 +105,11 @@ public class StreamEndPoint implements EndPoint
         _out=null;
     }
 
+    protected void idleExpired() throws IOException
+    {
+        _in.close();
+    }
+    
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#fill(org.eclipse.io.Buffer)
      */
@@ -107,7 +127,15 @@ public class StreamEndPoint implements EndPoint
     	    throw new IOException("FULL");
     	}
 
-        return buffer.readFrom(_in,space);
+    	try
+    	{
+    	    return buffer.readFrom(_in,space);
+    	}
+    	catch(SocketTimeoutException e)
+    	{
+    	    idleExpired();
+    	    return -1;
+    	}
     }
 
     /* (non-Javadoc)

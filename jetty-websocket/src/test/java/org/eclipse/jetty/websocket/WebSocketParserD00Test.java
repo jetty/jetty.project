@@ -17,7 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
+ * @version $Revision$ $Date$
  */
 public class WebSocketParserD00Test
 {
@@ -141,9 +141,13 @@ public class WebSocketParserD00Test
     {
         public List<String> _data = new ArrayList<String>();
 
-        public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+        public void onFrame(byte flags, byte opcode, Buffer buffer)
         {
             _data.add(buffer.toString(StringUtil.__UTF8));
+        }
+
+        public void close(int code,String message)
+        {
         }
     }
 }

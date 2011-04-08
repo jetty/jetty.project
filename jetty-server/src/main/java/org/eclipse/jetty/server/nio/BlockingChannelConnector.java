@@ -19,9 +19,7 @@ import java.net.Socket;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.Buffer;

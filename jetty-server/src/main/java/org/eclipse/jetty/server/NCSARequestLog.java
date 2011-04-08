@@ -17,9 +17,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.Locale;
 import java.util.TimeZone;
+
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeaders;
@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 

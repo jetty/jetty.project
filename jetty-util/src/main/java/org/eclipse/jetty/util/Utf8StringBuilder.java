@@ -48,6 +48,25 @@ public class Utf8StringBuilder
         for (int i=offset; i<end;i++)
             append(b[i]);
     }
+
+    /**
+     * @param b
+     * @param offset
+     * @param length
+     * @param maxChars The maximum characters allowed in the builder
+     * @return true if all bytes appended
+     */
+    public boolean append(byte[] b,int offset, int length, int maxChars)
+    {
+        int end=offset+length;
+        for (int i=offset; i<end;i++)
+        {
+            if (length()>maxChars)
+                return false;
+            append(b[i]);
+        }
+        return true;
+    }
     
     public void append(byte b)
     {

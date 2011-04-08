@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.io;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
@@ -21,9 +24,6 @@ import org.eclipse.jetty.io.nio.RandomAccessFileBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  *

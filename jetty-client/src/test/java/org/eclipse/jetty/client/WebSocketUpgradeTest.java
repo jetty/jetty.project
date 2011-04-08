@@ -18,9 +18,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.TestCase;
+
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
@@ -29,6 +31,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocketBuffers;
 import org.eclipse.jetty.websocket.WebSocketConnectionD00;
 import org.eclipse.jetty.websocket.WebSocketHandler;
 
@@ -70,33 +73,25 @@ public class WebSocketUpgradeTest extends TestCase
 
     public void testGetWithContentExchange() throws Exception
     {
-        final WebSocket clientWS = new WebSocket()
+        final WebSocket clientWS = new WebSocket.OnTextMessage()
         {
-            Outbound _outbound;
-
-            public void onConnect(Outbound outbound)
+            Connection _connection;
+            
+            public void onDisconnect(int closeCode, String message)
             {
-                _outbound=outbound;
+            }
+            
+            public void onConnect(Connection connection)
+            {
+                _connection=connection;
                 _results.add("clientWS.onConnect");
-                _results.add(_outbound);
+                _results.add(_connection);
             }
-
-            public void onDisconnect()
-            {
-            }
-
-            public void onMessage(byte frame, String data)
+            
+            public void onMessage(String data)
             {
                 _results.add("clientWS.onMessage");
                 _results.add(data);
-            }
-
-            public void onMessage(byte frame, byte[] data, int offset, int length)
-            {
-            }
-
-            public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
-            {
             }
         };
 
@@ -123,7 +118,7 @@ public class WebSocketUpgradeTest extends TestCase
             protected Connection onSwitchProtocol(EndPoint endp) throws IOException
             {
                 waitFor(3);
-                WebSocketConnectionD00 connection = new WebSocketConnectionD00(clientWS,endp,0);
+                WebSocketConnectionD00 connection = new WebSocketConnectionD00(clientWS,endp,new WebSocketBuffers(4096),System.currentTimeMillis(),1000,"",0);
 
                 _results.add("onSwitchProtocol");
                 _results.add(connection);
@@ -196,8 +191,7 @@ public class WebSocketUpgradeTest extends TestCase
         newServer();
         _handler= new WebSocketHandler()
         {
-            @Override
-            protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 _websocket = new TestWebSocket();
                 return _websocket;
@@ -217,29 +211,25 @@ public class WebSocketUpgradeTest extends TestCase
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    class TestWebSocket implements WebSocket
+    class TestWebSocket implements WebSocket.OnTextMessage
     {
-        Outbound _outbound;
+        Connection _connection;
 
-        public void onConnect(Outbound outbound)
+        public void onConnect(Connection connection)
         {
-            _outbound=outbound;
+            _connection=connection;
             _webSockets.add(this);
             _results.add("serverWS.onConnect");
             _results.add(this);
         }
 
-        public void onMessage(byte frame, byte[] data,int offset, int length)
-        {
-        }
-
-        public void onMessage(final byte frame, final String data)
+        public void onMessage(final String data)
         {
             _results.add("serverWS.onMessage");
             _results.add(data);
         }
 
-        public void onDisconnect()
+        public void onDisconnect(int code, String message)
         {
             _results.add("onDisconnect");
             _webSockets.remove(this);
@@ -247,11 +237,7 @@ public class WebSocketUpgradeTest extends TestCase
 
         public void sendMessage(String msg) throws IOException
         {
-            _outbound.sendMessage(msg);
-        }
-
-        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
-        {
+            _connection.sendMessage(msg);
         }
     }
 }

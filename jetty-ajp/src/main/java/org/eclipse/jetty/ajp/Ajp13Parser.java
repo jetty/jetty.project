@@ -145,10 +145,10 @@ public class Ajp13Parser implements Parser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public long parseAvailable() throws IOException
+    public int parseAvailable() throws IOException
     {
-        long len = parseNext();
-        long total = len > 0 ? len : 0;
+        int len = parseNext();
+        int total = len > 0 ? len : 0;
 
         // continue parsing
         while (!isComplete() && _buffer != null && _buffer.length() > 0)
@@ -228,9 +228,9 @@ public class Ajp13Parser implements Parser
     
     volatile int _seq=0;
     /* ------------------------------------------------------------------------------- */
-    public long parseNext() throws IOException
+    public int parseNext() throws IOException
     {
-        long total_filled = -1;
+        int total_filled = 0;
 
         if (_buffer == null)
         {
@@ -250,7 +250,7 @@ public class Ajp13Parser implements Parser
         {
             _state = STATE_END;
             _handler.messageComplete(_contentPosition);
-            return total_filled;
+            return 1;
         }
         
         if (_state < 0)
@@ -384,11 +384,9 @@ public class Ajp13Parser implements Parser
                         break;
 
                     case Ajp13RequestHeaders.JVM_ROUTE_ATTR:
-                        // XXX Using old Jetty 5 key,
-                        // should change!
-                        // Note used in
-                        // org.eclipse.jetty.servlet.HashSessionIdManager
-                        _handler.parsedRequestAttribute("org.eclipse.http.ajp.JVMRoute", Ajp13RequestPacket.getString(_buffer, _tok1));
+                        // moved to Eclipse naming usage
+                        // used in org.eclipse.jetty.servlet.HashSessionIdManager
+                        _handler.parsedRequestAttribute("org.eclipse.jetty.ajp.JVMRoute", Ajp13RequestPacket.getString(_buffer, _tok1));
                         break;
 
                     case Ajp13RequestHeaders.SSL_CERT_ATTR:

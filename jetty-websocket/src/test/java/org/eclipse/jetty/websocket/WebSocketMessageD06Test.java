@@ -45,15 +45,16 @@ public class WebSocketMessageD06Test
         _server.addConnector(_connector);
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
-            @Override
-            protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 _serverWebSocket = new TestWebSocket();
                 _serverWebSocket.onConnect=("onConnect".equals(protocol));
                 _serverWebSocket.echo=("echo".equals(protocol));
+                _serverWebSocket.aggregate=("aggregate".equals(protocol));
                 return _serverWebSocket;
             }
         };
+        wsHandler.setBufferSize(8192);
         wsHandler.setMaxIdleTime(1000);
         wsHandler.setHandler(new DefaultHandler());
         _server.setHandler(wsHandler);
@@ -102,7 +103,7 @@ public class WebSocketMessageD06Test
         skipTo("\r\n\r\n",input);
 
         assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.outbound);
+        assertNotNull(_serverWebSocket.connection);
         
         // Server sends a big message
         StringBuilder message = new StringBuilder();
@@ -110,9 +111,9 @@ public class WebSocketMessageD06Test
         for (int i = 0; i < (0x2000) / text.length(); i++)
             message.append(text);
         String data=message.toString();
-        _serverWebSocket.outbound.sendMessage(data);
+        _serverWebSocket.connection.sendMessage(data);
 
-        assertEquals(WebSocket.OP_TEXT,input.read());
+        assertEquals(WebSocketConnectionD06.OP_TEXT,input.read());
         assertEquals(0x7e,input.read());
         assertEquals(0x1f,input.read());
         assertEquals(0xf6,input.read());
@@ -150,7 +151,7 @@ public class WebSocketMessageD06Test
         skipTo("\r\n\r\n",input);
 
         assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.outbound);
+        assertNotNull(_serverWebSocket.connection);
         
         assertEquals(0x84,input.read());
         assertEquals(0x0f,input.read());
@@ -194,7 +195,7 @@ public class WebSocketMessageD06Test
         skipTo("\r\n\r\n",input);
 
         assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.outbound);
+        assertNotNull(_serverWebSocket.connection);
         
         assertEquals(0x84,input.read());
         assertEquals(0x0f,input.read());
@@ -234,11 +235,281 @@ public class WebSocketMessageD06Test
         skipTo("\r\n\r\n",input);
 
         assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.outbound);
+        assertNotNull(_serverWebSocket.connection);
 
         socket.setSoTimeout(1000);
         assertEquals(0x83,input.read());
         assertEquals(0x00,input.read());
+    }
+    
+    @Test
+    public void testMaxTextSize() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: other\r\n" +
+                 "Sec-WebSocket-Version: 6\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        socket.setSoTimeout(1000);
+        InputStream input = socket.getInputStream();
+        
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.connection);
+        
+        _serverWebSocket.getConnection().setMaxTextMessageSize(15);
+        
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0x04^0xff);
+        output.write(0x0a^0xff);
+        byte[] bytes="0123456789".getBytes(StringUtil.__ISO_8859_1);
+        for (int i=0;i<bytes.length;i++)
+            output.write(bytes[i]^0xff);
+        output.flush();
+
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0x80^0xff);
+        output.write(0x0a^0xff);
+        for (int i=0;i<bytes.length;i++)
+            output.write(bytes[i]^0xff);
+        output.flush();
+
+        assertEquals(0x80|WebSocketConnectionD06.OP_CLOSE,input.read());
+        assertEquals(30,input.read());
+        int code=(0xff&input.read())*0x100+(0xff&input.read());
+        assertEquals(1004,code);
+        lookFor("Text message size > 15 chars",input);
+    }
+
+
+    @Test
+    public void testMaxTextSize2() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: other\r\n" +
+                 "Sec-WebSocket-Version: 6\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        socket.setSoTimeout(100000);
+        InputStream input = socket.getInputStream();
+        
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.connection);
+        
+        _serverWebSocket.getConnection().setMaxTextMessageSize(15);
+        
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0x04^0xff);
+        output.write(0x14^0xff);
+        byte[] bytes="01234567890123456789".getBytes(StringUtil.__ISO_8859_1);
+        for (int i=0;i<bytes.length;i++)
+            output.write(bytes[i]^0xff);
+        output.flush();
+        
+        assertEquals(0x80|WebSocketConnectionD06.OP_CLOSE,input.read());
+        assertEquals(30,input.read());
+        int code=(0xff&input.read())*0x100+(0xff&input.read());
+        assertEquals(1004,code);
+        lookFor("Text message size > 15 chars",input);
+    }
+
+    @Test
+    public void testBinaryAggregate() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: aggregate\r\n" +
+                 "Sec-WebSocket-Version: 6\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        socket.setSoTimeout(1000);
+        InputStream input = socket.getInputStream();
+        
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.connection);
+        _serverWebSocket.getConnection().setMaxBinaryMessageSize(1024);
+        
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(WebSocketConnectionD06.OP_BINARY^0xff);
+        output.write(0x0a^0xff);
+        byte[] bytes="0123456789".getBytes(StringUtil.__ISO_8859_1);
+        for (int i=0;i<bytes.length;i++)
+            output.write(bytes[i]^0xff);
+        output.flush();
+
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0x80^0xff);
+        output.write(0x0a^0xff);
+        for (int i=0;i<bytes.length;i++)
+            output.write(bytes[i]^0xff);
+        output.flush();
+        
+        assertEquals(0x85,input.read());
+        assertEquals(20,input.read());
+        lookFor("01234567890123456789",input);
+    }
+    
+    @Test
+    public void testMaxBinarySize() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: other\r\n" +
+                 "Sec-WebSocket-Version: 6\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        socket.setSoTimeout(100000);
+        InputStream input = socket.getInputStream();
+        
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.connection);
+        
+        _serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
+        
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0x0f^0xff);
+        output.write(0x0a^0xff);
+        byte[] bytes="0123456789".getBytes(StringUtil.__ISO_8859_1);
+        for (int i=0;i<bytes.length;i++)
+            output.write(bytes[i]^0xff);
+        output.flush();
+
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0x80^0xff);
+        output.write(0x0a^0xff);
+        for (int i=0;i<bytes.length;i++)
+            output.write(bytes[i]^0xff);
+        output.flush();
+
+        
+        assertEquals(0x80|WebSocketConnectionD06.OP_CLOSE,input.read());
+        assertEquals(19,input.read());
+        int code=(0xff&input.read())*0x100+(0xff&input.read());
+        assertEquals(1004,code);
+        lookFor("Message size > 15",input);
+    }
+
+
+    @Test
+    public void testMaxBinarySize2() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: other\r\n" +
+                 "Sec-WebSocket-Version: 6\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        socket.setSoTimeout(100000);
+        InputStream input = socket.getInputStream();
+        
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.connection);
+        
+        _serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
+        
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0xff);
+        output.write(0x0f^0xff);
+        output.write(0x14^0xff);
+        byte[] bytes="01234567890123456789".getBytes(StringUtil.__ISO_8859_1);
+        for (int i=0;i<bytes.length;i++)
+            output.write(bytes[i]^0xff);
+        output.flush();
+        
+        assertEquals(0x80|WebSocketConnectionD06.OP_CLOSE,input.read());
+        assertEquals(19,input.read());
+        int code=(0xff&input.read())*0x100+(0xff&input.read());
+        assertEquals(1004,code);
+        lookFor("Message size > 15",input);
     }
 
     @Test
@@ -269,7 +540,7 @@ public class WebSocketMessageD06Test
         skipTo("\r\n\r\n",input);
 
         assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.outbound);
+        assertNotNull(_serverWebSocket.connection);
         
         assertEquals(0x84,input.read());
         assertEquals(0x0f,input.read());
@@ -277,8 +548,8 @@ public class WebSocketMessageD06Test
 
         assertEquals((byte)0x81,(byte)input.read());
         assertEquals(0x06,input.read());
-        assertEquals(1000/0xff,input.read());
-        assertEquals(1000%0xff,input.read());
+        assertEquals(1000/0x100,input.read());
+        assertEquals(1000%0x100,input.read());
         lookFor("Idle",input);
 
         // respond to close
@@ -294,7 +565,7 @@ public class WebSocketMessageD06Test
         assertTrue(_serverWebSocket.awaitDisconnected(5000));
         try
         {
-            _serverWebSocket.outbound.sendMessage("Don't send");
+            _serverWebSocket.connection.sendMessage("Don't send");
             assertTrue(false);
         }
         catch(IOException e)
@@ -332,7 +603,7 @@ public class WebSocketMessageD06Test
 
 
         assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.outbound);
+        assertNotNull(_serverWebSocket.connection);
         
         assertEquals(0x84,input.read());
         assertEquals(0x0f,input.read());
@@ -344,7 +615,7 @@ public class WebSocketMessageD06Test
 
         try
         {
-            _serverWebSocket.outbound.sendMessage("Don't send");
+            _serverWebSocket.connection.sendMessage("Don't send");
             assertTrue(false);
         }
         catch(IOException e)
@@ -361,16 +632,23 @@ public class WebSocketMessageD06Test
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
         
         WebSocketGeneratorD06 gen = new WebSocketGeneratorD06(new WebSocketBuffers(8096),endp,null);
-        gen.addFrame((byte)0x4,message,1000);
+        
+        byte[] data = message.getBytes(StringUtil.__UTF8);
+        gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length,1000);
         
         endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
                 
         WebSocketParserD06 parser = new WebSocketParserD06(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
         {
-            public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+            public void onFrame(byte flags, byte opcode, Buffer buffer)
             {
                 received.set(buffer.toString());
             }
+
+            public void close(int code,String message)
+            {
+            }
+
         },false);
         
         parser.parseNext();
@@ -388,15 +666,20 @@ public class WebSocketMessageD06Test
         WebSocketGeneratorD06.MaskGen maskGen = new WebSocketGeneratorD06.RandomMaskGen();
         
         WebSocketGeneratorD06 gen = new WebSocketGeneratorD06(new WebSocketBuffers(8096),endp,maskGen);
-        gen.addFrame((byte)0x4,message,1000);
+        byte[] data = message.getBytes(StringUtil.__UTF8);
+        gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length,1000);
         
         endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
                 
         WebSocketParserD06 parser = new WebSocketParserD06(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
         {
-            public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+            public void onFrame(byte flags, byte opcode, Buffer buffer)
             {
                 received.set(buffer.toString());
+            }
+
+            public void close(int code,String message)
+            {
             }
         },true);
         
@@ -455,22 +738,28 @@ public class WebSocketMessageD06Test
     }
     
 
-    private static class TestWebSocket implements WebSocket
+    private static class TestWebSocket implements WebSocket.OnFrame, WebSocket.OnBinaryMessage, WebSocket.OnTextMessage
     {
         boolean onConnect=false;
         boolean echo=true;
+        boolean aggregate=false;
         private final CountDownLatch connected = new CountDownLatch(1);
         private final CountDownLatch disconnected = new CountDownLatch(1);
-        private volatile Outbound outbound;
+        private volatile Connection connection;
 
-        public void onConnect(Outbound outbound)
+        public Connection getConnection()
         {
-            this.outbound = outbound;
+            return connection;
+        }
+        
+        public void onConnect(Connection connection)
+        {
+            this.connection = connection;
             if (onConnect)
             {
                 try
                 {
-                    outbound.sendMessage("sent on connect");
+                    connection.sendMessage("sent on connect");
                 }
                 catch(IOException e)
                 {
@@ -490,54 +779,65 @@ public class WebSocketMessageD06Test
             return disconnected.await(time, TimeUnit.MILLISECONDS);
         }
 
-        public void onMessage(byte opcode, String data)
-        {
-            if (echo)
-            {
-                try
-                {
-                    outbound.sendMessage(opcode,data);
-                }
-                catch(IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }   
-        }
-
-        public void onMessage(byte opcode, byte[] data, int offset, int length)
-        {
-            if (echo)
-            {
-                try
-                {
-                    outbound.sendMessage(opcode,data,offset,length);
-                }
-                catch(IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        public void onDisconnect()
+        public void onDisconnect(int code,String message)
         {
             disconnected.countDown();
         }
 
-        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
+        public boolean onFrame(byte flags, byte opcode, byte[] data, int offset, int length)
         {
             if (echo)
             {
+                switch(opcode)
+                {
+                    case WebSocketConnectionD06.OP_CLOSE:
+                    case WebSocketConnectionD06.OP_PING:
+                    case WebSocketConnectionD06.OP_PONG:
+                        break;
+                        
+                    default:
+                        try
+                        {
+                            connection.sendFrame(flags,opcode,data,offset,length);
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                }
+            }
+            return false;
+        }
+
+        public void onMessage(byte[] data, int offset, int length)
+        {
+            if (aggregate)
+            {
                 try
                 {
-                    outbound.sendFragment(more,opcode,data,offset,length);
+                    connection.sendMessage(data,offset,length);
                 }
-                catch(IOException e)
+                catch (IOException e)
                 {
                     e.printStackTrace();
                 }
             }
         }
+
+        public void onMessage(String data)
+        {
+            if (aggregate)
+            {
+                try
+                {
+                    connection.sendMessage(data);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 }

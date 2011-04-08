@@ -45,6 +45,8 @@ public class JSONPojoConvertorTest
         foo._float2 = new Float(10.22f);
         foo._double1 = 10000.11111d;
         foo._double2 = new Double(10000.22222d);
+        foo._char1='a';
+        foo._char2=new Character('b');
         
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo), new Baz[]{
             new Baz("baz0", Boolean.TRUE, null), new Baz("baz1", Boolean.FALSE, null)
@@ -52,7 +54,6 @@ public class JSONPojoConvertorTest
         bar.setColor(Color.Green);
         
         String s = json.toJSON(bar);
-        System.err.println(s);
         
         Object obj = json.parse(new JSON.StringSource(s));
         
@@ -64,7 +65,7 @@ public class JSONPojoConvertorTest
         
         Foo f = bz.getFoo();
         
-        assertEquals(f, foo);
+        assertEquals(foo, f);
         assertTrue(br.getBazs().length==2);
         assertEquals(br.getBazs()[0].getMessage(), "baz0");
         assertEquals(br.getBazs()[1].getMessage(), "baz1");
@@ -92,6 +93,8 @@ public class JSONPojoConvertorTest
         foo._float2 = new Float(10.22f);
         foo._double1 = 10000.11111d;
         foo._double2 = new Double(10000.22222d);
+        foo._char1='a';
+        foo._char2=new Character('b');
         
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo));
         // bar.setColor(Color.Blue);
@@ -291,6 +294,8 @@ public class JSONPojoConvertorTest
         private Float _float2;
         private double _double1;
         private Double _double2;
+        private char _char1;
+        private Character _char2;
         
         public Foo()
         {
@@ -309,7 +314,9 @@ public class JSONPojoConvertorTest
                 .append("\nfloat1: ").append(_float1)
                 .append("\nfloat2: ").append(_float2)
                 .append("\ndouble1: ").append(_double1)
-                .append("\ndouble2: ").append(_double2)                
+                .append("\ndouble2: ").append(_double2)  
+                .append("\nchar1: ").append(_char1)
+                .append("\nchar2: ").append(_char2)                
                 .toString();                
         }
         
@@ -327,7 +334,9 @@ public class JSONPojoConvertorTest
                     && getFloat1()==foo.getFloat1()
                     && getFloat2().equals(foo.getFloat2())
                     && getDouble1()==foo.getDouble1()                    
-                    && getDouble2().equals(foo.getDouble2());
+                    && getDouble2().equals(foo.getDouble2())
+                    && getChar1()==foo.getChar1()                    
+                    && getChar2().equals(foo.getChar2());
             }
             
             return false;
@@ -404,6 +413,22 @@ public class JSONPojoConvertorTest
         public void setDouble2(Double double2)
         {
             _double2 = double2;
+        }
+        public char getChar1()
+        {
+            return _char1;
+        }
+        public void setChar1(char char1)
+        {
+            _char1 = char1;
+        }
+        public Character getChar2()
+        {
+            return _char2;
+        }
+        public void setChar2(Character char2)
+        {
+            _char2 = char2;
         }
        
     }    

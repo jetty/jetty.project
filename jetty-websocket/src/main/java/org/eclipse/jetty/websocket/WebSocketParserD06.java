@@ -32,18 +32,19 @@ import org.eclipse.jetty.util.log.Log;
 public class WebSocketParserD06 implements WebSocketParser
 {    
     public enum State { 
-        MASK(0), OPCODE(1), LENGTH_7(2), LENGTH_16(4), LENGTH_63(10), DATA(10);
+        
+        START(0), MASK(4), OPCODE(1), LENGTH_7(1), LENGTH_16(2), LENGTH_63(8), DATA(0), SKIP(1);
 
-        int _minSize;
+        int _needs;
 
-        State(int minSize)
+        State(int needs)
         {
-            _minSize=minSize;
+            _needs=needs;
         }
 
-        int getMinSize()
+        int getNeeds()
         {
-            return _minSize;
+            return _needs;
         }
     };
 
@@ -54,12 +55,10 @@ public class WebSocketParserD06 implements WebSocketParser
     private final boolean _masked;
     private State _state;
     private Buffer _buffer;
-    private boolean _fin;
     private byte _flags;
     private byte _opcode;
-    private int _count;
+    private int _bytesNeeded;
     private long _length;
-    private Utf8StringBuilder _utf8;
     private final byte[] _mask = new byte[4];
     private int _m;
 
@@ -77,7 +76,7 @@ public class WebSocketParserD06 implements WebSocketParser
         _endp=endp;
         _handler=handler;
         _masked=masked;
-        _state=_masked?State.MASK:State.OPCODE;
+        _state=State.START;
     }
 
     /* ------------------------------------------------------------ */
@@ -106,6 +105,7 @@ public class WebSocketParserD06 implements WebSocketParser
             _buffer=_buffers.getBuffer();
 
         int total_filled=0;
+        int events=0;
 
         // Loop until an datagram call back or can't fill anymore
         while(true)
@@ -113,111 +113,154 @@ public class WebSocketParserD06 implements WebSocketParser
             int available=_buffer.length();
 
             // Fill buffer if we need a byte or need length
-            if (available < (_state.getMinSize() + (_masked?4:0)) || _state==State.DATA && available<_count)
+            while (available<(_state==State.SKIP?1:_bytesNeeded))
             {
                 // compact to mark (set at start of data)
                 _buffer.compact();
 
                 // if no space, then the data is too big for buffer
                 if (_buffer.space() == 0)
-                    throw new IllegalStateException("FULL");
+                    throw new IllegalStateException("FULL: "+_state+" "+_bytesNeeded+">"+_buffer.capacity());
 
                 // catch IOExceptions (probably EOF) and try to parse what we have
                 try
                 {
                     int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
                     if (filled<=0)
-                        return total_filled;
+                        return (total_filled+events)>0?(total_filled+events):filled;
                     total_filled+=filled;
                     available=_buffer.length();
                 }
                 catch(IOException e)
                 {
                     Log.debug(e);
-                    return total_filled>0?total_filled:-1;
+                    return (total_filled+events)>0?(total_filled+events):-1;
                 }
             }
 
             // if we are here, then we have sufficient bytes to process the current state.
-            
+  
             // Parse the buffer byte by byte (unless it is STATE_DATA)
             byte b;
-            while (_state!=State.DATA && available-->0)
+            while (_state!=State.DATA && available>=(_state==State.SKIP?1:_bytesNeeded))
             {
                 switch (_state)
                 {
+                    case START:
+                        _state=_masked?State.MASK:State.OPCODE;
+                        _bytesNeeded=_state.getNeeds();
+                        continue;
+                    
                     case MASK:
                         _buffer.get(_mask,0,4);
+                        available-=4;
                         _state=State.OPCODE;
+                        _bytesNeeded=_state.getNeeds();
                         _m=0;
                         continue;
                         
                     case OPCODE:
                         b=_buffer.get();
+                        available--;
                         if (_masked)
                             b^=_mask[_m++%4];
                         _opcode=(byte)(b&0xf);
-                        _flags=(byte)(b>>4);
-                        _fin=(_flags&8)!=0;
-                        _state=State.LENGTH_7;
+                        _flags=(byte)(0xf&(b>>4));
+                        
+                        if (WebSocketConnectionD06.isControlFrame(_opcode)&&!WebSocketConnectionD06.isLastFrame(_flags))
+                        {
+                            _state=State.SKIP;
+                            events++;
+                            _handler.close(WebSocketConnectionD06.CLOSE_PROTOCOL,"fragmented control");
+                        }
+                        else
+                            _state=State.LENGTH_7;
+
+                        _bytesNeeded=_state.getNeeds();
                         continue;
 
                     case LENGTH_7:
                         b=_buffer.get();
+                        available--;
                         if (_masked)
                             b^=_mask[_m++%4];
                         switch(b)
                         {
                             case 127:
                                 _length=0;
-                                _count=8;
                                 _state=State.LENGTH_63;
+                                _bytesNeeded=_state.getNeeds();
                                 break;
                             case 126:
                                 _length=0;
-                                _count=2;
                                 _state=State.LENGTH_16;
+                                _bytesNeeded=_state.getNeeds();
                                 break;
                             default:
                                 _length=(0x7f&b);
-                                _count=(int)_length;
+                                _bytesNeeded=(int)_length;
                                 _state=State.DATA; 
                         }
                         continue;
 
                     case LENGTH_16:
                         b=_buffer.get();
+                        available--;
                         if (_masked)
                             b^=_mask[_m++%4];
-                        _length = _length<<8 | b;
-                        if (--_count==0)
+                        _length = _length*0x100 + (0xff&b);
+                        if (--_bytesNeeded==0)
                         {
-                            if (_length>=_buffer.capacity()-4)
-                                throw new IllegalStateException("TOO LARGE");
-                            _count=(int)_length;
-                            _state=State.DATA;
+                            _bytesNeeded=(int)_length;
+                            if (_length>_buffer.capacity())
+                            {
+                                _state=State.SKIP;
+                                events++;
+                                _handler.close(WebSocketConnectionD06.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                            }
+                            else
+                            {
+                                _state=State.DATA;
+                            }
                         }
                         continue;
 
                     case LENGTH_63:
                         b=_buffer.get();
+                        available--;
                         if (_masked)
                             b^=_mask[_m++%4];
-                        _length = _length<<8 | b;
-                        if (--_count==0)
+                        _length = _length*0x100 + (0xff&b);
+                        if (--_bytesNeeded==0)
                         {
-                            if (_length>=_buffer.capacity()-10)
-                                throw new IllegalStateException("TOO LARGE");
-                            _count=(int)_length;
-                            _state=State.DATA;
+                            _bytesNeeded=(int)_length;
+                            if (_length>=_buffer.capacity())
+                            {
+                                _state=State.SKIP;
+                                events++;
+                                _handler.close(WebSocketConnectionD06.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                            }
+                            else
+                            {
+                                _state=State.DATA;
+                            }
                         }
                         continue;
+                        
+                    case SKIP:
+                        int skip=Math.min(available,_bytesNeeded);
+                        _buffer.skip(skip);
+                        available-=skip;
+                        _bytesNeeded-=skip;
+                        if (_bytesNeeded==0)
+                            _state=State.START;
+                        
                 }
             }
 
-            if (_state==State.DATA && available>=_count)
+            if (_state==State.DATA && available>=_bytesNeeded)
             {
-                Buffer data =_buffer.get(_count);
+                Buffer data =_buffer.get(_bytesNeeded);
                 if (_masked)
                 {
                     if (data.array()==null)
@@ -227,10 +270,12 @@ public class WebSocketParserD06 implements WebSocketParser
                     for (int i=data.getIndex();i<end;i++)
                         array[i]^=_mask[_m++%4];
                 }
-                
-                _handler.onFrame(!_fin,_flags, _opcode, data);
-                _count=0;
-                _state=_masked?State.MASK:State.OPCODE;
+
+                // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
+                events++;
+                _handler.onFrame(_flags, _opcode, data);
+                _bytesNeeded=0;
+                _state=State.START;
 
                 if (_buffer.length()==0)
                 {
@@ -238,8 +283,7 @@ public class WebSocketParserD06 implements WebSocketParser
                     _buffer=null;
                 }
 
-                return total_filled;
-
+                return total_filled+events;
             }
         }
     }

@@ -1,5 +1,8 @@
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 
 import org.eclipse.jetty.http.AbstractGenerator;
@@ -11,11 +14,9 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class HttpWriterTest
 {
@@ -239,13 +240,11 @@ public class HttpWriterTest
         }
         String source = sb.toString();
 
-        byte[] bytes = source.getBytes("UTF-8"/* StringUtil.__UTF81 */);
+        byte[] bytes = source.getBytes(StringUtil.__UTF8);
         _writer.write(source.toCharArray(),0,source.toCharArray().length);
 
-        java.io.ByteArrayOutputStream baos = new
-java.io.ByteArrayOutputStream();
-        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos/*
-,StringUtil.__UTF8 */);
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos,StringUtil.__UTF8);
         osw.write(source.toCharArray(),0,source.toCharArray().length);
         osw.flush();
 

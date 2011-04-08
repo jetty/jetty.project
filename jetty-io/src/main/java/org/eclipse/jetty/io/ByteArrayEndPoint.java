@@ -121,6 +121,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     {
         _out = out;
     }
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see org.eclipse.io.EndPoint#isOpen()
@@ -128,6 +129,24 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     public boolean isOpen()
     {
         return !_closed;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     *  @see org.eclipse.jetty.io.EndPoint#isInputShutdown()
+     */
+    public boolean isInputShutdown()
+    {
+        return _closed;
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     *  @see org.eclipse.jetty.io.EndPoint#isOutputShutdown()
+     */
+    public boolean isOutputShutdown()
+    {
+        return _closed;
     }
 
     /* ------------------------------------------------------------ */
@@ -157,6 +176,16 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
      */
     public void shutdownOutput() throws IOException
     {
+        close();
+    }
+
+    /* ------------------------------------------------------------ */
+    /* 
+     * @see org.eclipse.io.EndPoint#shutdownInput()
+     */
+    public void shutdownInput() throws IOException
+    {
+        close();
     }
     
     /* ------------------------------------------------------------ */
@@ -176,13 +205,19 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     {
         if (_closed)
             throw new IOException("CLOSED");
-        if (_in==null)
-            return -1;
-        if (_in.length()<=0)
-            return _nonBlocking?0:-1;
-        int len = buffer.put(_in);
-        _in.skip(len);
-        return len;
+        
+        if (_in!=null && _in.length()>0)
+        {
+            int len = buffer.put(_in);
+            _in.skip(len);
+            return len;
+        }
+        
+        if (_in!=null && _in.length()==0 && _nonBlocking)
+            return 0;
+        
+        close();
+        return -1;
     }
 
     /* ------------------------------------------------------------ */

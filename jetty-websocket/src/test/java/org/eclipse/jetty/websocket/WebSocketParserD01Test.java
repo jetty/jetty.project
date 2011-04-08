@@ -18,7 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * @version $Revision: 1441 $ $Date: 2010-04-02 12:28:17 +0200 (Fri, 02 Apr 2010) $
+ * @version $Revision$ $Date$
  */
 public class WebSocketParserD01Test
 {
@@ -169,9 +169,9 @@ public class WebSocketParserD01Test
         Utf8StringBuilder _utf8 = new Utf8StringBuilder();
         public List<String> _data = new ArrayList<String>();
 
-        public void onFrame(boolean more, byte flags, byte opcode, Buffer buffer)
+        public void onFrame(byte flags, byte opcode, Buffer buffer)
         {
-            if (more)
+            if ((flags&0x8)!=0)
                 _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
             else if (_utf8.length()==0)
                 _data.add(opcode,buffer.toString("utf-8"));
@@ -181,6 +181,10 @@ public class WebSocketParserD01Test
                 _data.add(opcode,_utf8.toString());
                 _utf8.reset();
             }
+        }
+
+        public void close(int code,String message)
+        {
         }
     }
 }

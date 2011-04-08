@@ -1,0 +1,12 @@
+<?xml version="1.0"  encoding="ISO-8859-1"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+  <!--
+  <Set name="virtualHosts">
+    <Array type="String">
+      <Item>red.myVirtualDomain.com</Item>
+    </Array>
+  </Set>
+  -->
+</Configure>

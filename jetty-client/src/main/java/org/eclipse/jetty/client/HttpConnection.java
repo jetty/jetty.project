@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
@@ -78,7 +77,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
     {
         _endp=endp;
         _timeStamp = System.currentTimeMillis();
-   
+
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
@@ -176,13 +175,20 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                         }
                         else
                         {
-                            // Hopefully just space?
-                            _parser.fill();
-                            _parser.skipCRLF();
-                            if (_parser.isMoreInBuffer())
+                            long filled = _parser.fill();
+                            if (filled < 0)
                             {
-                                Log.warn("Unexpected data received but no request sent");
                                 close();
+                            }
+                            else
+                            {
+                                // Hopefully just space?
+                                _parser.skipCRLF();
+                                if (_parser.isMoreInBuffer())
+                                {
+                                    Log.warn("Unexpected data received but no request sent");
+                                    close();
+                                }
                             }
                             return this;
                         }
@@ -198,7 +204,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                         no_progress = 0;
                         commitRequest();
                     }
-                    
+
                     long io = 0;
                     _endp.flush();
 
@@ -286,7 +292,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                         throw (ThreadDeath)e;
 
                     failed = true;
-                    
+
                     synchronized (this)
                     {
                         if (_exchange != null)
@@ -339,6 +345,17 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                         }
                     }
 
+                    // TODO - this needs to be greatly improved.
+                    if (_generator.isComplete() && !_parser.isComplete())
+                    {
+                        if (!_endp.isOpen() || _endp.isInputShutdown())
+                        {
+                            complete=true;
+                            close=true;
+                            close();
+                        }
+                    }
+
                     if (complete || failed)
                     {
                         synchronized (this)
@@ -353,10 +370,10 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                             {
                                 HttpExchange exchange=_exchange;
                                 _exchange.disassociate();
+
                                 if (_exchange.getTimeout()>0 && _exchange.getTimeout()!=getDestination().getHttpClient().getTimeout())
                                     _endp.setMaxIdleTime((int)getDestination().getHttpClient().getTimeout());
                                 _exchange = null;
-                                
 
                                 if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                                 {
@@ -695,6 +712,9 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
             }
             finally
             {
+                if (ex != null && ex.getStatus() < HttpExchange.STATUS_COMPLETED)
+                    ex.setStatus(HttpExchange.STATUS_EXPIRED);
+                
                 try
                 {
                     close();
@@ -704,14 +724,10 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
                     Log.ignore(e);
                 }
 
-                if (ex != null && ex.getStatus() < HttpExchange.STATUS_COMPLETED)
-                {
-                    ex.setStatus(HttpExchange.STATUS_EXPIRED);
-                }
             }
         }
     }
-    
+
 
 
     // TODO remove and use AbstractConnection for 7.4

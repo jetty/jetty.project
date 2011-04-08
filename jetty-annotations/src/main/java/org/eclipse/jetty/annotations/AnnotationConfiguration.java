@@ -33,9 +33,9 @@ import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
+import org.eclipse.jetty.webapp.MetaDataComplete;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
-import org.eclipse.jetty.webapp.WebDescriptor.MetaDataComplete;
 
 /**
  * Configuration for Annotations
@@ -349,10 +349,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return d;
     }
     
-    
     public boolean isMetaDataComplete (WebDescriptor d)
     {
-        return (d!=null && d.getMetaDataComplete() == WebDescriptor.MetaDataComplete.True);
+        return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
     }
     
     protected void clearAnnotationList (List<DiscoverableAnnotationHandler> handlers)

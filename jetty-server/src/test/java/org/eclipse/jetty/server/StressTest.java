@@ -85,7 +85,7 @@ public class StressTest
         _server.setThreadPool(_threads);
 
         _connector = new SelectChannelConnector();
-        _connector.setAcceptors(Runtime.getRuntime().availableProcessors()/2);
+        _connector.setAcceptors(Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
         _connector.setAcceptQueueSize(5000);
         _connector.setMaxIdleTime(30000);
         _server.addConnector(_connector);
@@ -243,7 +243,7 @@ public class StressTest
             final int other[] = new int[_latencies.length];
 
             long total=0;
-            
+
             for (int i=0;i<_latencies.length;i++)
             {
                 Queue<Long> latencies=_latencies[i];
@@ -263,7 +263,7 @@ public class StressTest
                         }
                     }
                     other[i]++;
-                    
+
                 }
             }
 

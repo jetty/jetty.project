@@ -1,0 +1,24 @@
+2010-11-17 17:49:57,785 [main] INFO [info.jtrac.config.JtracConfigurer] - found 'jtrac-init.properties' on classpath, processing...
+2010-11-17 17:49:57,785 [main] INFO [info.jtrac.config.JtracConfigurer] - 'jtrac.home' property initialized from 'jtrac-init.properties' as '/tmp/jtrac-red'
+2010-11-17 17:49:57,785 [main] INFO [info.jtrac.config.JtracConfigurer] - locales available configured are 'en'
+2010-11-17 17:49:57,785 [main] INFO [info.jtrac.config.JtracConfigurer] - directory already exists: '/tmp/jtrac-red'
+2010-11-17 17:49:57,785 [main] INFO [info.jtrac.config.JtracConfigurer] - directory already exists: '/tmp/jtrac-red/attachments'
+2010-11-17 17:49:57,785 [main] INFO [info.jtrac.config.JtracConfigurer] - directory already exists: '/tmp/jtrac-red/indexes'
+2010-11-17 17:49:57,785 [main] INFO [info.jtrac.config.JtracConfigurer] - 'jtrac.properties' file exists: '/tmp/jtrac-red/jtrac.properties'
+2010-11-17 17:49:57,786 [main] INFO [info.jtrac.config.JtracConfigurer] - found 'jtrac-version.properties' on classpath, processing...
+2010-11-17 17:49:57,786 [main] INFO [info.jtrac.config.JtracConfigurer] - jtrac.version = '2.1.0'
+2010-11-17 17:49:57,786 [main] INFO [info.jtrac.config.JtracConfigurer] - jtrac.timestamp = '200803022120'
+2010-11-17 17:49:57,786 [main] INFO [info.jtrac.config.JtracConfigurer] - Loading properties file from file [/tmp/jtrac-red/jtrac.properties]
+2010-11-17 17:49:57,804 [main] INFO [info.jtrac.config.DataSourceFactoryBean] - embedded HSQLDB mode detected, switching on spring single connection data source
+2010-11-17 17:49:57,950 [main] INFO [info.jtrac.hibernate.HibernateJtracDao] - database schema exists, normal startup
+2010-11-17 17:49:57,952 [main] INFO [info.jtrac.JtracImpl] - available locales configured {en=en - English}
+2010-11-17 17:49:57,954 [main] WARN [info.jtrac.mail.MailSender] - 'mail.server.host' config is null, mail sender not initialized
+2010-11-17 17:49:57,954 [main] WARN [info.jtrac.JtracImpl] - invalid default locale configured = 'null', using en
+2010-11-17 17:49:57,954 [main] INFO [info.jtrac.JtracImpl] - default locale set to 'en'
+2010-11-17 17:49:57,954 [main] WARN [info.jtrac.JtracImpl] - invalid attachment max size 'null', using 5
+2010-11-17 17:49:57,954 [main] INFO [info.jtrac.JtracImpl] - attachment max size set to 5 MB
+2010-11-17 17:49:57,954 [main] WARN [info.jtrac.JtracImpl] - invalid session timeout 'null', using 30
+2010-11-17 17:49:57,954 [main] INFO [info.jtrac.JtracImpl] - session timeout set to 30 minutes
+2010-11-17 17:49:57,975 [main] INFO [info.jtrac.wicket.JtracApplication] - casProxyTicketValidator not found in application context, CAS single-sign-on is not being used
+2010-11-17 17:53:44,141 [Scanner-0] INFO [info.jtrac.config.DataSourceFactoryBean] - attempting to shut down embedded HSQLDB database
+2010-11-17 17:53:44,253 [Scanner-0] INFO [info.jtrac.config.DataSourceFactoryBean] - embedded HSQLDB database shut down successfully

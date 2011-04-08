@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
+import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.MetaData.Origin;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**

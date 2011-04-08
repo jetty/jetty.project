@@ -26,7 +26,6 @@ import java.security.Security;
 import java.security.cert.CRL;
 import java.security.cert.CertStore;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
@@ -50,7 +49,7 @@ import javax.net.ssl.X509TrustManager;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 
 
@@ -110,10 +109,9 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _needClientAuth = false;
     /** Set to true if client certificate authentication is desired */
     private boolean _wantClientAuth = false;
-    /** Set to true if SSL certificate validation is required */
-    private boolean _validateCerts;
+    
     /** Set to true if renegotiation is allowed */
-    private boolean _allowRenegotiate = false;
+    private boolean _allowRenegotiate = true;
 
     /** Keystore password */
     private transient Password _keyStorePassword;
@@ -134,11 +132,19 @@ public class SslContextFactory extends AbstractLifeCycle
     /** TrustManager factory algorithm */
     private String _trustManagerFactoryAlgorithm = DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM;
 
-    /** Path to file that contains Certificate Revocation List */
-    private String _crlPath;
+    /** Set to true if SSL certificate validation is required */
+    private boolean _validateCerts;
     /** Maximum certification path length (n - number of intermediate certs, -1 for unlimited) */
     private int _maxCertPathLength = -1;
-
+    /** Path to file that contains Certificate Revocation List */
+    private String _crlPath;
+    /** Set to true to enable CRL Distribution Points (CRLDP) support */
+    private boolean _enableCRLDP = false;
+    /** Set to true to enable On-Line Certificate Status Protocol (OCSP) support */
+    private boolean _enableOCSP = false;
+    /** Location of OCSP Responder */
+    private String _ocspResponderURL;
+    
     /** SSL context */
     private SSLContext _context;
 
@@ -154,11 +160,11 @@ public class SslContextFactory extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * Construct an instance of SslContextFactory
-     * @param keystorePath default keystore location
+     * @param keyStorePath default keystore location
      */
-    public SslContextFactory(String keystorePath)
+    public SslContextFactory(String keyStorePath)
     {
-        _keyStorePath = keystorePath;
+        _keyStorePath = keyStorePath;
     }
     
     /* ------------------------------------------------------------ */
@@ -258,14 +264,14 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param keystore
+     * @param keyStorePath
      *            The file or URL of the SSL Key store.
      */
-    public void setKeyStore(String keystore)
+    public void setKeyStore(String keyStorePath)
     {
         checkStarted();
         
-        _keyStorePath = keystore;
+        _keyStorePath = keyStorePath;
     }
 
     /* ------------------------------------------------------------ */
@@ -279,14 +285,14 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param keystoreProvider
+     * @param keyStoreProvider
      *            The provider of the key store
      */
-    public void setKeyStoreProvider(String keystoreProvider)
+    public void setKeyStoreProvider(String keyStoreProvider)
     {
         checkStarted();
         
-        _keyStoreProvider = keystoreProvider;
+        _keyStoreProvider = keyStoreProvider;
     }
 
     /* ------------------------------------------------------------ */
@@ -300,14 +306,14 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param keystoreType
+     * @param keyStoreType
      *            The type of the key store (default "JKS")
      */
-    public void setKeyStoreType(String keystoreType)
+    public void setKeyStoreType(String keyStoreType)
     {
         checkStarted();
         
-        _keyStoreType = keystoreType;
+        _keyStoreType = keyStoreType;
     }
 
     /* ------------------------------------------------------------ */
@@ -323,13 +329,13 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /** Set the keyStoreInputStream.
-     * @param keystoreInputStream the InputStream to the KeyStore 
+     * @param keyStoreInputStream the InputStream to the KeyStore 
      */
-    public void setKeyStoreInputStream(InputStream keystoreInputStream)
+    public void setKeyStoreInputStream(InputStream keyStoreInputStream)
     {
         checkStarted();
         
-        _keyStoreInputStream = keystoreInputStream;
+        _keyStoreInputStream = keyStoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
@@ -364,14 +370,14 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param truststore
+     * @param trustStorePath
      *            The file name or URL of the trust store location
      */
-    public void setTrustStore(String truststore)
+    public void setTrustStore(String trustStorePath)
     {
         checkStarted();
         
-        _trustStorePath = truststore;
+        _trustStorePath = trustStorePath;
     }
 
     /* ------------------------------------------------------------ */
@@ -385,14 +391,14 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param truststoreProvider
+     * @param trustStoreProvider
      *            The provider of the trust store
      */
-    public void setTrustStoreProvider(String truststoreProvider)
+    public void setTrustStoreProvider(String trustStoreProvider)
     {
         checkStarted();
         
-        _trustStoreProvider = truststoreProvider;
+        _trustStoreProvider = trustStoreProvider;
     }
 
     /* ------------------------------------------------------------ */
@@ -406,14 +412,14 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * @param truststoreType
+     * @param trustStoreType
      *            The type of the trust store (default "JKS")
      */
-    public void setTrustStoreType(String truststoreType)
+    public void setTrustStoreType(String trustStoreType)
     {
         checkStarted();
         
-        _trustStoreType = truststoreType;
+        _trustStoreType = trustStoreType;
     }
 
     /* ------------------------------------------------------------ */
@@ -429,13 +435,13 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /** Set the _trustStoreInputStream.
-     * @param truststoreInputStream the InputStream to the TrustStore
+     * @param trustStoreInputStream the InputStream to the TrustStore
      */
-    public void setTrustStoreInputStream(InputStream truststoreInputStream)
+    public void setTrustStoreInputStream(InputStream trustStoreInputStream)
     {
         checkStarted();
         
-        _trustStoreInputStream = truststoreInputStream;
+        _trustStoreInputStream = trustStoreInputStream;
     }
 
     /* ------------------------------------------------------------ */
@@ -487,8 +493,19 @@ public class SslContextFactory extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return true if SSL certificate has to be validated
+     * @deprecated
      */
+    @Deprecated
     public boolean getValidateCerts()
+    {
+        return _validateCerts;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if SSL certificate has to be validated
+     */
+    public boolean isValidateCerts()
     {
         return _validateCerts;
     }
@@ -516,9 +533,11 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered a vulnerability
-     * in SSL/TLS with re-negotiation. If your JVM does not have CVE-2009-3555 fixed,
-     * then re-negotiation should not be allowed.
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should
+     * not be allowed.  CVE-2009-3555 was fixed in Sun java 1.6 with a ban 
+     * of renegotiates in u19 and with RFC5746 in u22.
      * 
      * @param allowRenegotiate
      *            true if re-negotiation is allowed (default false)
@@ -774,7 +793,11 @@ public class SslContextFactory extends AbstractLifeCycle
                 throw new Exception("No certificate found in the keystore" + (_certAlias==null ? "":" for alias " + _certAlias));
             }
 
-            CertificateValidator validator = new CertificateValidator(trustStore,crls);
+            CertificateValidator validator = new CertificateValidator(trustStore, crls);
+            validator.setMaxCertPathLength(_maxCertPathLength);
+            validator.setEnableCRLDP(_enableCRLDP);
+            validator.setEnableOCSP(_enableOCSP);
+            validator.setOcspResponderURL(_ocspResponderURL);
             validator.validate(keyStore, cert);
         }
 
@@ -784,6 +807,43 @@ public class SslContextFactory extends AbstractLifeCycle
         SecureRandom secureRandom = _secureRandomAlgorithm == null?null:SecureRandom.getInstance(_secureRandomAlgorithm);
         _context = _sslProvider == null?SSLContext.getInstance(_sslProtocol):SSLContext.getInstance(_sslProtocol,_sslProvider);
         _context.init(keyManagers,trustManagers,secureRandom);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Loads keystore using an input stream or a file path in the same
+     * order of precedence.
+     *
+     * Required for integrations to be able to override the mechanism
+     * used to load a keystore in order to provide their own implementation.
+     *
+     * @param storeStream keystore input stream
+     * @param storePath path of keystore file
+     * @param storeType keystore type
+     * @param storeProvider keystore provider
+     * @param storePassword keystore password
+     * @return created keystore
+     * @throws Exception
+     */
+    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
+    {
+        return CertificateUtils.getKeyStore(storeStream, storePath, storeType, storeProvider, storePassword);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Loads certificate revocation list (CRL) from a file.
+     *
+     * Required for integrations to be able to override the mechanism used to
+     * load CRL in order to provide their own implementation.
+     *
+     * @param crlPath path of certificate revocation list file
+     * @return
+     * @throws Exception
+     */
+    protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
+    {
+        return CertificateUtils.loadCRL(crlPath);
     }
 
     /* ------------------------------------------------------------ */
@@ -823,22 +883,34 @@ public class SslContextFactory extends AbstractLifeCycle
             {
                 PKIXBuilderParameters pbParams = new PKIXBuilderParameters(trustStore,new X509CertSelector());
 
-                // Enable revocation checking
-                pbParams.setRevocationEnabled(true);
-
                 // Set maximum certification path length
                 pbParams.setMaxPathLength(_maxCertPathLength);
+
+                // Make sure revocation checking is enabled
+                pbParams.setRevocationEnabled(true);
 
                 if (crls != null && !crls.isEmpty())
                 {
                     pbParams.addCertStore(CertStore.getInstance("Collection",new CollectionCertStoreParameters(crls)));
                 }
 
-                // Enable On-Line Certificate Status Protocol (OCSP) support
-                Security.setProperty("ocsp.enable","true");
+                if (_enableCRLDP)
+                {
+                    // Enable Certificate Revocation List Distribution Points (CRLDP) support
+                    System.setProperty("com.sun.security.enableCRLDP","true");
+                }
 
-                // Enable Certificate Revocation List Distribution Points (CRLDP) support
-                System.setProperty("com.sun.security.enableCRLDP","true");
+                if (_enableOCSP)
+                {
+                    // Enable On-Line Certificate Status Protocol (OCSP) support
+                    Security.setProperty("ocsp.enable","true");
+                    
+                    if (_ocspResponderURL != null)
+                    {
+                        // Override location of OCSP Responder
+                        Security.setProperty("ocsp.responderURL", _ocspResponderURL);
+                    }
+                }
 
                 TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(_trustManagerFactoryAlgorithm);
                 trustManagerFactory.init(new CertPathTrustManagerParameters(pbParams));
@@ -857,69 +929,6 @@ public class SslContextFactory extends AbstractLifeCycle
         return managers;
     }
 
-    /* ------------------------------------------------------------ */
-    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
-    {
-        KeyStore keystore = null;
-
-        if (storeStream != null || storePath != null)
-        {
-            InputStream inStream = storeStream;
-            try
-            {
-                if (inStream == null)
-                {
-                    inStream = Resource.newResource(storePath).getInputStream();
-                }
-                
-                if (storeProvider != null)
-                {
-                    keystore = KeyStore.getInstance(storeType, storeProvider);
-                }
-                else
-                {
-                    keystore = KeyStore.getInstance(storeType);
-                }
-    
-                keystore.load(inStream, storePassword == null ? null : storePassword.toCharArray());
-            }
-            finally
-            {
-                if (inStream != null)
-                {
-                    inStream.close();
-                }
-            }
-        }
-        
-        return keystore;
-    }
-
-    /* ------------------------------------------------------------ */
-    protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
-    {
-        Collection<? extends CRL> crlList = null;
-
-        if (crlPath != null)
-        {
-            InputStream in = null;
-            try
-            {
-                in = Resource.newResource(crlPath).getInputStream();
-                crlList = CertificateFactory.getInstance("X.509").generateCRLs(in);
-            }
-            finally
-            {
-                if (in != null)
-                {
-                    in.close();
-                }
-            }
-        }
-
-        return crlList;
-    }
-    
     /* ------------------------------------------------------------ */
     /**
      * Check configuration. Ensures that if keystore has been
@@ -1031,5 +1040,59 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             throw new IllegalStateException("Cannot modify configuration after SslContextFactory was started");
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return true if CRL Distribution Points support is enabled
+     */
+    public boolean isEnableCRLDP()
+    {
+        return _enableCRLDP;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Enables CRL Distribution Points Support
+     * @param enableCRLDP true - turn on, false - turns off
+     */
+    public void setEnableCRLDP(boolean enableCRLDP)
+    {
+        _enableCRLDP = enableCRLDP;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return true if On-Line Certificate Status Protocol support is enabled
+     */
+    public boolean isEnableOCSP()
+    {
+        return _enableOCSP;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Enables On-Line Certificate Status Protocol support
+     * @param enableOCSP true - turn on, false - turn off
+     */
+    public void setEnableOCSP(boolean enableOCSP)
+    {
+        _enableOCSP = enableOCSP;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return Location of the OCSP Responder
+     */
+    public String getOcspResponderURL()
+    {
+        return _ocspResponderURL;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the location of the OCSP Responder.
+     * @param ocspResponderURL location of the OCSP Responder
+     */
+    public void setOcspResponderURL(String ocspResponderURL)
+    {
+        _ocspResponderURL = ocspResponderURL;
     }
 }

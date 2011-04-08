@@ -368,12 +368,22 @@ public class NetworkTrafficListenerTest
         {
             public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
+                // Read and discard the request body to make the test more
+                // reliable, otherwise there is a race between request body
+                // upload and response download
+                InputStream input = servletRequest.getInputStream();
+                byte[] buffer = new byte[4096];
+                while (true)
+                {
+                    int read = input.read(buffer);
+                    if (read < 0)
+                        break;
+                }
                 request.setHandled(true);
             }
         });
 
         final AtomicReference<String> incomingData = new AtomicReference<String>("");
-        final CountDownLatch incomingLatch = new CountDownLatch(4);
         final AtomicReference<String> outgoingData = new AtomicReference<String>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
@@ -381,7 +391,6 @@ public class NetworkTrafficListenerTest
             public void incoming(Socket socket, Buffer bytes)
             {
                 incomingData.set(incomingData.get() + bytes.toString("UTF-8"));
-                incomingLatch.countDown();
             }
 
             public void outgoing(Socket socket, Buffer bytes)
@@ -413,15 +422,14 @@ public class NetworkTrafficListenerTest
         output.write(request.getBytes("UTF-8"));
         output.flush();
 
-        assertTrue(incomingLatch.await(1, TimeUnit.SECONDS));
-        assertEquals(request, incomingData.get());
-
         assertTrue(outgoingLatch.await(1, TimeUnit.SECONDS));
         assertEquals(expectedResponse, outgoingData.get());
 
         byte[] responseBytes = readResponse(socket);
         String response = new String(responseBytes, "UTF-8");
         assertEquals(expectedResponse, response);
+
+        assertEquals(request, incomingData.get());
 
         socket.close();
     }

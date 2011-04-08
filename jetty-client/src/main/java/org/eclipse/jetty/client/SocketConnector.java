@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.Socket;
+
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 
@@ -54,7 +55,7 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
             socket = SocketFactory.getDefault().createSocket();
         }
 
-        socket.setSoTimeout(_httpClient.getSoTimeout());
+        socket.setSoTimeout(0);
         socket.setTcpNoDelay(true);
 
         Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();

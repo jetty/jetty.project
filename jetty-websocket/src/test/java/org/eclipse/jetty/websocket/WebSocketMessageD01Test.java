@@ -39,14 +39,14 @@ public class WebSocketMessageD01Test
         _server.addConnector(_connector);
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
-            @Override
-            protected WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+            public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 _serverWebSocket = new TestWebSocket();
                 _serverWebSocket.onConnect=("onConnect".equals(protocol));
                 return _serverWebSocket;
             }
         };
+        wsHandler.setBufferSize(8192);
         wsHandler.setMaxIdleTime(1000);
         wsHandler.setHandler(new DefaultHandler());
         _server.setHandler(wsHandler);
@@ -283,9 +283,9 @@ public class WebSocketMessageD01Test
         boolean onConnect=false;
         private final CountDownLatch connected = new CountDownLatch(1);
         private final CountDownLatch disconnected = new CountDownLatch(1);
-        private volatile Outbound outbound;
+        private volatile Connection outbound;
 
-        public void onConnect(Outbound outbound)
+        public void onConnect(Connection outbound)
         {
             this.outbound = outbound;
             if (onConnect)
@@ -312,21 +312,10 @@ public class WebSocketMessageD01Test
             return disconnected.await(time, TimeUnit.MILLISECONDS);
         }
 
-        public void onMessage(byte frame, String data)
-        {
-        }
-
-        public void onMessage(byte frame, byte[] data, int offset, int length)
-        {
-        }
-
-        public void onDisconnect()
+        public void onDisconnect(int code,String message)
         {
             disconnected.countDown();
         }
 
-        public void onFragment(boolean more, byte opcode, byte[] data, int offset, int length)
-        {
-        }
     }
 }

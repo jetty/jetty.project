@@ -35,8 +35,6 @@ import org.eclipse.jetty.xml.XmlParser;
 public class WebDescriptor extends Descriptor
 { 
     protected static XmlParser _parserSingleton;
-    public enum MetaDataComplete {NotSet, True, False};
-  
     protected MetaDataComplete _metaDataComplete;
     protected int _majorVersion = 3; //default to container version
     protected int _minorVersion = 0;

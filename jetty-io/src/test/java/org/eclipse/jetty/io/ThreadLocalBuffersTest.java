@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.io;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -20,11 +22,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
-
 public class ThreadLocalBuffersTest
 {
-    private InnerBuffers httpBuffers;
+    private Buffers httpBuffers;
     private List<Thread> threadList = new ArrayList<Thread>();
     private int numThreads = Stress.isEnabled()?100:10;
     private int runTestLength = Stress.isEnabled()?5000:1000;
@@ -35,7 +35,7 @@ public class ThreadLocalBuffersTest
     {
         threadList.clear();
         buffersRetrieved = new AtomicLong( 0 );
-        httpBuffers = new InnerBuffers();
+        httpBuffers = new InnerBuffers(1024,4096);
 
         for ( int i = 0; i < numThreads; ++i )
         {
@@ -85,9 +85,7 @@ public class ThreadLocalBuffersTest
     @Test
     public void testDifferentSizes() throws Exception
     {
-        InnerBuffers buffers = new InnerBuffers();
-        buffers.setHeaderSize(128);
-        buffers.setBufferSize(256);
+        InnerBuffers buffers = new InnerBuffers(128,256);
 
         Buffer h1 = buffers.getHeader();
         Buffer h2 = buffers.getHeader();
@@ -134,9 +132,7 @@ public class ThreadLocalBuffersTest
     @Test
     public void testSameSizes() throws Exception
     {
-        InnerBuffers buffers = new InnerBuffers();
-        buffers.setHeaderSize(128);
-        buffers.setBufferSize(128);
+        InnerBuffers buffers = new InnerBuffers(128,128);
 
         Buffer h1 = buffers.getHeader();
         Buffer h2 = buffers.getHeader();
@@ -148,43 +144,23 @@ public class ThreadLocalBuffersTest
         known.add(h2);
         known.add(b1);
         known.add(b2);
-        known.add(h1);
+        known.add(b3);
 
-        buffers.returnBuffer(h1);
-        buffers.returnBuffer(h2);
-        buffers.returnBuffer(b1);
-        buffers.returnBuffer(b2);
-        buffers.returnBuffer(b3);
+        buffers.returnBuffer(h1); // header slot  *
+        buffers.returnBuffer(h2); // other slot
+        buffers.returnBuffer(b1); // buffer slot  *
+        buffers.returnBuffer(b2); // other slot
+        buffers.returnBuffer(b3); // other slot   *
 
         assertTrue(h1==buffers.getHeader()); // pooled header
         Buffer buffer = buffers.getHeader();
         for (Buffer b:known) assertTrue(b!=buffer); // new buffer
-        assertTrue(h2==buffers.getBuffer()); // h2 used from buffer slot
-        assertTrue(b3==buffers.getBuffer()); // b1 from other slot
-        buffer=buffers.getBuffer(128);
-        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
-
-        buffers.returnBuffer(h1);
-        buffers.returnBuffer(h2);
-        buffers.returnBuffer(b1);
-
-        assertTrue(h1==buffers.getHeader()); // pooled header
-        buffer=buffers.getHeader();
-        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
-        assertTrue(h2==buffers.getBuffer()); // h2 used from buffer slot
-        assertTrue(b1==buffers.getBuffer()); // h2 used from other slot
-
-        buffers.returnBuffer(h1);
-        buffers.returnBuffer(b1);
-        buffers.returnBuffer(h2);
-
-        assertTrue(h1==buffers.getHeader()); // pooled header
-        assertTrue(h2==buffers.getHeader()); // h2 from other slot
-        buffer=buffers.getHeader();
-        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
         assertTrue(b1==buffers.getBuffer()); // b1 used from buffer slot
-        buffer=buffers.getBuffer();
+        buffer = buffers.getBuffer();
         for (Buffer b:known) assertTrue(b!=buffer); // new buffer
+        
+        assertTrue(b3==buffers.getBuffer(128)); // b3 from other slot
+
     }
 
     private static class HeaderBuffer extends ByteArrayBuffer
@@ -197,20 +173,9 @@ public class ThreadLocalBuffersTest
 
     private static class InnerBuffers extends ThreadLocalBuffers
     {
-        @Override
-        protected Buffer newBuffer(int size)
+        InnerBuffers(int headerSize,int bufferSize)
         {
-            return new ByteArrayBuffer( size );
-        }
-        @Override
-        protected Buffer newHeader(int size)
-        {
-            return new HeaderBuffer( size );
-        }
-        @Override
-        protected boolean isHeader(Buffer buffer)
-        {
-            return buffer instanceof HeaderBuffer;
+            super(Type.DIRECT,headerSize,Type.BYTE_ARRAY,bufferSize,Type.INDIRECT);
         }
     }
 

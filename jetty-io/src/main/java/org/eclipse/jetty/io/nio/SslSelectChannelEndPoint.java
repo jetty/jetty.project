@@ -20,9 +20,9 @@ import java.nio.channels.SocketChannel;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
@@ -172,12 +172,39 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         Log.info(""+_result);
     }
+
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isOutputShutdown()
+    {
+        return _engine!=null && _engine.isOutboundDone();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isInputShutdown()
+    {
+        return _engine!=null && _engine.isInboundDone();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void shutdownInput() throws IOException
+    {
+        // Nothing to do here. If the socket is open, let the SSL close handshake work, else the socket is closed anyway.
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public void shutdownOutput() throws IOException
     {
+        if (_closing)
+            return;
+        _closing=true;
+        
         // TODO - this really should not be done in a loop here - but with async callbacks.
-        long end=System.currentTimeMillis()+((SocketChannel)_channel).socket().getSoTimeout();
+        long end=System.currentTimeMillis()+getMaxIdleTime();
         try
         {   
             while (isOpen() && isBufferingOutput()&& System.currentTimeMillis()<end)
@@ -185,7 +212,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 flush();
                 if (isBufferingOutput())
                 {
-                    Thread.sleep(100); // TODO non blocking
+                    Thread.sleep(50); // TODO non blocking
                     flush();
                 }
             }
@@ -198,7 +225,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 {
                     flush();
                     if (isBufferingOutput())
-                        Thread.sleep(100);
+                        Thread.sleep(50);
                 }
 
                 if (_debug) __log.debug(_session+" closing "+_engine.getHandshakeStatus());
@@ -273,27 +300,12 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
     }
 
-
     /* ------------------------------------------------------------ */
     @Override
     public void close() throws IOException
     {
-        try
-        {
-            _closing=true;
-            shutdownOutput();
-        }
-        catch(IOException e)
-        {
-            Log.ignore(e);
-        }
-        finally
-        {
-            super.close();
-        }   
+        super.close();
     }
-
-
     
     /* ------------------------------------------------------------ */
     /** Fill the buffer with unencrypted bytes.
@@ -617,6 +629,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 flushed=super.flush(_outNIOBuffer);
                 if (_debug) __log.debug(_session+" flushed "+flushed+"/"+len);
             }
+            else if (_closing && !_engine.isOutboundDone())
+            {
+                _engine.closeOutbound();
+            }
         }
     }
     
@@ -626,7 +642,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         if (_handshook && !_allowRenegotiate && _channel!=null && _channel.isOpen())
         {
             Log.warn("SSL renegotiate denied: "+_channel);
-            close();
+            super.close();
         }   
     }
 

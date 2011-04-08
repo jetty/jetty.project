@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.http;
 
-import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.ThreadLocalBuffers;
+import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /* ------------------------------------------------------------ */
@@ -23,73 +22,187 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  * simple unbounded pool of buffers for header, request and response sizes.
  *
  */
-public abstract class HttpBuffers extends AbstractLifeCycle
+public class HttpBuffers extends AbstractLifeCycle
 {
+    private int _requestBufferSize=12*1024;
+    private int _requestHeaderSize=6*1024;
+    private int _responseBufferSize=32*1024;
+    private int _responseHeaderSize=6*1024;
+    private int _maxBuffers=1024;
     
-    private final ThreadLocalBuffers _requestBuffers = new ThreadLocalBuffers()
-    {
-        @Override
-        protected Buffer newBuffer(int size)
-        {
-            return newRequestBuffer(size);
-        }
-
-        @Override
-        protected Buffer newHeader(int size)
-        {
-            return newRequestHeader(size);
-        }
-        @Override
-        protected boolean isHeader(Buffer buffer)
-        {
-            return isRequestHeader(buffer);
-        }
-    };
+    private Buffers.Type _requestBufferType=Buffers.Type.BYTE_ARRAY;
+    private Buffers.Type _requestHeaderType=Buffers.Type.BYTE_ARRAY;
+    private Buffers.Type _responseBufferType=Buffers.Type.BYTE_ARRAY;
+    private Buffers.Type _responseHeaderType=Buffers.Type.BYTE_ARRAY;
     
-    private final ThreadLocalBuffers _responseBuffers = new ThreadLocalBuffers()
-    {
-        @Override
-        protected Buffer newBuffer(int size)
-        {
-            return newResponseBuffer(size);
-        }
-
-        @Override
-        protected Buffer newHeader(int size)
-        {
-            return newResponseHeader(size);
-        }
-        @Override
-        protected boolean isHeader(Buffer buffer)
-        {
-            return isResponseHeader(buffer);
-        }
-    };
+    private Buffers _requestBuffers;
+    private Buffers _responseBuffers;
+    
     
     public HttpBuffers()
     {
         super();
-        _requestBuffers.setBufferSize(12*1024);
-        _requestBuffers.setHeaderSize(6*1024);
-        _responseBuffers.setBufferSize(32*1024);
-        _responseBuffers.setHeaderSize(6*1024);
+    }
+    
+    /**
+     * @return the requestBufferSize
+     */
+    public int getRequestBufferSize()
+    {
+        return _requestBufferSize;
+    }
+    
+    /**
+     * @param requestBufferSize the requestBufferSize to set
+     */
+    public void setRequestBufferSize(int requestBufferSize)
+    {
+        _requestBufferSize = requestBufferSize;
+    }
+
+    /**
+     * @return the requestHeaderSize
+     */
+    public int getRequestHeaderSize()
+    {
+        return _requestHeaderSize;
+    }
+
+    /**
+     * @param requestHeaderSize the requestHeaderSize to set
+     */
+    public void setRequestHeaderSize(int requestHeaderSize)
+    {
+        _requestHeaderSize = requestHeaderSize;
+    }
+
+    /**
+     * @return the responseBufferSize
+     */
+    public int getResponseBufferSize()
+    {
+        return _responseBufferSize;
+    }
+
+    /**
+     * @param responseBufferSize the responseBufferSize to set
+     */
+    public void setResponseBufferSize(int responseBufferSize)
+    {
+        _responseBufferSize = responseBufferSize;
+    }
+
+    /**
+     * @return the responseHeaderSize
+     */
+    public int getResponseHeaderSize()
+    {
+        return _responseHeaderSize;
+    }
+
+    /**
+     * @param responseHeaderSize the responseHeaderSize to set
+     */
+    public void setResponseHeaderSize(int responseHeaderSize)
+    {
+        _responseHeaderSize = responseHeaderSize;
+    }
+
+    /**
+     * @return the requestBufferType
+     */
+    public Buffers.Type getRequestBufferType()
+    {
+        return _requestBufferType;
+    }
+
+    /**
+     * @param requestBufferType the requestBufferType to set
+     */
+    protected void setRequestBufferType(Buffers.Type requestBufferType)
+    {
+        _requestBufferType = requestBufferType;
+    }
+
+    /**
+     * @return the requestHeaderType
+     */
+    public Buffers.Type getRequestHeaderType()
+    {
+        return _requestHeaderType;
+    }
+
+    /**
+     * @param requestHeaderType the requestHeaderType to set
+     */
+    protected void setRequestHeaderType(Buffers.Type requestHeaderType)
+    {
+        _requestHeaderType = requestHeaderType;
+    }
+
+    /**
+     * @return the responseBufferType
+     */
+    public Buffers.Type getResponseBufferType()
+    {
+        return _responseBufferType;
+    }
+
+    /**
+     * @param responseBufferType the responseBufferType to set
+     */
+    protected void setResponseBufferType(Buffers.Type responseBufferType)
+    {
+        _responseBufferType = responseBufferType;
+    }
+
+    /**
+     * @return the responseHeaderType
+     */
+    public Buffers.Type getResponseHeaderType()
+    {
+        return _responseHeaderType;
+    }
+
+    /**
+     * @param responseHeaderType the responseHeaderType to set
+     */
+    protected void setResponseHeaderType(Buffers.Type responseHeaderType)
+    {
+        _responseHeaderType = responseHeaderType;
+    }
+
+    /**
+     * @param requestBuffers the requestBuffers to set
+     */
+    public void setRequestBuffers(Buffers requestBuffers)
+    {
+        _requestBuffers = requestBuffers;
+    }
+
+    /**
+     * @param responseBuffers the responseBuffers to set
+     */
+    public void setResponseBuffers(Buffers responseBuffers)
+    {
+        _responseBuffers = responseBuffers;
     }
 
     @Override
     protected void doStart()
         throws Exception
     {
+        _requestBuffers=BuffersFactory.newBuffers(_requestHeaderType,_requestHeaderSize,_requestBufferType,_requestBufferSize,_requestBufferType,getMaxBuffers());
+        _responseBuffers=BuffersFactory.newBuffers(_responseHeaderType,_responseHeaderSize,_responseBufferType,_responseBufferSize,_responseBufferType,getMaxBuffers());
         super.doStart();
     }
     
-    /**
-     * @return Returns the headerBufferSize.
-     * @deprecated use {@link #getRequestHeaderSize()} or {@link #getResponseHeaderSize()}
-     */
-    @Deprecated
-    public int getHeaderBufferSize()
+    @Override
+    protected void doStop()
+        throws Exception
     {
-        return _requestBuffers.getHeaderSize();
+        _requestBuffers=null;
+        _responseBuffers=null;
     }
 
     public Buffers getRequestBuffers()
@@ -97,114 +210,20 @@ public abstract class HttpBuffers extends AbstractLifeCycle
         return _requestBuffers;
     }
     
-    /**
-     * @return Returns the requestBufferSize.
-     */
-    public int getRequestBufferSize()
-    {
-        return _requestBuffers.getBufferSize();
-    }
-    
-    /**
-     * @return Returns the request header size.
-     */
-    public int getRequestHeaderSize()
-    {
-        return _requestBuffers.getHeaderSize();
-    }
 
     public Buffers getResponseBuffers()
     {
         return _responseBuffers;
     }
-    
-    /**
-     * @return Returns the responseBufferSize.
-     */
-    public int getResponseBufferSize()
+
+    public void setMaxBuffers(int maxBuffers)
     {
-        return _responseBuffers.getBufferSize();
-    }
-    
-    /**
-     * @return Returns the response header size.
-     */
-    public int getResponseHeaderSize()
-    {
-        return _responseBuffers.getHeaderSize();
+        _maxBuffers = maxBuffers;
     }
 
-    protected abstract Buffer newRequestBuffer(int size);
-
-    protected abstract Buffer newRequestHeader(int size);
-
-    protected abstract Buffer newResponseBuffer(int size);
-
-    protected abstract Buffer newResponseHeader(int size);
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param buffer
-     * @return True if the buffer is the correct type for a request header buffer
-     */
-    protected abstract boolean isRequestHeader(Buffer buffer);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param buffer
-     * @return True if the buffer is the correct type for a response header buffer
-     */
-    protected abstract boolean isResponseHeader(Buffer buffer);
-    
-    
-
-    /**
-     * @param headerBufferSize The headerBufferSize to set.
-     * @deprecated 
-     */
-    @Deprecated
-    public void setHeaderBufferSize( int headerBufferSize )
+    public int getMaxBuffers()
     {
-        setRequestHeaderSize(headerBufferSize);
-        setResponseHeaderSize(headerBufferSize);
-    }
-    
-    /**
-     * @param size The requestBufferSize to set.
-     */
-    public void setRequestBufferSize( int size )
-    {
-        if (isStarted())
-          throw new IllegalStateException();
-        _requestBuffers.setBufferSize(size);
-    }
-    /**
-     * @param size 
-     */
-    public void setRequestHeaderSize( int size )
-    {
-        if (isStarted())
-            throw new IllegalStateException();
-        _requestBuffers.setHeaderSize(size);
-    }
-    
-    /**
-     * @param size The response buffer size in bytes.
-     */
-    public void setResponseBufferSize( int size )
-    {
-        if (isStarted())
-          throw new IllegalStateException();
-        _responseBuffers.setBufferSize(size);
-    }
-    /**
-     * @param size 
-     */
-    public void setResponseHeaderSize( int size )
-    {
-        if (isStarted())
-            throw new IllegalStateException();
-        _responseBuffers.setHeaderSize(size);
+        return _maxBuffers;
     }
     
 }

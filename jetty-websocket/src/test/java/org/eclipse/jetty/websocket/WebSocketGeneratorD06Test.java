@@ -43,9 +43,9 @@ public class WebSocketGeneratorD06Test
     public void testOneString() throws Exception
     {
         _generator = new WebSocketGeneratorD06(_buffers, _endPoint,null);
-        
-        
-        _generator.addFrame((byte)0x04,"Hell\uFF4F W\uFF4Frld",0);
+
+        byte[] data = "Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
+        _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length,0);
         _generator.flush();
         assertEquals((byte)0x84,_out.get());
         assertEquals(15,0xff&_out.get());
@@ -73,7 +73,7 @@ public class WebSocketGeneratorD06Test
         
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x04,bytes,0,bytes.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x04,bytes,0,bytes.length,0);
         _generator.flush();
         assertEquals((byte)0x84,_out.get());
         assertEquals(15,0xff&_out.get());
@@ -103,7 +103,7 @@ public class WebSocketGeneratorD06Test
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
 
-        _generator.addFrame((byte)0x4,b,0,b.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x4,b,0,b.length,0);
 
         _generator.flush();
         assertEquals((byte)0x84,_out.get());
@@ -119,8 +119,9 @@ public class WebSocketGeneratorD06Test
     public void testOneStringMasked() throws Exception
     {
         _generator = new WebSocketGeneratorD06(_buffers, _endPoint,_maskGen);
-        
-        _generator.addFrame((byte)0x04,"Hell\uFF4F W\uFF4Frld",0);
+
+        byte[] data = "Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
+        _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length,0);
         _generator.flush();
         
         _out.get(_mask,0,4);
@@ -151,7 +152,7 @@ public class WebSocketGeneratorD06Test
         
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x04,bytes,0,bytes.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x04,bytes,0,bytes.length,0);
         _generator.flush();
         
         _out.get(_mask,0,4);
@@ -184,7 +185,7 @@ public class WebSocketGeneratorD06Test
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
 
-        _generator.addFrame((byte)0x04,b,0,b.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x04,b,0,b.length,0);
         _generator.flush();
         
         _out.get(_mask,0,4);
