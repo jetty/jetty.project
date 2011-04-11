@@ -59,7 +59,7 @@ public class TestClient
                 if (opcode == WebSocketConnectionD06.OP_CLOSE)
                 {
                     byte[] data=buffer.asArray();
-                    System.err.println("CLOSED: "+((0xff&data[0])*0x100+(0xff&data[1]))+" "+new String(data,2,data.length-2,StringUtil.__UTF8));
+                    // System.err.println("CLOSED: "+((0xff&data[0])*0x100+(0xff&data[1]))+" "+new String(data,2,data.length-2,StringUtil.__UTF8));
                     _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_CLOSE,data,0,data.length,_socket.getSoTimeout());
                     _generator.flush(_socket.getSoTimeout());
                     _socket.shutdownOutput();

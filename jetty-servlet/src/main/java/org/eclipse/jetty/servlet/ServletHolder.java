@@ -406,7 +406,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         else
         {
             _servletHandler.getServletContext().log("unavailable",e);
-            _unavailableEx=new UnavailableException(e.toString(),-1);
+            _unavailableEx=new UnavailableException(String.valueOf(e),-1);
             _unavailable=-1;
         }
     }
