@@ -431,18 +431,4 @@ public class XmlConfiguredJetty
         _server.stop();
     }
 
-
-    public void waitForDirectoryScan()
-    {
-        int ms = 2000;
-        System.out.printf("Waiting %d milliseconds for AppProvider to process directory scan ...%n",ms);
-        try
-        {
-            Thread.sleep(ms);
-        }
-        catch (InterruptedException ignore)
-        {
-            /* ignore */
-        }
-    }
 }

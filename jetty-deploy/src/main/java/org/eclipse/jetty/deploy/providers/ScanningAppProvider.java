@@ -175,12 +175,6 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
         return _deploymentManager;
     }
 
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public Resource getMonitoredDir()
-    {
-        return _monitoredDir;
-    }
 
     /* ------------------------------------------------------------ */
     public Resource getMonitoredDirResource()
@@ -211,29 +205,17 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     {
         _deploymentManager = deploymentManager;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated use {@link #setMonitoredDirResource(Resource)}
-     */
-    public void setMonitoredDir(Resource dir)
-    {
-        setMonitoredDirResource(dir);
-    }
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * @deprecated use {@link #setMonitoredDirName(String)}
-     */
-    public void setMonitoredDir(String dir)
-    {
-        setMonitoredDirName(dir);
-    }
     
     /* ------------------------------------------------------------ */
     public void setMonitoredDirResource(Resource contextsDir)
     {
         _monitoredDir = contextsDir;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void addScannerListener(Scanner.Listener listener)
+    {
+        _scanner.addListener(listener);
     }
     
     /* ------------------------------------------------------------ */

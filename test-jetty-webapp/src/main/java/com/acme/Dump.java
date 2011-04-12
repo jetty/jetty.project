@@ -200,7 +200,11 @@ public class Dump extends HttpServlet
                         response.addHeader("Dump","onTimeout");
                         try
                         {
-                            dump(response,data,chars,block,dribble,flush);
+                            if (!dump(response,data,chars,block,dribble,flush))
+                            {
+                                response.setContentType("text/plain");
+                                response.getOutputStream().println("EXPIRED");
+                            }
                             continuation.complete();
                         }
                         catch (IOException e)

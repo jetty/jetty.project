@@ -260,11 +260,13 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * Configure an object. If the object is of the approprate class, the XML configuration script is applied to the object.
+     * Configure an object. 
+     *
+     * <p>Apply the XML configuration script to the passed object.</p>
      * 
      * @param obj
-     *            The object to be configured.
-     * @exception Exception
+     *            The object to be configured, which must be of a type or super type of the class attribute of the Configure element.
+     * @exception Exception 
      */
     public Object configure(Object obj) throws Exception
     {
@@ -300,13 +302,6 @@ public class XmlConfiguration
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * Configure an object. If the object is of the approprate class, the XML configuration script is applied to the object.
-         * 
-         * @param obj
-         *            The object to be configured.
-         * @exception Exception
-         */
         public Object configure(Object obj) throws Exception
         {
             // Check the class of the object
@@ -318,12 +313,6 @@ public class XmlConfiguration
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * Configure an object. If the configuration has an ID, an object is looked up by ID and it's type check. Otherwise a new object is created.
-         * 
-         * @return The newly created configured object.
-         * @exception Exception
-         */
         public Object configure() throws Exception
         {
             Class<?> oClass = (Class<?>)nodeClass(_config);

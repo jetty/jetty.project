@@ -405,7 +405,9 @@ public class StressTest
                 socket.close();
                 long end=System.currentTimeMillis();
 
-                response=response.substring(response.indexOf("\r\n\r\n")+4);
+                String endOfResponse = "\r\n\r\n";
+                assertTrue("response = '" + response + "'", response.contains(endOfResponse));
+                response=response.substring(response.indexOf(endOfResponse) + endOfResponse.length());
 
                 assertTrue(uri,response.startsWith("DATA "+__tests[i]));
                 long latency=end-start;

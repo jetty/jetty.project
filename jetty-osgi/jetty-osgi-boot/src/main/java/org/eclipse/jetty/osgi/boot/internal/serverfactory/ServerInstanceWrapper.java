@@ -82,12 +82,12 @@ public class ServerInstanceWrapper {
     
     public ServerInstanceWrapper(String managedServerName)
     {
-    	_managedServerName = managedServerName;
+        _managedServerName = managedServerName;
     }
     
     public String getManagedServerName()
     {
-    	return _managedServerName;
+        return _managedServerName;
     }
     
     /**
@@ -97,7 +97,7 @@ public class ServerInstanceWrapper {
      */
     public ClassLoader getParentClassLoaderForWebapps()
     {
-    	return _commonParentClassLoaderForWebapps;
+        return _commonParentClassLoaderForWebapps;
     }
     
     /**
@@ -105,7 +105,7 @@ public class ServerInstanceWrapper {
      */
     public DeploymentManager getDeploymentManager()
     {
-    	return _deploymentManager;
+        return _deploymentManager;
     }
     
     /**
@@ -113,19 +113,19 @@ public class ServerInstanceWrapper {
      */
     public OSGiAppProvider getOSGiAppProvider()
     {
-    	return _provider;
+        return _provider;
     }
     
     
     public Server getServer()
     {
-    	return _server;
+        return _server;
     }
     
     
     public WebBundleDeployerHelper getWebBundleDeployerHelp()
     {
-    	return _webBundleDeployerHelper;
+        return _webBundleDeployerHelper;
     }
     
     /**
@@ -133,25 +133,25 @@ public class ServerInstanceWrapper {
      */
     public ContextHandlerCollection getContextHandlerCollection()
     {
-    	return _ctxtHandler;
+        return _ctxtHandler;
     }
 
     
-	public void start(Server server, Dictionary props)
-	{
-		_server = server;
+    public void start(Server server, Dictionary props)
+    {
+        _server = server;
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
             // passing this bundle's classloader as the context classlaoder
             // makes sure there is access to all the jetty's bundles
             ClassLoader libExtClassLoader = null;
-        	String sharedURLs = (String)props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
+            String sharedURLs = (String)props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
             try
             {
-            	List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
-            	libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(
-            			shared, null, server, JettyBootstrapActivator.class.getClassLoader());
+                List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
+                libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(
+                        shared, null, server, JettyBootstrapActivator.class.getClassLoader());
             }
             catch (MalformedURLException e)
             {
@@ -169,8 +169,8 @@ public class ServerInstanceWrapper {
             {
                 URL[] jarsWithTlds = getJarsWithTlds();
                 _commonParentClassLoaderForWebapps = jarsWithTlds == null
-                		? libExtClassLoader
-                		:new TldLocatableURLClassloader(libExtClassLoader,jarsWithTlds);
+                        ? libExtClassLoader
+                        :new TldLocatableURLClassloader(libExtClassLoader,jarsWithTlds);
             }
             catch (MalformedURLException e)
             {
@@ -190,20 +190,20 @@ public class ServerInstanceWrapper {
         }
         _webBundleDeployerHelper = new WebBundleDeployerHelper(this);
     }
-	
-	
-	public void stop()
-	{
-		try {
-			if (_server.isRunning())
-			{
-				_server.stop();
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+    
+    
+    public void stop()
+    {
+        try {
+            if (_server.isRunning())
+            {
+                _server.stop();
+            }
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
     /**
      * TODO: right now only the jetty-jsp bundle is scanned for common taglibs.
@@ -232,7 +232,7 @@ public class ServerInstanceWrapper {
         WebBundleDeployerHelper.staticInit();//that is not looking great.
         for (WebappRegistrationCustomizer regCustomizer : WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS)
         {
-        	URL[] urls = regCustomizer.getJarsWithTlds(_provider, WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER);
+            URL[] urls = regCustomizer.getJarsWithTlds(_provider, WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER);
             for (URL url : urls)
             {
                 if (!res.contains(url))
@@ -249,12 +249,12 @@ public class ServerInstanceWrapper {
     {
         String jettyConfigurationUrls = (String) props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
         List<URL> jettyConfigurations = jettyConfigurationUrls != null
-        	? extractResources(jettyConfigurationUrls) : null;
-    	if (jettyConfigurations == null || jettyConfigurations.isEmpty())
-    	{
-    		return;
-    	}
-    	Map<String,Object> id_map = new HashMap<String,Object>();
+            ? extractResources(jettyConfigurationUrls) : null;
+        if (jettyConfigurations == null || jettyConfigurations.isEmpty())
+        {
+            return;
+        }
+        Map<String,Object> id_map = new HashMap<String,Object>();
         id_map.put("Server",server);
         Map<String,String> properties = new HashMap<String,String>();
         Enumeration<Object> en = props.keys();
@@ -300,7 +300,7 @@ public class ServerInstanceWrapper {
             }
             finally
             {
-            	IO.close(is);
+                IO.close(is);
             }
         }
 
@@ -336,17 +336,17 @@ public class ServerInstanceWrapper {
             }
             if (_provider == null)
             {
-            	//create it on the fly with reasonable default values.
-            	try
-            	{
-					_provider = new OSGiAppProvider();
-					_provider.setMonitoredDir(
-							Resource.newResource(getDefaultOSGiContextsHome(
-									new File(System.getProperty("jetty.home"))).toURI()));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-            	_deploymentManager.addAppProvider(_provider);
+                //create it on the fly with reasonable default values.
+                try
+                {
+                    _provider = new OSGiAppProvider();
+                    _provider.setMonitoredDirResource(
+                            Resource.newResource(getDefaultOSGiContextsHome(
+                                    new File(System.getProperty("jetty.home"))).toURI()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                _deploymentManager.addAppProvider(_provider);
             }
         }
 
@@ -380,7 +380,7 @@ public class ServerInstanceWrapper {
     
     File getOSGiContextsHome()
     {
-    	return _provider.getContextXmlDirAsFile();
+        return _provider.getContextXmlDirAsFile();
     }
     
     /**
@@ -388,22 +388,22 @@ public class ServerInstanceWrapper {
      */
     private List<URL> extractResources(String propertyValue)
     {
-    	StringTokenizer tokenizer = new StringTokenizer(propertyValue, ",;", false);
-    	List<URL> urls = new ArrayList<URL>();
-    	while (tokenizer.hasMoreTokens())
-    	{
-    		String tok = tokenizer.nextToken();
-    		try
-    		{
-    			urls.add(((DefaultFileLocatorHelper) WebBundleDeployerHelper
-        				.BUNDLE_FILE_LOCATOR_HELPER).getLocalURL(new URL(tok)));
-    		}
-    		catch (Throwable mfe)
-    		{
-    			
-    		}
-    	}
-    	return urls;
+        StringTokenizer tokenizer = new StringTokenizer(propertyValue, ",;", false);
+        List<URL> urls = new ArrayList<URL>();
+        while (tokenizer.hasMoreTokens())
+        {
+            String tok = tokenizer.nextToken();
+            try
+            {
+                urls.add(((DefaultFileLocatorHelper) WebBundleDeployerHelper
+                        .BUNDLE_FILE_LOCATOR_HELPER).getLocalURL(new URL(tok)));
+            }
+            catch (Throwable mfe)
+            {
+                
+            }
+        }
+        return urls;
     }
     
     /**
@@ -411,32 +411,32 @@ public class ServerInstanceWrapper {
      */
     private List<File> extractFiles(String propertyValue)
     {
-    	StringTokenizer tokenizer = new StringTokenizer(propertyValue, ",;", false);
-    	List<File> files = new ArrayList<File>();
-    	while (tokenizer.hasMoreTokens())
-    	{
-    		String tok = tokenizer.nextToken();
-    		try
-    		{
-    			URL url = new URL(tok);
-    			url = ((DefaultFileLocatorHelper) WebBundleDeployerHelper
-    				.BUNDLE_FILE_LOCATOR_HELPER).getFileURL(url);
-    			if (url.getProtocol().equals("file"))
-    			{
-    				Resource res = Resource.newResource(url);
-    				File folder = res.getFile();
-    				if (folder != null)
-    				{
-    					files.add(folder);
-    				}
-    			}
-    		}
-    		catch (Throwable mfe)
-    		{
-    			
-    		}
-    	}
-    	return files;
+        StringTokenizer tokenizer = new StringTokenizer(propertyValue, ",;", false);
+        List<File> files = new ArrayList<File>();
+        while (tokenizer.hasMoreTokens())
+        {
+            String tok = tokenizer.nextToken();
+            try
+            {
+                URL url = new URL(tok);
+                url = ((DefaultFileLocatorHelper) WebBundleDeployerHelper
+                    .BUNDLE_FILE_LOCATOR_HELPER).getFileURL(url);
+                if (url.getProtocol().equals("file"))
+                {
+                    Resource res = Resource.newResource(url);
+                    File folder = res.getFile();
+                    if (folder != null)
+                    {
+                        files.add(folder);
+                    }
+                }
+            }
+            catch (Throwable mfe)
+            {
+                
+            }
+        }
+        return files;
     }
     
 
