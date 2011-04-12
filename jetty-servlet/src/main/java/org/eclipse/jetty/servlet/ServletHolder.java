@@ -395,18 +395,22 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 _unavailable=System.currentTimeMillis()+5000; // TODO configure
         }
     }
-    
 
     /* ------------------------------------------------------------ */
 
-    private void makeUnavailable(Throwable e)
+    private void makeUnavailable(final Throwable e)
     {
         if (e instanceof UnavailableException)
             makeUnavailable((UnavailableException)e);
         else
         {
             _servletHandler.getServletContext().log("unavailable",e);
-            _unavailableEx=new UnavailableException(String.valueOf(e),-1);
+            _unavailableEx=new UnavailableException(String.valueOf(e),-1)
+            {
+                {
+                    initCause(e);
+                }
+            };
             _unavailable=-1;
         }
     }

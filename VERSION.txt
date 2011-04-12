@@ -1,5 +1,6 @@
 jetty-7.4.0-SNAPSHOT
  + 342504 Scanner Listener 
+ + JETTY-1362 Set root cause of UnavailableException
 
 jetty-7.4.0.RC0
  + 324110 Added test harnesses for merging of QueryStrings.
