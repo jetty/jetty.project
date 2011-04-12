@@ -16,9 +16,14 @@
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.deploy.AppProvider;
+import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,9 +35,11 @@ import org.junit.Test;
  */
 public class ScanningAppProviderRuntimeUpdatesTest
 {
-	@Rule
-	public TestingDir testdir = new TestingDir();
+    @Rule
+    public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
+    private final AtomicInteger _scans = new AtomicInteger();
+    private int _providers;
 
     @Before
     public void setupEnvironment() throws Exception
@@ -46,6 +53,24 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
         // Start it
         jetty.start();
+
+        // monitor tick
+        DeploymentManager dm = jetty.getServer().getBeans(DeploymentManager.class).get(0);
+        for (AppProvider provider : dm.getAppProviders())
+        {
+            if (provider instanceof ScanningAppProvider)
+            {
+                _providers++;
+                ((ScanningAppProvider)provider).addScannerListener(new Scanner.ScanListener()
+                {
+                    public void scan()
+                    {
+                        _scans.incrementAndGet();
+                    }
+                });
+            }
+        }
+
     }
 
     @After
@@ -55,6 +80,23 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.stop();
     }
 
+    public void waitForDirectoryScan()
+    {
+        int scan=_scans.get()+2*_providers;
+        do
+        {
+            try
+            {
+                Thread.sleep(200);
+            }
+            catch(InterruptedException e)
+            {
+                Log.warn(e);
+            }
+        }
+        while(_scans.get()<scan);
+    }
+    
     /**
      * Simple webapp deployment after startup of server.
      */
@@ -64,7 +106,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");
 
-        jetty.waitForDirectoryScan();
+        waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
     }
@@ -78,13 +120,13 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");
 
-        jetty.waitForDirectoryScan();
+        waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
 
         jetty.removeContext("foo.xml");
 
-        jetty.waitForDirectoryScan();
+        waitForDirectoryScan();
 
         // FIXME: hot undeploy with removal not working! - jetty.assertNoWebAppContexts();
     }
@@ -98,7 +140,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");
 
-        jetty.waitForDirectoryScan();
+        waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
 
@@ -111,8 +153,8 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.copyWebapp("foo-webapp-2.war","foo.war");
 
         // This should result in the existing foo.war being replaced with the new foo.war
-        jetty.waitForDirectoryScan();
-        jetty.waitForDirectoryScan();
+        waitForDirectoryScan();
+        waitForDirectoryScan();
         jetty.assertWebAppContextsExists("/foo");
 
         // Test that webapp response contains "-2"

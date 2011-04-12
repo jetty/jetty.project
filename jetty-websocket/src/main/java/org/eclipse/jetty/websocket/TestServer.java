@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -18,8 +19,9 @@ public class TestServer extends Server
 
     WebSocket _websocket;
     SelectChannelConnector _connector;
-    WebSocketHandler _handler;
-    ConcurrentLinkedQueue<TestWebSocket> _webSockets = new ConcurrentLinkedQueue<TestWebSocket>();
+    WebSocketHandler _wsHandler;
+    ResourceHandler _rHandler;
+    ConcurrentLinkedQueue<TestWebSocket> _broadcast = new ConcurrentLinkedQueue<TestWebSocket>();
 
     public TestServer(int port)
     {
@@ -27,7 +29,7 @@ public class TestServer extends Server
         _connector.setPort(port);
 
         addConnector(_connector);
-        _handler = new WebSocketHandler()
+        _wsHandler = new WebSocketHandler()
         {
             public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
@@ -56,18 +58,37 @@ public class TestServer extends Server
             }
         };
 
-        setHandler(_handler);
+        setHandler(_wsHandler);
+        
+        _rHandler=new ResourceHandler();
+        _rHandler.setDirectoriesListed(true);
+        _rHandler.setResourceBase(".");
+        _wsHandler.setHandler(_rHandler);
+   
     }
 
-    
+    /* ------------------------------------------------------------ */
     public boolean isVerbose()
     {
         return _verbose;
     }
 
+    /* ------------------------------------------------------------ */
     public void setVerbose(boolean verbose)
     {
         _verbose = verbose;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setResourceBase(String dir)
+    {
+        _rHandler.setResourceBase(dir);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getResourceBase()
+    {
+        return _rHandler.getResourceBase();
     }
     
     /* ------------------------------------------------------------ */
@@ -84,12 +105,14 @@ public class TestServer extends Server
         public void onConnect(Connection connection)
         {
             _connection = connection;
-            _webSockets.add(this);
+            if (_verbose)
+                System.err.printf("%s#onConnect %s\n",this.getClass().getSimpleName(),connection);
         }
 
         public void onDisconnect(int code,String message)
         {
-            _webSockets.remove(this);
+            if (_verbose)
+                System.err.printf("%s#onDisonnect %d %s\n",this.getClass().getSimpleName(),code,message);
         }
         
         public boolean onFrame(byte flags, byte opcode, byte[] data, int offset, int length)
@@ -161,10 +184,24 @@ public class TestServer extends Server
     class TestEchoBroadcastWebSocket extends TestWebSocket
     {
         @Override
+        public void onConnect(Connection connection)
+        {
+            super.onConnect(connection);
+            _broadcast.add(this);
+        }
+
+        @Override
+        public void onDisconnect(int code,String message)
+        {
+            super.onDisconnect(code,message);
+            _broadcast.remove(this);
+        }
+        
+        @Override
         public void onMessage(byte[] data, int offset, int length)
         {
             super.onMessage(data,offset,length);
-            for (TestWebSocket ws : _webSockets)
+            for (TestWebSocket ws : _broadcast)
             {
                 try
                 {
@@ -172,6 +209,7 @@ public class TestServer extends Server
                 }
                 catch (IOException e)
                 {
+                    _broadcast.remove(ws);
                     e.printStackTrace();
                 }
             }
@@ -181,7 +219,7 @@ public class TestServer extends Server
         public void onMessage(final String data)
         {
             super.onMessage(data);
-            for (TestWebSocket ws : _webSockets)
+            for (TestWebSocket ws : _broadcast)
             {
                 try
                 {
@@ -189,6 +227,7 @@ public class TestServer extends Server
                 }
                 catch (IOException e)
                 {
+                    _broadcast.remove(ws);
                     e.printStackTrace();
                 }
             }
@@ -286,17 +325,19 @@ public class TestServer extends Server
     private static void usage()
     {
         System.err.println("java -cp CLASSPATH "+TestServer.class+" [ OPTIONS ]");
-        System.err.println("  -p|--port PORT ");
+        System.err.println("  -p|--port PORT    (default 8080)");
         System.err.println("  -v|--verbose ");
+        System.err.println("  -d|--docroot file (default '.')");
         System.exit(1);
     }
     
-    public static void main(String[] args)
+    public static void main(String... args)
     {
         try
         {
             int port=8080;
             boolean verbose=false;
+            String docroot=".";
             
             for (int i=0;i<args.length;i++)
             {
@@ -305,6 +346,8 @@ public class TestServer extends Server
                     port=Integer.parseInt(args[++i]);
                 else if ("-v".equals(a)||"--verbose".equals(a))
                     verbose=true;
+                else if ("-d".equals(a)||"--docroot".equals(a))
+                    docroot=args[++i];
                 else if (a.startsWith("-"))
                     usage();
             }
@@ -312,6 +355,7 @@ public class TestServer extends Server
             
             TestServer server = new TestServer(port);
             server.setVerbose(verbose);
+            server.setResourceBase(docroot);
             server.start();
             server.join();
         }

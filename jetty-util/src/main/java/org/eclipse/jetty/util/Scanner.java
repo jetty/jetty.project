@@ -104,6 +104,10 @@ public class Scanner extends AbstractLifeCycle
     {
     }
 
+    public interface ScanListener extends Listener
+    {
+        public void scan();
+    }
     
     public interface DiscreteListener extends Listener
     {
@@ -391,6 +395,23 @@ public class Scanner extends AbstractLifeCycle
         _prevScan.clear();
         _prevScan.putAll(_currentScan);
         reportScanEnd(_scanCount);
+        
+        for (Listener l : _listeners)
+        {
+            try
+            {
+                if (l instanceof ScanListener)
+                    ((ScanListener)l).scan();
+            }
+            catch (Exception e)
+            {
+                Log.warn(e);
+            }
+            catch (Error e)
+            {
+                Log.warn(e);
+            }
+        }
     }
 
     /**
