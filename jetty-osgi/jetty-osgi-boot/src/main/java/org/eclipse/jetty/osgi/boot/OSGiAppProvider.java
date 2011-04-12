@@ -133,7 +133,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     public OSGiAppProvider(File contextsDir) throws IOException
     {
         this();
-        setMonitoredDir(Resource.newResource(contextsDir.toURI()));
+        setMonitoredDirResource(Resource.newResource(contextsDir.toURI()));
     }
     
     /**
@@ -303,7 +303,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     {
         try
         {
-            Resource monitoredDir = getMonitoredDir();
+            Resource monitoredDir = getMonitoredDirResource();
             if (monitoredDir == null)
                 return null;
             return monitoredDir.getFile();
@@ -324,7 +324,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     {
         try
         {
-            Resource monitoredDir = getMonitoredDir();
+            Resource monitoredDir = getMonitoredDirResource();
             if (monitoredDir == null)
                 return null;
             return monitoredDir.getFile().toURI().toString();
@@ -361,7 +361,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
      */
     public void setContextXmlDir(String contextsDir)
     {
-        setMonitoredDir(contextsDir);
+        setMonitoredDirName(contextsDir);
     }
     
     /**
