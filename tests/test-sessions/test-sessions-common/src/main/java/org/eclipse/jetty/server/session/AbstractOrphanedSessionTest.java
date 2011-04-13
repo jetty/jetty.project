@@ -45,8 +45,6 @@ public abstract class AbstractOrphanedSessionTest
     @Test
     public void testOrphanedSession() throws Exception
     {
-        Random random = new Random(System.nanoTime());
-
         // Disable scavenging for the first server, so that we simulate its "crash".
         String contextPath = "";
         String servletMapping = "/server";

@@ -41,15 +41,14 @@ public abstract class AbstractImmortalSessionTest
     @Test
     public void testImmortalSession() throws Exception
     {
-        Random random = new Random(System.nanoTime());
-
         String contextPath = "";
         String servletMapping = "/server";
-        int port = random.nextInt(50000) + 10000;
         int scavengePeriod = 2;
-        AbstractTestServer server = createServer(port, -1, scavengePeriod);
+        AbstractTestServer server = createServer(0, -1, scavengePeriod);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server.start();
+        int port=server.getPort();
+        
         try
         {
             HttpClient client = new HttpClient();

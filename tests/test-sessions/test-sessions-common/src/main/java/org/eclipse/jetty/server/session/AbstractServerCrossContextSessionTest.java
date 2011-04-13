@@ -44,18 +44,16 @@ public abstract class AbstractServerCrossContextSessionTest
     @Test
     public void testCrossContextDispatch() throws Exception
     {
-        Random random = new Random(System.nanoTime());
-
         String contextA = "/contextA";
         String contextB = "/contextB";
         String servletMapping = "/server";
-        int port = random.nextInt(50000) + 10000;
-        AbstractTestServer server = createServer(port);
+        AbstractTestServer server = createServer(0);
         ServletContextHandler ctxA = server.addContext(contextA);
         ctxA.addServlet(TestServletA.class, servletMapping);
         ServletContextHandler ctxB = server.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);
         server.start();
+        int port=server.getPort();
         try
         {
             HttpClient client = new HttpClient();

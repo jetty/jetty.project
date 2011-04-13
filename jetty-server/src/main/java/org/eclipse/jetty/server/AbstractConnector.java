@@ -113,9 +113,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.http.HttpListener#getHttpServer()
-     */
     public ThreadPool getThreadPool()
     {
         return _threadPool;
@@ -144,18 +141,12 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.HttpListener#setPort(int)
-     */
     public void setPort(int port)
     {
         _port = port;
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.HttpListener#getPort()
-     */
     public int getPort()
     {
         return _port;

@@ -87,18 +87,17 @@ public abstract class AbstractWebAppObjectInSessionTest
         targetFile = new File(packageDirs, resourceName);
         //copy(sourceFile, targetFile);
         IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
-        Random random = new Random(System.nanoTime());
 
-        int port1 = random.nextInt(50000) + 10000;
-        AbstractTestServer server1 = createServer(port1);
+        AbstractTestServer server1 = createServer(0);
         server1.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
         server1.start();
+        int port1 = server1.getPort();
         try
         {
-            int port2 = random.nextInt(50000) + 10000;
-            AbstractTestServer server2 = createServer(port2);
+            AbstractTestServer server2 = createServer(0);
             server2.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
             server2.start();
+            int port2 = server2.getPort();
             try
             {
                 HttpClient client = new HttpClient();

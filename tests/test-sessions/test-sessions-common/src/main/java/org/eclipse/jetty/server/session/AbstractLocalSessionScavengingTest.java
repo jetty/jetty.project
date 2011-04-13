@@ -52,21 +52,20 @@ public abstract class AbstractLocalSessionScavengingTest
     @Test
     public void testLocalSessionsScavenging() throws Exception
     {
-        Random random = new Random(System.nanoTime());
         String contextPath = "";
         String servletMapping = "/server";
-        int port1 = random.nextInt(50000) + 10000;
         int inactivePeriod = 1;
         int scavengePeriod = 2;
-        AbstractTestServer server1 = createServer(port1, inactivePeriod, scavengePeriod);
+        AbstractTestServer server1 = createServer(0, inactivePeriod, scavengePeriod);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server1.start();
+        int port1 = server1.getPort();
         try
         {
-            int port2 = random.nextInt(50000) + 10000;
-            AbstractTestServer server2 = createServer(port2, inactivePeriod, scavengePeriod * 3);
+            AbstractTestServer server2 = createServer(0, inactivePeriod, scavengePeriod * 3);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
             server2.start();
+            int port2 = server2.getPort();
             try
             {
                 HttpClient client = new HttpClient();
