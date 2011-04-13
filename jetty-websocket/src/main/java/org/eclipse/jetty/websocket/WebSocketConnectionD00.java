@@ -31,13 +31,13 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.websocket.WebSocket.OnFrame;
 
-public class WebSocketConnectionD00 extends AbstractConnection implements WebSocketConnection, WebSocket.Connection
+public class WebSocketConnectionD00 extends AbstractConnection implements WebSocketConnection, WebSocket.FrameConnection
 {
     public final static byte LENGTH_FRAME=(byte)0x80;
     public final static byte SENTINEL_FRAME=(byte)0x00;
 
-    
     final IdleCheck _idle;
     final WebSocketParser _parser;
     final WebSocketGenerator _generator;
@@ -47,11 +47,10 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     String _key2;
     ByteArrayBuffer _hixieBytes;
     
-    public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, int draft)
+    public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
         throws IOException
     {
         super(endpoint,timestamp);
-        // TODO - can we use the endpoint idle mechanism?
         if (endpoint instanceof AsyncEndPoint)
             ((AsyncEndPoint)endpoint).cancelIdle();
         
@@ -60,19 +59,9 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         _websocket = websocket;
         _protocol=protocol;
 
-        // Select the parser/generators to use
-        switch(draft)
-        {
-            case 1:
-                _generator = new WebSocketGeneratorD01(buffers, _endp);
-                _parser = new WebSocketParserD01(buffers, endpoint, new FrameHandlerD1(_websocket));
-                break;
-            default:
-                _generator = new WebSocketGeneratorD00(buffers, _endp);
-                _parser = new WebSocketParserD00(buffers, endpoint, new FrameHandlerD0(_websocket));
-        }
+        _generator = new WebSocketGeneratorD00(buffers, _endp);
+        _parser = new WebSocketParserD00(buffers, endpoint, new FrameHandlerD0(_websocket));
 
-        // TODO should these be AsyncEndPoint checks/calls?
         if (_endp instanceof SelectChannelEndPoint)
         {
             final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
@@ -95,7 +84,8 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             };
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
     public void setHixieKeys(String key1,String key2)
     {
         _key1=key1;
@@ -103,6 +93,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         _hixieBytes=new IndirectNIOBuffer(16);
     }
 
+    /* ------------------------------------------------------------ */
     public Connection handle() throws IOException
     {
         try
@@ -146,7 +137,9 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                     }
                 }
 
-                _websocket.onConnect(this);
+                if (_websocket instanceof OnFrame)
+                    ((OnFrame)_websocket).onHandshake(this);
+                _websocket.onOpen(this);
                 return this;
             }
             
@@ -169,6 +162,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
         catch(IOException e)
         {
+            Log.debug(e);
             try
             {
                 _endp.close();
@@ -184,12 +178,19 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             if (_endp.isOpen())
             {
                 _idle.access(_endp);
+
+                if (_endp.isInputShutdown() && _generator.isBufferEmpty())
+                    _endp.close();
+                else
+                    checkWriteable();
+                
                 checkWriteable();
             }
         }
         return this;
     }
 
+    /* ------------------------------------------------------------ */
     private void doTheHixieHixieShake()
     {          
         byte[] result=WebSocketConnectionD00.doTheHixieHixieShake(
@@ -199,25 +200,29 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         _hixieBytes.clear();
         _hixieBytes.put(result);
     }
-    
+
+    /* ------------------------------------------------------------ */
     public boolean isOpen()
     {
         return _endp!=null&&_endp.isOpen();
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return _parser.isBufferEmpty() && _generator.isBufferEmpty();
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isSuspended()
     {
         return false;
     }
 
+    /* ------------------------------------------------------------ */
     public void closed()
     {
-        _websocket.onDisconnect(0,"");
+        _websocket.onClose(WebSocketConnectionD06.CLOSE_NORMAL,"");
     }
 
     /* ------------------------------------------------------------ */
@@ -265,7 +270,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void disconnect(int code, String message)
+    public void close(int code, String message)
     {
         throw new UnsupportedOperationException();
     }
@@ -378,7 +383,9 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                 response.addHeader("WebSocket-Protocol",subprotocol);
             response.sendError(101,"Web Socket Protocol Handshake");
             response.flushBuffer();
-            _websocket.onConnect(this);
+            if (_websocket instanceof OnFrame)
+                ((OnFrame)_websocket).onHandshake(this);
+            _websocket.onOpen(this);
         }
     }
 
@@ -444,92 +451,57 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         
         public void close(int code,String message)
         {
-            disconnect(code,message);
+            close(code,message);
         }
     }
-    
-    class FrameHandlerD1 implements WebSocketParser.FrameHandler
+
+    public boolean isMessageComplete(byte flags)
     {
-        public final static byte PING=1;
-        public final static byte PONG=1;
-
-        final WebSocket _websocket;
-        final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
-        boolean _fragmented=false;
-
-        FrameHandlerD1(WebSocket websocket)
-        {
-            _websocket=websocket;
-        }
-        
-        public void onFrame(byte flags, byte opcode, Buffer buffer)
-        {
-            try
-            {
-                byte[] array=buffer.array();
-                
-                if (opcode==0)
-                {
-                    if (isMore(flags))
-                    {
-                        _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
-                        _fragmented=true;
-                    }
-                    else if (_fragmented)
-                    {
-                        _utf8.append(buffer.array(),buffer.getIndex(),buffer.length());
-                        if (_websocket instanceof WebSocket.OnTextMessage)
-                            ((WebSocket.OnTextMessage)_websocket).onMessage(_utf8.toString());
-                        _utf8.reset();
-                        _fragmented=false;
-                    }
-                    else
-                    {
-                        if (_websocket instanceof WebSocket.OnTextMessage)
-                            ((WebSocket.OnTextMessage)_websocket).onMessage(buffer.toString(StringUtil.__UTF8));
-                    }
-                }
-                else if (opcode==PING)
-                {
-                    sendFrame(flags,PONG,buffer.array(),buffer.getIndex(),buffer.length());
-                }
-                else if (opcode==PONG)
-                {
-                    
-                }
-                else
-                {
-                    if (isMore(flags))
-                    {
-                        if (_websocket instanceof WebSocket.OnFrame)
-                            ((WebSocket.OnFrame)_websocket).onFrame(flags,opcode,array,buffer.getIndex(),buffer.length());
-                    }
-                    else if (_fragmented)
-                    {
-                        if (_websocket instanceof WebSocket.OnFrame)
-                            ((WebSocket.OnFrame)_websocket).onFrame(flags,opcode,array,buffer.getIndex(),buffer.length());
-                    }
-                    else
-                    {
-                        if (_websocket instanceof WebSocket.OnBinaryMessage)
-                            ((WebSocket.OnBinaryMessage)_websocket).onMessage(array,buffer.getIndex(),buffer.length());
-                    }
-                }
-            }
-            catch(ThreadDeath th)
-            {
-                throw th;
-            }
-            catch(Throwable th)
-            {
-                Log.warn(th);
-            }
-        }
-
-        public void close(int code,String message)
-        {
-            disconnect(code,message);
-        }
+        return true;
     }
 
+    public byte binaryOpcode()
+    {
+        return LENGTH_FRAME;
+    }
+
+    public byte textOpcode()
+    {
+        return SENTINEL_FRAME;
+    }
+
+    public boolean isControl(byte opcode)
+    {
+        return false;
+    }
+
+    public boolean isText(byte opcode)
+    {
+        return (opcode&LENGTH_FRAME)==0;
+    }
+
+    public boolean isBinary(byte opcode)
+    {
+        return (opcode&LENGTH_FRAME)!=0;
+    }
+
+    public boolean isContinuation(byte opcode)
+    {
+        return false;
+    }
+
+    public boolean isClose(byte opcode)
+    {
+        return false;
+    }
+
+    public boolean isPing(byte opcode)
+    {
+        return false;
+    }
+
+    public boolean isPong(byte opcode)
+    {
+        return false;
+    }
 }

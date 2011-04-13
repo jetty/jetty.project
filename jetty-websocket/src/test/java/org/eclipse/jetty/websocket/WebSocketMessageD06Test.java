@@ -745,16 +745,20 @@ public class WebSocketMessageD06Test
         boolean aggregate=false;
         private final CountDownLatch connected = new CountDownLatch(1);
         private final CountDownLatch disconnected = new CountDownLatch(1);
-        private volatile Connection connection;
+        private volatile FrameConnection connection;
 
         public Connection getConnection()
         {
             return connection;
         }
-        
-        public void onConnect(Connection connection)
+
+        public void onHandshake(FrameConnection connection)
         {
             this.connection = connection;
+        }
+        
+        public void onOpen(Connection connection)
+        {
             if (onConnect)
             {
                 try
@@ -779,7 +783,7 @@ public class WebSocketMessageD06Test
             return disconnected.await(time, TimeUnit.MILLISECONDS);
         }
 
-        public void onDisconnect(int code,String message)
+        public void onClose(int code,String message)
         {
             disconnected.countDown();
         }

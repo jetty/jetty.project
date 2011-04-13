@@ -111,7 +111,7 @@ public class WebSocketLoadTest
     {
         private volatile Connection outbound;
 
-        public void onConnect(Connection outbound)
+        public void onOpen(Connection outbound)
         {
             this.outbound = outbound;
         }
@@ -125,11 +125,11 @@ public class WebSocketLoadTest
             }
             catch (IOException x)
             {
-                outbound.disconnect(0,"");
+                outbound.disconnect();
             }
         }
 
-        public void onDisconnect(int closeCode, String message)
+        public void onClose(int closeCode, String message)
         {
         }
     }

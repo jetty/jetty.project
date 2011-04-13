@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
@@ -44,7 +45,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
-public class HttpConnection /* extends AbstractConnection */ implements Connection
+public class HttpConnection extends AbstractConnection
 {
     private HttpDestination _destination;
     private HttpGenerator _generator;
@@ -75,8 +76,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
 
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
-        _endp=endp;
-        _timeStamp = System.currentTimeMillis();
+        super(endp);
 
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
@@ -431,7 +431,7 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
             if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
             {
                 // Assume we are write blocked!
-                ((AsyncEndPoint)_endp).setWritable(false);
+                ((AsyncEndPoint)_endp).scheduleWrite();
             }
         }
 
@@ -726,19 +726,5 @@ public class HttpConnection /* extends AbstractConnection */ implements Connecti
 
             }
         }
-    }
-
-
-
-    // TODO remove and use AbstractConnection for 7.4
-    private final long _timeStamp;
-    protected final EndPoint _endp;
-    public long getTimeStamp()
-    {
-        return _timeStamp;
-    }
-    public EndPoint getEndPoint()
-    {
-        return _endp;
     }
 }

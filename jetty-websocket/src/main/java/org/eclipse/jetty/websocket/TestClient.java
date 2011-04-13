@@ -21,6 +21,9 @@ import org.eclipse.jetty.util.log.Log;
 
 /**
  * @version $Revision$ $Date$
+ * 
+ * This is not a general purpose websocket client.
+ * It's only for testing the websocket server and is hardwired to a specific draft version of the protocol.
  */
 public class TestClient
 {
@@ -65,6 +68,11 @@ public class TestClient
                     _socket.shutdownOutput();
                     _socket.close();
                     return;
+                }
+                else if (opcode == WebSocketConnectionD06.OP_PING)
+                {
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length(),_socket.getSoTimeout());
+                    _generator.flush(_socket.getSoTimeout());
                 }
                 
                 _messageBytes+=buffer.length();

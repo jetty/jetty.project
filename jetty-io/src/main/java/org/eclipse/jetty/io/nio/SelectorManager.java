@@ -516,7 +516,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         Object att = key.attachment();
                         if (att instanceof SelectChannelEndPoint)
                         {
-                            ((SelectChannelEndPoint)att).schedule();
+                            if (key.isReadable()||key.isWritable())
+                                ((SelectChannelEndPoint)att).schedule();
                         }
                         else if (key.isConnectable())
                         {
@@ -553,7 +554,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
                             if (key.isReadable())
-                                endpoint.schedule();                           
+                                endpoint.schedule();  
                         }
                         key = null;
                     }
@@ -837,7 +838,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 for (int i=0;i<100 && _selecting!=null;i++)
                 {
                     wakeup();
-                    Thread.sleep(1);
+                    Thread.sleep(10);
                 }
             }
             catch(Exception e)

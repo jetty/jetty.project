@@ -24,7 +24,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.Idleable;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 
@@ -52,7 +51,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private boolean _writeBlocked;
     private boolean _open;
     private volatile long _idleTimestamp;
-    private boolean _changing=false;
 
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
@@ -199,7 +197,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 {
                     _dispatched = false;
                     Log.warn("Dispatched Failed! "+this+" to "+_manager);
-                    new Throwable().printStackTrace();
                     updateKey();
                 }
             }
@@ -250,21 +247,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     protected void idleExpired()
     {
-        if (_connection instanceof Idleable)
-        {
-            ((Idleable)_connection).idleExpired();
-        }
-        else
-        {
-            try
-            {
-                shutdownOutput();
-            }
-            catch(IOException e)
-            {
-                Log.ignore(e);
-            }
-        }
+        _connection.idleExpired();
     }
 
     /* ------------------------------------------------------------ */
@@ -274,14 +257,19 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
         int l = super.flush(header, buffer, trailer);
-        if (!(_writable=l!=0))
+        
+        // If there was something to write and it wasn't written, then we are not writable.
+        if (l==0 && ( header!=null && header.hasContent() || buffer!=null && buffer.hasContent() || trailer!=null && trailer.hasContent()))
         {
             synchronized (this)
             {
+                _writable=false;
                 if (!_dispatched)
                     updateKey();
             }
         }
+        else
+            _writable=true;
         return l;
     }
 
@@ -292,14 +280,20 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public int flush(Buffer buffer) throws IOException
     {
         int l = super.flush(buffer);
-        if (!(_writable=l!=0))
+        
+        // If there was something to write and it wasn't written, then we are not writable.
+        if (l==0 && buffer!=null && buffer.hasContent())
         {
             synchronized (this)
             {
+                _writable=false;
                 if (!_dispatched)
                     updateKey();
             }
         }
+        else
+            _writable=true;
+        
         return l;
     }
 
@@ -390,13 +384,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         return true;
     }
-
-    /* ------------------------------------------------------------ */
-    public void setWritable(boolean writable)
-    {
-        _writable=writable;
-    }
-
+    
     /* ------------------------------------------------------------ */
     public void scheduleWrite()
     {
@@ -433,7 +421,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
             if(_interestOps == ops && getChannel().isOpen())
                 return;
-            _changing=true;
         }
         _selectSet.addChange(this);
         _selectSet.wakeup();
@@ -447,7 +434,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized (this)
         {
-            _changing=false;
             if (getChannel().isOpen())
             {
                 if (_interestOps>0)
@@ -529,6 +515,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         final Connection next = _connection.handle();
                         if (next!=_connection)
                         {
+                            Log.debug("{} replaced {}",next,_connection);
                             _connection=next;
                             continue;
                         }

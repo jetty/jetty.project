@@ -1,5 +1,6 @@
 jetty-7.4.0-SNAPSHOT
  + 342504 Scanner Listener 
+ + 342700 refine websocket API for anticipated changes
  + JETTY-1362 Set root cause of UnavailableException
  + Various test harness cleanups to avoid random failures
 

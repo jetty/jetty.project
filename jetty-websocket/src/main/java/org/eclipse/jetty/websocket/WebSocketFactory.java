@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.util.log.Log;
 
 /**
  * Factory to create WebSocket connections
@@ -120,16 +121,16 @@ public class WebSocketFactory
         final WebSocketConnection connection;
         switch (draft)
         {
-            case 6:
-                connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol, draft);
+            case -1:
+            case 0:
+                connection = new WebSocketConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
-            case 5:
-            case 4:
-            case 3:
-            case 2:
-                throw new HttpException(400, "Unsupported draft specification: " + draft);
+            case 6:
+                connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
+                break;
             default:
-                connection = new WebSocketConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol, draft);
+                Log.warn("Unsupported Websocket version: "+draft);
+                throw new HttpException(400, "Unsupported draft specification: " + draft);
         }
 
         // Let the connection finish processing the handshake

@@ -35,7 +35,7 @@ public class WebSocketChatServlet extends WebSocketServlet
     {
         Connection _connection;
 
-        public void onConnect(Connection connection)
+        public void onOpen(Connection connection)
         {
             // Log.info(this+" onConnect");
             _connection=connection;
@@ -50,7 +50,7 @@ public class WebSocketChatServlet extends WebSocketServlet
         public void onMessage(String data)
         {
             if (data.indexOf("disconnect")>=0)
-                _connection.disconnect(0,"");
+                _connection.disconnect();
             else
             {
                 // Log.info(this+" onMessage: "+data);
@@ -68,7 +68,7 @@ public class WebSocketChatServlet extends WebSocketServlet
             }
         }
 
-        public void onDisconnect(int code, String message)
+        public void onClose(int code, String message)
         {
             // Log.info(this+" onDisconnect");
             _members.remove(this);

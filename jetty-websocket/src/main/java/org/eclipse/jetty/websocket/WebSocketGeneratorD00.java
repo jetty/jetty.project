@@ -131,7 +131,7 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
         if (!_endp.isOpen())
             throw new EofException();
 
-        if (_buffer!=null)
+        if (_buffer!=null && _buffer.hasContent())
             return _endp.flush(_buffer);
 
         return 0;

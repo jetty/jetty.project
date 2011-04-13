@@ -77,11 +77,11 @@ public class WebSocketUpgradeTest extends TestCase
         {
             Connection _connection;
             
-            public void onDisconnect(int closeCode, String message)
+            public void onClose(int closeCode, String message)
             {
             }
             
-            public void onConnect(Connection connection)
+            public void onOpen(Connection connection)
             {
                 _connection=connection;
                 _results.add("clientWS.onConnect");
@@ -118,11 +118,11 @@ public class WebSocketUpgradeTest extends TestCase
             protected Connection onSwitchProtocol(EndPoint endp) throws IOException
             {
                 waitFor(3);
-                WebSocketConnectionD00 connection = new WebSocketConnectionD00(clientWS,endp,new WebSocketBuffers(4096),System.currentTimeMillis(),1000,"",0);
+                WebSocketConnectionD00 connection = new WebSocketConnectionD00(clientWS,endp,new WebSocketBuffers(4096),System.currentTimeMillis(),1000,"");
 
                 _results.add("onSwitchProtocol");
                 _results.add(connection);
-                clientWS.onConnect(connection);
+                clientWS.onOpen(connection);
                 return connection;
             }
 
@@ -215,7 +215,7 @@ public class WebSocketUpgradeTest extends TestCase
     {
         Connection _connection;
 
-        public void onConnect(Connection connection)
+        public void onOpen(Connection connection)
         {
             _connection=connection;
             _webSockets.add(this);
@@ -229,7 +229,7 @@ public class WebSocketUpgradeTest extends TestCase
             _results.add(data);
         }
 
-        public void onDisconnect(int code, String message)
+        public void onClose(int code, String message)
         {
             _results.add("onDisconnect");
             _webSockets.remove(this);

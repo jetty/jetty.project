@@ -51,4 +51,9 @@ public interface Connection
      * Called when the connection is closed
      */
     void closed();
+    
+    /**
+     * Called when the connection idle timeout expires
+     */
+    void idleExpired();
 }
