@@ -493,7 +493,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
         public void onFrame(byte flags, byte opcode, Buffer buffer)
         {
-            boolean more=(flags&0x8)==0;
+            boolean lastFrame = isLastFrame(flags); 
             
             synchronized(WebSocketConnectionD06.this)
             {
@@ -528,7 +528,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                                 if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
                                 {
                                     // If this is the last fragment, deliver the text buffer
-                                    if (more && _onTextMessage!=null)
+                                    if (lastFrame && _onTextMessage!=null)
                                     {
                                         _opcode=-1;
                                         String msg =_utf8.toString();
@@ -541,8 +541,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                                     _connection.close(WebSocketConnectionD06.CLOSE_LARGE,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
                                     _utf8.reset();
                                     _opcode=-1;
-                                }
-                                        
+                                }    
                             }
                             else if (_opcode>=0 && _connection.getMaxBinaryMessageSize()>=0)
                             {
@@ -557,7 +556,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                                     _aggregate.put(buffer);
 
                                     // If this is the last fragment, deliver
-                                    if (!more && _onBinaryMessage!=null)
+                                    if (lastFrame && _onBinaryMessage!=null)
                                     {
                                         try
                                         {
@@ -606,7 +605,12 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                         {
                             if(_onTextMessage!=null)
                             {
-                                if (more)
+                                if (lastFrame)
+                                {
+                                    // Deliver the message
+                                    _onTextMessage.onMessage(buffer.toString(StringUtil.__UTF8));
+                                }
+                                else 
                                 {
                                     if (_connection.getMaxTextMessageSize()>=0)
                                     {
@@ -621,11 +625,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                                         }
                                     }
                                 }
-                                else 
-                                {
-                                    // Deliver the message
-                                    _onTextMessage.onMessage(buffer.toString(StringUtil.__UTF8));
-                                }
                             }
                             break;
                         }
@@ -634,7 +633,11 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                         {
                             if (_onBinaryMessage!=null)
                             {
-                                if (more)
+                                if (lastFrame)
+                                {
+                                    _onBinaryMessage.onMessage(array,buffer.getIndex(),buffer.length());
+                                }
+                                else   
                                 {
                                     if (_connection.getMaxBinaryMessageSize()>=0)
                                     {
@@ -653,10 +656,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                                             _aggregate.put(buffer);
                                         }
                                     }
-                                }
-                                else
-                                {
-                                    _onBinaryMessage.onMessage(array,buffer.getIndex(),buffer.length());
                                 }
                             }
                         }      
