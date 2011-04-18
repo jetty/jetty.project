@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
@@ -45,6 +46,7 @@ public class NestedConnection extends HttpConnection
         ((NestedRequest)_request).setConnection(this);
         
         // Set the request line
+        _request.setDispatcherType(DispatcherType.REQUEST);
         _request.setScheme(request.getScheme());
         _request.setMethod(request.getMethod());
         String uri=request.getQueryString()==null?request.getRequestURI():(request.getRequestURI()+"?"+request.getQueryString());
@@ -52,6 +54,8 @@ public class NestedConnection extends HttpConnection
         _request.setPathInfo(request.getRequestURI());
         _request.setQueryString(request.getQueryString());
         _request.setProtocol(request.getProtocol());
+        
+        _request.setAttribute("isSecure",new Boolean(request.isSecure()));
         
         // Set the headers
         HttpFields fields = getRequestFields();
@@ -63,6 +67,12 @@ public class NestedConnection extends HttpConnection
         }
         
         _request.setCookies(request.getCookies());
+        
+        for (Enumeration<String> e=request.getAttributeNames();e.hasMoreElements();)
+        {
+            String attr=e.nextElement();
+            _request.setAttribute(attr,request.getAttribute(attr));
+        }
         
         // System.err.println(_request.getMethod()+" "+_request.getUri()+" "+_request.getProtocol());
         // System.err.println(fields.toString());

@@ -379,7 +379,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          */
         public void doSelect() throws IOException
         {
-            Log.debug("doSelect "+SelectorManager.this.isRunning());
             try
             {
                 _selecting=Thread.currentThread();

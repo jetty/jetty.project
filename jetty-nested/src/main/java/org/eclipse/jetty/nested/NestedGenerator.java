@@ -40,7 +40,7 @@ public class NestedGenerator extends AbstractGenerator
 
     public void addContent(Buffer content, boolean last) throws IOException
     {
-        Log.debug("addContent {} {}",content.length(),last);
+        // Log.debug("addContent {} {}",content.length(),last);
         if (_noContent)
         {
             content.clear();
@@ -107,7 +107,7 @@ public class NestedGenerator extends AbstractGenerator
 
     public boolean addContent(byte b) throws IOException
     {
-        Log.debug("addContent 1");
+        // Log.debug("addContent 1");
         if (_noContent)
             return false;
 
@@ -150,7 +150,7 @@ public class NestedGenerator extends AbstractGenerator
     {
         if (_buffer == null)
         {
-            Log.debug("initContent");
+            // Log.debug("initContent");
             _buffer = _buffers.getBuffer();
         }
     }
@@ -181,7 +181,8 @@ public class NestedGenerator extends AbstractGenerator
     @Override
     public void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException
     {
-        Log.debug("completeHeader: {}",fields);
+        if (Log.isDebugEnabled())
+            Log.debug("completeHeader: {}",fields.toString().trim().replace("\r\n","|"));
         if (_state != STATE_HEADER)
             return;
 

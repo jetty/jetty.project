@@ -793,6 +793,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        Log.debug("scope {} @ {}",baseRequest.getContextPath()+"|"+baseRequest.getServletPath()+"|"+baseRequest.getPathInfo(),this);
+        
         Context old_context=null;
         String old_context_path=null;
         String old_servlet_path=null;
@@ -809,6 +811,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         if (old_context!=_scontext)
         {
             // check the target.
+            System.err.println(dispatch);
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
             {
                 if (_compactPath)
@@ -862,6 +865,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 baseRequest.setPathInfo(pathInfo);
             }
 
+            if (Log.isDebugEnabled())
+                Log.debug("context={} @ {}",baseRequest.getContextPath()+"|"+baseRequest.getServletPath()+"|"+baseRequest.getPathInfo(),this);
+
+            
             // start manual inline of nextScope(target,baseRequest,request,response);
             if (never())
                 nextScope(target,baseRequest,request,response);

@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -68,6 +69,10 @@ public class NestedJettyServlet implements Servlet
             else
                 _connector=(NestedConnector)_server.getConnectors()[0];
             
+            SocketConnector socket = new SocketConnector();
+            socket.setPort(0);
+            _server.addConnector(socket);
+            
             WebAppContext webapp = new WebAppContext();
             
             webapp.setContextPath(_context.getContextPath());
@@ -84,6 +89,7 @@ public class NestedJettyServlet implements Servlet
 
             _server.start();
             _context.log("Started Jetty/"+_server.getVersion()+" for "+webapp.getWar()+" nested in "+_context.getServerInfo());
+            webapp.setAttribute("socket",socket.toString());
         }
         catch(Exception e)
         {

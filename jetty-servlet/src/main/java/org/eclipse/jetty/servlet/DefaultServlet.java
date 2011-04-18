@@ -334,7 +334,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
         try
         {
-            if (_resourceBase!=null){
+            if (_resourceBase!=null)
+            {
                 r = _resourceBase.addPath(pathInContext);
             }
             else
@@ -344,7 +345,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
 
             if (Log.isDebugEnabled())
-                Log.debug("RESOURCE "+pathInContext+"="+r);
+                Log.debug("Resource "+pathInContext+"="+r);
         }
         catch (IOException e)
         {
