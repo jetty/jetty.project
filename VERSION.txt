@@ -1,5 +1,6 @@
-jetty-7.4.1-SNAPSHOT
+jetty-7.4.1-SNAPSHOT 
  + 343083 Set nested dispatch type.
+ + 343277 add support for a context white list
 
 jetty-7.4.0.v20110414
  + 342504 Scanner Listener 

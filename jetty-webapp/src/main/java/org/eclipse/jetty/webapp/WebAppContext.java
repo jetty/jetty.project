@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
@@ -129,6 +130,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
 
+    private String[] _contextWhiteList = null;
+    
     private File _tmpDir;
     private String _war;
     private String _extraClasspath;
@@ -977,6 +980,20 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         _permissions = permissions;
     }
+    
+    /**
+     * Set the context white list
+     * 
+     * In certain circumstances you want may want to deny access of one webapp from another
+     * when you may not fully trust the webapp.  Setting this white list will enable a
+     * check when a servlet called getContext(String), validating that the uriInPath
+     * for the given webapp has been declaratively allows access to the context.
+     * @param contextWhiteList
+     */
+    public void setContextWhiteList(String[] contextWhiteList)
+    {
+        _contextWhiteList = contextWhiteList;
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -1181,6 +1198,31 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 
             return resource.getURL();
         }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public ServletContext getContext(String uripath)
+        {
+            ServletContext servletContext = super.getContext(uripath);
+            
+            if ( servletContext != null && _contextWhiteList != null )
+            {
+                for ( String context : _contextWhiteList )
+                {
+                    if ( context.equals(uripath) )
+                    {
+                        return servletContext;
+                    }
+                }
+                
+                return null;
+            }
+            else
+            {
+                return servletContext;
+            }
+        }
+
     }
 
     /* ------------------------------------------------------------ */
