@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.client.HttpClient.Connector;
 import org.eclipse.jetty.client.security.Authentication;
@@ -40,17 +42,19 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class HttpDestination
 {
-    private final ByteArrayBuffer _hostHeader;
-    private final Address _address;
-    private final LinkedList<HttpConnection> _connections = new LinkedList<HttpConnection>();
-    private final ArrayList<HttpConnection> _idle = new ArrayList<HttpConnection>();
+    private final List<HttpExchange> _queue = new LinkedList<HttpExchange>();
+    private final List<HttpConnection> _connections = new LinkedList<HttpConnection>();
+    private final BlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
+    private final List<HttpConnection> _idle = new ArrayList<HttpConnection>();
     private final HttpClient _client;
+    private final Address _address;
     private final boolean _ssl;
-    private final int _maxConnections;
+    private final ByteArrayBuffer _hostHeader;
+    private volatile int _maxConnections;
+    private volatile int _maxQueueSize;
     private int _pendingConnections = 0;
-    private ArrayBlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
     private int _newConnection = 0;
-    private Address _proxy;
+    private volatile Address _proxy;
     private Authentication _proxyAuthentication;
     private PathMap _authorizations;
     private List<HttpCookie> _cookies;
@@ -71,29 +75,17 @@ public class HttpDestination
         }
     }
 
-    /* The queue of exchanged for this destination if connections are limited */
-    private LinkedList<HttpExchange> _queue = new LinkedList<HttpExchange>();
-
-    HttpDestination(HttpClient client, Address address, boolean ssl, int maxConnections)
+    HttpDestination(HttpClient client, Address address, boolean ssl)
     {
         _client = client;
         _address = address;
         _ssl = ssl;
-        _maxConnections = maxConnections;
+        _maxConnections = _client.getMaxConnectionsPerAddress();
+        _maxQueueSize = _client.getMaxQueueSizePerAddress();
         String addressString = address.getHost();
         if (address.getPort() != (_ssl ? 443 : 80))
             addressString += ":" + address.getPort();
         _hostHeader = new ByteArrayBuffer(addressString);
-    }
-
-    public Address getAddress()
-    {
-        return _address;
-    }
-
-    public Buffer getHostHeader()
-    {
-        return _hostHeader;
     }
 
     public HttpClient getHttpClient()
@@ -101,9 +93,39 @@ public class HttpDestination
         return _client;
     }
 
+    public Address getAddress()
+    {
+        return _address;
+    }
+
     public boolean isSecure()
     {
         return _ssl;
+    }
+
+    public Buffer getHostHeader()
+    {
+        return _hostHeader;
+    }
+
+    public int getMaxConnections()
+    {
+        return _maxConnections;
+    }
+
+    public void setMaxConnections(int maxConnections)
+    {
+        this._maxConnections = maxConnections;
+    }
+
+    public int getMaxQueueSize()
+    {
+        return _maxQueueSize;
+    }
+
+    public void setMaxQueueSize(int maxQueueSize)
+    {
+        this._maxQueueSize = maxQueueSize;
     }
 
     public int getConnections()
@@ -276,7 +298,7 @@ public class HttpDestination
             }
             else if (_queue.size() > 0)
             {
-                HttpExchange ex = _queue.removeFirst();
+                HttpExchange ex = _queue.remove(0);
                 ex.setStatus(HttpExchange.STATUS_EXCEPTED);
                 ex.getEventListener().onConnectionFailed(throwable);
 
@@ -310,7 +332,7 @@ public class HttpDestination
             _pendingConnections--;
             if (_queue.size() > 0)
             {
-                HttpExchange ex = _queue.removeFirst();
+                HttpExchange ex = _queue.remove(0);
                 ex.setStatus(HttpExchange.STATUS_EXCEPTED);
                 ex.getEventListener().onException(throwable);
             }
@@ -349,7 +371,7 @@ public class HttpDestination
                 }
                 else
                 {
-                    HttpExchange exchange = _queue.removeFirst();
+                    HttpExchange exchange = _queue.remove(0);
                     send(connection, exchange);
                 }
             }
@@ -399,7 +421,7 @@ public class HttpDestination
                 }
                 else
                 {
-                    HttpExchange ex = _queue.removeFirst();
+                    HttpExchange ex = _queue.remove(0);
                     send(connection, ex);
                 }
                 this.notifyAll();
@@ -526,6 +548,9 @@ public class HttpDestination
             boolean startConnection = false;
             synchronized (this)
             {
+                if (_queue.size() == _maxQueueSize)
+                    throw new RejectedExecutionException("Queue full for address " + _address);
+
                 _queue.add(ex);
                 if (_connections.size() + _pendingConnections < _maxConnections)
                     startConnection = true;
@@ -544,7 +569,7 @@ public class HttpDestination
             // to the exchange queue and recycle the connection
             if (!connection.send(exchange))
             {
-                _queue.addFirst(exchange);
+                _queue.add(0, exchange);
                 returnIdleConnection(connection);
             }
         }
