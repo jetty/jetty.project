@@ -25,15 +25,52 @@ import org.eclipse.jetty.io.bio.StreamEndPoint;
 
 public class NestedEndPoint extends StreamEndPoint
 {
-    public NestedEndPoint(HttpServletRequest request, HttpServletResponse response)
+    private final HttpServletRequest _outerRequest;
+    
+    public NestedEndPoint(HttpServletRequest outerRequest, HttpServletResponse outerResponse)
         throws IOException
     {
-        super(request.getInputStream(),response.getOutputStream());
+        super(outerRequest.getInputStream(),outerResponse.getOutputStream());
+        _outerRequest=outerRequest;
     }
 
     public ServletInputStream getServletInputStream()
     {
         return (ServletInputStream)getInputStream();
     }
+    @Override
+    public String getLocalAddr()
+    {
+        return _outerRequest.getLocalAddr();
+    }
 
+    @Override
+    public String getLocalHost()
+    {
+        return _outerRequest.getLocalName();
+    }
+
+    @Override
+    public int getLocalPort()
+    {
+        return _outerRequest.getLocalPort();
+    }
+
+    @Override
+    public String getRemoteAddr()
+    {
+        return _outerRequest.getRemoteAddr();
+    }
+
+    @Override
+    public String getRemoteHost()
+    {
+        // TODO Auto-generated method stub
+        return _outerRequest.getRemoteHost();
+    }
+    @Override
+    public int getRemotePort()
+    {
+        return _outerRequest.getRemotePort();
+    }
 }

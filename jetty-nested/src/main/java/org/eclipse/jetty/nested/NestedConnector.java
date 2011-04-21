@@ -72,9 +72,9 @@ public class NestedConnector extends AbstractConnector
      */
     public void service(ServletRequest outerRequest, ServletResponse outerResponse) throws IOException, ServletException
     {
-        HttpServletRequest request = (HttpServletRequest)outerRequest;
-        HttpServletResponse response = (HttpServletResponse)outerResponse;
-        NestedConnection connection=new NestedConnection(this,new NestedEndPoint(request,response),request,response,_serverInfo);
+        HttpServletRequest outerServletRequest = (HttpServletRequest)outerRequest;
+        HttpServletResponse outerServletResponse = (HttpServletResponse)outerResponse;
+        NestedConnection connection=new NestedConnection(this,new NestedEndPoint(outerServletRequest,outerServletResponse),outerServletRequest,outerServletResponse,_serverInfo);
         connection.service();
     }
 
