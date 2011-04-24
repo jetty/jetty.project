@@ -811,7 +811,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         if (old_context!=_scontext)
         {
             // check the target.
-            System.err.println(dispatch);
             if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
             {
                 if (_compactPath)

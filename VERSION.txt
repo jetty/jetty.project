@@ -3,6 +3,7 @@ jetty-7.4.1-SNAPSHOT
  + 343277 add support for a context white list
  + 343352 make sure that jetty.osgi.boot is activated when a WAB is registered
  + 343567 HttpClient does not limit the destination's exchange queue
+ + 343707 'REQUEST' is printed on console for each incoming HTTP request
 
 jetty-7.4.0.v20110414
  + 342504 Scanner Listener
