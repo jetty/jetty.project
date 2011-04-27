@@ -16,6 +16,7 @@ package org.eclipse.jetty.overlays;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -145,6 +146,13 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     public final static String TEMPLATES="templates";
     public final static String NODES="nodes";
     public final static String INSTANCES="instances";
+
+    public final static String LIB="WEB-INF/lib-overlay";
+    public final static String WEBAPP=".";
+    public final static String OVERLAY_XML="WEB-INF/overlay.xml";
+    public final static String TEMPLATE_XML="WEB-INF/template.xml";
+    public final static String WEB_DEFAULT_XML="WEB-INF/web-default.xml";
+    public final static String WEB_FRAGMENT_XML="WEB-INF/web-overlay.xml";
     
     enum Monitor { WEBAPPS,TEMPLATES,NODES,INSTANCES} ;
     
@@ -153,31 +161,13 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     static 
     {
         List<String> regexes = new ArrayList<String>();
-        
-        regexes.add(WEBAPPS+"/[^/]*/");
-        regexes.add(TEMPLATES+"/[^/]*/");
-        regexes.add(NODES+"/[^/]*/");
-        regexes.add(INSTANCES+"/[^/]*/");
-        
-        regexes.add(WEBAPPS+"/[^/]*");
-        regexes.add(TEMPLATES+"/[^/]*");
-        regexes.add(NODES+"/[^/]*");
-        regexes.add(INSTANCES+"/[^/]*");
-        
-        regexes.add(TEMPLATES+"/[^/]*/[^/]+");
-        regexes.add(NODES+"/[^/]*/[^/]+");
-        regexes.add(INSTANCES+"/[^/]*/[^/]+");
-        
-        regexes.add(TEMPLATES+"/[^/]*/lib/[^/]+");
-        regexes.add(NODES+"/[^/]*/lib/[^/]+");
-        regexes.add(INSTANCES+"/[^/]*/lib/[^/]+");
-        
-        for (String s:new String[] {"/WEB-INF/lib/[^/]*","/WEB-INF/classes/[^/]*","/WEB-INF/[^/]*\\.xml",})
+
+        for (String s:new String[] {".war",".jar","/WEB-INF/syslib/[^/]*","/WEB-INF/lib/[^/]*","/WEB-INF/classes/[^/]*","/WEB-INF/[^/]*\\.xml",})
         {
             regexes.add(WEBAPPS+"/[^/]*"+s);
-            regexes.add(TEMPLATES+"/[^/]*/webapp"+s);
-            regexes.add(NODES+"/[^/]*/webapp"+s);
-            regexes.add(INSTANCES+"/[^/]*/webapp"+s);
+            regexes.add(TEMPLATES+"/[^/]*"+s);
+            regexes.add(NODES+"/[^/]*"+s);
+            regexes.add(INSTANCES+"/[^/]*"+s);
         }
         
         for (String s: regexes)
@@ -212,6 +202,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             Set<String> changes = new HashSet<String>();
             for (String filename:filenames)
             {
+                
                 File file=new File(filename);
                 if (file.getName().startsWith(".") || file.getName().endsWith(".swp"))
                     continue;
@@ -232,7 +223,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                 }
                 
                 String uri=dir+"/"+name;
-                
+
                 for (Pattern p : __scanPatterns)
                 {
                     if (p.matcher(relname).matches())
@@ -244,7 +235,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                         __log.debug("{} != {}",relname,p.pattern());
                 }
             }
-
+            
             if (changes.size()>0)
                 OverlayedAppProvider.this.updateLayers(changes);
         }
@@ -344,7 +335,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             // Build the instance lib loader
             ClassLoader shared_loader = shared.getWebappLoader()!=null?shared.getWebappLoader():(shared.getLibLoader()!=null?shared.getLibLoader():orig_loader);
             ClassLoader loader = shared_loader;
-            Resource instance_lib = instance.getResource("lib");
+            Resource instance_lib = instance.getResource(LIB);
             if (instance_lib.exists())
             {
                 List<URL> libs = new ArrayList<URL>();
@@ -370,7 +361,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             // Create the instance context for the template
             ContextHandler context=null;
                 
-            Resource template_context_xml = template.getResource("context.xml");
+            Resource template_context_xml = template.getResource(OVERLAY_XML);
             if (template_context_xml.exists())
             {
                 __log.debug("{}: context.xml={}",origin,template_context_xml);
@@ -386,7 +377,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                 context=new WebAppContext();
 
             // Set the resource base
-            final Resource instance_webapp = instance.getResource("webapp");
+            final Resource instance_webapp = instance.getResource(WEBAPP);
             if (instance_webapp.exists())
             {   
                 context.setBaseResource(new ResourceCollection(instance_webapp,shared.getBaseResource()));
@@ -406,7 +397,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             context.setAttribute("org.eclipse.jetty.server.session.timer", _sessionScavenger);
             
             // Apply any node or instance context.xml
-            for (Resource context_xml : getLayeredResources("context.xml",node,instance))
+            for (Resource context_xml : getLayeredResources(OVERLAY_XML,node,instance))
             {
                 __log.debug("{}: context.xml={}",origin,context_xml);
                 XmlConfiguration xmlc = newXmlConfiguration(context_xml.getURL(),idMap,template,instance);
@@ -479,7 +470,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                     loader = new URLClassLoader(new URL[]{},shared_loader);
 
                 // add default descriptor
-                List<Resource> webdefaults=getLayeredResources("webdefault.xml",instance,node,template);
+                List<Resource> webdefaults=getLayeredResources(WEB_DEFAULT_XML,instance,node,template);
                 if (webdefaults.size()>0)
                 {
                     Resource webdefault = webdefaults.get(0);
@@ -488,7 +479,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                 }
                 
                 // add overlay descriptors
-                for (Resource override : getLayeredResources("web.xml",template,node,instance))
+                for (Resource override : getLayeredResources(WEB_FRAGMENT_XML,template,node,instance))
                 {
                     __log.debug("{}: web override={}",origin,override);
                     webappcontext.addOverrideDescriptor(override.toString());
@@ -541,7 +532,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         // If we have libs directories, create classloader and make it available to
         // the XMLconfiguration
         List<URL> libs = new ArrayList<URL>();
-        for (Resource lib : getLayeredResources("lib",node,template))
+        for (Resource lib : getLayeredResources(LIB,node,template))
         {
             for (String jar :lib.list())
             {
@@ -591,7 +582,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         // shared results of running the template and node context.xml files.
         // If there is a template context.xml, give it the chance to create the ContextHandler instance
         // otherwise create an instance ourselves
-        for (Resource template_xml : getLayeredResources("template.xml",template,node))
+        for (Resource template_xml : getLayeredResources(TEMPLATE_XML,template,node))
         {
             __log.debug("{}: template.xml={}",key,template_xml);
             XmlConfiguration xmlc = newXmlConfiguration(template_xml.getURL(),idMap,template,null);
@@ -882,6 +873,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
 
+    /* ------------------------------------------------------------ */
     protected File tmpdir(String name,String suffix) throws IOException
     {
         File dir=_tmpDir;
@@ -900,7 +892,8 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         tmp.deleteOnExit();
         return tmp;
     }
-    
+
+    /* ------------------------------------------------------------ */
     /**
      * Walks the defined webapps, templates, nodes and instances to 
      * determine what should be deployed, then adjust reality to match.
@@ -1026,11 +1019,13 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
 
     }
 
+    /* ------------------------------------------------------------ */
     protected void removeInstance(String name)
     {
         _removedLayers.add(_instances.remove(name));
     }
 
+    /* ------------------------------------------------------------ */
     protected Instance loadInstance(String name, File origin)
         throws IOException
     {
@@ -1039,6 +1034,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return instance;
     }
 
+    /* ------------------------------------------------------------ */
     protected void removeNode()
     {
         if (_node!=null)
@@ -1046,6 +1042,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _node=null;
     }
 
+    /* ------------------------------------------------------------ */
     protected Node loadNode(File origin)
         throws IOException
     {
@@ -1054,12 +1051,14 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _node=new Node(_nodeName,origin);
         return _node;
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected void removeTemplate(String name)
     {
         _removedLayers.add(_templates.remove(name));
     }
 
+    /* ------------------------------------------------------------ */
     protected Template loadTemplate(String name, File origin)
         throws IOException
     {
@@ -1072,7 +1071,8 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     {
         _removedLayers.add(_webapps.remove(name));
     }
-    
+
+    /* ------------------------------------------------------------ */
     protected Webapp loadWebapp(String name, File origin)
         throws IOException
     {
@@ -1081,6 +1081,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return webapp;
     }
 
+    /* ------------------------------------------------------------ */
     private static List<Resource> getLayeredResources(String path, Layer... layers)
     {
         List<Resource> resources = new ArrayList<Resource>();
@@ -1095,6 +1096,9 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         return resources;
     }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     class Layer 
     {
         private final String _name;
@@ -1217,10 +1221,13 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     
         public Resource getContext()
         {
-            return getResource("context.xml");
+            return getResource(OVERLAY_XML);
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     class Node extends Overlay
     {
         public Node(String name, File origin) throws IOException
@@ -1229,7 +1236,10 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
     
-    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     class ClassifiedOverlay extends Overlay
     {
         private final String _templateName;
@@ -1238,9 +1248,16 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         public ClassifiedOverlay(String name, File origin) throws IOException
         {
             super(name,origin);
+            
+            int l=1;
             int e=name.indexOf('=');
+            if (e<0)
+            {
+                l=2;
+                e=name.indexOf("--");
+            }
             _templateName=e>=0?name.substring(0,e):name;
-            _classifier=e>=0?name.substring(e+1):null;
+            _classifier=e>=0?name.substring(e+l):null;
         }
 
         public String getTemplateName()
@@ -1253,7 +1270,10 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             return _classifier;
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     class Template extends ClassifiedOverlay
     {
         private Webapp _webapp;
@@ -1273,7 +1293,10 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             super(name,origin);
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     class Instance extends ClassifiedOverlay
     {
         Template _template;
@@ -1315,7 +1338,10 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             getLoadedKey();
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     static class OverlayedApp extends App
     {
         final Instance _instance;
@@ -1332,4 +1358,5 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         }
     }
     
+
 }

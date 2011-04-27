@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
@@ -512,5 +513,38 @@ public class TypeUtil
             Log.ignore(e);
         }
         return null;
+    }
+    
+    public static Object call(Class<?> oClass, String method, Object obj, Object[] arg) 
+       throws InvocationTargetException, NoSuchMethodException
+    {
+        // Lets just try all methods for now
+        Method[] methods = oClass.getMethods();
+        for (int c = 0; methods != null && c < methods.length; c++)
+        {
+            if (!methods[c].getName().equals(method))
+                continue;
+            if (methods[c].getParameterTypes().length != arg.length)
+                continue;
+            if (Modifier.isStatic(methods[c].getModifiers()) != (obj == null))
+                continue;
+            if ((obj == null) && methods[c].getDeclaringClass() != oClass)
+                continue;
+
+            try
+            {
+                return methods[c].invoke(obj,arg);
+            }
+            catch (IllegalAccessException e)
+            {
+                Log.ignore(e);
+            }
+            catch (IllegalArgumentException e)
+            {
+                Log.ignore(e);
+            }
+        }
+
+        throw new NoSuchMethodException(method);
     }
 }

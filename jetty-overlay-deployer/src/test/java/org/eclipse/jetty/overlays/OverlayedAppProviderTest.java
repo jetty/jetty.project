@@ -169,7 +169,7 @@ public class OverlayedAppProviderTest
         assertTrue(scanned.isEmpty());
 
         
-        // Check scanning for archives
+        // Check scanning for directories
         File war = new File(_webapps,"foo-1.2.3");
         war.mkdir();
         File template = new File(_templates,"foo=foo-1.2.3");
@@ -178,6 +178,12 @@ public class OverlayedAppProviderTest
         node.mkdir();
         File instance = new File(_instances,"foo=instance");
         instance.mkdir();
+        for (File f : new File[] { war,template,node,instance } )
+        {
+            File webinf = new File(f,"WEB-INF");
+            webinf.mkdir();
+            touch(webinf,"web.xml");
+        }   
         
         provider.scan();
         provider.scan();
@@ -204,10 +210,10 @@ public class OverlayedAppProviderTest
 
         for (File d : new File[]{template,node,instance})
         {
-            touch(d,"web.xml");
-            touch(d,"context.xml");
-            touch(d,"other");
-            touch(d,"webapp/WEB-INF/lib/bar.jar");
+            touch(d,"WEB-INF/web-fragment.xml");
+            touch(d,"WEB-INF/overlay.xml");
+            touch(d,"WEB-INF/other");
+            touch(d,"WEB-INF/lib/bar.jar");
         }
 
         provider.scan();
@@ -223,9 +229,8 @@ public class OverlayedAppProviderTest
         
         // Touch xml
         Thread.sleep(1000); // needed so last modified is different
-        touch(war,"WEB-INF/web.xml");
-        for (File d : new File[]{template,node,instance})
-            touch(d,"context.xml");
+        for (File d : new File[]{war,template,node,instance})
+            touch(d,"WEB-INF/web.xml");
         provider.scan();
         provider.scan();
         results = scanned.poll();
@@ -238,9 +243,8 @@ public class OverlayedAppProviderTest
         
         // Touch XML
         Thread.sleep(1000);
-        touch(war,"WEB-INF/spring.XML");
-        for (File d : new File[]{template,node,instance})
-            touch(d,"webapp/WEB-INF/spring.XML");
+        for (File d : new File[]{war,template,node,instance})
+            touch(d,"WEB-INF/spring.XML");
         provider.scan();
         provider.scan();
         results = scanned.poll();
@@ -253,21 +257,17 @@ public class OverlayedAppProviderTest
       
 
         // Touch unrelated
-        touch(war,"index.html");
-        for (File d : new File[]{template,node,instance})
-            touch(d,"webapp/index.html");
+        for (File d : new File[]{war,template,node,instance})
+            touch(d,"index.html");
         provider.scan();
         provider.scan();
         results = scanned.poll();
-        assertEquals(1,results.size());
-        assertTrue(results.contains("webapps/foo-1.2.3"));
-
+        assertEquals(null,results);
         
         // Touch jar
         Thread.sleep(1000);
-        touch(war,"WEB-INF/lib/bar.jar");
-        for (File d : new File[]{template,node,instance})
-            touch(d,"webapp/WEB-INF/lib/bar.jar");
+        for (File d : new File[]{war,template,node,instance})
+            touch(d,"WEB-INF/lib/bar.jar");
         provider.scan();
         provider.scan();
         results = scanned.poll();
@@ -280,9 +280,7 @@ public class OverlayedAppProviderTest
         
         // touch other class
         Thread.sleep(1000);
-        touch(war,"WEB-INF/other.txt");
-        touch(war,"index.html");
-        for (File d : new File[]{template,node,instance})
+        for (File d : new File[]{war,template,node,instance})
             touch(d,"index.html");
         provider.scan();
         provider.scan();
@@ -414,15 +412,20 @@ public class OverlayedAppProviderTest
         // Add a war dir
         File warDir = new File(_webapps,"foo-1.2.3");
         warDir.mkdir();
+        File warDirWI = new File(warDir,"WEB-INF");
+        warDirWI.mkdir();
+        touch(warDirWI,"web.xml");
         provider.scan();
         provider.scan();
         assertEquals("loadWebapp foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
         assertEquals(warDir.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
         
-        
         // Add a template dir
         File templateDir = new File(_templates,"foo=foo-1.2.3");
         templateDir.mkdir();
+        File templateDirWI = new File(templateDir,"WEB-INF");
+        templateDirWI.mkdir();
+        touch(templateDirWI,"web.xml");
         provider.scan();
         provider.scan();
         assertEquals("loadTemplate foo=foo-1.2.3",scanned.poll(1,TimeUnit.SECONDS));
@@ -431,6 +434,9 @@ public class OverlayedAppProviderTest
         // Add a node dir
         File nodeADir = new File(_nodes,"nodeA");
         nodeADir.mkdir();
+        File nodeADirWI = new File(nodeADir,"WEB-INF");
+        nodeADirWI.mkdir();
+        touch(nodeADirWI,"web.xml");
         provider.scan();
         provider.scan();
         assertEquals("loadNode",scanned.poll(1,TimeUnit.SECONDS));
@@ -439,6 +445,9 @@ public class OverlayedAppProviderTest
         // Add another node dir
         File nodeBDir = new File(_nodes,"nodeB");
         nodeBDir.mkdir();
+        File nodeBDirWI = new File(nodeBDir,"WEB-INF");
+        nodeBDirWI.mkdir();
+        touch(nodeADirWI,"web.xml");
         provider.scan();
         provider.scan();
         assertTrue(scanned.isEmpty());
@@ -446,6 +455,9 @@ public class OverlayedAppProviderTest
         // Add an instance dir
         File instanceDir = new File(_instances,"foo=instance");
         instanceDir.mkdir();
+        File instanceDirWI = new File(instanceDir,"WEB-INF");
+        instanceDirWI.mkdir();
+        touch(instanceDirWI,"web.xml");
         provider.scan();
         provider.scan();
         assertEquals("loadInstance foo=instance",scanned.poll(1,TimeUnit.SECONDS));
@@ -464,11 +476,8 @@ public class OverlayedAppProviderTest
         assertTrue(scanned.isEmpty());
 
         // Touch directories
-        touch(warDir,"WEB-INF/web.xml");
-        touch(templateDir,"context.xml");
-        touch(nodeADir,"context.xml");
-        touch(nodeBDir,"context.xml");
-        touch(instanceDir,"context.xml");
+        for (File d : new File[]{warDir,templateDir,nodeADir,nodeBDir,instanceDir})
+            touch(d,"WEB-INF/web.xml");
         provider.scan();
         provider.scan();
         assertEquals(8,scanned.size());
