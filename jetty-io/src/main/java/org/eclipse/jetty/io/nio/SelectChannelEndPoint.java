@@ -354,7 +354,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized (this)
         {
-            long start=_selectSet.getNow();
+            long now=_selectSet.getNow();
+            long end=now+timeoutMs;
             try
             {
                 _writeBlocked=true;
@@ -363,15 +364,17 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     try
                     {
                         updateKey();
-                        this.wait(timeoutMs);
+                        this.wait(end-now);
                     }
                     catch (InterruptedException e)
                     {
                         Log.warn(e);
                     }
-
-                    timeoutMs -= _selectSet.getNow()-start;
-                    if (_writeBlocked && timeoutMs<=0)
+                    finally
+                    {
+                        now=_selectSet.getNow();
+                    }
+                    if (_writeBlocked && now>=end)
                         return false;
                 }
             }

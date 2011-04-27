@@ -6,6 +6,7 @@ jetty-7.4.1-SNAPSHOT
  + 343567 HttpClient does not limit the destination's exchange queue
  + 343707 'REQUEST' is printed on console for each incoming HTTP request
  + 343482 refactored overlay deployer layout to use WAR layout
+ + 343923 flush timeouts applied to outer loop
 
 jetty-7.4.0.v20110414
  + 342504 Scanner Listener

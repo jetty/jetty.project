@@ -424,22 +424,28 @@ public abstract class AbstractGenerator implements Generator
     public void flush(long maxIdleTime) throws IOException
     {
         // block until everything is flushed
+        long now=System.currentTimeMillis();
+        long end=now+maxIdleTime;
         Buffer content = _content;
         Buffer buffer = _buffer;
         if (content!=null && content.length()>0 || buffer!=null && buffer.length()>0 || isBufferFull())
         {
             flushBuffer();
             
-            while ((content!=null && content.length()>0 ||buffer!=null && buffer.length()>0) && _endp.isOpen())
-                blockForOutput(maxIdleTime);
+            while (now<end && (content!=null && content.length()>0 ||buffer!=null && buffer.length()>0) && _endp.isOpen())
+            {
+                blockForOutput(end-now);
+                now=System.currentTimeMillis();
+            }
         }
         
         // make sure buffered data is also flushed
-        while (_endp.isBufferingOutput() && _endp.isOpen())
+        while (now<end && _endp.isBufferingOutput() && _endp.isOpen())
         {
             if (!_endp.isBlocking())
-                _endp.blockWritable(maxIdleTime);
+                _endp.blockWritable(end-now);
             _endp.flush();
+            now=System.currentTimeMillis();
         }
     }
 
