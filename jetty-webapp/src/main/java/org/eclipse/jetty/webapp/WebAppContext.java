@@ -143,6 +143,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationClassesSet=false;
     private boolean _configurationsSet=false;
     private boolean _allowDuplicateFragmentNames = false;
+    private boolean _throwUnavailableOnStartupException = false;
     
   
     private MetaData _metadata=new MetaData();
@@ -448,6 +449,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             Log.warn("Failed startup of context "+this, e);
             _unavailableException=e;
             setAvailable(false);
+            if (isThrowUnavailableOnStartupException())
+                throw e;
         }
     }
     
@@ -1161,6 +1164,17 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _allowDuplicateFragmentNames = allowDuplicateFragmentNames;
     }
 
+    
+    /* ------------------------------------------------------------ */
+    public void setThrowUnavailableOnStartupException (boolean throwIfStartupException) {
+        _throwUnavailableOnStartupException = throwIfStartupException;
+    }
+    
+    
+    public boolean isThrowUnavailableOnStartupException () {
+        return _throwUnavailableOnStartupException;
+    }
+    
 
     /* ------------------------------------------------------------ */
     @Override

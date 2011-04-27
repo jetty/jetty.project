@@ -233,7 +233,9 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _dumpBeforeStop = dumpBeforeStop;
     }
-
+    
+    
+  
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
@@ -254,7 +256,7 @@ public class Server extends HandlerWrapper implements Attributes
         } 
         catch(Throwable e) 
         { 
-            Log.warn("Error starting handlers",e);
+            mex.add(e);
         }
         
         if (_connectors!=null)
