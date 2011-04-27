@@ -128,6 +128,9 @@ public class WebSocketFactory
             case 6:
                 connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
+            case 7:
+                connection = new WebSocketConnectionD07(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
+                break;
             default:
                 Log.warn("Unsupported Websocket version: "+draft);
                 throw new HttpException(400, "Unsupported draft specification: " + draft);

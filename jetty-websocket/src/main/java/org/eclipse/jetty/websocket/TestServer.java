@@ -36,16 +36,16 @@ public class TestServer extends Server
                 {
                     _websocket = new TestEchoWebSocket();        
                 }
-                else if ("org.ietf.websocket.test-echo-broadcast".equals(protocol))
+                else if ("org.ietf.websocket.test-echo-broadcast".equals(protocol) || "echo-broadcast".equals(protocol))
                 {
                     _websocket = new TestEchoBroadcastWebSocket(); 
 
                 }
-                else if ("org.ietf.websocket.test-echo-assemble".equals(protocol))
+                else if ("org.ietf.websocket.test-echo-assemble".equals(protocol) || "echo-assemble".equals(protocol))
                 {
                     _websocket = new TestEchoAssembleWebSocket();
                 }
-                else if ("org.ietf.websocket.test-echo-fragment".equals(protocol))
+                else if ("org.ietf.websocket.test-echo-fragment".equals(protocol) || "echo-fragment".equals(protocol))
                 {
                     _websocket = new TestEchoFragmentWebSocket();
                 }
