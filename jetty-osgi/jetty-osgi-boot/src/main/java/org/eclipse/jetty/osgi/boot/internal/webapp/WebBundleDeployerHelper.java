@@ -14,6 +14,7 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
+import java.awt.Component.BaselineResizeBehavior;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,6 +27,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeMap;
 
 import org.eclipse.jetty.deploy.ContextDeployer;
@@ -44,6 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -227,66 +230,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
 
-            Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragments(contributor);
-            if (fragments != null && fragments.length != 0)
-            {
-                //sorted extra resource base found in the fragments.
-                //the resources are either overriding the resourcebase found in the web-bundle
-                //or appended.
-                //amongst each resource we sort them according to the alphabetical order
-                //of the name of the internal folder and the symbolic name of the fragment.
-                //this is useful to make sure that the lookup path of those
-                //resource base defined by fragments is always the same.
-                //This natural order could be abused to define the order in which the base resources are
-                //looked up.
-                TreeMap<String,Resource> patchResourcesPath = new TreeMap<String,Resource>();
-                TreeMap<String,Resource> appendedResourcesPath = new TreeMap<String,Resource>();
-                for (Bundle frag : fragments) {
-                    String fragFolder = (String)frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_FRAGMENT_FOLDER_PATH);
-                    String patchFragFolder = (String)frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH);
-                    if (fragFolder != null)
-                    {
-                        URL fragUrl = frag.getEntry(fragFolder);
-                        if (fragUrl == null)
-                        {
-                            throw new IllegalArgumentException("Unable to locate " + fragFolder + " inside "
-                                    + " the fragment '" + frag.getSymbolicName() + "'");
-                        }
-                        fragUrl = DefaultFileLocatorHelper.getLocalURL(fragUrl);
-                        String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
-                        appendedResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(fragUrl));
-                    }
-                    if (patchFragFolder != null)
-                    {
-                        URL patchFragUrl = frag.getEntry(patchFragFolder);
-                        if (patchFragUrl == null)
-                        {
-                            throw new IllegalArgumentException("Unable to locate " + patchFragUrl + " inside "
-                                    + " the fragment '" + frag.getSymbolicName() + "'");
-                        }
-                        patchFragUrl = DefaultFileLocatorHelper.getLocalURL(patchFragUrl);
-                        String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
-                        patchResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(patchFragUrl));
-                    }
-                }
-                
-                LinkedList<Resource> resourcesPath = new LinkedList<Resource>();
-                //place the patch resources at the beginning of the lookup path.
-                resourcesPath.addAll(patchResourcesPath.values());
-                //then place the one from the host web bundle.
-                resourcesPath.add(Resource.newResource(baseWebappInstallURL));
-                //now add the appended ones.
-                resourcesPath.addAll(appendedResourcesPath.values());
-                
-                ResourceCollection rc = new ResourceCollection(resourcesPath.toArray(
-                        new Resource[resourcesPath.size()]));
-                context.setBaseResource(rc);
-            }
-            else
-            {
-                //context.setBaseResource(Resource.newResource(baseWebappInstallURL));
-                context.setWar(baseWebappInstallURL.toString());
-            }
+            context.setWar(baseWebappInstallURL.toString());
             context.setContextPath(contextPath);
             context.setExtraClasspath(extraClasspath);
 
@@ -344,6 +288,33 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             context.setServerClasses(null);
             
             _wrapper.getOSGiAppProvider().addContext(contributor,pathInBundleToWebApp,context);
+            
+            //support for patch resources. ideally this should be done inside a configurator.
+            List<Resource> patchResources =
+            		(List<Resource>)context.getAttribute(WebInfConfiguration.RESOURCE_URLS+".patch");
+            if (patchResources != null)
+            {
+	            LinkedList<Resource> resourcesPath = new LinkedList<Resource>();
+	            //place the patch resources at the beginning of the lookup path.
+	            resourcesPath.addAll(patchResources);
+	            //then place the ones from the host web bundle.
+	            Resource hostResources = context.getBaseResource();
+	            if (hostResources instanceof ResourceCollection)
+	            {
+	            	for (Resource re : ((ResourceCollection)hostResources).getResources())
+	            	{
+	            		resourcesPath.add(re);
+	            	}
+	            }
+	            else
+	            {
+	            	resourcesPath.add(hostResources);
+	            }
+	            
+	            ResourceCollection rc = new ResourceCollection(resourcesPath.toArray(
+	                    new Resource[resourcesPath.size()]));
+	            context.setBaseResource(rc);
+            }
             
             return context;
         }
@@ -508,7 +479,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      *      <code>// configure it</code>
      */
     protected void configureWebAppContext(ContextHandler wah, Bundle contributor,
-            String requireTldBundle)
+            String requireTldBundle) throws IOException
     {
         // rfc66
         wah.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT,contributor.getBundleContext());
@@ -528,6 +499,57 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         //can pick it up.
         wah.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundle);
 
+        
+        Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragments(contributor);
+        if (fragments != null && fragments.length != 0)
+        {
+            //sorted extra resource base found in the fragments.
+            //the resources are either overriding the resourcebase found in the web-bundle
+            //or appended.
+            //amongst each resource we sort them according to the alphabetical order
+            //of the name of the internal folder and the symbolic name of the fragment.
+            //this is useful to make sure that the lookup path of those
+            //resource base defined by fragments is always the same.
+            //This natural order could be abused to define the order in which the base resources are
+            //looked up.
+            TreeMap<String,Resource> patchResourcesPath = new TreeMap<String,Resource>();
+            TreeMap<String,Resource> appendedResourcesPath = new TreeMap<String,Resource>();
+            for (Bundle frag : fragments) {
+                String fragFolder = (String)frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_FRAGMENT_FOLDER_PATH);
+                String patchFragFolder = (String)frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH);
+                if (fragFolder != null)
+                {
+                    URL fragUrl = frag.getEntry(fragFolder);
+                    if (fragUrl == null)
+                    {
+                        throw new IllegalArgumentException("Unable to locate " + fragFolder + " inside "
+                                + " the fragment '" + frag.getSymbolicName() + "'");
+                    }
+                    fragUrl = DefaultFileLocatorHelper.getLocalURL(fragUrl);
+                    String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
+                    appendedResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(fragUrl));
+                }
+                if (patchFragFolder != null)
+                {
+                    URL patchFragUrl = frag.getEntry(patchFragFolder);
+                    if (patchFragUrl == null)
+                    {
+                        throw new IllegalArgumentException("Unable to locate " + patchFragUrl + " inside "
+                                + " the fragment '" + frag.getSymbolicName() + "'");
+                    }
+                    patchFragUrl = DefaultFileLocatorHelper.getLocalURL(patchFragUrl);
+                    String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
+                    patchResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(patchFragUrl));
+                }
+            }
+            if (!appendedResourcesPath.isEmpty()) {
+            	wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, new ArrayList<Resource>(appendedResourcesPath.values()));
+            }
+            if (!patchResourcesPath.isEmpty()) {
+            	wah.setAttribute(WebInfConfiguration.RESOURCE_URLS + ".patch", new ArrayList<Resource>(patchResourcesPath.values()));
+            }
+        }
+        
         
     }
 
@@ -605,7 +627,6 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                 }
             }
 
-            
             configureWebAppContext(context, bundle, requireTldBundle);
             return context;
         }
