@@ -8,6 +8,7 @@ jetty-7.4.1-SNAPSHOT
  + 343923 flush timeouts applied to outer loop
  + 344059 Websockets draft-07
  + JETTY-954 WebAppContext eats any start exceptions instead of stopping the server load
+ + 344067 - Add support for OSGi fragment bundles to add static resources to web-bundles
 
 jetty-7.4.0.v20110414
  + 342504 Scanner Listener
