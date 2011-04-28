@@ -27,7 +27,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>javax.servlet;version="2.5",*</Import-Package>
+                <Import-Package>javax.servlet*;version="2.5",*</Import-Package>
               </instructions>
             </configuration>
            </execution>
