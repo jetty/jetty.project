@@ -254,7 +254,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                         }
                         fragUrl = DefaultFileLocatorHelper.getLocalURL(fragUrl);
                         String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
-                        patchResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(fragUrl));
+                        appendedResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(fragUrl));
                     }
                     if (patchFragFolder != null)
                     {
@@ -266,7 +266,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                         }
                         patchFragUrl = DefaultFileLocatorHelper.getLocalURL(patchFragUrl);
                         String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
-                        appendedResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(patchFragUrl));
+                        patchResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(patchFragUrl));
                     }
                 }
                 
