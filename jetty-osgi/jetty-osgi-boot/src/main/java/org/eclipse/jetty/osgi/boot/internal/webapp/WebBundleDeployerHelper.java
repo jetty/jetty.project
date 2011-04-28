@@ -284,7 +284,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             }
             else
             {
-                context.setBaseResource(Resource.newResource(baseWebappInstallURL));
+                //context.setBaseResource(Resource.newResource(baseWebappInstallURL));
+                context.setWar(baseWebappInstallURL.toString());
             }
             context.setContextPath(contextPath);
             context.setExtraClasspath(extraClasspath);
