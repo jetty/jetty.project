@@ -130,20 +130,34 @@ public class HttpConnection extends AbstractConnection
                 scep.scheduleWrite();
             }
 
-            long exchTimeout = _exchange.getTimeout();
-            if (exchTimeout > 0)
-            {
-                if (exchTimeout!=_destination.getHttpClient().getTimeout())
-                    _endp.setMaxIdleTime((int)exchTimeout);
-                _destination.getHttpClient().schedule(_timeout, exchTimeout);
-            }
-            else
-            {
-                _destination.getHttpClient().schedule(_timeout);
-            }
+            scheduleTimeout();
 
             return true;
         }
+    }
+
+    protected void scheduleTimeout() throws IOException
+    {
+        HttpClient httpClient = _destination.getHttpClient();
+
+        long exchangeTimeout = _exchange.getTimeout();
+        long timeout = exchangeTimeout;
+        if (timeout <= 0)
+            timeout = httpClient.getTimeout();
+
+        long endPointTimeout = _endp.getMaxIdleTime();
+
+        if (timeout > 0 && timeout > endPointTimeout)
+        {
+            // Make it larger than the exchange timeout so that there are
+            // no races in trying to close the endpoint between the 2 timeouts
+            _endp.setMaxIdleTime(2 * (int)timeout);
+        }
+
+        if (exchangeTimeout > 0)
+            httpClient.schedule(_timeout, exchangeTimeout);
+        else
+            httpClient.schedule(_timeout);
     }
 
     public Connection handle() throws IOException
@@ -369,11 +383,12 @@ public class HttpConnection extends AbstractConnection
                             if (_exchange != null)
                             {
                                 HttpExchange exchange=_exchange;
-                                _exchange.disassociate();
-
-                                if (_exchange.getTimeout()>0 && _exchange.getTimeout()!=getDestination().getHttpClient().getTimeout())
-                                    _endp.setMaxIdleTime((int)getDestination().getHttpClient().getTimeout());
+                                exchange.disassociate();
                                 _exchange = null;
+
+                                // Reset the maxIdleTime because it may have been changed
+                                if (!close)
+                                    _endp.setMaxIdleTime((int)_destination.getHttpClient().getIdleTimeout());
 
                                 if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                                 {
@@ -714,7 +729,7 @@ public class HttpConnection extends AbstractConnection
             {
                 if (ex != null && ex.getStatus() < HttpExchange.STATUS_COMPLETED)
                     ex.setStatus(HttpExchange.STATUS_EXPIRED);
-                
+
                 try
                 {
                     close();
