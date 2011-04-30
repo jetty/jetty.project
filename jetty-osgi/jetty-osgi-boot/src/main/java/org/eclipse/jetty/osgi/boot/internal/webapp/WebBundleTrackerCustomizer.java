@@ -248,26 +248,6 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             	rfc66ContextPath = rfc66ContextPath.substring(0,lastDot);
             }
         }
-        if (rfc66ContextPath.startsWith("${") && rfc66ContextPath.endsWith("}"))
-        {
-        	//a system property.
-        	String sysProperty = rfc66ContextPath.substring(2, rfc66ContextPath.length()-1);
-        	String[] keyAndDefaultValue = sysProperty.split(",");
-        	String defaultValue = null;
-        	if (keyAndDefaultValue.length == 2)
-        	{
-        		sysProperty = keyAndDefaultValue[0];
-        		defaultValue = keyAndDefaultValue[1];
-        	}
-        	String sysValue = System.getProperty(sysProperty, defaultValue);
-        	if (sysValue == null)
-        	{
-        		throw new IllegalArgumentException("Could not resolve the system property "
-        				+ sysProperty + " defined in the manifest of the bundle "
-        				+ bundle.getSymbolicName());
-        	}
-        	rfc66ContextPath = sysValue;
-        }
         if (!rfc66ContextPath.startsWith("/"))
         {
             rfc66ContextPath = "/" + rfc66ContextPath;

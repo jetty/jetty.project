@@ -27,6 +27,10 @@
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-nested</artifactId>
+    </dependency>
+    <dependency>
     	<groupId>org.eclipse</groupId>
     	<artifactId>osgi</artifactId>
     </dependency>

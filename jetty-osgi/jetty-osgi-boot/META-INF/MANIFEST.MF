@@ -26,7 +26,7 @@ Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  org.xml.sax,
  org.xml.sax.helpers
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
-Bundle-Classpath: .
+Bundle-Classpath: .,target/classes
 Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.annotations;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.client;bundle-version="[7.0,8)";resolution:=optional,
@@ -36,6 +36,7 @@ Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optio
  org.eclipse.jetty.io;bundle-version="[7.0,8)",
  org.eclipse.jetty.jmx;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.jndi;bundle-version="[7.0,8)";resolution:=optional,
+ org.eclipse.jetty.nested;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.plus;bundle-version="[7.0,8.0)";resolution:=optional,
  org.eclipse.jetty.rewrite;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.security;bundle-version="[7.0,8)";resolution:=optional,
@@ -47,4 +48,5 @@ Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[7.0,8)";resolution:=optio
  org.eclipse.jetty.websocket;bundle-version="[7.0,8)";resolution:=optional,
  org.eclipse.jetty.xml;bundle-version="[7.0,8)"
 Export-Package: org.eclipse.jetty.osgi.boot;version="7.4.0",
+ org.eclipse.jetty.osgi.nested;version="7.4.0",
  org.eclipse.jetty.osgi.boot.utils;version="7.4.0"

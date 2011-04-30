@@ -18,9 +18,8 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Dictionary;
-import java.util.Hashtable;
 import java.util.Enumeration;
-import java.util.Properties;
+import java.util.Hashtable;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
@@ -94,8 +93,10 @@ public class DefaultJettyAtJettyHomeHelper {
     	Bundle jettyHomeBundle = null;
     	if (jettyHomeSysProp != null)
     	{
+    		jettyHomeSysProp = resolvePropertyValue(jettyHomeSysProp);
     		//bug 329621
-    		if (jettyHomeSysProp.startsWith("\"") && jettyHomeSysProp.endsWith("\"")) {
+    		if (jettyHomeSysProp.startsWith("\"") && jettyHomeSysProp.endsWith("\"")
+    				|| (jettyHomeSysProp.startsWith("'") && jettyHomeSysProp.endsWith("'"))) {
     			jettyHomeSysProp = jettyHomeSysProp.substring(1, jettyHomeSysProp.length() - 1);
     		}
     		if (jettyHomeBundleSysProp != null)
@@ -112,6 +113,7 @@ public class DefaultJettyAtJettyHomeHelper {
     	}
     	else if (jettyHomeBundleSysProp != null)
     	{
+    		jettyHomeBundleSysProp = resolvePropertyValue(jettyHomeBundleSysProp);
     		for (Bundle b : bundleContext.getBundles())
     		{
     			if (b.getSymbolicName().equals(jettyHomeBundleSysProp))
@@ -150,6 +152,7 @@ public class DefaultJettyAtJettyHomeHelper {
 			setProperty(properties,SYS_PROP_JETTY_PORT_SSL,System.getProperty(SYS_PROP_JETTY_PORT_SSL));
 
    			bundleContext.registerService(Server.class.getName(), server, properties);
+//   			hookNestedConnectorToBridgeServlet(server);
 		}
 		catch (Throwable t)
 		{
@@ -197,7 +200,6 @@ public class DefaultJettyAtJettyHomeHelper {
     private static String getJettyConfigurationURLs(Bundle configurationBundle)
     {
     	String jettyetc = System.getProperty(SYS_PROP_JETTY_ETC_FILES,"etc/jetty.xml");
-    	System.err.println("jettyetc=" + jettyetc);
         StringTokenizer tokenizer = new StringTokenizer(jettyetc,";,", false);
         StringBuilder res = new StringBuilder();
         
@@ -256,4 +258,49 @@ public class DefaultJettyAtJettyHomeHelper {
 		}
 	}
 	
+	/**
+	 * recursively substitute the ${sysprop} by their actual system property.
+	 * ${sysprop,defaultvalue} will use 'defaultvalue' as the value if no sysprop is defined.
+	 * Not the most efficient code but we are shooting for simplicity and speed of development here.
+	 * 
+	 * @param value
+	 * @return
+	 */
+	public static String resolvePropertyValue(String value)
+	{	
+		int ind = value.indexOf("${");
+		if (ind == -1) {
+			return value;
+		}
+		int ind2 = value.indexOf('}', ind);
+		if (ind2 == -1) {
+			return value;
+		}
+		String sysprop = value.substring(ind+2, ind2);
+		String defaultValue = null;
+		int comma = sysprop.indexOf(',');
+		if (comma != -1 && comma+1 != sysprop.length())
+		{
+			defaultValue = sysprop.substring(comma+1);
+			defaultValue = resolvePropertyValue(defaultValue);
+			sysprop = sysprop.substring(0,comma);
+		}
+		else
+		{
+			defaultValue = "${" + sysprop + "}";
+		}
+		
+		String v = System.getProperty(sysprop);
+		
+		String reminder = value.length() > ind2 + 1 ? value.substring(ind2+1) : "";
+		reminder = resolvePropertyValue(reminder);
+		if (v != null)
+		{
+			return value.substring(0, ind) + v + reminder;
+		}
+		else
+		{
+			return value.substring(0, ind) + defaultValue + reminder;
+		}
+	}
 }
