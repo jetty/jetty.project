@@ -12,14 +12,20 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.servletbridge;
 
-import org.eclipse.equinox.servletbridge.FrameworkLauncher;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
 import java.util.TreeMap;
+
+import org.eclipse.equinox.servletbridge.FrameworkLauncher;
 
 /**
  * Extend the servletbridge FrameworkLauncher to support launching an equinox installation
@@ -44,8 +50,12 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
     {
         try
         {
-            String resourceBaseStr = System.getProperty(OSGI_INSTALL_AREA,config.getInitParameter(OSGI_INSTALL_AREA));
-            if (resourceBaseStr != null)
+            String resourceBaseStr = System.getProperty(OSGI_INSTALL_AREA);
+            if (resourceBaseStr == null || resourceBaseStr.length() == 0)
+            {
+                resourceBaseStr = config.getInitParameter(OSGI_INSTALL_AREA);
+            }
+            if (resourceBaseStr != null && resourceBaseStr.length() != 0)
             {
                 // If the path starts with a reference to a nsystem property, resolve it.
                 resourceBaseStr = resolveSystemProperty(resourceBaseStr);
@@ -107,11 +117,47 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
                 props.put(OSGI_INSTALL_AREA,getPlatformDirectory().getAbsolutePath());
             }
             String osgiFramework = props.getProperty(OSGI_FRAMEWORK);
+            File pluginsFolder = null;
             if (osgiFramework == null && getPlatformDirectory() != null)
             {
                 File osgiFrameworkF = findOsgiFramework(getPlatformDirectory());
+                pluginsFolder = osgiFrameworkF.getParentFile();
                 props.put(OSGI_FRAMEWORK,osgiFrameworkF.getAbsoluteFile().getAbsolutePath());
             }
+            String osgiFrameworkExtensions = props.getProperty(OSGI_FRAMEWORK_EXTENSIONS);
+            if (osgiFrameworkExtensions == null)
+            {
+                //this bundle will make the javax.servlet and javax.servlet.http packages passed from
+                //the bootstrap classloader into equinox
+                osgiFrameworkExtensions = "org.eclipse.equinox.servletbridge.extensionbundle";
+            }
+            File configIni = new File(getPlatformDirectory(), "configuration/config.ini");
+            if (configIni.exists())
+            {
+                Properties configIniProps = new Properties();
+                InputStream configIniStream = null;
+                try
+                {
+                    configIniStream = new FileInputStream(configIni);
+                    configIniProps.load(configIniStream);
+                }
+                catch (IOException ioe)
+                {
+                    
+                }
+                finally
+                {
+                    try { configIniStream.close(); } catch (IOException ioe2) {}
+                }
+                String confIniFrameworkExt = configIniProps.getProperty(OSGI_FRAMEWORK_EXTENSIONS);
+                if (confIniFrameworkExt != null)
+                {
+                    osgiFrameworkExtensions = osgiFrameworkExtensions + "," + confIniFrameworkExt;
+                }
+            }
+            props.setProperty(OSGI_FRAMEWORK_EXTENSIONS,osgiFrameworkExtensions);
+            __deployExtensionBundle(pluginsFolder);
+            
             String jettyHome = System.getProperty("jetty.home");
             if (jettyHome == null)
             {
@@ -127,8 +173,8 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             System.setProperty("java.naming.factory.initial","org.eclipse.jetty.jndi.InitialContextFactory");
             System.setProperty("java.naming.factory.url.pkgs","org.eclipse.jetty.jndi");
         }
-        // String sysPackagesExtra = "org.osgi.framework.system.packages.extra";
-        // System.setProperty(sysPackagesExtra, "javax.servlet,javax.servlet.http");
+        String sysPackagesExtra = "org.osgi.framework.system.packages.extra";
+        props.setProperty(sysPackagesExtra, "javax.servlet,javax.servlet.http");
         return props;
     }
 
@@ -228,38 +274,6 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
         return null;
     }
 
-    private static Field _field;
-
-    // introspection trick to be able to set the private field platformDirectory
-    void __setPlatformDirectory(File platformDirectory)
-    {
-        try
-        {
-            if (_field == null)
-            {
-                _field = org.eclipse.equinox.servletbridge.FrameworkLauncher.class.getDeclaredField("platformDirectory"); //$NON-NLS-1$
-                _field.setAccessible(true);
-            }
-            _field.set(this,platformDirectory);
-        }
-        catch (SecurityException e)
-        {
-            e.printStackTrace();
-        }
-        catch (NoSuchFieldException e)
-        {
-            e.printStackTrace();
-        }
-        catch (IllegalArgumentException e)
-        {
-            e.printStackTrace();
-        }
-        catch (IllegalAccessException e)
-        {
-            e.printStackTrace();
-        }
-    }
-    
     /**
      * recursively substitute the ${sysprop} by their actual system property.
      * ${sysprop,defaultvalue} will use 'defaultvalue' as the value if no sysprop is defined.
@@ -306,5 +320,67 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
         }
     }
 
+
+    
+    // introspection trick to be able to set the private field platformDirectory
+    private static Field _field;
+    void __setPlatformDirectory(File platformDirectory)
+    {
+        try
+        {
+            if (_field == null)
+            {
+                _field = org.eclipse.equinox.servletbridge.FrameworkLauncher.class.getDeclaredField("platformDirectory"); //$NON-NLS-1$
+                _field.setAccessible(true);
+            }
+            _field.set(this,platformDirectory);
+        }
+        catch (SecurityException e)
+        {
+            e.printStackTrace();
+        }
+        catch (NoSuchFieldException e)
+        {
+            e.printStackTrace();
+        }
+        catch (IllegalArgumentException e)
+        {
+            e.printStackTrace();
+        }
+        catch (IllegalAccessException e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
+    //introspection trick to invoke the generateExtensionBundle method
+    private static Method _deployExtensionBundleMethod;
+    private void __deployExtensionBundle(File plugins)
+    {
+        //look for the extensionbundle
+        //if it is already there no need to do something:
+        for (String file : plugins.list())
+        {
+            if (file.startsWith("org.eclipse.equinox.servletbridge.extensionbundle"))//EXTENSIONBUNDLE_DEFAULT_BSN 
+            {
+                return;
+            }
+        }
+        
+        try
+        {
+            //invoke deployExtensionBundle(File plugins)
+            if (_deployExtensionBundleMethod == null)
+            {
+                _deployExtensionBundleMethod = FrameworkLauncher.class.getDeclaredMethod("deployExtensionBundle", File.class);
+                _deployExtensionBundleMethod.setAccessible(true);
+            }
+            _deployExtensionBundleMethod.invoke(this, plugins);
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace();
+        }
+    }
 
 }

@@ -8,12 +8,11 @@
 	    <servlet-class>org.eclipse.equinox.servletbridge.BridgeServlet</servlet-class>
 	    <!-- Point to a folder where an equinox installation exists.
 	    When this parameter is defined, that equinox installation is launched in place.
-	    The parameter can also be passed as a system property.
+        The parameter can also be passed as a system property. -->
 	    <init-param>
 	        <param-name>osgi.install.area</param-name>
 	        <param-value></param-value>
 	    </init-param>
-	    -->
 		<init-param>
 			<param-name>commandline</param-name>
 			<param-value>-console</param-value>			
