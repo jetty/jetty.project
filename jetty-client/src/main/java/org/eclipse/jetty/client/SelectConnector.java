@@ -104,8 +104,8 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             }
             else
             {
-                channel.configureBlocking(false);
                 channel.socket().connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
+                channel.configureBlocking(false);
                 _selectorManager.register( channel, destination );
             }
 
