@@ -16,6 +16,8 @@ package org.eclipse.jetty.websocket;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -302,6 +304,12 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public List<Extension> getExtensions()
+    {
+        return Collections.emptyList();
+    }
+
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class FrameConnectionD06 implements WebSocket.FrameConnection
@@ -427,6 +435,18 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             return OP_TEXT;
         }
 
+        /* ------------------------------------------------------------ */
+        public byte continuationOpcode()
+        {
+            return OP_CONTINUATION;
+        }
+
+        /* ------------------------------------------------------------ */
+        public byte finMask()
+        {
+            return 0x8;
+        }
+        
         /* ------------------------------------------------------------ */
         public boolean isControl(byte opcode)
         {

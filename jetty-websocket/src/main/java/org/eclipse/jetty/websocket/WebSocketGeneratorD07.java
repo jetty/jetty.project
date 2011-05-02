@@ -119,25 +119,26 @@ public class WebSocketGeneratorD07 implements WebSocketGenerator
             _buffer=mask?_buffers.getBuffer():_buffers.getDirectBuffer();
             
         boolean last=WebSocketConnectionD07.isLastFrame(flags);
-        opcode=(byte)(((0xf&flags)<<4)+0xf&opcode);
+        byte orig=opcode;
         
         int space=mask?14:10;
         
         do
         {
             opcode = _opsent?WebSocketConnectionD07.OP_CONTINUATION:opcode;
+            opcode=(byte)(((0xf&flags)<<4)+(0xf&opcode));
             _opsent=true;
             
             int payload=length;
             if (payload+space>_buffer.capacity())
             {
                 // We must fragement, so clear FIN bit
-                opcode&=(byte)0x7F; // Clear the FIN bit
+                opcode=(byte)(opcode&0x7F); // Clear the FIN bit
                 payload=_buffer.capacity()-space;
             }
             else if (last)
-                opcode|=(byte)0x80; // Set the FIN bit
-
+                opcode= (byte)(opcode|0x80); // Set the FIN bit
+      
             // ensure there is space for header
             if (_buffer.space() <= space)
             {

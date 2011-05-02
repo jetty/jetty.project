@@ -12,6 +12,8 @@ import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -24,6 +26,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -158,6 +161,201 @@ public class WebSocketMessageD07Test
         lookFor("sent on connect",input);
     }
 
+    @Test
+    public void testIdentityExtension() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: onConnect\r\n" +
+                 "Sec-WebSocket-Version: 7\r\n"+
+                 "Sec-WebSocket-Extensions: identity;param=0\r\n"+
+                 "Sec-WebSocket-Extensions: identity;param=1, identity ; param = '2' ; other = ' some = value ' \r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(1000);
+
+        InputStream input = socket.getInputStream();
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("Sec-WebSocket-Extensions: ",input);
+        lookFor("identity;param=0",input);
+        skipTo("Sec-WebSocket-Extensions: ",input);
+        lookFor("identity;param=1",input);
+        skipTo("Sec-WebSocket-Extensions: ",input);
+        lookFor("identity;",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.connection);
+
+        assertEquals(0x81,input.read());
+        assertEquals(0x0f,input.read());
+        lookFor("sent on connect",input);
+    }
+
+
+    @Test
+    public void testFragmentExtension() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: onConnect\r\n" +
+                 "Sec-WebSocket-Version: 7\r\n"+
+                 "Sec-WebSocket-Extensions: fragment;maxLength=4;fragments=7\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(1000);
+
+        InputStream input = socket.getInputStream();
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("Sec-WebSocket-Extensions: ",input);
+        lookFor("fragment;",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.connection);
+
+        assertEquals(0x01,input.read());
+        assertEquals(0x04,input.read());
+        lookFor("sent",input);
+        assertEquals(0x00,input.read());
+        assertEquals(0x04,input.read());
+        lookFor(" on ",input);
+        assertEquals(0x00,input.read());
+        assertEquals(0x04,input.read());
+        lookFor("conn",input);
+        assertEquals(0x00,input.read());
+        assertEquals(0x01,input.read());
+        lookFor("e",input);
+        assertEquals(0x00,input.read());
+        assertEquals(0x01,input.read());
+        lookFor("c",input);
+        assertEquals(0x00,input.read());
+        assertEquals(0x00,input.read());
+        assertEquals(0x80,input.read());
+        assertEquals(0x01,input.read());
+        lookFor("t",input);
+    }
+
+    @Test
+    public void testDeflateFrameExtension() throws Exception
+    {
+        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: echo\r\n" +
+                 "Sec-WebSocket-Version: 7\r\n"+
+                 "Sec-WebSocket-Extensions: deflate-frame\r\n"+
+                 "Sec-WebSocket-Extensions: fragment;fragments=2\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(1000);
+
+        InputStream input = socket.getInputStream();
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("Sec-WebSocket-Extensions: ",input);
+        lookFor("deflate-frame;minLength=64",input);
+        skipTo("Sec-WebSocket-Extensions: ",input);
+        lookFor("fragment;",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(_serverWebSocket.awaitConnected(1000));
+        assertNotNull(_serverWebSocket.connection);
+        
+        
+        // Server sends a big message
+        String text = "0123456789ABCDEF ";
+        text=text+text+text+text;
+        text=text+text+text+text;
+        text=text+text+text+text+'X';
+        byte[] data=text.getBytes("utf-8");
+        Deflater deflater = new Deflater();
+        deflater.setInput(data);
+        deflater.finish();
+        byte[] buf=new byte[data.length];
+        
+        buf[0]=(byte)((byte)0x7e);
+        buf[1]=(byte)(data.length>>8);
+        buf[2]=(byte)(data.length&0xff);
+        
+        int l=deflater.deflate(buf,3,buf.length-3);
+
+        assertTrue(deflater.finished());
+        
+        output.write(0xC1);
+        output.write((byte)(0x80|(0xff&(l+3))));
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(buf,0,l+3);
+        output.flush();
+        
+
+        assertEquals(0x40+WebSocketConnectionD07.OP_TEXT,input.read());
+        assertEquals(0x20+3,input.read());
+        assertEquals(0x7e,input.read());
+        assertEquals(0x02,input.read());
+        assertEquals(0x20,input.read());
+        
+        byte[] raw = new byte[32];
+        assertEquals(32,input.read(raw));
+        
+        Inflater inflater = new Inflater();
+        inflater.setInput(raw);
+        
+        byte[] result = new byte[544];
+        assertEquals(544,inflater.inflate(result));
+        assertEquals(TypeUtil.toHexString(data,0,544),TypeUtil.toHexString(result));
+        
+
+        assertEquals((byte)0xC0,(byte)input.read());
+        assertEquals(0x21+3,input.read());
+        assertEquals(0x7e,input.read());
+        assertEquals(0x02,input.read());
+        assertEquals(0x21,input.read());
+        
+        assertEquals(32,input.read(raw));
+        
+        inflater.reset();
+        inflater.setInput(raw);
+        result = new byte[545];
+        assertEquals(545,inflater.inflate(result));
+        assertEquals(TypeUtil.toHexString(data,544,545),TypeUtil.toHexString(result));
+        
+
+    }
     @Test
     public void testServerEcho() throws Exception
     {

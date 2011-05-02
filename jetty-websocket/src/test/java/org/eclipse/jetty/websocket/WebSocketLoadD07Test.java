@@ -33,7 +33,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketLoadTest
+public class WebSocketLoadD07Test
 {
     private static Server _server;
     private static Connector _connector;
@@ -142,8 +142,8 @@ public class WebSocketLoadTest
         private final int iterations;
         private final CountDownLatch latch;
         private final SocketEndPoint _endp;
-        private final WebSocketGeneratorD06 _generator;
-        private final WebSocketParserD06 _parser;
+        private final WebSocketGeneratorD07 _generator;
+        private final WebSocketParserD07 _parser;
         private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
         {
             public void onFrame(byte flags, byte opcode, Buffer buffer)
@@ -167,8 +167,8 @@ public class WebSocketLoadTest
             this.iterations = iterations;
             
             _endp=new SocketEndPoint(socket);
-            _generator = new WebSocketGeneratorD06(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD06.FixedMaskGen());
-            _parser = new WebSocketParserD06(new WebSocketBuffers(32*1024),_endp,_handler,false);
+            _generator = new WebSocketGeneratorD07(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD07.FixedMaskGen());
+            _parser = new WebSocketParserD07(new WebSocketBuffers(32*1024),_endp,_handler,false);
             
         }
 
@@ -181,7 +181,7 @@ public class WebSocketLoadTest
                     "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                     "Sec-WebSocket-Origin: http://example.com\r\n"+
                     "Sec-WebSocket-Protocol: onConnect\r\n" +
-                    "Sec-WebSocket-Version: 6\r\n"+
+                    "Sec-WebSocket-Version: 7\r\n"+
                     "\r\n");
             output.flush();
 
@@ -203,7 +203,7 @@ public class WebSocketLoadTest
                 {
                     byte[] data = message.getBytes(StringUtil.__UTF8);
                     _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,0,data.length);
-                    _generator.flush(10000);
+                    _generator.flush();
                     
                     //System.err.println("-> "+message);
                     

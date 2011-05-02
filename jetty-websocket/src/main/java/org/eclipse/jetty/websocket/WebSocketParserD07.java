@@ -181,11 +181,11 @@ public class WebSocketParserD07 implements WebSocketParser
                         
                         switch(b)
                         {
-                            case 127:
+                            case 0x7f:
                                 _length=0;
                                 _state=State.LENGTH_63;
                                 break;
-                            case 126:
+                            case 0x7e:
                                 _length=0;
                                 _state=State.LENGTH_16;
                                 break;

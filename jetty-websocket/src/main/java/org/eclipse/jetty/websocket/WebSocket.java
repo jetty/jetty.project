@@ -146,6 +146,8 @@ public interface WebSocket
         void close(int closeCode,String message);
         byte binaryOpcode();
         byte textOpcode();
+        byte continuationOpcode();
+        byte finMask();
         
         boolean isControl(byte opcode);
         boolean isText(byte opcode);

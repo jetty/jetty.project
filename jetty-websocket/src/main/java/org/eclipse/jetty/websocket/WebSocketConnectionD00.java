@@ -16,6 +16,8 @@ package org.eclipse.jetty.websocket;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -505,5 +507,20 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     public boolean isPong(byte opcode)
     {
         return false;
+    }
+
+    public List<Extension> getExtensions()
+    {
+        return Collections.emptyList();
+    }
+
+    public byte continuationOpcode()
+    {
+        return 0;
+    }
+
+    public byte finMask()
+    {
+        return 0;
     }
 }

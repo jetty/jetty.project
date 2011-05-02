@@ -16,6 +16,8 @@ package org.eclipse.jetty.websocket;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -66,6 +68,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
     
     private final static byte[] MAGIC;
     private final IdleCheck _idle;
+    private final List<Extension> _extensions;
     private final WebSocketParserD07 _parser;
     private final WebSocketParser.FrameHandler _inbound;
     private final WebSocketGeneratorD07 _generator;
@@ -80,6 +83,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
     private boolean _closedOut;
     private int _maxTextMessageSize;
     private int _maxBinaryMessageSize=-1;
+    
 
     static
     {
@@ -102,7 +106,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
     
 
     /* ------------------------------------------------------------ */
-    public WebSocketConnectionD07(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, Extension[] extensions)
+    public WebSocketConnectionD07(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions)
         throws IOException
     {
         super(endpoint,timestamp);
@@ -120,35 +124,39 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
         _onControl=_webSocket instanceof OnControl ? (OnControl)_webSocket : null;
         _generator = new WebSocketGeneratorD07(buffers, _endp,null);
         
-        if (extensions!=null)
+        _extensions=extensions;
+        if (_extensions!=null)
         {
             byte data_op=OP_EXT_DATA;
             byte ctrl_op=OP_EXT_CTRL;
             byte flag_mask=0x4;
-            for (int e=0;e<extensions.length;e++)
+            int e=0;
+            for (Extension extension : _extensions)
             {
-                byte[] data_ops=new byte[extensions[e].getDataOpcodes()];
+                byte[] data_ops=new byte[extension.getDataOpcodes()];
                 for (int i=0;i<data_ops.length;i++)
                     data_ops[i]=data_op++;
-                byte[] ctrl_ops=new byte[extensions[e].getControlOpcodes()];
+                byte[] ctrl_ops=new byte[extension.getControlOpcodes()];
                 for (int i=0;i<ctrl_ops.length;i++)
                     ctrl_ops[i]=ctrl_op++;
-                byte[] flag_masks=new byte[extensions[e].getReservedBits()];
+                byte[] flag_masks=new byte[extension.getReservedBits()];
                 for (int i=0;i<flag_masks.length;i++)
                 {
                     flag_masks[i]=flag_mask;
                     flag_mask= (byte)(flag_mask>>1);
                 }
-                
-                extensions[e].init(
-                        e==extensions.length-1?_frameHandler:extensions[e+1],
-                                e==0?_generator:extensions[e-1],
-                                        data_ops,ctrl_ops,flag_masks);
+
+                extension.bind(
+                        _connection,
+                        e==extensions.size()-1?_frameHandler:extensions.get(e+1),
+                        e==0?_generator:extensions.get(e-1),
+                        data_ops,ctrl_ops,flag_masks);
+                e++;
             }
         }
 
-        _outbound=(extensions==null || extensions.length==0)?_generator:extensions[extensions.length-1];
-        _inbound=(extensions==null || extensions.length==0)?_frameHandler:extensions[0];
+        _outbound=_extensions.size()==0?_generator:extensions.get(extensions.size()-1);
+        _inbound=_extensions.size()==0?_frameHandler:extensions.get(0);
         
         _parser = new WebSocketParserD07(buffers, endpoint,_inbound,true);
         
@@ -185,6 +193,15 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
     public WebSocket.Connection getConnection()
     {
         return _connection;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public List<Extension> getExtensions()
+    {
+        if (_extensions==null)
+            return Collections.emptyList();
+        
+        return _extensions;
     }
     
     /* ------------------------------------------------------------ */
@@ -453,6 +470,18 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
         }
 
         /* ------------------------------------------------------------ */
+        public byte continuationOpcode()
+        {
+            return OP_CONTINUATION;
+        }
+
+        /* ------------------------------------------------------------ */
+        public byte finMask()
+        {
+            return 0x8;
+        }
+        
+        /* ------------------------------------------------------------ */
         public boolean isControl(byte opcode)
         {
             return isControlFrame(opcode);
@@ -699,6 +728,8 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
 
         public void close(int code,String message)
         {
+            if (code!=CLOSE_NORMAL)
+                Log.warn("Close: "+code+" "+message);
             _connection.close(code,message);
         }
 
@@ -728,8 +759,12 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
         response.addHeader("Sec-WebSocket-Accept",hashKey(key));
         if (subprotocol!=null)
             response.addHeader("Sec-WebSocket-Protocol",subprotocol);
-        response.sendError(101);
+        
+        for(Extension ext : _extensions)
+            response.addHeader("Sec-WebSocket-Extensions",ext.getParameterizedName());
 
+        response.sendError(101);
+        
         if (_onFrame!=null)
             _onFrame.onHandshake(_connection);
         _webSocket.onOpen(_connection);

@@ -21,8 +21,8 @@ import java.util.StringTokenizer;
 /** StringTokenizer with Quoting support.
  *
  * This class is a copy of the java.util.StringTokenizer API and
- * the behaviour is the same, except that single and doulbe quoted
- * string values are recognized.
+ * the behaviour is the same, except that single and double quoted
+ * string values are recognised.
  * Delimiters within quotes are not considered delimiters.
  * Quotes can be escaped with '\'.
  *

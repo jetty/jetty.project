@@ -14,6 +14,13 @@
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -21,6 +28,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -118,18 +126,30 @@ public class WebSocketFactory
         HttpConnection http = HttpConnection.getCurrentConnection();
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
 
+        List<String> extensions_requested = new ArrayList<String>();
+        for (Enumeration e=request.getHeaders("Sec-WebSocket-Extensions");e.hasMoreElements();)
+        {
+            QuotedStringTokenizer tok = new QuotedStringTokenizer((String)e.nextElement(),",");
+            while (tok.hasMoreTokens())
+                extensions_requested.add(tok.nextToken());
+        }
+        
         final WebSocketConnection connection;
+        final List<Extension> extensions;
         switch (draft)
         {
             case -1:
             case 0:
+                extensions=Collections.emptyList();
                 connection = new WebSocketConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
             case 6:
+                extensions=Collections.emptyList();
                 connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
-            case 7:
-                connection = new WebSocketConnectionD07(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,null);
+            case 7: 
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD07.OP_EXT_DATA, 16-WebSocketConnectionD07.OP_EXT_CTRL,3);
+                connection = new WebSocketConnectionD07(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions);
                 break;
             default:
                 Log.warn("Unsupported Websocket version: "+draft);
@@ -148,7 +168,7 @@ public class WebSocketFactory
         request.setAttribute("org.eclipse.jetty.io.Connection", connection);
     }
 
-    public static String[] parseProtocols(String protocol)
+    protected String[] parseProtocols(String protocol)
     {
         if (protocol == null)
             return new String[]{null};
@@ -161,7 +181,7 @@ public class WebSocketFactory
         return protocols;
     }
 
-    public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response)
+    protected boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response)
             throws IOException
     {
         if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
@@ -171,7 +191,7 @@ public class WebSocketFactory
                 protocol = request.getHeader("WebSocket-Protocol");
 
             WebSocket websocket = null;
-            for (String p : WebSocketFactory.parseProtocols(protocol))
+            for (String p : parseProtocols(protocol))
             {
                 websocket = _acceptor.doWebSocketConnect(request, p);
                 if (websocket != null)
@@ -195,5 +215,56 @@ public class WebSocketFactory
         }
 
         return false;
+    }
+    
+    public List<Extension> initExtensions(List<String> requested,int maxDataOpcodes,int maxControlOpcodes,int maxReservedBits)
+    {
+        List<Extension> extensions = new ArrayList<Extension>();
+        for (String rExt : requested)
+        {
+            QuotedStringTokenizer tok = new QuotedStringTokenizer(rExt,";");
+            String extName=tok.nextToken().trim();
+            Map<String,String> parameters = new HashMap<String,String>();
+            while (tok.hasMoreTokens())
+            {
+                QuotedStringTokenizer nv = new QuotedStringTokenizer(tok.nextToken().trim(),"=");
+                String name=nv.nextToken().trim();
+                String value=nv.hasMoreTokens()?nv.nextToken().trim():null;
+                parameters.put(name,value);
+            }
+            
+            Extension extension = newExtension(extName);
+            
+            if (extension==null)
+                continue;
+
+            if (extension.init(parameters))
+            {
+                if (extension.getDataOpcodes()<=maxDataOpcodes && extension.getControlOpcodes()<=maxControlOpcodes && extension.getReservedBits()<=maxReservedBits)
+                {
+                    Log.debug("add {} {}",extName,parameters);
+                    extensions.add(extension);
+                    maxDataOpcodes-=extension.getDataOpcodes();
+                    maxControlOpcodes-=extension.getControlOpcodes();
+                    maxReservedBits-=extension.getReservedBits();
+                }
+            }
+        }
+        Log.debug("extensions={}",extensions);
+        return extensions;
+    }
+
+    private Extension newExtension(String name)
+    {
+        if ("identity".equals(name))
+            return new IdentityExtension();
+
+        if ("fragment".equals(name))
+            return new FragmentExtension();
+        
+        if ("deflate-frame".equals(name))
+            return new DeflateFrameExtension();
+        
+        return null;
     }
 }
