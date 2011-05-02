@@ -43,6 +43,13 @@ public class WebSocketFactory
         String checkOrigin(HttpServletRequest request, String host, String origin);
     }
 
+    private final Map<String,Class<? extends Extension>> _extensionClasses = new HashMap<String, Class<? extends Extension>>();
+    {
+        _extensionClasses.put("identity",IdentityExtension.class);
+        _extensionClasses.put("fragment",FragmentExtension.class);
+        _extensionClasses.put("x-deflate-frame",DeflateFrameExtension.class);
+    }
+    
     private final Acceptor _acceptor;
     private WebSocketBuffers _buffers;
     private int _maxIdleTime = 300000;
@@ -256,15 +263,19 @@ public class WebSocketFactory
 
     private Extension newExtension(String name)
     {
-        if ("identity".equals(name))
-            return new IdentityExtension();
-
-        if ("fragment".equals(name))
-            return new FragmentExtension();
-        
-        if ("x-deflate-frame".equals(name))
-            return new DeflateFrameExtension();
+        try
+        {
+            Class<? extends Extension> extClass = _extensionClasses.get(name);
+            if (extClass!=null)
+                return extClass.newInstance();
+        }
+        catch (Exception e)
+        {
+            Log.warn(e);
+        }
         
         return null;
     }
+    
+    
 }
