@@ -202,7 +202,7 @@ public class WebSocketLoadTest
                 for (int i = 0; i < iterations; ++i)
                 {
                     byte[] data = message.getBytes(StringUtil.__UTF8);
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,0,data.length,10000);
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,0,data.length);
                     _generator.flush(10000);
                     
                     //System.err.println("-> "+message);

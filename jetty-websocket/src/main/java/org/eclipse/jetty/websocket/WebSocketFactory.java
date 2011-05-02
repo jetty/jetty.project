@@ -129,7 +129,7 @@ public class WebSocketFactory
                 connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
             case 7:
-                connection = new WebSocketConnectionD07(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
+                connection = new WebSocketConnectionD07(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,null);
                 break;
             default:
                 Log.warn("Unsupported Websocket version: "+draft);

@@ -40,8 +40,10 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
         _endp=endp;
     }
     
-    public synchronized void addFrame(byte flags, byte opcode,byte[] content, int offset, int length, int blockFor) throws IOException
+    public synchronized void addFrame(byte flags, byte opcode,byte[] content, int offset, int length) throws IOException
     {
+        long blockFor=_endp.getMaxIdleTime();
+        
         if (_buffer==null)
             _buffer=_buffers.getDirectBuffer();
 

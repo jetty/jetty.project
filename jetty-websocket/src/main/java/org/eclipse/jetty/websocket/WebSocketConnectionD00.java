@@ -231,7 +231,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     public void sendMessage(String content) throws IOException
     {
         byte[] data = content.getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0,SENTINEL_FRAME,data,0,data.length,_endp.getMaxIdleTime());
+        _generator.addFrame((byte)0,SENTINEL_FRAME,data,0,data.length);
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
@@ -240,7 +240,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void sendMessage(byte[] data, int offset, int length) throws IOException
     {
-        _generator.addFrame((byte)0,LENGTH_FRAME,data,offset,length,_endp.getMaxIdleTime());
+        _generator.addFrame((byte)0,LENGTH_FRAME,data,offset,length);
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
@@ -263,7 +263,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void sendFrame(byte flags,byte opcode, byte[] content, int offset, int length) throws IOException
     {
-        _generator.addFrame((byte)0,opcode,content,offset,length,_endp.getMaxIdleTime());
+        _generator.addFrame((byte)0,opcode,content,offset,length);
         _generator.flush();
         checkWriteable();
         _idle.access(_endp);
@@ -280,7 +280,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     {
         try
         {
-            _generator.flush(_endp.getMaxIdleTime());
+            _generator.flush();
             _endp.close();
         }
         catch(IOException e)
@@ -289,12 +289,14 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
     }
 
+    /* ------------------------------------------------------------ */
     public void fillBuffersFrom(Buffer buffer)
     {
         _parser.fill(buffer);
     }
 
 
+    /* ------------------------------------------------------------ */
     private void checkWriteable()
     {
         if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)

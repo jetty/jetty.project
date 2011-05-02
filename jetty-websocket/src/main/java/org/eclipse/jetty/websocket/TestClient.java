@@ -63,16 +63,16 @@ public class TestClient
                 {
                     byte[] data=buffer.asArray();
                     // System.err.println("CLOSED: "+((0xff&data[0])*0x100+(0xff&data[1]))+" "+new String(data,2,data.length-2,StringUtil.__UTF8));
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_CLOSE,data,0,data.length,_socket.getSoTimeout());
-                    _generator.flush(_socket.getSoTimeout());
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_CLOSE,data,0,data.length);
+                    _generator.flush();
                     _socket.shutdownOutput();
                     _socket.close();
                     return;
                 }
                 else if (opcode == WebSocketConnectionD07.OP_PING)
                 {
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length(),_socket.getSoTimeout());
-                    _generator.flush(_socket.getSoTimeout());
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
+                    _generator.flush();
                 }
                 
                 _messageBytes+=buffer.length();
@@ -232,7 +232,7 @@ public class TestClient
 
                     if (_verbose)                
                         System.err.printf("%s#addFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
-                    _generator.addFrame(flags,op,data,off,len,_socket.getSoTimeout());
+                    _generator.addFrame(flags,op,data,off,len);
 
                     off+=len;
                     if(data.length-off>len)
@@ -241,7 +241,7 @@ public class TestClient
                         len=fragment;
                 }
 
-                _generator.flush(_socket.getSoTimeout());
+                _generator.flush();
 
                 Thread.sleep(1000);
             }
@@ -258,7 +258,7 @@ public class TestClient
         {
             if (_messagesSent==_messagesReceived)
                 break;
-            _generator.flush(10);
+            _generator.flush();
             Thread.sleep(100);
         }
         

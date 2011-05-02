@@ -271,7 +271,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                 byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                 bytes[0]=(byte)(code/0x100);
                 bytes[1]=(byte)(code%0x100);
-                _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_CLOSE,bytes,0,bytes.length,_endp.getMaxIdleTime());
+                _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_CLOSE,bytes,0,bytes.length);
             }
             _generator.flush();
             
@@ -319,7 +319,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             if (_closedOut)
                 throw new IOException("closing");
             byte[] data = content.getBytes(StringUtil.__UTF8);
-            _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,0,data.length,_endp.getMaxIdleTime());
+            _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,0,data.length);
             _generator.flush();
             checkWriteable();
             _idle.access(_endp);
@@ -333,7 +333,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         {
             if (_closedOut)
                 throw new IOException("closing");
-            _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_BINARY,content,offset,length,_endp.getMaxIdleTime());
+            _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_BINARY,content,offset,length);
             _generator.flush();
             checkWriteable();
             _idle.access(_endp);
@@ -347,7 +347,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         {
             if (_closedOut)
                 throw new IOException("closing");
-            _generator.addFrame(flags,opcode,content,offset,length,_endp.getMaxIdleTime());
+            _generator.addFrame(flags,opcode,content,offset,length);
             _generator.flush();
             checkWriteable();
             _idle.access(_endp);
@@ -358,7 +358,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         {
             if (_closedOut)
                 throw new IOException("closing");
-            _generator.addFrame((byte)0x8,control,data,offset,length,_endp.getMaxIdleTime());
+            _generator.addFrame((byte)0x8,control,data,offset,length);
             _generator.flush();
             checkWriteable();
             _idle.access(_endp);

@@ -109,9 +109,11 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
         _maskGen=maskGen;
     }
 
-    public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length, int blockFor) throws IOException
+    public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
     {
         // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
+        
+        long blockFor=_endp.getMaxIdleTime();
         
         if (_buffer==null)
             _buffer=(_maskGen!=null)?_buffers.getBuffer():_buffers.getDirectBuffer();

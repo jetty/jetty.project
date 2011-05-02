@@ -109,7 +109,7 @@ public class WebSocketGeneratorD07 implements WebSocketGenerator
         _maskGen=maskGen;
     }
 
-    public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length, int blockFor) throws IOException
+    public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
     {
         // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
         
@@ -140,7 +140,11 @@ public class WebSocketGeneratorD07 implements WebSocketGenerator
 
             // ensure there is space for header
             if (_buffer.space() <= space)
-                expelBuffer(blockFor);
+            {
+                flushBuffer();
+                if (_buffer.space() <= space)
+                    flush();
+            }
             
             // write the opcode and length
             if (payload>0xffff)
@@ -205,7 +209,7 @@ public class WebSocketGeneratorD07 implements WebSocketGenerator
                 else
                 {
                     // Forcibly flush the data, issuing a blocking write
-                    expelBuffer(blockFor);
+                    flush();
                     if (remaining == 0)
                     {
                         // Gently flush the data, issuing a non-blocking write
@@ -218,25 +222,15 @@ public class WebSocketGeneratorD07 implements WebSocketGenerator
         }
         while (length>0);
         _opsent=!last;
-    }
-
-    public synchronized int flush(int blockFor) throws IOException
-    {
-        return expelBuffer(blockFor);
-    }
-
-    public synchronized int flush() throws IOException
-    {
-        int flushed = flushBuffer();
+        
         if (_buffer!=null && _buffer.length()==0)
         {
             _buffers.returnBuffer(_buffer);
             _buffer=null;
         }
-        return flushed;
     }
 
-    private synchronized int flushBuffer() throws IOException
+    public synchronized int flushBuffer() throws IOException
     {
         if (!_endp.isOpen())
             throw new EofException();
@@ -247,32 +241,46 @@ public class WebSocketGeneratorD07 implements WebSocketGenerator
         return 0;
     }
 
-    private synchronized int expelBuffer(long blockFor) throws IOException
+    public synchronized int flush() throws IOException
     {
         if (_buffer==null)
             return 0;
         int result = flushBuffer();
-        _buffer.compact();
+        
         if (!_endp.isBlocking())
         {
-            while (_buffer.space()==0)
+            long now = System.currentTimeMillis();
+            long end=now+_endp.getMaxIdleTime();
+            while (_buffer.length()>0)
             {
-                // TODO: in case the I/O system signals write ready, but when we attempt to write we cannot
-                // TODO: we should decrease the blockFor timeout instead of waiting again the whole timeout
-                boolean ready = _endp.blockWritable(blockFor);
+                boolean ready = _endp.blockWritable(end-now);
                 if (!ready)
+                {
+                    now = System.currentTimeMillis();
+                    if (now<end)
+                        continue;
                     throw new IOException("Write timeout");
+                }
 
                 result += flushBuffer();
-                _buffer.compact();
             }
         }
+        _buffer.compact();
         return result;
     }
 
     public synchronized boolean isBufferEmpty()
     {
         return _buffer==null || _buffer.length()==0;
+    }
+
+    public synchronized void idle()
+    {
+        if (_buffer!=null && _buffer.length()==0)
+        {
+            _buffers.returnBuffer(_buffer);
+            _buffer=null;
+        }
     }
 
 }

@@ -45,7 +45,7 @@ public class WebSocketGeneratorD07Test
         _generator = new WebSocketGeneratorD07(_buffers, _endPoint,null);
 
         byte[] data = "Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length);
         _generator.flush();
         assertEquals((byte)0x84,_out.get());
         assertEquals(15,0xff&_out.get());
@@ -73,7 +73,7 @@ public class WebSocketGeneratorD07Test
         
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x8,(byte)0x04,bytes,0,bytes.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x04,bytes,0,bytes.length);
         _generator.flush();
         assertEquals((byte)0x84,_out.get());
         assertEquals(15,0xff&_out.get());
@@ -103,7 +103,7 @@ public class WebSocketGeneratorD07Test
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
 
-        _generator.addFrame((byte)0x8,(byte)0x4,b,0,b.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x4,b,0,b.length);
 
         _generator.flush();
         assertEquals((byte)0x84,_out.get());
@@ -121,7 +121,7 @@ public class WebSocketGeneratorD07Test
         _generator = new WebSocketGeneratorD07(_buffers, _endPoint,_maskGen);
 
         byte[] data = "Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length);
         _generator.flush();
         
         assertEquals((byte)0x84,_out.get());
@@ -151,7 +151,7 @@ public class WebSocketGeneratorD07Test
         
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x8,(byte)0x04,bytes,0,bytes.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x04,bytes,0,bytes.length);
         _generator.flush();
         
         assertEquals((byte)0x84,_out.get());
@@ -183,7 +183,7 @@ public class WebSocketGeneratorD07Test
         for (int i=0;i<b.length;i++)
             b[i]=(byte)('0'+(i%10));
 
-        _generator.addFrame((byte)0x8,(byte)0x04,b,0,b.length,0);
+        _generator.addFrame((byte)0x8,(byte)0x04,b,0,b.length);
         _generator.flush();
         
         assertEquals((byte)0x84,_out.get());

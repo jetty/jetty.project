@@ -41,10 +41,12 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
     final static byte OP_CONTINUATION = 0x00;
     final static byte OP_TEXT = 0x01;
     final static byte OP_BINARY = 0x02;
+    final static byte OP_EXT_DATA = 0x03;
     
     final static byte OP_CLOSE = 0x08;
     final static byte OP_PING = 0x09;
     final static byte OP_PONG = 0x0A;
+    final static byte OP_EXT_CTRL = 0x0B;
     
     final static int CLOSE_NORMAL=1000;
     final static int CLOSE_SHUTDOWN=1001;
@@ -62,11 +64,12 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
         return (opcode&0x8)!=0;
     }
     
-    
     private final static byte[] MAGIC;
     private final IdleCheck _idle;
-    private final WebSocketParser _parser;
-    private final WebSocketGenerator _generator;
+    private final WebSocketParserD07 _parser;
+    private final WebSocketParser.FrameHandler _inbound;
+    private final WebSocketGeneratorD07 _generator;
+    private final WebSocketGenerator _outbound;
     private final WebSocket _webSocket;
     private final OnFrame _onFrame;
     private final OnBinaryMessage _onBinaryMessage;
@@ -99,7 +102,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
     
 
     /* ------------------------------------------------------------ */
-    public WebSocketConnectionD07(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
+    public WebSocketConnectionD07(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, Extension[] extensions)
         throws IOException
     {
         super(endpoint,timestamp);
@@ -116,7 +119,39 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
         _onBinaryMessage=_webSocket instanceof OnBinaryMessage ? (OnBinaryMessage)_webSocket : null;
         _onControl=_webSocket instanceof OnControl ? (OnControl)_webSocket : null;
         _generator = new WebSocketGeneratorD07(buffers, _endp,null);
-        _parser = new WebSocketParserD07(buffers, endpoint, _frameHandler,true);
+        
+        if (extensions!=null)
+        {
+            byte data_op=OP_EXT_DATA;
+            byte ctrl_op=OP_EXT_CTRL;
+            byte flag_mask=0x4;
+            for (int e=0;e<extensions.length;e++)
+            {
+                byte[] data_ops=new byte[extensions[e].getDataOpcodes()];
+                for (int i=0;i<data_ops.length;i++)
+                    data_ops[i]=data_op++;
+                byte[] ctrl_ops=new byte[extensions[e].getControlOpcodes()];
+                for (int i=0;i<ctrl_ops.length;i++)
+                    ctrl_ops[i]=ctrl_op++;
+                byte[] flag_masks=new byte[extensions[e].getReservedBits()];
+                for (int i=0;i<flag_masks.length;i++)
+                {
+                    flag_masks[i]=flag_mask;
+                    flag_mask= (byte)(flag_mask>>1);
+                }
+                
+                extensions[e].init(
+                        e==extensions.length-1?_frameHandler:extensions[e+1],
+                                e==0?_generator:extensions[e-1],
+                                        data_ops,ctrl_ops,flag_masks);
+            }
+        }
+
+        _outbound=(extensions==null || extensions.length==0)?_generator:extensions[extensions.length-1];
+        _inbound=(extensions==null || extensions.length==0)?_frameHandler:extensions[0];
+        
+        _parser = new WebSocketParserD07(buffers, endpoint,_inbound,true);
+        
         _protocol=protocol;
 
         // TODO should these be AsyncEndPoint checks/calls?
@@ -162,7 +197,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
 
             while (progress)
             {
-                int flushed=_generator.flush();
+                int flushed=_generator.flushBuffer();
                 int filled=_parser.parseNext();
 
                 progress = flushed>0 || filled>0;
@@ -190,8 +225,9 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
         {
             if (_endp.isOpen())
             {
+                _generator.idle();
                 _idle.access(_endp);
-                if (_closedIn && _closedOut && _generator.isBufferEmpty())
+                if (_closedIn && _closedOut && _outbound.isBufferEmpty())
                     _endp.close();
                 else if (_endp.isInputShutdown() && !_closedIn)
                     closeIn(CLOSE_PROTOCOL,null);
@@ -206,7 +242,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
-        return _parser.isBufferEmpty() && _generator.isBufferEmpty();
+        return _parser.isBufferEmpty() && _outbound.isBufferEmpty();
     }
 
     /* ------------------------------------------------------------ */
@@ -264,9 +300,9 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
                 byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                 bytes[0]=(byte)(code/0x100);
                 bytes[1]=(byte)(code%0x100);
-                _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_CLOSE,bytes,0,bytes.length,_endp.getMaxIdleTime());
+                _outbound.addFrame((byte)0x8,WebSocketConnectionD07.OP_CLOSE,bytes,0,bytes.length);
             }
-            _generator.flush();
+            _outbound.flush();
             
         }
         catch(IOException e)
@@ -288,7 +324,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     private void checkWriteable()
     {
-        if (!_generator.isBufferEmpty() && _endp instanceof AsyncEndPoint)
+        if (!_outbound.isBufferEmpty() && _endp instanceof AsyncEndPoint)
         {
             ((AsyncEndPoint)_endp).scheduleWrite();
         }
@@ -312,8 +348,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
             if (_closedOut)
                 throw new IOException("closing");
             byte[] data = content.getBytes(StringUtil.__UTF8);
-            _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_TEXT,data,0,data.length,_endp.getMaxIdleTime());
-            _generator.flush();
+            _outbound.addFrame((byte)0x8,WebSocketConnectionD07.OP_TEXT,data,0,data.length);
             checkWriteable();
             _idle.access(_endp);
         }
@@ -326,8 +361,7 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
         {
             if (_closedOut)
                 throw new IOException("closing");
-            _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_BINARY,content,offset,length,_endp.getMaxIdleTime());
-            _generator.flush();
+            _outbound.addFrame((byte)0x8,WebSocketConnectionD07.OP_BINARY,content,offset,length);
             checkWriteable();
             _idle.access(_endp);
         }
@@ -340,19 +374,17 @@ public class WebSocketConnectionD07 extends AbstractConnection implements WebSoc
         {
             if (_closedOut)
                 throw new IOException("closing");
-            _generator.addFrame(flags,opcode,content,offset,length,_endp.getMaxIdleTime());
-            _generator.flush();
+            _outbound.addFrame(flags,opcode,content,offset,length);
             checkWriteable();
             _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
-        public void sendControl(byte control, byte[] data, int offset, int length) throws IOException
+        public void sendControl(byte ctrl, byte[] data, int offset, int length) throws IOException
         {
             if (_closedOut)
                 throw new IOException("closing");
-            _generator.addFrame((byte)0x8,control,data,offset,length,_endp.getMaxIdleTime());
-            _generator.flush();
+            _outbound.addFrame((byte)0x8,ctrl,data,offset,length);
             checkWriteable();
             _idle.access(_endp);
         }

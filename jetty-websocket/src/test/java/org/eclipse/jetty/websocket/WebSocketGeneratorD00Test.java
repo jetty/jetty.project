@@ -30,7 +30,7 @@ public class WebSocketGeneratorD00Test
     public void testOneString() throws Exception
     {
         byte[] data="Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x0,(byte)0x04,data,0,data.length,0);
+        _generator.addFrame((byte)0x0,(byte)0x04,data,0,data.length);
         _generator.flush();
         assertEquals((byte)0x04,_out.get());
         assertEquals('H',_out.get());
@@ -55,7 +55,7 @@ public class WebSocketGeneratorD00Test
     public void testOneBinaryString() throws Exception
     {
         byte[] data="Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
-        _generator.addFrame((byte)0x0,(byte)0x84,data,0,data.length,0);
+        _generator.addFrame((byte)0x0,(byte)0x84,data,0,data.length);
         _generator.flush();
         assertEquals((byte)0x84,_out.get());
         assertEquals(15,_out.get());
