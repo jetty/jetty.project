@@ -19,7 +19,7 @@ public class DeflateFrameExtension extends AbstractExtension
     
     public DeflateFrameExtension()
     {
-        super("deflate-frame",0,0,1);
+        super("x-deflate-frame",0,0,1);
     }
 
     @Override

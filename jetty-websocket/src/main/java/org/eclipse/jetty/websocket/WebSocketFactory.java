@@ -262,7 +262,7 @@ public class WebSocketFactory
         if ("fragment".equals(name))
             return new FragmentExtension();
         
-        if ("deflate-frame".equals(name))
+        if ("x-deflate-frame".equals(name))
             return new DeflateFrameExtension();
         
         return null;

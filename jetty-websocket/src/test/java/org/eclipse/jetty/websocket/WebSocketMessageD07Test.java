@@ -272,7 +272,7 @@ public class WebSocketMessageD07Test
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: echo\r\n" +
                  "Sec-WebSocket-Version: 7\r\n"+
-                 "Sec-WebSocket-Extensions: deflate-frame\r\n"+
+                 "Sec-WebSocket-Extensions: x-deflate-frame\r\n"+
                  "Sec-WebSocket-Extensions: fragment;fragments=2\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
@@ -285,7 +285,7 @@ public class WebSocketMessageD07Test
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("Sec-WebSocket-Extensions: ",input);
-        lookFor("deflate-frame;minLength=64",input);
+        lookFor("x-deflate-frame;minLength=64",input);
         skipTo("Sec-WebSocket-Extensions: ",input);
         lookFor("fragment;",input);
         skipTo("\r\n\r\n",input);
