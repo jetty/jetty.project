@@ -813,7 +813,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        if (isStarted())
+        if (isRunning())
             throw new IllegalStateException();
         _configurationClasses = configurations==null?null:(String[])configurations.clone();
         _configurationClassesSet = true;
@@ -826,7 +826,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurations(Configuration[] configurations)
     {
-        if (isStarted())
+        if (isRunning())
             throw new IllegalStateException();
         _configurations = configurations==null?null:(Configuration[])configurations.clone();
         _configurationsSet = true;
