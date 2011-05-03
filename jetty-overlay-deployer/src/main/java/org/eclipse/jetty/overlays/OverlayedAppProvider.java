@@ -74,24 +74,24 @@ import org.xml.sax.SAXException;
  * Each overlays may provide the following files and subdirectories:<dl>
  * <dt>lib</dt>
  * <dd>The lib directory can contain jars that are applied to a {@link URLClassLoader} that is
- * available before any context.xml files are executed, so that classes from these jars may be used by the 
- * context.xml.</dd> 
+ * available before any overlay.xml files are executed, so that classes from these jars may be used by the 
+ * overlay.xml.</dd> 
  * 
- * <dt>context.xml</dt>
- * <dd>This {@link XmlConfiguration} formatted file may exist in a template, node or instance overlay and is applied to the {@link ContextHandler} or
- * {@link WebAppContext} so that it may be configured.  The context.xml from the template overlay can be used to 
- * create the ContextHandler instance, so a derived class maybe used.</dd>
+ * <dt>overlay.xml</dt>
+ * <dd>This {@link XmlConfiguration} formatted file must exist in the WEB-INF directory of an overlay and is 
+ * used to configure a {@link ContextHandler} or {@link WebAppContext}.  The overlay.xml from the template 
+ * overlay can be used to instantiate the ContextHandler instance, so a derived class maybe used.</dd>
  * 
  * <dt>template.xml</dt>
  * <dd>This {@link XmlConfiguration} formatted file if it exists in a template or node overlay, is applied to a shared instance of {@link TemplateContext}.
- * Any ID's created in a template are available as ID's in context.xml for an instance.</dd>
+ * Any ID's created in a template are available as ID's in overlay.xml for an instance.</dd>
  * 
- * <dt>webdefaul.xml</dt>
+ * <dt>webdefault.xml</dt>
  * <dd>If present in an overlay, then the most specific version is passed to 
  * {@link WebAppContext#setDefaultsDescriptor(String)}. Typically this is set in the template overlay.</dd>
  * 
- * <dt>web.xml</dt>
- * <dd>The web.xml file of an overlay is applied to a web application as 
+ * <dt>web-overlay.xml</dt>
+ * <dd>The web-overlay.xml file of an overlay is applied to a web application as 
  * with {@link WebAppContext#addOverrideDescriptor(String)}. This allows incremental changes to web.xml without
  * totally replacing it (see webapp). Typically this is used to set init parameters.</dd>
  * 
@@ -105,7 +105,7 @@ import org.xml.sax.SAXException;
  * The OverlayedAppProvider will scan the "webapps", "templates", "nodes" and "instances" subdirectories of 
  * the directory configured with {@link #setScanDir(File)}. New webapps and overlays and modified files within 
  * the overlays will trigger hot deployment, redeployment or undeployment.   The scan for modified files is 
- * restricted to only top level files (eg context.xml) and the files matching WEB-INF/*.xml WEB-INF/lib/*
+ * restricted to only top level files (eg overlay.xml) and the files matching WEB-INF/*.xml WEB-INF/lib/*
  * and WEB-INF/classes/*.  The webapps/overlays may be directory structures or war/jar archives.
  * <p>
  * The filenames of the templates and instances are used to match them together and with a webapplication.
@@ -116,31 +116,31 @@ import org.xml.sax.SAXException;
  * (eg instances/myFoo=instance1.jar instances/myFoo=instance2/ etc.).
  * <p>
  * If a template name does not include a webapp name, then the template is created as a ContextHandler
- * instead of a WebAppContext (with the exact type being determined by context.xml).
+ * instead of a WebAppContext (with the exact type being determined by overlay.xml).
  */
 public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private final static Logger __log=org.eclipse.jetty.util.log.Log.getLogger("OverlayedAppProvider");
     /**
-     * Property set for context.xml and template.xml files that gives the root cloudtide directory as a canoncial file name.
+     * Property set for overlay.xml and template.xml files that gives the root overlay scan directory as a canoncial file name.
      */
-    public final static String CLOUDTIDE_DIR="cloudtide.dir";
+    public final static String OVERLAYS_DIR="overlays.dir";
     /**
-     *  Property set for context.xml and template.xml files that gives the current webapp name, as {@link Webapp#getName()}.
+     *  Property set for overlay.xml and template.xml files that gives the current webapp name, as {@link Webapp#getName()}.
      */
-    public final static String CLOUDTIDE_WEBAPP="cloudtide.webapp";
+    public final static String OVERLAY_WEBAPP="overlay.webapp";
     /**
-     *  Property set for context.xml and template.xml files that gives the current template name, as {@link Template#getTemplateName()}.
+     *  Property set for overlay.xml and template.xml files that gives the current template name, as {@link Template#getTemplateName()}.
      */
-    public final static String CLOUDTIDE_TEMPLATE="cloudtide.template";
+    public final static String OVERLAY_TEMPLATE="overlay.template";
     /**
-     *  Property set for context.xml and template.xml files that gives the current node name, as {@link Node#getName()}.
+     *  Property set for overlay.xml and template.xml files that gives the current node name, as {@link Node#getName()}.
      */
-    public final static String CLOUDTIDE_NODE="cloudtide.node";
+    public final static String OVERLAY_NODE="overlay.node";
     /**
-     *  Property set for context.xml and template.xml files that gives the current instance name, {@link Instance#getName()}.
+     *  Property set for overlay.xml and template.xml files that gives the current instance name, {@link Instance#getName()}.
      */
-    public final static String CLOUDTIDE_INSTANCE="cloudtide.instance";
+    public final static String OVERLAY_INSTANCE="overlay.instance";
     
     public final static String WEBAPPS="webapps";
     public final static String TEMPLATES="templates";
@@ -353,7 +353,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             // set the thread loader
             Thread.currentThread().setContextClassLoader(loader);
 
-            // Create properties to be shared by context.xmls
+            // Create properties to be shared by overlay.xmls
             Map<String,Object> idMap = new HashMap<String,Object>();
             idMap.putAll(shared.getIdMap());
             idMap.put(_serverID,getDeploymentManager().getServer());
@@ -364,7 +364,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             Resource template_context_xml = template.getResource(OVERLAY_XML);
             if (template_context_xml.exists())
             {
-                __log.debug("{}: context.xml={}",origin,template_context_xml);
+                __log.debug("{}: overlay.xml={}",origin,template_context_xml);
                 XmlConfiguration xmlc = newXmlConfiguration(template_context_xml.getURL(),idMap,template,instance);
                 context=(ContextHandler)xmlc.configure();
                 idMap=xmlc.getIdMap();
@@ -396,10 +396,10 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             // Set the shared session scavenger timer
             context.setAttribute("org.eclipse.jetty.server.session.timer", _sessionScavenger);
             
-            // Apply any node or instance context.xml
+            // Apply any node or instance overlay.xml
             for (Resource context_xml : getLayeredResources(OVERLAY_XML,node,instance))
             {
-                __log.debug("{}: context.xml={}",origin,context_xml);
+                __log.debug("{}: overlay.xml={}",origin,context_xml);
                 XmlConfiguration xmlc = newXmlConfiguration(context_xml.getURL(),idMap,template,instance);
                 xmlc.getIdMap().put("Cache",context.getAttribute(ResourceCache.class.getCanonicalName()));
                 xmlc.configure(context);
@@ -505,16 +505,16 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     private XmlConfiguration newXmlConfiguration(URL url, Map<String, Object> idMap, Template template, Instance instance) throws SAXException, IOException
     {
         XmlConfiguration xmlc = new XmlConfiguration(url);
-        xmlc.getProperties().put(CLOUDTIDE_DIR,_scanDir.getCanonicalPath());
+        xmlc.getProperties().put(OVERLAYS_DIR,_scanDir.getCanonicalPath());
         if (template!=null)
         {
-            xmlc.getProperties().put(CLOUDTIDE_TEMPLATE,template.getTemplateName());
-            xmlc.getProperties().put(CLOUDTIDE_WEBAPP,template.getWebapp()==null?null:template.getWebapp().getName());
+            xmlc.getProperties().put(OVERLAY_TEMPLATE,template.getTemplateName());
+            xmlc.getProperties().put(OVERLAY_WEBAPP,template.getWebapp()==null?null:template.getWebapp().getName());
         }
         if (_node!=null)
-            xmlc.getProperties().put(CLOUDTIDE_NODE,_node.getName());
+            xmlc.getProperties().put(OVERLAY_NODE,_node.getName());
         if (instance!=null)
-            xmlc.getProperties().put(CLOUDTIDE_INSTANCE,instance.getName());
+            xmlc.getProperties().put(OVERLAY_INSTANCE,instance.getName());
         if (getConfigurationManager()!=null)
             xmlc.getProperties().putAll(getConfigurationManager().getProperties());
         xmlc.getIdMap().putAll(idMap);
@@ -572,15 +572,15 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         _shared.put(key,shared);
 
         
-        // Create properties to be shared by context.xmls
+        // Create properties to be shared by overlay.xmls
         Map<String,Object> idMap = new HashMap<String,Object>();
         idMap.put(_serverID,getDeploymentManager().getServer());
 
         
         // Create the shared context for the template
         // This instance will never be start, but is used to capture the 
-        // shared results of running the template and node context.xml files.
-        // If there is a template context.xml, give it the chance to create the ContextHandler instance
+        // shared results of running the template and node overlay.xml files.
+        // If there is a template overlay.xml, give it the chance to create the ContextHandler instance
         // otherwise create an instance ourselves
         for (Resource template_xml : getLayeredResources(TEMPLATE_XML,template,node))
         {
