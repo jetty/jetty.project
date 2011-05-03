@@ -184,7 +184,7 @@
  org.slf4j.helpers;resolution:=optional,
  org.xml.sax,
  org.xml.sax.helpers,
- org.eclipse.jetty.nested;resolution:=optional
+ org.eclipse.jetty.nested;resolution:=optional,
  *
                         </Import-Package>
                         <DynamicImport-Package>org.eclipse.jetty.*;version="[7.3,8)"</DynamicImport-Package>
