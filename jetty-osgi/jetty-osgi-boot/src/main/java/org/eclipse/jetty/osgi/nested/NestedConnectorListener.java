@@ -16,15 +16,18 @@ import java.lang.reflect.Method;
 
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.nested.NestedConnector;
+import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.osgi.framework.FrameworkUtil;
 
 /**
- * Extension of the NestedConnector that manages registering and unregistering with the
- * BridgeServlet.
+ * Listens to the start and stop of the NestedConnector to register and unregister the NestedConnector
+ * with the BridgeServlet.
  * All interactions with the BridgeServlet are done via introspection to avoid depending on it directly.
  * The BridgeServlet lives in the bootstrap-webapp; not inside equinox.
  */
-public class NestedConnector extends org.eclipse.jetty.nested.NestedConnector
+public class NestedConnectorListener extends AbstractLifeCycleListener
 {
 
 	/** Name of the BridgeServlet class. By default org.eclipse.equinox.servletbridge.BridgeServlet */
@@ -40,6 +43,11 @@ public class NestedConnector extends org.eclipse.jetty.nested.NestedConnector
 	
 	/** servlet that wraps this NestedConnector and uses the NestedConnector to service the requests. */
 	private NestedConnectorServletDelegate _servletDelegate;
+	
+	/**
+	 * The NestedConnector listened to.
+	 */
+	private NestedConnector nestedConnector;
 	
 	/**
 	 * @param bridgeServletClassName Name of the class that is the BridgeServlet.
@@ -81,28 +89,53 @@ public class NestedConnector extends org.eclipse.jetty.nested.NestedConnector
 		this.unregisterServletDelegateMethodName = unregisterServletDelegateMethodName;
 	}
 	
-	
+	/**
+	 * @param nestedConnector The NestedConnector that we are listening to here.
+	 */
+	public void setNestedConnector(NestedConnector nestedConnector)
+	{
+		this.nestedConnector = nestedConnector;
+	}
+	/**
+	 * @return The NestedConnector that we are listening to here.
+	 */
+	public NestedConnector getNestedConnector()
+	{
+		return this.nestedConnector;
+	}
 	
 	@Override
-	protected void doStart() throws Exception
-	{
-		super.doStart();
-		registerWithBridgeServlet();
-	}
-
+    public void lifeCycleStarted(LifeCycle event)
+    {
+    	try
+    	{
+			registerWithBridgeServlet();
+		}
+    	catch (Exception e)
+    	{
+			//Logger.getLogger("org.eclipse.jetty.osgi.nested").;
+		}
+    }
+    
 	@Override
-	protected void doStop() throws Exception
-	{
-		unregisterWithBridgeServlet();
-		super.doStop();
-	}
+    public void lifeCycleStopping(LifeCycle event)
+    {
+    	try
+    	{
+    		unregisterWithBridgeServlet();
+		}
+    	catch (Exception e)
+    	{
+			e.printStackTrace();
+		}
+    }
 
 	/**
 	 * Hook into the BridgeServlet
 	 */
 	protected void registerWithBridgeServlet() throws Exception
 	{
-		_servletDelegate = new NestedConnectorServletDelegate(this);
+		_servletDelegate = new NestedConnectorServletDelegate(getNestedConnector());
 		try
 		{
 			invokeStaticMethod(getBridgeServletClassName(), getRegisterServletDelegateMethodName(),

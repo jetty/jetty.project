@@ -14,9 +14,16 @@
 
     <Call name="addConnector">
       <Arg>
-          <New class="org.eclipse.jetty.osgi.nested.NestedConnector">
+          <New id="NestedConnector" class="org.eclipse.jetty.nested.NestedConnector">
             <Set name="statsOn">false</Set>
             <Set name="confidentialPort">8443</Set>
+            <Call name="addLifeCycleListener">
+              <Arg>
+                <New class="org.eclipse.jetty.osgi.nested.NestedConnectorListener" id="NestedConnectorListener">
+                  <Set name="nestedConnector"><Ref id="NestedConnector"/></Set>
+                </New>
+              </Arg>
+            </Call>
           </New>
       </Arg>
     </Call>

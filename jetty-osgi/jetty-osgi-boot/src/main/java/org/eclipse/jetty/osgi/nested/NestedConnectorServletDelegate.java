@@ -19,6 +19,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.nested.NestedConnector;
+
 /**
  * Wraps a NestedConnector into a servlet that can be plugged into
  * BridgeServlet#registerServletDelegate
