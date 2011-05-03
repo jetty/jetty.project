@@ -24,8 +24,10 @@ import org.osgi.framework.FrameworkUtil;
 /**
  * Listens to the start and stop of the NestedConnector to register and unregister the NestedConnector
  * with the BridgeServlet.
+ * <p>
  * All interactions with the BridgeServlet are done via introspection to avoid depending on it directly.
  * The BridgeServlet lives in the bootstrap-webapp; not inside equinox.
+ * </p>
  */
 public class NestedConnectorListener extends AbstractLifeCycleListener
 {
@@ -113,7 +115,11 @@ public class NestedConnectorListener extends AbstractLifeCycleListener
 		}
     	catch (Exception e)
     	{
-			//Logger.getLogger("org.eclipse.jetty.osgi.nested").;
+			if (e instanceof RuntimeException)
+			{
+				throw (RuntimeException)e;
+			}
+			throw new RuntimeException("Unable to register the servlet delegate into the BridgeServlet.", e);
 		}
     }
     
@@ -126,7 +132,11 @@ public class NestedConnectorListener extends AbstractLifeCycleListener
 		}
     	catch (Exception e)
     	{
-			e.printStackTrace();
+			if (e instanceof RuntimeException)
+			{
+				throw (RuntimeException)e;
+			}
+			throw new RuntimeException("Unable to unregister the servlet delegate into the BridgeServlet.", e);
 		}
     }
 
