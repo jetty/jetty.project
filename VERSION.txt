@@ -11,6 +11,7 @@ jetty-7.4.1-SNAPSHOT
  + 344513 Attempting to set ConfigurationClasses in jetty-web.xml causes NPE
  + JETTY-954 WebAppContext eats any start exceptions instead of stopping the server load
  + 344529 Ability to customize the error handling of the OSGi HttpService
+ + 340040 Support for a total timeout
 
 jetty-7.4.0.v20110414
  + 342504 Scanner Listener

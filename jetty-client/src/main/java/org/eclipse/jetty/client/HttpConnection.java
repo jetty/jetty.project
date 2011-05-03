@@ -60,7 +60,7 @@ public class HttpConnection extends AbstractConnection
     // The current exchange waiting for a response
     private volatile HttpExchange _exchange;
     private HttpExchange _pipeline;
-    private final Timeout.Task _timeout = new TimeoutTask();
+    private final Timeout.Task _idleTimeout = new ConnectionIdleTask();
     private AtomicBoolean _idle = new AtomicBoolean(false);
 
     public void dump() throws IOException
@@ -114,10 +114,17 @@ public class HttpConnection extends AbstractConnection
                 return true;
             }
 
-            if (!_endp.isOpen())
-                return false;
-
             _exchange = ex;
+            _exchange.associate(this);
+
+            // The call to associate() may have closed the connection, check if it's the case
+            if (!_endp.isOpen())
+            {
+                _exchange.disassociate();
+                _exchange = null;
+                return false;
+            }
+
             _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_COMMIT);
 
             if (_endp.isBlocking())
@@ -130,41 +137,36 @@ public class HttpConnection extends AbstractConnection
                 scep.scheduleWrite();
             }
 
-            scheduleTimeout();
+            adjustIdleTimeout();
 
             return true;
         }
     }
 
-    protected void scheduleTimeout() throws IOException
+    private void adjustIdleTimeout() throws IOException
     {
-        HttpClient httpClient = _destination.getHttpClient();
+        // Adjusts the idle timeout in case the default or exchange timeout
+        // are greater. This is needed for long polls, where one wants an
+        // aggressive releasing of idle connections (so idle timeout is small)
+        // but still allow long polls to complete normally
 
-        long exchangeTimeout = _exchange.getTimeout();
-        long timeout = exchangeTimeout;
+        long timeout = _exchange.getTimeout();
         if (timeout <= 0)
-            timeout = httpClient.getTimeout();
+            timeout = _destination.getHttpClient().getTimeout();
 
         long endPointTimeout = _endp.getMaxIdleTime();
 
         if (timeout > 0 && timeout > endPointTimeout)
         {
             // Make it larger than the exchange timeout so that there are
-            // no races in trying to close the endpoint between the 2 timeouts
+            // no races between the idle timeout and the exchange timeout
+            // when trying to close the endpoint
             _endp.setMaxIdleTime(2 * (int)timeout);
         }
-
-        if (exchangeTimeout > 0)
-            httpClient.schedule(_timeout, exchangeTimeout);
-        else
-            httpClient.schedule(_timeout);
     }
 
     public Connection handle() throws IOException
     {
-        if (_exchange != null)
-            _exchange.associate(this);
-
         try
         {
             int no_progress = 0;
@@ -207,8 +209,6 @@ public class HttpConnection extends AbstractConnection
                             return this;
                         }
                     }
-                    if (!_exchange.isAssociated())
-                        _exchange.associate(this);
                 }
 
                 try
@@ -252,7 +252,6 @@ public class HttpConnection extends AbstractConnection
                                     if (_requestContentChunk == null || _requestContentChunk.length() == 0)
                                     {
                                         _requestContentChunk = _exchange.getRequestContentChunk();
-                                        _destination.getHttpClient().schedule(_timeout);
 
                                         if (_requestContentChunk != null)
                                             _generator.addContent(_requestContentChunk,false);
@@ -313,7 +312,8 @@ public class HttpConnection extends AbstractConnection
                         {
                             // Cancelling the exchange causes an exception as we close the connection,
                             // but we don't report it as it is normal cancelling operation
-                            if (_exchange.getStatus() != HttpExchange.STATUS_CANCELLING)
+                            if (_exchange.getStatus() != HttpExchange.STATUS_CANCELLING &&
+                                    _exchange.getStatus() != HttpExchange.STATUS_CANCELLED)
                             {
                                 _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
                                 _exchange.getEventListener().onException(e);
@@ -353,13 +353,12 @@ public class HttpConnection extends AbstractConnection
                             // it can be reused or closed out
                             if (_parser.isComplete())
                             {
-                                _destination.getHttpClient().cancel(_timeout);
+                                _exchange.cancelTimeout(_destination.getHttpClient());
                                 complete = true;
                             }
                         }
                     }
 
-                    // TODO - this needs to be greatly improved.
                     if (_generator.isComplete() && !_parser.isComplete())
                     {
                         if (!_endp.isOpen() || _endp.isInputShutdown())
@@ -383,7 +382,6 @@ public class HttpConnection extends AbstractConnection
                             if (_exchange != null)
                             {
                                 HttpExchange exchange=_exchange;
-                                exchange.disassociate();
                                 _exchange = null;
 
                                 // Reset the maxIdleTime because it may have been changed
@@ -428,7 +426,6 @@ public class HttpConnection extends AbstractConnection
                                         send(exchange);
                                     }
                                 }
-
                             }
                         }
                     }
@@ -437,11 +434,6 @@ public class HttpConnection extends AbstractConnection
         }
         finally
         {
-            if (_exchange != null && _exchange.isAssociated())
-            {
-                _exchange.disassociate();
-            }
-
             // Do we have more stuff to write?
             if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
             {
@@ -461,9 +453,6 @@ public class HttpConnection extends AbstractConnection
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.io.Connection#isSuspended()
-     */
     public boolean isSuspended()
     {
         return false;
@@ -646,7 +635,7 @@ public class HttpConnection extends AbstractConnection
 
     public String toDetailString()
     {
-        return toString() + " ex=" + _exchange + " " + _timeout.getAge();
+        return toString() + " ex=" + _exchange + " idle for " + _idleTimeout.getAge();
     }
 
     public void close() throws IOException
@@ -677,8 +666,8 @@ public class HttpConnection extends AbstractConnection
     {
         synchronized (this)
         {
-            if (_idle.compareAndSet(false,true))
-                _destination.getHttpClient().scheduleIdle(_timeout);
+            if (_idle.compareAndSet(false, true))
+                _destination.getHttpClient().scheduleIdle(_idleTimeout);
             else
                 throw new IllegalStateException();
         }
@@ -688,9 +677,9 @@ public class HttpConnection extends AbstractConnection
     {
         synchronized (this)
         {
-            if (_idle.compareAndSet(true,false))
+            if (_idle.compareAndSet(true, false))
             {
-                _destination.getHttpClient().cancel(_timeout);
+                _destination.getHttpClient().cancel(_idleTimeout);
                 return true;
             }
         }
@@ -698,47 +687,35 @@ public class HttpConnection extends AbstractConnection
         return false;
     }
 
-    private class TimeoutTask extends Timeout.Task
+    protected void exchangeExpired(HttpExchange exchange)
+    {
+        synchronized (this)
+        {
+            // We are expiring an exchange, but the exchange is pending
+            // Cannot reuse the connection because the reply may arrive, so close it
+            if (_exchange == exchange)
+            {
+                try
+                {
+                    _destination.returnConnection(this, true);
+                }
+                catch (IOException x)
+                {
+                    Log.ignore(x);
+                }
+            }
+        }
+    }
+
+    private class ConnectionIdleTask extends Timeout.Task
     {
         @Override
         public void expired()
         {
-            HttpExchange ex = null;
-            try
+            // Connection idle, close it
+            if (_idle.compareAndSet(true, false))
             {
-                synchronized (HttpConnection.this)
-                {
-                    ex = _exchange;
-                    _exchange = null;
-                    if (ex != null)
-                    {
-                        ex.disassociate();
-                        _destination.returnConnection(HttpConnection.this, true);
-                    }
-                    else if (_idle.compareAndSet(true,false))
-                    {
-                        _destination.returnIdleConnection(HttpConnection.this);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.debug(e);
-            }
-            finally
-            {
-                if (ex != null && ex.getStatus() < HttpExchange.STATUS_COMPLETED)
-                    ex.setStatus(HttpExchange.STATUS_EXPIRED);
-
-                try
-                {
-                    close();
-                }
-                catch (IOException e)
-                {
-                    Log.ignore(e);
-                }
-
+                _destination.returnIdleConnection(HttpConnection.this);
             }
         }
     }

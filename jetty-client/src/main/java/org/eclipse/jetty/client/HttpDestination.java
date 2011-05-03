@@ -538,6 +538,10 @@ public class HttpDestination
                 (auth).setCredentials(ex);
         }
 
+        // Schedule the timeout here, before we queue the exchange
+        // so that we count also the queue time in the timeout
+        ex.scheduleTimeout(this);
+
         HttpConnection connection = getIdleConnection();
         if (connection != null)
         {
@@ -561,6 +565,16 @@ public class HttpDestination
         }
     }
 
+    protected void exchangeExpired(HttpExchange exchange)
+    {
+        // The exchange may expire while waiting in the
+        // destination queue, make sure it is removed
+        synchronized (this)
+        {
+            _queue.remove(exchange);
+        }
+    }
+
     protected void send(HttpConnection connection, HttpExchange exchange) throws IOException
     {
         synchronized (this)
@@ -569,7 +583,8 @@ public class HttpDestination
             // to the exchange queue and recycle the connection
             if (!connection.send(exchange))
             {
-                _queue.add(0, exchange);
+                if (exchange.getStatus() <= HttpExchange.STATUS_WAITING_FOR_CONNECTION)
+                    _queue.add(0, exchange);
                 returnIdleConnection(connection);
             }
         }
