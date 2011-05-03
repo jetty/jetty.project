@@ -65,6 +65,15 @@ public class WebSocketFactory
         _acceptor = acceptor;
     }
 
+
+    /**
+     * @return A modifiable map of extension name to extension class
+     */
+    public Map<String,Class<? extends Extension>> getExtensionClassesMap()
+    {
+        return _extensionClasses;
+    }
+    
     /**
      * Get the maxIdleTime.
      *
