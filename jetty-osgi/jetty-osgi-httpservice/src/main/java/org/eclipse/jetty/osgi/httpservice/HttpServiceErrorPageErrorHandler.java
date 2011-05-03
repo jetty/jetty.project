@@ -53,13 +53,20 @@ public class HttpServiceErrorPageErrorHandler extends ErrorPageErrorHandler
 			}
 			catch (ServletException e)
 			{
-				
+				//well
 			}
 		}
 		if (!response.isCommitted())
 		{
 			super.handle(target, baseRequest, request, response);
 		}
+	}
+
+	@Override
+	protected void doStop() throws Exception
+	{
+		INSTANCE = null;
+		super.doStop();
 	}
 	
 	
