@@ -15,6 +15,14 @@
   </properties>
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.equinox.http</groupId>
       <artifactId>servlet</artifactId>
     </dependency>
@@ -37,7 +45,7 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.3.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
+                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.4.1.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
                 <copy todir="target/classes/contexts">
                     <fileset dir="contexts" />
                 </copy>

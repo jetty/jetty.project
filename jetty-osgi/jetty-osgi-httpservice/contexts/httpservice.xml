@@ -21,8 +21,12 @@
   </Set>
 <!-- this servlet provides the OSGi HTTP Service once it is initialized -->
   <Call name="addServlet">
-    <Arg>org.eclipse.jetty.osgi.httpservice.HttpServiceServletX</Arg>
+    <Arg>org.eclipse.equinox.http.servlet.HttpServiceServlet</Arg>
     <Arg>/*</Arg>
     <Set name="InitOrder">0</Set>
   </Call>
+<!-- custom pluggable error handler -->
+  <Set name="ErrorHandler">
+    <New class="org.eclipse.jetty.osgi.httpservice.HttpServiceErrorPageErrorHandler"/>
+  </Set>
 </Configure>
