@@ -6,7 +6,7 @@ import java.util.Map;
 public class FragmentExtension extends AbstractExtension
 {
     private int _maxLength=-1;
-    private int _fragments=1;
+    private int _minFragments=1;
     
     public FragmentExtension()
     {
@@ -19,7 +19,7 @@ public class FragmentExtension extends AbstractExtension
         if(super.init(parameters))
         {
             _maxLength=getInitParameter("maxLength",_maxLength);
-            _fragments=getInitParameter("fragments",_fragments);
+            _minFragments=getInitParameter("minFragments",_minFragments);
             return true;
         }
         return false;
@@ -45,7 +45,7 @@ public class FragmentExtension extends AbstractExtension
             opcode=getConnection().continuationOpcode();
         }
         
-        while (fragments<_fragments)
+        while (fragments<_minFragments)
         {
             int frag=length/2;
             fragments++;

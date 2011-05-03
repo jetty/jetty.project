@@ -218,7 +218,7 @@ public class WebSocketMessageD07Test
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: onConnect\r\n" +
                  "Sec-WebSocket-Version: 7\r\n"+
-                 "Sec-WebSocket-Extensions: fragment;maxLength=4;fragments=7\r\n"+
+                 "Sec-WebSocket-Extensions: fragment;maxLength=4;minFragments=7\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -273,7 +273,7 @@ public class WebSocketMessageD07Test
                  "Sec-WebSocket-Protocol: echo\r\n" +
                  "Sec-WebSocket-Version: 7\r\n"+
                  "Sec-WebSocket-Extensions: x-deflate-frame\r\n"+
-                 "Sec-WebSocket-Extensions: fragment;fragments=2\r\n"+
+                 "Sec-WebSocket-Extensions: fragment;minFragments=2\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
