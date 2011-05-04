@@ -68,7 +68,7 @@ public class OverlayedAppProviderTest
     }
 
     @Test
-    public void testScanForJars() throws Exception
+    public void testScanForWars() throws Exception
     {
         final ConcurrentLinkedQueue<Set<String>> scanned = new ConcurrentLinkedQueue<Set<String>>();
         OverlayedAppProvider provider = new OverlayedAppProvider()
@@ -97,11 +97,11 @@ public class OverlayedAppProviderTest
         // Check scanning for archives
         File war = new File(_webapps,"foo-1.2.3.war");
         touch(war);
-        File template = new File(_templates,"foo=foo-1.2.3.jar");
+        File template = new File(_templates,"foo=foo-1.2.3.war");
         touch(template);
-        File node = new File(_nodes,"nodeA.jar");
+        File node = new File(_nodes,"nodeA.war");
         touch(node);
-        File instance = new File(_instances,"foo=instance.jar");
+        File instance = new File(_instances,"foo=instance.war");
         touch(instance);
 
         provider.scan();
@@ -111,9 +111,9 @@ public class OverlayedAppProviderTest
         assertTrue(results!=null);
         assertEquals(4,results.size());
         assertTrue(results.contains("webapps/foo-1.2.3.war"));
-        assertTrue(results.contains("templates/foo=foo-1.2.3.jar"));
-        assertTrue(results.contains("nodes/nodeA.jar"));
-        assertTrue(results.contains("instances/foo=instance.jar"));
+        assertTrue(results.contains("templates/foo=foo-1.2.3.war"));
+        assertTrue(results.contains("nodes/nodeA.war"));
+        assertTrue(results.contains("instances/foo=instance.war"));
 
         provider.scan();
         provider.scan();
@@ -130,9 +130,9 @@ public class OverlayedAppProviderTest
         assertTrue(results!=null);
         assertEquals(4,results.size());
         assertTrue(results.contains("webapps/foo-1.2.3.war"));
-        assertTrue(results.contains("templates/foo=foo-1.2.3.jar"));
-        assertTrue(results.contains("nodes/nodeA.jar"));
-        assertTrue(results.contains("instances/foo=instance.jar"));
+        assertTrue(results.contains("templates/foo=foo-1.2.3.war"));
+        assertTrue(results.contains("nodes/nodeA.war"));
+        assertTrue(results.contains("instances/foo=instance.war"));
 
     }
 
@@ -372,7 +372,7 @@ public class OverlayedAppProviderTest
 
 
         // Add a template
-        File template = new File(_templates,"foo=foo-1.2.3.jar");
+        File template = new File(_templates,"foo=foo-1.2.3.war");
         touch(template);
         provider.scan();
         provider.scan();
@@ -380,7 +380,7 @@ public class OverlayedAppProviderTest
         assertEquals(template.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Add a node
-        File nodeA = new File(_nodes,"nodeA.jar");
+        File nodeA = new File(_nodes,"nodeA.war");
         touch(nodeA);
         provider.scan();
         provider.scan();
@@ -388,13 +388,13 @@ public class OverlayedAppProviderTest
         assertEquals(nodeA.getAbsolutePath(),scanned.poll(1,TimeUnit.SECONDS));
 
         // Add another node
-        File nodeB = new File(_nodes,"nodeB.jar");
+        File nodeB = new File(_nodes,"nodeB.war");
         provider.scan();
         provider.scan();
         assertTrue(scanned.isEmpty());
 
         // Add an instance
-        File instance = new File(_instances,"foo=instance.jar");
+        File instance = new File(_instances,"foo=instance.war");
         touch(instance);
         provider.scan();
         provider.scan();

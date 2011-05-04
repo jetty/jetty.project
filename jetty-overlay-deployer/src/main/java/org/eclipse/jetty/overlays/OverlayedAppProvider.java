@@ -760,7 +760,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
                 
                 Monitor monitor = Monitor.valueOf(origin.getParentFile().getName().toUpperCase());
                 
-                String ext=monitor==Monitor.WEBAPPS?".war":".jar";
+                String ext=".war";
                 
                 // check directory vs archive 
                 if (origin.isDirectory() || !origin.exists() && !ruri.toLowerCase().endsWith(ext))
