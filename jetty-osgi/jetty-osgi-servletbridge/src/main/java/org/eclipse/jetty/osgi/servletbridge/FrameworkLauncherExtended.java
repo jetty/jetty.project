@@ -161,20 +161,24 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             String jettyHome = System.getProperty("jetty.home");
             if (jettyHome == null)
             {
-                System.setProperty("jetty.home",getPlatformDirectory().getAbsolutePath());
+            	jettyHome = getPlatformDirectory().getAbsolutePath();
+                System.setProperty("jetty.home",jettyHome);
                 // System.setProperty("jetty.port", "9080");
                 // System.setProperty("jetty.port.ssl", "9443");
             }
-            String etcJettyXml = System.getProperty("jetty.etc.config.urls");
-            if (etcJettyXml == null && new File(jettyHome,"etc/jetty-osgi-nested.xml").exists())
+            else
             {
-                System.setProperty("jetty.etc.config.urls","etc/jetty-osgi-nested.xml");
+            	jettyHome = resolveSystemProperty(jettyHome);
             }
-            System.setProperty("java.naming.factory.initial","org.eclipse.jetty.jndi.InitialContextFactory");
-            System.setProperty("java.naming.factory.url.pkgs","org.eclipse.jetty.jndi");
+            String etcJettyXml = System.getProperty("jetty.etc.config.urls");
+            if (etcJettyXml == null)
+            {
+            	if (new File(jettyHome,"etc/jetty-osgi-nested.xml").exists())
+            	{
+            		System.setProperty("jetty.etc.config.urls","etc/jetty-osgi-nested.xml");
+            	}
+            }
         }
-        String sysPackagesExtra = "org.osgi.framework.system.packages.extra";
-        props.setProperty(sysPackagesExtra, "javax.servlet,javax.servlet.http");
         return props;
     }
 
