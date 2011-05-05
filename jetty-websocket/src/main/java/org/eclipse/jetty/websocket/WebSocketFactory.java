@@ -197,7 +197,7 @@ public class WebSocketFactory
         return protocols;
     }
 
-    protected boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response)
+    public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response)
             throws IOException
     {
         if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
