@@ -23,15 +23,20 @@ import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
@@ -42,6 +47,8 @@ import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.server.ResourceCache;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.Holder;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -49,6 +56,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -72,34 +80,57 @@ import org.xml.sax.SAXException;
  * </dl>
  * <p>
  * Each overlays may provide the following files and subdirectories:<dl>
- * <dt>lib</dt>
- * <dd>The lib directory can contain jars that are applied to a {@link URLClassLoader} that is
+ * <dt>WEB-INF/lib-overlay</dt>
+ * <dd>The lib-overlay directory can contain jars that are applied to a {@link URLClassLoader} that is
  * available before any overlay.xml files are executed, so that classes from these jars may be used by the 
  * overlay.xml.</dd> 
  * 
- * <dt>overlay.xml</dt>
+ * <dt>WEB-INF/overlay.xml</dt>
  * <dd>This {@link XmlConfiguration} formatted file must exist in the WEB-INF directory of an overlay and is 
  * used to configure a {@link ContextHandler} or {@link WebAppContext}.  The overlay.xml from the template 
  * overlay can be used to instantiate the ContextHandler instance, so a derived class maybe used.</dd>
  * 
- * <dt>template.xml</dt>
+ * <dt>WEB-INF/template.xml</dt>
  * <dd>This {@link XmlConfiguration} formatted file if it exists in a template or node overlay, is applied to a shared instance of {@link TemplateContext}.
  * Any ID's created in a template are available as ID's in overlay.xml for an instance.</dd>
  * 
- * <dt>webdefault.xml</dt>
+ * <dt>WEB-INF/webdefault.xml</dt>
  * <dd>If present in an overlay, then the most specific version is passed to 
  * {@link WebAppContext#setDefaultsDescriptor(String)}. Typically this is set in the template overlay.</dd>
  * 
- * <dt>web-overlay.xml</dt>
+ * <dt>WEB-INF/web-overlay.xml</dt>
  * <dd>The web-overlay.xml file of an overlay is applied to a web application as 
  * with {@link WebAppContext#addOverrideDescriptor(String)}. This allows incremental changes to web.xml without
  * totally replacing it (see webapp). Typically this is used to set init parameters.</dd>
  * 
- * <dt>webapp</dt>
- * <dd>This directory contains static content that overlays the static content of the webapp
+ * <dt>.</dt>
+ * <dd>This root directory contains static content that overlays the static content of the webapp
  * or earlier overlays. Using this directory, files like index.html or logo.png can be added or replaced. It can
  * also be used to replace files within WEB-INF including web.xml classes and libs.</dd>
- * 
+ * </dl>
+ * <p>
+ * Any init parameters set on the context, filters or servlets may have parameterized values, with the parameters 
+ * including:
+ * <dl>
+ * <dt>${overlays.dir}</dt>
+ * <dd>the root overlay scan directory as a canonical file name.</dd>
+ * <dt>${overlay.webapp}</dt>
+ * <dd>the webapp name, same as {@link Webapp#getName()}.</dd>
+ * <dt>${overlay.template}</dt>
+ * <dd>the  template name, as {@link Template#getName()}.</dd>
+ * <dt>${overlay.template.name}</dt>
+ * <dd>the  template classifier, as {@link Template#getTemplateName()}.</dd>
+ * <dt>${overlay.template.classifier}</dt>
+ * <dd>the  template classifier, as {@link Template#getClassifier()()}.</dd>
+ * <dt>${overlay.node}</dt>
+ * <dd>the node name, as {@link Node#getName()}.</dd>
+ * <dt>${overlay.instance}</dt>
+ * <dd>the instance name, {@link Instance#getName()}.</dd>
+ * <dt>${overlay.instance.classifier}</dt>
+ * <dd>the instance name, {@link Instance#getClassifier()()}.</dd>
+ * <dt>${*}</dt>
+ * <dd>Any properties obtained via {@link #getConfigurationManager()}.{@link ConfigurationManager#getProperties()}</dd>
+ * <dd></dd>
  * </dl>
  * <p>
  * The OverlayedAppProvider will scan the "webapps", "templates", "nodes" and "instances" subdirectories of 
@@ -122,7 +153,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
 {
     private final static Logger __log=org.eclipse.jetty.util.log.Log.getLogger("OverlayedAppProvider");
     /**
-     * Property set for overlay.xml and template.xml files that gives the root overlay scan directory as a canoncial file name.
+     * Property set for overlay.xml and template.xml files that gives the root overlay scan directory as a canonical file name.
      */
     public final static String OVERLAYS_DIR="overlays.dir";
     /**
@@ -130,9 +161,17 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
      */
     public final static String OVERLAY_WEBAPP="overlay.webapp";
     /**
-     *  Property set for overlay.xml and template.xml files that gives the current template name, as {@link Template#getTemplateName()}.
+     *  Property set for overlay.xml and template.xml files that gives the current template full name, as {@link Template#getName()}.
      */
     public final static String OVERLAY_TEMPLATE="overlay.template";
+    /**
+     *  Property set for overlay.xml and template.xml files that gives the current template name, as {@link Template#getTemplateName()}.
+     */
+    public final static String OVERLAY_TEMPLATE_NAME="overlay.template.name";
+    /**
+     *  Property set for overlay.xml and template.xml files that gives the current template classifier, as {@link Template#getClassifier()}.
+     */
+    public final static String OVERLAY_TEMPLATE_CLASSIFIER="overlay.template.classifier";
     /**
      *  Property set for overlay.xml and template.xml files that gives the current node name, as {@link Node#getName()}.
      */
@@ -141,6 +180,10 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
      *  Property set for overlay.xml and template.xml files that gives the current instance name, {@link Instance#getName()}.
      */
     public final static String OVERLAY_INSTANCE="overlay.instance";
+    /**
+     *  Property set for overlay.xml and template.xml files that gives the current instance clasifier, {@link Instance#getClassifier()}.
+     */
+    public final static String OVERLAY_INSTANCE_CLASSIFIER="overlay.instance.classifier";
     
     public final static String WEBAPPS="webapps";
     public final static String TEMPLATES="templates";
@@ -490,6 +533,14 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
 
             __log.debug("{}: baseResource={}",origin,context.getBaseResource());
             
+            Resource jetty_web_xml = context.getResource("/WEB-INF/"+JettyWebXmlConfiguration.JETTY_WEB_XML);
+            if (jetty_web_xml!=null && jetty_web_xml.exists())
+                context.setAttribute(JettyWebXmlConfiguration.XML_CONFIGURATION,newXmlConfiguration(jetty_web_xml.getURL(),idMap,template,instance));
+            
+            // Add listener to expand parameters from descriptors before other listeners execute
+            Map<String,String> params = new HashMap<String,String>();
+            populateParameters(params,template,instance);
+            context.addEventListener(new ParameterExpander(params,context));
             
             System.err.println("created:\n"+context.dump());
             
@@ -505,21 +556,39 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     private XmlConfiguration newXmlConfiguration(URL url, Map<String, Object> idMap, Template template, Instance instance) throws SAXException, IOException
     {
         XmlConfiguration xmlc = new XmlConfiguration(url);
-        xmlc.getProperties().put(OVERLAYS_DIR,_scanDir.getCanonicalPath());
-        if (template!=null)
-        {
-            xmlc.getProperties().put(OVERLAY_TEMPLATE,template.getTemplateName());
-            xmlc.getProperties().put(OVERLAY_WEBAPP,template.getWebapp()==null?null:template.getWebapp().getName());
-        }
-        if (_node!=null)
-            xmlc.getProperties().put(OVERLAY_NODE,_node.getName());
-        if (instance!=null)
-            xmlc.getProperties().put(OVERLAY_INSTANCE,instance.getName());
-        if (getConfigurationManager()!=null)
-            xmlc.getProperties().putAll(getConfigurationManager().getProperties());
+        populateParameters(xmlc.getProperties(),template,instance);
         xmlc.getIdMap().putAll(idMap);
         
         return xmlc;
+    }
+
+    /* ------------------------------------------------------------ */
+    private void populateParameters(Map<String,String> params,Template template, Instance instance)
+    {
+        try
+        {
+            params.put(OVERLAYS_DIR,_scanDir.getCanonicalPath());
+            if (template!=null)
+            {
+                params.put(OVERLAY_TEMPLATE,template.getName());
+                params.put(OVERLAY_TEMPLATE_NAME,template.getTemplateName());
+                params.put(OVERLAY_TEMPLATE_CLASSIFIER,template.getClassifier());
+                params.put(OVERLAY_WEBAPP,template.getWebapp()==null?null:template.getWebapp().getName());
+            }
+            if (_node!=null)
+                params.put(OVERLAY_NODE,_node.getName());
+            if (instance!=null)
+            {
+                params.put(OVERLAY_INSTANCE,instance.getName());
+                params.put(OVERLAY_INSTANCE_CLASSIFIER,instance.getClassifier());
+            }
+            if (getConfigurationManager()!=null)
+                params.putAll(getConfigurationManager().getProperties());
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
 
@@ -559,7 +628,7 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
         
         // Make the shared resourceBase
         List<Resource> bases = new ArrayList<Resource>();
-        for (Resource wa : getLayeredResources("webapp",node,template))
+        for (Resource wa : getLayers(node,template))
             bases.add(wa);
         if (webapp!=null)
             bases.add(webapp.getBaseResource());
@@ -1082,6 +1151,21 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     }
 
     /* ------------------------------------------------------------ */
+    private static List<Resource> getLayers(Layer... layers)
+    {
+        List<Resource> resources = new ArrayList<Resource>();
+        for (Layer layer: layers)
+        {
+            if (layer==null)
+                continue;
+            Resource resource = layer.getBaseResource();
+            if (resource.exists())
+                resources.add(resource);
+        }
+        return resources;
+    }
+    
+    /* ------------------------------------------------------------ */
     private static List<Resource> getLayeredResources(String path, Layer... layers)
     {
         List<Resource> resources = new ArrayList<Resource>();
@@ -1359,4 +1443,73 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
     }
     
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private final class ParameterExpander implements ServletContextListener
+    {
+        private final Map<String, String> _params;
+        private final ContextHandler _ctx;
+
+        private ParameterExpander(Map<String, String> params, ContextHandler ctx)
+        {
+            _params = params;
+            _ctx = ctx;
+        }
+
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            Enumeration<String> e=_ctx.getInitParameterNames();
+            while (e.hasMoreElements())
+            {
+                String name = e.nextElement();
+                _ctx.setInitParameter(name,expandParameter(_ctx.getInitParameter(name)));
+            }
+            
+            ServletHandler servletHandler = _ctx.getChildHandlerByClass(ServletHandler.class);
+            if (servletHandler!=null)
+            {
+                List<Holder<?>> holders = new ArrayList<Holder<?>>();
+                holders.addAll(Arrays.asList(servletHandler.getFilters()));
+                holders.addAll(Arrays.asList(servletHandler.getServlets()));
+                for (Holder<?> holder: holders)
+                {
+                    e=holder.getInitParameterNames();
+                    while (e.hasMoreElements())
+                    {
+                        String name = e.nextElement();
+                        holder.setInitParameter(name,expandParameter(holder.getInitParameter(name)));
+                    }
+                }
+            }
+        }
+
+        private String expandParameter(String value)
+        {
+            int i=0;
+            while (true)
+            {
+                int open=value.indexOf("${",i);
+                if (open<0)
+                    return value;
+                int close=value.indexOf("}",open);
+                if (close<0)
+                    return value;
+                
+                String param = value.substring(open+2,close);
+                if (_params.containsKey(param))
+                {
+                    String tmp=value.substring(0,open)+_params.get(param);
+                    i=tmp.length();
+                    value=tmp+value.substring(close+1);
+                }
+                else
+                    i=close+1;
+            }
+        }
+
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+        }
+    }
 }

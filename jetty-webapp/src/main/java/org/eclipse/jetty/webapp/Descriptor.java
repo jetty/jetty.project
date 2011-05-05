@@ -71,4 +71,9 @@ public abstract class Descriptor
     {
         return _root;
     }
+    
+    public String toString()
+    {
+        return this.getClass().getSimpleName()+"("+_xml+")";
+    }
 }

@@ -38,6 +38,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     public static final String PROPERTY_THIS_WEB_INF_URL = "this.web-inf.url";
 
 
+    public static final String XML_CONFIGURATION = "org.eclipse.jetty.webapp.JettyWebXmlConfiguration";
+    public static final String JETTY_WEB_XML = "jetty-web.xml";
     
     /** 
      * Configure
@@ -64,7 +66,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
             // do jetty.xml file
             Resource jetty=web_inf.addPath("jetty7-web.xml");
             if(!jetty.exists())
-                jetty=web_inf.addPath("jetty-web.xml");
+                jetty=web_inf.addPath(JETTY_WEB_XML);
             if(!jetty.exists())
                 jetty=web_inf.addPath("web-jetty.xml");
 
@@ -77,7 +79,11 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                     context.setServerClasses(null);
                     if(Log.isDebugEnabled())
                         Log.debug("Configure: "+jetty);
-                    XmlConfiguration jetty_config=new XmlConfiguration(jetty.getURL());
+                    XmlConfiguration jetty_config = (XmlConfiguration)context.getAttribute(XML_CONFIGURATION);
+                    if (jetty_config==null)
+                        jetty_config=new XmlConfiguration(jetty.getURL());
+                    else
+                        context.removeAttribute(XML_CONFIGURATION);
                     setupXmlConfiguration(context,jetty_config, web_inf);
                     jetty_config.configure(context);
                 }

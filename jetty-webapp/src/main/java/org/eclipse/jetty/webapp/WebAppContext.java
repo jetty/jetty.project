@@ -407,7 +407,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
       
         // Prepare for configuration     
         for (int i=0;i<_configurations.length;i++)
+        {
+            Log.debug("preConfigure {} with {}",this,_configurations[i]);
             _configurations[i].preConfigure(this);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -415,7 +418,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         // Configure webapp
         for (int i=0;i<_configurations.length;i++)
+        {
+            Log.debug("configure {} with {}",this,_configurations[i]);
             _configurations[i].configure(this);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -423,7 +429,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {   
         // Clean up after configuration
         for (int i=0;i<_configurations.length;i++)
+        {
+            Log.debug("postConfigure {} with {}",this,_configurations[i]);
             _configurations[i].postConfigure(this);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -1092,7 +1101,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _war = war;
     }
 
-
     /* ------------------------------------------------------------ */
     /**
      * @return Comma or semicolon separated path of filenames or URLs
@@ -1170,7 +1178,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _throwUnavailableOnStartupException = throwIfStartupException;
     }
     
-    
+
+    /* ------------------------------------------------------------ */
     public boolean isThrowUnavailableOnStartupException () {
         return _throwUnavailableOnStartupException;
     }

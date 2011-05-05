@@ -196,8 +196,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         dump(out,indent,Collections.singletonList(new CLDump(getClassLoader())),TypeUtil.asList(getHandlers()),getBeans(),_initParams.entrySet(), _attributes.getAttributeEntrySet(),_contextAttributes.getAttributeEntrySet());
     }
     
-   
-    
     /* ------------------------------------------------------------ */
     public Context getServletContext()
     {
