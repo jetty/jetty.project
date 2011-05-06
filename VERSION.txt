@@ -1,17 +1,17 @@
 jetty-7.4.1-SNAPSHOT
+ + 340040 Support for a total timeout
  + 343083 Set nested dispatch type and connection
  + 343277 add support for a context white list
  + 343352 make sure that jetty.osgi.boot is activated when a WAB is registered
+ + 343482 refactored overlay deployer layout to use WAR layout
  + 343567 HttpClient does not limit the destination's exchange queue
  + 343707 'REQUEST' is printed on console for each incoming HTTP request
- + 343482 refactored overlay deployer layout to use WAR layout
  + 343923 flush timeouts applied to outer loop
  + 344059 Websockets draft-07
  + 344067 Add support for OSGi fragment bundles to add static resources to web-bundles
  + 344513 Attempting to set ConfigurationClasses in jetty-web.xml causes NPE
- + JETTY-954 WebAppContext eats any start exceptions instead of stopping the server load
  + 344529 Ability to customize the error handling of the OSGi HttpService
- + 340040 Support for a total timeout
+ + JETTY-954 WebAppContext eats any start exceptions instead of stopping the server load
 
 jetty-7.4.0.v20110414
  + 342504 Scanner Listener
