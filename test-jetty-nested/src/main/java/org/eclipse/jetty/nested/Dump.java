@@ -590,6 +590,56 @@ public class Dump extends HttpServlet
             }
 
             pout.write("</tr><tr>\n");
+            pout.write("<th align=\"left\" colspan=\"2\"><big><br/>ServletContext Misc:</big></th>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\" valign=\"top\">"+"servletContext.getContextPath()"+":&nbsp;</th>");
+            pout.write("<td>"+ getServletContext().getContextPath() + "</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\" valign=\"top\">"+"getServletContext().getRealPath(\"/WEB-INF/\")"+":&nbsp;</th>");
+            pout.write("<td>"+ getServletContext().getRealPath("/WEB-INF/") + "</td>");
+            String webinfRealPath = getServletContext().getRealPath("/WEB-INF/");
+            if (webinfRealPath != null)
+            {
+                try
+                {
+                    File webInfRealPathFile = new File(webinfRealPath);
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\" valign=\"top\">"+"new File(getServletContext().getRealPath(\"/WEB-INF/\"))"+":&nbsp;</th>");
+                    pout.write("<td>exists()="+ webInfRealPathFile.exists()
+                            + "; isFile()="+webInfRealPathFile.isFile()
+                            + "; isDirectory()="+webInfRealPathFile.isDirectory()
+                            + "; isAbsolute()=" + webInfRealPathFile.isAbsolute()
+                            + "; canRead()=" + webInfRealPathFile.canRead()
+                            + "; canWrite()=" + webInfRealPathFile.canWrite()
+                            +"</td>");
+                    if (webInfRealPathFile.exists() && webInfRealPathFile.isDirectory())
+                    {
+                        File webxml = new File(webInfRealPathFile, "web.xml");
+                        pout.write("</tr><tr>\n");
+                        pout.write("<th align=\"right\" valign=\"top\">"+"new File(getServletContext().getRealPath(\"/WEB-INF/web.xml\"))"+":&nbsp;</th>");
+                        pout.write("<td>exists()="+ webxml.exists()
+                                + "; isFile()="+webxml.isFile()
+                                + "; isDirectory()="+webxml.isDirectory()
+                                + "; isAbsolute()=" + webxml.isAbsolute()
+                                + "; canRead()=" + webxml.canRead()
+                                + "; canWrite()=" + webxml.canWrite()
+                                +"</td>");
+                    }
+                }
+                catch (Throwable t)
+                {
+                    pout.write("<th align=\"right\" valign=\"top\">"+"Error probing the java.io.File(getServletContext().getRealPath(\"/WEB-INF/\"))"+":&nbsp;</th>");
+                    pout.write("<td>"+ t + "</td>");
+                }
+            }
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\" valign=\"top\">"+"getServletContext().getServerInfo()"+":&nbsp;</th>");
+            pout.write("<td>"+ getServletContext().getServerInfo() + "</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\" valign=\"top\">"+"getServletContext().getServletContextName()"+":&nbsp;</th>");
+            pout.write("<td>"+ getServletContext().getServletContextName() + "</td>");
+
+            pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Context InitParameters:</big></th>");
             a= getServletContext().getInitParameterNames();
             while (a.hasMoreElements())
