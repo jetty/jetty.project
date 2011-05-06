@@ -354,12 +354,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized (this)
         {
+            if (!isOpen() || isOutputShutdown())
+                throw new EofException();
+            
             long now=_selectSet.getNow();
             long end=now+timeoutMs;
             try
             {
                 _writeBlocked=true;
-                while (isOpen() && _writeBlocked)
+                while (isOpen() && _writeBlocked && !isOutputShutdown())
                 {
                     try
                     {
