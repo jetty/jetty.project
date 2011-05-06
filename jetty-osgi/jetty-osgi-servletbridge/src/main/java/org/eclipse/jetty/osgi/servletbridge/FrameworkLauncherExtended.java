@@ -59,6 +59,19 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             {
                 // If the path starts with a reference to a nsystem property, resolve it.
                 resourceBaseStr = resolveSystemProperty(resourceBaseStr);
+                if (resourceBaseStr.startsWith("/WEB-INF/"))
+                {
+                	String rpath = context.getRealPath(resourceBaseStr);
+                	if (rpath != null)
+                	{
+                		File rpathFile = new File(rpath);
+                		if (rpathFile.exists() && rpathFile.isDirectory() && rpathFile.canWrite())
+                		{
+                			resourceBaseStr = rpath;
+                		}
+                	}
+                }
+                	
                 if (resourceBaseStr.startsWith("file://"))
                 {
                     resourceBaseAsURL = new URL(resourceBaseStr.replace(" ","%20")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -74,8 +87,15 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             }
             else
             {
-                super.initResourceBase();
-                resourceBaseAsURL = context.getResource(resourceBaseStr);
+            	if (context.getResource(RESOURCE_BASE + ECLIPSE) != null)
+            	{
+            		resourceBase = RESOURCE_BASE + ECLIPSE;
+            	}
+            	else
+            	{
+                    super.initResourceBase();
+            	}
+                resourceBaseAsURL = context.getResource(resourceBase);
             }
         }
         catch (MalformedURLException e)
@@ -178,6 +198,17 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             		System.setProperty("jetty.etc.config.urls","etc/jetty-osgi-nested.xml");
             	}
             }
+            String logback = System.getProperty("logback.configurationFile");
+            if (logback == null)
+            {
+            	File etcLogback = new File(jettyHome,"etc/logback.xml");
+            	if (etcLogback.exists())
+            	{
+            		System.setProperty("logback.configurationFile",etcLogback.getAbsolutePath());
+            	}
+            }
+            System.err.println("syserr: logback.configurationFile=" + System.getProperty("logback.configurationFile"));
+            System.out.println("sysout: logback.configurationFile=" + System.getProperty("logback.configurationFile"));
         }
         return props;
     }

@@ -11,7 +11,7 @@
         The parameter can also be passed as a system property. -->
 	    <init-param>
 	        <param-name>osgi.install.area</param-name>
-	        <param-value></param-value>
+            <param-value>/WEB-INF/eclipse</param-value>
 	    </init-param>
 		<init-param>
 			<param-name>commandline</param-name>
@@ -42,6 +42,17 @@
 		</init-param>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
+    
+    <servlet>
+      <servlet-name>dump</servlet-name>
+      <servlet-class>org.eclipse.jetty.nested.Dump</servlet-class>
+      <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+      <servlet-name>dump</servlet-name>
+      <url-pattern>/dump/*</url-pattern>
+    </servlet-mapping>
 	<servlet-mapping>
 		<servlet-name>proxy</servlet-name>
 		<url-pattern>/*</url-pattern>
