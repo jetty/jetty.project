@@ -53,11 +53,14 @@ public class Server extends HandlerWrapper implements Attributes
     private static final String _version;
     static
     {
-        if (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
+        if (Server.class.getPackage()!=null && 
+            "Eclipse.org - Jetty".equals(Server.class.getPackage().getImplementationVendor()) &&
+             Server.class.getPackage().getImplementationVersion()!=null)
             _version=Server.class.getPackage().getImplementationVersion();
         else
             _version=System.getProperty("jetty.version","7.x.y-SNAPSHOT");
     }
+    
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
     private ThreadPool _threadPool;

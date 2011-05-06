@@ -1,6 +1,7 @@
 jetty-7.4.1-SNAPSHOT
  + 340040 Support for a total timeout
  + 343083 Set nested dispatch type and connection
+ + 343172 Check package implementor for version
  + 343277 add support for a context white list
  + 343352 make sure that jetty.osgi.boot is activated when a WAB is registered
  + 343482 refactored overlay deployer layout to use WAR layout

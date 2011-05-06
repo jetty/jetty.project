@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +149,9 @@ public class Config
     static
     {
         Package pkg = Config.class.getPackage();
-        if (pkg != null && (pkg.getImplementationVersion() != null))
+        if (pkg != null && 
+                "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) &&
+                (pkg.getImplementationVersion() != null))
             _version = pkg.getImplementationVersion();
         else
             _version = System.getProperty("jetty.version","Unknown");
