@@ -1470,8 +1470,10 @@ public class OverlayedAppProvider extends AbstractLifeCycle implements AppProvid
             if (servletHandler!=null)
             {
                 List<Holder<?>> holders = new ArrayList<Holder<?>>();
-                holders.addAll(Arrays.asList(servletHandler.getFilters()));
-                holders.addAll(Arrays.asList(servletHandler.getServlets()));
+                if (servletHandler.getFilters()!=null)
+                    holders.addAll(Arrays.asList(servletHandler.getFilters()));
+                if (servletHandler.getHandler()!=null)
+                    holders.addAll(Arrays.asList(servletHandler.getServlets()));
                 for (Holder<?> holder: holders)
                 {
                     e=holder.getInitParameterNames();
