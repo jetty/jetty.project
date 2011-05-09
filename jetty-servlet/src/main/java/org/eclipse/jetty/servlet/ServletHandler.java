@@ -68,9 +68,9 @@ import org.eclipse.jetty.util.log.Log;
  * javax.servlet.http.HttpServlet API.
  * <P>
  * This handler does not implement the full J2EE features and is intended to
- * be used when a full web application is not required.  Specifically filters
- * and request wrapping are not supported.
- * 
+ * be used directly when a full web application is not required.  If a Web application is required,
+ * then this handler should be used as part of a {@link org.eclipse.jetty.webapp.WebAppContext}.
+ * <p>
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().
  */
