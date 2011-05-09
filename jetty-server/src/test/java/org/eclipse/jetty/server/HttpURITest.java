@@ -18,8 +18,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+
+import junit.framework.Assert;
+
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.util.MultiMap;
 import org.junit.Test;
 
 public class HttpURITest
@@ -191,6 +197,46 @@ public class HttpURITest
         }
     }
 
+    @Test
+    public void testUnicodeErrors() throws UnsupportedEncodingException
+    {
+        String uri="http://server/path?invalid=data%u2021here";
+        try
+        {
+            URLDecoder.decode(uri,"UTF-8");
+            Assert.assertTrue(false);
+        }
+        catch (IllegalArgumentException e)
+        {
+        }
+
+        try
+        {
+            HttpURI huri=new HttpURI(uri);
+            MultiMap<String> params = new MultiMap<String>();
+            huri.decodeQueryTo(params);
+            System.err.println(params);
+            Assert.assertTrue(false);
+        }
+        catch (IllegalArgumentException e)
+        {
+        }
+        
+        try
+        {
+            HttpURI huri=new HttpURI(uri);
+            MultiMap<String> params = new MultiMap<String>();
+            huri.decodeQueryTo(params,"UTF-8");
+            System.err.println(params);
+            Assert.assertTrue(false);
+        }
+        catch (IllegalArgumentException e)
+        {
+        }        
+        
+    }
+    
+    
     private final String[][] connect_tests=
     {
        /* 0*/ {"  localhost:8080  ","localhost","8080"},
