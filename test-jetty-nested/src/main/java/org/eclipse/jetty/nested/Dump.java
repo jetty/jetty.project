@@ -494,6 +494,19 @@ public class Dump extends HttpServlet
                 }
             }
 
+            if ("true".equals(request.getParameter("env")))
+            {
+                pout.write("</tr><tr>\n");
+                pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Environment&nbsp;System-Properties:&nbsp;</big></th>");
+
+                for (Entry<Object, Object> e : System.getProperties().entrySet())
+                {
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">" + notag(String.valueOf(e.getKey())) + ":&nbsp;</th>");
+                    pout.write("<td>"+notag(String.valueOf(e.getValue()))+"</td>");
+                }
+            }
+
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Request Parameters:</big></th>");
             h= request.getParameterNames();
