@@ -647,25 +647,16 @@ public class UrlEncoded extends MultiMap
                         buffer.getStringBuffer().append(encoded,offset,offset+i);
                     }
 
-                    while(c=='%' && (i+2)<length)
+                    try
                     {
-                        try
-                        {
-                            byte b=(byte)TypeUtil.parseInt(encoded,offset+i+1,2,16);
-                            buffer.append(b);
-                            i+=3;
-                        }
-                        catch(NumberFormatException nfe)
-                        {
-                            buffer.getStringBuffer().append('%');
-                            for(char next; ((next=encoded.charAt(++i+offset))!='%');)
-                                buffer.getStringBuffer().append((next=='+' ? ' ' : next));
-                        }
-
-                        if (i<length)
-                            c = encoded.charAt(offset+i);
+                        byte b=(byte)TypeUtil.parseInt(encoded,offset+i+1,2,16);
+                        buffer.append(b);
+                        i+=2;
                     }
-                    i--;
+                    catch(NumberFormatException nfe)
+                    {
+                        buffer.getStringBuffer().append('%');  
+                    }
                 }
                 else if (buffer!=null)
                     buffer.getStringBuffer().append(c);
