@@ -13,16 +13,28 @@
 package org.eclipse.jetty.nested;
 
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.eclipse.jetty.server.Request;
 
 public class NestedRequest extends Request
 {
-    public NestedRequest()
+    private final HttpServletRequest _outer;
+    
+    public NestedRequest(HttpServletRequest outer)
     {
+        _outer=outer;
     }
     
     void setConnection(NestedConnection connection)
     {
         super.setConnection(connection);
     }
+
+    public boolean isSecure()
+    {
+        return _outer.isSecure();
+    }
+    
+    
 }

@@ -29,6 +29,24 @@
     <url-pattern>/*</url-pattern>  
   </servlet-mapping>
   
+  <servlet>
+    <servlet-name>test</servlet-name>
+    <servlet-class>org.eclipse.jetty.nested.TestServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>test</servlet-name>
+    <url-pattern>/test/*</url-pattern>  
+  </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>dump</servlet-name>
+    <servlet-class>org.eclipse.jetty.nested.Dump</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>dump</servlet-name>
+    <url-pattern>/outer/*</url-pattern>  
+  </servlet-mapping>
+  
   </web-app>
 
 

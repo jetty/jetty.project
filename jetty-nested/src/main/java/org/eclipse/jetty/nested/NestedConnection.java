@@ -41,7 +41,7 @@ public class NestedConnection extends HttpConnection
               connector.getServer(),
               new NestedParser(),
               new NestedGenerator(connector.getResponseBuffers(),endp,outerResponse,nestedIn),
-              new NestedRequest());
+              new NestedRequest(outerRequest));
 
         ((NestedRequest)_request).setConnection(this);
         
@@ -55,8 +55,6 @@ public class NestedConnection extends HttpConnection
         _request.setQueryString(outerRequest.getQueryString());
         _request.setProtocol(outerRequest.getProtocol());
         
-        _request.setAttribute("isSecure",new Boolean(outerRequest.isSecure()));
-        
         // Set the headers
         HttpFields fields = getRequestFields();
         for (Enumeration<String> e=outerRequest.getHeaderNames();e.hasMoreElements();)
@@ -66,13 +64,22 @@ public class NestedConnection extends HttpConnection
             fields.add(header,value);
         }
         
+        // Slight hack for cloud foundry
+        if (!fields.containsKey("x-forwarded-for") && outerRequest.getHeader("x-forwarded_for")!=null)
+            fields.add("x-forwarded-for",outerRequest.getHeader("x-forwarded_for"));
+        
+        // Let outer parse the cookies
         _request.setCookies(outerRequest.getCookies());
         
+        // copy request attributes
         for (Enumeration<String> e=outerRequest.getAttributeNames();e.hasMoreElements();)
         {
             String attr=e.nextElement();
             _request.setAttribute(attr,outerRequest.getAttribute(attr));
         }
+        
+        // customize the request
+        connector.customize(endp,_request);
         
         // System.err.println(_request.getMethod()+" "+_request.getUri()+" "+_request.getProtocol());
         // System.err.println(fields.toString());

@@ -381,6 +381,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         return false;
                 }
             }
+            catch(Throwable e)
+            {
+                // TODO remove this if it finds nothing
+                Log.warn(e);
+                if (e instanceof RuntimeException)
+                    throw (RuntimeException)e;
+                if (e instanceof Error)
+                    throw (Error)e;
+                throw new RuntimeException(e);
+            }
             finally
             {
                 _writeBlocked=false;

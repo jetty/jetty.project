@@ -20,8 +20,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Request;
 
 /**
  * Nested Jetty Connector
@@ -37,6 +39,7 @@ public class NestedConnector extends AbstractConnector
     public NestedConnector()
     {
         setAcceptors(0);
+        setForwarded(true);
     }
     
     public void open() throws IOException
