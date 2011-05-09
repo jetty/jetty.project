@@ -207,7 +207,11 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             		System.setProperty("logback.configurationFile",etcLogback.getAbsolutePath());
             	}
             }
-            System.err.println("syserr: logback.configurationFile=" + System.getProperty("logback.configurationFile"));
+            else
+            {
+            	logback = resolveSystemProperty(logback);
+            }
+//            System.err.println("syserr: logback.configurationFile=" + System.getProperty("logback.configurationFile"));
             System.out.println("sysout: logback.configurationFile=" + System.getProperty("logback.configurationFile"));
         }
         return props;
