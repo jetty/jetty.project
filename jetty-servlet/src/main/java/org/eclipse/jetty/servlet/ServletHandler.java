@@ -82,14 +82,14 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     private ServletContextHandler _contextHandler;
     private ContextHandler.Context _servletContext;
-    private FilterHolder[] _filters;
+    private FilterHolder[] _filters=new FilterHolder[0];
     private FilterMapping[] _filterMappings;
     private boolean _filterChainsCached=true;
     private int _maxFilterChainsCacheSize=512;
     private boolean _startWithUnavailable=true;
     private IdentityService _identityService;
     
-    private ServletHolder[] _servlets;
+    private ServletHolder[] _servlets=new ServletHolder[0];
     private ServletMapping[] _servletMappings;
     
     private final Map<String,FilterHolder> _filterNameMap= new HashMap<String,FilterHolder>();
@@ -796,17 +796,15 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** Convenience method to add a servlet.
      * @return The servlet holder.
      */
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
         ServletHolder holder = newServletHolder(null);
-        holder.setName(className+"-"+holder.hashCode());
+        holder.setName(className+"-"+LazyList.size(_servlets));
         holder.setClassName(className);
-        
         addServletWithMapping(holder,pathSpec);
-        
         return holder;
     }   
     
@@ -921,7 +919,7 @@ public class ServletHandler extends ScopedHandler
     public FilterHolder addFilterWithMapping (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         FilterHolder holder = newFilterHolder();
-        holder.setName(className+"-"+holder.hashCode());
+        holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
         
         addFilterWithMapping(holder,pathSpec,dispatches);
@@ -989,7 +987,7 @@ public class ServletHandler extends ScopedHandler
     public FilterHolder addFilterWithMapping (String className,String pathSpec,int dispatches)
     {
         FilterHolder holder = newFilterHolder(null);
-        holder.setName(className+"-"+holder.hashCode());
+        holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
         
         addFilterWithMapping(holder,pathSpec,dispatches);
