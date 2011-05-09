@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.log.Log;
 public abstract class AbstractHandler extends AggregateLifeCycle implements Handler
 {
     private Server _server;
+    private String _contextBasis;
     
     /* ------------------------------------------------------------ */
     /**
@@ -93,5 +94,14 @@ public abstract class AbstractHandler extends AggregateLifeCycle implements Hand
     {
         out.append(toString()).append(' ').append(getState()).append('\n');
     }
+
+    public void setContextBasis(String basis)
+    {
+        _contextBasis = basis;
+    }
     
+    public String getContextBasis()
+    {
+        return _contextBasis;
+    }
 }

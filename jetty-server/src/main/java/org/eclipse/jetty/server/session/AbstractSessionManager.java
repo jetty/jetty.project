@@ -70,6 +70,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     private static final HttpSessionContext __nullSessionContext=new NullSessionContext();
 
     private boolean _usingCookies=true;
+    private String _contextBasis;
 
     /* ------------------------------------------------------------ */
     // Setting of max inactive interval for new sessions
@@ -96,6 +97,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     protected final CounterStatistic _sessionsStats = new CounterStatistic();
     protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
+
     
     /* ------------------------------------------------------------ */
     public AbstractSessionManager()
@@ -753,6 +755,24 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void setCheckingRemoteSessionIdEncoding(boolean remote)
     {
         _checkingRemoteSessionIdEncoding=remote;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.SessionManager#setContextBasis(java.lang.String)
+     */
+    public void setContextBasis(String basis)
+    {
+        _contextBasis = basis;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.SessionManager#getContextBasis()
+     */
+    public String getContextBasis()
+    {
+        return _contextBasis;
     }
 
     /* ------------------------------------------------------------ */

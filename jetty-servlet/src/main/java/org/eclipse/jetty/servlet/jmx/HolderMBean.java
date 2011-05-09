@@ -24,6 +24,20 @@ public class HolderMBean extends ObjectMBean
     }
 
     /* ------------------------------------------------------------ */
+    public String getObjectContextBasis()
+    {
+        if (_managed != null && _managed instanceof Holder)
+        {
+            Holder holder = (Holder)_managed;
+            String name = holder.getContextBasis();
+            if (name != null)
+                return name;
+        }
+        
+        return super.getObjectContextBasis();
+    }
+
+    /* ------------------------------------------------------------ */
     public String getObjectNameBasis()
     {
         if (_managed!=null && _managed instanceof Holder)

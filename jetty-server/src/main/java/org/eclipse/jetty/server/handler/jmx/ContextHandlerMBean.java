@@ -17,33 +17,16 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 
-public class ContextHandlerMBean extends ObjectMBean
+public class ContextHandlerMBean extends AbstractHandlerMBean
 {
     public ContextHandlerMBean(Object managedObject)
     {
         super(managedObject);
     }
 
-    /* ------------------------------------------------------------ */
-    public String getObjectNameBasis()
-    {
-        if (_managed!=null && _managed instanceof ContextHandler)
-        {
-            ContextHandler context = (ContextHandler)_managed;
-            String name = context.getDisplayName();
-            if (name!=null)
-                return name;
-            
-            if (context.getBaseResource()!=null && context.getBaseResource().getName().length()>1)
-                return context.getBaseResource().getName();
-        }
-        return super.getObjectNameBasis();
-    }
-    
     public Map getContextAttributes()
     {
         Map map = new HashMap();

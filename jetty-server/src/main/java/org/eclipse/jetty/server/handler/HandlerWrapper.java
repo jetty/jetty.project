@@ -77,6 +77,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         if (handler!=null)
         {
             handler.setServer(getServer());
+            handler.setContextBasis(getContextBasis());
         }
 
         _handler = handler;

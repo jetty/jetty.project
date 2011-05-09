@@ -16,11 +16,12 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.eclipse.jetty.util.TypeUtil;
 
-public class ServletMapping
+
+public class ServletMapping extends AbstractMapping
 {
-    private String[] _pathSpecs;
-    private String _servletName;
+    private String _contextName;
 
     /* ------------------------------------------------------------ */
     public ServletMapping()
@@ -29,38 +30,11 @@ public class ServletMapping
     
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the pathSpecs.
-     */
-    public String[] getPathSpecs()
-    {
-        return _pathSpecs;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the servletName.
      */
     public String getServletName()
     {
-        return _servletName;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param pathSpecs The pathSpecs to set.
-     */
-    public void setPathSpecs(String[] pathSpecs)
-    {
-        _pathSpecs = pathSpecs;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param pathSpec The pathSpec to set.
-     */
-    public void setPathSpec(String pathSpec)
-    {
-        _pathSpecs = new String[]{pathSpec};
+        return getEntityName();
     }
     
     /* ------------------------------------------------------------ */
@@ -69,19 +43,6 @@ public class ServletMapping
      */
     public void setServletName(String servletName)
     {
-        _servletName = servletName;
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    public String toString()
-    {
-        return (_pathSpecs==null?"[]":Arrays.asList(_pathSpecs).toString())+"=>"+_servletName; 
-    }
-
-    /* ------------------------------------------------------------ */
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(String.valueOf(this)).append("\n");
+        setEntityName(servletName);
     }
 }

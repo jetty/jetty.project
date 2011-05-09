@@ -340,5 +340,18 @@ public interface SessionManager extends LifeCycle
      * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */
     public void setCheckingRemoteSessionIdEncoding(boolean remote);
-
+    
+    /**
+     * Sets the context basis.
+     *
+     * @param basis the new context basis
+     */
+    public void setContextBasis(String basis);
+    
+    /**
+     * Gets the context basis.
+     *
+     * @return the context basis
+     */
+    public String getContextBasis();
 }

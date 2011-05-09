@@ -49,6 +49,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     /* ---------------------------------------------------------------- */
     protected String _name;
     protected ServletHandler _servletHandler;
+    
+    private String _contextBasis;
 
     /* ---------------------------------------------------------------- */
     protected Holder()
@@ -265,6 +267,16 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     {
         return AggregateLifeCycle.dump(this);
     }    
+    
+    public void setContextBasis(String basis)
+    {
+        _contextBasis = basis;
+    }
+    
+    public String getContextBasis()
+    {
+        return _contextBasis;
+    }
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

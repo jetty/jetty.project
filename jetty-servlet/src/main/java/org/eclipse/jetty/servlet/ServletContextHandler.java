@@ -116,10 +116,12 @@ public class ServletContextHandler extends ContextHandler
     public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {   
         super((ContextHandler.Context)null);
+
         _scontext = new Context();
-        _sessionHandler = sessionHandler;
-        _securityHandler = securityHandler;
-        _servletHandler = servletHandler;
+
+        setSessionHandler(sessionHandler);
+        setSecurityHandler(securityHandler);
+        setServletHandler(servletHandler);
             
         if (errorHandler!=null)
             setErrorHandler(errorHandler);
@@ -253,7 +255,7 @@ public class ServletContextHandler extends ContextHandler
     public SecurityHandler getSecurityHandler()
     {
         if (_securityHandler==null && (_options&SECURITY)!=0 && !isStarted()) 
-            _securityHandler=newSecurityHandler();
+            setSecurityHandler(newSecurityHandler());
         
         return _securityHandler;
     }
@@ -265,7 +267,8 @@ public class ServletContextHandler extends ContextHandler
     public ServletHandler getServletHandler()
     {
         if (_servletHandler==null && !isStarted()) 
-            _servletHandler=newServletHandler();
+            setServletHandler(newServletHandler());
+        
         return _servletHandler;
     }
 
@@ -276,7 +279,7 @@ public class ServletContextHandler extends ContextHandler
     public SessionHandler getSessionHandler()
     {
         if (_sessionHandler==null && (_options&SESSIONS)!=0 && !isStarted()) 
-            _sessionHandler=newSessionHandler();
+            setSessionHandler(newSessionHandler());
         return _sessionHandler;
     }
 
@@ -377,6 +380,11 @@ public class ServletContextHandler extends ContextHandler
         if (isStarted())
             throw new IllegalStateException("STARTED");
         
+        if (sessionHandler != null)
+        {
+            sessionHandler.setContextBasis(getContextBasis());
+        }
+        
         _sessionHandler = sessionHandler;
     }
 
@@ -389,6 +397,11 @@ public class ServletContextHandler extends ContextHandler
         if (isStarted())
             throw new IllegalStateException("STARTED");
         
+        if (securityHandler != null)
+        {
+            securityHandler.setContextBasis(getContextBasis());
+        }
+
         _securityHandler = securityHandler;
     }
 
@@ -401,6 +414,11 @@ public class ServletContextHandler extends ContextHandler
         if (isStarted())
             throw new IllegalStateException("STARTED");
         
+        if (servletHandler != null)
+        {
+            servletHandler.setContextBasis(getContextBasis());
+        }
+
         _servletHandler = servletHandler;
     }
 
@@ -445,7 +463,7 @@ public class ServletContextHandler extends ContextHandler
         for (Decorator decorator : _decorators)
             decorator.destroyFilterInstance(filter);
     }
-    
+
     /* ------------------------------------------------------------ */
     public class Context extends ContextHandler.Context
     {
