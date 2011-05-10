@@ -162,11 +162,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     throws UnavailableException
     {
         _servletContext=getServletContext();
-        ContextHandler.Context scontext=ContextHandler.getCurrentContext();
-        if (scontext==null)
-            _contextHandler=((ContextHandler.Context)_servletContext).getContextHandler();
-        else
-            _contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+        _contextHandler = initContextHandler(_servletContext);
 
         _mimeTypes = _contextHandler.getMimeTypes();
 
@@ -282,6 +278,29 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 _defaultHolder=h;
 
         if (Log.isDebugEnabled()) Log.debug("resource base = "+_resourceBase);
+    }
+
+    /**
+     * Compute the field _contextHandler.<br/>
+     * In the case where the DefaultServlet is deployed on the HttpService it is likely that
+     * this method needs to be overwritten to unwrap the ServletContext facade until we reach
+     * the original jetty's ContextHandler.
+     * @param servletContext The servletContext of this servlet.
+     * @return the jetty's ContextHandler for this servletContext.
+     */
+    protected ContextHandler initContextHandler(ServletContext servletContext)
+    {
+        ContextHandler.Context scontext=ContextHandler.getCurrentContext();
+        if (scontext==null)
+        {
+            if (servletContext instanceof ContextHandler.Context)
+                return ((ContextHandler.Context)servletContext).getContextHandler();
+            else
+                throw new IllegalArgumentException("The servletContext " + servletContext + " " + 
+                    servletContext.getClass().getName() + " is not " + ContextHandler.Context.class.getName());
+        }
+        else
+            return ContextHandler.getCurrentContext().getContextHandler();
     }
 
     /* ------------------------------------------------------------ */
