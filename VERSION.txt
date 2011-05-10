@@ -1,4 +1,5 @@
 jetty-7.4.1-SNAPSHOT
+ + 288563 remove unsupported and deprecated --secure option
  + 332907 (work in progress) Added AbstractHandlerContainer.findContainerOf
  + 336056 Ability to override the computation of the ContextHandler to deploy the DefaultServlet on the HttpService
  + 340040 Support for a total timeout
