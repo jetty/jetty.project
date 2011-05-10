@@ -52,6 +52,14 @@
      <artifactId>${servlet.spec.artifactId}</artifactId>
     </dependency>
   </dependencies>
+  <!-- can't find the jsp-2.2 jars on maven central.
+    adding glassifish maven repo for now. -->
+  <repositories>
+    <repository>
+      <id>sun</id>
+      <url>http://download.java.net/maven/2/</url>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>
