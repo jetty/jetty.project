@@ -8,6 +8,7 @@ jetty-7.4.1-SNAPSHOT
  + 343352 make sure that jetty.osgi.boot is activated when a WAB is registered
  + 343482 refactored overlay deployer layout to use WAR layout
  + 343567 HttpClient does not limit the destination's exchange queue
+ + 343680 Handle OSGi bundle jars not ending in ".war"
  + 343707 'REQUEST' is printed on console for each incoming HTTP request
  + 343923 flush timeouts applied to outer loop
  + 343936 Session idle calls unbind and remove listeners 
