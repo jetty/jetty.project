@@ -112,7 +112,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             Log.debug(e);
         }
-        return Authentication.UNAUTHENTICATED;
+        return this;
     }
     
     /* ------------------------------------------------------------ */
@@ -132,7 +132,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             Log.debug(e);
         }
-        return Authentication.UNAUTHENTICATED;
+        return this;
     }
 
     /* ------------------------------------------------------------ */

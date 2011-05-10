@@ -366,7 +366,7 @@ public class Request implements HttpServletRequest
     public String getAuthType()
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate(this);
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).getAuthMethod();
@@ -1881,7 +1881,7 @@ public class Request implements HttpServletRequest
     {
         if (_authentication instanceof Authentication.Deferred)
         {
-            _authentication=((Authentication.Deferred)_authentication).authenticate(this,response);
+        	setAuthentication(((Authentication.Deferred)_authentication).authenticate(this,response));
             return !(_authentication instanceof Authentication.ResponseSent);        
         }
         response.sendError(HttpStatus.UNAUTHORIZED_401);
@@ -1921,12 +1921,15 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public void login(String username, String password) throws ServletException
     {
-        if (_authentication instanceof Authentication.Deferred) {
+        if (_authentication instanceof Authentication.Deferred) 
+        {
             _authentication=((Authentication.Deferred)_authentication).login(username,password);
             if (_authentication == null)
                 throw new ServletException();
-        } else {
-            throw new ServletException();
+        } 
+        else 
+        {
+            throw new ServletException("Authenticated as "+_authentication);
         }
     }
 
