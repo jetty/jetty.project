@@ -10,6 +10,7 @@ jetty-7.4.1-SNAPSHOT
  + 343567 HttpClient does not limit the destination's exchange queue
  + 343707 'REQUEST' is printed on console for each incoming HTTP request
  + 343923 flush timeouts applied to outer loop
+ + 343936 Session idle calls unbind and remove listeners 
  + 344059 Websockets draft-07
  + 344067 Add support for OSGi fragment bundles to add static resources to web-bundles
  + 344513 Attempting to set ConfigurationClasses in jetty-web.xml causes NPE
