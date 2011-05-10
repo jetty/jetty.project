@@ -1,5 +1,6 @@
 jetty-7.4.1-SNAPSHOT
  + 332907 (work in progress) Added AbstractHandlerContainer.findContainerOf
+ + 336056 Ability to override the computation of the ContextHandler to deploy the DefaultServlet on the HttpService
  + 340040 Support for a total timeout
  + 343083 Set nested dispatch type and connection
  + 343172 Check package implementor for version
@@ -20,7 +21,6 @@ jetty-7.4.1-SNAPSHOT
  + JETTY-1326 Invoker names not hashCode based
  + JETTY-1343 IllegalArgumentException for bad % encodings
  + JETTY-1347 Updated ServletHander javadoc
- + 336056 Ability to override the computation of the ContextHandler to deploy the DefaultServlet on the HttpService
 
 jetty-7.4.0.v20110414
  + 342504 Scanner Listener
