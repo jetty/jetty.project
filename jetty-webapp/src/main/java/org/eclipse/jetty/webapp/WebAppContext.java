@@ -1199,19 +1199,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
     
     /* ------------------------------------------------------------ */
-    public MetaData getMetaData()
-    {
-        return _metadata;
-    }
-
-
-    /* ------------------------------------------------------------ */
-    public String getContextBasis()
-    {
-        return getWar();
-    }
-
-    /* ------------------------------------------------------------ */
     public class Context extends ServletContextHandler.Context
     {
         /* ------------------------------------------------------------ */
@@ -1260,4 +1247,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
 
     }
+
+    /* ------------------------------------------------------------ */
+    public MetaData getMetaData()
+    {
+        return _metadata;
+    }
+
 }

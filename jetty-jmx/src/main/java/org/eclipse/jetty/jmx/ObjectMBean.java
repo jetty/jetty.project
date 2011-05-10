@@ -182,11 +182,6 @@ public class ObjectMBean implements DynamicMBean
         return null;
     }
     
-    public String getObjectContextBasis()
-    {
-        return null;
-    }
-    
     public String getObjectNameBasis()
     {
         return null;

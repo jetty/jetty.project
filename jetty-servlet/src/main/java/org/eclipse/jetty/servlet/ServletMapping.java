@@ -16,12 +16,11 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.TypeUtil;
 
-
-public class ServletMapping extends AbstractMapping
+public class ServletMapping
 {
-    private String _contextName;
+    private String[] _pathSpecs;
+    private String _servletName;
 
     /* ------------------------------------------------------------ */
     public ServletMapping()
@@ -30,11 +29,38 @@ public class ServletMapping extends AbstractMapping
     
     /* ------------------------------------------------------------ */
     /**
+     * @return Returns the pathSpecs.
+     */
+    public String[] getPathSpecs()
+    {
+        return _pathSpecs;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @return Returns the servletName.
      */
     public String getServletName()
     {
-        return getEntityName();
+        return _servletName;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param pathSpecs The pathSpecs to set.
+     */
+    public void setPathSpecs(String[] pathSpecs)
+    {
+        _pathSpecs = pathSpecs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param pathSpec The pathSpec to set.
+     */
+    public void setPathSpec(String pathSpec)
+    {
+        _pathSpecs = new String[]{pathSpec};
     }
     
     /* ------------------------------------------------------------ */
@@ -43,6 +69,19 @@ public class ServletMapping extends AbstractMapping
      */
     public void setServletName(String servletName)
     {
-        setEntityName(servletName);
+        _servletName = servletName;
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return (_pathSpecs==null?"[]":Arrays.asList(_pathSpecs).toString())+"=>"+_servletName; 
+    }
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
     }
 }

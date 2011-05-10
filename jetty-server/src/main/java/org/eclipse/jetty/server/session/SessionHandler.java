@@ -80,10 +80,7 @@ public class SessionHandler extends ScopedHandler
             getServer().getContainer().update(this, old_session_manager, sessionManager, "sessionManager",true);
 
         if (sessionManager!=null)
-        {
             sessionManager.setSessionHandler(this);
-            sessionManager.setContextBasis(getContextBasis());
-        }
 
         _sessionManager = sessionManager;
 
@@ -322,16 +319,5 @@ public class SessionHandler extends ScopedHandler
     {
         if(_sessionManager!=null)
             _sessionManager.clearEventListeners();
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void setContextBasis(String name)
-    {
-        if (_sessionManager != null)
-        {
-            _sessionManager.setContextBasis(name);
-        }
-        
-        super.setContextBasis(name);
     }
 }

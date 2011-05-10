@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -11,14 +11,15 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.servlet.jmx;
+package org.eclipse.jetty.webapp.jmx;
 
-import org.eclipse.jetty.jmx.ObjectMBean;
-import org.eclipse.jetty.servlet.Holder;
+import org.eclipse.jetty.server.handler.jmx.ContextHandlerMBean;
+import org.eclipse.jetty.webapp.WebAppContext;
 
-public class HolderMBean extends ObjectMBean
+public class WebAppContextMBean extends ContextHandlerMBean
 {
-    public HolderMBean(Object managedObject)
+
+    public WebAppContextMBean(Object managedObject)
     {
         super(managedObject);
     }
@@ -26,13 +27,17 @@ public class HolderMBean extends ObjectMBean
     /* ------------------------------------------------------------ */
     public String getObjectNameBasis()
     {
-        if (_managed!=null && _managed instanceof Holder)
+        String basis = super.getObjectNameBasis();
+        if (basis!=null)
+            return basis;
+        
+        if (_managed!=null && _managed instanceof WebAppContext)
         {
-            Holder holder = (Holder)_managed;
-            String name = holder.getName();
+            WebAppContext context = (WebAppContext)_managed;
+            String name = context.getWar();
             if (name!=null)
                 return name;
         }
-        return super.getObjectNameBasis();
+        return null;
     }
 }

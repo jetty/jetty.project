@@ -61,9 +61,6 @@ public interface Handler extends LifeCycle, Destroyable
     public void setServer(Server server);
     public Server getServer();
     
-    public void setContextBasis(String basis);
-    public String getContextBasis();
-    
     public void destroy();
     
 }

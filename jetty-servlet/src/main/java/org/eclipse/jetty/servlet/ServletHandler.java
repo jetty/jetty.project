@@ -1110,7 +1110,6 @@ public class ServletHandler extends ScopedHandler
             {
                 _filterNameMap.put(_filters[i].getName(),_filters[i]);
                 _filters[i].setServletHandler(this);
-                _filters[i].setContextBasis(getContextBasis());
             }
         }
 
@@ -1123,7 +1122,6 @@ public class ServletHandler extends ScopedHandler
             {
                 _servletNameMap.put(_servlets[i].getName(),_servlets[i]);
                 _servlets[i].setServletHandler(this);
-                _servlets[i].setContextBasis(getContextBasis());
             }
         }
     }
@@ -1143,8 +1141,6 @@ public class ServletHandler extends ScopedHandler
             _filterNameMappings=new MultiMap();
             for (int i=0;i<_filterMappings.length;i++)
             {
-                _filterMappings[i].setContextBasis(getContextBasis());
-
                 FilterHolder filter_holder = (FilterHolder)_filterNameMap.get(_filterMappings[i].getFilterName());
                 if (filter_holder==null)
                     throw new IllegalStateException("No filter named "+_filterMappings[i].getFilterName());
@@ -1176,8 +1172,6 @@ public class ServletHandler extends ScopedHandler
             // update the maps
             for (int i=0;i<_servletMappings.length;i++)
             {
-                _servletMappings[i].setContextBasis(getContextBasis());
-
                 ServletHolder servlet_holder = (ServletHolder)_servletNameMap.get(_servletMappings[i].getServletName());
                 if (servlet_holder==null)
                     throw new IllegalStateException("No such servlet: "+_servletMappings[i].getServletName());
@@ -1187,7 +1181,6 @@ public class ServletHandler extends ScopedHandler
                     for (int j=0;j<pathSpecs.length;j++)
                         if (pathSpecs[j]!=null)
                             pm.put(pathSpecs[j],servlet_holder);
-                    
                 }
             }
             

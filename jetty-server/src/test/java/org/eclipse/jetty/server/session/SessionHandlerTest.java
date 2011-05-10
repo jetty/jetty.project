@@ -589,14 +589,5 @@ public class SessionHandlerTest
         public void changeSessionIdOnAuthentication(HttpServletRequest request, HttpServletResponse response)
         {
         }
-
-        public void setContextBasis(String basis)
-        {
-        }
-
-        public String getContextBasis()
-        {
-            return null;
-        }
     }
 }

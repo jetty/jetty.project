@@ -779,8 +779,7 @@ public class HashSessionManager extends AbstractSessionManager
                     fos = new FileOutputStream(file);
                     willPassivate();
                     save(fos);
-
-                    _attributes.clear();
+                    clearAttributes();
 
                     _idled = true;
                 }

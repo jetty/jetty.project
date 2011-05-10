@@ -44,7 +44,6 @@ import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.plaf.metal.MetalIconFactory.FileIcon16;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
@@ -435,27 +434,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     public String getDisplayName()
     {
         return _displayName;
-    }
-    
-    public String getContextBasis()
-    {
-        if (_displayName != null)
-            return _displayName;
-        
-        if (_baseResource != null && _baseResource.getName().length() > 1)
-            return _baseResource.getName();
-        
-        if (_contextPath != null && _contextPath.length() > 0)
-        {
-            int idx = _contextPath.lastIndexOf(File.separator);
-            String name = idx < 0 ? _contextPath : _contextPath.substring(++idx);
-            if (name.isEmpty())
-                return "[root]";
-            else
-                return name;
-        }
-        
-        return null;
     }
 
     /* ------------------------------------------------------------ */

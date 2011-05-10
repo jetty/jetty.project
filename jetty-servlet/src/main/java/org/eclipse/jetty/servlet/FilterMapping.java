@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 
 
-public class FilterMapping extends AbstractMapping
+public class FilterMapping implements Dumpable
 {
     /** Dispatch types */
     public static final int DEFAULT=0;
@@ -84,7 +84,9 @@ public class FilterMapping extends AbstractMapping
     
 	
     private int _dispatches=DEFAULT;
+    private String _filterName;
     private transient FilterHolder _holder;
+    private String[] _pathSpecs;
     private String[] _servletNames;
 
     /* ------------------------------------------------------------ */
@@ -101,9 +103,8 @@ public class FilterMapping extends AbstractMapping
     {
         if (appliesTo(type))
         {
-            String[] pathSpecs = getPathSpecs();
-            for (int i=0;i<pathSpecs.length;i++)
-                if (pathSpecs[i]!=null &&  PathMap.match(pathSpecs[i], path,true))
+            for (int i=0;i<_pathSpecs.length;i++)
+                if (_pathSpecs[i]!=null &&  PathMap.match(_pathSpecs[i], path,true))
                     return true;
         }
 
@@ -129,7 +130,7 @@ public class FilterMapping extends AbstractMapping
      */
     public String getFilterName()
     {
-        return getEntityName();
+        return _filterName;
     }
     
     /* ------------------------------------------------------------ */
@@ -141,6 +142,15 @@ public class FilterMapping extends AbstractMapping
         return _holder;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the pathSpec.
+     */
+    public String[] getPathSpecs()
+    {
+        return _pathSpecs;
+    }
+
     /* ------------------------------------------------------------ */
     public void setDispatcherTypes(EnumSet<DispatcherType> dispatcherTypes) 
     {
@@ -182,7 +192,7 @@ public class FilterMapping extends AbstractMapping
      */
     public void setFilterName(String filterName)
     {
-        setEntityName(filterName);
+        _filterName = filterName;
     }
     
     /* ------------------------------------------------------------ */
@@ -193,6 +203,24 @@ public class FilterMapping extends AbstractMapping
     {
         _holder = holder;
         setFilterName(holder.getName());
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param pathSpecs The Path specifications to which this filter should be mapped. 
+     */
+    public void setPathSpecs(String[] pathSpecs)
+    {
+        _pathSpecs = pathSpecs;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param pathSpec The pathSpec to set.
+     */
+    public void setPathSpec(String pathSpec)
+    {
+        _pathSpecs = new String[]{pathSpec};
     }
     
     /* ------------------------------------------------------------ */
@@ -225,13 +253,24 @@ public class FilterMapping extends AbstractMapping
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public String toString()
     {
         return 
-        TypeUtil.asList(getPathSpecs())+"/"+
+        TypeUtil.asList(_pathSpecs)+"/"+
         TypeUtil.asList(_servletNames)+"=="+
         _dispatches+"=>"+
-        getEntityName(); 
+        _filterName; 
     }
+
+    /* ------------------------------------------------------------ */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+    }
+
+    /* ------------------------------------------------------------ */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }    
 }
