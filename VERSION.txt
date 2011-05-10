@@ -1,4 +1,5 @@
 jetty-7.4.1-SNAPSHOT
+ + 332907 (work in progress) Added AbstractHandlerContainer.findContainerOf
  + 340040 Support for a total timeout
  + 343083 Set nested dispatch type and connection
  + 343172 Check package implementor for version
