@@ -824,19 +824,6 @@ public class Config
                         continue;
                     }
 
-                    // Add Security Policy file reference
-                    if (subject.toLowerCase().endsWith(".policy"))
-                    {
-                        //policy file to parse
-                        String cn = expand(subject.substring(0,subject.length()));
-                        if (cn != null && cn.length() > 0)
-                        {
-                            debug("  POLICY=" + cn);
-                            _policyDirectory = new File(fixPath(cn)).getParentFile().toURI().getPath();
-                        }
-                        continue;
-                    }
-
                     // single JAR file
                     File f = new File(fixPath(file));
                     if (f.exists())
@@ -968,24 +955,6 @@ public class Config
             }
         }
         __properties.put(name,value);
-    }
-
-    public Policy getPolicyInstance(ClassLoader cl) throws ClassNotFoundException, SecurityException, NoSuchMethodException, IllegalArgumentException,
-    InstantiationException, IllegalAccessException, InvocationTargetException
-    {
-        Class<?> jettyPolicy = cl.loadClass("org.eclipse.jetty.policy.JettyPolicy");
-        Constructor<?> c = jettyPolicy.getConstructor(new Class[]
-                                                                { Set.class, Map.class });
-        Object policyClass = c.newInstance(_policyDirectory, __properties);
-
-        if (policyClass instanceof Policy)
-        {
-            Policy p = (Policy)policyClass;
-            p.refresh();
-            return (Policy)policyClass;
-        }
-
-        throw new ClassCastException("Unable to cast to " + Policy.class.getName() + " : " + policyClass.getClass().getName());
     }
 
     public void addActiveOption(String option)
