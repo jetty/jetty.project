@@ -1184,6 +1184,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _throwUnavailableOnStartupException;
     }
     
+    public String getName()
+    {
+        return getWar();
+    }
 
     /* ------------------------------------------------------------ */
     @Override

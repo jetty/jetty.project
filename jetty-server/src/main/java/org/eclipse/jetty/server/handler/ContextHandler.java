@@ -1440,8 +1440,28 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         return Collections.emptySet();
     }
 
-
-
+    /* ------------------------------------------------------------ */
+    public String getName()
+    {
+        if (_displayName != null)
+            return _displayName;
+        
+        if (_baseResource != null && _baseResource.getName().length() > 1)
+            return _baseResource.getName();
+        
+        if (_contextPath != null && _contextPath.length() > 0)
+        {
+            int idx = _contextPath.lastIndexOf(File.separator);
+            String basis = idx < 0 ? _contextPath : _contextPath.substring(++idx);
+            if (basis.isEmpty())
+                return "[root]";
+            else
+                return basis;
+        }
+        
+        return null;
+    }
+    
     /* ------------------------------------------------------------ */
     private String normalizeHostname( String host )
     {
@@ -1453,7 +1473,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
             return host;
     }
-
+     
     /* ------------------------------------------------------------ */
     /** Context.
      * <p>
