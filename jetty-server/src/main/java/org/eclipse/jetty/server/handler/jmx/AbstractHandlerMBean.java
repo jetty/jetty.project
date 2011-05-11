@@ -25,10 +25,10 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.resource.Resource;
 
 public class AbstractHandlerMBean extends ObjectMBean
 {
+    /* ------------------------------------------------------------ */
     public AbstractHandlerMBean(Object managedObject)
     {
         super(managedObject);
@@ -88,7 +88,15 @@ public class AbstractHandlerMBean extends ObjectMBean
     /* ------------------------------------------------------------ */
     protected String getContextName(ContextHandler context)
     {
-        String name=context.getDisplayName();
+        String name = null;
+        
+        if (context.getContextPath()!=null && context.getContextPath().length()>0)
+        {
+            int idx = context.getContextPath().lastIndexOf(File.separator);
+            name = idx < 0 ? context.getContextPath() : context.getContextPath().substring(++idx);
+            if (name==null || name.length()==0)
+                name= "ROOT";
+        }
         
         if (name==null && context.getBaseResource()!=null)
         {
@@ -102,14 +110,6 @@ public class AbstractHandlerMBean extends ObjectMBean
                 Log.ignore(e);
                 name=context.getBaseResource().getName();
             }
-        }
-        
-        if (name==null && context.getContextPath()!=null && context.getContextPath().length()>0)
-        {
-            int idx = context.getContextPath().lastIndexOf(File.separator);
-            name = idx < 0 ? context.getContextPath() : context.getContextPath().substring(++idx);
-            if (name==null || name.length()==0)
-                name= "ROOT";
         }
         
         return name;
