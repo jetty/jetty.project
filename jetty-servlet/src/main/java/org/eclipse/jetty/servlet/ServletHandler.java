@@ -116,21 +116,24 @@ public class ServletHandler extends ScopedHandler
      */
     public void setServer(Server server)
     {
-        if (getServer()!=null && getServer()!=server)
+        Server old=getServer();
+        if (old!=null && old!=server)
         {
             getServer().getContainer().update(this, _filters, null, "filter",true);
             getServer().getContainer().update(this, _filterMappings, null, "filterMapping",true);
             getServer().getContainer().update(this, _servlets, null, "servlet",true);
             getServer().getContainer().update(this, _servletMappings, null, "servletMapping",true);
         }
-        if (server!=null && getServer()!=server)
+
+        super.setServer(server);
+        
+        if (server!=null && old!=server)
         {
             server.getContainer().update(this, null, _filters, "filter",true);
             server.getContainer().update(this, null, _filterMappings, "filterMapping",true);
             server.getContainer().update(this, null, _servlets, "servlet",true);
             server.getContainer().update(this, null, _servletMappings, "servletMapping",true);
         }
-        super.setServer(server);
     }
 
     /* ----------------------------------------------------------------- */
