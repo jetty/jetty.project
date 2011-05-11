@@ -70,16 +70,12 @@ public class HandlerWrapper extends AbstractHandlerContainer
             throw new IllegalStateException(STARTED);
 
         Handler old_handler = _handler;
-
+        _handler = handler;
+        if (handler!=null)
+            handler.setServer(getServer());
+        
         if (getServer()!=null)
             getServer().getContainer().update(this, old_handler, handler, "handler");
-
-        if (handler!=null)
-        {
-            handler.setServer(getServer());
-        }
-
-        _handler = handler;
     }
 
     /* ------------------------------------------------------------ */

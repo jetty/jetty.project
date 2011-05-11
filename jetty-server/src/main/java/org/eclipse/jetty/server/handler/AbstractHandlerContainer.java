@@ -88,6 +88,9 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     /* ------------------------------------------------------------ */
     public static <T extends HandlerContainer> T findContainerOf(HandlerContainer root,Class<T>type, Handler handler)
     {
+        if (root==null || handler==null)
+            return null;
+        
         Handler[] branches=root.getChildHandlersByClass(type);
         if (branches!=null)
         {
