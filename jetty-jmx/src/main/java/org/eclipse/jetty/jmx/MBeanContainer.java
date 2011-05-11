@@ -281,26 +281,15 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         }
     }
 
+    /**
+     * @param basis name to strip of special characters.
+     * @return normalized name
+     */
     public String makeName(String basis)
     {
-        String name = basis;
-        if (name != null)
-        {
-            name = name.replace('\\', '/');
-            if (name.endsWith("/"))
-                name = name.substring(0, name.length() - 1);
-
-            int slash = name.lastIndexOf('/', name.length() - 1);
-            if (slash > 0)
-                name = name.substring(slash + 1);
-            int dot = name.lastIndexOf('.');
-            if (dot > 0)
-                name = name.substring(0, dot);
-
-            name = name.replace(':', '_').replace('*', '_').replace('?', '_').replace('=', '_').replace(',', '_').replace(' ', '_');
-        }
-
-        return name;
+        if (basis==null)
+            return basis;
+        return basis.replace(':', '_').replace('*', '_').replace('?', '_').replace('=', '_').replace(',', '_').replace(' ', '_');
     }
 
     /**

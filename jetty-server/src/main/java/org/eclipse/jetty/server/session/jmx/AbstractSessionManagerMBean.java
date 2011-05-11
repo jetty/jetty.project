@@ -19,10 +19,11 @@ package org.eclipse.jetty.server.session.jmx;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.jmx.AbstractHandlerMBean;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 
-public class AbstractSessionManagerMBean extends ObjectMBean
+public class AbstractSessionManagerMBean extends AbstractHandlerMBean
 {
     public AbstractSessionManagerMBean(Object managedObject)
     {
@@ -45,7 +46,7 @@ public class AbstractSessionManagerMBean extends ObjectMBean
                                                              ContextHandler.class,
                                                              handler);
                 if (context != null)
-                    basis = context.getName();
+                    basis = getContextName(context);
             }
 
             if (basis != null)

@@ -17,12 +17,14 @@
 package org.eclipse.jetty.server.handler.jmx;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class AbstractHandlerMBean extends ObjectMBean
@@ -54,7 +56,7 @@ public class AbstractHandlerMBean extends ObjectMBean
                                 ContextHandler.class, handler);
                     
                     if (context != null)
-                        basis = context.getName();
+                        basis = getContextName(context);
                 }
             }
             if (basis != null)
@@ -73,7 +75,7 @@ public class AbstractHandlerMBean extends ObjectMBean
             if (_managed instanceof ContextHandler)
             {
                 ContextHandler context = (ContextHandler)_managed;
-                name = context.getName();
+                name = getContextName(context);
             }
             
             if (name != null)
@@ -81,5 +83,35 @@ public class AbstractHandlerMBean extends ObjectMBean
         }
         
         return super.getObjectNameBasis();
+    }
+
+    /* ------------------------------------------------------------ */
+    protected String getContextName(ContextHandler context)
+    {
+        String name=context.getDisplayName();
+        
+        if (name==null && context.getBaseResource()!=null)
+        {
+            try
+            {
+                if (context.getBaseResource().getFile()!=null)
+                    name = context.getBaseResource().getFile().getName();
+            }
+            catch(IOException e)
+            {
+                Log.ignore(e);
+                name=context.getBaseResource().getName();
+            }
+        }
+        
+        if (name==null && context.getContextPath()!=null && context.getContextPath().length()>0)
+        {
+            int idx = context.getContextPath().lastIndexOf(File.separator);
+            name = idx < 0 ? context.getContextPath() : context.getContextPath().substring(++idx);
+            if (name==null || name.length()==0)
+                name= "ROOT";
+        }
+        
+        return name;
     }
 }
