@@ -13,7 +13,19 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.lang.ref.WeakReference;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -28,7 +40,7 @@ import org.eclipse.jetty.util.MultiMap;
  */
 public class HashSessionIdManager extends AbstractSessionIdManager
 {
-    MultiMap<String> _sessions;
+    private final Map<String, Set<WeakReference<HttpSession>>> _sessions = new HashMap<String, Set<WeakReference<HttpSession>>>();
 
     /* ------------------------------------------------------------ */
     public HashSessionIdManager()
@@ -77,7 +89,6 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     @Override
     protected void doStart() throws Exception
     {        
-        _sessions=new MultiMap<String>(true);
         super.doStart();
     }
 
@@ -85,9 +96,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
     @Override
     protected void doStop() throws Exception
     {
-        if (_sessions!=null)
-            _sessions.clear(); // Maybe invalidate?
-        _sessions=null;
+        _sessions.clear(); 
         super.doStop();
     }
 
@@ -97,7 +106,10 @@ public class HashSessionIdManager extends AbstractSessionIdManager
      */
     public boolean idInUse(String id)
     {
-        return _sessions.containsKey(id);
+        synchronized (this)
+        {
+            return _sessions.containsKey(id);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -106,7 +118,19 @@ public class HashSessionIdManager extends AbstractSessionIdManager
      */
     public void addSession(HttpSession session)
     {
-        _sessions.add(getClusterId(session.getId()),session);
+        String id = getClusterId(session.getId());
+        WeakReference<HttpSession> ref = new WeakReference<HttpSession>(session);
+        
+        synchronized (this)
+        {
+            Set<WeakReference<HttpSession>> sessions = _sessions.get(id);
+            if (sessions==null)
+            {
+                sessions=new HashSet<WeakReference<HttpSession>>();
+                _sessions.put(id,sessions);
+            }
+            sessions.add(ref);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -115,7 +139,32 @@ public class HashSessionIdManager extends AbstractSessionIdManager
      */
     public void removeSession(HttpSession session)
     {
-        _sessions.removeValue(getClusterId(session.getId()),session);
+        String id = getClusterId(session.getId());
+        
+        synchronized (this)
+        {
+            Collection<WeakReference<HttpSession>> sessions = _sessions.get(id);
+            if (sessions!=null)
+            {
+                for (Iterator<WeakReference<HttpSession>> iter = sessions.iterator(); iter.hasNext();)
+                {
+                    WeakReference<HttpSession> ref = iter.next();
+                    HttpSession s=ref.get();
+                    if (s==null)
+                    {
+                        iter.remove();
+                        continue;
+                    }
+                    if (s==session)
+                    {
+                        iter.remove();
+                        break;
+                    }
+                }
+                if (sessions.isEmpty())
+                    _sessions.remove(id);
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -124,19 +173,22 @@ public class HashSessionIdManager extends AbstractSessionIdManager
      */
     public void invalidateAll(String id)
     {
-	// Do not use iterators as this method tends to be called recursively 
-	// by the invalidate calls.
-	while (_sessions.containsKey(id))
-	{
-	    Session session=(Session)_sessions.getValue(id,0);
-	    
-	    if (session.isValid())
-	    {
-		session.invalidate();
-	    }
-	   
-	    _sessions.removeValue(id,session);	    
-	}
+        Collection<WeakReference<HttpSession>> sessions;
+        synchronized (this)
+        {
+            sessions = _sessions.remove(id);
+        }
+        
+        if (sessions!=null)
+        {
+            for (WeakReference<HttpSession> ref: sessions)
+            {
+                Session session=(Session)ref.get();
+                if (session!=null && session.isValid())
+                    session.invalidate();
+            }
+            sessions.clear();
+        }
     }
 
 }

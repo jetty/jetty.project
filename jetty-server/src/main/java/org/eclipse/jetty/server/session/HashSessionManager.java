@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class HashSessionManager extends AbstractSessionManager
 {
+    protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
     private static int __id;
     private Timer _timer;
     private boolean _timerStop=false;
@@ -61,7 +62,6 @@ public class HashSessionManager extends AbstractSessionManager
     private int _savePeriodMs=0; //don't do period saves by default
     private int _idleSavePeriodMs = 0; // don't idle save sessions by default.
     private TimerTask _saveTask;
-    protected ConcurrentMap<String,HashedSession> _sessions;
     private File _storeDir;
     private boolean _lazyLoad=false;
     private volatile boolean _sessionsLoaded=false;
@@ -79,7 +79,6 @@ public class HashSessionManager extends AbstractSessionManager
     @Override
     public void doStart() throws Exception
     {
-        _sessions=new ConcurrentHashMap<String,HashedSession>(); 
         super.doStart();
 
         _timerStop=false;
@@ -113,15 +112,7 @@ public class HashSessionManager extends AbstractSessionManager
     @Override
     public void doStop() throws Exception
     {     
-        if (_storeDir != null)
-            saveSessions();
-        
-        super.doStop();
- 
-        _sessions.clear();
-        _sessions=null;
-
-        // stop the scavenger
+        // stop the scavengers
         synchronized(this)
         {
             if (_saveTask!=null)
@@ -134,6 +125,12 @@ public class HashSessionManager extends AbstractSessionManager
                 _timer.cancel();
             _timer=null;
         }
+        
+        // This will callback invalidate sessions - where we decide if we will save 
+        super.doStop();
+ 
+        _sessions.clear();
+
     }
 
     /* ------------------------------------------------------------ */
@@ -228,7 +225,7 @@ public class HashSessionManager extends AbstractSessionManager
                         {
                             try
                             {
-                                saveSessions();
+                                saveSessions(true);
                             }
                             catch (Exception e)
                             {
@@ -381,16 +378,32 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void invalidateSessions()
+    protected void invalidateSessions() throws Exception
     {
         // Invalidate all sessions to cause unbind events
         ArrayList<HashedSession> sessions=new ArrayList<HashedSession>(_sessions.values());
-        for (Iterator<HashedSession> i=sessions.iterator(); i.hasNext();)
+        int loop=100;
+        while (sessions.size()>0 && loop-->0)
         {
-            HashedSession session=i.next();
-            session.invalidate();
+            // If we are called from doStop
+            if (isStopping() && _storeDir != null && _storeDir.exists() && _storeDir.canWrite())
+            {
+                // Then we only save and remove the session - it is not invalidated.
+                for (HashedSession session : sessions)
+                {
+                    session.save(false);
+                    removeSession(session,false);
+                }
+            }
+            else
+            {
+                for (HashedSession session : sessions)
+                    session.invalidate();
+            }
+            
+            // check that no new sessions were created while we were iterating
+            sessions=new ArrayList<HashedSession>(_sessions.values());
         }
-        _sessions.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -412,7 +425,6 @@ public class HashSessionManager extends AbstractSessionManager
     {
         return _sessions.remove(clusterId)!=null;
     }
-    
 
     /* ------------------------------------------------------------ */
     public void setStoreDirectory (File dir)
@@ -485,10 +497,8 @@ public class HashSessionManager extends AbstractSessionManager
         return null;
     }
     
-    
-
     /* ------------------------------------------------------------ */
-    public void saveSessions() throws Exception
+    public void saveSessions(boolean reactivate) throws Exception
     {
         if (_storeDir==null || !_storeDir.exists())
         {
@@ -501,48 +511,8 @@ public class HashSessionManager extends AbstractSessionManager
             return;
         }
 
-        Iterator<Map.Entry<String, HashedSession>> itor = _sessions.entrySet().iterator();
-        while (itor.hasNext())
-        {
-            Map.Entry<String,HashedSession> entry = itor.next();
-            String id = entry.getKey();
-            HashedSession session = entry.getValue();
-            synchronized(session)
-            {
-                // No point saving a session that has been idled or has had a previous save failure
-                if (!session.isIdled() && !session.isSaveFailed())
-                {
-                    File file = null;
-                    FileOutputStream fos = null;
-                    try
-                    {
-                        file = new File (_storeDir, id);
-                        if (file.exists())
-                            file.delete();
-                        file.createNewFile();
-                        fos = new FileOutputStream (file);
-                        session.willPassivate();
-                        session.save(fos);
-                        session.didActivate();
-                        fos.close();
-                    }
-                    catch (Exception e)
-                    {
-                        session.saveFailed();
-
-                        Log.warn("Problem persisting session "+id, e);
-
-                        if (fos != null)
-                        {
-                            // Must not leave files open if the saving failed
-                            IO.close(fos);
-                            // No point keeping the file if we didn't save the whole session
-                            file.delete();
-                        }
-                    }
-                }
-            }
-        }
+        for (HashedSession session : _sessions.values())
+            session.save(true);
     }
 
     /* ------------------------------------------------------------ */
@@ -640,37 +610,64 @@ public class HashSessionManager extends AbstractSessionManager
 
         /* ------------------------------------------------------------ */
         @Override
-        public void invalidate ()
+        protected void doInvalidate()
         throws IllegalStateException
         {
-            if (isRunning())
+            super.doInvalidate();
+            
+            // Remove from the disk
+            if (_storeDir!=null && getId()!=null)
             {
-                super.invalidate();
-                remove();
+                String id=getId();
+                File f = new File(_storeDir, id);
+                f.delete();
             }
         }
 
         /* ------------------------------------------------------------ */
-        public void remove()
+        private synchronized void save(boolean reactivate)
         {
-            String id=getId();
-            if (id==null)
-                return;
-            
-            //all sessions are invalidated when jetty is stopped, make sure we don't
-            //remove all the sessions in this case
-            if (isStopping() || isStopped())
-                return;
-            
-            if (_storeDir==null || !_storeDir.exists())
+            // Only idle the session if not already idled and no previous save/idle has failed
+            if (!isIdled() && !_saveFailed)
             {
-                return;
-            }
-            
-            File f = new File(_storeDir, id);
-            f.delete();
-        }
+                if (Log.isDebugEnabled())
+                    Log.debug("Saving {} {}",super.getId(),reactivate);
 
+                File file = null;
+                FileOutputStream fos = null;
+                
+                try
+                {
+                    file = new File(_storeDir, super.getId());
+
+                    if (file.exists())
+                        file.delete();
+                    file.createNewFile();
+                    fos = new FileOutputStream(file);
+                    willPassivate();
+                    save(fos);
+                    if (reactivate)
+                        didActivate();
+                    else
+                        clearAttributes();
+                }
+                catch (Exception e)
+                {
+                    saveFailed(); // We won't try again for this session
+
+                    Log.warn("Problem saving session " + super.getId(), e);
+
+                    if (fos != null)
+                    {
+                        // Must not leave the file open if the saving failed
+                        IO.close(fos);
+                        // No point keeping the file if we didn't save the whole session
+                        file.delete();
+                        _idled=false; // assume problem was before _values.clear();
+                    }
+                }
+            }
+        }
         /* ------------------------------------------------------------ */
         public synchronized void save(OutputStream os)  throws IOException 
         {
@@ -751,6 +748,7 @@ public class HashSessionManager extends AbstractSessionManager
             }
         }
 
+        
         /* ------------------------------------------------------------ */
         /**
          * Idle the session to reduce session memory footprint.
@@ -760,45 +758,7 @@ public class HashSessionManager extends AbstractSessionManager
          */
         public synchronized void idle()
         {
-            // Only idle the session if not already idled and no previous save/idle has failed
-            if (!isIdled() && !_saveFailed)
-            {
-                if (Log.isDebugEnabled())
-                    Log.debug("Idling " + super.getId());
-
-                File file = null;
-                FileOutputStream fos = null;
-                
-                try
-                {
-                    file = new File(_storeDir, super.getId());
-
-                    if (file.exists())
-                        file.delete();
-                    file.createNewFile();
-                    fos = new FileOutputStream(file);
-                    willPassivate();
-                    save(fos);
-                    clearAttributes();
-
-                    _idled = true;
-                }
-                catch (Exception e)
-                {
-                    saveFailed(); // We won't try again for this session
-
-                    Log.warn("Problem idling session " + super.getId(), e);
-
-                    if (fos != null)
-                    {
-                        // Must not leave the file open if the saving failed
-                        IO.close(fos);
-                        // No point keeping the file if we didn't save the whole session
-                        file.delete();
-                        _idled=false; // assume problem was before _values.clear();
-                    }
-                }
-            }
+            save(false);
         }
         
         /* ------------------------------------------------------------ */

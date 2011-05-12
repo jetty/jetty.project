@@ -626,7 +626,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     public abstract Session getSession(String idInCluster);
 
-    protected abstract void invalidateSessions();
+    protected abstract void invalidateSessions() throws Exception;
 
 
     /* ------------------------------------------------------------ */
