@@ -89,7 +89,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         private String _rowId;
         private long _accessed;
         private long _lastAccessed;
-        private long _maxIdleMs;
+        private long _maxIdleMs=-1;
         private long _cookieSet;
         private long _created;
         private Map<String,Object> _attributes;
@@ -275,7 +275,8 @@ public class JDBCSessionManager extends AbstractSessionManager
         {
             super(request);   
             _data = new SessionData(_clusterId,_attributes);
-            _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
+            if (_dftMaxIdleSecs>0)
+                _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
             _data.setCanonicalContext(canonicalize(_context.getContextPath()));
             _data.setVirtualHost(getVirtualHost(_context));
             _data.setExpiryTime(_maxIdleMs < 0 ? 0 : (System.currentTimeMillis() + _maxIdleMs));
@@ -289,7 +290,8 @@ public class JDBCSessionManager extends AbstractSessionManager
          {
              super(data.getCreated(), accessed, data.getId());
              _data=data;
-             _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
+             if (_dftMaxIdleSecs>0)
+                 _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
              _attributes.putAll(_data.getAttributeMap());
              _data.setAttributeMap(_attributes);
          }

@@ -248,6 +248,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         }
                         catch(SSLException e)
                         {
+                            super.close();
                             Log.ignore(e);
                         }
                         finally
@@ -281,6 +282,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                             _result=_engine.wrap(__NO_BUFFERS,out_buffer);
                             if (_debug) __log.debug(_session+" close wrap "+_result);
                             _outNIOBuffer.setPutIndex(put+_result.bytesProduced());
+                        }
+                        catch(SSLException e)
+                        {
+                            super.close();
+                            throw e;
                         }
                         finally
                         {
@@ -436,6 +442,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                     
                                     _outNIOBuffer.setPutIndex(put+_result.bytesProduced());
                                 }
+                                catch(SSLException e)
+                                {
+                                    super.close();
+                                    throw e;
+                                }
                                 finally
                                 {
                                     out_buffer.position(0);
@@ -450,12 +461,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         }
                     }
                 }
-            }
-            catch(SSLException e)
-            {
-                Log.warn(e.toString());
-                Log.debug(e);
-                throw e;
             }
             finally
             {
@@ -590,6 +595,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                     _closing=true;
                             }
                             _outNIOBuffer.setPutIndex(put+_result.bytesProduced());
+                        }
+                        catch(SSLException e)
+                        {
+                            super.close();
+                            throw e;
                         }
                         finally
                         {
@@ -727,6 +737,12 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             // skip the bytes consumed
             _inNIOBuffer.skip(_result.bytesConsumed());
         }
+        catch(SSLException e)
+        {
+            Log.warn(this+" "+e);
+            super.close();
+            throw e;
+        }
         finally
         {
             // reset the buffer so it can be managed by the _inNIOBuffer again.
@@ -814,6 +830,12 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         _outNIOBuffer.setPutIndex(_result.bytesProduced());
                         consumed=_result.bytesConsumed();
                     }
+                    catch(SSLException e)
+                    {
+                        Log.warn(this+" "+e);
+                        super.close();
+                        throw e;
+                    }
                     finally
                     {
                         out_buffer.position(0);
@@ -888,6 +910,12 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     _outNIOBuffer.setGetIndex(0);
                     _outNIOBuffer.setPutIndex(_result.bytesProduced());
                     consumed=_result.bytesConsumed();
+                }
+                catch(SSLException e)
+                {
+                    Log.warn(this+" "+e);
+                    super.close();
+                    throw e;
                 }
                 finally
                 {
