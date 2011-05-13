@@ -13,7 +13,10 @@
       <Arg>
           <New class="org.eclipse.jetty.nested.NestedConnector">
             <Set name="statsOn">false</Set>
-            <Set name="confidentialPort">8443</Set>
+            <Set name="forwarded">true</Set>
+            <Set name="forwardedHostHeader">x-forwarded_for</Set>
+            <Set name="forwardedCipherSuiteHeader">sslclientcipher</Set>
+            <Set name="forwardedSslSessionIdHeader">sslsessionid</Set>
           </New>
       </Arg>
     </Call>

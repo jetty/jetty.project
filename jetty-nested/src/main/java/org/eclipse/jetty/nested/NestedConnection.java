@@ -64,10 +64,6 @@ public class NestedConnection extends HttpConnection
             fields.add(header,value);
         }
         
-        // Slight hack for cloud foundry
-        if (!fields.containsKey("x-forwarded-for") && outerRequest.getHeader("x-forwarded_for")!=null)
-            fields.add("x-forwarded-for",outerRequest.getHeader("x-forwarded_for"));
-        
         // Let outer parse the cookies
         _request.setCookies(outerRequest.getCookies());
         

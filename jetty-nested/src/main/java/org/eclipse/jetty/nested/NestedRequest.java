@@ -15,6 +15,7 @@ package org.eclipse.jetty.nested;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.server.Request;
 
 public class NestedRequest extends Request
@@ -33,8 +34,7 @@ public class NestedRequest extends Request
 
     public boolean isSecure()
     {
-        return _outer.isSecure();
+        return _outer.isSecure() || HttpSchemes.HTTPS.equals(getScheme());
     }
-    
     
 }
