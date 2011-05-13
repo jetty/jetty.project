@@ -1,4 +1,4 @@
-jetty-7.4.1.v20110512
+jetty-7.4.1.v20110513
  + 288563 remove unsupported and deprecated --secure option
  + 332907 Add context property to ObjectName of JMX MBeans
  + 336056 Ability to override the computation of the ContextHandler to deploy the DefaultServlet on the HttpService

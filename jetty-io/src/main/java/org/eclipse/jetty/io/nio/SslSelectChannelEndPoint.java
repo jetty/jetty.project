@@ -739,7 +739,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         catch(SSLException e)
         {
-            Log.warn(this+" "+e);
+            Log.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
             super.close();
             throw e;
         }
@@ -832,7 +832,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     }
                     catch(SSLException e)
                     {
-                        Log.warn(this+" "+e);
+                        Log.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
                         super.close();
                         throw e;
                     }
@@ -913,7 +913,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 }
                 catch(SSLException e)
                 {
-                    Log.warn(this+" "+e);
+                    Log.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
                     super.close();
                     throw e;
                 }
