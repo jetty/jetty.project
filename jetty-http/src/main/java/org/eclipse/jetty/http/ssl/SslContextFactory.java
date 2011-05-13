@@ -19,7 +19,9 @@ package org.eclipse.jetty.http.ssl;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.security.InvalidParameterException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -49,6 +51,7 @@ import javax.net.ssl.X509TrustManager;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 
@@ -144,6 +147,10 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _enableOCSP = false;
     /** Location of OCSP Responder */
     private String _ocspResponderURL;
+    /** SSL keystore */
+    private KeyStore _keyStore;
+    /** SSL truststore */
+    private KeyStore _trustStore;
     
     /** SSL context */
     private SSLContext _context;
@@ -319,7 +326,10 @@ public class SslContextFactory extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /** Get the _keyStoreInputStream.
      * @return the _keyStoreInputStream
+     *
+     * @deprecated
      */
+    @Deprecated
     public InputStream getKeyStoreInputStream()
     {
         checkConfig();
@@ -329,8 +339,11 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /** Set the keyStoreInputStream.
-     * @param keyStoreInputStream the InputStream to the KeyStore 
+     * @param keyStoreInputStream the InputStream to the KeyStore
+     * 
+     * @deprecated
      */
+    @Deprecated
     public void setKeyStoreInputStream(InputStream keyStoreInputStream)
     {
         checkStarted();
@@ -425,7 +438,10 @@ public class SslContextFactory extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /** Get the _trustStoreInputStream.
      * @return the _trustStoreInputStream
+     *
+     * @deprecated
      */
+    @Deprecated
     public InputStream getTrustStoreInputStream()
     {
         checkConfig();
@@ -436,7 +452,10 @@ public class SslContextFactory extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /** Set the _trustStoreInputStream.
      * @param trustStoreInputStream the InputStream to the TrustStore
+     *
+     * @deprecated
      */
+    @Deprecated
     public void setTrustStoreInputStream(InputStream trustStoreInputStream)
     {
         checkStarted();
@@ -773,10 +792,9 @@ public class SslContextFactory extends AbstractLifeCycle
         // parameters are set up correctly  
         checkConfig();
         
-        KeyStore keyStore = getKeyStore(_keyStoreInputStream, _keyStorePath, _keyStoreType, 
-                _keyStoreProvider, _keyStorePassword==null? null: _keyStorePassword.toString());
-        KeyStore trustStore = getKeyStore(_trustStoreInputStream, _trustStorePath, _trustStoreType, 
-                _trustStoreProvider, _trustStorePassword==null? null: _trustStorePassword.toString());
+        KeyStore keyStore = loadKeyStore();
+        KeyStore trustStore = loadTrustStore();
+        
         Collection<? extends CRL> crls = loadCRL(_crlPath);
 
         if (_validateCerts && keyStore != null)
@@ -804,11 +822,39 @@ public class SslContextFactory extends AbstractLifeCycle
         KeyManager[] keyManagers = getKeyManagers(keyStore);
         TrustManager[] trustManagers = getTrustManagers(trustStore,crls);
 
-        SecureRandom secureRandom = _secureRandomAlgorithm == null?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-        _context = _sslProvider == null?SSLContext.getInstance(_sslProtocol):SSLContext.getInstance(_sslProtocol,_sslProvider);
+        SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
+        _context = (_sslProvider == null)?SSLContext.getInstance(_sslProtocol):SSLContext.getInstance(_sslProtocol,_sslProvider);
         _context.init(keyManagers,trustManagers,secureRandom);
     }
-
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Override this method to provide alternate way to load a keystore.
+     *
+     * @return the key store instance
+     * @throws Exception
+     */
+    protected KeyStore loadKeyStore() throws Exception
+    {
+        return _keyStore != null ? _keyStore : getKeyStore(_keyStoreInputStream, 
+                _keyStorePath, _keyStoreType, _keyStoreProvider,
+                _keyStorePassword==null? null: _keyStorePassword.toString());
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Override this method to provide alternate way to load a truststore.
+     *
+     * @return the key store instance
+     * @throws Exception
+     */
+    protected KeyStore loadTrustStore() throws Exception
+    {
+        return _trustStore != null ? _trustStore : getKeyStore(_trustStoreInputStream,
+                _trustStorePath, _trustStoreType,  _trustStoreProvider,
+                _trustStorePassword==null? null: _trustStorePassword.toString());
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Loads keystore using an input stream or a file path in the same
@@ -824,7 +870,10 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param storePassword keystore password
      * @return created keystore
      * @throws Exception
+     * 
+     * @deprecated
      */
+    @Deprecated
     protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
     {
         return CertificateUtils.getKeyStore(storeStream, storePath, storeType, storeProvider, storePassword);
@@ -939,7 +988,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public boolean checkConfig()
     {
         boolean check = true;
-        if (_keyStoreInputStream == null && _keyStorePath == null)
+        if (_keyStore == null && _keyStoreInputStream == null && _keyStorePath == null)
         {
             // configuration doesn't have a valid keystore
             check = false;
@@ -948,8 +997,9 @@ public class SslContextFactory extends AbstractLifeCycle
         {
              // if the keystore has been configured but there is no 
              // truststore configured, use the keystore as the truststore
-            if (_trustStoreInputStream == null && _trustStorePath == null)
+            if (_trustStore == null && _trustStoreInputStream == null && _trustStorePath == null)
             {
+                _trustStore = _keyStore;
                 _trustStorePath = _keyStorePath;
                 _trustStoreInputStream = _keyStoreInputStream;
                 _trustStoreType = _keyStoreType;
@@ -1057,6 +1107,8 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setEnableCRLDP(boolean enableCRLDP)
     {
+        checkStarted();
+
         _enableCRLDP = enableCRLDP;
     }
 
@@ -1075,6 +1127,8 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setEnableOCSP(boolean enableOCSP)
     {
+        checkStarted();
+
         _enableOCSP = enableOCSP;
     }
 
@@ -1093,6 +1147,69 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public void setOcspResponderURL(String ocspResponderURL)
     {
+        checkStarted();
+
         _ocspResponderURL = ocspResponderURL;
     }
+
+    /* ------------------------------------------------------------ */
+    /** Set the key store.
+     * @param keyStore the key store to set
+     */
+    public void setKeyStore(KeyStore keyStore)
+    {
+        checkStarted();
+
+        _keyStore = keyStore;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the trust store.
+     * @param trustStore the trust store to set
+     */
+    public void setTrustStore(KeyStore trustStore)
+    {
+        checkStarted();
+
+        _trustStore = trustStore;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Set the key store resource.
+     * @param keyStore the key store resource to set
+     */
+    public void setKeyStoreResource(Resource resource)
+    {
+        checkStarted();
+
+        try
+        {
+            _keyStoreInputStream = resource.getInputStream();
+        }
+        catch (IOException e)
+        {
+             throw new InvalidParameterException("Unable to get resource "+
+                     "input stream for resource "+resource.toString());
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the trust store resource.
+     * @param trustStore the trust store resource to set
+     */
+    public void setTrustStore(Resource resource)
+    {
+        checkStarted();
+
+        try
+        {
+            _trustStoreInputStream = resource.getInputStream();
+        }
+        catch (IOException e)
+        {
+             throw new InvalidParameterException("Unable to get resource "+
+                     "input stream for resource "+resource.toString());
+        }
+    }
+    
 }
