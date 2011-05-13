@@ -777,6 +777,17 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return __dftConfigurationClasses;
     }
     
+    /* ------------------------------------------------------------ */
+    public String[] getDefaultServerClasses ()
+    {
+        return __dftServerClasses;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String[] getDefaultSystemClasses ()
+    {
+        return __dftSystemClasses;
+    }
     
     /* ------------------------------------------------------------ */
     protected void loadConfigurations()

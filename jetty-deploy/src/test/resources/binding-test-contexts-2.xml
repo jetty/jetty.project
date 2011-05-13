@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Array id="serverClasses" type="java.lang.String">
+    <Item>org.foo.test.</Item>
+  </Array>
+
+  <Array id="systemClasses" type="java.lang.String">
+    <Item>com.foo.test.</Item>
+  </Array>
+
+  <Call name="addLifeCycle">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref id="Contexts" />
+        </Set>
+        
+        
+        
+        <Ref id="DeploymentManager">
+          <Call name="addLifeCycleBinding">
+            <Arg>
+              <New class="org.eclipse.jetty.deploy.bindings.WebappClasspathPatternBinding">
+                <Set name="serverClasses"><Ref id="serverClasses"/></Set>
+                <Set name="systemClasses"><Ref id="systemClasses"/></Set>         
+              </New>
+            </Arg>
+          </Call>
+       </Ref>
+        
+        <!-- Providers of Apps -->
+        <Set name="appProviders">
+          <Array type="org.eclipse.jetty.deploy.AppProvider">
+            <Item>
+             <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
+              <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/contexts</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="configurationManager">
+                <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
+                  <Set name="file">
+                    <Property name="test.targetdir" default="target" />/xml-configured-jetty.properties
+                  </Set>
+                </New>
+              </Set>
+             </New>
+            </Item>
+            <Item>
+             <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+              <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/webapps</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="contextXmlDir"><SystemProperty name="jetty.home" />/contexts</Set>
+             </New>
+            </Item>
+          </Array>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+
+</Configure>
