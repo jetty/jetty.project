@@ -1,3 +1,6 @@
+jetty-7.4.2-SNAPSHOT
+ + 345729 binding for managing server and system classes globally
+
 jetty-7.4.1.v20110513
  + 288563 remove unsupported and deprecated --secure option
  + 332907 Add context property to ObjectName of JMX MBeans
