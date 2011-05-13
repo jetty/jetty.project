@@ -20,6 +20,7 @@ jetty-7.4.1.v20110513
  + 345047 Readded deprecated ScanningAppDeployer#setMonitoredDir
  + 345290 Weak references from SessionIdManager. HashSessionManager cleanup.
  + 345543 Always close endpoint on SSLException
+ + 345656 Disambiguate SslContextFactory#validateCerts property 
  + 345679 Allow setting an initialized KeyStore as keystore/truststore of SslContextFactory
  + 345704 jetty-nested works with forwarded SSL in cloudfoundry
  + JETTY-954 WebAppContext eats any start exceptions instead of stopping the server load

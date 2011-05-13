@@ -137,6 +137,8 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /** Set to true if SSL certificate validation is required */
     private boolean _validateCerts;
+    /** Set to true if SSL certificate of the peer validation is required */
+    private boolean _validatePeerCerts;
     /** Maximum certification path length (n - number of intermediate certs, -1 for unlimited) */
     private int _maxCertPathLength = -1;
     /** Path to file that contains Certificate Revocation List */
@@ -543,6 +545,27 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
+     * @return true if SSL certificates of the peer have to be validated
+     */
+    public boolean isValidatePeerCerts()
+    {
+        return _validatePeerCerts;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param validatePeerCerts
+     *            true if SSL certificates of the peer have to be validated
+     */
+    public void setValidatePeerCerts(boolean validatePeerCerts)
+    {
+        checkStarted();
+        
+        _validatePeerCerts = validatePeerCerts;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * @return True if SSL re-negotiation is allowed (default false)
      */
     public boolean isAllowRenegotiate()
@@ -928,7 +951,7 @@ public class SslContextFactory extends AbstractLifeCycle
         if (trustStore != null)
         {
             // Revocation checking is only supported for PKIX algorithm
-            if (_validateCerts && _trustManagerFactoryAlgorithm.equalsIgnoreCase("PKIX"))
+            if (_validatePeerCerts && _trustManagerFactoryAlgorithm.equalsIgnoreCase("PKIX"))
             {
                 PKIXBuilderParameters pbParams = new PKIXBuilderParameters(trustStore,new X509CertSelector());
 
