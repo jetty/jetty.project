@@ -25,6 +25,7 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
@@ -47,6 +48,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
     private int _maxBuffers=1024;
+    private boolean _enableSslSessionCaching;
 
     /**
      * @param httpClient
@@ -66,7 +68,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 
         final boolean direct=_httpClient.getUseDirectBuffers();
 
-        SSLEngine sslEngine=_selectorManager.newSslEngine();
+        SSLEngine sslEngine=_selectorManager.newSslEngine(null);
         final SSLSession ssl_session=sslEngine.getSession();
         _sslBuffers = BuffersFactory.newBuffers(
                 direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
@@ -141,7 +143,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         @Override
         public boolean dispatch(Runnable task)
         {
-            return SelectConnector.this._httpClient._threadPool.dispatch(task);
+            return _httpClient._threadPool.dispatch(task);
         }
 
         @Override
@@ -186,12 +188,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             {
                 if (dest.isProxied())
                 {
-                    SSLEngine engine=newSslEngine();
+                    SSLEngine engine=newSslEngine(channel);
                     ep = new ProxySelectChannelEndPoint(channel, selectSet, key, _sslBuffers, engine, (int)_httpClient.getIdleTimeout());
                 }
                 else
                 {
-                    SSLEngine engine=newSslEngine();
+                    SSLEngine engine=newSslEngine(channel);
                     ep = new SslSelectChannelEndPoint(_sslBuffers, channel, selectSet, key, engine, (int)_httpClient.getIdleTimeout());
                 }
             }
@@ -206,14 +208,26 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             return ep;
         }
 
-        private synchronized SSLEngine newSslEngine() throws IOException
+        private synchronized SSLEngine newSslEngine(SocketChannel channel) throws IOException
         {
             if (_sslContext==null)
             {
-                _sslContext = SelectConnector.this._httpClient.getSSLContext();
+                _sslContext = _httpClient.getSslContextFactory().getSslContext();
+                _enableSslSessionCaching = _httpClient.getSslContextFactory().isEnableSessionCaching();
             }
 
-            SSLEngine sslEngine = _sslContext.createSSLEngine();
+            SSLEngine sslEngine = null;
+            if (channel != null && _enableSslSessionCaching)
+            {
+                String peerHost = channel.socket().getInetAddress().getCanonicalHostName();
+                int peerPort = channel.socket().getPort();
+
+                sslEngine = _sslContext.createSSLEngine(peerHost, peerPort);
+            }
+            else
+            {
+                sslEngine = _sslContext.createSSLEngine();
+            }
             sslEngine.setUseClientMode(true);
             sslEngine.beginHandshake();
 

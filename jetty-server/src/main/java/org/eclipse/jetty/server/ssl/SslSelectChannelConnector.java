@@ -542,7 +542,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine(), SslSelectChannelConnector.this._maxIdleTime);
+        SSLEngine engine = createSSLEngine(_sslContextFactory.isEnableSessionCaching() ? channel : null);
+        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,engine, SslSelectChannelConnector.this._maxIdleTime);
         endp.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
         return endp;
     }
@@ -563,16 +564,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         try
         {
             engine = _sslContextFactory.getSslContext().createSSLEngine();
-            engine.setUseClientMode(false);
-
-            if (_sslContextFactory.getWantClientAuth())
-                engine.setWantClientAuth(_sslContextFactory.getWantClientAuth());
-            if (_sslContextFactory.getNeedClientAuth())
-                engine.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
-
-            engine.setEnabledCipherSuites(
-                    _sslContextFactory.selectCipherSuites(engine.getEnabledCipherSuites(),
-                                                          engine.getSupportedCipherSuites()));
+            
+            customizeEngine(engine);
         }
         catch (Exception e)
         {
@@ -581,6 +574,50 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
             throw new IllegalStateException(e);
         }
         return engine;
+    }
+
+    /* ------------------------------------------------------------ */
+    protected SSLEngine createSSLEngine(SocketChannel channel) throws IOException
+    {
+        SSLEngine engine = null;
+        if (channel == null)
+        {
+            engine = createSSLEngine();
+        }
+        else
+        {
+            try
+            {
+                String peerHost = channel.socket().getInetAddress().getCanonicalHostName();
+                int peerPort = channel.socket().getPort();
+                
+                engine = _sslContextFactory.getSslContext().createSSLEngine(peerHost, peerPort);
+                
+                customizeEngine(engine);
+            }
+            catch (Exception e)
+            {
+                Log.warn("Error creating sslEngine -- closing this connector",e);
+                close();
+                throw new IllegalStateException(e);
+            }
+        }
+        return engine;
+    }
+    
+    /* ------------------------------------------------------------ */
+    private void customizeEngine(SSLEngine engine)
+    {
+        engine.setUseClientMode(false);
+
+        if (_sslContextFactory.getWantClientAuth())
+            engine.setWantClientAuth(_sslContextFactory.getWantClientAuth());
+        if (_sslContextFactory.getNeedClientAuth())
+            engine.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
+
+        engine.setEnabledCipherSuites(
+                _sslContextFactory.selectCipherSuites(engine.getEnabledCipherSuites(),
+                                                      engine.getSupportedCipherSuites()));
     }
 
     /* ------------------------------------------------------------ */

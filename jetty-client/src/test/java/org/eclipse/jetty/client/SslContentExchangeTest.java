@@ -40,6 +40,7 @@ public class SslContentExchangeTest
         cf.setKeyStore(keystore.getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
+        cf.setEnableSessionCaching(true);
         server.addConnector(connector);
                 
         Handler handler = new TestHandler(getBasePath());
@@ -54,5 +55,15 @@ public class SslContentExchangeTest
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[]{handler, root});
         server.setHandler( handlers ); 
+    }
+
+    @Override
+    protected void configureClient(HttpClient client)
+        throws Exception
+    {
+        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+
+        SslContextFactory cf = client.getSslContextFactory();
+        cf.setEnableSessionCaching(true);
     }
 }

@@ -153,7 +153,9 @@ public class SslContextFactory extends AbstractLifeCycle
     private KeyStore _keyStore;
     /** SSL truststore */
     private KeyStore _trustStore;
-    
+    /** Set to true to enable SSL Session caching */
+    private boolean _enableSessionCaching;
+         
     /** SSL context */
     private SSLContext _context;
 
@@ -1235,4 +1237,20 @@ public class SslContextFactory extends AbstractLifeCycle
         }
     }
     
+    /** 
+    * @return true if SSL Session caching is enabled
+    */
+    public boolean isEnableSessionCaching()
+    {
+        return _enableSessionCaching;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Set the flag to enable SSL Session caching.
+    * @param enableSessionCaching the value of the flag 
+    */
+    public void setEnableSessionCaching(boolean enableSessionCaching)
+    {
+        _enableSessionCaching = enableSessionCaching;
+    }
 }
