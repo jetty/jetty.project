@@ -503,17 +503,25 @@ public class Dump extends HttpServlet
             if ("true".equals(request.getParameter("env")))
             {
                 pout.write("</tr><tr>\n");
-                pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Environment&nbsp;System-Properties:&nbsp;</big></th>");
-                
-                for (Entry<Object, Object> e : System.getProperties().entrySet())
+                pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Environment:&nbsp;</big></th>");
+                for (Entry e : System.getenv().entrySet())
                 {
                     pout.write("</tr><tr>\n");
                     pout.write("<th align=\"right\">" + notag(String.valueOf(e.getKey())) + ":&nbsp;</th>");
                     pout.write("<td>"+notag(String.valueOf(e.getValue()))+"</td>");
                 }
 
+                pout.write("</tr><tr>\n");
+                pout.write("<th align=\"left\" colspan=\"2\"><big><br/>System-Properties:&nbsp;</big></th>");
+
+                for (Entry<Object, Object> e : System.getProperties().entrySet())
+                {
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">" + notag(String.valueOf(e.getKey())) + ":&nbsp;</th>");
+                    pout.write("<td>"+notag(String.valueOf(e.getValue()))+"</td>");
+                }
             }
-            
+
             //handle testing jdbc connections:
             String jdbcUrl = request.getParameter("jdbc-url");
             String jdbcDriver = request.getParameter("jdbc-driver");
@@ -869,12 +877,22 @@ public class Dump extends HttpServlet
             pout.write("</form>\n");
             
             pout.write("<h2>Form to test a JDBC connection URL</h2>");
+            String jdbcUser = request.getParameter("jdbc-user");
+            if (jdbcUser == null || jdbcUser.length() == 0) jdbcUser = "root";
+            String jdbcPass = request.getParameter("jdbc-pass");
+            if (jdbcPass == null) jdbcPass = "";
+            String jdbcDriverr = request.getParameter("jdbc-driver");
+            if (jdbcDriverr == null || jdbcDriverr.length() == 0) jdbcDriverr = "com.mysql.jdbc.Driver";
+            String jdbcQuery = request.getParameter("jdbc-query");
+            if (jdbcQuery == null || jdbcQuery.length() == 0) jdbcQuery = "show tables;";
+            String jdbcUrll = request.getParameter("jdbc-url");
+            if (jdbcUrll == null || jdbcUrll.length() == 0) jdbcUrll = "jdbc:mysql://127.0.0.1:3306/example";
             pout.write("<form method=\"POST\" accept-charset=\"utf-8\" action=\""+response.encodeURL(getURI(request))+"\">");
-            pout.write("JDBC Driver class: <input type=\"text\" name=\"jdbc-driver\" value=\"com.mysql.jdbc.Driver\"/><br/>\n");
-            pout.write("JDBC URL: <input type=\"text\" name=\"jdbc-url\" value=\"jdbc:mysql://127.0.0.1:3306/intalio?autoReconnect=true\"/><br/>\n");
-            pout.write("JDBC Username: <input type=\"text\" name=\"jdbc-user\" value=\"root\"/><br/>\n");
-            pout.write("JDBC Password: <input type=\"text\" name=\"jdbc-pass\" value=\"\"/><br/>\n");
-            pout.write("JDBC Query: <input type=\"text\" name=\"jdbc-query\" value=\"show tables;\"/><br/>\n");
+            pout.write("JDBC Driver class: <input type=\"text\" name=\"jdbc-driver\" value=\"" + jdbcDriverr + "\"/><br/>\n");
+            pout.write("JDBC URL: <input type=\"text\" name=\"jdbc-url\" value=\"" + jdbcUrll + "\"/><br/>\n");
+            pout.write("JDBC Username: <input type=\"text\" name=\"jdbc-user\" value=\"" + jdbcUser + "\"/><br/>\n");
+            pout.write("JDBC Password: <input type=\"text\" name=\"jdbc-pass\" value=\"" + jdbcPass + "\"/><br/>\n");
+            pout.write("JDBC Query: <input type=\"text\" name=\"jdbc-query\" value=\"" + jdbcQuery + "\"/><br/>\n");
             pout.write("<input type=\"submit\" name=\"Action\" value=\"Submit\"><br/>");
             pout.write("</form>");
             pout.write("<br/>");

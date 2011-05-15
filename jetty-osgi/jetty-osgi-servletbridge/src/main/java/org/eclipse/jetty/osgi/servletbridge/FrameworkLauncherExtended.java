@@ -14,7 +14,9 @@ package org.eclipse.jetty.osgi.servletbridge;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,6 +26,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.jar.Attributes;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
 
 import org.eclipse.equinox.servletbridge.FrameworkLauncher;
 
@@ -39,7 +45,8 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
      * installation instead we use that folder as it is
      */
     private static final String DEPLOY_IN_PLACE_WHEN_INSTALL_AREA_IS_FOLDER = "org.eclipse.equinox.servletbridge.deployinplace"; //$NON-NLS-1$
-
+	public static final String	FRAMEWORK_BOOTDELEGATION = "org.osgi.framework.bootdelegation";
+	
     private boolean deployedInPlace = false;
     private URL resourceBaseAsURL = null;
 
@@ -57,7 +64,7 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             }
             if (resourceBaseStr != null && resourceBaseStr.length() != 0)
             {
-                // If the path starts with a reference to a nsystem property, resolve it.
+                // If the path starts with a reference to a system property, resolve it.
                 resourceBaseStr = resolveSystemProperty(resourceBaseStr);
                 if (resourceBaseStr.startsWith("/WEB-INF/"))
                 {
@@ -71,7 +78,7 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
                 		}
                 	}
                 }
-                	
+                
                 if (resourceBaseStr.startsWith("file://"))
                 {
                     resourceBaseAsURL = new URL(resourceBaseStr.replace(" ","%20")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -152,9 +159,10 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
                 osgiFrameworkExtensions = "org.eclipse.equinox.servletbridge.extensionbundle";
             }
             File configIni = new File(getPlatformDirectory(), "configuration/config.ini");
+            Properties configIniProps = new Properties();
             if (configIni.exists())
             {
-                Properties configIniProps = new Properties();
+            	System.out.println("Got the " + configIni.getAbsolutePath());
                 InputStream configIniStream = null;
                 try
                 {
@@ -175,16 +183,40 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
                     osgiFrameworkExtensions = osgiFrameworkExtensions + "," + confIniFrameworkExt;
                 }
             }
+            else
+            {
+            	System.out.println("Unable to locate the " + configIni.getAbsolutePath());
+            }
             props.setProperty(OSGI_FRAMEWORK_EXTENSIONS,osgiFrameworkExtensions);
-            __deployExtensionBundle(pluginsFolder);
+            //__deployExtensionBundle(pluginsFolder);
+            deployExtensionBundle(pluginsFolder, true);
+            
+            
+            String bootDeleg = props.getProperty(FRAMEWORK_BOOTDELEGATION);
+            if (bootDeleg == null)
+            {
+            	bootDeleg = configIniProps.getProperty(FRAMEWORK_BOOTDELEGATION);
+            }
+            if (bootDeleg == null || bootDeleg.indexOf("javax.servlet.http") == -1)
+            {
+            	String add = "javax.servlet,javax.servlet.http,javax.servlet.resources";
+            	if (bootDeleg != null)
+            	{
+            		bootDeleg += add;
+            	}
+            	else
+            	{
+            		bootDeleg = add;
+            	}
+            	props.setProperty(FRAMEWORK_BOOTDELEGATION, bootDeleg);
+            }
             
             String jettyHome = System.getProperty("jetty.home");
             if (jettyHome == null)
             {
             	jettyHome = getPlatformDirectory().getAbsolutePath();
                 System.setProperty("jetty.home",jettyHome);
-                // System.setProperty("jetty.port", "9080");
-                // System.setProperty("jetty.port.ssl", "9443");
+                props.setProperty("jetty.home",jettyHome);
             }
             else
             {
@@ -196,6 +228,21 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             	if (new File(jettyHome,"etc/jetty-osgi-nested.xml").exists())
             	{
             		System.setProperty("jetty.etc.config.urls","etc/jetty-osgi-nested.xml");
+            		props.setProperty("jetty.etc.config.urls","etc/jetty-osgi-nested.xml");
+            	}
+            }
+            String startLevel = System.getProperty("osgi.startLevel");
+            if (startLevel == null)
+            {
+            	startLevel = props.getProperty("osgi.startLevel");
+            	if (startLevel == null)
+            	{
+            		startLevel = configIniProps.getProperty("osgi.startLevel");
+            	}
+            	if (startLevel != null)
+            	{
+            		props.setProperty("osgi.startLevel",startLevel);
+            		System.setProperty("osgi.startLevel",startLevel);
             	}
             }
             String logback = System.getProperty("logback.configurationFile");
@@ -205,13 +252,13 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             	if (etcLogback.exists())
             	{
             		System.setProperty("logback.configurationFile",etcLogback.getAbsolutePath());
+            		props.setProperty("logback.configurationFile",etcLogback.getAbsolutePath());
             	}
             }
             else
             {
             	logback = resolveSystemProperty(logback);
             }
-//            System.err.println("syserr: logback.configurationFile=" + System.getProperty("logback.configurationFile"));
             System.out.println("sysout: logback.configurationFile=" + System.getProperty("logback.configurationFile"));
         }
         return props;
@@ -421,5 +468,139 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             t.printStackTrace();
         }
     }
+//--end of introspection to invoke deployExtensionBundle
+    
+//from Framework with support for the equinox hook
+  	private static final String EXTENSIONBUNDLE_DEFAULT_BSN = "org.eclipse.equinox.servletbridge.extensionbundle"; //$NON-NLS-1$
+  	private static final String EXTENSIONBUNDLE_DEFAULT_VERSION = "1.2.0"; //$NON-NLS-1$
+  	private static final String MANIFEST_VERSION = "Manifest-Version"; //$NON-NLS-1$
+  	private static final String BUNDLE_MANIFEST_VERSION = "Bundle-ManifestVersion"; //$NON-NLS-1$
+  	private static final String BUNDLE_NAME = "Bundle-Name"; //$NON-NLS-1$
+  	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; //$NON-NLS-1$
+  	private static final String BUNDLE_VERSION = "Bundle-Version"; //$NON-NLS-1$
+  	private static final String FRAGMENT_HOST = "Fragment-Host"; //$NON-NLS-1$
+  	private static final String EXPORT_PACKAGE = "Export-Package"; //$NON-NLS-1$
+
+  	private static final String CONFIG_EXTENDED_FRAMEWORK_EXPORTS = "extendedFrameworkExports"; //$NON-NLS-1$
+
+	private void deployExtensionBundle(File plugins, boolean configureEquinoxHook) {
+		// we might want to parameterize the extension bundle BSN in the future
+		final String extensionBundleBSN = EXTENSIONBUNDLE_DEFAULT_BSN;
+		File extensionBundleFile = findExtensionBundleFile(plugins, extensionBundleBSN);
+
+		if (extensionBundleFile == null)
+			generateExtensionBundle(plugins, extensionBundleBSN, EXTENSIONBUNDLE_DEFAULT_VERSION, configureEquinoxHook);
+		else /*if (Boolean.valueOf(config.getInitParameter(CONFIG_OVERRIDE_AND_REPLACE_EXTENSION_BUNDLE)).booleanValue())*/ {
+			String extensionBundleVersion = findExtensionBundleVersion(extensionBundleFile, extensionBundleBSN);
+			if (extensionBundleFile.isDirectory()) {
+				deleteDirectory(extensionBundleFile);
+			} else {
+				extensionBundleFile.delete();
+			}
+			generateExtensionBundle(plugins, extensionBundleBSN, extensionBundleVersion, true);
+//		} else {
+//			processExtensionBundle(extensionBundleFile);
+		}
+	}
+
+	private File findExtensionBundleFile(File plugins, final String extensionBundleBSN) {
+		FileFilter extensionBundleFilter = new FileFilter() {
+			public boolean accept(File candidate) {
+				return candidate.getName().startsWith(extensionBundleBSN + "_"); //$NON-NLS-1$
+			}
+		};
+		File[] extensionBundles = plugins.listFiles(extensionBundleFilter);
+		if (extensionBundles.length == 0)
+			return null;
+
+		if (extensionBundles.length > 1) {
+			for (int i = 1; i < extensionBundles.length; i++) {
+				if (extensionBundles[i].isDirectory()) {
+					deleteDirectory(extensionBundles[i]);
+				} else {
+					extensionBundles[i].delete();
+				}
+			}
+		}
+		return extensionBundles[0];
+	}
+
+	private String findExtensionBundleVersion(File extensionBundleFile, String extensionBundleBSN) {
+		String fileName = extensionBundleFile.getName();
+		if (fileName.endsWith(".jar")) {
+			return fileName.substring(extensionBundleBSN.length() + 1, fileName.length() - ".jar".length());
+		}
+		return fileName.substring(extensionBundleBSN.length() + 1);
+	}
+
+    
+	private void generateExtensionBundle(File plugins, String extensionBundleBSN, String extensionBundleVersion,
+			boolean configureEquinoxHook) {
+		Manifest mf = new Manifest();
+		Attributes attribs = mf.getMainAttributes();
+		attribs.putValue(MANIFEST_VERSION, "1.0"); //$NON-NLS-1$
+		attribs.putValue(BUNDLE_MANIFEST_VERSION, "2"); //$NON-NLS-1$
+		attribs.putValue(BUNDLE_NAME, "Servletbridge Extension Bundle"); //$NON-NLS-1$
+		attribs.putValue(BUNDLE_SYMBOLIC_NAME, extensionBundleBSN);
+		attribs.putValue(BUNDLE_VERSION, extensionBundleVersion);
+		attribs.putValue(FRAGMENT_HOST, "system.bundle; extension:=framework"); //$NON-NLS-1$
+
+		String servletVersion = context.getMajorVersion() + "." + context.getMinorVersion(); //$NON-NLS-1$
+		String packageExports = "org.eclipse.equinox.servletbridge; version=1.1" + //$NON-NLS-1$
+				", javax.servlet; version=" + servletVersion + //$NON-NLS-1$
+				", javax.servlet.http; version=" + servletVersion + //$NON-NLS-1$
+				", javax.servlet.resources; version=" + servletVersion; //$NON-NLS-1$
+
+		String extendedExports = config.getInitParameter(CONFIG_EXTENDED_FRAMEWORK_EXPORTS);
+		if (extendedExports != null && extendedExports.trim().length() != 0)
+			packageExports += ", " + extendedExports; //$NON-NLS-1$
+
+		attribs.putValue(EXPORT_PACKAGE, packageExports);
+		writeJarFile(new File(plugins, extensionBundleBSN + "_" + extensionBundleVersion + ".jar"), mf, configureEquinoxHook); //$NON-NLS-1$
+	}
+
+	private void writeJarFile(File jarFile, Manifest mf, boolean configureEquinoxHook) {
+		try {
+			JarOutputStream jos = null;
+			try {
+				jos = new JarOutputStream(new FileOutputStream(jarFile), mf);
+				
+				if (configureEquinoxHook) {
+					//hook configurator properties:
+					ZipEntry e = new ZipEntry("hookconfigurators.properties");
+					jos.putNextEntry(e);
+					Properties props = new Properties();
+					props.put("hook.configurators", "org.eclipse.jetty.osgi.servletbridge.hook.ServletBridgeClassLoaderDelegateHook");
+					props.store(jos, "");
+					jos.closeEntry();
+	
+					//the hook class
+					e = new ZipEntry("org/eclipse/jetty/osgi/servletbridge/hook/ServletBridgeClassLoaderDelegateHook.class");
+					jos.putNextEntry(e);
+					InputStream in = getClass().getResourceAsStream("/org/eclipse/jetty/osgi/servletbridge/hook/ServletBridgeClassLoaderDelegateHook.class");
+					
+		            byte[] buffer = new byte[512];
+		            try {
+		                int n;
+		                while ((n = in.read(buffer)) != -1)
+		                {
+		                    jos.write(buffer, 0, n);
+		                }
+		            } finally {
+		                in.close();
+		            }
+					jos.closeEntry();
+				}
+				
+				jos.finish();
+			} finally {
+				if (jos != null)
+					jos.close();
+			}
+		} catch (IOException e) {
+			context.log("Error writing extension bundle", e); //$NON-NLS-1$
+		}
+	}
+//--from Framework with support for the equinox hook
 
 }
