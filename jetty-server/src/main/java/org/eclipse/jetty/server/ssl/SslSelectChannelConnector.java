@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
@@ -588,8 +589,9 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         {
             try
             {
-                String peerHost = channel.socket().getInetAddress().getCanonicalHostName();
-                int peerPort = channel.socket().getPort();
+                InetSocketAddress remoteAddr = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
+                String peerHost = remoteAddr.getHostName();
+                int peerPort = remoteAddr.getPort();
                 
                 engine = _sslContextFactory.getSslContext().createSSLEngine(peerHost, peerPort);
                 

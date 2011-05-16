@@ -43,6 +43,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509KeyManager;
@@ -149,13 +150,18 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _enableOCSP = false;
     /** Location of OCSP Responder */
     private String _ocspResponderURL;
+    
     /** SSL keystore */
     private KeyStore _keyStore;
     /** SSL truststore */
     private KeyStore _trustStore;
     /** Set to true to enable SSL Session caching */
     private boolean _enableSessionCaching;
-         
+    /** SSL session cache size */
+    private int _sslSessionCacheSize;
+    /** SSL session timeout */
+    private int _sslSessionTimeout;
+    
     /** SSL context */
     private SSLContext _context;
 
@@ -850,6 +856,10 @@ public class SslContextFactory extends AbstractLifeCycle
         SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
         _context = (_sslProvider == null)?SSLContext.getInstance(_sslProtocol):SSLContext.getInstance(_sslProtocol,_sslProvider);
         _context.init(keyManagers,trustManagers,secureRandom);
+        
+        SSLSessionContext sslSessionContext = _context.getServerSessionContext();
+        sslSessionContext.setSessionCacheSize(_sslSessionCacheSize);
+        sslSessionContext.setSessionTimeout(_sslSessionTimeout);
     }
     
     /* ------------------------------------------------------------ */
@@ -1252,5 +1262,41 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setEnableSessionCaching(boolean enableSessionCaching)
     {
         _enableSessionCaching = enableSessionCaching;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get SSL session cache size.
+     * @return SSL session cache size
+     */
+    public int getSslSessionCacheSize()
+    {
+        return _sslSessionCacheSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** SEt SSL session cache size.
+     * @param sslSessionCacheSize SSL session cache size to set
+     */
+    public void setSslSessionCacheSize(int sslSessionCacheSize)
+    {
+        _sslSessionCacheSize = sslSessionCacheSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get SSL session timeout.
+     * @return SSL session timeout
+     */
+    public int getSslSessionTimeout()
+    {
+        return _sslSessionTimeout;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set SSL session timeout.
+     * @param sslSessionTimeout SSL session timeout to set
+     */
+    public void setSslSessionTimeout(int sslSessionTimeout)
+    {
+        _sslSessionTimeout = sslSessionTimeout;
     }
 }

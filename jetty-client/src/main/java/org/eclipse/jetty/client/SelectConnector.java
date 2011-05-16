@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -212,16 +213,18 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         {
             if (_sslContext==null)
             {
-                _sslContext = _httpClient.getSslContextFactory().getSslContext();
-                _enableSslSessionCaching = _httpClient.getSslContextFactory().isEnableSessionCaching();
+                SslContextFactory factory = _httpClient.getSslContextFactory();
+                _sslContext = factory.getSslContext();
+                _enableSslSessionCaching = factory.isEnableSessionCaching();
             }
 
             SSLEngine sslEngine = null;
             if (channel != null && _enableSslSessionCaching)
             {
-                String peerHost = channel.socket().getInetAddress().getCanonicalHostName();
-                int peerPort = channel.socket().getPort();
-
+                InetSocketAddress remoteAddr = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
+                String peerHost = remoteAddr.getHostName();
+                int peerPort = remoteAddr.getPort();
+                
                 sslEngine = _sslContext.createSSLEngine(peerHost, peerPort);
             }
             else
