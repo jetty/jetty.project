@@ -29,6 +29,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
 
@@ -207,7 +209,8 @@ public class JettyBootstrapActivator implements BundleActivator
      */
     public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath) throws Exception
     {
-        WebAppContext contextHandler = new WebAppContext();
+    	checkBundleActivated();
+    	WebAppContext contextHandler = new WebAppContext();
         Dictionary dic = new Hashtable();
         dic.put(OSGiWebappConstants.SERVICE_PROP_WAR,webappFolderPath);
         dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
@@ -236,6 +239,7 @@ public class JettyBootstrapActivator implements BundleActivator
      */
     public static void registerWebapplication(Bundle contributor, String webappFolderPath, String contextPath, Dictionary<String, String> dic) throws Exception
     {
+    	checkBundleActivated();
         WebAppContext contextHandler = new WebAppContext();
         dic.put(OSGiWebappConstants.SERVICE_PROP_WAR,webappFolderPath);
         dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_PATH,contextPath);
@@ -275,6 +279,7 @@ public class JettyBootstrapActivator implements BundleActivator
      */
     public static void registerContext(Bundle contributor, String contextFilePath, Dictionary<String, String> dic) throws Exception
     {
+    	checkBundleActivated();
         ContextHandler contextHandler = new ContextHandler();
         dic.put(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH,contextFilePath);
         dic.put(IWebBundleDeployerHelper.INTERNAL_SERVICE_PROP_UNKNOWN_CONTEXT_HANDLER_TYPE,Boolean.TRUE.toString());
@@ -284,6 +289,26 @@ public class JettyBootstrapActivator implements BundleActivator
     public static void unregister(String contextPath)
     {
         // todo
+    }
+    
+    /**
+     * Since org.eclipse.jetty.osgi.boot does not have a lazy activation policy
+     * when one fo the static methods to register a webapp is called we should make sure that
+     * the bundle is started.
+     */
+    private static void checkBundleActivated()
+    {
+    	if (INSTANCE == null) {
+    		Bundle thisBundle = FrameworkUtil.getBundle(JettyBootstrapActivator.class);
+    		try
+    		{
+				thisBundle.start();
+			}
+    		catch (BundleException e)
+			{
+				//nevermind.
+			}
+    	}
     }
     
 

@@ -35,9 +35,11 @@ public class PackageAdminServiceTracker implements ServiceListener
 
     private List<BundleActivator> _activatedFragments = new ArrayList<BundleActivator>();
     private boolean _fragmentsWereActivated = false;
+    public static PackageAdminServiceTracker INSTANCE = null;
 
     public PackageAdminServiceTracker(BundleContext context)
     {
+        INSTANCE = this;
         _context = context;
         if (!setup())
         {
@@ -79,6 +81,24 @@ public class PackageAdminServiceTracker implements ServiceListener
         {
             invokeFragmentActivators(event.getServiceReference());
         }
+    }
+    
+    /**
+     * Helper to access the PackageAdmin and return the fragments hosted by a bundle.
+     * when we drop the support for the older versions of OSGi, we will stop using the PackageAdmin
+     * service.
+     * @param bundle
+     * @return
+     */
+    public Bundle[] getFragments(Bundle bundle)
+    {
+        ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
+        if (sr == null)
+        {//we should never be here really.
+            return null;
+        }
+        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
+        return admin.getFragments(bundle);
     }
 
     private void invokeFragmentActivators(ServiceReference sr)
@@ -128,6 +148,7 @@ public class PackageAdminServiceTracker implements ServiceListener
 
     public void stop()
     {
+        INSTANCE = null;
         for (BundleActivator fragAct : _activatedFragments)
         {
             try

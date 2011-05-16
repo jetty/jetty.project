@@ -27,6 +27,10 @@
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-nested</artifactId>
+    </dependency>
+    <dependency>
     	<groupId>org.eclipse</groupId>
     	<artifactId>osgi</artifactId>
     </dependency>
@@ -126,9 +130,9 @@
  org.xml.sax.helpers,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[7.3,8)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[8.0.0,9.0.0)"</DynamicImport-Package>
                         <!--Require-Bundle/-->
-                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment> 
+                        <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment> 
                     </instructions>
                 </configuration>
             </plugin>

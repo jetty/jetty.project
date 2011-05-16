@@ -46,6 +46,15 @@ public class OSGiWebappConstants
     /** path within the bundle to the folder that contains the basic resources. */
     public static final String JETTY_WAR_FOLDER_PATH = "Jetty-WarFolderPath";
 
+    /** path within a fragment hosted by a web-bundle to a folder that contains basic resources.
+     * the path is appended to the lookup path where jetty locates static resources */
+    public static final String JETTY_WAR_FRAGMENT_FOLDER_PATH = "Jetty-WarFragmentFolderPath";
+
+    /** path within a fragment hosted by a web-bundle to a folder that contains basic resources.
+     * The path is prefixed to the lookup path where jetty locates static resources:
+     * this will override static resources with the same name in the web-bundle. */
+    public static final String JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH = "Jetty-WarPatchFragmentFolderPath";
+
     // OSGi ContextHandler service properties.
     /** web app context path */
     public static final String SERVICE_PROP_CONTEXT_PATH = "contextPath";
