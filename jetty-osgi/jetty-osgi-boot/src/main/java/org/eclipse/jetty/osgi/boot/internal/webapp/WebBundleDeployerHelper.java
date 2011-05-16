@@ -14,7 +14,6 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot.internal.webapp;
 
-import java.awt.Component.BaselineResizeBehavior;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
