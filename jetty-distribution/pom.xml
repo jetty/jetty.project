@@ -53,7 +53,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.4</version>
         <executions>
           <execution>
             <phase>generate-resources</phase>
@@ -158,7 +157,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.1</version>
         <executions>
           <execution>
             <id>unpack</id>
@@ -531,6 +529,7 @@
             <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
           </descriptors>
           <tarLongFileMode>gnu</tarLongFileMode>
+          <appendAssemblyId>false</appendAssemblyId>
         </configuration>
         <executions>
           <execution>

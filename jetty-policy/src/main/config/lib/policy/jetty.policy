@@ -43,6 +43,7 @@ grant codeBase "file:${jetty.home}/lib/-" {
    // jetty specific properties
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";
+   permission java.util.PropertyPermission "org.eclipse.jetty.util.log.DEBUG", "read";
    permission java.util.PropertyPermission "START", "read";
    permission java.util.PropertyPermission "STOP.PORT", "read";
    permission java.util.PropertyPermission "STOP.KEY", "read";

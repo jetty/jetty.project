@@ -161,7 +161,7 @@ public class FilterHolder extends Holder<Filter>
     public FilterRegistration.Dynamic getRegistration()
     {
         if (_registration == null)
-            _registration = new Registration();
+            _registration = new FilterHolder.Registration();
         return _registration;
     }
     
