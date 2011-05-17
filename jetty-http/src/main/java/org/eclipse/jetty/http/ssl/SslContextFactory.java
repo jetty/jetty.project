@@ -922,7 +922,7 @@ public class SslContextFactory extends AbstractLifeCycle
      * load CRL in order to provide their own implementation.
      *
      * @param crlPath path of certificate revocation list file
-     * @return
+     * @return Collection of CRL's
      * @throws Exception
      */
     protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
@@ -1211,7 +1211,7 @@ public class SslContextFactory extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /** Set the key store resource.
-     * @param keyStore the key store resource to set
+     * @param resource the key store resource to set
      */
     public void setKeyStoreResource(Resource resource)
     {
@@ -1230,7 +1230,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /** Set the trust store resource.
-     * @param trustStore the trust store resource to set
+     * @param resource the trust store resource to set
      */
     public void setTrustStore(Resource resource)
     {
