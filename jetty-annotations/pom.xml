@@ -19,10 +19,16 @@
         <extensions>true</extensions>
         <executions>
           <execution>
+            <id>generate-manifest</id>
             <goals>
               <goal>manifest</goal>
             </goals>
-           </execution>
+            <configuration>
+              <instructions>
+                <Import-Package>javax.servlet.*;version="[2.5,3.0)",*</Import-Package>
+              </instructions>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
