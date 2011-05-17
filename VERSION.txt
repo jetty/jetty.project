@@ -3,6 +3,7 @@ jetty-7.4.2-SNAPSHOT
  + 345615 Enable SSL Session caching
  + 345763 Source file is updated during the build
  + 345873 Update jetty-ssl.xml to new style
+ + 345900 Handle ipv6 with default port
  + 346014 Fixed full HttpGenerator
 
 jetty-7.4.1.v20110513
