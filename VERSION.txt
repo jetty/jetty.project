@@ -1,4 +1,4 @@
-jetty-7.4.2.vTEST
+jetty-7.4.2-SNAPSHOT 
  + 338364 Fixed expires header for set cookies
  + 345729 binding for managing server and system classes globally
  + 345615 Enable SSL Session caching
