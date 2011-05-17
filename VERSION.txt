@@ -1,10 +1,12 @@
 jetty-7.4.2-SNAPSHOT
+ + 338364 Fixed expires header for set cookies
  + 345729 binding for managing server and system classes globally
  + 345615 Enable SSL Session caching
  + 345763 Source file is updated during the build
  + 345873 Update jetty-ssl.xml to new style
  + 345900 Handle ipv6 with default port
  + 346014 Fixed full HttpGenerator
+ + JETTY-1342 Recreate selector if wakeup throws JVM bug
 
 jetty-7.4.1.v20110513
  + 288563 remove unsupported and deprecated --secure option
