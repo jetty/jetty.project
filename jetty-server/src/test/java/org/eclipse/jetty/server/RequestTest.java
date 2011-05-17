@@ -55,6 +55,7 @@ public class RequestTest
         _connector.setRequestBufferSize(1024);
         _connector.setResponseHeaderSize(512);
         _connector.setResponseBufferSize(2048);
+        _connector.setForwarded(true);
         _server.addConnector(_connector);
         _handler = new RequestHandler();
         _server.setHandler(_handler);
@@ -116,6 +117,87 @@ public class RequestTest
 
         assertTrue(results.get(i++).startsWith("text/html"));
         assertEquals(" x=z; ",results.get(i++));
+    }
+    
+    @Test
+    public void testHostPort() throws Exception
+    {
+        final ArrayList<String> results = new ArrayList<String>();
+        _handler._checker = new RequestTester()
+        {
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                results.add(request.getRemoteAddr());
+                results.add(request.getServerName());
+                results.add(String.valueOf(request.getServerPort()));
+                return true;
+            }
+        };
+
+        _connector.getResponses(
+                "GET / HTTP/1.1\n"+
+                "Host: myhost\n"+
+                "\n"+
+
+                "GET / HTTP/1.1\n"+
+                "Host: myhost:8888\n"+
+                "\n"+
+
+                "GET / HTTP/1.1\n"+
+                "Host: 1.2.3.4\n"+
+                "\n"+
+
+                "GET / HTTP/1.1\n"+
+                "Host: 1.2.3.4:8888\n"+
+                "\n"+
+
+                "GET / HTTP/1.1\n"+
+                "Host: [::1]\n"+
+                "\n"+
+
+                "GET / HTTP/1.1\n"+
+                "Host: [::1]:8888\n"+
+                "\n"+
+
+                "GET / HTTP/1.1\n"+
+                "Host: [::1]\n"+
+                "x-forwarded-for: remote\n"+
+                "x-forwarded-proto: https\n"+
+                "\n"+
+
+                "GET / HTTP/1.1\n"+
+                "Host: [::1]:8888\n"+
+                "x-forwarded-for: remote\n"+
+                "x-forwarded-proto: https\n"+
+                "\n"
+                );
+
+        int i=0;
+        assertEquals(null,results.get(i++));
+        assertEquals("myhost",results.get(i++));
+        assertEquals("80",results.get(i++));
+        assertEquals(null,results.get(i++));
+        assertEquals("myhost",results.get(i++));
+        assertEquals("8888",results.get(i++));
+        assertEquals(null,results.get(i++));
+        assertEquals("1.2.3.4",results.get(i++));
+        assertEquals("80",results.get(i++));
+        assertEquals(null,results.get(i++));
+        assertEquals("1.2.3.4",results.get(i++));
+        assertEquals("8888",results.get(i++));
+        assertEquals(null,results.get(i++));
+        assertEquals("[::1]",results.get(i++));
+        assertEquals("80",results.get(i++));
+        assertEquals(null,results.get(i++));
+        assertEquals("[::1]",results.get(i++));
+        assertEquals("8888",results.get(i++));
+        assertEquals("remote",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
+        assertEquals("443",results.get(i++));
+        assertEquals("remote",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
+        assertEquals("8888",results.get(i++));
+
     }
 
     @Test
