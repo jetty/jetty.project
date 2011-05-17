@@ -2,6 +2,7 @@ jetty-7.4.2-SNAPSHOT
  + 345729 binding for managing server and system classes globally
  + 345615 Enable SSL Session caching
  + 345763 Source file is updated during the build
+ + 345873 Update jetty-ssl.xml to new style
  + 346014 Fixed full HttpGenerator
 
 jetty-7.4.1.v20110513
