@@ -100,7 +100,7 @@
                             javax.security.auth.message*;resolution:=optional,
                             *
                         </Import-Package>
-                        <Export-Package>org.eclipse.jetty*</Export-Package>
+                        <Export-Package>org.eclipse.jetty*;version="${parsedVersion.osgiVersion}"</Export-Package>
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions
                         of the packages it uses; no need to reflect some tight dependency determined at
                         compilation time. -->

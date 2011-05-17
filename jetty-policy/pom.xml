@@ -27,7 +27,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Export-Package>org.eclipse.jetty.policy.*</Export-Package>
+                <Export-Package>org.eclipse.jetty.policy.*;version="${parsedVersion.osgiVersion}"</Export-Package>
               </instructions>
             </configuration>
           </execution>
