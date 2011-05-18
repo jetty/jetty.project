@@ -15,6 +15,7 @@ package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.Channel;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -28,6 +29,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import javax.management.RuntimeErrorException;
 
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -389,12 +392,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 int changes=_changes.size();
                 while (changes-->0 && (change=_changes.poll())!=null)
                 {
+                    Channel ch=null;
+                    SelectionKey key=null;
+                    
                     try
                     {
                         if (change instanceof EndPoint)
                         {
                             // Update the operations for a key.
                             SelectChannelEndPoint endpoint = (SelectChannelEndPoint)change;
+                            ch=endpoint.getChannel();
                             endpoint.doUpdateKey();
                         }
                         else if (change instanceof ChannelAndAttachment)
@@ -402,25 +409,27 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             // finish accepting/connecting this connection
                             final ChannelAndAttachment asc = (ChannelAndAttachment)change;
                             final SelectableChannel channel=asc._channel;
+                            ch=channel;
                             final Object att = asc._attachment;
                             
                             if ((channel instanceof SocketChannel) && ((SocketChannel)channel).isConnected())
                             {
-                                SelectionKey key = channel.register(selector,SelectionKey.OP_READ,att);
+                                key = channel.register(selector,SelectionKey.OP_READ,att);
                                 SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
                                 key.attach(endpoint);
                                 endpoint.schedule();
                             }
                             else if (channel.isOpen())
                             {
-                                channel.register(selector,SelectionKey.OP_CONNECT,att);
+                                key = channel.register(selector,SelectionKey.OP_CONNECT,att);
                             }
                         }
                         else if (change instanceof SocketChannel)
                         {
                             // Newly registered channel
                             final SocketChannel channel=(SocketChannel)change;
-                            SelectionKey key = channel.register(selector,SelectionKey.OP_READ,null);
+                            ch=channel;
+                            key = channel.register(selector,SelectionKey.OP_READ,null);
                             SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
                             endpoint.schedule();
@@ -432,19 +441,27 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         else
                             throw new IllegalArgumentException(change.toString());
                     }
-                    catch (Exception e)
+                    catch (Throwable e)
                     {
+                        if (e instanceof ThreadDeath)
+                            throw (ThreadDeath)e;
+                        
                         if (isRunning())
                             Log.warn(e);
                         else
                             Log.debug(e);
-                    }
-                    catch (Error e)
-                    {
-                        if (isRunning())
-                            Log.warn(e);
-                        else
-                            Log.debug(e);
+                        
+                        if(ch!=null && key==null)
+                        {
+                            try
+                            {
+                                ch.close();
+                            }
+                            catch(IOException e2)
+                            {
+                                Log.debug(e2);
+                            }
+                        }
                     }
                 }
 
@@ -689,27 +706,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
                 else if (_jvmBug==__JVMBUG_THRESHHOLD)
                 {
-                    synchronized (this)
-                    {
-                        // BLOODY SUN BUG !!!  Try refreshing the entire selector.
-                        final Selector new_selector = Selector.open();
-                        for (SelectionKey k: selector.keys())
-                        {
-                            if (!k.isValid() || k.interestOps()==0)
-                                continue;
-
-                            final SelectableChannel channel = k.channel();
-                            final Object attachment = k.attachment();
-
-                            if (attachment==null)
-                                addChange(channel);
-                            else
-                                addChange(channel,attachment);
-                        }
-                        _selector.close();
-                        _selector=new_selector;
-                        return;
-                    }
+                    renewSelector();
                 }
                 else if (_jvmBug%32==31) // heuristic attempt to cancel key 31,63,95,... loops
                 {
@@ -766,6 +763,40 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
         
         /* ------------------------------------------------------------ */
+        private void renewSelector() 
+        {
+            try
+            {
+                synchronized (this)
+                {
+                    Selector selector=_selector;
+                    if (selector==null)
+                        return;
+                    final Selector new_selector = Selector.open();
+                    for (SelectionKey k: selector.keys())
+                    {
+                        if (!k.isValid() || k.interestOps()==0)
+                            continue;
+
+                        final SelectableChannel channel = k.channel();
+                        final Object attachment = k.attachment();
+
+                        if (attachment==null)
+                            addChange(channel);
+                        else
+                            addChange(channel,attachment);
+                    }
+                    _selector.close();
+                    _selector=new_selector;
+                }
+            }
+            catch(IOException e)
+            {
+                throw new RuntimeException("recreating selector",e);
+            }
+        }
+        
+        /* ------------------------------------------------------------ */
         public SelectorManager getManager()
         {
             return SelectorManager.this;
@@ -800,9 +831,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         /* ------------------------------------------------------------ */
         public void wakeup()
         {
-            Selector selector = _selector;
-            if (selector!=null)
-                selector.wakeup();
+            try
+            {
+                Selector selector = _selector;
+                if (selector!=null)
+                    selector.wakeup();
+            }
+            catch(Exception e)
+            {
+                renewSelector();
+            }
         }
         
         /* ------------------------------------------------------------ */
