@@ -19,11 +19,10 @@
   </properties>
   <modules>
     <module>jetty-osgi-boot</module>
-    <!-- remove until we update the code to make it work with the jsp-2.2 jars -->
     <module>jetty-osgi-boot-jsp</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
-    <!--module>test-jetty-osgi</module-->
+    <module>test-jetty-osgi</module>
   </modules>
   <build>
     <resources>

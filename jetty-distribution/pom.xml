@@ -9,14 +9,20 @@
   <name>Jetty :: Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
-    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
+    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/jetty8/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
-    <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
-    <orbit-javax-annotation-version>1.0.0.v20100513-0750</orbit-javax-annotation-version>
-    <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
+    <orbit-javax-activation-version>${javax-activation-version}.0.v201105071233</orbit-javax-activation-version>
+    <orbit-javax-annotation-version>1.1.0.v201105051105</orbit-javax-annotation-version>
+    <orbit-javax-el-version>2.2.0.v201105051105</orbit-javax-el-version>
     <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
-    <orbit-org-objectweb-asm-version>3.1.0.v200803061910</orbit-org-objectweb-asm-version>
+    <orbit-javax-servlet-version>3.0.0.v201103241727</orbit-javax-servlet-version>
+    <orbit-javax-servlet-jsp-version>2.2.0.v201103241009</orbit-javax-servlet-jsp-version>
+    <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
+    <orbit-com-sun-el-version>2.2.0.v201105051105</orbit-com-sun-el-version>
+    <orbit-org-apache-jasper-version>2.1.0.v201007080150</orbit-org-apache-jasper-version>
+    <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
+    <orbit-org-objectweb-asm-version>3.3.1.v201101071600</orbit-org-objectweb-asm-version>
     <orbit-javax-transaction-version>1.1.1.v201004190952</orbit-javax-transaction-version>
   </properties>
   <build>
@@ -63,9 +69,16 @@
 
                 <mkdir dir="${orbit-cache}" />
                 <get dest="${orbit-cache}" verbose="true" skipexisting="true">
+                  <url url="${jetty-orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.annotation_${orbit-javax-annotation-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.el_${orbit-javax-el-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
+                  <url url="${jetty-orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
+                  <url url="${jetty-orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
+                  <url url="${jetty-orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
+                  <url url="${jetty-orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
                   <url url="${jetty-orbit-url}/org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.transaction_${orbit-javax-transaction-version}.jar" />
                   <url url="${jetty-orbit-url}/ecj-${eclipse-ecj-version}.jar" />

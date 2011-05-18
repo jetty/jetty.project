@@ -32,10 +32,16 @@
         <groupId>org.eclipse.osgi</groupId>
         <artifactId>services</artifactId>
     </dependency>
+<!-- switch to 2.2 once it works in OSGi for us
     <dependency>
       <groupId>org.glassfish.web</groupId>
       <artifactId>jsp-impl</artifactId>
       <version>2.2</version>
+    </dependency> -->
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jsp-2.1-glassfish</artifactId>
+      <version>2.1.v20100127</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet.jsp</groupId>
@@ -60,6 +66,7 @@
       <url>http://download.java.net/maven/2/</url>
     </repository>
   </repositories>
+
 
   <build>
     <plugins>
