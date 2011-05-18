@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
-import junit.framework.Assert;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.Scanner.Notification;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -84,15 +84,10 @@ public class ScannerTest
         }
     }
 
-    private void assumeNotWindows()
-    {
-        Assume.assumeTrue(!System.getProperty("os.name").toLowerCase().contains("windows"));
-    }
-
     @Test
     public void testAddedChangeRemove() throws Exception
     {
-        assumeNotWindows();
+        Assume.assumeTrue(!OS.IS_WINDOWS && !OS.IS_OSX);
 
         touch("a0");
 
@@ -200,7 +195,7 @@ public class ScannerTest
     @Test
     public void testSizeChange() throws Exception
     {
-        assumeNotWindows();
+        Assume.assumeTrue(!OS.IS_WINDOWS && !OS.IS_OSX);
 
         touch("tsc0");
         _scanner.scan();

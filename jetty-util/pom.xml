@@ -70,6 +70,11 @@
   </build>
   <dependencies>
     <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-test-helper</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -80,6 +85,5 @@
       <scope>provided</scope>
       <optional>true</optional>
     </dependency>
-
   </dependencies>
 </project>
