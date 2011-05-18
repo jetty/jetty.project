@@ -13,18 +13,24 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
@@ -34,9 +40,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class StressTest
 {
@@ -114,6 +117,8 @@ public class StressTest
     @Test
     public void testNonPersistent() throws Throwable
     {
+    	assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+    	
         doThreads(10,100,false);
         if (Stress.isEnabled())
         {
@@ -127,6 +132,8 @@ public class StressTest
     @Test
     public void testPersistent() throws Throwable
     {
+    	assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+    	
         doThreads(20,100,true);
         if (Stress.isEnabled())
         {
