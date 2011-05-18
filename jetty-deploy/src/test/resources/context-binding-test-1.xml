@@ -1,6 +1,10 @@
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
-  <Array id="serverClasses" type="java.lang.String">
+  <Call name="addServerClass">
+    <Arg>org.eclipse.foo.</Arg>
+  </Call>
+
+  <!-- Array id="serverClasses" type="java.lang.String">
     <Item>-org.eclipse.jetty.continuation.</Item>
     <Item>-org.eclipse.jetty.jndi.</Item>
     <Item>-org.eclipse.jetty.plus.jaas.</Item>
@@ -23,5 +27,5 @@
   </Array>
 
   <Set name="serverClasses"><Ref id="serverClasses"/></Set>
-  <Set name="systemClasses"><Ref id="systemClasses"/></Set>
+  <Set name="systemClasses"><Ref id="systemClasses"/></Set-->
 </Configure>
