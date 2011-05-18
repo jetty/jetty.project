@@ -1246,7 +1246,8 @@ public class SslContextFactory extends AbstractLifeCycle
                      "input stream for resource "+resource.toString());
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
     /** 
     * @return true if SSL Session caching is enabled
     */
