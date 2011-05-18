@@ -35,7 +35,7 @@
         <Ref id="DeploymentManager">
           <Call name="addLifeCycleBinding">
             <Arg>
-              <New class="org.eclipse.jetty.deploy.bindings.GlobalJettyXmlBinding">
+              <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
                 <Set name="jettyXml">file://<SystemProperty name="jetty.home" />/context-binding-test-1.xml</Set>
               </New>
             </Arg>

@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
  */
-public class GlobalJettyXmlBindingTest
+public class GlobalWebappConfigBindingTest
 {
 	@Rule
 	public TestingDir testdir = new TestingDir();

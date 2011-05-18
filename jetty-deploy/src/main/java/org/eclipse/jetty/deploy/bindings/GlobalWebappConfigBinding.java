@@ -12,7 +12,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-public class GlobalJettyXmlBinding implements AppLifeCycle.Binding
+public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
 {
 
     private String _jettyXml;
