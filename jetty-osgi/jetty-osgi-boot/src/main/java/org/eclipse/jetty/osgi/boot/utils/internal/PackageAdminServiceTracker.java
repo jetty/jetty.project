@@ -169,7 +169,7 @@ public class PackageAdminServiceTracker implements ServiceListener
     protected List<Bundle> getRequiredBundles(Bundle bundle, PackageAdmin admin)
     {
     	List<Bundle> res = new ArrayList<Bundle>();
-    	String requiredBundleHeader = bundle.getHeaders().get("Require-Bundle");
+    	String requiredBundleHeader = (String)bundle.getHeaders().get("Require-Bundle");
     	if (requiredBundleHeader == null)
     	{
     		return res;
