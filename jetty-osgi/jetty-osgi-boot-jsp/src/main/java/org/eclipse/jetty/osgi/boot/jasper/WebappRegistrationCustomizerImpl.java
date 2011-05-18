@@ -24,7 +24,6 @@ import javax.servlet.jsp.JspFactory;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.compiler.Localizer;
-import org.apache.jasper.runtime.TldScanner;
 import org.apache.jasper.xmlparser.ParserUtils;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiAppProvider;

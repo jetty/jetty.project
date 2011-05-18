@@ -117,6 +117,7 @@
  javax.servlet.http;version="2.5.0",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
+ org.eclipse.jetty.nested;version="8.0.0";resolution:=optional,
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
