@@ -115,6 +115,21 @@
                   </fileset>
                 </copy>
 
+                <!-- ${jetty.home}/lib/jsp/ -->
+<!-- Review with the team
+                <mkdir dir="${assembly-directory}/lib/jsp" />
+                <copy todir="${assembly-directory}/lib/jsp">
+                  <fileset dir="${orbit-cache}">
+                    <include name="javax.el_${orbit-javax-el-version}.jar" />
+                    <include name="javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
+                    <include name="javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
+                    <include name="com.sun.el_${orbit-com-sun-el-version}.jar" />
+                    <include name="org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
+                    <include name="org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
+                    <include name="ecj-${eclipse-ecj-version}.jar" />
+                  </fileset>
+                </copy>
+-->
                 <copy file="../VERSION.txt" todir="${assembly-directory}" />
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
