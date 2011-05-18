@@ -21,8 +21,8 @@ Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  org.osgi.service.url;version="1.0.0",
  org.osgi.util.tracker;version="1.3.0",
  org.slf4j;resolution:=optional,
- org.slf4j.spi;resolution:=optional, 
  org.slf4j.helpers;resolution:=optional,
+ org.slf4j.spi;resolution:=optional,
  org.xml.sax,
  org.xml.sax.helpers
 Bundle-RequiredExecutionEnvironment: J2SE-1.5

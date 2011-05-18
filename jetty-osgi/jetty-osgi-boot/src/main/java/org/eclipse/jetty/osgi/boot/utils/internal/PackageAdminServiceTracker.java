@@ -13,7 +13,10 @@
 package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -100,6 +103,115 @@ public class PackageAdminServiceTracker implements ServiceListener
         PackageAdmin admin = (PackageAdmin)_context.getService(sr);
         return admin.getFragments(bundle);
     }
+    
+    /**
+     * Returns the fragments and the required-bundles that have a jetty-web annotation attribute
+     * compatible with the webFragOrAnnotationOrResources.
+     * @param bundle
+     * @param webFragOrAnnotationOrResources
+     * @return
+     */
+    public Bundle[] getFragmentsAndRequiredBundles(Bundle bundle)
+    {
+        ServiceReference sr = _context.getServiceReference(PackageAdmin.class.getName());
+        if (sr == null)
+        {//we should never be here really.
+            return null;
+        }
+        PackageAdmin admin = (PackageAdmin)_context.getService(sr);
+        Bundle[] fragments = admin.getFragments(bundle);
+        //get the required bundles. we can't use the org.osgi.framework.wiring package
+        //just yet: it is not supported by enough osgi implementations.
+        List<Bundle> requiredBundles = getRequiredBundles(bundle, admin);
+        if (fragments != null)
+        {
+        	Set<String> already = new HashSet<String>();
+        	for (Bundle b : requiredBundles)
+        	{
+        		already.add(b.getSymbolicName());
+        	}
+	        //Also add the bundles required by the fragments.
+	        //this way we can inject onto an existing web-bundle a set of bundles that extend it
+        	for (Bundle f : fragments)
+        	{
+        		List<Bundle> requiredBundlesByFragment = getRequiredBundles(f, admin);
+        		for (Bundle b : requiredBundlesByFragment)
+        		{
+        			if (already.add(b.getSymbolicName()))
+        			{
+        				requiredBundles.add(b);
+        			}
+        		}
+        	}
+        }
+        ArrayList<Bundle> bundles = new ArrayList<Bundle>(
+        		(fragments != null ? fragments.length : 0) +
+        		(requiredBundles != null ? requiredBundles.size() : 0));
+        if (fragments != null)
+        {
+        	for (Bundle f : fragments)
+        	{
+        		bundles.add(f);
+        	}
+        }
+        if (requiredBundles != null)
+        {
+        	bundles.addAll(requiredBundles);
+        }
+        return bundles.toArray(new Bundle[bundles.size()]);
+    }
+    
+    /**
+     * A simplistic but good enough parser for the Require-Bundle header.
+     * @param bundle
+     * @return The map of required bundles associated to the value of the jetty-web attribute.
+     */
+    protected List<Bundle> getRequiredBundles(Bundle bundle, PackageAdmin admin)
+    {
+    	List<Bundle> res = new ArrayList<Bundle>();
+    	String requiredBundleHeader = bundle.getHeaders().get("Require-Bundle");
+    	if (requiredBundleHeader == null)
+    	{
+    		return res;
+    	}
+    	StringTokenizer tokenizer = new StringTokenizer(requiredBundleHeader, ",");
+    	while (tokenizer.hasMoreTokens())
+    	{
+    		String tok = tokenizer.nextToken().trim();
+    		StringTokenizer tokenizer2 = new StringTokenizer(tok, ";");
+    		String symbolicName = tokenizer2.nextToken().trim();
+    		String versionRange = null;
+    		while (tokenizer2.hasMoreTokens())
+    		{
+    			String next = tokenizer2.nextToken().trim();
+    			if (next.startsWith("bundle-version="))
+    			{
+    				if (next.startsWith("bundle-version=\"") || next.startsWith("bundle-version='"))
+    				{
+    					versionRange = next.substring("bundle-version=\"".length(), next.length()-1);
+    				}
+    				else
+    				{
+    					versionRange = next.substring("bundle-version=".length());
+    				}
+    			}
+    		}
+    		Bundle[] reqBundles = admin.getBundles(symbolicName, versionRange);
+    		if (reqBundles != null)
+    		{
+	    		for (Bundle b : reqBundles)
+	    		{
+	    			if (b.getState() == Bundle.ACTIVE || b.getState() == Bundle.STARTING)
+	    			{
+	    				res.add(b);
+	    				break;
+	    			}
+	    		}
+    		}
+    	}
+    	return res;
+    }
+    
 
     private void invokeFragmentActivators(ServiceReference sr)
     {

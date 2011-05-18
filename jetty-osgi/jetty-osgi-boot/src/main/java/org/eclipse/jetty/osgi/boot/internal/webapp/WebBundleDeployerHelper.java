@@ -501,7 +501,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         wah.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundle);
 
         
-        Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragments(contributor);
+        Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(contributor);
         if (fragments != null && fragments.length != 0)
         {
             //sorted extra resource base found in the fragments.
