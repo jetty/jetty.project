@@ -30,17 +30,13 @@
       <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
         <Set name="contexts">
           <Ref id="Contexts" />
-        </Set>
-        
-        
+        </Set>      
         
         <Ref id="DeploymentManager">
           <Call name="addLifeCycleBinding">
             <Arg>
-              <New class="org.eclipse.jetty.deploy.bindings.WebappClasspathPatternBinding">
-                <Set name="override">true</Set>
-                <Set name="serverClasses"><Ref id="serverClasses"/></Set>
-                <Set name="systemClasses"><Ref id="systemClasses"/></Set>         
+              <New class="org.eclipse.jetty.deploy.bindings.GlobalJettyXmlBinding">
+                <Set name="jettyXml">file://<SystemProperty name="jetty.home" />/context-binding-test-1.xml</Set>
               </New>
             </Arg>
           </Call>

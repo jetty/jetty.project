@@ -15,21 +15,26 @@
 // ========================================================================
 package org.eclipse.jetty.deploy.bindings;
 
+import java.io.File;
+
 import junit.framework.Assert;
 
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
  */
-public class WebappClasspathPatternBindingTest
+public class GlobalJettyXmlBindingTest
 {
 	@Rule
 	public TestingDir testdir = new TestingDir();
@@ -40,17 +45,11 @@ public class WebappClasspathPatternBindingTest
     {
         jetty = new XmlConfiguredJetty(testdir);
         jetty.addConfiguration("jetty.xml");
-//        jetty.addConfiguration("jetty-deploymgr-contexts.xml");
 
         // Setup initial context
         jetty.copyContext("foo.xml","foo.xml");
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
 
-        // Should not throw an Exception
-    //    jetty.load();
-
-        // Start it
-      //  jetty.start();
     }
 
     @After
@@ -63,6 +62,8 @@ public class WebappClasspathPatternBindingTest
     @Test
     public void testServerAndSystemClassesOverride() throws Exception
     {
+        IO.copy(MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml"), new File(jetty.getJettyHome(), "context-binding-test-1.xml"));
+        
         jetty.addConfiguration("binding-test-contexts-1.xml");
         jetty.load();
         jetty.start();
@@ -100,46 +101,5 @@ public class WebappClasspathPatternBindingTest
         
         Assert.assertFalse(jndiPackage);
     }
-
-    @Test
-    public void testServerAndSystemClassesModification() throws Exception
-    {
-        jetty.addConfiguration("binding-test-contexts-2.xml");
-        jetty.load();
-        jetty.start();
-        
-        WebAppContext context = jetty.getWebAppContexts().get(0);
-        
-        Assert.assertNotNull(context);
-        Assert.assertEquals(context.getDefaultServerClasses().length,context.getServerClasses().length - 1); // added a pattern
-        Assert.assertEquals(context.getDefaultSystemClasses().length,context.getSystemClasses().length - 1); // added a pattern
-        
-        boolean testPackageServer = false;
-        
-
-        for (String entry : context.getSystemClasses())
-        {
-            if ("com.foo.test.".equals(entry))
-            {
-                testPackageServer = true;
-            }
-        }
-        
-        Assert.assertTrue(testPackageServer);
-        
-        boolean testPackageSystem = false;
-        
-      
-        for (String entry : context.getSystemClasses())
-        {
-            if ("com.foo.test.".equals(entry))
-            {
-                testPackageSystem = true;
-            }
-        }
-        
-        Assert.assertTrue(testPackageSystem);
-    }
-
 }
 
