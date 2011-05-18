@@ -6,6 +6,7 @@ jetty-7.4.2-SNAPSHOT
  + 345873 Update jetty-ssl.xml to new style
  + 345900 Handle ipv6 with default port
  + 346014 Fixed full HttpGenerator
+ + 346124 ServletContext resources paths not resolved correctly when using UNC shares 
  + 346179 o.e.j.util.ScannerTest fails on MacOS X platform
  + 346181 o.e.j.server.StressTest stalls on MacOS X platform
  + JETTY-1342 Recreate selector if wakeup throws JVM bug
