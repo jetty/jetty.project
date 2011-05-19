@@ -55,7 +55,7 @@ import org.xml.sax.SAXException;
  * 
  * <p>
  * The actual XML file format may be changed (eg to spring XML) by implementing the {@link ConfigurationProcessorFactory} interfaces to be found by the
- * {@link ServiceLoader} by using the DTD and first tag element in the file. Note that DTD will be null if validation is off.
+ * <code>ServiceLoader</code> by using the DTD and first tag element in the file. Note that DTD will be null if validation is off.
  * 
  */
 public class XmlConfiguration

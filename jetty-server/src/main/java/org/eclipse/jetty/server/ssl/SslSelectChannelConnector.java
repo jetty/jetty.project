@@ -578,7 +578,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------ */
     /**
-     * @param channel, A channel which if passed is used as to extract remote 
+     * @param channel A channel which if passed is used as to extract remote 
      * host and port for the purposes of SSL session caching
      * @return A SSLEngine for a new or cached SSL Session
      * @throws IOException

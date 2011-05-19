@@ -319,9 +319,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         int _maxBinaryMessage=WebSocketConnectionD06.this._maxBinaryMessageSize;
 
         /* ------------------------------------------------------------ */
-        /**
-         * @see org.eclipse.jetty.websocket.WebSocketConnection#sendMessage(byte, java.lang.String)
-         */
         public synchronized void sendMessage(String content) throws IOException
         {
             if (_closedOut)
@@ -334,9 +331,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * @see org.eclipse.jetty.websocket.WebSocketConnection#sendMessage(byte, byte[], int, int)
-         */
         public synchronized void sendMessage(byte[] content, int offset, int length) throws IOException
         {
             if (_closedOut)
@@ -348,9 +342,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
 
         /* ------------------------------------------------------------ */
-        /**
-         * @see org.eclipse.jetty.websocket.WebSocketConnection#sendFrame(boolean, byte, byte[], int, int)
-         */
         public void sendFrame(byte flags,byte opcode, byte[] content, int offset, int length) throws IOException
         {
             if (_closedOut)
