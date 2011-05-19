@@ -85,6 +85,7 @@ public class PolicyMonitorTest
         permFile.setLastModified(System.currentTimeMillis());
                         
         monitor.waitForScan();
+        monitor.waitForScan();
 
         Assert.assertEquals(2,count.get());
         monitor.stop();
