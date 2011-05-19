@@ -771,8 +771,8 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param The
-     *            header name holding a forwarded SSL Session ID (default null)
+     * @param forwardedSslSessionId
+     *            The header name holding a forwarded SSL Session ID (default null)
      */
     public void setForwardedSslSessionIdHeader(String forwardedSslSessionId)
     {
