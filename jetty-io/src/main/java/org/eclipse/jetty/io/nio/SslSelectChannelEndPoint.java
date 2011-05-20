@@ -189,13 +189,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
     /* ------------------------------------------------------------ */
     @Override
-    public void shutdownInput() throws IOException
-    {
-        // Nothing to do here. If the socket is open, let the SSL close handshake work, else the socket is closed anyway.
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
     public void shutdownOutput() throws IOException
     {
         sslClose();
@@ -687,7 +680,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             _inNIOBuffer.clear();
 
         int total_filled=0;
-
+        boolean remoteClosed = false;
         // loop filling as much encrypted data as we can into the buffer
         while (_inNIOBuffer.space()>0 && super.isOpen())
         {
@@ -695,8 +688,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             {
                 int filled=super.fill(_inNIOBuffer);
                 if (_debug) __log.debug(_session+" unwrap filled "+filled);
-                // break the loop if no progress is made (we have read everything
-                // there is to read).
+                if (filled < 0)
+                    remoteClosed = true;
+                // break the loop if no progress is made (we have read everything there is to read)
                 if (filled<=0)
                     break;
                 total_filled+=filled;
@@ -719,7 +713,24 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         // If we have no progress and no data
         if (total_filled==0 && _inNIOBuffer.length()==0)
         {
-            if(!isOpen())
+            if (isOpen())
+            {
+                if (remoteClosed)
+                {
+                    try
+                    {
+                        _engine.closeInbound();
+                    }
+                    catch (SSLException x)
+                    {
+                        // It may happen, for example, in case of truncation
+                        // attacks, we close so that we do not spin forever.
+                        freeOutBuffer();
+                        super.close();
+                    }
+                }
+            }
+            else
             {
                 freeOutBuffer();
                 throw new EofException();
