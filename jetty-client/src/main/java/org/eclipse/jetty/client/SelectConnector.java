@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -48,11 +47,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
-    private int _maxBuffers=1024;
-    private boolean _enableSslSessionCaching;
 
     /**
-     * @param httpClient
+     * @param httpClient the HttpClient this connector is associated to
      */
     SelectConnector(HttpClient httpClient)
     {
@@ -74,7 +71,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         _sslBuffers = BuffersFactory.newBuffers(
                 direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
                 direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
-                direct?Type.DIRECT:Type.INDIRECT,_maxBuffers);
+                direct?Type.DIRECT:Type.INDIRECT,1024);
 
         _httpClient._threadPool.dispatch(this);
     }
@@ -211,20 +208,15 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 
         private synchronized SSLEngine newSslEngine(SocketChannel channel) throws IOException
         {
-            if (_sslContext==null)
-            {
-                SslContextFactory factory = _httpClient.getSslContextFactory();
-                _sslContext = factory.getSslContext();
-                _enableSslSessionCaching = factory.isEnableSessionCaching();
-            }
+            SslContextFactory sslContextFactory = _httpClient.getSslContextFactory();
+            if (_sslContext == null)
+                _sslContext = sslContextFactory.getSslContext();
 
-            SSLEngine sslEngine = null;
-            if (channel != null && _enableSslSessionCaching)
+            SSLEngine sslEngine;
+            if (channel != null && sslContextFactory.isSessionCachingEnabled())
             {
-                InetSocketAddress remoteAddr = (InetSocketAddress)channel.socket().getRemoteSocketAddress();
-                String peerHost = remoteAddr.getHostName();
-                int peerPort = remoteAddr.getPort();
-                
+                String peerHost = channel.socket().getInetAddress().getHostAddress();
+                int peerPort = channel.socket().getPort();
                 sslEngine = _sslContext.createSSLEngine(peerHost, peerPort);
             }
             else
