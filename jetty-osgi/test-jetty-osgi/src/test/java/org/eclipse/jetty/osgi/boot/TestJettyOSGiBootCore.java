@@ -72,8 +72,8 @@ public class TestJettyOSGiBootCore
                // CoreOptions.equinox(),
                 
                 mavenBundle().groupId( "org.mortbay.jetty" ).artifactId( "servlet-api" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse" ).artifactId( "osgi" ).versionAsInProject().noStart(),
-                mavenBundle().groupId( "org.eclipse.osgi" ).artifactId( "services" ).versionAsInProject().noStart(),
+                mavenBundle().groupId( "org.eclipse.osgi" ).artifactId( "org.eclipse.osgi" ).versionAsInProject().noStart(),
+                mavenBundle().groupId( "org.eclipse.osgi" ).artifactId( "org.eclipse.osgi.services" ).versionAsInProject().noStart(),
 
                 mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-deploy" ).versionAsInProject().noStart(),   
                 mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-server" ).versionAsInProject().noStart(),   

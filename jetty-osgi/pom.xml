@@ -11,8 +11,8 @@
   <name>Jetty :: OSGi</name>
   <packaging>pom</packaging>
   <properties>
-    <osgi-version>3.5.0.v20090520</osgi-version>
-    <osgi-services-version>3.1.200-v20070605</osgi-services-version>
+    <osgi-version>3.6.0.v20100517</osgi-version>
+    <osgi-services-version>3.2.100.v20100503</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
     <!--equinox-servletbridge-version>1.0.0-v20070523</equinox-servletbridge-version-->
     <jsp-2.1-glassfish-version>2.1.v20100127</jsp-2.1-glassfish-version>
@@ -25,6 +25,7 @@
     <module>jetty-osgi-boot-logback</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
+    <module>jetty-osgi-equinoxtools</module>
     <module>test-jetty-osgi</module>
   </modules>
   <build>
@@ -74,6 +75,16 @@
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-continuation</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-websocket</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -108,14 +119,14 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse</groupId>
-        <artifactId>osgi</artifactId>
-        <version>${osgi-version}</version>
+        <groupId>org.eclipse.osgi</groupId>
+        <artifactId>org.eclipse.osgi.services</artifactId>
+        <version>${osgi-services-version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.osgi</groupId>
-        <artifactId>services</artifactId>
-        <version>${osgi-services-version}</version>
+        <artifactId>org.eclipse.osgi</artifactId>
+        <version>${osgi-version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.equinox.http</groupId>
