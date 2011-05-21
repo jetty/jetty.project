@@ -27,8 +27,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 import org.eclipse.osgi.framework.console.ConsoleSession;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkUtil;
 
 /**
  * Websocket version of the Chat with equinox.

@@ -29,8 +29,6 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.osgi.equinoxtools.WebEquinoxToolsActivator;
 import org.eclipse.jetty.osgi.equinoxtools.console.WebConsoleWriterOutputStream.OnFlushListener;
 import org.eclipse.osgi.framework.console.ConsoleSession;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkUtil;
 
 /**
  * Async servlet with jetty continuations to interact with the equinox console.
