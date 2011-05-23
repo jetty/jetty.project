@@ -683,10 +683,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 int filled=super.fill(_inNIOBuffer);
                 if (_debug) __log.debug(_session+" unwrap filled "+filled);
                 if (filled < 0)
-                {
-                    __log.info("{} fill() returned -1, _inNIOBuffer {}", _socket, _inNIOBuffer); // TODO: remove this
                     remoteClosed = true;
-                }
                 // break the loop if no progress is made (we have read everything there is to read)
                 if (filled<=0)
                     break;
@@ -732,12 +729,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 freeOutBuffer();
                 throw new EofException();
             }
-            __log.info("{} uwrap() returning false, _inNIOBuffer {}", _socket, _inNIOBuffer); // TODO: remove this
             return false;
         }
-
-        if (remoteClosed)
-            __log.info("{} uwrapping, _inNIOBuffer {}", _socket, _inNIOBuffer); // TODO: remove this
 
         // We have some in data, so try to unwrap it.
         try
