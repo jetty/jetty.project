@@ -165,13 +165,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         _allowRenegotiate = allowRenegotiate;
     }
 
-    /* ------------------------------------------------------------ */
-    // TODO get rid of these dumps
-    public void dump()
-    {
-        Log.info(""+_result);
-    }
-
 
     /* ------------------------------------------------------------ */
     @Override
@@ -195,6 +188,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         super.shutdownOutput();
     }
 
+    /* ------------------------------------------------------------ */
     protected void sslClose() throws IOException
     {
         if (_closing)

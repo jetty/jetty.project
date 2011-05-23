@@ -259,7 +259,7 @@ public class ServletHandler extends ScopedHandler
      */
     public RequestDispatcher getRequestDispatcher(String uriInContext)
     {
-        if (uriInContext == null)
+        if (uriInContext == null || _contextHandler==null)
             return null;
 
         if (!uriInContext.startsWith("/"))
@@ -1464,13 +1464,15 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
-        _contextHandler.destroyServlet(servlet);
+        if (_contextHandler!=null)
+            _contextHandler.destroyServlet(servlet);
     }
 
     /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
-        _contextHandler.destroyFilter(filter);
+        if (_contextHandler!=null)
+            _contextHandler.destroyFilter(filter);
     }
     
     /* ------------------------------------------------------------ */

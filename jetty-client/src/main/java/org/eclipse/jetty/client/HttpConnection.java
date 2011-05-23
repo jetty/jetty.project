@@ -17,6 +17,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.security.Authentication;
@@ -38,6 +39,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout;
 
@@ -45,7 +48,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
-public class HttpConnection extends AbstractConnection
+public class HttpConnection extends AbstractConnection implements Dumpable
 {
     private HttpDestination _destination;
     private HttpGenerator _generator;
@@ -63,16 +66,6 @@ public class HttpConnection extends AbstractConnection
     private final Timeout.Task _idleTimeout = new ConnectionIdleTask();
     private AtomicBoolean _idle = new AtomicBoolean(false);
 
-    public void dump() throws IOException
-    {
-        // TODO update to dumpable
-        Log.info("endp=" + _endp + " " + _endp.isBufferingInput() + " " + _endp.isBufferingOutput());
-        Log.info("generator=" + _generator);
-        Log.info("parser=" + _parser.getState() + " " + _parser.isMoreInBuffer());
-        Log.info("exchange=" + _exchange);
-        if (_endp instanceof SslSelectChannelEndPoint)
-            ((SslSelectChannelEndPoint)_endp).dump();
-    }
 
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
@@ -706,7 +699,29 @@ public class HttpConnection extends AbstractConnection
             }
         }
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump()
+     */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump(java.lang.Appendable, java.lang.String)
+     */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        synchronized (this)
+        {
+            out.append(String.valueOf(this)).append("\n");
+            AggregateLifeCycle.dump(out,indent,Collections.singletonList(_endp));
+        }
+    }
+    
     private class ConnectionIdleTask extends Timeout.Task
     {
         @Override

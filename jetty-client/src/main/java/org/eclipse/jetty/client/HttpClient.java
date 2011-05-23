@@ -33,6 +33,9 @@ import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -64,7 +67,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * @see HttpExchange
  * @see HttpDestination
  */
-public class HttpClient extends HttpBuffers implements Attributes
+public class HttpClient extends HttpBuffers implements Attributes, Dumpable
 {
     public static final int CONNECTOR_SOCKET = 0;
     public static final int CONNECTOR_SELECT_CHANNEL = 2;
@@ -147,21 +150,23 @@ public class HttpClient extends HttpBuffers implements Attributes
         _connectBlocking = connectBlocking;
     }
 
-    /* ------------------------------------------------------------------------------- */
-    public void dump()
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump()
+     */
+    public String dump()
     {
-        try
-        {
-            for (Map.Entry<Address, HttpDestination> entry : _destinations.entrySet())
-            {
-                Log.info("\n" + entry.getKey() + ":");
-                entry.getValue().dump();
-            }
-        }
-        catch(Exception e)
-        {
-            Log.warn(e);
-        }
+        return AggregateLifeCycle.dump(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump(java.lang.Appendable, java.lang.String)
+     */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dump(out,indent,_destinations.values());
     }
 
     /* ------------------------------------------------------------------------------- */

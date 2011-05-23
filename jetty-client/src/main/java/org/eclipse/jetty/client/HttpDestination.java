@@ -35,12 +35,14 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 
 /**
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
-public class HttpDestination
+public class HttpDestination implements Dumpable
 {
     private final List<HttpExchange> _queue = new LinkedList<HttpExchange>();
     private final List<HttpConnection> _connections = new LinkedList<HttpConnection>();
@@ -59,22 +61,8 @@ public class HttpDestination
     private PathMap _authorizations;
     private List<HttpCookie> _cookies;
 
-    public void dump() throws IOException
-    {
-        synchronized (this)
-        {
-            Log.info(this.toString());
-            Log.info("connections=" + _connections.size());
-            Log.info("idle=" + _idle.size());
-            Log.info("pending=" + _pendingConnections);
-            for (HttpConnection c : _connections)
-            {
-                if (!c.isIdle())
-                    c.dump();
-            }
-        }
-    }
 
+    
     HttpDestination(HttpClient client, Address address, boolean ssl)
     {
         _client = client;
@@ -653,6 +641,28 @@ public class HttpDestination
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump()
+     */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump(java.lang.Appendable, java.lang.String)
+     */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        synchronized (this)
+        {
+            out.append(String.valueOf(this)+"idle="+_idle.size()+" pending="+_pendingConnections).append("\n");
+            AggregateLifeCycle.dump(out,indent,_connections);
+        }
+    }
+    
     private class ConnectExchange extends ContentExchange
     {
         private final SelectConnector.ProxySelectChannelEndPoint proxyEndPoint;
