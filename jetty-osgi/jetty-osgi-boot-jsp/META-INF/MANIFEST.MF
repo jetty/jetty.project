@@ -40,6 +40,6 @@ Import-Package: com.sun.el;version="2.2.0";resolution:=optional,
  org.apache.taglibs.standard.tag.rt.xml;version="1.2.0";resolution:=optional,
  org.apache.taglibs.standard.tei;version="1.2.0";resolution:=optional,
  org.apache.taglibs.standard.tlv;version="1.2.0";resolution:=optional,
- org.glassfish.jsp.api;version="2.2.2"
+ org.glassfish.jsp.api;version="2.2.2";resolution:=optional
 DynamicImport-Package: org.apache.jasper.*;version="2.1.0"
 
