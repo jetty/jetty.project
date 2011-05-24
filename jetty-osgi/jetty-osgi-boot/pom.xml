@@ -102,7 +102,7 @@
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
-                        <Export-Package>org.eclipse.jetty.osgi.boot,org.eclipse.jetty.osgi.boot.utils</Export-Package> 
+                        <Export-Package>org.eclipse.jetty.osgi.boot;version="${parsedVersion.osgiVersion}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${parsedVersion.osgiVersion}"</Export-Package> 
                         <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions
                         of the packages it uses; no need to reflect some tight dependency determined at

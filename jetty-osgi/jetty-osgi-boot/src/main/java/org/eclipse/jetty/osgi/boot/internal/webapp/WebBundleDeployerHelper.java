@@ -44,6 +44,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.FragmentConfiguration;
+import org.eclipse.jetty.webapp.TagLibConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -499,7 +501,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         wah.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundle);
 
         
-        Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragments(contributor);
+        Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(contributor);
         if (fragments != null && fragments.length != 0)
         {
             //sorted extra resource base found in the fragments.
@@ -541,11 +543,79 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                     patchResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(patchFragUrl));
                 }
             }
-            if (!appendedResourcesPath.isEmpty()) {
+            if (!appendedResourcesPath.isEmpty())
+            {
             	wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, new ArrayList<Resource>(appendedResourcesPath.values()));
             }
-            if (!patchResourcesPath.isEmpty()) {
+            if (!patchResourcesPath.isEmpty())
+            {
             	wah.setAttribute(WebInfConfiguration.RESOURCE_URLS + ".patch", new ArrayList<Resource>(patchResourcesPath.values()));
+            }
+            
+            if (wah instanceof WebAppContext)
+            {
+            	//This is the equivalent of what MetaInfConfiguration does. For OSGi bundles without the JarScanner
+            	WebAppContext webappCtxt = (WebAppContext)wah;
+	            //take care of the web-fragments, meta-inf resources and tld resources:
+	            //similar to what MetaInfConfiguration does.
+	            List<Resource> frags = (List<Resource>)wah.getAttribute(FragmentConfiguration.FRAGMENT_RESOURCES);
+	            List<Resource> resfrags = (List<Resource>)wah.getAttribute(WebInfConfiguration.RESOURCE_URLS);
+	            List<Resource> tldfrags = (List<Resource>)wah.getAttribute(TagLibConfiguration.TLD_RESOURCES);
+	            for (Bundle frag : fragments)
+	            {
+	            	URL webFrag = frag.getEntry("/META-INF/web-fragment.xml");
+	            	Enumeration<URL> resEnum = frag.findEntries("/META-INF/resources", "*", true);
+	            	Enumeration<URL> tldEnum = frag.findEntries("/META-INF", "*.tld", false);
+	            	if (webFrag != null || (resEnum != null && resEnum.hasMoreElements())
+	            			|| (tldEnum != null && tldEnum.hasMoreElements()))
+	                {
+	                    try
+	                    {
+	                        File fragFile = BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(frag);
+	                        //add it to the webinf jars collection:
+	                        //no need to check that it was not there yet: it was not there yet for sure.
+	                        Resource fragFileAsResource = Resource.newResource(fragFile.toURI());
+	                        webappCtxt.getMetaData().addWebInfJar(fragFileAsResource);
+	                        
+	                        if (webFrag != null)
+	                        {
+		                        if (frags == null)
+		                        {
+		                            frags = new ArrayList<Resource>();
+		                            wah.setAttribute(FragmentConfiguration.FRAGMENT_RESOURCES, frags);
+		                        }
+		                        frags.add(fragFileAsResource);
+	                        }
+	                        if (resEnum != null && resEnum.hasMoreElements())
+	                        {
+		                        if (resfrags == null)
+		                        {
+		                        	resfrags = new ArrayList<Resource>();
+		                            wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, resfrags);
+		                        }
+		                        resfrags.add(Resource.newResource(
+		                        		DefaultFileLocatorHelper.getLocalURL(frag.getEntry("/META-INF/resources"))));
+	                        }
+	                        if (tldEnum != null && tldEnum.hasMoreElements())
+	                        {
+		                        if (tldfrags == null)
+		                        {
+		                        	tldfrags = new ArrayList<Resource>();
+		                            wah.setAttribute(TagLibConfiguration.TLD_RESOURCES, tldfrags);
+		                        }
+		                        while (tldEnum.hasMoreElements())
+		                        {
+		                        	tldfrags.add(Resource.newResource(
+		                        			DefaultFileLocatorHelper.getLocalURL(tldEnum.nextElement())));
+		                        }
+	                        }
+	                    }
+	                    catch (Exception e)
+	                    {
+	                        __logger.warn("Unable to locate the bundle " + frag.getBundleId(),e);
+	                    }
+	                }
+	            }
             }
         }
         
@@ -733,3 +803,4 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 
 
 }
+
