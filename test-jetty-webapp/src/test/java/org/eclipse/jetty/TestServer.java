@@ -49,7 +49,6 @@ public class TestServer
 {
     public static void main(String[] args) throws Exception
     {
-        Log.getLog().setDebugEnabled(false);
         ((StdErrLog)Log.getLog()).setSource(false);
         
         String jetty_root = "..";

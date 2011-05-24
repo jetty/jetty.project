@@ -21,6 +21,7 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -293,6 +294,8 @@ public class MetaData
     public void resolve (WebAppContext context)
     throws Exception
     {
+        Log.debug("metadata resolve {}",context);
+        
         //Ensure origins is fresh
         _origins.clear();
         
@@ -323,11 +326,17 @@ public class MetaData
             p.process(context,getWebDefault());
             p.process(context,getWebXml());
             for (WebDescriptor wd : getOverrideWebs())   
+            {
+                Log.debug("process {} {}",context,wd);
                 p.process(context,wd);
+            }
         }
         
         for (DiscoveredAnnotation a:_annotations)
+        {
+            Log.debug("apply {}",a);
             a.apply();
+        }
     
         
         List<Resource> resources = getOrderedWebInfJars();
@@ -338,6 +347,7 @@ public class MetaData
             {
                 for (DescriptorProcessor p:_descriptorProcessors)
                 {
+                    Log.debug("process {} {}",context,fd);
                     p.process(context,fd);
                 }
             }
@@ -346,7 +356,10 @@ public class MetaData
             if (fragAnnotations != null)
             {
                 for (DiscoveredAnnotation a:fragAnnotations)
+                {
+                    Log.debug("apply {}",a);
                     a.apply();
+                }
             }
         }
         

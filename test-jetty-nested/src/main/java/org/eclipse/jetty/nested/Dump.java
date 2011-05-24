@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
+import java.util.Map.Entry;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -494,6 +495,19 @@ public class Dump extends HttpServlet
                 }
             }
 
+            if ("true".equals(request.getParameter("env")))
+            {
+                pout.write("</tr><tr>\n");
+                pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Environment&nbsp;System-Properties:&nbsp;</big></th>");
+
+                for (Entry<Object, Object> e : System.getProperties().entrySet())
+                {
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">" + notag(String.valueOf(e.getKey())) + ":&nbsp;</th>");
+                    pout.write("<td>"+notag(String.valueOf(e.getValue()))+"</td>");
+                }
+            }
+
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Request Parameters:</big></th>");
             h= request.getParameterNames();
@@ -588,6 +602,56 @@ public class Dump extends HttpServlet
                 pout.write("<th align=\"right\">"+name+":&nbsp;</th>");
                 pout.write("<td>"+ toString(getInitParameter(name)) +"</td>");
             }
+
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"left\" colspan=\"2\"><big><br/>ServletContext Misc:</big></th>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\" valign=\"top\">"+"servletContext.getContextPath()"+":&nbsp;</th>");
+            pout.write("<td>"+ getServletContext().getContextPath() + "</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\" valign=\"top\">"+"getServletContext().getRealPath(\"/WEB-INF/\")"+":&nbsp;</th>");
+            pout.write("<td>"+ getServletContext().getRealPath("/WEB-INF/") + "</td>");
+            String webinfRealPath = getServletContext().getRealPath("/WEB-INF/");
+            if (webinfRealPath != null)
+            {
+                try
+                {
+                    File webInfRealPathFile = new File(webinfRealPath);
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\" valign=\"top\">"+"new File(getServletContext().getRealPath(\"/WEB-INF/\"))"+":&nbsp;</th>");
+                    pout.write("<td>exists()="+ webInfRealPathFile.exists()
+                            + "; isFile()="+webInfRealPathFile.isFile()
+                            + "; isDirectory()="+webInfRealPathFile.isDirectory()
+                            + "; isAbsolute()=" + webInfRealPathFile.isAbsolute()
+                            + "; canRead()=" + webInfRealPathFile.canRead()
+                            + "; canWrite()=" + webInfRealPathFile.canWrite()
+                            +"</td>");
+                    if (webInfRealPathFile.exists() && webInfRealPathFile.isDirectory())
+                    {
+                        File webxml = new File(webInfRealPathFile, "web.xml");
+                        pout.write("</tr><tr>\n");
+                        pout.write("<th align=\"right\" valign=\"top\">"+"new File(getServletContext().getRealPath(\"/WEB-INF/web.xml\"))"+":&nbsp;</th>");
+                        pout.write("<td>exists()="+ webxml.exists()
+                                + "; isFile()="+webxml.isFile()
+                                + "; isDirectory()="+webxml.isDirectory()
+                                + "; isAbsolute()=" + webxml.isAbsolute()
+                                + "; canRead()=" + webxml.canRead()
+                                + "; canWrite()=" + webxml.canWrite()
+                                +"</td>");
+                    }
+                }
+                catch (Throwable t)
+                {
+                    pout.write("<th align=\"right\" valign=\"top\">"+"Error probing the java.io.File(getServletContext().getRealPath(\"/WEB-INF/\"))"+":&nbsp;</th>");
+                    pout.write("<td>"+ t + "</td>");
+                }
+            }
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\" valign=\"top\">"+"getServletContext().getServerInfo()"+":&nbsp;</th>");
+            pout.write("<td>"+ getServletContext().getServerInfo() + "</td>");
+            pout.write("</tr><tr>\n");
+            pout.write("<th align=\"right\" valign=\"top\">"+"getServletContext().getServletContextName()"+":&nbsp;</th>");
+            pout.write("<td>"+ getServletContext().getServletContextName() + "</td>");
 
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Context InitParameters:</big></th>");

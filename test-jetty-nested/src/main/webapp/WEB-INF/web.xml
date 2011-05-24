@@ -8,7 +8,7 @@
   <display-name>Nested WebApp</display-name>
   
   <servlet>
-    <servlet-name>jetty</servlet-name>
+    <servlet-name>nestedJetty</servlet-name>
     <servlet-class>org.eclipse.jetty.nested.NestedJettyServlet</servlet-class>
     <init-param>
       <param-name>debug</param-name>
@@ -25,9 +25,28 @@
     <load-on-startup>0</load-on-startup>
   </servlet>
   <servlet-mapping>
-    <servlet-name>jetty</servlet-name>
+    <servlet-name>nestedJetty</servlet-name>
     <url-pattern>/*</url-pattern>  
   </servlet-mapping>
-</web-app>
+  
+  <servlet>
+    <servlet-name>test</servlet-name>
+    <servlet-class>org.eclipse.jetty.nested.TestServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>test</servlet-name>
+    <url-pattern>/test/*</url-pattern>  
+  </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>dump</servlet-name>
+    <servlet-class>org.eclipse.jetty.nested.Dump</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>dump</servlet-name>
+    <url-pattern>/outer/*</url-pattern>  
+  </servlet-mapping>
+  
+  </web-app>
 
 

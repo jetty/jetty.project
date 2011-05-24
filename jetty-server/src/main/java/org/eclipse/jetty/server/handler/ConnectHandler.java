@@ -670,6 +670,19 @@ public class ConnectHandler extends HandlerWrapper
             writeData();
             _endPoint.shutdownOutput();
         }
+
+        public void idleExpired()
+        {
+            try
+            {
+                shutdownOutput();
+            }
+            catch(Exception e)
+            {
+                Log.debug(e);
+                close();
+            }
+        }
     }
 
     public class ClientToProxyConnection implements Connection
@@ -818,6 +831,19 @@ public class ConnectHandler extends HandlerWrapper
         public void shutdownOutput() throws IOException
         {
             _endPoint.shutdownOutput();
+        }
+
+        public void idleExpired()
+        {
+            try
+            {
+                shutdownOutput();
+            }
+            catch(Exception e)
+            {
+                Log.debug(e);
+                close();
+            }
         }
     }
 

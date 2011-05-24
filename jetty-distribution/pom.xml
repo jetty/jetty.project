@@ -9,7 +9,7 @@
   <name>Jetty :: Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
-    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/jetty-8</jetty-orbit-url>
+    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
     <orbit-javax-activation-version>${javax-activation-version}.0.v201105071233</orbit-javax-activation-version>
@@ -53,7 +53,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.4</version>
         <executions>
           <execution>
             <phase>generate-resources</phase>
@@ -158,7 +157,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.1</version>
         <executions>
           <execution>
             <id>unpack</id>
@@ -271,6 +269,16 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-policy</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-overlay-deployer</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
                   <type>jar</type>
@@ -493,6 +501,24 @@
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-overlay-deployer</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-overlay-deployer</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-websocket</artifactId>
                   <version>${project.version}</version>
                   <type>jar</type>
@@ -513,6 +539,7 @@
             <descriptor>src/main/assembly/jetty-assembly.xml</descriptor>
           </descriptors>
           <tarLongFileMode>gnu</tarLongFileMode>
+          <appendAssemblyId>false</appendAssemblyId>
         </configuration>
         <executions>
           <execution>
@@ -607,6 +634,16 @@
       <groupId>${servlet.spec.groupId}</groupId>
       <artifactId>${servlet.spec.artifactId}</artifactId>
       <version>${servlet.spec.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-overlay-deployer</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-overlay-deployer</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

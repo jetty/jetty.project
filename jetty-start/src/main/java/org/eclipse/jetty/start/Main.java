@@ -58,7 +58,6 @@ public class Main
     private static final int EXIT_USAGE = 1;
     private static final int ERR_LOGGING = -1;
     private static final int ERR_INVOKE_MAIN = -2;
-    private static final int ERR_SECURITY = -3;
     private static final int ERR_NOT_STOPPED = -4;
     private static final int ERR_UNKNOWN = -5;
     private boolean _showUsage = false;
@@ -67,7 +66,6 @@ public class Main
     private boolean _listOptions = false;
     private boolean _dryRun = false;
     private boolean _exec = false;
-    private boolean _secure = false;
     private final Config _config = new Config();
     private Set<String> _sysProps = new HashSet<String>();
     private List<String> _jvmArgs = new ArrayList<String>();
@@ -195,13 +193,7 @@ public class Main
                     System.out.println("Establishing start.log on " + new Date());
                     continue;
                 }
-
-                if ("--secure".equals(arg))
-                {
-                    _secure = true;
-                    continue;
-                }
-
+                
                 if (arg.startsWith("--pre="))
                 {
                     xmls.add(startup++,arg.substring(6));
@@ -512,13 +504,6 @@ public class Main
             throw new FileNotFoundException("No XML configuration files specified in start.config or command line.");
         }
 
-        // Add mandatory options for secure mode
-        if (_secure)
-        {
-            _config.addActiveOption("policy");
-            _config.addActiveOption("security");
-        }
-
         // Normalize the XML config options passed on the command line.
         configuredXmls = resolveXmlConfigs(configuredXmls);
 
@@ -550,7 +535,6 @@ public class Main
         if (_dumpVersions)
         {
             showClasspathWithVersions(classpath);
-            showActiveSecurityPolicies(cl);
             return;
         }
 
@@ -594,9 +578,6 @@ public class Main
 
         // Set current context class loader to what is selected.
         Thread.currentThread().setContextClassLoader(cl);
-
-        // Initialize the Security
-        initSecurity(cl);
 
         // Invoke the Main Class
         try
@@ -855,46 +836,6 @@ public class Main
         }
     }
 
-    private void showActiveSecurityPolicies(ClassLoader cl)
-    {
-
-        initSecurity(cl);
-
-        Policy policy = Policy.getPolicy();
-
-        if (policy != null && policy.getClass().getName().contains("JettyPolicy"))
-        {
-            System.out.println("Active Security Policies: ");
-
-            try
-            {
-                Method m = policy.getClass().getMethod("dump",new Class[]{ PrintStream.class });
-                m.invoke(policy,new Object[]
-                { System.out });
-            }
-            catch (SecurityException e)
-            {
-                e.printStackTrace(System.err);
-            }
-            catch (NoSuchMethodException e)
-            {
-                e.printStackTrace(System.err);
-            }
-            catch (IllegalArgumentException e)
-            {
-                e.printStackTrace(System.err);
-            }
-            catch (IllegalAccessException e)
-            {
-                e.printStackTrace(System.err);
-            }
-            catch (InvocationTargetException e)
-            {
-                e.printStackTrace(System.err);
-            }
-        }
-    }
-
     private String fixPath(String path)
     {
         return path.replace('/',File.separatorChar);
@@ -930,31 +871,6 @@ public class Main
         return "";
     }
 
-    private void initSecurity(ClassLoader cl)
-    {
-        // Init the Security Policies
-        try
-        {
-            if (_secure)
-            {
-                Policy.setPolicy(_config.getPolicyInstance(cl));
-                System.setSecurityManager(new SecurityManager());
-                // Policy.getPolicy().refresh();
-            }
-            else
-            {
-                Policy policy = Policy.getPolicy();
-                if (policy != null)
-                {
-                    policy.refresh();
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            usageExit(e,ERR_SECURITY);
-        }
-    }
 
     private List<String> resolveXmlConfigs(List<String> xmls) throws FileNotFoundException
     {

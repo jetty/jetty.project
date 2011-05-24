@@ -38,8 +38,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * Abstract Connector implementation. This abstract implementation of the
- * Connector interface provides:
+ * Abstract Connector implementation. This abstract implementation of the Connector interface provides:
  * <ul>
  * <li>AbstractLifeCycle implementation</li>
  * <li>Implementations for connector getters and setters</li>
@@ -69,11 +68,13 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     private boolean _useDNS;
     private boolean _forwarded;
     private String _hostHeader;
-    
-    private String _forwardedHostHeader = "X-Forwarded-Host"; 
-    private String _forwardedServerHeader = "X-Forwarded-Server"; 
-    private String _forwardedForHeader = "X-Forwarded-For"; 
-    private String _forwardedProtoHeader = "X-Forwarded-Proto"; 
+
+    private String _forwardedHostHeader = "X-Forwarded-Host";
+    private String _forwardedServerHeader = "X-Forwarded-Server";
+    private String _forwardedForHeader = "X-Forwarded-For";
+    private String _forwardedProtoHeader = "X-Forwarded-Proto";
+    private String _forwardedCipherSuiteHeader;
+    private String _forwardedSslSessionIdHeader;
     private boolean _reuseAddress = true;
 
     protected int _maxIdleTime = 200000;
@@ -85,11 +86,11 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     private final AtomicLong _statsStartedAt = new AtomicLong(-1L);
 
     /** connections to server */
-    private final CounterStatistic _connectionStats = new CounterStatistic(); 
+    private final CounterStatistic _connectionStats = new CounterStatistic();
     /** requests per connection */
-    private final SampleStatistic _requestStats = new SampleStatistic(); 
+    private final SampleStatistic _requestStats = new SampleStatistic();
     /** duration of a connection */
-    private final SampleStatistic _connectionDurationStats = new SampleStatistic(); 
+    private final SampleStatistic _connectionDurationStats = new SampleStatistic();
 
     /* ------------------------------------------------------------ */
     /**
@@ -113,9 +114,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.http.HttpListener#getHttpServer()
-     */
     public ThreadPool getThreadPool()
     {
         return _threadPool;
@@ -144,18 +142,12 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.HttpListener#setPort(int)
-     */
     public void setPort(int port)
     {
         _port = port;
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.HttpListener#getPort()
-     */
     public int getPort()
     {
         return _port;
@@ -172,28 +164,20 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the maximum Idle time for a connection, which roughly translates to
-     * the {@link Socket#setSoTimeout(int)} call, although with NIO
-     * implementations other mechanisms may be used to implement the timeout.
-     * The max idle time is applied:
+     * Set the maximum Idle time for a connection, which roughly translates to the {@link Socket#setSoTimeout(int)} call, although with NIO implementations
+     * other mechanisms may be used to implement the timeout. The max idle time is applied:
      * <ul>
      * <li>When waiting for a new request to be received on a connection</li>
      * <li>When reading the headers and content of a request</li>
      * <li>When writing the headers and content of a response</li>
      * </ul>
-     * Jetty interprets this value as the maximum time between some progress
-     * being made on the connection. So if a single byte is read or written,
-     * then the timeout (if implemented by jetty) is reset. However, in many
-     * instances, the reading/writing is delegated to the JVM, and the semantic
-     * is more strictly enforced as the maximum time a single read/write
-     * operation can take. Note, that as Jetty supports writes of memory mapped
-     * file buffers, then a write may take many 10s of seconds for large content
-     * written to a slow device.
+     * Jetty interprets this value as the maximum time between some progress being made on the connection. So if a single byte is read or written, then the
+     * timeout (if implemented by jetty) is reset. However, in many instances, the reading/writing is delegated to the JVM, and the semantic is more strictly
+     * enforced as the maximum time a single read/write operation can take. Note, that as Jetty supports writes of memory mapped file buffers, then a write may
+     * take many 10s of seconds for large content written to a slow device.
      * <p>
-     * Previously, Jetty supported separate idle timeouts and IO operation
-     * timeouts, however the expense of changing the value of soTimeout was
-     * significant, so these timeouts were merged. With the advent of NIO, it
-     * may be possible to again differentiate these values (if there is demand).
+     * Previously, Jetty supported separate idle timeouts and IO operation timeouts, however the expense of changing the value of soTimeout was significant, so
+     * these timeouts were merged. With the advent of NIO, it may be possible to again differentiate these values (if there is demand).
      * 
      * @param maxIdleTime
      *            The maxIdleTime to set.
@@ -287,8 +271,8 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      */
     public void setAcceptors(int acceptors)
     {
-        if (acceptors > 2*Runtime.getRuntime().availableProcessors())
-            Log.warn("Acceptors should be <=2*availableProcessors: "+this);
+        if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
+            Log.warn("Acceptors should be <=2*availableProcessors: " + this);
         _acceptors = acceptors;
     }
 
@@ -407,12 +391,29 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     {
         HttpFields httpFields = request.getConnection().getRequestFields();
 
+        // Do SSL first
+        if (getForwardedCipherSuiteHeader()!=null)
+        {
+            String cipher_suite=httpFields.getStringField(getForwardedCipherSuiteHeader());
+            if (cipher_suite!=null)
+                request.setAttribute("javax.servlet.request.cipher_suite",cipher_suite);
+        }
+        if (getForwardedSslSessionIdHeader()!=null)
+        {
+            String ssl_session_id=httpFields.getStringField(getForwardedSslSessionIdHeader());
+            if(ssl_session_id!=null)
+            {
+                request.setAttribute("javax.servlet.request.ssl_session_id", ssl_session_id);
+                request.setScheme(HttpSchemes.HTTPS);
+            }
+        }
+        
         // Retrieving headers from the request
-        String forwardedHost = getLeftMostValue(httpFields.getStringField(getForwardedHostHeader()));
-        String forwardedServer = getLeftMostValue(httpFields.getStringField(getForwardedServerHeader()));
-        String forwardedFor = getLeftMostValue(httpFields.getStringField(getForwardedForHeader()));
-        String forwardedProto = getLeftMostValue(httpFields.getStringField(getForwardedProtoHeader()));
-
+        String forwardedHost = getLeftMostFieldValue(httpFields,getForwardedHostHeader());
+        String forwardedServer = getLeftMostFieldValue(httpFields,getForwardedServerHeader());
+        String forwardedFor = getLeftMostFieldValue(httpFields,getForwardedForHeader());
+        String forwardedProto = getLeftMostFieldValue(httpFields,getForwardedProtoHeader());
+        
         if (_hostHeader != null)
         {
             // Update host header
@@ -462,8 +463,13 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    protected String getLeftMostValue(String headerValue)
+    protected String getLeftMostFieldValue(HttpFields fields, String header)
     {
+        if (header == null)
+            return null;
+
+        String headerValue = fields.getStringField(header);
+
         if (headerValue == null)
             return null;
 
@@ -505,9 +511,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /*
-     * @see
-     * org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server
-     * .Request)
+     * @see org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server .Request)
      */
     public boolean isIntegral(Request request)
     {
@@ -605,8 +609,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * Is reverse proxy handling on?
      * 
-     * @return true if this connector is checking the
-     *         x-forwarded-for/host/server headers
+     * @return true if this connector is checking the x-forwarded-for/host/server headers
      */
     public boolean isForwarded()
     {
@@ -615,13 +618,11 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set reverse proxy handling.
-     * If set to true, then the X-Forwarded headers (or the headers set in their place) 
-     * are looked for to set the request protocol, host, server and client ip.
+     * Set reverse proxy handling. If set to true, then the X-Forwarded headers (or the headers set in their place) are looked for to set the request protocol,
+     * host, server and client ip.
      * 
      * @param check
-     *            true if this connector is checking the
-     *            x-forwarded-for/host/server headers
+     *            true if this connector is checking the x-forwarded-for/host/server headers
      * @set {@link #setForwardedForHeader(String)}
      * @set {@link #setForwardedHostHeader(String)}
      * @set {@link #setForwardedProtoHeader(String)}
@@ -642,10 +643,8 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set a forced valued for the host header to control what is returned by
-     * {@link ServletRequest#getServerName()} and
-     * {@link ServletRequest#getServerPort()}. This value is only used if
-     * {@link #isForwarded()} is true.
+     * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
+     * This value is only used if {@link #isForwarded()} is true.
      * 
      * @param hostHeader
      *            The value of the host header to force.
@@ -689,8 +688,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     /**
      * @param forwardedServerHeader
-     *            The header name for forwarded server (default
-     *            x-forwarded-server)
+     *            The header name for forwarded server (default x-forwarded-server)
      * @see #setForwarded(boolean)
      */
     public void setForwardedServerHeader(String forwardedServerHeader)
@@ -719,7 +717,9 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the forwardedProtoHeader.
+    /**
+     * Get the forwardedProtoHeader.
+     * 
      * @return the forwardedProtoHeader (default X-Forwarded-For)
      * @see #setForwarded(boolean)
      */
@@ -729,13 +729,54 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the forwardedProtoHeader.
-     * @param forwardedProtoHeader the forwardedProtoHeader to set (default X-Forwarded-For)
+    /**
+     * Set the forwardedProtoHeader.
+     * 
+     * @param forwardedProtoHeader
+     *            the forwardedProtoHeader to set (default X-Forwarded-For)
      * @see #setForwarded(boolean)
      */
     public void setForwardedProtoHeader(String forwardedProtoHeader)
     {
         _forwardedProtoHeader = forwardedProtoHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The header name holding a forwarded cipher suite (default null)
+     */
+    public String getForwardedCipherSuiteHeader()
+    {
+        return _forwardedCipherSuiteHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param forwardedCipherSuite
+     *            The header name holding a forwarded cipher suite (default null)
+     */
+    public void setForwardedCipherSuiteHeader(String forwardedCipherSuite)
+    {
+        _forwardedCipherSuiteHeader = forwardedCipherSuite;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The header name holding a forwarded SSL Session ID (default null)
+     */
+    public String getForwardedSslSessionIdHeader()
+    {
+        return _forwardedSslSessionIdHeader;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param forwardedSslSessionId
+     *            The header name holding a forwarded SSL Session ID (default null)
+     */
+    public void setForwardedSslSessionIdHeader(String forwardedSslSessionId)
+    {
+        _forwardedSslSessionIdHeader = forwardedSslSessionId;
     }
 
     /* ------------------------------------------------------------ */
@@ -747,10 +788,10 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         if (dot > 0)
             name = name.substring(dot + 1);
 
-        return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort()) + " "+AbstractLifeCycle.getState(this);
+        return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort()) + " "
+                + AbstractLifeCycle.getState(this);
     }
 
-    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -841,9 +882,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Get the number of requests handled by this connector since last
-     *         call of statsReset(). If setStatsOn(false) then this is
-     *         undefined.
+     * @return Get the number of requests handled by this connector since last call of statsReset(). If setStatsOn(false) then this is undefined.
      */
     public int getRequests()
     {
@@ -861,8 +900,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Number of connections accepted by the server since statsReset()
-     *         called. Undefined if setStatsOn(false).
+     * @return Number of connections accepted by the server since statsReset() called. Undefined if setStatsOn(false).
      */
     public int getConnections()
     {
@@ -871,8 +909,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Number of connections currently open that were opened since
-     *         statsReset() called. Undefined if setStatsOn(false).
+     * @return Number of connections currently open that were opened since statsReset() called. Undefined if setStatsOn(false).
      */
     public int getConnectionsOpen()
     {
@@ -881,8 +918,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Maximum number of connections opened simultaneously since
-     *         statsReset() called. Undefined if setStatsOn(false).
+     * @return Maximum number of connections opened simultaneously since statsReset() called. Undefined if setStatsOn(false).
      */
     public int getConnectionsOpenMax()
     {
@@ -891,8 +927,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Mean duration in milliseconds of open connections since
-     *         statsReset() called. Undefined if setStatsOn(false).
+     * @return Mean duration in milliseconds of open connections since statsReset() called. Undefined if setStatsOn(false).
      */
     public double getConnectionsDurationMean()
     {
@@ -901,8 +936,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Maximum duration in milliseconds of an open connection since
-     *         statsReset() called. Undefined if setStatsOn(false).
+     * @return Maximum duration in milliseconds of an open connection since statsReset() called. Undefined if setStatsOn(false).
      */
     public long getConnectionsDurationMax()
     {
@@ -911,9 +945,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Standard deviation of duration in milliseconds of open
-     *         connections since statsReset() called. Undefined if
-     *         setStatsOn(false).
+     * @return Standard deviation of duration in milliseconds of open connections since statsReset() called. Undefined if setStatsOn(false).
      */
     public double getConnectionsDurationStdDev()
     {
@@ -922,8 +954,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Mean number of requests per connection since statsReset() called.
-     *         Undefined if setStatsOn(false).
+     * @return Mean number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
      */
     public double getConnectionsRequestsMean()
     {
@@ -932,8 +963,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Maximum number of requests per connection since statsReset()
-     *         called. Undefined if setStatsOn(false).
+     * @return Maximum number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
      */
     public int getConnectionsRequestsMax()
     {
@@ -942,8 +972,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Standard deviation of number of requests per connection since
-     *         statsReset() called. Undefined if setStatsOn(false).
+     * @return Standard deviation of number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
      */
     public double getConnectionsRequestsStdDev()
     {
@@ -1036,10 +1065,8 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the priority offset of the acceptor threads. The priority is adjusted
-     * by this amount (default 0) to either favour the acceptance of new threads
-     * and newly active connections or to favour the handling of already
-     * dispatched connections.
+     * Set the priority offset of the acceptor threads. The priority is adjusted by this amount (default 0) to either favour the acceptance of new threads and
+     * newly active connections or to favour the handling of already dispatched connections.
      * 
      * @param offset
      *            the amount to alter the priority of the acceptor threads.
@@ -1051,8 +1078,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @return True if the the server socket will be opened in SO_REUSEADDR
-     *         mode.
+     * @return True if the the server socket will be opened in SO_REUSEADDR mode.
      */
     public boolean getReuseAddress()
     {
@@ -1062,8 +1088,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     /**
      * @param reuseAddress
-     *            True if the the server socket will be opened in SO_REUSEADDR
-     *            mode.
+     *            True if the the server socket will be opened in SO_REUSEADDR mode.
      */
     public void setReuseAddress(boolean reuseAddress)
     {
@@ -1101,6 +1126,5 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     {
         out.append(String.valueOf(this)).append("\n");
     }
-    
-    
+
 }

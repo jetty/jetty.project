@@ -30,7 +30,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
-
+import org.eclipse.jetty.util.thread.Timeout;
 
 /**
  * <p>An HTTP client API that encapsulates an exchange (a request and its response) with a HTTP server.</p>
@@ -101,11 +101,22 @@ public class HttpExchange
 
     // a timeout for this exchange
     private long _timeout = -1;
+    private volatile Timeout.Task _timeoutTask;
 
     boolean _onRequestCompleteDone;
     boolean _onResponseCompleteDone;
     boolean _onDone; // == onConnectionFail || onException || onExpired || onCancelled || onResponseCompleted && onRequestCompleted
 
+    protected void expire(HttpDestination destination)
+    {
+        if (getStatus() < HttpExchange.STATUS_COMPLETED)
+            setStatus(HttpExchange.STATUS_EXPIRED);
+
+        destination.exchangeExpired(this);
+        HttpConnection connection = _connection;
+        if (connection != null)
+            connection.exchangeExpired(this);
+    }
 
     public int getStatus()
     {
@@ -154,6 +165,7 @@ public class HttpExchange
         // might need a version number concept
         synchronized(this)
         {
+            _timeoutTask=null;
             _onRequestCompleteDone=false;
             _onResponseCompleteDone=false;
             _onDone=false;
@@ -190,6 +202,10 @@ public class HttpExchange
                         case STATUS_CANCELLING:
                         case STATUS_EXCEPTED:
                             set=_status.compareAndSet(oldStatus,newStatus);
+                            break;
+                        case STATUS_EXPIRED:
+                            if (set=_status.compareAndSet(oldStatus,newStatus))
+                                getEventListener().onExpire();
                             break;
                     }
                     break;
@@ -527,7 +543,7 @@ public class HttpExchange
      */
     public void setRequestHeader(String name, String value)
     {
-        getRequestFields().put(name,value);
+        getRequestFields().put(name, value);
     }
 
     /**
@@ -537,7 +553,7 @@ public class HttpExchange
      */
     public void setRequestHeader(Buffer name, Buffer value)
     {
-        getRequestFields().put(name,value);
+        getRequestFields().put(name, value);
     }
 
     /**
@@ -545,7 +561,7 @@ public class HttpExchange
      */
     public void setRequestContentType(String value)
     {
-        getRequestFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,value);
+        getRequestFields().put(HttpHeaders.CONTENT_TYPE_BUFFER, value);
     }
 
     /**
@@ -670,15 +686,17 @@ public class HttpExchange
             {
                 Log.debug(x);
             }
+            finally
+            {
+                disassociate();
+            }
         }
     }
 
     void associate(HttpConnection connection)
     {
-       if ( connection.getEndPoint().getLocalHost() != null )
-       {
-           _localAddress = new Address( connection.getEndPoint().getLocalHost(), connection.getEndPoint().getLocalPort() );
-       }
+       if (connection.getEndPoint().getLocalHost() != null)
+           _localAddress = new Address(connection.getEndPoint().getLocalHost(), connection.getEndPoint().getLocalPort());
 
         _connection = connection;
         if (getStatus() == STATUS_CANCELLING)
@@ -690,9 +708,9 @@ public class HttpExchange
         return this._connection != null;
     }
 
-    Connection disassociate()
+    HttpConnection disassociate()
     {
-        Connection result = _connection;
+        HttpConnection result = _connection;
         this._connection = null;
         if (getStatus() == STATUS_CANCELLING)
             setStatus(STATUS_CANCELLED);
@@ -850,9 +868,37 @@ public class HttpExchange
         this._configureListeners = autoConfigure;
     }
 
+    protected void scheduleTimeout(final HttpDestination destination)
+    {
+        assert _timeoutTask == null;
+
+        _timeoutTask = new Timeout.Task()
+        {
+            @Override
+            public void expired()
+            {
+                HttpExchange.this.expire(destination);
+            }
+        };
+
+        HttpClient httpClient = destination.getHttpClient();
+        long timeout = getTimeout();
+        if (timeout > 0)
+            httpClient.schedule(_timeoutTask, timeout);
+        else
+            httpClient.schedule(_timeoutTask);
+    }
+
+    protected void cancelTimeout(HttpClient httpClient)
+    {
+        Timeout.Task task = _timeoutTask;
+        if (task != null)
+            httpClient.cancel(task);
+        _timeoutTask = null;
+    }
+
     private class Listener implements HttpEventListener
     {
-
         public void onConnectionFailed(Throwable ex)
         {
             try
@@ -904,8 +950,10 @@ public class HttpExchange
             {
                 synchronized(HttpExchange.this)
                 {
-                    _onRequestCompleteDone=true;
-                    _onDone=_onResponseCompleteDone;
+                    _onRequestCompleteDone = true;
+                    // Member _onDone may already be true, for example
+                    // because the exchange expired or has been canceled
+                    _onDone |= _onResponseCompleteDone;
                     if (_onDone)
                         disassociate();
                     HttpExchange.this.notifyAll();
@@ -923,8 +971,10 @@ public class HttpExchange
             {
                 synchronized(HttpExchange.this)
                 {
-                    _onResponseCompleteDone=true;
-                    _onDone=_onRequestCompleteDone;
+                    _onResponseCompleteDone = true;
+                    // Member _onDone may already be true, for example
+                    // because the exchange expired or has been canceled
+                    _onDone |= _onRequestCompleteDone;
                     if (_onDone)
                         disassociate();
                     HttpExchange.this.notifyAll();

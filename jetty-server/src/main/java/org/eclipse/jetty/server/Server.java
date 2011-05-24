@@ -51,14 +51,17 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class Server extends HandlerWrapper implements Attributes
 {
-    private static final String _version;
+    private static final String __version;
     static
     {
-        if (Server.class.getPackage()!=null && Server.class.getPackage().getImplementationVersion()!=null)
-            _version=Server.class.getPackage().getImplementationVersion();
+        if (Server.class.getPackage()!=null && 
+            "Eclipse.org - Jetty".equals(Server.class.getPackage().getImplementationVendor()) &&
+             Server.class.getPackage().getImplementationVersion()!=null)
+            __version=Server.class.getPackage().getImplementationVersion();
         else
-            _version=System.getProperty("jetty.version","8.0.y.z-SNAPSHOT");
+            __version=System.getProperty("jetty.version","8.0.y.z-SNAPSHOT");
     }
+    
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
     private ThreadPool _threadPool;
@@ -110,7 +113,7 @@ public class Server extends HandlerWrapper implements Attributes
     /* ------------------------------------------------------------ */
     public static String getVersion()
     {
-        return _version;
+        return __version;
     }
     
     /* ------------------------------------------------------------ */
@@ -234,7 +237,9 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _dumpBeforeStop = dumpBeforeStop;
     }
-
+    
+    
+  
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
@@ -242,8 +247,8 @@ public class Server extends HandlerWrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.register(this);
         
-        Log.info("jetty-"+_version);
-        HttpGenerator.setServerVersion(_version);
+        Log.info("jetty-"+__version);
+        HttpGenerator.setServerVersion(__version);
         MultiException mex=new MultiException();
         
         if (_threadPool==null)
@@ -255,7 +260,7 @@ public class Server extends HandlerWrapper implements Attributes
         } 
         catch(Throwable e) 
         { 
-            Log.warn("Error starting handlers",e);
+            mex.add(e);
         }
         
         if (_connectors!=null)

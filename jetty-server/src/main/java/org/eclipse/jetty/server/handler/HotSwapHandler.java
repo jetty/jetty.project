@@ -67,10 +67,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
         try
         {
             Handler old_handler = _handler;
-
-            if (getServer()!=null)
-                getServer().getContainer().update(this, old_handler, handler, "handler");
-
+            _handler = handler;
             if (handler!=null)
             {
                 handler.setServer(getServer());
@@ -78,7 +75,9 @@ public class HotSwapHandler extends AbstractHandlerContainer
                     handler.start();
             }
 
-            _handler = handler;
+            if (getServer()!=null)
+                getServer().getContainer().update(this, old_handler, handler, "handler");
+
             
             // if there is an old handler and it was started, stop it
             if (old_handler != null && isStarted())

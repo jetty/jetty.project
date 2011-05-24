@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.client.security.Authentication;
@@ -34,6 +33,9 @@ import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -65,7 +67,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * @see HttpExchange
  * @see HttpDestination
  */
-public class HttpClient extends HttpBuffers implements Attributes
+public class HttpClient extends HttpBuffers implements Attributes, Dumpable
 {
     public static final int CONNECTOR_SOCKET = 0;
     public static final int CONNECTOR_SELECT_CHANNEL = 2;
@@ -74,6 +76,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     private boolean _useDirectBuffers = true;
     private boolean _connectBlocking = true;
     private int _maxConnectionsPerAddress = Integer.MAX_VALUE;
+    private int _maxQueueSizePerAddress = Integer.MAX_VALUE;
     private ConcurrentMap<Address, HttpDestination> _destinations = new ConcurrentHashMap<Address, HttpDestination>();
     ThreadPool _threadPool;
     Connector _connector;
@@ -147,21 +150,23 @@ public class HttpClient extends HttpBuffers implements Attributes
         _connectBlocking = connectBlocking;
     }
 
-    /* ------------------------------------------------------------------------------- */
-    public void dump()
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump()
+     */
+    public String dump()
     {
-        try
-        {
-            for (Map.Entry<Address, HttpDestination> entry : _destinations.entrySet())
-            {
-                Log.info("\n" + entry.getKey() + ":");
-                entry.getValue().dump();
-            }
-        }
-        catch(Exception e)
-        {
-            Log.warn(e);
-        }
+        return AggregateLifeCycle.dump(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump(java.lang.Appendable, java.lang.String)
+     */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dump(out,indent,_destinations.values());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -240,7 +245,7 @@ public class HttpClient extends HttpBuffers implements Attributes
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpDestination getDestination(Address remote, boolean ssl) throws UnknownHostException, IOException
+    public HttpDestination getDestination(Address remote, boolean ssl) throws IOException
     {
         if (remote == null)
             throw new UnknownHostException("Remote socket address cannot be null.");
@@ -248,7 +253,7 @@ public class HttpClient extends HttpBuffers implements Attributes
         HttpDestination destination = _destinations.get(remote);
         if (destination == null)
         {
-            destination = new HttpDestination(this, remote, ssl, _maxConnectionsPerAddress);
+            destination = new HttpDestination(this, remote, ssl);
             if (_proxy != null && (_noProxy == null || !_noProxy.contains(remote.getHost())))
             {
                 destination.setProxy(_proxy);
@@ -394,13 +399,23 @@ public class HttpClient extends HttpBuffers implements Attributes
         _maxConnectionsPerAddress = maxConnectionsPerAddress;
     }
 
+    public int getMaxQueueSizePerAddress()
+    {
+        return _maxQueueSizePerAddress;
+    }
+
+    public void setMaxQueueSizePerAddress(int maxQueueSizePerAddress)
+    {
+        this._maxQueueSizePerAddress = maxQueueSizePerAddress;
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
         setBufferTypes();
         super.doStart();
-        
+
         _timeoutQ.setDuration(_timeout);
         _timeoutQ.setNow();
         _idleTimeoutQ.setDuration(_idleTimeout);
@@ -451,7 +466,6 @@ public class HttpClient extends HttpBuffers implements Attributes
                 }
             }
         });
-
     }
 
     /* ------------------------------------------------------------ */

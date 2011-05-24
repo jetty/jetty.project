@@ -75,9 +75,7 @@ public class HandlerCollection extends AbstractHandlerContainer
             throw new IllegalStateException(STARTED);
         
         Handler [] old_handlers = _handlers==null?null:_handlers.clone();
-        
-        if (getServer()!=null)
-            getServer().getContainer().update(this, old_handlers, handlers, "handler");
+        _handlers = handlers;
         
         Server server = getServer();
         MultiException mex = new MultiException();
@@ -87,9 +85,9 @@ public class HandlerCollection extends AbstractHandlerContainer
                 handlers[i].setServer(server);
         }
 
-        // handlers is volatile
-        _handlers = handlers;
-
+        if (getServer()!=null)
+            getServer().getContainer().update(this, old_handlers, handlers, "handler");
+        
         // stop old handlers
         for (int i=0;old_handlers!=null && i<old_handlers.length;i++)
         {

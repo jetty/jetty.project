@@ -39,8 +39,6 @@ public abstract class AbstractLastAccessTimeTest
     @Test
     public void testLastAccessTime() throws Exception
     {
-        Random random = new Random(System.nanoTime());
-
         String contextPath = "";
         String servletMapping = "/server";
         int maxInactivePeriod = 8;

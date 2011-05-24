@@ -217,6 +217,15 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     {
         _scanner.addListener(listener);
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @deprecated Use {@link #setMonitoredDirName(String)}
+     */
+    public void setMonitoredDir(String dir)
+    {
+        setMonitoredDirName(dir);
+    }
     
     /* ------------------------------------------------------------ */
     /**

@@ -9,7 +9,7 @@
     <artifactId>jetty-all-server</artifactId>
     <name>Jetty :: Aggregate :: All Server</name>
     <properties>
-      <bundle-symbolic-name>${project.groupId}.${artifactId}</bundle-symbolic-name>
+      <bundle-symbolic-name>${project.groupId}.${project.artifactId}</bundle-symbolic-name>
     </properties>
 
     <build>
@@ -100,7 +100,7 @@
                             javax.security.auth.message*;resolution:=optional,
                             *
                         </Import-Package>
-                        <Export-Package>org.eclipse.jetty*</Export-Package>
+                        <Export-Package>org.eclipse.jetty*;version="${parsedVersion.osgiVersion}"</Export-Package>
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions
                         of the packages it uses; no need to reflect some tight dependency determined at
                         compilation time. -->

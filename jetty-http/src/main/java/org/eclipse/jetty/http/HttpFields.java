@@ -82,6 +82,9 @@ public class HttpFields
         private final StringBuilder buf = new StringBuilder(32);
         private final GregorianCalendar gc = new GregorianCalendar(__GMT);
         
+        /**
+         * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'" 
+         */
         public String formatDate(long date)
         {
             buf.setLength(0);
@@ -175,7 +178,6 @@ public class HttpFields
     /* ------------------------------------------------------------ */
     /**
      * Format HTTP date "EEE, dd MMM yyyy HH:mm:ss 'GMT'" 
-     * cookies
      */
     public static String formatDate(long date)
     {
@@ -281,19 +283,17 @@ public class HttpFields
             return new DateParser();
         }
     };
-    
-    
-    public final static String __01Jan1970=formatCookieDate(0);
+
+    /* -------------------------------------------------------------- */
+    public final static String __01Jan1970=formatDate(0);
     public final static Buffer __01Jan1970_BUFFER=new ByteArrayBuffer(__01Jan1970);
+    public final static String __01Jan1970_COOKIE = formatCookieDate(0).trim();
 
     /* -------------------------------------------------------------- */
     private final ArrayList<Field> _fields = new ArrayList<Field>(20);
     private final HashMap<Buffer,Field> _bufferMap = new HashMap<Buffer,Field>(32);
     private final int _maxCookieVersion;
     private int _revision;
-    
-
-   
     
     /* ------------------------------------------------------------ */
     /**
@@ -1076,7 +1076,7 @@ public class HttpFields
         	// Always add the expires param as some browsers still don't handle max-age
         	buf.append(";Expires=");
         	if (maxAge == 0)
-        		buf.append(__01Jan1970);
+        		buf.append(__01Jan1970_COOKIE);
         	else
         		formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
             
@@ -1096,10 +1096,9 @@ public class HttpFields
         if (isHttpOnly) 
             buf.append(";HttpOnly");
 
-        // TODO - straight to Buffer?
         name_value_params = buf.toString();
         
-        // look for existing cookie
+        // look for existing set cookie of same name
         Field field = getField(HttpHeaders.SET_COOKIE_BUFFER);
         if (field != null)
         {
@@ -1107,16 +1106,18 @@ public class HttpFields
             
             while (field!=null)
             {
-                if (field._revision!=revision || field._value!=null && field._value.toString().startsWith(start))
+                if (field._revision==revision && field._value!=null && field._value.toString().startsWith(start))
                 {
                     field.reset(new ByteArrayBuffer(name_value_params),-1,revision);
-                    return;
+                    name_value_params=null;
+                    break;
                 }
                 field=field._next;
             }
         }
         
-        add(HttpHeaders.SET_COOKIE_BUFFER, new ByteArrayBuffer(name_value_params));
+        if (name_value_params!=null)
+            add(HttpHeaders.SET_COOKIE_BUFFER, new ByteArrayBuffer(name_value_params));
         
         // Expire responses with set-cookie headers so they do not get cached.
         put(HttpHeaders.EXPIRES_BUFFER, __01Jan1970_BUFFER);

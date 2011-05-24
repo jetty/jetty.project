@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.ssl;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -118,7 +117,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
      * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
      * does not have CVE-2009-3555 fixed, then re-negotiation should
-     * not be allowed.  CVE-2009-3555 was fixed in Sun java 1.6 with a ban 
+     * not be allowed.  CVE-2009-3555 was fixed in Sun java 1.6 with a ban
      * of renegotiate in u19 and with RFC5746 in u22.
      * @param allowRenegotiate true if re-negotiation is allowed (default false)
      * @deprecated
@@ -209,7 +208,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /* ------------------------------------------------------------ */
     /**
      * Unsupported.
-     * 
+     *
      * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      * @deprecated
      */
@@ -222,7 +221,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /* ------------------------------------------------------------ */
     /**
      * Unsupported.
-     * 
+     *
      * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      * @deprecated
      */
@@ -500,7 +499,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#getSslContextFactory()
      */
-//    @Override
     public SslContextFactory getSslContextFactory()
     {
         return _sslContextFactory;
@@ -542,7 +540,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,createSSLEngine(), SslSelectChannelConnector.this._maxIdleTime);
+        SSLEngine engine = createSSLEngine(channel);
+        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,engine, SslSelectChannelConnector.this._maxIdleTime);
         endp.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
         return endp;
     }
@@ -557,30 +556,51 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     }
 
     /* ------------------------------------------------------------ */
-    protected SSLEngine createSSLEngine() throws IOException
+    /**
+     * @param channel A channel which if passed is used as to extract remote
+     * host and port for the purposes of SSL session caching
+     * @return A SSLEngine for a new or cached SSL Session
+     * @throws IOException if the SSLEngine cannot be created
+     */
+    protected SSLEngine createSSLEngine(SocketChannel channel) throws IOException
     {
-        SSLEngine engine = null;
         try
         {
-            engine = _sslContextFactory.getSslContext().createSSLEngine();
-            engine.setUseClientMode(false);
-
-            if (_sslContextFactory.getWantClientAuth())
-                engine.setWantClientAuth(_sslContextFactory.getWantClientAuth());
-            if (_sslContextFactory.getNeedClientAuth())
-                engine.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
-
-            engine.setEnabledCipherSuites(
-                    _sslContextFactory.selectCipherSuites(engine.getEnabledCipherSuites(),
-                                                          engine.getSupportedCipherSuites()));
+            SSLEngine engine;
+            if (channel != null && _sslContextFactory.isSessionCachingEnabled())
+            {
+                String peerHost = channel.socket().getInetAddress().getHostAddress();
+                int peerPort = channel.socket().getPort();
+                engine = _sslContextFactory.getSslContext().createSSLEngine(peerHost, peerPort);
+            }
+            else
+            {
+                engine = _sslContextFactory.getSslContext().createSSLEngine();
+            }
+            customizeEngine(engine);
+            return engine;
         }
-        catch (Exception e)
+        catch (Exception x)
         {
-            Log.warn("Error creating sslEngine -- closing this connector",e);
+            Log.warn("Error creating SSLEngine -- closing this connector", x);
             close();
-            throw new IllegalStateException(e);
+            throw new IllegalStateException(x);
         }
-        return engine;
+    }
+
+    /* ------------------------------------------------------------ */
+    private void customizeEngine(SSLEngine engine)
+    {
+        engine.setUseClientMode(false);
+
+        if (_sslContextFactory.getWantClientAuth())
+            engine.setWantClientAuth(_sslContextFactory.getWantClientAuth());
+        if (_sslContextFactory.getNeedClientAuth())
+            engine.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
+
+        engine.setEnabledCipherSuites(
+                _sslContextFactory.selectCipherSuites(engine.getEnabledCipherSuites(),
+                                                      engine.getSupportedCipherSuites()));
     }
 
     /* ------------------------------------------------------------ */
@@ -594,19 +614,19 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         {
             throw new IllegalStateException("SSL context is not configured correctly.");
         }
-        
-        _sslContextFactory.start(); 
-        
+
+        _sslContextFactory.start();
+
         SSLEngine sslEngine = _sslContextFactory.getSslContext().createSSLEngine();
 
         sslEngine.setUseClientMode(false);
         sslEngine.setWantClientAuth(_sslContextFactory.getWantClientAuth());
         sslEngine.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
-        
+
         sslEngine.setEnabledCipherSuites(_sslContextFactory.selectCipherSuites(
                                             sslEngine.getEnabledCipherSuites(),
                                             sslEngine.getSupportedCipherSuites()));
-        
+
         SSLSession sslSession = sslEngine.getSession();
 
         _sslBuffers = BuffersFactory.newBuffers(
@@ -622,7 +642,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
         super.doStart();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.nio.SelectChannelConnector#doStop()
@@ -630,7 +650,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected void doStop() throws Exception
     {
-        _sslContextFactory.stop(); 
+        _sslContextFactory.stop();
         _sslBuffers=null;
         super.doStop();
     }

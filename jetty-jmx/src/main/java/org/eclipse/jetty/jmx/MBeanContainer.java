@@ -232,29 +232,32 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
                 if (dot >= 0)
                     type = type.substring(dot + 1);
 
+                String context = null;
+                if (mbean instanceof ObjectMBean)
+                {
+                    context = makeName(((ObjectMBean)mbean).getObjectContextBasis());
+                }
+
                 String name = null;
                 if (mbean instanceof ObjectMBean)
                 {
-                    name = ((ObjectMBean)mbean).getObjectNameBasis();
-                    if (name != null)
-                    {
-                        name = name.replace('\\', '/');
-                        if (name.endsWith("/"))
-                            name = name.substring(0, name.length() - 1);
-
-                        int slash = name.lastIndexOf('/', name.length() - 1);
-                        if (slash > 0)
-                            name = name.substring(slash + 1);
-                        dot = name.lastIndexOf('.');
-                        if (dot > 0)
-                            name = name.substring(0, dot);
-
-                        name = name.replace(':', '_').replace('*', '_').replace('?', '_').replace('=', '_').replace(',', '_').replace(' ', '_');
-                    }
+                    name = makeName(((ObjectMBean)mbean).getObjectNameBasis());
                 }
 
-                String basis = (name != null && name.length() > 1) ? ("type=" + type + ",name=" + name) : ("type=" + type);
-
+                StringBuffer buf = new StringBuffer();
+                buf.append("type=").append(type);
+                if (context != null && context.length()>1)
+                {
+                    buf.append(buf.length()>0 ? ",":"");
+                    buf.append("context=").append(context);
+                }
+                if (name != null && name.length()>1)
+                {
+                    buf.append(buf.length()>0 ? ",":"");
+                    buf.append("name=").append(name);
+                }
+                    
+                String basis = buf.toString();
                 Integer count = _unique.get(basis);
                 count = count == null ? 0 : 1 + count;
                 _unique.put(basis, count);
@@ -276,6 +279,17 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         {
             Log.warn("bean: " + obj, e);
         }
+    }
+
+    /**
+     * @param basis name to strip of special characters.
+     * @return normalized name
+     */
+    public String makeName(String basis)
+    {
+        if (basis==null)
+            return basis;
+        return basis.replace(':', '_').replace('*', '_').replace('?', '_').replace('=', '_').replace(',', '_').replace(' ', '_');
     }
 
     /**

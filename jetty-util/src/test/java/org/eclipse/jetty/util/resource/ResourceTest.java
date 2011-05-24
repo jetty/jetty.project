@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.resource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.FilePermission;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -456,7 +458,14 @@ public class ResourceTest
         assertTrue("Class path resource does not exist.",resource.exists());
     }
     
-    
-    
-    
+    @Test
+    public void testUncPathResourceFile() throws Exception
+    {
+        assumeTrue(OS.IS_WINDOWS);
+        
+        String uncPath = "\\\\127.0.0.1"+__userURL.toURI().getPath().replace('/','\\')+"ResourceTest.java";
+        
+        Resource uncResource = Resource.newResource(uncPath, false);
+        assertTrue(uncResource.exists());        
+    }
 }

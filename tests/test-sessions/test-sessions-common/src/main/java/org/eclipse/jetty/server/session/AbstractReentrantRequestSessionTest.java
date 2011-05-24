@@ -40,14 +40,12 @@ public abstract class AbstractReentrantRequestSessionTest
     @Test
     public void testReentrantRequestSession() throws Exception
     {
-        Random random = new Random(System.nanoTime());
-
         String contextPath = "";
         String servletMapping = "/server";
-        int port = random.nextInt(50000) + 10000;
-        AbstractTestServer server = createServer(port);
+        AbstractTestServer server = createServer(0);
         server.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         server.start();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();

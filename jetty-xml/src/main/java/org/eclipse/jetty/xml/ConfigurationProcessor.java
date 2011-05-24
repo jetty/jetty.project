@@ -21,7 +21,7 @@ import java.util.Map;
  * <p>
  * A file in non-XmlConfiguration file format may be processed by a {@link ConfigurationProcessor}
  * instance that is returned from a {@link ConfigurationProcessorFactory} instance discovered by the
- * {@link ServiceLoader} mechanism.  This is used to allow spring configuration files to be used instead of 
+ * <code>ServiceLoader</code> mechanism.  This is used to allow spring configuration files to be used instead of 
  * jetty.xml
  *
  */

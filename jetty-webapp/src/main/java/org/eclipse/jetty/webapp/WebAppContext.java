@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
@@ -129,6 +130,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
 
+    private String[] _contextWhiteList = null;
+    
     private File _tmpDir;
     private String _war;
     private String _extraClasspath;
@@ -140,6 +143,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationClassesSet=false;
     private boolean _configurationsSet=false;
     private boolean _allowDuplicateFragmentNames = false;
+    private boolean _throwUnavailableOnStartupException = false;
     
     private MetaData _metadata=new MetaData();
 
@@ -402,7 +406,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
       
         // Prepare for configuration     
         for (int i=0;i<_configurations.length;i++)
+        {
+            Log.debug("preConfigure {} with {}",this,_configurations[i]);
             _configurations[i].preConfigure(this);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -410,7 +417,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         // Configure webapp
         for (int i=0;i<_configurations.length;i++)
+        {
+            Log.debug("configure {} with {}",this,_configurations[i]);
             _configurations[i].configure(this);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -418,7 +428,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {   
         // Clean up after configuration
         for (int i=0;i<_configurations.length;i++)
+        {
+            Log.debug("postConfigure {} with {}",this,_configurations[i]);
             _configurations[i].postConfigure(this);
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -444,6 +457,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             Log.warn("Failed startup of context "+this, e);
             _unavailableException=e;
             setAvailable(false);
+            if (isThrowUnavailableOnStartupException())
+                throw e;
         }
     }
     
@@ -761,6 +776,17 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return __dftConfigurationClasses;
     }
     
+    /* ------------------------------------------------------------ */
+    public String[] getDefaultServerClasses ()
+    {
+        return __dftServerClasses;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String[] getDefaultSystemClasses ()
+    {
+        return __dftSystemClasses;
+    }
     
     /* ------------------------------------------------------------ */
     protected void loadConfigurations()
@@ -806,7 +832,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        if (isStarted())
+        if (isRunning())
             throw new IllegalStateException();
         _configurationClasses = configurations==null?null:(String[])configurations.clone();
         _configurationClassesSet = true;
@@ -819,7 +845,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurations(Configuration[] configurations)
     {
-        if (isStarted())
+        if (isRunning())
             throw new IllegalStateException();
         _configurations = configurations==null?null:(Configuration[])configurations.clone();
         _configurationsSet = true;
@@ -976,6 +1002,20 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         _permissions = permissions;
     }
+    
+    /**
+     * Set the context white list
+     * 
+     * In certain circumstances you want may want to deny access of one webapp from another
+     * when you may not fully trust the webapp.  Setting this white list will enable a
+     * check when a servlet called getContext(String), validating that the uriInPath
+     * for the given webapp has been declaratively allows access to the context.
+     * @param contextWhiteList
+     */
+    public void setContextWhiteList(String[] contextWhiteList)
+    {
+        _contextWhiteList = contextWhiteList;
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -1071,7 +1111,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _war = war;
     }
 
-
     /* ------------------------------------------------------------ */
     /**
      * @return Comma or semicolon separated path of filenames or URLs
@@ -1143,7 +1182,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _allowDuplicateFragmentNames = allowDuplicateFragmentNames;
     }
 
+    
+    /* ------------------------------------------------------------ */
+    public void setThrowUnavailableOnStartupException (boolean throwIfStartupException) {
+        _throwUnavailableOnStartupException = throwIfStartupException;
+    }
+    
 
+    /* ------------------------------------------------------------ */
+    public boolean isThrowUnavailableOnStartupException () {
+        return _throwUnavailableOnStartupException;
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     protected void startContext()
@@ -1180,6 +1230,31 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 
             return resource.getURL();
         }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public ServletContext getContext(String uripath)
+        {
+            ServletContext servletContext = super.getContext(uripath);
+            
+            if ( servletContext != null && _contextWhiteList != null )
+            {
+                for ( String context : _contextWhiteList )
+                {
+                    if ( context.equals(uripath) )
+                    {
+                        return servletContext;
+                    }
+                }
+                
+                return null;
+            }
+            else
+            {
+                return servletContext;
+            }
+        }
+
     }
 
     /* ------------------------------------------------------------ */

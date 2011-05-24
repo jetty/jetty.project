@@ -18,9 +18,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+
+import junit.framework.Assert;
+
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.Test;
+import org.omg.Dynamic.Parameter;
 
 public class HttpURITest
 {
@@ -191,6 +200,59 @@ public class HttpURITest
         }
     }
 
+    @Test
+    public void testUnicodeErrors() throws UnsupportedEncodingException
+    {
+        String uri="http://server/path?invalid=data%u2021here";
+        try
+        {
+            URLDecoder.decode(uri,"UTF-8");
+            Assert.assertTrue(false);
+        }
+        catch (IllegalArgumentException e)
+        {
+        }
+
+        try
+        {
+            HttpURI huri=new HttpURI(uri);
+            MultiMap<String> params = new MultiMap<String>();
+            huri.decodeQueryTo(params);
+            System.err.println(params);
+            Assert.assertTrue(false);
+        }
+        catch (IllegalArgumentException e)
+        {
+        }
+        
+        try
+        {
+            HttpURI huri=new HttpURI(uri);
+            MultiMap<String> params = new MultiMap<String>();
+            huri.decodeQueryTo(params,"UTF-8");
+            System.err.println(params);
+            Assert.assertTrue(false);
+        }
+        catch (IllegalArgumentException e)
+        {
+        }        
+        
+    }
+
+    @Test
+    public void testExtB() throws Exception
+    {
+        for (String value: new String[]{"a","abcdABCD","\u00C0","\u697C","\uD869\uDED5","\uD840\uDC08"} )
+        {
+            HttpURI uri = new HttpURI("/path?value="+URLEncoder.encode(value,"UTF-8"));
+            
+            MultiMap<String> parameters = new MultiMap<String>();
+            uri.decodeQueryTo(parameters,"UTF-8");
+            assertEquals(value,parameters.get("value"));
+        }
+    }
+    
+    
     private final String[][] connect_tests=
     {
        /* 0*/ {"  localhost:8080  ","localhost","8080"},

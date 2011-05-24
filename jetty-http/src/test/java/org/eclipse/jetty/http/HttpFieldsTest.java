@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -362,9 +363,16 @@ public class HttpFieldsTest
         assertEquals("minimal=value",fields.getStringField("Set-Cookie"));
 
         fields.clear();
+        fields.addSetCookie("everything","wrong","wrong","wrong",0,"to be replaced",true,true,0);
         fields.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
         assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
-
+        Enumeration<String> e =fields.getValues("Set-Cookie");
+        assertTrue(e.hasMoreElements());
+        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",e.nextElement());
+        assertFalse(e.hasMoreElements());
+        assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.getStringField("Expires"));
+       
+        
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
         String setCookie=fields.getStringField("Set-Cookie");
@@ -394,7 +402,7 @@ public class HttpFieldsTest
         fields.addSetCookie("foo","bob","domain",null,-1,null,false,false,-1);
         assertEquals("name=more;Domain=domain",fields.getStringField("Set-Cookie"));
 
-        Enumeration e=fields.getValues("Set-Cookie");
+        e=fields.getValues("Set-Cookie");
         assertEquals("name=more;Domain=domain",e.nextElement());
         assertEquals("foo=bob;Domain=domain",e.nextElement());
         

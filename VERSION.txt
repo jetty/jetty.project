@@ -2,11 +2,60 @@ jetty-8.0.0.M3-SNAPSHOT
  + 324505 Implement API login
  + 335500 request.getParts() throws a NullPointerException
  + 343472 isUserInRole does not prevent subsequent login call.
- + Updated to jetty-7.4.0.RC0
+ + Updated to jetty-7.4.2-SNAPSHOT
 
-jetty-7.4.0-SNAPSHOT
- + 342504 Scanner Listener 
+jetty-7.4.2-SNAPSHOT
+ + 338364 Fixed expires header for set cookies
+ + 345729 binding for managing server and system classes globally
+ + 345615 Enable SSL Session caching
+ + 345763 Source file is updated during the build
+ + 345873 Update jetty-ssl.xml to new style
+ + 345900 Handle ipv6 with default port
+ + 346014 Fixed full HttpGenerator
+ + 346124 ServletContext resources paths not resolved correctly when using UNC shares
+ + 346179 o.e.j.util.ScannerTest fails on MacOS X platform
+ + 346181 o.e.j.server.StressTest stalls on MacOS X platform
+ + JETTY-1342 Recreate selector if wakeup throws JVM bug
+ + 346614 HttpConnection.handle() spins in case of SSL truncation attacks
+ + 346764 OrderedGroupBinding deployment binding
+
+jetty-7.4.1.v20110513
+ + 288563 remove unsupported and deprecated --secure option
+ + 332907 Add context property to ObjectName of JMX MBeans
+ + 336056 Ability to override the computation of the ContextHandler to deploy the DefaultServlet on the HttpService
+ + 340040 Support for a total timeout
+ + 343083 Set nested dispatch type and connection
+ + 343172 Check package implementor for version
+ + 343277 add support for a context white list
+ + 343352 make sure that jetty.osgi.boot is activated when a WAB is registered
+ + 343482 refactored overlay deployer layout to use WAR layout
+ + 343567 HttpClient does not limit the destination's exchange queue
+ + 343680 Handle OSGi bundle jars not ending in ".war"
+ + 343707 'REQUEST' is printed on console for each incoming HTTP request
+ + 343923 flush timeouts applied to outer loop
+ + 343936 Session idle calls unbind and remove listeners
+ + 344059 Websockets draft-07
+ + 344067 Add support for OSGi fragment bundles to add static resources to web-bundles
+ + 344513 Attempting to set ConfigurationClasses in jetty-web.xml causes NPE
+ + 344529 Ability to customize the error handling of the OSGi HttpService
+ + 345047 Readded deprecated ScanningAppDeployer#setMonitoredDir
+ + 345290 Weak references from SessionIdManager. HashSessionManager cleanup.
+ + 345543 Always close endpoint on SSLException
+ + 345656 Disambiguate SslContextFactory#validateCerts property
+ + 345679 Allow setting an initialized KeyStore as keystore/truststore of SslContextFactory
+ + 345704 jetty-nested works with forwarded SSL in cloudfoundry
+ + JETTY-954 WebAppContext eats any start exceptions instead of stopping the server load
+ + JETTY-1314 Handle bad URI encodings
+ + JETTY-1324 Tested not using CESU-8 instead of UTF-8
+ + JETTY-1326 Invoker names not hashCode based
+ + JETTY-1343 IllegalArgumentException for bad % encodings
+ + JETTY-1347 Updated ServletHander javadoc
+
+jetty-7.4.0.v20110414
+ + 342504 Scanner Listener
+ + 342700 refine websocket API for anticipated changes
  + JETTY-1362 Set root cause of UnavailableException
+ + Various test harness cleanups to avoid random failures
 
 jetty-7.4.0.RC0
  + 324110 Added test harnesses for merging of QueryStrings.

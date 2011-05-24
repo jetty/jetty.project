@@ -12,7 +12,7 @@
   <description>Jetty OSGi Integration test</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.test</bundle-symbolic-name>
-    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/jetty-8</jetty-orbit-url>
+    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
     <orbit-javax-activation-version>${javax-activation-version}.0.v201105071233</orbit-javax-activation-version>

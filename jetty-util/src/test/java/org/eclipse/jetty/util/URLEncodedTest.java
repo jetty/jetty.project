@@ -133,6 +133,18 @@ public class URLEncodedTest
 
     /* -------------------------------------------------------------- */
     @Test
+    public void testBadEncoding() throws UnsupportedEncodingException
+    {
+        UrlEncoded url_encoded = new UrlEncoded();
+        url_encoded.decode("Name15=xx%zz", "UTF-8");
+        assertEquals("encoded param size",1, url_encoded.size());
+        assertEquals("encoded get", "xx%zz", url_encoded.getString("Name15"));
+
+    }
+    
+    
+    /* -------------------------------------------------------------- */
+    @Test
     public void testUrlEncodedStream()
     	throws Exception
     {

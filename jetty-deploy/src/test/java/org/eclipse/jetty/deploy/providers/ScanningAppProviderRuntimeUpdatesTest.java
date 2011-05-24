@@ -147,13 +147,12 @@ public class ScanningAppProviderRuntimeUpdatesTest
         // Test that webapp response contains "-1"
         jetty.assertResponseContains("/foo/info","FooServlet-1");
 
-        Thread.sleep(1900);
+        waitForDirectoryScan();
         System.out.println("Updating war files");
         jetty.copyContext("foo.xml","foo.xml"); // essentially "touch" the context xml
         jetty.copyWebapp("foo-webapp-2.war","foo.war");
 
         // This should result in the existing foo.war being replaced with the new foo.war
-        waitForDirectoryScan();
         waitForDirectoryScan();
         jetty.assertWebAppContextsExists("/foo");
 

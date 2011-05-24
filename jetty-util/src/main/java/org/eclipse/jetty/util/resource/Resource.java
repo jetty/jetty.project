@@ -160,7 +160,7 @@ public abstract class Resource implements ResourceFactory
                         resource=resource.substring(2);
                     
                     File file=new File(resource).getCanonicalFile();
-                    url=new URL(URIUtil.encodePath(file.toURL().toString()));            
+                    url=file.toURI().toURL();            
                     
                     URLConnection connection=url.openConnection();
                     connection.setUseCaches(useCaches);

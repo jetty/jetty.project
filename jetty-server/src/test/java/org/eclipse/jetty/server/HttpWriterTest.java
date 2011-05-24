@@ -15,6 +15,7 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -92,6 +93,22 @@ public class HttpWriterTest
         _writer.setCharacterEncoding(StringUtil.__UTF8);
         _writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StringUtil.__UTF8),_bytes.asArray());
+    }
+    
+    @Test
+    public void testNotCESU8() throws Exception
+    {
+        _writer.setCharacterEncoding(StringUtil.__UTF8);
+        String data="xxx\uD801\uDC00xxx";
+        _writer.write(data);
+        assertEquals("787878F0909080787878",TypeUtil.toHexString(_bytes.asArray()));
+        assertArrayEquals(data.getBytes(StringUtil.__UTF8),_bytes.asArray());
+        assertEquals(3+4+3,_bytes.length());
+        
+        Utf8StringBuilder buf = new Utf8StringBuilder();
+        buf.append(_bytes.asArray(),0,_bytes.length());
+        assertEquals(data,buf.toString());
+        
     }
 
     @Test

@@ -12,9 +12,19 @@
 // ========================================================================
 package org.eclipse.jetty.webapp;
 
+import java.io.IOException;
 import java.util.Arrays;
 
+import javax.servlet.GenericServlet;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+
+import junit.framework.Assert;
+
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
@@ -75,5 +85,55 @@ public class WebAppContextTest
         server.setAttribute(WebAppContext.SERVER_CONFIG, classNames);
         wac.setServer(server);
         assertTrue(Arrays.equals(configs,wac.getConfigurations()));
+    }
+    
+    /**
+     * tests that the servlet context white list works
+     * 
+     * @throws Exception
+     */
+    @Test 
+    public void testContextWhiteList() throws Exception
+    {
+        Server server = new Server(0);
+        HandlerList handlers = new HandlerList();
+        WebAppContext contextA = new WebAppContext(".", "/A"); 
+        
+        contextA.addServlet( ServletA.class, "/s");
+        handlers.addHandler(contextA);
+        WebAppContext contextB = new WebAppContext(".", "/B");
+        
+        contextB.addServlet(ServletB.class, "/s");
+        contextB.setContextWhiteList(new String [] { "/doesnotexist", "/B/s" } );
+        handlers.addHandler(contextB);
+        
+        server.setHandler(handlers);
+        server.start();
+        
+        // context A should be able to get both A and B servlet contexts
+        Assert.assertNotNull(contextA.getServletHandler().getServletContext().getContext("/A/s"));
+        Assert.assertNotNull(contextA.getServletHandler().getServletContext().getContext("/B/s"));
+
+        // context B has a contextWhiteList set and should only be able to get ones that are approved
+        Assert.assertNull(contextB.getServletHandler().getServletContext().getContext("/A/s"));
+        Assert.assertNotNull(contextB.getServletHandler().getServletContext().getContext("/B/s"));
+    }
+    
+    class ServletA extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            this.getServletContext().getContext("/A/s");
+        }      
+    }
+    
+    class ServletB extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            this.getServletContext().getContext("/B/s");
+        }      
     }
 }

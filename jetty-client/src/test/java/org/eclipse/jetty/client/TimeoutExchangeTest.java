@@ -16,13 +16,11 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -95,10 +93,16 @@ public class TimeoutExchangeTest
 
     private void startClient(long clientTimeout) throws Exception
     {
+        startClient(clientTimeout, 20000);
+    }
+
+    private void startClient(long clientTimeout, long maxIdleTimeout) throws Exception
+    {
         _httpClient = new HttpClient();
         _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         _httpClient.setMaxConnectionsPerAddress(2);
         _httpClient.setTimeout(clientTimeout);
+        _httpClient.setIdleTimeout(maxIdleTimeout);
         _httpClient.start();
     }
 
@@ -181,6 +185,50 @@ public class TimeoutExchangeTest
         Assert.assertTrue(httpExchange.getDoneLatch().await(2 * serverSleep, TimeUnit.MILLISECONDS));
         Assert.assertTrue(httpExchange.isTimeoutOccurred());
         Assert.assertFalse(httpExchange.isResponseReceived());
+        Assert.assertFalse(httpExchange.isErrorOccurred());
+    }
+
+    @Test
+    public void testDefaultTimeoutWithSmallerIdleTimeoutNotExpiring() throws Exception
+    {
+        startClient(3000, 1000);
+        long serverSleep = 2000;
+
+        // The idle timeout is shorter than the default timeout, but will be
+        // temporarily increased on the endpoint in order for the exchange to complete.
+
+        CustomContentExchange httpExchange = new CustomContentExchange();
+        httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
+        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setRequestContent(new ByteArrayBuffer("<h1>??</h1>"));
+        _httpClient.send(httpExchange);
+
+        Assert.assertTrue(httpExchange.getDoneLatch().await(2 * serverSleep, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(httpExchange.isTimeoutOccurred());
+        Assert.assertTrue(httpExchange.isResponseReceived());
+        Assert.assertFalse(httpExchange.isErrorOccurred());
+    }
+
+    @Test
+    public void testExchangeTimeoutWithSmallerIdleTimeoutNotExpiring() throws Exception
+    {
+        startClient(4000, 3000);
+        long serverSleep = 1000;
+        long exchangeTimeout = 2000;
+
+        // The idle timeout is shorter than the default timeout, but will be
+        // temporarily increased on the endpoint in order for the exchange to complete.
+
+        CustomContentExchange httpExchange = new CustomContentExchange();
+        httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
+        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setRequestContent(new ByteArrayBuffer("<h1>??</h1>"));
+        httpExchange.setTimeout(exchangeTimeout);
+        _httpClient.send(httpExchange);
+
+        Assert.assertTrue(httpExchange.getDoneLatch().await(2 * serverSleep, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(httpExchange.isTimeoutOccurred());
+        Assert.assertTrue(httpExchange.isResponseReceived());
         Assert.assertFalse(httpExchange.isErrorOccurred());
     }
 

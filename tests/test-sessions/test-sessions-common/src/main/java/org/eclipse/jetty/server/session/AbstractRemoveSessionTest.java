@@ -25,16 +25,14 @@ public abstract class AbstractRemoveSessionTest
     @Test
     public void testRemoveSession() throws Exception
     {
-        Random random = new Random(System.nanoTime());
-
         String contextPath = "";
         String servletMapping = "/server";
-        int port = random.nextInt(50000) + 10000;
         int scavengePeriod = 3;
-        AbstractTestServer server = createServer(port, 1, scavengePeriod);
+        AbstractTestServer server = createServer(0, 1, scavengePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
         server.start();
+        int port = server.getPort();
         try
         {
             HttpClient client = new HttpClient();

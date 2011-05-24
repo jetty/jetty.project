@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.client;
@@ -33,15 +33,16 @@ public class SslContentExchangeTest
         throws Exception
     {
         setProtocol("https");
-        
+
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
         SslContextFactory cf = connector.getSslContextFactory();
         cf.setKeyStore(keystore.getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
+        cf.setSessionCachingEnabled(true);
         server.addConnector(connector);
-                
+
         Handler handler = new TestHandler(getBasePath());
 
         ServletContextHandler root = new ServletContextHandler();
@@ -49,10 +50,20 @@ public class SslContentExchangeTest
         root.setResourceBase(getBasePath());
         ServletHolder servletHolder = new ServletHolder( new DefaultServlet() );
         servletHolder.setInitParameter( "gzip", "true" );
-        root.addServlet( servletHolder, "/*" );    
+        root.addServlet( servletHolder, "/*" );
 
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[]{handler, root});
-        server.setHandler( handlers ); 
+        server.setHandler( handlers );
+    }
+
+    @Override
+    protected void configureClient(HttpClient client)
+        throws Exception
+    {
+        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+
+        SslContextFactory cf = client.getSslContextFactory();
+        cf.setSessionCachingEnabled(true);
     }
 }

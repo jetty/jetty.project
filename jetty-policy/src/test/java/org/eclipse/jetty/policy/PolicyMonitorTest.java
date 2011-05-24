@@ -27,7 +27,8 @@ public class PolicyMonitorTest
     {
         final AtomicInteger count = new AtomicInteger(0);
         
-        PolicyMonitor monitor = new PolicyMonitor( MavenTestingUtils.getTestResourceDir("monitor-test-1").getAbsolutePath())
+        PolicyMonitor monitor = new PolicyMonitor(new File(MavenTestingUtils.getTargetDir(),
+                "test-classes/monitor-test-1").getAbsolutePath())
         {
             
             @Override
@@ -59,7 +60,8 @@ public class PolicyMonitorTest
         
         final AtomicInteger count = new AtomicInteger(0);
         
-        PolicyMonitor monitor = new PolicyMonitor( MavenTestingUtils.getTestResourceDir("monitor-test-2").getAbsolutePath())
+        PolicyMonitor monitor = new PolicyMonitor(new File(MavenTestingUtils.getTargetDir(),
+                "test-classes/monitor-test-2").getAbsolutePath())
         {       
             @Override
             public void onPolicyChange(PolicyBlock grant)
@@ -77,10 +79,12 @@ public class PolicyMonitorTest
             Thread.sleep(100);
         }
         
-        File permFile = MavenTestingUtils.getTestResourceFile("monitor-test-2/global-all-permission.policy");
+        File permFile =new File(MavenTestingUtils.getTargetDir(),
+                "test-classes/monitor-test-2/global-all-permission.policy");
         
         permFile.setLastModified(System.currentTimeMillis());
                         
+        monitor.waitForScan();
         monitor.waitForScan();
 
         Assert.assertEquals(2,count.get());
@@ -92,7 +96,8 @@ public class PolicyMonitorTest
     {
         final AtomicInteger count = new AtomicInteger(0);
         
-        PolicyMonitor monitor = new PolicyMonitor( MavenTestingUtils.getTestResourceDir("monitor-test-3").getAbsolutePath())
+        PolicyMonitor monitor = new PolicyMonitor(new File(MavenTestingUtils.getTargetDir(),
+            "test-classes/monitor-test-3").getAbsolutePath())
         {       
             @Override
             public void onPolicyChange(PolicyBlock grant)

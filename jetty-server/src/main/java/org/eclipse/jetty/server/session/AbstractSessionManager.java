@@ -583,7 +583,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     public abstract Session getSession(String idInCluster);
 
-    protected abstract void invalidateSessions();
+    protected abstract void invalidateSessions() throws Exception;
 
 
     /* ------------------------------------------------------------ */
@@ -1151,36 +1151,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                 // Notify listeners and unbind values
                 if (isNotAvailable())
                     throw new IllegalStateException();
-
-                while (_attributes!=null && _attributes.size()>0)
-                {
-                    ArrayList keys;
-                    synchronized (Session.this)
-                    {
-                        keys=new ArrayList(_attributes.keySet());
-                    }
-
-                    Iterator iter=keys.iterator();
-                    while (iter.hasNext())
-                    {
-                        String key=(String)iter.next();
-
-                        Object value;
-                        synchronized (Session.this)
-                        {
-                            value=_attributes.remove(key);
-                        }
-                        unbindValue(key,value);
-
-                        if (_sessionAttributeListeners!=null)
-                        {
-                            HttpSessionBindingEvent event=new HttpSessionBindingEvent(this,key,value);
-
-                            for (int i=0; i<LazyList.size(_sessionAttributeListeners); i++)
-                                ((HttpSessionAttributeListener)LazyList.get(_sessionAttributeListeners,i)).attributeRemoved(event);
-                        }
-                    }
-                }
+                clearAttributes();
             }
             finally
             {
@@ -1189,6 +1160,42 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             }
         }
 
+        /* ------------------------------------------------------------- */
+        protected void clearAttributes() 
+        {
+            while (_attributes!=null && _attributes.size()>0)
+            {
+                ArrayList keys;
+                synchronized (Session.this)
+                {
+                    keys=new ArrayList(_attributes.keySet());
+                }
+
+                Iterator iter=keys.iterator();
+                while (iter.hasNext())
+                {
+                    String key=(String)iter.next();
+
+                    Object value;
+                    synchronized (Session.this)
+                    {
+                        value=_attributes.remove(key);
+                    }
+                    unbindValue(key,value);
+
+                    if (_sessionAttributeListeners!=null)
+                    {
+                        HttpSessionBindingEvent event=new HttpSessionBindingEvent(this,key,value);
+
+                        for (int i=0; i<LazyList.size(_sessionAttributeListeners); i++)
+                            ((HttpSessionAttributeListener)LazyList.get(_sessionAttributeListeners,i)).attributeRemoved(event);
+                    }
+                }
+            } 
+            if (_attributes!=null)
+                _attributes.clear();
+        }
+        
         /* ------------------------------------------------------------- */
         public boolean isIdChanged()
         {

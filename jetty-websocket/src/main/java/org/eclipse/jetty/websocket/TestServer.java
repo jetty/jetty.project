@@ -11,7 +11,6 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.websocket.WebSocket.Connection;
 
 public class TestServer extends Server
 {
@@ -37,16 +36,16 @@ public class TestServer extends Server
                 {
                     _websocket = new TestEchoWebSocket();        
                 }
-                else if ("org.ietf.websocket.test-echo-broadcast".equals(protocol))
+                else if ("org.ietf.websocket.test-echo-broadcast".equals(protocol) || "echo-broadcast".equals(protocol))
                 {
                     _websocket = new TestEchoBroadcastWebSocket(); 
 
                 }
-                else if ("org.ietf.websocket.test-echo-assemble".equals(protocol))
+                else if ("org.ietf.websocket.test-echo-assemble".equals(protocol) || "echo-assemble".equals(protocol))
                 {
                     _websocket = new TestEchoAssembleWebSocket();
                 }
-                else if ("org.ietf.websocket.test-echo-fragment".equals(protocol))
+                else if ("org.ietf.websocket.test-echo-fragment".equals(protocol) || "echo-fragment".equals(protocol))
                 {
                     _websocket = new TestEchoFragmentWebSocket();
                 }
@@ -62,7 +61,7 @@ public class TestServer extends Server
         
         _rHandler=new ResourceHandler();
         _rHandler.setDirectoriesListed(true);
-        _rHandler.setResourceBase(".");
+        _rHandler.setResourceBase("src/test/webapp");
         _wsHandler.setHandler(_rHandler);
    
     }
@@ -95,21 +94,27 @@ public class TestServer extends Server
     /* ------------------------------------------------------------ */
     class TestWebSocket implements WebSocket, WebSocket.OnFrame, WebSocket.OnBinaryMessage, WebSocket.OnTextMessage, WebSocket.OnControl
     {
-        protected Connection _connection;
+        protected FrameConnection _connection;
         
-        public Connection getOutbound()
+        public FrameConnection getConnection()
         {
             return _connection;
         }
         
-        public void onConnect(Connection connection)
+        public void onOpen(Connection connection)
         {
-            _connection = connection;
             if (_verbose)
-                System.err.printf("%s#onConnect %s\n",this.getClass().getSimpleName(),connection);
+                System.err.printf("%s#onOpen %s\n",this.getClass().getSimpleName(),connection);
+        }
+        
+        public void onHandshake(FrameConnection connection)
+        {
+            if (_verbose)
+                System.err.printf("%s#onHandshake %s %s\n",this.getClass().getSimpleName(),connection,connection.getClass().getSimpleName());
+            _connection = connection;
         }
 
-        public void onDisconnect(int code,String message)
+        public void onClose(int code,String message)
         {
             if (_verbose)
                 System.err.printf("%s#onDisonnect %d %s\n",this.getClass().getSimpleName(),code,message);
@@ -147,9 +152,9 @@ public class TestServer extends Server
     class TestEchoWebSocket extends TestWebSocket 
     {
         @Override
-        public void onConnect(Connection connection)
+        public void onOpen(Connection connection)
         {
-            super.onConnect(connection);
+            super.onOpen(connection);
             connection.setMaxTextMessageSize(-1);
             connection.setMaxBinaryMessageSize(-1);
         }
@@ -160,16 +165,8 @@ public class TestServer extends Server
             super.onFrame(flags,opcode,data,offset,length);
             try
             {
-                switch(opcode)
-                {
-                    case WebSocketConnectionD06.OP_CLOSE:
-                    case WebSocketConnectionD06.OP_PING:
-                    case WebSocketConnectionD06.OP_PONG:
-                        break;
-                    default:
-                        getOutbound().sendFrame(flags,opcode,data,offset,length); 
-                }
-            }
+                if (!getConnection().isControl(opcode))
+                    getConnection().sendFrame(flags,opcode,data,offset,length);             }
             catch (IOException e)
             {
                 e.printStackTrace();
@@ -184,16 +181,16 @@ public class TestServer extends Server
     class TestEchoBroadcastWebSocket extends TestWebSocket
     {
         @Override
-        public void onConnect(Connection connection)
+        public void onOpen(Connection connection)
         {
-            super.onConnect(connection);
+            super.onOpen(connection);
             _broadcast.add(this);
         }
 
         @Override
-        public void onDisconnect(int code,String message)
+        public void onClose(int code,String message)
         {
-            super.onDisconnect(code,message);
+            super.onClose(code,message);
             _broadcast.remove(this);
         }
         
@@ -205,7 +202,7 @@ public class TestServer extends Server
             {
                 try
                 {
-                    ws.getOutbound().sendMessage(data,offset,length); 
+                    ws.getConnection().sendMessage(data,offset,length); 
                 }
                 catch (IOException e)
                 {
@@ -223,7 +220,7 @@ public class TestServer extends Server
             {
                 try
                 {
-                    ws.getOutbound().sendMessage(data); 
+                    ws.getConnection().sendMessage(data); 
                 }
                 catch (IOException e)
                 {
@@ -240,9 +237,9 @@ public class TestServer extends Server
     {
         
         @Override
-        public void onConnect(Connection connection)
+        public void onOpen(Connection connection)
         {
-            super.onConnect(connection);
+            super.onOpen(connection);
             connection.setMaxTextMessageSize(64*1024);
             connection.setMaxBinaryMessageSize(64*1024);
         }
@@ -253,7 +250,7 @@ public class TestServer extends Server
             super.onMessage(data,offset,length);
             try
             {
-                getOutbound().sendMessage(data,offset,length); 
+                getConnection().sendMessage(data,offset,length); 
             }
             catch (IOException e)
             {
@@ -267,7 +264,7 @@ public class TestServer extends Server
             super.onMessage(data);
             try
             {
-                getOutbound().sendMessage(data); 
+                getConnection().sendMessage(data); 
             }
             catch (IOException e)
             {
@@ -281,9 +278,9 @@ public class TestServer extends Server
     class TestEchoFragmentWebSocket extends TestWebSocket
     {
         @Override
-        public void onConnect(Connection connection)
+        public void onOpen(Connection connection)
         {
-            super.onConnect(connection);
+            super.onOpen(connection);
             connection.setMaxTextMessageSize(64*1024);
             connection.setMaxBinaryMessageSize(64*1024);
         }
@@ -294,8 +291,8 @@ public class TestServer extends Server
             super.onMessage(data,offset,length);
             try
             {
-                getOutbound().sendFrame((byte)0x0,WebSocketConnectionD06.OP_BINARY,data,offset,length/2); 
-                getOutbound().sendFrame((byte)0x8,WebSocketConnectionD06.OP_BINARY,data,offset+length/2,length-length/2); 
+                getConnection().sendFrame((byte)0x0,getConnection().binaryOpcode(),data,offset,length/2); 
+                getConnection().sendFrame((byte)0x8,getConnection().binaryOpcode(),data,offset+length/2,length-length/2); 
             }
             catch (IOException e)
             {
@@ -312,8 +309,8 @@ public class TestServer extends Server
                 byte[] data = message.getBytes(StringUtil.__UTF8);
                 int offset=0;
                 int length=data.length;
-                getOutbound().sendFrame((byte)0x0,WebSocketConnectionD06.OP_TEXT,data,offset,length/2); 
-                getOutbound().sendFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,offset+length/2,length-length/2); 
+                getConnection().sendFrame((byte)0x0,getConnection().textOpcode(),data,offset,length/2); 
+                getConnection().sendFrame((byte)0x8,getConnection().textOpcode(),data,offset+length/2,length-length/2); 
             }
             catch (IOException e)
             {
@@ -327,7 +324,7 @@ public class TestServer extends Server
         System.err.println("java -cp CLASSPATH "+TestServer.class+" [ OPTIONS ]");
         System.err.println("  -p|--port PORT    (default 8080)");
         System.err.println("  -v|--verbose ");
-        System.err.println("  -d|--docroot file (default '.')");
+        System.err.println("  -d|--docroot file (default 'src/test/webapp')");
         System.exit(1);
     }
     
@@ -337,7 +334,7 @@ public class TestServer extends Server
         {
             int port=8080;
             boolean verbose=false;
-            String docroot=".";
+            String docroot="src/test/webapp";
             
             for (int i=0;i<args.length;i++)
             {

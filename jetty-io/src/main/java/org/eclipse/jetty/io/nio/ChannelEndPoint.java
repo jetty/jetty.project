@@ -139,17 +139,6 @@ public class ChannelEndPoint implements EndPoint
      */
     public void close() throws IOException
     {
-        if (_socket!=null && !_socket.isOutputShutdown())
-        {
-            try
-            {
-                _socket.shutdownOutput();
-            }
-            catch (IOException x)
-            {
-                Log.ignore(x);
-            }
-        }
         _channel.close();
     }
 

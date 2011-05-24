@@ -72,9 +72,9 @@ import org.eclipse.jetty.util.log.Log;
  * javax.servlet.http.HttpServlet API.
  * <P>
  * This handler does not implement the full J2EE features and is intended to
- * be used when a full web application is not required.  Specifically filters
- * and request wrapping are not supported.
- * 
+ * be used directly when a full web application is not required.  If a Web application is required,
+ * then this handler should be used as part of a <code>org.eclipse.jetty.webapp.WebAppContext</code>.
+ * <p>
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().
  */
@@ -86,7 +86,7 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     private ServletContextHandler _contextHandler;
     private ContextHandler.Context _servletContext;
-    private FilterHolder[] _filters;
+    private FilterHolder[] _filters=new FilterHolder[0];
     private FilterMapping[] _filterMappings;
     private boolean _filterChainsCached=true;
     private int _maxFilterChainsCacheSize=512;
@@ -94,7 +94,7 @@ public class ServletHandler extends ScopedHandler
     private IdentityService _identityService;
     private SecurityHandler _securityHandler;
     
-    private ServletHolder[] _servlets;
+    private ServletHolder[] _servlets=new ServletHolder[0];
     private ServletMapping[] _servletMappings;
     
     private final Map<String,FilterHolder> _filterNameMap= new HashMap<String,FilterHolder>();
@@ -121,21 +121,24 @@ public class ServletHandler extends ScopedHandler
      */
     public void setServer(Server server)
     {
-        if (getServer()!=null && getServer()!=server)
+        Server old=getServer();
+        if (old!=null && old!=server)
         {
             getServer().getContainer().update(this, _filters, null, "filter",true);
             getServer().getContainer().update(this, _filterMappings, null, "filterMapping",true);
             getServer().getContainer().update(this, _servlets, null, "servlet",true);
             getServer().getContainer().update(this, _servletMappings, null, "servletMapping",true);
         }
-        if (server!=null && getServer()!=server)
+
+        super.setServer(server);
+        
+        if (server!=null && old!=server)
         {
             server.getContainer().update(this, null, _filters, "filter",true);
             server.getContainer().update(this, null, _filterMappings, "filterMapping",true);
             server.getContainer().update(this, null, _servlets, "servlet",true);
             server.getContainer().update(this, null, _servletMappings, "servletMapping",true);
         }
-        super.setServer(server);
     }
 
     /* ----------------------------------------------------------------- */
@@ -261,7 +264,7 @@ public class ServletHandler extends ScopedHandler
      */
     public RequestDispatcher getRequestDispatcher(String uriInContext)
     {
-        if (uriInContext == null)
+        if (uriInContext == null || _contextHandler==null)
             return null;
 
         if (!uriInContext.startsWith("/"))
@@ -366,8 +369,6 @@ public class ServletHandler extends ScopedHandler
             {
                 servlet_holder=(ServletHolder)entry.getValue();
 
-                if(Log.isDebugEnabled())Log.debug("servlet="+servlet_holder);
-
                 String servlet_path_spec=(String)entry.getKey(); 
                 String servlet_path=entry.getMapped()!=null?entry.getMapped():PathMap.pathMatch(servlet_path_spec,target);
                 String path_info=PathMap.pathInfo(servlet_path_spec,target);
@@ -390,7 +391,8 @@ public class ServletHandler extends ScopedHandler
             servlet_holder=(ServletHolder)_servletNameMap.get(target);
         }
 
-        Log.debug("servlet holder=",servlet_holder);
+        if (Log.isDebugEnabled())
+            Log.debug("servlet {} -> {}",baseRequest.getContextPath()+"|"+baseRequest.getServletPath()+"|"+baseRequest.getPathInfo(),servlet_holder);
 
         try
         {
@@ -799,17 +801,22 @@ public class ServletHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** Convenience method to add a servlet Holder.
+    public ServletHolder newServletHolder(Class<? extends Servlet> servlet)
+    {
+        return new ServletHolder(servlet);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convenience method to add a servlet.
      * @return The servlet holder.
      */
     public ServletHolder addServletWithMapping (String className,String pathSpec)
     {
         ServletHolder holder = newServletHolder(null);
-        holder.setName(className+"-"+holder.hashCode());
+        holder.setName(className+"-"+LazyList.size(_servlets));
         holder.setClassName(className);
-        
         addServletWithMapping(holder,pathSpec);
-        
         return holder;
     }   
     
@@ -924,7 +931,7 @@ public class ServletHandler extends ScopedHandler
     public FilterHolder addFilterWithMapping (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
-        holder.setName(className+"-"+holder.hashCode());
+        holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
         
         addFilterWithMapping(holder,pathSpec,dispatches);
@@ -951,6 +958,74 @@ public class ServletHandler extends ScopedHandler
             mapping.setFilterName(holder.getName());
             mapping.setPathSpec(pathSpec);
             mapping.setDispatcherTypes(dispatches);
+            setFilterMappings((FilterMapping[])LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
+        }
+        catch (RuntimeException e)
+        {
+            setFilters(holders);
+            throw e;
+        }
+        catch (Error e)
+        {
+            setFilters(holders);
+            throw e;
+        }
+            
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convenience method to add a filter.
+     * @param filter  class of filter to create
+     * @param pathSpec filter mappings for filter
+     * @param dispatches see {@link FilterMapping#setDispatches(int)}
+     * @return The filter holder.
+     */
+    public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,int dispatches)
+    {
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
+        holder.setHeldClass(filter);
+        addFilterWithMapping(holder,pathSpec,dispatches);
+        
+        return holder;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convenience method to add a filter.
+     * @param className of filter
+     * @param pathSpec filter mappings for filter
+     * @param dispatches see {@link FilterMapping#setDispatches(int)}
+     * @return The filter holder.
+     */
+    public FilterHolder addFilterWithMapping (String className,String pathSpec,int dispatches)
+    {
+        FilterHolder holder = newFilterHolder(null);
+        holder.setName(className+"-"+_filters.length);
+        holder.setClassName(className);
+        
+        addFilterWithMapping(holder,pathSpec,dispatches);
+        return holder;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convenience method to add a filter.
+     * @param holder filter holder to add
+     * @param pathSpec filter mappings for filter
+     * @param dispatches see {@link FilterMapping#setDispatches(int)}
+     */
+    public void addFilterWithMapping (FilterHolder holder,String pathSpec,int dispatches)
+    {
+        FilterHolder[] holders = getFilters();
+        if (holders!=null)
+            holders = (FilterHolder[])holders.clone();
+        
+        try
+        {
+            setFilters((FilterHolder[])LazyList.addToArray(holders, holder, FilterHolder.class));
+            
+            FilterMapping mapping = new FilterMapping();
+            mapping.setFilterName(holder.getName());
+            mapping.setPathSpec(pathSpec);
+            mapping.setDispatches(dispatches);
             setFilterMappings((FilterMapping[])LazyList.addToArray(getFilterMappings(), mapping, FilterMapping.class));
         }
         catch (RuntimeException e)
@@ -1396,13 +1471,15 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
-        _contextHandler.destroyServlet(servlet);
+        if (_contextHandler!=null)
+            _contextHandler.destroyServlet(servlet);
     }
 
     /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
-        _contextHandler.destroyFilter(filter);
+        if (_contextHandler!=null)
+            _contextHandler.destroyFilter(filter);
     }
     
     /* ------------------------------------------------------------ */

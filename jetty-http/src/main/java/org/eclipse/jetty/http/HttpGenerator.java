@@ -171,7 +171,7 @@ public class HttpGenerator extends AbstractGenerator
                 Buffer nc=_buffers.getBuffer(_content.length()+content.length());
                 nc.put(_content);
                 nc.put(content);
-                _content=nc;
+                content=nc;
             }
         }
 

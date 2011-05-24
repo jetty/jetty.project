@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>16</version>
+    <version>17</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
@@ -12,7 +12,6 @@
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
   <properties>
-    <felix.bundle.version>2.0.0</felix.bundle.version>
     <javax-activation-version>1.1</javax-activation-version>
     <javax-mail-version>1.4.1</javax-mail-version>
     <javax-transaction-version>1.1.1</javax-transaction-version>
@@ -72,7 +71,6 @@
         <inherited>true</inherited>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.1.1</version>
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -99,7 +97,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.5</version>
         <executions>
           <execution>
             <id>set-osgi-version</id>
@@ -114,7 +111,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>1.0-alpha-4</version>
         <executions>
           <execution>
             <id>enforce-java</id>
@@ -148,7 +144,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
-        <version>2.5</version>
         <configuration>
           <targetJdk>1.5</targetJdk>
           <rulesets>
@@ -182,7 +177,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.4.2</version>
           <configuration>
             <failIfNoTests>false</failIfNoTests>
             <systemProperties>
@@ -196,7 +190,6 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>2.0.0</version>
           <extensions>true</extensions>
           <configuration>
             <instructions>
@@ -205,6 +198,7 @@
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Localization>plugin</Bundle-Localization>
               <Bundle-Classpath>.</Bundle-Classpath>
+              <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
               <Bundle-Copyright>Copyright (c) 2008-2009 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
             </instructions>
@@ -213,7 +207,6 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.2-beta-5</version>
           <dependencies>
             <dependency>
               <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -225,7 +218,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.3.1</version>
+          <version>2.3.2</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <xmlOutput>true</xmlOutput>
@@ -236,12 +229,27 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.1</version>
+        </plugin>
+        <plugin>
+        	<groupId>org.apache.maven.plugins</groupId>
+        	<artifactId>maven-jxr-plugin</artifactId>
+        	<version>2.2</version>
+        </plugin>
+        <plugin>
+        	<groupId>org.apache.maven.plugins</groupId>
+        	<artifactId>maven-javadoc-plugin</artifactId>
+        	<version>2.8</version>
+        </plugin>
+        <plugin>
+        	<groupId>org.apache.maven.plugins</groupId>
+        	<artifactId>maven-pmd-plugin</artifactId>
+        	<version>2.5</version>
         </plugin>
       </plugins>
     </pluginManagement>
   </build>
   <reporting>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -251,7 +259,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.6.1</version>
+        <version>2.8</version>
         <configuration>
           <maxmemory>512m</maxmemory>
           <docfilessubdirs>true</docfilessubdirs>
@@ -273,7 +281,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>2.3.1</version>
+        <version>2.3.2</version>
       </plugin>
     </plugins>
   </reporting>
@@ -433,7 +441,6 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>cobertura-maven-plugin</artifactId>
-            <version>2.4</version>
             <configuration>
               <maxmem>512m</maxmem>
             </configuration>
@@ -493,15 +500,6 @@
         </file>
       </activation>
       <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-site-plugin</artifactId>
-              <version>3.0-beta-3</version>
-            </plugin>
-          </plugins>
-        </pluginManagement>
         <plugins>
           <plugin>
             <artifactId>maven-site-plugin</artifactId>

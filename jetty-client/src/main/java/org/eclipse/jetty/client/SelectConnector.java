@@ -19,13 +19,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
@@ -47,10 +47,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
     private SSLContext _sslContext;
     private Buffers _sslBuffers;
-    private int _maxBuffers=1024;
 
     /**
-     * @param httpClient
+     * @param httpClient the HttpClient this connector is associated to
      */
     SelectConnector(HttpClient httpClient)
     {
@@ -67,12 +66,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 
         final boolean direct=_httpClient.getUseDirectBuffers();
 
-        SSLEngine sslEngine=_selectorManager.newSslEngine();
+        SSLEngine sslEngine=_selectorManager.newSslEngine(null);
         final SSLSession ssl_session=sslEngine.getSession();
         _sslBuffers = BuffersFactory.newBuffers(
                 direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
                 direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
-                direct?Type.DIRECT:Type.INDIRECT,_maxBuffers); 
+                direct?Type.DIRECT:Type.INDIRECT,1024);
 
         _httpClient._threadPool.dispatch(this);
     }
@@ -105,12 +104,8 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             }
             else
             {
-                channel.configureBlocking( true );
-                channel.socket().setSoTimeout(_httpClient.getConnectTimeout());
-                channel.socket().connect(address.toSocketAddress(),_httpClient.getConnectTimeout());
+                channel.socket().connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
                 channel.configureBlocking(false);
-                channel.socket().setSoTimeout((int)_httpClient.getTimeout());
-
                 _selectorManager.register( channel, destination );
             }
 
@@ -146,7 +141,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         @Override
         public boolean dispatch(Runnable task)
         {
-            return SelectConnector.this._httpClient._threadPool.dispatch(task);
+            return _httpClient._threadPool.dispatch(task);
         }
 
         @Override
@@ -191,18 +186,18 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             {
                 if (dest.isProxied())
                 {
-                    SSLEngine engine=newSslEngine();
-                    ep = new ProxySelectChannelEndPoint(channel,selectSet,key,_sslBuffers,engine);
+                    SSLEngine engine=newSslEngine(channel);
+                    ep = new ProxySelectChannelEndPoint(channel, selectSet, key, _sslBuffers, engine, (int)_httpClient.getIdleTimeout());
                 }
                 else
                 {
-                    SSLEngine engine=newSslEngine();
-                    ep = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,engine);
+                    SSLEngine engine=newSslEngine(channel);
+                    ep = new SslSelectChannelEndPoint(_sslBuffers, channel, selectSet, key, engine, (int)_httpClient.getIdleTimeout());
                 }
             }
             else
             {
-                ep=new SelectChannelEndPoint(channel,selectSet,key);
+                ep = new SelectChannelEndPoint(channel, selectSet, key, (int)_httpClient.getIdleTimeout());
             }
 
             HttpConnection connection=(HttpConnection)ep.getConnection();
@@ -211,14 +206,23 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             return ep;
         }
 
-        private synchronized SSLEngine newSslEngine() throws IOException
+        private synchronized SSLEngine newSslEngine(SocketChannel channel) throws IOException
         {
-            if (_sslContext==null)
-            {
-                _sslContext = SelectConnector.this._httpClient.getSSLContext();
-            }
+            SslContextFactory sslContextFactory = _httpClient.getSslContextFactory();
+            if (_sslContext == null)
+                _sslContext = sslContextFactory.getSslContext();
 
-            SSLEngine sslEngine = _sslContext.createSSLEngine();
+            SSLEngine sslEngine;
+            if (channel != null && sslContextFactory.isSessionCachingEnabled())
+            {
+                String peerHost = channel.socket().getInetAddress().getHostAddress();
+                int peerPort = channel.socket().getPort();
+                sslEngine = _sslContext.createSSLEngine(peerHost, peerPort);
+            }
+            else
+            {
+                sslEngine = _sslContext.createSSLEngine();
+            }
             sslEngine.setUseClientMode(true);
             sslEngine.beginHandshake();
 
@@ -281,10 +285,10 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         private final SelectChannelEndPoint plainEndPoint;
         private volatile boolean upgraded = false;
 
-        public ProxySelectChannelEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, Buffers sslBuffers, SSLEngine engine) throws IOException
+        public ProxySelectChannelEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, Buffers sslBuffers, SSLEngine engine, int maxIdleTimeout) throws IOException
         {
-            super(sslBuffers, channel, selectSet, key, engine);
-            this.plainEndPoint = new SelectChannelEndPoint(channel, selectSet, key);
+            super(sslBuffers, channel, selectSet, key, engine, maxIdleTimeout);
+            this.plainEndPoint = new SelectChannelEndPoint(channel, selectSet, key, maxIdleTimeout);
         }
 
         public void upgrade()

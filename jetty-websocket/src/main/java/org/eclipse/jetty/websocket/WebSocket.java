@@ -27,14 +27,14 @@ public interface WebSocket
      * Called when a new websocket connection is accepted.
      * @param connection The Connection object to use to send messages.
      */
-    void onConnect(Connection connection);
+    void onOpen(Connection connection);
     
     /**
      * Called when an established websocket connection closes
      * @param closeCode
      * @param message
      */
-    void onDisconnect(int closeCode, String message);
+    void onClose(int closeCode, String message);
 
     /**
      * A nested WebSocket interface for receiving text messages
@@ -95,34 +95,70 @@ public interface WebSocket
          * @return true if this call has completely handled the frame and no further processing is needed (including aggregation and/or message delivery)
          */
         boolean onFrame(byte flags,byte opcode,byte[] data, int offset, int length);
+        
+        void onHandshake(FrameConnection connection);
     }
     
+    /**
+     * A  Connection interface is passed to a WebSocket instance via the {@link WebSocket#onOpen(Connection)} to 
+     * give the application access to the specifics of the current connection.   This includes methods 
+     * for sending frames and messages as well as methods for interpreting the flags and opcodes of the connection.
+     */
     public interface Connection
     {
         String getProtocol();
         void sendMessage(String data) throws IOException;
         void sendMessage(byte[] data, int offset, int length) throws IOException;
-        void sendControl(byte control,byte[] data, int offset, int length) throws IOException;
-        void sendFrame(byte flags,byte opcode,byte[] data, int offset, int length) throws IOException;
-        void disconnect(int closeCode,String message);
+        void disconnect();
         boolean isOpen();
-        
-        boolean isMore(byte flags);
-        
+
+        /**
+         * @param size size<0 No aggregation of frames to messages, >=0 max size of text frame aggregation buffer in characters
+         */
         void setMaxTextMessageSize(int size);
+        
+        /**
+         * @param size size<0 no aggregation of binary frames, >=0 size of binary frame aggregation buffer
+         */
         void setMaxBinaryMessageSize(int size);
         
         /**
          * Size in characters of the maximum text message to be received
-         * @return <0 No aggregation of frames to messages, >=0 max size of text frame aggregation buffer in characters
+         * @return size <0 No aggregation of frames to messages, >=0 max size of text frame aggregation buffer in characters
          */
         int getMaxTextMessageSize();
         
         /**
          * Size in bytes of the maximum binary message to be received
-         * @return <0 no aggregation of binary frames, >=0 size of binary frame aggregation buffer
+         * @return size <0 no aggregation of binary frames, >=0 size of binary frame aggregation buffer
          */
         int getMaxBinaryMessageSize();
+    }
+    
+    /**
+     * Frame Level Connection
+     * <p>The Connection interface at the level of sending/receiving frames rather than messages.
+     *
+     */
+    public interface FrameConnection extends Connection
+    {
+        boolean isMessageComplete(byte flags);
+        void close(int closeCode,String message);
+        byte binaryOpcode();
+        byte textOpcode();
+        byte continuationOpcode();
+        byte finMask();
+        
+        boolean isControl(byte opcode);
+        boolean isText(byte opcode);
+        boolean isBinary(byte opcode);
+        boolean isContinuation(byte opcode);
+        boolean isClose(byte opcode);
+        boolean isPing(byte opcode);
+        boolean isPong(byte opcode);
+        
+        void sendControl(byte control,byte[] data, int offset, int length) throws IOException;
+        void sendFrame(byte flags,byte opcode,byte[] data, int offset, int length) throws IOException;
     }
     
 }

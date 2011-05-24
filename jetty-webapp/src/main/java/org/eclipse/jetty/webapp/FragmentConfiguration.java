@@ -69,7 +69,14 @@ public class FragmentConfiguration extends AbstractConfiguration
         {
             for (Resource frag : frags)
             {
-                metaData.addFragment(frag, Resource.newResource("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml"));
+            	if (frag.isDirectory()) //tolerate the case where the library is a directory, not a jar. useful for OSGi for example
+            	{
+                    metaData.addFragment(frag, Resource.newResource(frag.getURL()+"/META-INF/web-fragment.xml"));            		
+            	}
+                else //the standard case: a jar most likely inside WEB-INF/lib
+                {
+                    metaData.addFragment(frag, Resource.newResource("jar:"+frag.getURL()+"!/META-INF/web-fragment.xml"));
+                }
             }
         }
     }

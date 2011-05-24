@@ -503,7 +503,7 @@ public class HttpConnection  extends AbstractConnection implements Connection
                         more_in_buffer=false;
                     }
                     else if (_generator.isCommitted() && !_generator.isComplete() && _endp instanceof AsyncEndPoint)
-                        ((AsyncEndPoint)_endp).setWritable(false);
+                        ((AsyncEndPoint)_endp).scheduleWrite();
                 }
             }
         }
@@ -808,6 +808,7 @@ public class HttpConnection  extends AbstractConnection implements Connection
     /* ------------------------------------------------------------ */
     public void closed()
     {
+        Log.debug("closed {}",this);
     }
     
     /* ------------------------------------------------------------ */

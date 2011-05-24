@@ -634,7 +634,7 @@ public class WebSocketMessageD06Test
         WebSocketGeneratorD06 gen = new WebSocketGeneratorD06(new WebSocketBuffers(8096),endp,null);
         
         byte[] data = message.getBytes(StringUtil.__UTF8);
-        gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length,1000);
+        gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length);
         
         endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
                 
@@ -667,7 +667,7 @@ public class WebSocketMessageD06Test
         
         WebSocketGeneratorD06 gen = new WebSocketGeneratorD06(new WebSocketBuffers(8096),endp,maskGen);
         byte[] data = message.getBytes(StringUtil.__UTF8);
-        gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length,1000);
+        gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length);
         
         endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
                 
@@ -745,16 +745,20 @@ public class WebSocketMessageD06Test
         boolean aggregate=false;
         private final CountDownLatch connected = new CountDownLatch(1);
         private final CountDownLatch disconnected = new CountDownLatch(1);
-        private volatile Connection connection;
+        private volatile FrameConnection connection;
 
         public Connection getConnection()
         {
             return connection;
         }
-        
-        public void onConnect(Connection connection)
+
+        public void onHandshake(FrameConnection connection)
         {
             this.connection = connection;
+        }
+        
+        public void onOpen(Connection connection)
+        {
             if (onConnect)
             {
                 try
@@ -779,7 +783,7 @@ public class WebSocketMessageD06Test
             return disconnected.await(time, TimeUnit.MILLISECONDS);
         }
 
-        public void onDisconnect(int code,String message)
+        public void onClose(int code,String message)
         {
             disconnected.countDown();
         }

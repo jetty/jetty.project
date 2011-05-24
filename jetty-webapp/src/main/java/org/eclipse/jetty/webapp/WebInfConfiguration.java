@@ -420,7 +420,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 {
                     // look for a sibling like "foo/" to a "foo.war"
                     File warfile=Resource.newResource(war).getFile();
-                    if (warfile!=null)
+                    if (warfile!=null && warfile.getName().toLowerCase().endsWith(".war"))
                     {
                         File sibling = new File(warfile.getParent(),warfile.getName().substring(0,warfile.getName().length()-4));
                         if (sibling.exists() && sibling.isDirectory() && sibling.canWrite())

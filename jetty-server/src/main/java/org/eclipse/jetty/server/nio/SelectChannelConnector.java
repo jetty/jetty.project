@@ -28,8 +28,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.Timeout.Task;
@@ -304,6 +306,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         return new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
     }
 
+    /* ------------------------------------------------------------------------------- */
     protected void endPointClosed(SelectChannelEndPoint endpoint)
     {
         connectionClosed(endpoint.getConnection());
@@ -312,22 +315,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------------------------- */
     protected Connection newConnection(SocketChannel channel,final SelectChannelEndPoint endpoint)
     {
-        return new HttpConnection(SelectChannelConnector.this,endpoint,getServer())
-        {
-            /* ------------------------------------------------------------ */
-            @Override
-            public void cancelTimeout(Task task)
-            {
-                endpoint.getSelectSet().cancelTimeout(task);
-            }
-
-            /* ------------------------------------------------------------ */
-            @Override
-            public void scheduleTimeout(Task task, long timeoutMs)
-            {
-                endpoint.getSelectSet().scheduleTimeout(task,timeoutMs);
-            }
-        };
+        return new SelectChannelHttpConnection(SelectChannelConnector.this,endpoint,getServer(),endpoint);
     }
 
     /* ------------------------------------------------------------ */
@@ -339,6 +327,34 @@ public class SelectChannelConnector extends AbstractNIOConnector
             AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{null,"CLOSED",_manager}));
         else
             AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{_acceptChannel,_acceptChannel.isOpen()?"OPEN":"CLOSED",_manager}));
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private class SelectChannelHttpConnection extends HttpConnection
+    {
+        private final SelectChannelEndPoint _endpoint;
+
+        private SelectChannelHttpConnection(Connector connector, EndPoint endpoint, Server server, SelectChannelEndPoint endpoint2)
+        {
+            super(connector,endpoint,server);
+            _endpoint = endpoint2;
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public void cancelTimeout(Task task)
+        {
+            _endpoint.getSelectSet().cancelTimeout(task);
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public void scheduleTimeout(Task task, long timeoutMs)
+        {
+            _endpoint.getSelectSet().scheduleTimeout(task,timeoutMs);
+        }
     }
 
     /* ------------------------------------------------------------ */

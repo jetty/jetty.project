@@ -1002,13 +1002,19 @@ public class Request implements HttpServletRequest
         Buffer hostPort = _connection.getRequestFields().get(HttpHeaders.HOST_BUFFER);
         if (hostPort!=null)
         {
-            for (int i=hostPort.length();i-->0;)   
+            loop:
+            for (int i=hostPort.putIndex();i-->hostPort.getIndex();)   
             {
-                if (hostPort.peek(hostPort.getIndex()+i)==':')
+                char ch=(char)(0xff&hostPort.peek(i));
+                switch(ch)
                 {
-                    _serverName=BufferUtil.to8859_1_String(hostPort.peek(hostPort.getIndex(), i));
-                    _port=BufferUtil.toInt(hostPort.peek(hostPort.getIndex()+i+1, hostPort.length()-i-1));
-                    return _serverName;
+                    case ']':
+                        break loop;
+
+                    case ':':
+                        _serverName=BufferUtil.to8859_1_String(hostPort.peek(hostPort.getIndex(), i-hostPort.getIndex()));
+                        _port=BufferUtil.toInt(hostPort.peek(i+1, hostPort.putIndex()-i-1));
+                        return _serverName;
                 }
             }
             if (_serverName==null || _port<0)

@@ -228,7 +228,7 @@ public class WebSocketMessageD00Test
         private final CountDownLatch latch = new CountDownLatch(1);
         private volatile Connection outbound;
 
-        public void onConnect(Connection outbound)
+        public void onOpen(Connection outbound)
         {
             this.outbound = outbound;
             if (onConnect)
@@ -250,7 +250,7 @@ public class WebSocketMessageD00Test
             return latch.await(time, TimeUnit.MILLISECONDS);
         }
 
-        public void onDisconnect(int code,String message)
+        public void onClose(int code,String message)
         {
         }
     }

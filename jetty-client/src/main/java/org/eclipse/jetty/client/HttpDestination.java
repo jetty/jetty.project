@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.client.HttpClient.Connector;
 import org.eclipse.jetty.client.security.Authentication;
@@ -33,67 +35,45 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 
 /**
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
-public class HttpDestination
+public class HttpDestination implements Dumpable
 {
-    private final ByteArrayBuffer _hostHeader;
-    private final Address _address;
-    private final LinkedList<HttpConnection> _connections = new LinkedList<HttpConnection>();
-    private final ArrayList<HttpConnection> _idle = new ArrayList<HttpConnection>();
+    private final List<HttpExchange> _queue = new LinkedList<HttpExchange>();
+    private final List<HttpConnection> _connections = new LinkedList<HttpConnection>();
+    private final BlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
+    private final List<HttpConnection> _idle = new ArrayList<HttpConnection>();
     private final HttpClient _client;
+    private final Address _address;
     private final boolean _ssl;
-    private final int _maxConnections;
+    private final ByteArrayBuffer _hostHeader;
+    private volatile int _maxConnections;
+    private volatile int _maxQueueSize;
     private int _pendingConnections = 0;
-    private ArrayBlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
     private int _newConnection = 0;
-    private Address _proxy;
+    private volatile Address _proxy;
     private Authentication _proxyAuthentication;
     private PathMap _authorizations;
     private List<HttpCookie> _cookies;
 
-    public void dump() throws IOException
-    {
-        synchronized (this)
-        {
-            Log.info(this.toString());
-            Log.info("connections=" + _connections.size());
-            Log.info("idle=" + _idle.size());
-            Log.info("pending=" + _pendingConnections);
-            for (HttpConnection c : _connections)
-            {
-                if (!c.isIdle())
-                    c.dump();
-            }
-        }
-    }
 
-    /* The queue of exchanged for this destination if connections are limited */
-    private LinkedList<HttpExchange> _queue = new LinkedList<HttpExchange>();
-
-    HttpDestination(HttpClient client, Address address, boolean ssl, int maxConnections)
+    
+    HttpDestination(HttpClient client, Address address, boolean ssl)
     {
         _client = client;
         _address = address;
         _ssl = ssl;
-        _maxConnections = maxConnections;
+        _maxConnections = _client.getMaxConnectionsPerAddress();
+        _maxQueueSize = _client.getMaxQueueSizePerAddress();
         String addressString = address.getHost();
         if (address.getPort() != (_ssl ? 443 : 80))
             addressString += ":" + address.getPort();
         _hostHeader = new ByteArrayBuffer(addressString);
-    }
-
-    public Address getAddress()
-    {
-        return _address;
-    }
-
-    public Buffer getHostHeader()
-    {
-        return _hostHeader;
     }
 
     public HttpClient getHttpClient()
@@ -101,9 +81,39 @@ public class HttpDestination
         return _client;
     }
 
+    public Address getAddress()
+    {
+        return _address;
+    }
+
     public boolean isSecure()
     {
         return _ssl;
+    }
+
+    public Buffer getHostHeader()
+    {
+        return _hostHeader;
+    }
+
+    public int getMaxConnections()
+    {
+        return _maxConnections;
+    }
+
+    public void setMaxConnections(int maxConnections)
+    {
+        this._maxConnections = maxConnections;
+    }
+
+    public int getMaxQueueSize()
+    {
+        return _maxQueueSize;
+    }
+
+    public void setMaxQueueSize(int maxQueueSize)
+    {
+        this._maxQueueSize = maxQueueSize;
     }
 
     public int getConnections()
@@ -276,7 +286,7 @@ public class HttpDestination
             }
             else if (_queue.size() > 0)
             {
-                HttpExchange ex = _queue.removeFirst();
+                HttpExchange ex = _queue.remove(0);
                 ex.setStatus(HttpExchange.STATUS_EXCEPTED);
                 ex.getEventListener().onConnectionFailed(throwable);
 
@@ -310,7 +320,7 @@ public class HttpDestination
             _pendingConnections--;
             if (_queue.size() > 0)
             {
-                HttpExchange ex = _queue.removeFirst();
+                HttpExchange ex = _queue.remove(0);
                 ex.setStatus(HttpExchange.STATUS_EXCEPTED);
                 ex.getEventListener().onException(throwable);
             }
@@ -349,7 +359,7 @@ public class HttpDestination
                 }
                 else
                 {
-                    HttpExchange exchange = _queue.removeFirst();
+                    HttpExchange exchange = _queue.remove(0);
                     send(connection, exchange);
                 }
             }
@@ -399,7 +409,7 @@ public class HttpDestination
                 }
                 else
                 {
-                    HttpExchange ex = _queue.removeFirst();
+                    HttpExchange ex = _queue.remove(0);
                     send(connection, ex);
                 }
                 this.notifyAll();
@@ -516,6 +526,10 @@ public class HttpDestination
                 (auth).setCredentials(ex);
         }
 
+        // Schedule the timeout here, before we queue the exchange
+        // so that we count also the queue time in the timeout
+        ex.scheduleTimeout(this);
+
         HttpConnection connection = getIdleConnection();
         if (connection != null)
         {
@@ -526,6 +540,9 @@ public class HttpDestination
             boolean startConnection = false;
             synchronized (this)
             {
+                if (_queue.size() == _maxQueueSize)
+                    throw new RejectedExecutionException("Queue full for address " + _address);
+
                 _queue.add(ex);
                 if (_connections.size() + _pendingConnections < _maxConnections)
                     startConnection = true;
@@ -533,6 +550,16 @@ public class HttpDestination
 
             if (startConnection)
                 startNewConnection();
+        }
+    }
+
+    protected void exchangeExpired(HttpExchange exchange)
+    {
+        // The exchange may expire while waiting in the
+        // destination queue, make sure it is removed
+        synchronized (this)
+        {
+            _queue.remove(exchange);
         }
     }
 
@@ -544,7 +571,8 @@ public class HttpDestination
             // to the exchange queue and recycle the connection
             if (!connection.send(exchange))
             {
-                _queue.addFirst(exchange);
+                if (exchange.getStatus() <= HttpExchange.STATUS_WAITING_FOR_CONNECTION)
+                    _queue.add(0, exchange);
                 returnIdleConnection(connection);
             }
         }
@@ -613,6 +641,28 @@ public class HttpDestination
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump()
+     */
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.Dumpable#dump(java.lang.Appendable, java.lang.String)
+     */
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        synchronized (this)
+        {
+            out.append(String.valueOf(this)+"idle="+_idle.size()+" pending="+_pendingConnections).append("\n");
+            AggregateLifeCycle.dump(out,indent,_connections);
+        }
+    }
+    
     private class ConnectExchange extends ContentExchange
     {
         private final SelectConnector.ProxySelectChannelEndPoint proxyEndPoint;

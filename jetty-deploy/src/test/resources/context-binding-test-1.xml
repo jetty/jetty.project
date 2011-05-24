@@ -1,0 +1,31 @@
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+
+  <Call name="addServerClass">
+    <Arg>org.eclipse.foo.</Arg>
+  </Call>
+
+  <!-- Array id="serverClasses" type="java.lang.String">
+    <Item>-org.eclipse.jetty.continuation.</Item>
+    <Item>-org.eclipse.jetty.jndi.</Item>
+    <Item>-org.eclipse.jetty.plus.jaas.</Item>
+    <Item>-org.eclipse.jetty.websocket.</Item>
+    <Item>-org.eclipse.jetty.servlet.DefaultServlet</Item>
+    <Item>org.eclipse.jetty.</Item>
+    <Item>org.eclipse.foo.</Item>
+  </Array>
+
+  <Array id="systemClasses" type="java.lang.String">
+    <Item>java.</Item>
+    <Item>javax.</Item>
+    <Item>org.xml.</Item>
+    <Item>org.w3c.</Item>
+    <Item>org.apache.commons.logging</Item>
+    <Item>org.eclipse.jetty.continuation</Item>
+    <Item>org.eclipse.jetty.plus.jaas.</Item>
+    <Item>org.eclipse.jetty.websocket</Item>
+    <Item>org.eclipse.jetty.servlet.DefaultServlet</Item>
+  </Array>
+
+  <Set name="serverClasses"><Ref id="serverClasses"/></Set>
+  <Set name="systemClasses"><Ref id="systemClasses"/></Set-->
+</Configure>

@@ -152,7 +152,7 @@ public class QuotedStringTokenizerTest
      * Test for String quote(String, String)
      */
     @Test
-    public void testQuoteString()
+    public void testQuoteIfNeeded()
     {
         assertEquals("abc",QuotedStringTokenizer.quoteIfNeeded("abc", " ,"));
         assertEquals("\"a c\"",QuotedStringTokenizer.quoteIfNeeded("a c", " ,"));
@@ -169,6 +169,9 @@ public class QuotedStringTokenizerTest
         assertEquals("a'c",QuotedStringTokenizer.unquote("\"a'c\""));
         assertEquals("a\n\r\t",QuotedStringTokenizer.unquote("\"a\\n\\r\\t\""));
         assertEquals("\u0000\u001f ",QuotedStringTokenizer.unquote("\"\u0000\u001f\u0020\""));
+        assertEquals("\u0000\u001f ",QuotedStringTokenizer.unquote("\"\u0000\u001f\u0020\""));
+        assertEquals("ab\u001ec",QuotedStringTokenizer.unquote("ab\u001ec"));
+        assertEquals("ab\u001ec",QuotedStringTokenizer.unquote("\"ab\u001ec\""));
     }
 
 }

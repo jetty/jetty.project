@@ -1,7 +1,6 @@
 package org.eclipse.jetty.continuation;
 
 import java.io.IOException;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -13,16 +12,24 @@ import javax.servlet.ServletResponse;
 
 
 /* ------------------------------------------------------------ */
-/** ContinuationFilter
- * <p>
- * This filter may be applied to webapplication that use the asynchronous 
- * features of the {@link Continuation} API, but that are deployed in container 
- * that is neither Jetty (>=6.1) nor a Servlet3.0 container.
- * The following init parameters may be used to configure the filter (these are mostly for testing):<dl>
+/**
+ * <p>ContinuationFilter must be applied to servlet paths that make use of
+ * the asynchronous features provided by {@link Continuation} APIs, but that
+ * are deployed in servlet containers that are neither Jetty (>= 7) nor a
+ * compliant Servlet 3.0 container.</p>
+ * <p>The following init parameters may be used to configure the filter (these are mostly for testing):</p>
+ * <dl>
  * <dt>debug</dt><dd>Boolean controlling debug output</dd>
- * <dt>jetty6</dt><dd>Boolean to force support for jetty 6 continuations)</dd>
- * <dt>faux</dt><dd>Boolean to force support for faux continuations</dd>
+ * <dt>jetty6</dt><dd>Boolean to force use of Jetty 6 continuations</dd>
+ * <dt>faux</dt><dd>Boolean to force use of faux continuations</dd>
  * </dl>
+ * <p>If the servlet container is not Jetty (either 6 or 7) nor a Servlet 3
+ * container, then "faux" continuations will be used.</p>
+ * <p>Faux continuations will just put the thread that called {@link Continuation#suspend()}
+ * in wait, and will notify that thread when {@link Continuation#resume()} or
+ * {@link Continuation#complete()} is called.</p>
+ * <p>Faux continuations are not threadless continuations (they are "faux" - fake - for this reason)
+ * and as such they will scale less than proper continuations.</p>
  */
 public class ContinuationFilter implements Filter
 {
@@ -38,12 +45,12 @@ public class ContinuationFilter implements Filter
     {
         boolean jetty_7_or_greater="org.eclipse.jetty.servlet".equals(filterConfig.getClass().getPackage().getName());
         _context = filterConfig.getServletContext();
-        
+
         String param=filterConfig.getInitParameter("debug");
         _debug=param!=null&&Boolean.parseBoolean(param);
         if (_debug)
             __debug=true;
-        
+
         param=filterConfig.getInitParameter("jetty6");
         if (param==null)
             param=filterConfig.getInitParameter("partial");
@@ -57,7 +64,7 @@ public class ContinuationFilter implements Filter
             _faux=Boolean.parseBoolean(param);
         else
             _faux=!(jetty_7_or_greater || _jetty6 || _context.getMajorVersion()>=3);
-        
+
         _filtered=_faux||_jetty6;
         if (_debug)
             _context.log("ContinuationFilter "+
@@ -124,7 +131,7 @@ public class ContinuationFilter implements Filter
             _context.log(string);
         }
     }
-    
+
     private void debug(String string, Throwable th)
     {
         if (_debug)

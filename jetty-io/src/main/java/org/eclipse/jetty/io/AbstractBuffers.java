@@ -43,7 +43,6 @@ public abstract class AbstractBuffers implements Buffers
     /* ------------------------------------------------------------ */
     /**
      * Create a new header Buffer
-     * @param size
      * @return new Buffer
      */
     final protected Buffer newHeader()
@@ -63,7 +62,6 @@ public abstract class AbstractBuffers implements Buffers
     /* ------------------------------------------------------------ */
     /**
      * Create a new content Buffer
-     * @param size
      * @return new Buffer
      */
     final protected Buffer newBuffer()

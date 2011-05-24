@@ -168,7 +168,8 @@ public class ClientCertAuthenticator extends LoginAuthenticator
      * load CRL in order to provide their own implementation.
      *
      * @param crlPath path of certificate revocation list file
-     * @return
+     * @return a (possibly empty) collection view of java.security.cert.CRL objects initialized with the data from the
+     *         input stream.
      * @throws Exception
      */
     protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception

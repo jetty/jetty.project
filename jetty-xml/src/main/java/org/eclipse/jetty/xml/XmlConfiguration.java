@@ -55,7 +55,7 @@ import org.xml.sax.SAXException;
  * 
  * <p>
  * The actual XML file format may be changed (eg to spring XML) by implementing the {@link ConfigurationProcessorFactory} interfaces to be found by the
- * {@link ServiceLoader} by using the DTD and first tag element in the file. Note that DTD will be null if validation is off.
+ * <code>ServiceLoader</code> by using the DTD and first tag element in the file. Note that DTD will be null if validation is off.
  * 
  */
 public class XmlConfiguration
@@ -209,7 +209,7 @@ public class XmlConfiguration
                 }
                 catch (Exception e)
                 {
-                    Log.ignore(e);
+                    Log.warn(e);
                 }
                 if (_processor!=null)
                     break;
@@ -684,44 +684,21 @@ public class XmlConfiguration
             if (Log.isDebugEnabled())
                 Log.debug("XML call " + method);
 
-            // Lets just try all methods for now
-            Method[] methods = oClass.getMethods();
-            for (int c = 0; methods != null && c < methods.length; c++)
+            try
             {
-                if (!methods[c].getName().equals(method))
-                    continue;
-                if (methods[c].getParameterTypes().length != size)
-                    continue;
-                if (Modifier.isStatic(methods[c].getModifiers()) != (obj == null))
-                    continue;
-                if ((obj == null) && methods[c].getDeclaringClass() != oClass)
-                    continue;
-
-                Object n = null;
-                boolean called = false;
-                try
-                {
-                    n = methods[c].invoke(obj,arg);
-                    called = true;
-                }
-                catch (IllegalAccessException e)
-                {
-                    Log.ignore(e);
-                }
-                catch (IllegalArgumentException e)
-                {
-                    Log.ignore(e);
-                }
-                if (called)
-                {
-                    if (id != null)
-                        _idMap.put(id,n);
-                    configure(n,node,argi);
-                    return n;
-                }
+                Object n= TypeUtil.call(oClass,method,obj,arg);
+                if (id != null)
+                    _idMap.put(id,n);
+                configure(n,node,argi);
+                return n;
+            }
+            catch (NoSuchMethodException e)
+            {
+                IllegalStateException ise = new IllegalStateException("No Method: " + node + " on " + oClass);
+                ise.initCause(e);
+                throw ise;
             }
 
-            throw new IllegalStateException("No Method: " + node + " on " + oClass);
         }
 
         /* ------------------------------------------------------------ */
