@@ -25,12 +25,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse</groupId>
-    	<artifactId>osgi</artifactId>
+    	<groupId>org.eclipse.osgi</groupId>
+    	<artifactId>org.eclipse.osgi</artifactId>
     </dependency>
     <dependency>
         <groupId>org.eclipse.osgi</groupId>
-        <artifactId>services</artifactId>
+        <artifactId>org.eclipse.osgi.services</artifactId>
     </dependency>
 <!-- switch to 2.2 once it works in OSGi for us
     <dependency>
@@ -43,11 +43,11 @@
       <artifactId>jsp-2.1-glassfish</artifactId>
       <version>2.1.v20100127</version>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>javax.servlet.jsp</groupId>
       <artifactId>jsp-api</artifactId>
       <version>2.2</version>
-    </dependency>
+    </dependency-->
     <dependency>
       <groupId>javax.el</groupId>
       <artifactId>el-api</artifactId>

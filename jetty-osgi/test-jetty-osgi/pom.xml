@@ -111,14 +111,14 @@
     </dependency>
     
     <dependency>
-    	<groupId>org.eclipse</groupId>
-    	<artifactId>osgi</artifactId>
+    	<groupId>org.eclipse.osgi</groupId>
+    	<artifactId>org.eclipse.osgi</artifactId>
         <version>${osgi-version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
         <groupId>org.eclipse.osgi</groupId>
-        <artifactId>services</artifactId>
+        <artifactId>org.eclipse.osgi.services</artifactId>
         <version>${osgi-services-version}</version>
       <scope>runtime</scope>
     </dependency>
