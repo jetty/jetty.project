@@ -242,6 +242,9 @@ public class SslTruncationAttackTest
         SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(socket, socket.getInetAddress().getHostName(), socket.getPort(), true);
         sslSocket.setUseClientMode(true);
 
+        // Wait for the socket to be connected
+        TimeUnit.SECONDS.sleep(1);
+
         handleCount.set(0);
 
         // Send TCP FIN without SSL close alert
