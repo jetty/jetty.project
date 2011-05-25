@@ -9,6 +9,7 @@ jetty-7.4.2-SNAPSHOT
  + 346124 ServletContext resources paths not resolved correctly when using UNC shares
  + 346179 o.e.j.util.ScannerTest fails on MacOS X platform
  + 346181 o.e.j.server.StressTest stalls on MacOS X platform
+ + 346998 AbstractLifeCycle.isRunning() returns false if state changes from STARTING to STARTED during call
  + JETTY-1342 Recreate selector if wakeup throws JVM bug
  + 346614 HttpConnection.handle() spins in case of SSL truncation attacks
  + 346764 OrderedGroupBinding deployment binding
