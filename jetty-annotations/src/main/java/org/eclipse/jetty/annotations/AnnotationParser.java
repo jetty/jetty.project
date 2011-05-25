@@ -43,7 +43,7 @@ import org.objectweb.asm.commons.EmptyVisitor;
  * a handler being able to be registered to handle each annotation type.
  */
 public class AnnotationParser
-{ 
+{
     protected List<String> _parsedClassNames = new ArrayList<String>();
     protected Map<String, List<DiscoverableAnnotationHandler>> _annotationHandlers = new HashMap<String, List<DiscoverableAnnotationHandler>>();
     protected List<ClassHandler> _classHandlers = new ArrayList<ClassHandler>();
@@ -636,10 +636,11 @@ public class AnnotationParser
         parse(uris, resolver);
     }
 
-    private void scanClass (InputStream is)
+    protected void scanClass (InputStream is)
     throws IOException
     {
         ClassReader reader = new ClassReader(is);
         reader.accept(new MyClassVisitor(), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
     }
 }
+

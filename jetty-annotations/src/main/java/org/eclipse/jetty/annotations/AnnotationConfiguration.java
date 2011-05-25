@@ -68,7 +68,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //a 2.5 version webapp that has specifically asked to discover annotations
             if (Log.isDebugEnabled()) Log.debug("parsing annotations");
             
-            AnnotationParser parser = new AnnotationParser();
+            AnnotationParser parser = createAnnotationParser();
             //Discoverable annotations - those that you have to look for without loading a class
             parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
             parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
@@ -94,7 +94,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
             context.setAttribute(CLASS_INHERITANCE_MAP, classHandler.getMap());
         }    
     }
-
+    
+    /**
+     * @return a new AnnotationParser. This method can be overridden to use a different impleemntation of
+     * the AnnotationParser. Note that this is considered internal API.
+     */
+    protected AnnotationParser createAnnotationParser()
+    {
+        return new AnnotationParser();
+    }
+    
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {

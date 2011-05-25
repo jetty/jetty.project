@@ -15,6 +15,7 @@ Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
  org.eclipse.jetty.nested;version="8.0.0";resolution:=optional,
+ org.eclipse.jetty.annotations;version="8.0.0";resolution:=optional,
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
@@ -48,4 +49,5 @@ Require-Bundle: org.eclipse.jetty.ajp;bundle-version="[8.0,9)";resolution:=optio
  org.eclipse.jetty.websocket;bundle-version="[8.0,9)";resolution:=optional,
  org.eclipse.jetty.xml;bundle-version="[8.0,9)"
 Export-Package: org.eclipse.jetty.osgi.boot;version="8.0.0",
- org.eclipse.jetty.osgi.boot.utils;version="8.0.0"
+ org.eclipse.jetty.osgi.boot.utils;version="8.0.0",
+ org.eclipse.jetty.osgi.annotations;version="8.0.0"
