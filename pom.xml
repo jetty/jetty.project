@@ -21,7 +21,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>1.5.11</slf4j-version>
     <build-support-version>1.0</build-support-version>
-    <jetty.test.helper>1.5-SNAPSHOT</jetty.test.helper>
+    <jetty.test.helper>1.5</jetty.test.helper>
     <jetty.test.policy>1.2</jetty.test.policy>
   </properties>
   <scm>
