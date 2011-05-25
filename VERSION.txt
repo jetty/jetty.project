@@ -13,6 +13,7 @@ jetty-7.4.2-SNAPSHOT
  + JETTY-1342 Recreate selector if wakeup throws JVM bug
  + 346614 HttpConnection.handle() spins in case of SSL truncation attacks
  + 346764 OrderedGroupBinding deployment binding
+ + 347137 - Allow SSL renegotiations by default in HttpClient
 
 jetty-7.4.1.v20110513
  + 288563 remove unsupported and deprecated --secure option

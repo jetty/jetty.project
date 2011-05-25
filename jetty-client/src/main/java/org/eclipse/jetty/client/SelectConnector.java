@@ -192,7 +192,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 else
                 {
                     SSLEngine engine=newSslEngine(channel);
-                    ep = new SslSelectChannelEndPoint(_sslBuffers, channel, selectSet, key, engine, (int)_httpClient.getIdleTimeout());
+                    SslSelectChannelEndPoint sslEp = new SslSelectChannelEndPoint(_sslBuffers, channel, selectSet, key, engine, (int)_httpClient.getIdleTimeout());
+                    sslEp.setAllowRenegotiate(_httpClient.getSslContextFactory().isAllowRenegotiate());
+                    ep = sslEp;
                 }
             }
             else
