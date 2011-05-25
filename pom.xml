@@ -17,11 +17,11 @@
     <javax-servlet-jsp-version>2.1.v20100127</javax-servlet-jsp-version>
     <javax-transaction-version>1.1.1</javax-transaction-version>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
-    <junit4-version>4.8.1</junit4-version>
+    <junit-version>4.8.1</junit-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>1.5.11</slf4j-version>
     <build-support-version>1.0</build-support-version>
-    <jetty.test.helper>1.3</jetty.test.helper>
+    <jetty.test.helper>1.5-SNAPSHOT</jetty.test.helper>
     <jetty.test.policy>1.2</jetty.test.policy>
   </properties>
   <scm>
@@ -229,19 +229,19 @@
           <artifactId>maven-dependency-plugin</artifactId>
         </plugin>
         <plugin>
-        	<groupId>org.apache.maven.plugins</groupId>
-        	<artifactId>maven-jxr-plugin</artifactId>
-        	<version>2.2</version>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jxr-plugin</artifactId>
+          <version>2.2</version>
         </plugin>
         <plugin>
-        	<groupId>org.apache.maven.plugins</groupId>
-        	<artifactId>maven-javadoc-plugin</artifactId>
-        	<version>2.8</version>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.8</version>
         </plugin>
         <plugin>
-        	<groupId>org.apache.maven.plugins</groupId>
-        	<artifactId>maven-pmd-plugin</artifactId>
-        	<version>2.5</version>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-pmd-plugin</artifactId>
+          <version>2.5</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -377,8 +377,7 @@
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>${junit4-version}</version>
-        <scope>test</scope>
+        <version>${junit-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

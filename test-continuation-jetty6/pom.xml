@@ -46,10 +46,10 @@
         <type>jar</type>
         <scope>test</scope>
         <exclusions>
-        	<exclusion>
-        		<artifactId>servlet-api-2.5</artifactId>
-        		<groupId>org.mortbay.jetty</groupId>
-        	</exclusion>
+          <exclusion>
+            <artifactId>servlet-api-2.5</artifactId>
+            <groupId>org.mortbay.jetty</groupId>
+          </exclusion>
         </exclusions>
     </dependency>
     <dependency>
