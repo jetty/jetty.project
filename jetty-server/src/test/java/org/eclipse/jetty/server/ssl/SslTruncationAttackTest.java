@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SslTruncationAttackTest
@@ -108,7 +109,7 @@ public class SslTruncationAttackTest
      * @throws Exception if the test fails
      */
     @Test
-    public void testTruncationAttack() throws Exception
+    public void testTruncationAttackAfterReading() throws Exception
     {
         Socket socket = new Socket("localhost", connector.getLocalPort());
         SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(socket, socket.getInetAddress().getHostName(), socket.getPort(), true);
@@ -151,7 +152,106 @@ public class SslTruncationAttackTest
         TimeUnit.SECONDS.sleep(1);
 
         Assert.assertEquals("handle() invocations", 1, handleCount.get());
-        Assert.assertTrue("endpoint closed", endPointClosed.get());
+        Assert.assertTrue("endpoint not closed", endPointClosed.get());
+    }
+
+    /**
+     * This test is currently failing because we are looping on SslSCEP.unwrap()
+     * to fill the buffer, so there is a case where we loop once, read some data
+     * loop again and read -1, but we can't close the connection yet as we have
+     * to notify the application (not sure that this is necessary... must assume
+     * the data is truncated, so it's not that safe to pass it to the application).
+     * This case needs to be revisited, and it also requires a review of the
+     * Connection:close case, especially on the client side.
+     * @throws Exception if the test fails
+     */
+    @Ignore
+    @Test
+    public void testTruncationAttackBeforeReading() throws Exception
+    {
+        Socket socket = new Socket("localhost", connector.getLocalPort());
+        SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(socket, socket.getInetAddress().getHostName(), socket.getPort(), true);
+        sslSocket.setUseClientMode(true);
+        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        sslSocket.addHandshakeCompletedListener(new HandshakeCompletedListener()
+        {
+            public void handshakeCompleted(HandshakeCompletedEvent handshakeCompletedEvent)
+            {
+                handshakeLatch.countDown();
+            }
+        });
+        sslSocket.startHandshake();
+
+        Assert.assertTrue(handshakeLatch.await(1, TimeUnit.SECONDS));
+
+        String request = "" +
+                "GET / HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "\r\n";
+        sslSocket.getOutputStream().write(request.getBytes("UTF-8"));
+
+        // Do not read the response, just close the underlying socket
+
+        handleCount.set(0);
+
+        // Send TCP FIN without SSL close alert
+        socket.close();
+
+        // Sleep for a while to detect eventual spin looping
+        TimeUnit.SECONDS.sleep(1);
+
+        Assert.assertEquals("handle() invocations", 1, handleCount.get());
+        Assert.assertTrue("endpoint not closed", endPointClosed.get());
+    }
+
+    @Test
+    public void testTruncationAttackAfterHandshake() throws Exception
+    {
+        Socket socket = new Socket("localhost", connector.getLocalPort());
+        SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(socket, socket.getInetAddress().getHostName(), socket.getPort(), true);
+        sslSocket.setUseClientMode(true);
+        final CountDownLatch handshakeLatch = new CountDownLatch(1);
+        sslSocket.addHandshakeCompletedListener(new HandshakeCompletedListener()
+        {
+            public void handshakeCompleted(HandshakeCompletedEvent handshakeCompletedEvent)
+            {
+                handshakeLatch.countDown();
+            }
+        });
+        sslSocket.startHandshake();
+
+        Assert.assertTrue(handshakeLatch.await(1, TimeUnit.SECONDS));
+
+        handleCount.set(0);
+
+        // Send TCP FIN without SSL close alert
+        socket.close();
+
+        // Sleep for a while to detect eventual spin looping
+        TimeUnit.SECONDS.sleep(1);
+
+        Assert.assertEquals("handle() invocations", 1, handleCount.get());
+        Assert.assertTrue("endpoint not closed", endPointClosed.get());
+    }
+
+
+    @Test
+    public void testTruncationAttackBeforeHandshake() throws Exception
+    {
+        Socket socket = new Socket("localhost", connector.getLocalPort());
+        SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(socket, socket.getInetAddress().getHostName(), socket.getPort(), true);
+        sslSocket.setUseClientMode(true);
+
+        handleCount.set(0);
+
+        // Send TCP FIN without SSL close alert
+        socket.close();
+
+        // Sleep for a while to detect eventual spin looping
+        TimeUnit.SECONDS.sleep(1);
+
+        Assert.assertEquals("handle() invocations", 1, handleCount.get());
+        Assert.assertTrue("endpoint not closed", endPointClosed.get());
     }
 
     private class EmptyHandler extends AbstractHandler

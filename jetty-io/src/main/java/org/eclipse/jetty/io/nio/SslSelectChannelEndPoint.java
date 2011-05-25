@@ -184,8 +184,14 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     @Override
     public void shutdownOutput() throws IOException
     {
-        sslClose();
-        super.shutdownOutput();
+        try
+        {
+            sslClose();
+        }
+        finally
+        {
+            super.shutdownOutput();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -291,9 +297,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 }
             }
         }
-        catch (Exception e)
+        catch (Exception x)
         {
-            Log.debug(e);
+            Log.debug(x);
             super.close();
         }
     }
@@ -302,8 +308,14 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     @Override
     public void close() throws IOException
     {
-        sslClose();
-        super.close();
+        try
+        {
+            sslClose();
+        }
+        finally
+        {
+            super.close();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -693,6 +705,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             {
                 if (_inNIOBuffer.length()==0)
                 {
+                    freeInBuffer();
                     if (_outNIOBuffer!=null)
                     {
                         _outNIOBuffer.clear();
@@ -707,28 +720,26 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         // If we have no progress and no data
         if (total_filled==0 && _inNIOBuffer.length()==0)
         {
-            if (isOpen())
+            if (isOpen() && remoteClosed)
             {
-                if (remoteClosed)
+                try
                 {
-                    try
-                    {
-                        _engine.closeInbound();
-                    }
-                    catch (SSLException x)
-                    {
-                        // It may happen, for example, in case of truncation
-                        // attacks, we close so that we do not spin forever.
-                        freeOutBuffer();
-                        super.close();
-                    }
+                    _engine.closeInbound();
+                }
+                catch (SSLException x)
+                {
+                    // It may happen, for example, in case of truncation
+                    // attacks, we close so that we do not spin forever
+                    super.close();
                 }
             }
-            else
-            {
-                freeOutBuffer();
+
+            freeInBuffer();
+            freeOutBuffer();
+
+            if (!isOpen())
                 throw new EofException();
-            }
+
             return false;
         }
 
@@ -739,7 +750,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             // so update its position and limit from the inNIOBuffer.
             in_buffer.position(_inNIOBuffer.getIndex());
             in_buffer.limit(_inNIOBuffer.putIndex());
-            _result=null;
 
             // Do the unwrap
             _result=_engine.unwrap(in_buffer,buffer);
@@ -750,7 +760,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         catch(SSLException e)
         {
-            Log.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
+            Log.warn(getRemoteAddr() + ":" + getRemotePort() + " " + e);
+            freeOutBuffer();
             super.close();
             throw e;
         }
