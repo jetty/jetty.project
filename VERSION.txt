@@ -13,6 +13,7 @@ jetty-7.4.2-SNAPSHOT
  + 346614 HttpConnection.handle() spins in case of SSL truncation attacks
  + 346764 OrderedGroupBinding deployment binding
  + 347137 Allow SSL renegotiations by default in HttpClient
+ + 374174 Consistent mbean names
  + JETTY-1146 Encode jsessionid in sendRedirect
  + JETTY-1342 Recreate selector if wakeup throws JVM bug
 
