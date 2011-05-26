@@ -642,6 +642,16 @@ public class Dump extends HttpServlet
                 pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Get Resource: \""+res+"\"</big></th>");
 
                 pout.write("</tr><tr>\n");
+                pout.write("<th align=\"right\">getServletContext().getResource(...):&nbsp;</th>");
+                try{pout.write("<td>"+getServletContext().getResource(res)+"</td>");}
+                catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+                
+                pout.write("</tr><tr>\n");
+                pout.write("<th align=\"right\">getServletContext().getResourcePaths(...):&nbsp;</th>");
+                try{pout.write("<td>"+getServletContext().getResourcePaths(res)+"</td>");}
+                catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+                
+                pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">getServletContext().getContext(...):&nbsp;</th>");
                 
                 ServletContext context = getServletContext().getContext(res);
@@ -649,6 +659,16 @@ public class Dump extends HttpServlet
                 
                 if (context!=null)
                 {
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">getServletContext().getContext(...).getResource(...):&nbsp;</th>");
+                    try{pout.write("<td>"+context.getResource(res)+"</td>");}
+                    catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+                    
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">getServletContext().getContext(...).getResourcePaths(...):&nbsp;</th>");
+                    try{pout.write("<td>"+context.getResourcePaths(res)+"</td>");}
+                    catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+                    
                     String cp=context.getContextPath();
                     if (cp==null || "/".equals(cp))
                         cp="";
@@ -669,10 +689,6 @@ public class Dump extends HttpServlet
                 pout.write("<th align=\"right\">Thread.currentThread().getContextClassLoader().getResource(...):&nbsp;</th>");
                 pout.write("<td>"+Thread.currentThread().getContextClassLoader().getResource(res)+"</td>");
 
-                pout.write("</tr><tr>\n");
-                pout.write("<th align=\"right\">getServletContext().getResource(...):&nbsp;</th>");
-                try{pout.write("<td>"+getServletContext().getResource(res)+"</td>");}
-                catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
             }
             
             pout.write("</tr></table>\n");
