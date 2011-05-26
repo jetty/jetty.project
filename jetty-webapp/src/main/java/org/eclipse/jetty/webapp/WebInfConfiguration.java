@@ -165,10 +165,13 @@ public class WebInfConfiguration extends AbstractConfiguration
         {
             IO.delete(context.getTempDirectory());
             context.setTempDirectory(null);
+            
+            //clear out the context attributes for the tmp dir only if we had to
+            //create the tmp dir
+            context.setAttribute(TEMPDIR_CONFIGURED, null);
+            context.setAttribute(context.TEMPDIR, null);
         }
-        
-        context.setAttribute(TEMPDIR_CONFIGURED, null);
-        context.setAttribute(context.TEMPDIR, null);
+
         
         //reset the base resource back to what it was before we did any unpacking of resources
         context.setBaseResource(_preUnpackBaseResource);

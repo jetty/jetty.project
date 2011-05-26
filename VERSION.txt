@@ -1,4 +1,5 @@
 jetty-7.4.2-SNAPSHOT
+ + 336220 tmp directory is not set if you reload a webapp with jetty-maven-plugin
  + 338364 Fixed expires header for set cookies
  + 345729 binding for managing server and system classes globally
  + 345615 Enable SSL Session caching
