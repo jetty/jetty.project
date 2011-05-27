@@ -1,4 +1,4 @@
-jetty-8.0.0.M3-SNAPSHOT
+jetty-8.0.0.M3
  + 324505 Implement API login
  + 335500 request.getParts() throws a NullPointerException
  + 343472 isUserInRole does not prevent subsequent login call.
