@@ -66,11 +66,11 @@ public class XmlConfiguredJetty
         String jettyHomeBase = testdir.getDir().getAbsolutePath();
         // Ensure we have a new (pristene) directory to work with. 
         int idx = 0;
-        _jettyHome = new File(jettyHomeBase + "#" + idx);
+        _jettyHome = new File(jettyHomeBase + "_" + idx);
         while (_jettyHome.exists())
         {
             idx++;
-            _jettyHome = new File(jettyHomeBase + "#" + idx);
+            _jettyHome = new File(jettyHomeBase + "_" + idx);
         }
         deleteContents(_jettyHome);
         // Prepare Jetty.Home (Test) dir
