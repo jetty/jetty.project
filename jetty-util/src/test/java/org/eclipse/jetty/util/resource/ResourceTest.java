@@ -463,7 +463,7 @@ public class ResourceTest
     {
         assumeTrue(OS.IS_WINDOWS);
         
-        String uncPath = "\\\\127.0.0.1"+__userURL.toURI().getPath().replace('/','\\')+"ResourceTest.java";
+        String uncPath = "\\\\127.0.0.1"+__userURL.toURI().getPath().replace('/','\\').replace(':','$')+"ResourceTest.java";
         
         Resource uncResource = Resource.newResource(uncPath, false);
         assertTrue(uncResource.exists());        

@@ -428,8 +428,9 @@ public class Response implements HttpServletResponse
                 location=buf.toString();
             }
         }
+        
+        location=encodeRedirectURL(location);
         resetBuffer();
-
         setHeader(HttpHeaders.LOCATION,location);
         setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
         complete();

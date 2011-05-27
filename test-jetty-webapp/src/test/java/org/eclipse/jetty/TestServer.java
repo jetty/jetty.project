@@ -29,11 +29,13 @@ import org.eclipse.jetty.server.NCSARequestLog;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.nio.BlockingChannelConnector;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionManager;
@@ -148,6 +150,12 @@ public class TestServer
         ((HashSessionManager)webapp.getSessionHandler().getSessionManager()).setSavePeriod(10);
         
         contexts.addHandler(webapp);
+        
+        ContextHandler srcroot = new ContextHandler();
+        srcroot.setResourceBase(".");
+        srcroot.setHandler(new ResourceHandler());
+        srcroot.setContextPath("/src");
+        contexts.addHandler(srcroot);
         
         server.start();
         server.join();

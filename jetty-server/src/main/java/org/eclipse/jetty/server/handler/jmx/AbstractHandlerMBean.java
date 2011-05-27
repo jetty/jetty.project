@@ -16,7 +16,6 @@
 
 package org.eclipse.jetty.server.handler.jmx;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.jetty.jmx.ObjectMBean;
@@ -92,7 +91,7 @@ public class AbstractHandlerMBean extends ObjectMBean
         
         if (context.getContextPath()!=null && context.getContextPath().length()>0)
         {
-            int idx = context.getContextPath().lastIndexOf(File.separator);
+            int idx = context.getContextPath().lastIndexOf('/');
             name = idx < 0 ? context.getContextPath() : context.getContextPath().substring(++idx);
             if (name==null || name.length()==0)
                 name= "ROOT";

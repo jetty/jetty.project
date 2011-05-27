@@ -15,6 +15,7 @@ package com.acme;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -75,6 +77,25 @@ public class Dump extends HttpServlet
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        doGet(request, response);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        byte[] buffer = new byte[8192];
+        int len=request.getContentLength();
+        int c=0;
+        InputStream in=request.getInputStream();
+        while (c<len)
+        {
+            int l = in.read(buffer);
+            if (l<0)
+                break;
+            c+=l;
+        }
+        request.setAttribute("PUT",c+"bytes");
         doGet(request, response);
     }
 
@@ -633,6 +654,16 @@ public class Dump extends HttpServlet
                 pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Get Resource: \""+res+"\"</big></th>");
 
                 pout.write("</tr><tr>\n");
+                pout.write("<th align=\"right\">getServletContext().getResource(...):&nbsp;</th>");
+                try{pout.write("<td>"+getServletContext().getResource(res)+"</td>");}
+                catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+                
+                pout.write("</tr><tr>\n");
+                pout.write("<th align=\"right\">getServletContext().getResourcePaths(...):&nbsp;</th>");
+                try{pout.write("<td>"+getServletContext().getResourcePaths(res)+"</td>");}
+                catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+                
+                pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">getServletContext().getContext(...):&nbsp;</th>");
                 
                 ServletContext context = getServletContext().getContext(res);
@@ -640,6 +671,16 @@ public class Dump extends HttpServlet
                 
                 if (context!=null)
                 {
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">getServletContext().getContext(...).getResource(...):&nbsp;</th>");
+                    try{pout.write("<td>"+context.getResource(res)+"</td>");}
+                    catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+                    
+                    pout.write("</tr><tr>\n");
+                    pout.write("<th align=\"right\">getServletContext().getContext(...).getResourcePaths(...):&nbsp;</th>");
+                    try{pout.write("<td>"+context.getResourcePaths(res)+"</td>");}
+                    catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
+                    
                     String cp=context.getContextPath();
                     if (cp==null || "/".equals(cp))
                         cp="";
@@ -660,10 +701,6 @@ public class Dump extends HttpServlet
                 pout.write("<th align=\"right\">Thread.currentThread().getContextClassLoader().getResource(...):&nbsp;</th>");
                 pout.write("<td>"+Thread.currentThread().getContextClassLoader().getResource(res)+"</td>");
 
-                pout.write("</tr><tr>\n");
-                pout.write("<th align=\"right\">getServletContext().getResource(...):&nbsp;</th>");
-                try{pout.write("<td>"+getServletContext().getResource(res)+"</td>");}
-                catch(Exception e) {pout.write("<td>"+"" +e+"</td>");}
             }
             
             pout.write("</tr></table>\n");

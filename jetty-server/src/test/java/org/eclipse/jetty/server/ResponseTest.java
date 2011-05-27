@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
 
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.bio.SocketConnector;
@@ -347,6 +348,37 @@ public class ResponseTest
         assertEquals("http://other:8888/path/info;param?query=0&more=1#target",response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
         assertEquals("http://myhost/path/info;param?query=0&more=1#target",response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
         assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target",response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
+    }
+
+    @Test
+    public void testSendRedirect()
+        throws Exception
+    {
+        ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
+        HttpConnection connection=new HttpConnection(connector,out, connector.getServer());
+        Response response = new Response(connection);
+        Request request = connection.getRequest();
+        request.setServerName("myhost");
+        request.setServerPort(8888);
+        request.setUri(new HttpURI("/path/info;param;jsessionid=12345?query=0&more=1#target"));
+        request.setContextPath("/path");
+        request.setRequestedSessionId("12345");
+        request.setRequestedSessionIdFromCookie(false);
+        AbstractSessionManager manager=new HashSessionManager();
+        manager.setIdManager(new HashSessionIdManager());
+        request.setSessionManager(manager);
+        request.setSession(new TestSession(manager,"12345"));
+        manager.setCheckingRemoteSessionIdEncoding(false);
+
+        response.sendRedirect("/other/location");
+        
+        String location = out.getOut().toString();
+        int l=location.indexOf("Location: ");
+        int e=location.indexOf('\n',l);
+        location=location.substring(l+10,e).trim();
+        
+        assertEquals("http://myhost:8888/other/location;jsessionid=12345",location);
+        
     }
 
     @Test

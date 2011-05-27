@@ -104,9 +104,9 @@
     <!-- can't use javax.servlet:servlet-api:2.5 it is not a bundle.
     the mortbay one is a bundle -->
     <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>servlet-api-3.0</artifactId>
-        <version>7.0.0pre2</version>
+        <groupId>${servlet.spec.groupId}</groupId>
+        <artifactId>${servlet.spec.artifactId}</artifactId>
+        <version>${servlet.spec.version}</version>
       <scope>runtime</scope>
     </dependency>
     

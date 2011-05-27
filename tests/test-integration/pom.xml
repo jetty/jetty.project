@@ -79,11 +79,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-webapp-rfc2616</artifactId>
       <version>${project.version}</version>

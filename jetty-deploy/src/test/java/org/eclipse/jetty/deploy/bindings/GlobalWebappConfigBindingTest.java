@@ -15,9 +15,9 @@
 // ========================================================================
 package org.eclipse.jetty.deploy.bindings;
 
-import java.io.File;
+import static org.hamcrest.Matchers.*;
 
-import junit.framework.Assert;
+import java.io.File;
 
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
@@ -26,8 +26,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,8 +36,8 @@ import org.junit.Test;
  */
 public class GlobalWebappConfigBindingTest
 {
-	@Rule
-	public TestingDir testdir = new TestingDir();
+    @Rule
+    public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
 
     @Before
@@ -58,48 +58,38 @@ public class GlobalWebappConfigBindingTest
         // Stop jetty.
         jetty.stop();
     }
-    
+
     @Test
     public void testServerAndSystemClassesOverride() throws Exception
     {
-        IO.copy(MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml"), new File(jetty.getJettyHome(), "context-binding-test-1.xml"));
-        
+        IO.copy(MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml"),new File(jetty.getJettyHome(),"context-binding-test-1.xml"));
+
         jetty.addConfiguration("binding-test-contexts-1.xml");
         jetty.load();
         jetty.start();
-        
+
         WebAppContext context = jetty.getWebAppContexts().get(0);
-        
-        Assert.assertNotNull(context);
-        Assert.assertEquals(context.getDefaultServerClasses().length, context.getServerClasses().length - 1); // added a pattern
-        //Assert.assertEquals(context.getDefaultSystemClasses().length,context.getSystemClasses().length + 1); // removed a patter
-        
-        boolean fooPackage = false;
-        
-        // we are inserting the foo package into the server classes
-        for (String entry : context.getServerClasses())
-        {
-            if ("org.eclipse.foo.".equals(entry))
-            {
-                fooPackage = true;
-            }
-        }
-        
-        Assert.assertTrue(fooPackage);
-        
-      //  boolean jndiPackage = false;
-        
+
+        Assert.assertNotNull("Context should not be null",context);
+        String defaultClasses[] = context.getDefaultServerClasses();
+        String currentClasses[] = context.getServerClasses();
+
+        String addedClass = "org.eclipse.foo."; // What was added by the binding
+        Assert.assertThat("Default Server Classes",addedClass,not(isIn(defaultClasses)));
+        Assert.assertThat("Current Server Classes",addedClass,isIn(currentClasses));
+
+        //  boolean jndiPackage = false;
+
         // this test overrides and we removed the jndi from the list so it
         // should test false
-//        for (String entry : context.getSystemClasses())
-//        {
-//            if ("org.eclipse.jetty.jndi.".equals(entry))
-//            {
-//                jndiPackage = true;
-//            }
-//        }
-//        
-//        Assert.assertFalse(jndiPackage);
+        //        for (String entry : context.getSystemClasses())
+        //        {
+        //            if ("org.eclipse.jetty.jndi.".equals(entry))
+        //            {
+        //                jndiPackage = true;
+        //            }
+        //        }
+        //        
+        //        Assert.assertFalse(jndiPackage);
     }
 }
-

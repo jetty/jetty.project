@@ -220,7 +220,7 @@ public class WebAppClassLoader extends URLClassLoader
         StringTokenizer tokenizer= new StringTokenizer(classPath, ",;");
         while (tokenizer.hasMoreTokens())
         {
-            Resource resource= _context.newResource(tokenizer.nextToken());
+            Resource resource= _context.newResource(tokenizer.nextToken().trim());
             if (Log.isDebugEnabled())
                 Log.debug("Path resource=" + resource);
 
