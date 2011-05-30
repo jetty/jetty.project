@@ -1,3 +1,6 @@
+jetty-7.4.3-SNAPSHOT
+ + 347617 Dynamically install/update/remove OSGi bundles discovered in the contexts folder
+
 jetty-7.4.2.v20110526
  + 334443 Improve the ability to specify extra class paths using the Jetty Maven Plugin
  + 336220 tmp directory is not set if you reload a webapp with jetty-maven-plugin

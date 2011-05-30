@@ -157,7 +157,7 @@
                 </executions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot</Bundle-SymbolicName>
                         <Export-Package>org.eclipse.jetty.osgi.boot;version="${parsedVersion.osgiVersion}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${parsedVersion.osgiVersion}"</Export-Package> 
                         <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions

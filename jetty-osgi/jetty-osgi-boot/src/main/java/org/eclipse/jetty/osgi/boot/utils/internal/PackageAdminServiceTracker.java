@@ -26,6 +26,7 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * When the PackageAdmin service is activated we can look for the fragments
@@ -38,6 +39,9 @@ public class PackageAdminServiceTracker implements ServiceListener
 
     private List<BundleActivator> _activatedFragments = new ArrayList<BundleActivator>();
     private boolean _fragmentsWereActivated = false;
+    //Use the deprecated StartLevel to stay compatible with older versions of OSGi.
+    private StartLevel _startLevel;
+    private int _maxStartLevel = 6;
     public static PackageAdminServiceTracker INSTANCE = null;
 
     public PackageAdminServiceTracker(BundleContext context)
@@ -66,6 +70,21 @@ public class PackageAdminServiceTracker implements ServiceListener
         _fragmentsWereActivated = sr != null;
         if (sr != null)
             invokeFragmentActivators(sr);
+        
+        sr = _context.getServiceReference(StartLevel.class.getName());
+        if (sr != null)
+        {
+        	_startLevel = (StartLevel)_context.getService(sr);
+        	try
+        	{
+        		_maxStartLevel = Integer.parseInt(System.getProperty("osgi.startLevel","6"));
+        	}
+        	catch (Exception e)
+        	{
+        		//nevermind default on the usual.
+        		_maxStartLevel = 6;
+        	}
+        }
         return _fragmentsWereActivated;
     }
 
@@ -272,6 +291,14 @@ public class PackageAdminServiceTracker implements ServiceListener
                 e.printStackTrace();
             }
         }
+    }
+    
+    /**
+     * @return true if the framework has completed all the start levels.
+     */
+    public boolean frameworkHasCompletedAutostarts()
+    {
+    	return _startLevel == null ? true : _startLevel.getStartLevel() >= _maxStartLevel;
     }
 
 }
