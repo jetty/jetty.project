@@ -380,11 +380,11 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 
     /**
      * @return true when this app provider locates osgi bundles and features in
-     * its monitored directory and installs them. false by default.
+     * its monitored directory and installs them. By default true if there is a folder to monitor.
      */
     public boolean isAutoInstallOSGiBundles()
     {
-        return _autoInstallOSGiBundles;
+        return getMonitoredDirResource() != null && _autoInstallOSGiBundles;
     }
 
     /**

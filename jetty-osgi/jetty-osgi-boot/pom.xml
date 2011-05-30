@@ -40,62 +40,6 @@
     </dependency>
   </dependencies>
 
-  <!--build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>process-resources</phase>
-            <configuration>
-              <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.3.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
-                <copy todir="target/classes/jettyhome">
-                    <fileset dir="jettyhome">
-                        <exclude name="**/*.log" />
-                    </fileset>
-                </copy>
-              </tasks>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>artifact-jar</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>test-jar</id>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <archive>
-            <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <onlyAnalyze>org.eclipse.jetty.osgi.boot.*</onlyAnalyze>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build-->
-  
       <build> 
         <plugins> 
             <plugin> 
@@ -105,7 +49,7 @@
                         <phase>process-resources</phase> 
                         <configuration> 
                             <tasks>
-                                <delete file="target/classes/META-INF/MANIFEST.MF" />
+                                <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
                                 <copy todir="target/classes/jettyhome"> 
                                     <fileset dir="jettyhome"> 
                                         <exclude name="**/*.log" /> 
