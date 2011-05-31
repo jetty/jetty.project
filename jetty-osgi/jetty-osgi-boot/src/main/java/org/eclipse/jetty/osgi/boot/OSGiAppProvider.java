@@ -384,7 +384,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
      */
     public boolean isAutoInstallOSGiBundles()
     {
-        return getMonitoredDirResource() != null && _autoInstallOSGiBundles;
+    	return _autoInstallOSGiBundles;
     }
 
     /**
@@ -460,14 +460,41 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     {
         if (isAutoInstallOSGiBundles())
         {
-            File scandir = getMonitoredDirResource().getFile();
-            for (File file : scandir.listFiles())
-            {
-                if (fileMightBeAnOSGiBundle(file))
-                {
-                    installBundle(file, false);
-                }
-            }
+        	if (getMonitoredDirResource()  == null)
+        	{
+        		setAutoInstallOSGiBundles(false);
+        		Log.info("Disable autoInstallOSGiBundles as there is not contexts folder to monitor.");
+        	}
+	    	else
+        	{
+	    		File scandir = null;
+	    		try
+	    		{
+	                scandir = getMonitoredDirResource().getFile();
+	                if (!scandir.exists() || !scandir.isDirectory())
+	                {
+	                	setAutoInstallOSGiBundles(false);
+	            		Log.info("Disable autoInstallOSGiBundles as the contexts folder '" + scandir.getAbsolutePath() + " does not exist.");
+	            		scandir = null;
+	                }
+	    		}
+	    		catch (IOException ioe)
+	    		{
+                	setAutoInstallOSGiBundles(false);
+            		Log.info("Disable autoInstallOSGiBundles as the contexts folder '" + getMonitoredDirResource().getURI() + " does not exist.");
+            		scandir = null;
+	    		}
+	    		if (scandir != null)
+	    		{
+		            for (File file : scandir.listFiles())
+		            {
+		                if (fileMightBeAnOSGiBundle(file))
+		                {
+		                    installBundle(file, false);
+		                }
+		            }
+	    		}
+        	}
         }
         super.doStart();
         if (isAutoInstallOSGiBundles())
