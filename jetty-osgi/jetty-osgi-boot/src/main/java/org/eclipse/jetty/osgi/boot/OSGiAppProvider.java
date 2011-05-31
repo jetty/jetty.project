@@ -474,14 +474,14 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 	                if (!scandir.exists() || !scandir.isDirectory())
 	                {
 	                	setAutoInstallOSGiBundles(false);
-	            		Log.info("Disable autoInstallOSGiBundles as the contexts folder '" + scandir.getAbsolutePath() + " does not exist.");
+	            		Log.warn("Disable autoInstallOSGiBundles as the contexts folder '" + scandir.getAbsolutePath() + " does not exist.");
 	            		scandir = null;
 	                }
 	    		}
 	    		catch (IOException ioe)
 	    		{
                 	setAutoInstallOSGiBundles(false);
-            		Log.info("Disable autoInstallOSGiBundles as the contexts folder '" + getMonitoredDirResource().getURI() + " does not exist.");
+            		Log.warn("Disable autoInstallOSGiBundles as the contexts folder '" + getMonitoredDirResource().getURI() + " does not exist.");
             		scandir = null;
 	    		}
 	    		if (scandir != null)
