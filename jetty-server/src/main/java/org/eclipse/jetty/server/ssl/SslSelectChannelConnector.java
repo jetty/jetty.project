@@ -564,28 +564,19 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
      */
     protected SSLEngine createSSLEngine(SocketChannel channel) throws IOException
     {
-        try
+        SSLEngine engine;
+        if (channel != null && _sslContextFactory.isSessionCachingEnabled())
         {
-            SSLEngine engine;
-            if (channel != null && _sslContextFactory.isSessionCachingEnabled())
-            {
-                String peerHost = channel.socket().getInetAddress().getHostAddress();
-                int peerPort = channel.socket().getPort();
-                engine = _sslContextFactory.getSslContext().createSSLEngine(peerHost, peerPort);
-            }
-            else
-            {
-                engine = _sslContextFactory.getSslContext().createSSLEngine();
-            }
-            customizeEngine(engine);
-            return engine;
+            String peerHost = channel.socket().getInetAddress().getHostAddress();
+            int peerPort = channel.socket().getPort();
+            engine = _sslContextFactory.getSslContext().createSSLEngine(peerHost, peerPort);
         }
-        catch (Exception x)
+        else
         {
-            Log.warn("Error creating SSLEngine -- closing this connector", x);
-            close();
-            throw new IllegalStateException(x);
+            engine = _sslContextFactory.getSslContext().createSSLEngine();
         }
+        customizeEngine(engine);
+        return engine;
     }
 
     /* ------------------------------------------------------------ */

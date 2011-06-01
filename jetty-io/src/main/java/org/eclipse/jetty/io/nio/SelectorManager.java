@@ -445,6 +445,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         else
                             throw new IllegalArgumentException(change.toString());
                     }
+                    catch (CancelledKeyException e)
+                    {
+                        Log.ignore(e);
+                    }
                     catch (Throwable e)
                     {
                         if (e instanceof ThreadDeath)
@@ -454,17 +458,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             Log.warn(e);
                         else
                             Log.debug(e);
-                        
-                        if(ch!=null && key==null)
+
+                        try
                         {
-                            try
-                            {
-                                ch.close();
-                            }
-                            catch(IOException e2)
-                            {
-                                Log.debug(e2);
-                            }
+                            ch.close();
+                        }
+                        catch(IOException e2)
+                        {
+                            Log.debug(e2);
                         }
                     }
                 }
@@ -522,6 +523,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 // Look for things to do
                 for (SelectionKey key: selector.selectedKeys())
                 {   
+                    SocketChannel channel=null;
+                    
                     try
                     {
                         if (!key.isValid())
@@ -542,7 +545,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         else if (key.isConnectable())
                         {
                             // Complete a connection of a registered channel
-                            SocketChannel channel = (SocketChannel)key.channel();
+                            channel = (SocketChannel)key.channel();
                             boolean connected=false;
                             try
                             {
@@ -570,7 +573,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         else
                         {
                             // Wrap readable registered channel in an endpoint
-                            SocketChannel channel = (SocketChannel)key.channel();
+                            channel = (SocketChannel)key.channel();
                             SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
                             if (key.isReadable())
@@ -589,6 +592,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         else
                             Log.ignore(e);
 
+                        try
+                        {
+                            if (channel!=null)
+                                channel.close();
+                        }
+                        catch(IOException e2)
+                        {
+                            Log.debug(e2);
+                        }
+                        
                         if (key != null && !(key.channel() instanceof ServerSocketChannel) && key.isValid())
                             key.cancel();
                     }
