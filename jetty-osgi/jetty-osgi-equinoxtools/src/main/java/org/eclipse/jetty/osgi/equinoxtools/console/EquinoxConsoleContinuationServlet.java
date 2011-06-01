@@ -85,7 +85,8 @@ public class EquinoxConsoleContinuationServlet extends HttpServlet implements On
         if (request.getParameter("action")!=null)
             doPost(request,response);
         else
-            response.sendRedirect("index.html");
+            response.sendRedirect(request.getContextPath() + request.getServletPath()
+                + (request.getPathInfo() != null ? request.getPathInfo() : "") +  "/index.html");
     }
 
     // Handle Ajax calls from browser
