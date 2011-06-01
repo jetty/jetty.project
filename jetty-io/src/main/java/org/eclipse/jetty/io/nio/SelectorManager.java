@@ -434,6 +434,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             key.attach(endpoint);
                             endpoint.schedule();
                         }
+                        else if (change instanceof ChangeTask)
+                        {
+                            ((Runnable)change).run();
+                        }
                         else if (change instanceof Runnable)
                         {
                             dispatch((Runnable)change);
@@ -839,6 +843,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
             catch(Exception e)
             {
+                addChange(new ChangeTask()
+                {
+                    public void run()
+                    {
+                        renewSelector();
+                    }
+                });
+                
                 renewSelector();
             }
         }
@@ -1010,5 +1022,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         _deferringInterestedOps0 = deferringInterestedOps0;
     }
+    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private interface ChangeTask extends Runnable
+    {}
     
 }
