@@ -10,20 +10,27 @@
   <name>Jetty :: OSGi :: Example Equinox Tools</name>
   <description>Jetty OSGi Example Equinox Tools</description>
   <properties>
+        <forceContextQualifier>v20110513</forceContextQualifier>
+        <jetty-version>7.4.1.v20110513</jetty-version>
+    <osgi-version>3.6.0.v20100517</osgi-version>
+    <osgi-services-version>3.2.100.v20100503</osgi-services-version>
     <bundle-symbolic-name>${project.groupId}.equinoxtools</bundle-symbolic-name>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
+        <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-continuation</artifactId>
+        <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-websocket</artifactId>
+        <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -32,10 +39,12 @@
     <dependency>
     	<groupId>org.eclipse.osgi</groupId>
     	<artifactId>org.eclipse.osgi</artifactId>
+       <version>${osgi-version}</version>
     </dependency>
     <dependency>
         <groupId>org.eclipse.osgi</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
+       <version>${osgi-services-version}</version>
     </dependency>
   </dependencies>
 

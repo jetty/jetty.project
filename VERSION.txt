@@ -2,6 +2,7 @@ jetty-7.4.3-SNAPSHOT
  + 347617 Dynamically install/update/remove OSGi bundles discovered in the contexts folder
  + 347717 start.jar destroys dependent child of --exec
  + JETTY-1342 Recreate selector in change task
+ + 347889 OSGi should follow directive visibility:=reexport for META-INF/web-fragments and resources 
 
 jetty-7.4.2.v20110526
  + 334443 Improve the ability to specify extra class paths using the Jetty Maven Plugin
