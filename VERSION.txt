@@ -1,4 +1,5 @@
 jetty-7.4.3-SNAPSHOT
+ + 295832 ProxyServlet more extensible and configurable
  + 347617 Dynamically install/update/remove OSGi bundles discovered in the contexts folder
  + 347717 start.jar destroys dependent child of --exec
  + 347898 Close channel on JVM exceptions
