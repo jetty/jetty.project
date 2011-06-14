@@ -112,31 +112,15 @@ public class ProxyServlet implements Servlet
     {
         _config = config;
         _context = config.getServletContext();
-
-        _client = new HttpClient();
-        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-
+        
         _hostHeader = config.getInitParameter("HostHeader");
 
         try
         {
-            _log = Log.getLogger("org.eclipse.jetty.servlets." + config.getServletName());
+            _log = createLogger(config);      
 
-            String t = config.getInitParameter("maxThreads");
-            if (t != null)
-                _client.setThreadPool(new QueuedThreadPool(Integer.parseInt(t)));
-            else
-                _client.setThreadPool(new QueuedThreadPool());
-            ((QueuedThreadPool)_client.getThreadPool()).setName(config.getServletName());
-
-            t = config.getInitParameter("maxConnections");
-            if (t != null)
-                _client.setMaxConnectionsPerAddress(Integer.parseInt(t));
-
-            customizeClient(_client);
-
-            _client.start();
-
+            _client = createHttpClient(config);
+            
             if (_context != null)
             {
                 _context.setAttribute(config.getServletName() + ".Logger",_log);
@@ -172,7 +156,60 @@ public class ProxyServlet implements Servlet
             _log.debug(x);
         }
     }
+    
+    
+    /**
+     * Create and return a logger based on the ServletConfig for use in the 
+     * proxy servlet
+     * 
+     * @param config
+     * @return Logger
+     */
+    protected Logger createLogger(ServletConfig config)
+    {
+        return Log.getLogger("org.eclipse.jetty.servlets." + config.getServletName());
+    }
+    
+    /**
+     * Create and return an HttpClient based on ServletConfig
+     * 
+     * By default this implementation will create an instance of the 
+     * HttpClient for use by this proxy servlet.
+     * 
+     * @param config 
+     * @return HttpClient 
+     * @throws Exception
+     */
+    protected HttpClient createHttpClient(ServletConfig config) throws Exception
+    {
+        HttpClient client = new HttpClient();
+        client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+       
+        String t = config.getInitParameter("maxThreads");
+        
+        if (t != null)
+        {
+            client.setThreadPool(new QueuedThreadPool(Integer.parseInt(t)));
+        }
+        else
+        {
+            client.setThreadPool(new QueuedThreadPool());
+        }
+        
+        ((QueuedThreadPool)client.getThreadPool()).setName(config.getServletName());        
 
+        t = config.getInitParameter("maxConnections");
+        
+        if (t != null)
+        {
+            client.setMaxConnectionsPerAddress(Integer.parseInt(t));
+        }
+        
+        client.start();
+        
+        return client;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Helper function to process a parameter value containing a list of new entries and initialize the specified host map.
@@ -427,9 +464,7 @@ public class ProxyServlet implements Servlet
                 exchange.setURL(url.toString());
                 exchange.setVersion(request.getProtocol());
 
-                customizeExchange(exchange);
-                
-                
+                customizeExchange(exchange, request);          
 
                 if (debug != 0)
                     _log.debug(debug + " " + request.getMethod() + " " + url + " " + request.getProtocol());
@@ -573,23 +608,13 @@ public class ProxyServlet implements Servlet
     }
 
 
-
-    /**
-     * Extension point for subclasses to customize this ProxyServlet's HttpClient. Useful for setting timeouts etc. The default implementation does nothing.
-     * 
-     * @param client
-     */
-    protected void customizeClient(HttpClient client)
-    {
-
-    }
-    
     /**
      * Extension point for subclasses to customize an exchange. Useful for setting timeouts etc. The default implementation does nothing.
      * 
      * @param exchange
+     * @param request
      */
-    protected void customizeExchange(HttpExchange exchange)
+    protected void customizeExchange(HttpExchange exchange, HttpServletRequest request)
     {
 
     }
