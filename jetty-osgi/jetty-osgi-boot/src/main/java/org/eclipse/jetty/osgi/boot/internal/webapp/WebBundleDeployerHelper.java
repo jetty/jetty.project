@@ -587,13 +587,23 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 	                        }
 	                        if (resEnum != null && resEnum.hasMoreElements())
 	                        {
-		                        if (resfrags == null)
-		                        {
-		                        	resfrags = new ArrayList<Resource>();
-		                            wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, resfrags);
-		                        }
-		                        resfrags.add(Resource.newResource(
-		                        		DefaultFileLocatorHelper.getLocalURL(frag.getEntry("/META-INF/resources"))));
+	                        	URL resourcesEntry = frag.getEntry("/META-INF/resources/");
+	                        	if (resourcesEntry == null)
+	                        	{
+	                        		//probably we found some fragments to a bundle.
+			                        //those are already contributed.
+	                        		//so we skip this.
+	                        	}
+	                        	else
+	                        	{
+			                        if (resfrags == null)
+			                        {
+			                        	resfrags = new ArrayList<Resource>();
+			                            wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, resfrags);
+			                        }
+	                        		resfrags.add(Resource.newResource(
+	                        				DefaultFileLocatorHelper.getLocalURL(resourcesEntry)));
+	                        	}
 	                        }
 	                        if (tldEnum != null && tldEnum.hasMoreElements())
 	                        {
