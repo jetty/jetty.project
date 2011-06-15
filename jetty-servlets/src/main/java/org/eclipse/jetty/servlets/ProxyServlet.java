@@ -364,7 +364,6 @@ public class ProxyServlet implements Servlet
                 response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT); // Need better test that isInitial
             else
             {
-                customizeContinuation(continuation);
                 
                 String uri = request.getRequestURI();
                 if (request.getQueryString() != null)
@@ -464,7 +463,6 @@ public class ProxyServlet implements Servlet
                 exchange.setURL(url.toString());
                 exchange.setVersion(request.getProtocol());
 
-                customizeExchange(exchange, request);          
 
                 if (debug != 0)
                     _log.debug(debug + " " + request.getMethod() + " " + url + " " + request.getProtocol());
@@ -539,6 +537,20 @@ public class ProxyServlet implements Servlet
                 if (hasContent)
                     exchange.setRequestContentSource(in);
 
+                customizeExchange(exchange, request);     
+                
+                /*
+                 * we need to set the timeout on the continuation to take into
+                 * account the timeout of the HttpClient and the HttpExchange
+                 */
+                long ctimeout = (_client.getConnectTimeout() > exchange.getTimeout()) ? _client.getConnectTimeout() : exchange.getTimeout();
+                
+                // continuation fudge factor of 1000, underlying components
+                // should fail/expire first
+                continuation.setTimeout(ctimeout + 1000);
+                
+                customizeContinuation(continuation);
+                
                 continuation.suspend(response);
                 _client.send(exchange);
 
@@ -663,7 +675,7 @@ public class ProxyServlet implements Servlet
 
     /**
      * Extension point for custom handling of an HttpExchange's onExpire method. The default implementation sets the response status to
-     * HttpServletResponse.SC_INTERNAL_SERVER_ERROR (503)
+     * HttpServletResponse.SC_GATEWAY_TIMEOUT (504)
      * 
      * @param request
      * @param response
@@ -672,7 +684,7 @@ public class ProxyServlet implements Servlet
     {
         if (!response.isCommitted())
         {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
         }
     }
 
