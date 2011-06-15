@@ -231,7 +231,10 @@ public class UrlEncoded extends MultiMap
                 key = encoded
                     ?decodeString(content,mark+1,content.length()-mark-1,charset)
                     :content.substring(mark+1);
-                map.add(key,"");
+                if (key != null && key.length() > 0)
+                {
+                    map.add(key,"");
+                }
             }
         }
     }

@@ -34,7 +34,11 @@ public class URLEncodedTest
     {
           
         UrlEncoded url_encoded = new UrlEncoded();
-        assertEquals("Empty",0, url_encoded.size());
+        assertEquals("Initially not empty",0, url_encoded.size());
+        
+        url_encoded.clear();
+        url_encoded.decode("");
+        assertEquals("Not empty after decode(\"\")",0, url_encoded.size());
 
         url_encoded.clear();
         url_encoded.decode("Name1=Value1");
