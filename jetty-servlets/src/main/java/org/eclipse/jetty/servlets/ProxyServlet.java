@@ -204,6 +204,20 @@ public class ProxyServlet implements Servlet
         {
             client.setMaxConnectionsPerAddress(Integer.parseInt(t));
         }
+       
+        t = config.getInitParameter("timeout");
+        
+        if ( t != null )
+        {
+            client.setTimeout(Long.parseLong(t));
+        }
+        
+        t = config.getInitParameter("idleTimeout");
+        
+        if ( t != null )
+        {
+            client.setIdleTimeout(Long.parseLong(t));
+        }
         
         client.start();
         
