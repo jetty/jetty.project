@@ -166,7 +166,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             }
             catch (Throwable e)
             {
-            	Log.warn("Staring the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
+            	Log.warn("Starting the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
                 return true;//maybe it did not work maybe it did. safer to track this bundle.
             }
         }
