@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
@@ -71,6 +72,8 @@ import org.omg.CORBA._PolicyStub;
  * <li>name - Name of Proxy servlet (default: "ProxyServlet"
  * <li>maxThreads - maximum threads
  * <li>maxConnections - maximum connections per destination
+ * <li>timeout - the period in ms the client will wait for a response from the proxied server
+ * <li>idleTimeout - the period in ms a connection to proxied server can be idle for before it is closed
  * <li>HostHeader - Force the host header to a particular value
  * <li>whiteList - comma-separated list of allowed proxy destinations
  * <li>blackList - comma-separated list of forbidden proxy destinations
