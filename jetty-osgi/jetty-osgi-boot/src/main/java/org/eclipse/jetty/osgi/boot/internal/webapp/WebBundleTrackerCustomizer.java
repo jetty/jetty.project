@@ -152,7 +152,10 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             String contextPath = getWebContextPath(bundle, dic, false);//(String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
             if (contextPath == null || !contextPath.startsWith("/"))
             {
-                throw new IllegalArgumentException();
+            	Log.warn("The manifest header '" + OSGiWebappConstants.JETTY_WAR_FOLDER_PATH +
+                		": " + warFolderRelativePath + "' in the bundle " + bundle.getSymbolicName() + 
+                		" is not valid: there is no Web-ContextPath defined in the manifest.");
+            	return false;
             }
             // create the corresponding service and publish it in the context of
             // the contributor bundle.
@@ -163,8 +166,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             }
             catch (Throwable e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            	Log.warn("Staring the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
                 return true;//maybe it did not work maybe it did. safer to track this bundle.
             }
         }
