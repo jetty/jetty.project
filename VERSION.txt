@@ -6,7 +6,8 @@ jetty-7.4.3-SNAPSHOT
  + 349344 Passing empty query string to UrlEncoded#decodeTo(String, MultiMap, String) does not yield an empty map
  + JETTY-1342 Recreate selector in change task
  + 347889 OSGi should follow directive visibility:=reexport for META-INF/web-fragments and resources
- + 349738 set buffer sizes for http client in proxy servlet 
+ + 349738 set buffer sizes for http client in proxy servlet
+ + 349870 proxy servlet protect continuation against fast failing exchanges
 
 jetty-7.4.2.v20110526
  + 334443 Improve the ability to specify extra class paths using the Jetty Maven Plugin
