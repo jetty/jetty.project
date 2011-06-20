@@ -604,7 +604,7 @@ public class ProxyServlet implements Servlet
                  * we need to set the timeout on the continuation to take into
                  * account the timeout of the HttpClient and the HttpExchange
                  */
-                long ctimeout = (_client.getConnectTimeout() > exchange.getTimeout()) ? _client.getConnectTimeout() : exchange.getTimeout();
+                long ctimeout = (_client.getTimeout() > exchange.getTimeout()) ? _client.getTimeout() : exchange.getTimeout();
                 
                 // continuation fudge factor of 1000, underlying components
                 // should fail/expire first
