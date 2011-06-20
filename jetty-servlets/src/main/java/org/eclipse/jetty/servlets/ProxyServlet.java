@@ -485,7 +485,13 @@ public class ProxyServlet implements Servlet
                     protected void onConnectionFailed(Throwable ex)
                     {
                         handleOnConnectionFailed(ex,request,response);
-                        continuation.complete();
+                        
+                        // it is possible this might trigger before the 
+                        // continuation.suspend()
+                        if (!continuation.isInitial())
+                        {
+                            continuation.complete();
+                        }
                     }
 
                     protected void onException(Throwable ex)
@@ -496,7 +502,13 @@ public class ProxyServlet implements Servlet
                             return;
                         }
                         handleOnException(ex,request,response);
-                        continuation.complete();
+                        
+                        // it is possible this might trigger before the 
+                        // continuation.suspend()
+                        if (!continuation.isInitial())
+                        {
+                            continuation.complete();
+                        }
                     }
 
                     protected void onExpire()
