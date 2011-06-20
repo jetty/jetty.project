@@ -608,8 +608,15 @@ public class ProxyServlet implements Servlet
                 
                 // continuation fudge factor of 1000, underlying components
                 // should fail/expire first
-                continuation.setTimeout(ctimeout + 1000);
-                
+                if ( ctimeout == 0 )
+                {
+                    continuation.setTimeout(0);  // ideally never times out
+                }
+                else
+                {    
+                    continuation.setTimeout(ctimeout + 1000);
+                }
+                                
                 customizeContinuation(continuation);
                 
                 continuation.suspend(response);
