@@ -74,7 +74,11 @@ import org.omg.CORBA._PolicyStub;
  * <li>maxConnections - maximum connections per destination
  * <li>timeout - the period in ms the client will wait for a response from the proxied server
  * <li>idleTimeout - the period in ms a connection to proxied server can be idle for before it is closed
- * <li>HostHeader - Force the host header to a particular value
+ * <li>requestHeaderSize - the size of the request header buffer (d. 6,144)
+ * <li>requestBufferSize - the size of the request buffer (d. 12,288)
+ * <li>responseHeaderSize - the size of the response header buffer (d. 6,144)
+ * <li>responseBufferSize - the size of the response buffer (d. 32,768)
+ * <li>HostHeader - Force the host header to a particular value 
  * <li>whiteList - comma-separated list of allowed proxy destinations
  * <li>blackList - comma-separated list of forbidden proxy destinations
  * </ul>
@@ -220,6 +224,34 @@ public class ProxyServlet implements Servlet
         if ( t != null )
         {
             client.setIdleTimeout(Long.parseLong(t));
+        }
+        
+        t = config.getInitParameter("requestHeaderSize");
+        
+        if ( t != null )
+        {
+            client.setRequestHeaderSize(Integer.parseInt(t));
+        }
+        
+        t = config.getInitParameter("requestBufferSize");
+        
+        if ( t != null )
+        {
+            client.setRequestBufferSize(Integer.parseInt(t));
+        }
+        
+        t = config.getInitParameter("responseHeaderSize");
+        
+        if ( t != null )
+        {
+            client.setResponseHeaderSize(Integer.parseInt(t));
+        }
+        
+        t = config.getInitParameter("responseBufferSize");
+        
+        if ( t != null )
+        {
+            client.setResponseBufferSize(Integer.parseInt(t));
         }
         
         client.start();
