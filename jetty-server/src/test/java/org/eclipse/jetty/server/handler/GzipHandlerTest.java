@@ -11,42 +11,33 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.servlets;
-
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringReader;
-import java.net.Socket;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.zip.GZIPInputStream;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.testing.HttpTester;
-import org.eclipse.jetty.testing.ServletTester;
-import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.eclipse.jetty.util.IO;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+package org.eclipse.jetty.server.handler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GzipFilterTest
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.util.zip.GZIPInputStream;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.IO;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+public class GzipHandlerTest
 {
     private static String __content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
@@ -62,41 +53,48 @@ public class GzipFilterTest
         "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
-    @Rule
-    public TestingDir testdir = new TestingDir();
-
-    private ServletTester tester;
+    private Server _server;
+    private LocalConnector _connector;
 
     @Before
-    public void setUp() throws Exception
+    public void init() throws Exception
     {
-        testdir.ensureEmpty();
+        _server = new Server();
 
-        File testFile = testdir.getFile("file.txt");
-        BufferedOutputStream testOut = new BufferedOutputStream(new FileOutputStream(testFile));
-        ByteArrayInputStream testIn = new ByteArrayInputStream(__content.getBytes("ISO8859_1"));
-        IO.copy(testIn,testOut);
-        testOut.close();
+        _connector = new LocalConnector();
+        _server.addConnector(_connector);
+
+        Handler testHandler = new AbstractHandler()
+        {
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+                    ServletException
+            {
+                PrintWriter writer = response.getWriter();
+                writer.write(__content);
+                writer.close();
+
+                baseRequest.setHandled(true);
+            }
+        };
         
-        tester=new ServletTester();
-        tester.setContextPath("/context");
-        tester.setResourceBase(testdir.getDir().getCanonicalPath());
-        tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        FilterHolder holder = tester.addFilter(GzipFilter.class,"/*",0);
-        holder.setInitParameter("mimeTypes","text/plain");
-        tester.start();
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setHandler(testHandler);
+
+        _server.setHandler(gzipHandler);
+        _server.start();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void destroy() throws Exception
     {
-        tester.stop();
-        IO.delete(testdir.getDir());
+        _server.stop();
+        _server.join();
     }
 
     @Test
-    public void testGzipFilter() throws Exception
+    public void testGzipHandler() throws Exception
     {
+
         // generated and parsed test
         HttpTester request = new HttpTester();
         HttpTester response = new HttpTester();
@@ -105,10 +103,10 @@ public class GzipFilterTest
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("accept-encoding","gzip");
-        request.setURI("/context/file.txt");
+        request.setURI("/");
         
         ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
-        ByteArrayBuffer respBuff = tester.getResponses(reqsBuff);
+        ByteArrayBuffer respBuff = _connector.getResponses(reqsBuff, false);
         response.parse(respBuff.asArray());
                 
         assertTrue(response.getMethod()==null);
@@ -119,6 +117,7 @@ public class GzipFilterTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
         
-        assertEquals(__content, testOut.toString("ISO8859_1"));
+        assertEquals(__content, testOut.toString("UTF8"));
+
     }
 }
