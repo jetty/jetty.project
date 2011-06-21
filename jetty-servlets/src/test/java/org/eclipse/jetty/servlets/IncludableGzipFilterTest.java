@@ -37,7 +37,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class GzipFilterTest
+public class IncludableGzipFilterTest
 {
     private static String __content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
@@ -73,7 +73,7 @@ public class GzipFilterTest
         tester.setContextPath("/context");
         tester.setResourceBase(testdir.getDir().getCanonicalPath());
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        FilterHolder holder = tester.addFilter(GzipFilter.class,"/*",0);
+        FilterHolder holder = tester.addFilter(IncludableGzipFilter.class,"/*",0);
         holder.setInitParameter("mimeTypes","text/plain");
         tester.start();
     }

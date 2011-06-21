@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.embedded;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,6 +32,9 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.GzipHandler;
+import org.eclipse.jetty.testing.HttpTester;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
