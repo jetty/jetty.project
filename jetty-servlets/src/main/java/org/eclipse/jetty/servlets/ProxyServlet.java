@@ -607,7 +607,7 @@ public class ProxyServlet implements Servlet
                 long ctimeout = (_client.getTimeout() > exchange.getTimeout()) ? _client.getTimeout() : exchange.getTimeout();
                 
                 // continuation fudge factor of 1000, underlying components
-                // should fail/expire first
+                // should fail/expire first from exchange
                 if ( ctimeout == 0 )
                 {
                     continuation.setTimeout(0);  // ideally never times out
