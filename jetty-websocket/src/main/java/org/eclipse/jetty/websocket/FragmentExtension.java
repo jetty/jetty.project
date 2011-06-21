@@ -10,7 +10,7 @@ public class FragmentExtension extends AbstractExtension
     
     public FragmentExtension()
     {
-        super("fragment",0,0,0);
+        super("fragment");
     }
 
     @Override

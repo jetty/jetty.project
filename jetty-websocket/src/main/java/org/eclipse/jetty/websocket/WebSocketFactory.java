@@ -164,8 +164,10 @@ public class WebSocketFactory
                 connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
             case 7: 
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD07.OP_EXT_DATA, 16-WebSocketConnectionD07.OP_EXT_CTRL,3);
-                connection = new WebSocketConnectionD07(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions);
+            case 8: 
+            case 9: 
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD7_9.OP_EXT_DATA, 16-WebSocketConnectionD7_9.OP_EXT_CTRL,3);
+                connection = new WebSocketConnectionD7_9(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
                 Log.warn("Unsupported Websocket version: "+draft);
@@ -256,14 +258,8 @@ public class WebSocketFactory
 
             if (extension.init(parameters))
             {
-                if (extension.getDataOpcodes()<=maxDataOpcodes && extension.getControlOpcodes()<=maxControlOpcodes && extension.getReservedBits()<=maxReservedBits)
-                {
-                    Log.debug("add {} {}",extName,parameters);
-                    extensions.add(extension);
-                    maxDataOpcodes-=extension.getDataOpcodes();
-                    maxControlOpcodes-=extension.getControlOpcodes();
-                    maxReservedBits-=extension.getReservedBits();
-                }
+                Log.debug("add {} {}",extName,parameters);
+                extensions.add(extension);
             }
         }
         Log.debug("extensions={}",extensions);

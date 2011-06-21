@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Log;
  * Parser the WebSocket protocol.
  *
  */
-public class WebSocketParserD07 implements WebSocketParser
+public class WebSocketParserD7_9 implements WebSocketParser
 {    
     public enum State { 
         
@@ -72,7 +72,7 @@ public class WebSocketParserD07 implements WebSocketParser
      * @param endp
      * @param handler
      */
-    public WebSocketParserD07(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean shouldBeMasked)
+    public WebSocketParserD7_9(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean shouldBeMasked)
     {
         _buffers=buffers;
         _endp=endp;
@@ -160,11 +160,11 @@ public class WebSocketParserD07 implements WebSocketParser
                         _opcode=(byte)(b&0xf);
                         _flags=(byte)(0xf&(b>>4));
                         
-                        if (WebSocketConnectionD07.isControlFrame(_opcode)&&!WebSocketConnectionD07.isLastFrame(_flags))
+                        if (WebSocketConnectionD7_9.isControlFrame(_opcode)&&!WebSocketConnectionD7_9.isLastFrame(_flags))
                         {
                             events++;
                             Log.warn("Fragmented Control from "+_endp);
-                            _handler.close(WebSocketConnectionD07.CLOSE_PROTOCOL,"Fragmented control");
+                            _handler.close(WebSocketConnectionD7_9.CLOSE_PROTOCOL,"Fragmented control");
                             _skip=true;
                         }
 
@@ -205,7 +205,7 @@ public class WebSocketParserD07 implements WebSocketParser
                             if (_length>_buffer.capacity())
                             {
                                 events++;
-                                _handler.close(WebSocketConnectionD07.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionD7_9.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -224,7 +224,7 @@ public class WebSocketParserD07 implements WebSocketParser
                             if (_length>=_buffer.capacity())
                             {
                                 events++;
-                                _handler.close(WebSocketConnectionD07.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionD7_9.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -267,7 +267,7 @@ public class WebSocketParserD07 implements WebSocketParser
                     _buffer.skip(_bytesNeeded);
                     _state=State.START;
                     events++;
-                    _handler.close(WebSocketConnectionD07.CLOSE_PROTOCOL,"bad mask");
+                    _handler.close(WebSocketConnectionD7_9.CLOSE_PROTOCOL,"bad mask");
                 }
                 else
                 {

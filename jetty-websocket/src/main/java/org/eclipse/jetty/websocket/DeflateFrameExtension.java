@@ -13,13 +13,13 @@ import org.eclipse.jetty.util.log.Log;
 
 public class DeflateFrameExtension extends AbstractExtension
 {
-    private int _minLength=64;
+    private int _minLength=8;
     private Deflater _deflater;
     private Inflater _inflater;
     
     public DeflateFrameExtension()
     {
-        super("x-deflate-frame",0,0,1);
+        super("x-deflate-frame");
     }
 
     @Override
@@ -45,12 +45,12 @@ public class DeflateFrameExtension extends AbstractExtension
     @Override
     public void onFrame(byte flags, byte opcode, Buffer buffer)
     {        
-        if (getConnection().isControl(opcode) || !isFlag(flags,0))
+        if (getConnection().isControl(opcode) || !isFlag(flags,1))
         {
             super.onFrame(flags,opcode,buffer);
             return;
         }
-        
+
         if (buffer.array()==null)
             buffer=buffer.asMutableBuffer();
         
@@ -61,7 +61,8 @@ public class DeflateFrameExtension extends AbstractExtension
             length=0;
             while(b-->0)
                 length=0x100*length+(0xff&buffer.get());
-        }        
+        }    
+        
         // TODO check a max framesize
         
         _inflater.setInput(buffer.array(),buffer.getIndex(),buffer.length());
@@ -76,12 +77,12 @@ public class DeflateFrameExtension extends AbstractExtension
                 buf.setPutIndex(buf.putIndex()+inflated);
             }
 
-            super.onFrame(clearFlag(flags,0),opcode,buf);
+            super.onFrame(clearFlag(flags,1),opcode,buf);
         }
         catch(DataFormatException e)
         {
             Log.warn(e);
-            getConnection().close(WebSocketConnectionD07.CLOSE_PROTOCOL,e.toString());
+            getConnection().close(WebSocketConnectionD7_9.CLOSE_PROTOCOL,e.toString());
         }
     }
 
@@ -91,9 +92,9 @@ public class DeflateFrameExtension extends AbstractExtension
     @Override
     public void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
     {
-        if (getConnection().isControl(opcode) && length<_minLength)
+        if (getConnection().isControl(opcode) || length<_minLength)
         {
-            super.addFrame(clearFlag(flags,0),opcode,content,offset,length);
+            super.addFrame(clearFlag(flags,1),opcode,content,offset,length);
             return;
         }
         
@@ -133,8 +134,8 @@ public class DeflateFrameExtension extends AbstractExtension
         int l = _deflater.deflate(out,out_offset,length-out_offset);
         
         if (_deflater.finished())
-            super.addFrame(setFlag(flags,0),opcode,out,0,l+out_offset);
+            super.addFrame(setFlag(flags,1),opcode,out,0,l+out_offset);
         else
-            super.addFrame(clearFlag(flags,0),opcode,content,offset,length);
+            super.addFrame(clearFlag(flags,1),opcode,content,offset,length);
     }
 }

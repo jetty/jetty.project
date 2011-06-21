@@ -11,36 +11,16 @@ import org.eclipse.jetty.websocket.WebSocketParser.FrameHandler;
 
 public class AbstractExtension implements Extension
 {
+    private static final int[] __mask = { -1, 0x04, 0x02, 0x01};
     private final String _name;
-    private final byte[] _dataOpcodes;
-    private final byte[] _controlOpcodes;
-    private final byte[] _bitMasks;
     private final Map<String,String> _parameters=new HashMap<String, String>();
     private FrameHandler _inbound;
     private WebSocketGenerator _outbound;
     private WebSocket.FrameConnection _connection;
     
-    public AbstractExtension(String name,int dataCodes, int controlCodes, int flags)
+    public AbstractExtension(String name)
     {
         _name = name;
-        _dataOpcodes=new byte[dataCodes];
-        _controlOpcodes=new byte[controlCodes];
-        _bitMasks=new byte[flags];
-    }
-    
-    public int getDataOpcodes()
-    {
-        return _dataOpcodes.length;
-    }
-
-    public int getControlOpcodes()
-    {
-        return _controlOpcodes.length;
-    }
-
-    public int getReservedBits()
-    {
-        return _bitMasks.length;
     }
     
     public WebSocket.FrameConnection getConnection()
@@ -75,19 +55,11 @@ public class AbstractExtension implements Extension
     }
     
     
-    public void bind(WebSocket.FrameConnection connection, FrameHandler incoming, WebSocketGenerator outgoing, byte[] dataOpcodes, byte[] controlOpcodes, byte[] bitMasks)
+    public void bind(WebSocket.FrameConnection connection, FrameHandler incoming, WebSocketGenerator outgoing)
     {
         _connection=connection;
         _inbound=incoming;
         _outbound=outgoing;
-        if (dataOpcodes!=null)
-            System.arraycopy(dataOpcodes,0,_dataOpcodes,0,dataOpcodes.length);
-        if (controlOpcodes!=null)
-            System.arraycopy(controlOpcodes,0,_dataOpcodes,0,controlOpcodes.length);
-        if (bitMasks!=null)
-            System.arraycopy(bitMasks,0,_bitMasks,0,bitMasks.length);
-        
-        // System.err.printf("bind %s[%s|%s|%s]\n",_name,TypeUtil.toHexString(dataOpcodes),TypeUtil.toHexString(controlOpcodes),TypeUtil.toHexString(bitMasks));
     }
 
     public String getName()
@@ -130,46 +102,27 @@ public class AbstractExtension implements Extension
         // System.err.printf("addFrame %s %x %x %d\n",getExtensionName(),flags,opcode,length);
         _outbound.addFrame(flags,opcode,content,offset,length);
     }
-
-    public byte dataOpcode(int i)
+    
+    public byte setFlag(byte flags,int rsv)
     {
-        return _dataOpcodes[i];
-    }
-
-    public int dataIndex(byte op)
-    {
-        for (int i=0;i<_dataOpcodes.length;i++)
-            if (_dataOpcodes[i]==op)
-                return i;
-        return -1;
-    }
-
-    public byte controlOpcode(int i)
-    {
-        return _dataOpcodes[i];
-    }
-
-    public int controlIndex(byte op)
-    {
-        for (int i=0;i<_controlOpcodes.length;i++)
-            if (_controlOpcodes[i]==op)
-                return i;
-        return -1;
+        if (rsv<1||rsv>3)
+            throw new IllegalArgumentException("rsv"+rsv);
+        byte b=(byte)(flags | __mask[rsv]);
+        return b;
     }
     
-    public byte setFlag(byte flags,int flag)
+    public byte clearFlag(byte flags,int rsv)
     {
-        return (byte)(flags | _bitMasks[flag]);
-    }
-    
-    public byte clearFlag(byte flags,int flag)
-    {
-        return (byte)(flags & ~_bitMasks[flag]);
+        if (rsv<1||rsv>3)
+            throw new IllegalArgumentException("rsv"+rsv);
+        return (byte)(flags & ~__mask[rsv]);
     }
 
-    public boolean isFlag(byte flags,int flag)
+    public boolean isFlag(byte flags,int rsv)
     {
-        return (flags & _bitMasks[flag])!=0;
+        if (rsv<1||rsv>3)
+            throw new IllegalArgumentException("rsv"+rsv);
+        return (flags & __mask[rsv])!=0;
     }
     
     public String toString()
