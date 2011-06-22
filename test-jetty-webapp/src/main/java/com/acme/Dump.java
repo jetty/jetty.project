@@ -22,6 +22,9 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.net.URL;
+import java.util.Collections;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
@@ -688,6 +691,13 @@ public class Dump extends HttpServlet
                 pout.write("</tr><tr>\n");
                 pout.write("<th align=\"right\">Thread.currentThread().getContextClassLoader().getResource(...):&nbsp;</th>");
                 pout.write("<td>"+Thread.currentThread().getContextClassLoader().getResource(res)+"</td>");
+                pout.write("</tr><tr>\n");
+                pout.write("<th align=\"right\">Thread.currentThread().getContextClassLoader().getResources(...):&nbsp;</th>");
+                Enumeration<URL> urls = Thread.currentThread().getContextClassLoader().getResources(res);
+                if (urls==null)
+                    pout.write("<td>null</td>");
+                else
+                    pout.write("<td>"+Collections.list(urls)+"</td>");
 
             }
             

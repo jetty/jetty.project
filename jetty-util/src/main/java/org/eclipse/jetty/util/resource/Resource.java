@@ -536,7 +536,7 @@ public abstract class Resource implements ResourceFactory
             buf.append("\">");
             buf.append(deTag(ls[i]));
             buf.append("&nbsp;");
-            buf.append("</TD><TD ALIGN=right>");
+            buf.append("</A></TD><TD ALIGN=right>");
             buf.append(item.length());
             buf.append(" bytes&nbsp;</TD><TD>");
             buf.append(dfmt.format(new Date(item.lastModified())));

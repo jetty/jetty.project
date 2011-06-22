@@ -316,10 +316,7 @@ public class WebAppClassLoader extends URLClassLoader
     /* ------------------------------------------------------------ */
     private List<URL> toList(Enumeration<URL> e)
     {
-        List<URL> list = new ArrayList<URL>();
-        while (e!=null && e.hasMoreElements())
-            list.add(e.nextElement());
-        return list;
+        return Collections.list(e);
     }
     
     /* ------------------------------------------------------------ */
