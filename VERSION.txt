@@ -5,13 +5,14 @@ jetty-7.4.3-SNAPSHOT
  + 347717 start.jar destroys dependent child of --exec
  + 347889 OSGi should follow directive visibility:=reexport for META-INF/web-fragments and resources
  + 347898 Close channel on JVM exceptions
+ + 348652 jetty.sh starts two unix processes
+ + 348935 Close A tag in directory listing
  + 349344 Passing empty query string to UrlEncoded#decodeTo(String, MultiMap, String) does not yield an empty map
  + 349738 set buffer sizes for http client in proxy servlet
  + 349870 proxy servlet protect continuation against fast failing exchanges
  + 349896 SCEP supports zero maxIdleTime
  + 349897 draft -09 websockets
  + 349997 MBeanContainer uses weak references
- + 348935 Close A tag in directory listing
  + JETTY-1342 Recreate selector in change task
 
 jetty-7.4.2.v20110526
