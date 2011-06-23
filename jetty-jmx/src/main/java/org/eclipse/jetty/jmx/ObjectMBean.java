@@ -139,7 +139,12 @@ public class ObjectMBean implements DynamicMBean
                 }
                 catch (ClassNotFoundException e)
                 {
-                    if (e.toString().endsWith("MBean"))
+                    // The code below was modified to fix bug 332200.
+                    // The issue was caused by additional information
+                    // added to the message after the class name when
+                    // Jetty is running in Apache Felix.
+                    String klass = e.getMessage().split("[ ]", 2)[0];
+                    if (klass.endsWith("MBean"))
                         Log.ignore(e);
                     else
                         Log.warn(e);
