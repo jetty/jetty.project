@@ -14,6 +14,7 @@ jetty-7.4.3-SNAPSHOT
  + 349896 SCEP supports zero maxIdleTime
  + 349897 draft -09 websockets
  + 349997 MBeanContainer uses weak references
+ + 350287 ScanningAppProviderRuntimeUpdatesTest fails on Windows
  + JETTY-1342 Recreate selector in change task
 
 jetty-7.4.2.v20110526
