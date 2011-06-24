@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
@@ -117,7 +118,7 @@ public class SocketConnector extends AbstractConnector
      */
     protected Connection newConnection(EndPoint endpoint)
     {
-        return new HttpConnection(this, endpoint, getServer());
+        return new BlockingHttpConnection(this, endpoint, getServer());
     }
 
     /* ------------------------------------------------------------------------------- */

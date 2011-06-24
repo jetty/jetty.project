@@ -58,7 +58,6 @@ public class HttpParser implements Parser
     private Buffer _header; // Buffer for header data (and small _content)
     private Buffer _body; // Buffer for large content
     private Buffer _buffer; // The current buffer in use (either _header or _content)
-    private final View  _contentView=new View(); // View of the content in the buffer for {@link Input}
     private CachedBuffer _cached;
     private View.CaseInsensitive _tok0; // Saved token: header name, request method or response version
     private View.CaseInsensitive _tok1; // Saved token: header value, request URI or response code
@@ -67,6 +66,7 @@ public class HttpParser implements Parser
     private boolean _forceContentBuffer;
     
     /* ------------------------------------------------------------------------------- */
+    protected final View  _contentView=new View(); // View of the content in the buffer for {@link Input}
     protected int _state=STATE_START;
     protected byte _eol;
     protected int _length;
@@ -1111,8 +1111,6 @@ public class HttpParser implements Parser
         _forceContentBuffer=force;
     } 
     
-
-    
     /* ------------------------------------------------------------ */
     public Buffer blockForContent(long maxIdleTime) throws IOException
     {
@@ -1121,49 +1119,32 @@ public class HttpParser implements Parser
         if (getState() <= HttpParser.STATE_END) 
             return null;
         
-        // Handle simple end points.
-        if (_endp==null)
-            parseNext();
-        
-        // Handle blocking end points
-        else if (_endp.isBlocking())
-        {
-            try
-            {
-                parseNext();
-
-                // parse until some progress is made (or IOException thrown for timeout)
-                while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp.isOpen())
-                {
-                    // Try to get more _parser._content
-                    parseNext();
-                }
-            }
-            catch(IOException e)
-            {
-                _endp.close();
-                throw e;
-            }
-        }
-        else // Handle non-blocking end point
+        try
         {
             parseNext();
             
             // parse until some progress is made (or IOException thrown for timeout)
-            while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp.isOpen())
+            while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp!=null && _endp.isOpen())
             {
-                if (_endp.isBufferingInput() && parseNext()>0)
-                    continue;
-                
-                if (!_endp.blockReadable(maxIdleTime))
+                if (!_endp.isBlocking())
                 {
-                    _endp.close();
-                    throw new EofException("timeout");
+                    if (_endp.isBufferingInput() && parseNext()>0)
+                        continue;
+
+                    if (!_endp.blockReadable(maxIdleTime))
+                    {
+                        _endp.close();
+                        throw new EofException("timeout");
+                    }
                 }
 
-                // Try to get more _parser._content
                 parseNext();
             }
+        }
+        catch(IOException e)
+        {
+            _endp.close();
+            throw e;
         }
         
         return _contentView.length()>0?_contentView:null; 

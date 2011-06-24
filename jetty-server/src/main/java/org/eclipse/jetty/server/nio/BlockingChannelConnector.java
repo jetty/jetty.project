@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.ChannelEndPoint;
+import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ConcurrentHashSet;
@@ -172,7 +173,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             throws IOException
         {
             super(channel,BlockingChannelConnector.this._maxIdleTime);
-            _connection = new HttpConnection(BlockingChannelConnector.this,this,getServer());
+            _connection = new BlockingHttpConnection(BlockingChannelConnector.this,this,getServer());
         }
         
         /* ------------------------------------------------------------ */

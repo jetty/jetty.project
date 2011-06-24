@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
+import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -65,7 +66,7 @@ public class SslTruncationAttackTest
             @Override
             protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
             {
-                return new HttpConnection(this, endpoint, server)
+                return new AsyncHttpConnection(this, endpoint, server)
                 {
                     @Override
                     public Connection handle() throws IOException
