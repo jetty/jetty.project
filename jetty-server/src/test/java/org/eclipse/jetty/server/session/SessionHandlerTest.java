@@ -60,7 +60,7 @@ public class SessionHandlerTest
                 return cookieName;
             }
         });
-        sessionHandler.setRequestedId(baseRequest,httpRequest);
+        sessionHandler.checkRequestedSessionId(baseRequest,httpRequest);
 
         assertEquals(sessionId,baseRequest.getRequestedSessionId());
         assertTrue(baseRequest.isRequestedSessionIdFromCookie());
@@ -100,7 +100,7 @@ public class SessionHandlerTest
             }
         });
 
-        sessionHandler.setRequestedId(baseRequest,httpRequest);
+        sessionHandler.checkRequestedSessionId(baseRequest,httpRequest);
 
         assertEquals(sessionId,baseRequest.getRequestedSessionId());
         assertFalse(baseRequest.isRequestedSessionIdFromCookie());

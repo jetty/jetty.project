@@ -260,7 +260,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      *
      * Session instance in memory of this node.
      */
-    public class Session extends AbstractSessionManager.Session
+    public class Session extends AbstractSession
     {
         private static final long serialVersionUID = 5208464051134226143L;
         private final SessionData _data;
@@ -273,13 +273,14 @@ public class JDBCSessionManager extends AbstractSessionManager
          */
         protected Session (HttpServletRequest request)
         {
-            super(request);   
-            _data = new SessionData(_clusterId,_attributes);
+            super(JDBCSessionManager.this,request);   
+            _data = new SessionData(getClusterId(),_jdbcAttributes);
             if (_dftMaxIdleSecs>0)
                 _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
             _data.setCanonicalContext(canonicalize(_context.getContextPath()));
             _data.setVirtualHost(getVirtualHost(_context));
-            _data.setExpiryTime(_maxIdleMs < 0 ? 0 : (System.currentTimeMillis() + _maxIdleMs));
+            int maxInterval=getMaxInactiveInterval();
+            _data.setExpiryTime(maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000));
         }
 
         /**
@@ -288,12 +289,12 @@ public class JDBCSessionManager extends AbstractSessionManager
           */
          protected Session (long accessed, SessionData data)
          {
-             super(data.getCreated(), accessed, data.getId());
+             super(JDBCSessionManager.this,data.getCreated(), accessed, data.getId());
              _data=data;
              if (_dftMaxIdleSecs>0)
                  _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
-             _attributes.putAll(_data.getAttributeMap());
-             _data.setAttributeMap(_attributes);
+             _jdbcAttributes.putAll(_data.getAttributeMap());
+             _data.setAttributeMap(_jdbcAttributes);
          }
          
          @Override
@@ -320,20 +321,26 @@ public class JDBCSessionManager extends AbstractSessionManager
          * Entry to session.
          * Called by SessionHandler on inbound request and the session already exists in this node's memory.
          * 
-         * @see org.eclipse.jetty.server.session.AbstractSessionManager.Session#access(long)
+         * @see org.eclipse.jetty.server.session.AbstractSession#access(long)
          */
         @Override
-        protected void access(long time)
+        protected boolean access(long time)
         {
-            super.access(time);
-            _data.setLastAccessed(_data.getAccessed());
-            _data.setAccessed(time);
-            _data.setExpiryTime(_maxIdleMs < 0 ? 0 : (time + _maxIdleMs));
+            if (super.access(time))
+            {
+                _data.setLastAccessed(_data.getAccessed());
+                _data.setAccessed(time);
+
+                int maxInterval=getMaxInactiveInterval();
+                _data.setExpiryTime(maxInterval <= 0 ? 0 : (time + maxInterval*1000));
+                return true;
+            }
+            return false;
         }
 
         /** 
          * Exit from session
-         * @see org.eclipse.jetty.server.session.AbstractSessionManager.Session#complete()
+         * @see org.eclipse.jetty.server.session.AbstractSession#complete()
          */
         @Override
         protected void complete()
@@ -558,17 +565,6 @@ public class JDBCSessionManager extends AbstractSessionManager
             }
         }
     }
-
-   
-    /** 
-     * Get all the sessions as a map of id to Session.
-     */
-    @Override
-    public Map getSessionMap()
-    {
-       return Collections.unmodifiableMap(_sessions);
-    }
-
     
     /** 
      * Get the number of sessions.
@@ -679,10 +675,10 @@ public class JDBCSessionManager extends AbstractSessionManager
     /** 
      * Add a newly created session to our in-memory list for this node and persist it.
      * 
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager#addSession(org.eclipse.jetty.server.session.AbstractSessionManager.Session)
+     * @see org.eclipse.jetty.server.session.AbstractSessionManager#addSession(org.eclipse.jetty.server.session.AbstractSessionManager.AbstractSession)
      */
     @Override
-    protected void addSession(AbstractSessionManager.Session session)
+    protected void addSession(AbstractSession session)
     {
         if (session==null)
             return;
@@ -713,7 +709,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * @see org.eclipse.jetty.server.session.AbstractSessionManager#newSession(javax.servlet.http.HttpServletRequest)
      */
     @Override
-    protected AbstractSessionManager.Session newSession(HttpServletRequest request)
+    protected AbstractSession newSession(HttpServletRequest request)
     {
         return new Session(request);
     }
@@ -725,7 +721,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * {@link SessionIdManager#invalidateAll(String)} should be called.
      */
     @Override
-    public void removeSession(AbstractSessionManager.Session session, boolean invalidate)
+    public void removeSession(AbstractSession session, boolean invalidate)
     {
         // Remove session from context and global maps
         boolean removed = false;
@@ -748,11 +744,11 @@ public class JDBCSessionManager extends AbstractSessionManager
             if (invalidate)
                 _sessionIdManager.invalidateAll(session.getClusterId());
             
-            if (invalidate && _sessionListeners!=null)
+            if (invalidate && !_sessionListeners.isEmpty())
             {
                 HttpSessionEvent event=new HttpSessionEvent(session);
-                for (int i=LazyList.size(_sessionListeners); i-->0;)
-                    ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionDestroyed(event);
+                for (HttpSessionListener l : _sessionListeners)
+                    l.sessionDestroyed(event);
             }
             if (!invalidate)
             {

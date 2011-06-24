@@ -41,7 +41,7 @@ public class HashTestServer extends AbstractTestServer
         return new HashSessionIdManager();
     }
 
-    public AbstractSessionManager newSessionManager()
+    public SessionManager newSessionManager()
     {
         HashSessionManager manager = new HashSessionManager();
         manager.setScavengePeriod((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));
