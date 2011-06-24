@@ -19,7 +19,7 @@ public class AsyncHttpConnection extends HttpConnection
     public Connection handle() throws IOException
     {
         Connection connection = this;
-
+        
         // Loop while more in buffer
         try
         {
@@ -68,6 +68,7 @@ public class AsyncHttpConnection extends HttpConnection
                     // Do we need to complete a half close?
                     if (_endp.isInputShutdown() && (_parser.isIdle() || _parser.isComplete()))
                     {
+                        Log.debug("complete half close {}",this);
                         more_in_buffer=false;
                         _endp.close();
                         reset(true);
@@ -98,7 +99,7 @@ public class AsyncHttpConnection extends HttpConnection
                     // else Are we suspended?
                     else if (_request.isAsyncStarted())
                     {
-                        Log.debug("return with suspended request");
+                        Log.debug("suspended {}",this);
                         more_in_buffer=false;
                         progress=false;
                     }

@@ -16,6 +16,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
@@ -66,7 +67,7 @@ public class SslTruncationAttackTest
             @Override
             protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
             {
-                return new AsyncHttpConnection(this, endpoint, server)
+                AsyncHttpConnection connection=new AsyncHttpConnection(this, endpoint, server)
                 {
                     @Override
                     public Connection handle() throws IOException
@@ -75,6 +76,8 @@ public class SslTruncationAttackTest
                         return super.handle();
                     }
                 };
+                ((HttpParser)connection.getParser()).setForceContentBuffer(true);
+                return connection;
             }
         };
         server.addConnector(connector);
@@ -152,7 +155,7 @@ public class SslTruncationAttackTest
         // Sleep for a while to detect eventual spin looping
         TimeUnit.SECONDS.sleep(1);
 
-        Assert.assertEquals("handle() invocations", 1, handleCount.get());
+        Assert.assertTrue("handle() invocations", handleCount.get()<=1);
         Assert.assertTrue("endpoint not closed", endPointClosed.get());
     }
 
