@@ -16,18 +16,17 @@
 package org.eclipse.jetty.deploy.providers;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.deploy.DeploymentManager.AppEntry;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
-import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -86,53 +85,18 @@ public class ScanningAppProviderRuntimeUpdatesTest
     public void waitForDirectoryScan()
     {
         int scan=_scans.get()+2*_providers;
-        try
+        do
         {
-            do
+            try
             {
                 Thread.sleep(200);
             }
-            while(_scans.get()<scan);
-            
-            Thread.sleep(200);
-        }
-        catch(InterruptedException e)
-        {
-            Log.ignore(e);
-        }
-    }
-    
-    public void waitForDeployment()
-    {
-        DeploymentManager dm = jetty.getServer().getBeans(DeploymentManager.class).get(0);
-
-        long count = 10;
-        boolean ready; 
-        Collection<AppEntry> entries = dm.getAppEntries();
-        try
-        {
-            do 
+            catch(InterruptedException e)
             {
-                Thread.sleep(200);
-                
-                ready = true;
-                for(AppEntry entry: entries)
-                {
-                    if(!entry.getLifecyleNode().getName().equals("deployed"))
-                    {
-                        ready = false;
-                    }
-                }
-            } while (!ready && --count > 0);
+                Log.warn(e);
+            }
         }
-        catch (InterruptedException e)
-        {
-            Log.ignore(e);
-        }
-        catch (Exception e)
-        {
-            Log.warn(e);
-        }
+        while(_scans.get()<scan);
     }
     
     /**
@@ -175,6 +139,10 @@ public class ScanningAppProviderRuntimeUpdatesTest
     @Test
     public void testAfterStartupThenUpdateContext() throws Exception
     {
+        // This test will not work on Windows as second war file would
+        // not be written over the first one because of a file lock
+        Assume.assumeTrue(!OS.IS_WINDOWS);
+        
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");
 
@@ -182,8 +150,6 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
         jetty.assertWebAppContextsExists("/foo");
 
-        waitForDeployment();
-        
         // Test that webapp response contains "-1"
         jetty.assertResponseContains("/foo/info","FooServlet-1");
 
@@ -194,10 +160,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
         // This should result in the existing foo.war being replaced with the new foo.war
         waitForDirectoryScan();
-
         jetty.assertWebAppContextsExists("/foo");
-
-        waitForDeployment();
 
         // Test that webapp response contains "-2"
         jetty.assertResponseContains("/foo/info","FooServlet-2");
