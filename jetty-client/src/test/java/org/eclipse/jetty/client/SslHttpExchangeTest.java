@@ -21,6 +21,8 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Assume;
 
 /**
@@ -92,6 +94,8 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     @Override
     public void testPerf() throws Exception
     {
+        Assume.assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+        
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
         IgnoreTestOnBuggyIBM();
         super.testPerf();
