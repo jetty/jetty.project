@@ -87,6 +87,7 @@ public class ScannerTest
     @Test
     public void testAddedChangeRemove() throws Exception
     {
+        // TODO needs to be further investigated
         Assume.assumeTrue(!OS.IS_WINDOWS && !OS.IS_OSX);
 
         touch("a0");
@@ -195,6 +196,7 @@ public class ScannerTest
     @Test
     public void testSizeChange() throws Exception
     {
+        // TODO needs to be further investigated
         Assume.assumeTrue(!OS.IS_WINDOWS && !OS.IS_OSX);
 
         touch("tsc0");

@@ -117,7 +117,8 @@ public class StressTest
     @Test
     public void testNonPersistent() throws Throwable
     {
-    	assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+        // TODO needs to be further investigated
+        assumeTrue(!OS.IS_OSX || Stress.isEnabled());
     	
         doThreads(10,100,false);
         if (Stress.isEnabled())
@@ -132,7 +133,8 @@ public class StressTest
     @Test
     public void testPersistent() throws Throwable
     {
-    	assumeTrue(!OS.IS_OSX || Stress.isEnabled());
+        // TODO needs to be further investigated
+        assumeTrue(!OS.IS_OSX || Stress.isEnabled());
     	
         doThreads(20,100,true);
         if (Stress.isEnabled())
