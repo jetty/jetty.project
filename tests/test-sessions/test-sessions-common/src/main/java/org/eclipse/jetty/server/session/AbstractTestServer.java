@@ -71,7 +71,7 @@ public abstract class AbstractTestServer
         ServletContextHandler context = new ServletContextHandler(_contexts, contextPath);
 
         SessionManager sessionManager = newSessionManager();
-        sessionManager.setIdManager(_sessionIdManager);
+        sessionManager.setSessionIdManager(_sessionIdManager);
         sessionManager.setMaxInactiveInterval(_maxInactivePeriod);
 
         SessionHandler sessionHandler = newSessionHandler(sessionManager);
@@ -96,7 +96,7 @@ public abstract class AbstractTestServer
         WebAppContext context = new WebAppContext(_contexts, warPath, contextPath);
 
         SessionManager sessionManager = newSessionManager();
-        sessionManager.setIdManager(_sessionIdManager);
+        sessionManager.setSessionIdManager(_sessionIdManager);
         sessionManager.setMaxInactiveInterval(_maxInactivePeriod);
 
         SessionHandler sessionHandler = newSessionHandler(sessionManager);

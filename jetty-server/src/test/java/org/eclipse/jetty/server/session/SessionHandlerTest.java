@@ -417,7 +417,7 @@ public class SessionHandlerTest
             return null;
         }
 
-        public SessionIdManager getIdManager()
+        public SessionIdManager getSessionIdManager()
         {
             return null;
         }
@@ -496,7 +496,7 @@ public class SessionHandlerTest
         {
         }
 
-        public void setIdManager(SessionIdManager idManager)
+        public void setSessionIdManager(SessionIdManager idManager)
         {
         }
 

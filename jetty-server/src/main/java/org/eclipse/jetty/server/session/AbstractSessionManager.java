@@ -109,6 +109,18 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    public ContextHandler.Context getContext()
+    {
+        return _context;
+    }
+
+    /* ------------------------------------------------------------ */
+    public ContextHandler getContextHandler()
+    {
+        return _context.getContextHandler();
+    }
+    
+    /* ------------------------------------------------------------ */
     public HttpCookie access(HttpSession session,boolean secure)
     {
         long now=System.currentTimeMillis();
@@ -237,7 +249,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /* ------------------------------------------------------------ */
     public HttpSession getHttpSession(String nodeId)
     {
-        String cluster_id = getIdManager().getClusterId(nodeId);
+        String cluster_id = getSessionIdManager().getClusterId(nodeId);
 
         AbstractSession session = getSession(cluster_id);
         if (session!=null && !session.getNodeId().equals(nodeId))
@@ -246,11 +258,20 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the metaManager used for cross context session management
+     * @deprecated Use {@link #getSessionIdManager()}
      */
     public SessionIdManager getIdManager()
+    {
+        return getSessionIdManager();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the SessionIdManager used for cross context session management
+     */
+    public SessionIdManager getSessionIdManager()
     {
         return _sessionIdManager;
     }
@@ -300,12 +321,12 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated use {@link #getIdManager()}
+     * @deprecated use {@link #getSessionIdManager()}
      */
     @Deprecated
     public SessionIdManager getMetaManager()
     {
-        return getIdManager();
+        return getSessionIdManager();
     }
 
     /* ------------------------------------------------------------ */
@@ -491,12 +512,21 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         _httpOnly=httpOnly;
     }
 
-
+    /* ------------------------------------------------------------ */
+    /**
+     * @param metaManager The metaManager used for cross context session management.
+     * @deprecated use {@link #setSessionIdManager(SessionIdManager)}
+     */
+    public void setIdManager(SessionIdManager metaManager)
+    {
+        setSessionIdManager(metaManager);
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param metaManager The metaManager used for cross context session management.
      */
-    public void setIdManager(SessionIdManager metaManager)
+    public void setSessionIdManager(SessionIdManager metaManager)
     {
         _sessionIdManager=metaManager;
     }
@@ -522,12 +552,12 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     /**
-     * @deprecated use {@link #setIdManager(SessionIdManager)}
+     * @deprecated use {@link #setSessionIdManager(SessionIdManager)}
      */
     @Deprecated
     public void setMetaManager(SessionIdManager metaManager)
     {
-        setIdManager(metaManager);
+        setSessionIdManager(metaManager);
     }
 
     /* ------------------------------------------------------------ */

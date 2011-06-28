@@ -105,7 +105,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             _created=System.currentTimeMillis();
             _accessed = _created;
             _attributes = new HashMap<String,Object>();
-            _lastNode = getIdManager().getWorkerName();
+            _lastNode = getSessionIdManager().getWorkerName();
         }
         
         public SessionData (String sessionId,Map<String,Object> attributes)
@@ -114,7 +114,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             _created=System.currentTimeMillis();
             _accessed = _created;
             _attributes = attributes;
-            _lastNode = getIdManager().getWorkerName();
+            _lastNode = getSessionIdManager().getWorkerName();
         }
 
         public synchronized String getId ()
@@ -509,7 +509,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                                 " lastSaved="+(session==null?0:session._data._lastSaved)+
                                 " interval="+(_saveIntervalSec * 1000)+
                                 " lastNode="+session._data.getLastNode()+
-                                " thisNode="+getIdManager().getWorkerName()+
+                                " thisNode="+getSessionIdManager().getWorkerName()+
                                 " difference="+(now - session._data._lastSaved));
                 }
                 
@@ -530,7 +530,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                 
                 if (data != null)
                 {
-                    if (!data.getLastNode().equals(getIdManager().getWorkerName()) || session==null)
+                    if (!data.getLastNode().equals(getSessionIdManager().getWorkerName()) || session==null)
                     {
                         //if the session in the database has not already expired
                         if (data._expiryTime > now)
@@ -872,7 +872,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                         data.setCanonicalContext(result.getString("contextPath"));
                         data.setVirtualHost(result.getString("virtualHost"));
 
-                        InputStream is = ((JDBCSessionIdManager)getIdManager())._dbAdaptor.getBlobInputStream(result, "map");
+                        InputStream is = ((JDBCSessionIdManager)getSessionIdManager())._dbAdaptor.getBlobInputStream(result, "map");
                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream (is);
                         Object o = ois.readObject();
                         data.setAttributeMap((Map<String,Object>)o);
@@ -935,7 +935,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.setString(2, data.getId()); //session id
             statement.setString(3, data.getCanonicalContext()); //context path
             statement.setString(4, data.getVirtualHost()); //first vhost
-            statement.setString(5, getIdManager().getWorkerName());//my node id
+            statement.setString(5, getSessionIdManager().getWorkerName());//my node id
             statement.setLong(6, data.getAccessed());//accessTime
             statement.setLong(7, data.getLastAccessed()); //lastAccessTime
             statement.setLong(8, data.getCreated()); //time created
@@ -986,7 +986,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
             statement = connection.prepareStatement(__updateSession);     
-            statement.setString(1, getIdManager().getWorkerName());//my node id
+            statement.setString(1, getSessionIdManager().getWorkerName());//my node id
             statement.setLong(2, data.getAccessed());//accessTime
             statement.setLong(3, data.getLastAccessed()); //lastAccessTime
             statement.setLong(4, now); //last saved time
@@ -1023,7 +1023,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     protected void updateSessionNode (SessionData data)
     throws Exception
     {
-        String nodeId = getIdManager().getWorkerName();
+        String nodeId = getSessionIdManager().getWorkerName();
         Connection connection = getConnection();
         PreparedStatement statement = null;
         try
@@ -1060,7 +1060,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             long now = System.currentTimeMillis();
             connection.setAutoCommit(true);
             statement = connection.prepareStatement(__updateSessionAccessTime);
-            statement.setString(1, getIdManager().getWorkerName());
+            statement.setString(1, getSessionIdManager().getWorkerName());
             statement.setLong(2, data.getAccessed());
             statement.setLong(3, data.getLastAccessed());
             statement.setLong(4, now);
@@ -1120,7 +1120,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     private Connection getConnection ()
     throws SQLException
     { 
-        return ((JDBCSessionIdManager)getIdManager()).getConnection();
+        return ((JDBCSessionIdManager)getSessionIdManager()).getConnection();
     }
 
     /**
