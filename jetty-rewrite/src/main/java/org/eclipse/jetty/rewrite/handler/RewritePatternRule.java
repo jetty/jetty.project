@@ -18,12 +18,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
  * Rewrite the URI by replacing the matched {@link PathMap} path with a fixed string. 
  */
-public class RewritePatternRule extends PatternRule
+public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
 {
     private String _replacement;
 
@@ -54,6 +55,13 @@ public class RewritePatternRule extends PatternRule
     {
         target = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern,target));   
         return target;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException 
+    {
+        String uri = URIUtil.addPaths(_replacement, PathMap.pathInfo(_pattern,request.getRequestURI()));
+        request.setRequestURI(uri);
     }
 
     /* ------------------------------------------------------------ */

@@ -17,11 +17,21 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Request;
+
 /**
  * An abstract rule for creating rewrite rules.
  */
 public abstract class Rule
 {   
+    /**
+     * Interface used to apply a changed target if {@link RuleContainer#setRewriteRequestURI(boolean)} is true.
+     */
+    public interface ApplyURI
+    {
+        void applyURI(Request request, String oldTarget, String newTarget) throws IOException;   
+    }
+    
     protected boolean _terminating;
     protected boolean _handling;
     

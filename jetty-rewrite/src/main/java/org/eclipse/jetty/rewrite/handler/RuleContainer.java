@@ -203,9 +203,14 @@ public class RuleContainer extends Rule
                         original_set=true;
                         request.setAttribute(_originalPathAttribute, target);
                     }     
-                    
+
                     if (_rewriteRequestURI)
-                        ((Request)request).setRequestURI(applied);
+                    {
+                        if (rule instanceof Rule.ApplyURI && !target.equals(request.getRequestURI()))
+                            ((Rule.ApplyURI)rule).applyURI((Request)request, target, applied);
+                        else
+                            ((Request)request).setRequestURI(applied);
+                    }
 
                     if (_rewritePathInfo)
                         ((Request)request).setPathInfo(applied);
