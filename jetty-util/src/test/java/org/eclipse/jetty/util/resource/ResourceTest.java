@@ -120,9 +120,11 @@ public class ResourceTest
 		__userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
 		__relDir = "src/test/java/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);  
         
+	/*
         System.err.println("User Dir="+__userDir);
         System.err.println("Rel  Dir="+__relDir);
         System.err.println("User URL="+__userURL);
+	*/
 
         tmpFile=File.createTempFile("test",null).getCanonicalFile();
         tmpFile.deleteOnExit();

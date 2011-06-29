@@ -66,6 +66,16 @@ public class FileResource extends URLResource
     {
         return __checkAliases;
     }
+
+    /* -------------------------------------------------------- */
+    public FileResource(File file) throws MalformedURLException
+    {
+        super(file.toURI().toURL(),null);
+        
+        _file=file;
+
+        fixUrlString();
+    }
     
     /* -------------------------------------------------------- */
     public FileResource(URL url)
@@ -73,35 +83,24 @@ public class FileResource extends URLResource
     {
         super(url,null);
 
-        try
-        {
-            // Try standard API to convert URL to file.
-            _file =new File(new URI(url.toString()));
-        }
-        catch (Exception e)
-        {
-            Log.ignore(e);
-            try
-            {
-                // Assume that File.toURL produced unencoded chars. So try
-                // encoding them.
-                String file_url="file:"+URIUtil.encodePath(url.toString().substring(5));           
-                URI uri = new URI(file_url);
-                if (uri.getAuthority()==null) 
-                    _file = new File(uri);
-                else
-                    _file = new File("//"+uri.getAuthority()+URIUtil.decodePath(url.getFile()));
-            }
-            catch (Exception e2)
-            {
-                Log.ignore(e2);
+        _file =new File(url.toURI());
 
-                // Still can't get the file.  Doh! try good old hack!
-                checkConnection();
-                Permission perm = _connection.getPermission();
-                _file = new File(perm==null?url.getFile():perm.getName());
-            }
-        }
+        fixUrlString();
+    }
+    
+    /* -------------------------------------------------------- */
+    FileResource(URL url, URLConnection connection, File file)
+    {
+        super(url,connection);
+
+        _file=file;
+        
+        fixUrlString();
+    }
+    
+    /* -------------------------------------------------------- */
+    private void fixUrlString()
+    {
         if (_file.isDirectory())
         {
             if (!_urlString.endsWith("/"))
@@ -112,16 +111,6 @@ public class FileResource extends URLResource
             if (_urlString.endsWith("/"))
                 _urlString=_urlString.substring(0,_urlString.length()-1);
         }
-            
-    }
-    
-    /* -------------------------------------------------------- */
-    FileResource(URL url, URLConnection connection, File file)
-    {
-        super(url,connection);
-        _file=file;
-        if (_file.isDirectory() && !_urlString.endsWith("/"))
-            _urlString=_urlString+"/";
     }
     
     /* -------------------------------------------------------- */
