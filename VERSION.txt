@@ -20,6 +20,7 @@ jetty-7.4.3-SNAPSHOT
  + 350634 Cleanup FileResource construction
  + 350642 Don't close SCEP during NIOBuffer manipulation
  + JETTY-1342 Recreate selector in change task
+ + JETTY-1385 NPE in jetty client's HTttpExchange.setRequestContentSource(InputStream)
  + JETTY-1390 RewriteHandler handles encoded URIs
 
 jetty-7.4.2.v20110526
