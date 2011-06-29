@@ -174,7 +174,6 @@ public class ChannelEndPoint implements EndPoint
                 if (len<0 && isOpen() && !isInputShutdown())
                     shutdownInput();
             }
-
             catch (IOException x)
             {
                 try
@@ -185,7 +184,9 @@ public class ChannelEndPoint implements EndPoint
                 {
                     Log.ignore(xx);
                 }
-                throw x;
+                
+                if (len>=0)
+                    throw x;
             }
         }
         else
