@@ -154,49 +154,38 @@ public class ChannelEndPoint implements EndPoint
             final NIOBuffer nbuf = (NIOBuffer)buf;
             final ByteBuffer bbuf=nbuf.getByteBuffer();
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized(bbuf)
+            
+            try
             {
-                try
-                {
-                    bbuf.position(buffer.putIndex());
-                    len=_channel.read(bbuf);
-                    if (len<0 && isOpen() && !isInputShutdown())
-                    {
-                        try
-                        {
-                            shutdownInput();
-                        }
-                        catch(IOException x)
-                        {
-                            Log.ignore(x);
-                            try
-                            {
-                                close();
-                            }
-                            catch (IOException xx)
-                            {
-                                Log.ignore(xx);
-                            }
-                        }
-                    }
-                }
-                catch (IOException x)
+                synchronized(bbuf)
                 {
                     try
                     {
-                        close();
+                        bbuf.position(buffer.putIndex());
+                        len=_channel.read(bbuf);
                     }
-                    catch (IOException xx)
+                    finally
                     {
-                        Log.ignore(xx);
+                        buffer.setPutIndex(bbuf.position());
+                        bbuf.position(0);
                     }
-                    throw x;
                 }
-                finally
+
+                if (len<0 && isOpen() && !isInputShutdown())
+                    shutdownInput();
+            }
+
+            catch (IOException x)
+            {
+                try
                 {
-                    buffer.setPutIndex(bbuf.position());
-                    bbuf.position(0);
+                    close();
                 }
+                catch (IOException xx)
+                {
+                    Log.ignore(xx);
+                }
+                throw x;
             }
         }
         else

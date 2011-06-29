@@ -18,6 +18,7 @@ jetty-7.4.3-SNAPSHOT
  + 349997 MBeanContainer uses weak references
  + 350533 Add "Origin" to the list of allowed headers in CrossOriginFilter
  + 350634 Cleanup FileResource construction
+ + 350642 Don't close SCEP during NIOBuffer manipulation
  + JETTY-1342 Recreate selector in change task
  + JETTY-1390 RewriteHandler handles encoded URIs
 
