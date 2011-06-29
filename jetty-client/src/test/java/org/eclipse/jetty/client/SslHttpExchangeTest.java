@@ -24,6 +24,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Functional testing for HttpExchange.
@@ -33,8 +35,10 @@ import org.junit.Assume;
  */
 public class SslHttpExchangeTest extends HttpExchangeTest
 {
+    /* ------------------------------------------------------------ */
+    @Before
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         _scheme="https://";
         startServer();
@@ -48,6 +52,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
         _httpClient.start();
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     protected void newServer()
     {
@@ -69,7 +74,9 @@ public class SslHttpExchangeTest extends HttpExchangeTest
         _connector=connector;
     }
     
-    private void IgnoreTestOnBuggyIBM() {
+    /* ------------------------------------------------------------ */
+    private void IgnoreTestOnBuggyIBM()
+    {
         // Use Junit 4.x to flag test as ignored if encountering IBM JVM
         // Will show up in various junit reports as an ignored test as well.
         Assume.assumeThat(System.getProperty("java.vendor").toLowerCase(),not(containsString("ibm")));
@@ -79,6 +86,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     /**
      * @see org.eclipse.jetty.client.HttpExchangeTest#testGetWithContentExchange()
      */
+    @Test
     @Override
     public void testGetWithContentExchange() throws Exception
     {
@@ -91,6 +99,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     /**
      * @see org.eclipse.jetty.client.HttpExchangeTest#testPerf()
      */
+    @Test
     @Override
     public void testPerf() throws Exception
     {
@@ -106,6 +115,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     /**
      * @see org.eclipse.jetty.client.HttpExchangeTest#testPostWithContentExchange()
      */
+    @Test
     @Override
     public void testPostWithContentExchange() throws Exception
     {
@@ -118,6 +128,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     /**
      * @see org.eclipse.jetty.client.HttpExchangeTest#testReserveConnections()
      */
+    @Test
     @Override
     public void testReserveConnections() throws Exception
     {

@@ -20,7 +20,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         _scheme = "https://";
         startServer();
