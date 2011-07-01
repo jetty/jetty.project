@@ -1,10 +1,8 @@
-jetty-7.4.4-SNAPSHOT
- + 324704 JDBC Session Manager reloading session
-
-jetty-7.4.3.v20110630 June 30 2011
+jetty-7.4.3.v20110631 June 31 2011
  + 295832 ProxyServlet more extensible and configurable
  + 302566 GZIP handler for embedded Jetty servers
  + 308851 Converted HttpExchangeTest and related tests to JUnit 4
+ + 324704 JDBC Session Manager reloading session
  + 332200 Eliminate expected exceptions from log while using org.eclipse.jetty.jmx bundle
  + 347468 o.e.j.deploy.binding.GlobalWebappConfigBindingTest fails on Windows platform
  + 347617 Dynamically install/update/remove OSGi bundles discovered in the contexts folder
