@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -31,94 +33,126 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.Test;
 
+/* ------------------------------------------------------------ */
 public class ErrorStatusTest
     extends ContentExchangeTest
 {
+
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPutBadRequest()
         throws Exception
     {
         doPutFail(HttpStatus.BAD_REQUEST_400);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPutUnauthorized()
         throws Exception
     {
         doPutFail(HttpStatus.UNAUTHORIZED_401);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPutForbidden()
         throws Exception
     {
         doPutFail(HttpStatus.FORBIDDEN_403);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPutNotFound()
         throws Exception
     {
         doPutFail(HttpStatus.NOT_FOUND_404);    
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPutServerError()
         throws Exception
     {
         doPutFail(HttpStatus.INTERNAL_SERVER_ERROR_500);    
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGetBadRequest()
         throws Exception
     {
         doGetFail(HttpStatus.BAD_REQUEST_400);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGetUnauthorized()
         throws Exception
     {
         doGetFail(HttpStatus.UNAUTHORIZED_401);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGetNotFound()
         throws Exception
     {
         doGetFail(HttpStatus.NOT_FOUND_404);    
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGetServerError()
         throws Exception
     {
         doGetFail(HttpStatus.INTERNAL_SERVER_ERROR_500);    
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPostBadRequest() 
         throws Exception
     {
         doPostFail(HttpStatus.BAD_REQUEST_400);
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPostUnauthorized()
         throws Exception
     {
         doPostFail(HttpStatus.UNAUTHORIZED_401);
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPostForbidden()
         throws Exception
     {
         doPostFail(HttpStatus.FORBIDDEN_403);
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPostNotFound()
         throws Exception
     {
         doPostFail(HttpStatus.NOT_FOUND_404);
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPostServerError()
         throws Exception
     {
         doPostFail(HttpStatus.INTERNAL_SERVER_ERROR_500);
     }
 
+    /* ------------------------------------------------------------ */
     protected void doPutFail(int status)
         throws Exception
     {
@@ -140,6 +174,7 @@ public class ErrorStatusTest
         assertEquals(status, responseStatus);            
     }
     
+    /* ------------------------------------------------------------ */
     protected void doGetFail(int status)
         throws Exception
     {
@@ -164,6 +199,7 @@ public class ErrorStatusTest
         assertEquals(status, responseStatus);
     }
     
+    /* ------------------------------------------------------------ */
     protected void doPostFail(int status)
         throws Exception
     {
@@ -185,6 +221,7 @@ public class ErrorStatusTest
         assertEquals(status, responseStatus);            
     }
 
+    /* ------------------------------------------------------------ */
     protected void configureServer(Server server)
         throws Exception
     {
@@ -208,7 +245,9 @@ public class ErrorStatusTest
         server.setHandler( handlers ); 
     }
     
+    /* ------------------------------------------------------------ */
     protected static class StatusHandler extends AbstractHandler {
+        /* ------------------------------------------------------------ */
         public void handle(String target, Request baseRequest,
                 HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException

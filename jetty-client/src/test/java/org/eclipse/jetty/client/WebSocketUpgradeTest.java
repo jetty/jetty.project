@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -20,8 +22,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.Buffer;
@@ -34,11 +34,15 @@ import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketBuffers;
 import org.eclipse.jetty.websocket.WebSocketConnectionD00;
 import org.eclipse.jetty.websocket.WebSocketHandler;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
+/* ------------------------------------------------------------ */
 /**
  * Functional testing for HttpExchange.
  */
-public class WebSocketUpgradeTest extends TestCase
+public class WebSocketUpgradeTest
 {
     protected Server _server;
     protected int _port;
@@ -49,8 +53,9 @@ public class WebSocketUpgradeTest extends TestCase
     protected TestWebSocket _websocket;
     final BlockingQueue<Object> _results = new ArrayBlockingQueue<Object>(100);
 
-    @Override
-    protected void setUp() throws Exception
+    /* ------------------------------------------------------------ */
+    @Before
+    public void setUp() throws Exception
     {
         startServer();
         _httpClient=new HttpClient();
@@ -62,25 +67,29 @@ public class WebSocketUpgradeTest extends TestCase
         _httpClient.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    /* ------------------------------------------------------------ */
+    @After
+    public void tearDown() throws Exception
     {
         _httpClient.stop();
         Thread.sleep(500);
         stopServer();
     }
 
-
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGetWithContentExchange() throws Exception
     {
         final WebSocket clientWS = new WebSocket.OnTextMessage()
         {
             Connection _connection;
             
+            /* ------------------------------------------------------------ */
             public void onClose(int closeCode, String message)
             {
             }
             
+            /* ------------------------------------------------------------ */
             public void onOpen(Connection connection)
             {
                 _connection=connection;
@@ -88,6 +97,7 @@ public class WebSocketUpgradeTest extends TestCase
                 _results.add(_connection);
             }
             
+            /* ------------------------------------------------------------ */
             public void onMessage(String data)
             {
                 _results.add("clientWS.onMessage");
@@ -126,6 +136,7 @@ public class WebSocketUpgradeTest extends TestCase
                 return connection;
             }
 
+            /* ------------------------------------------------------------ */
             private void waitFor(int results)
             {
                 try
@@ -176,6 +187,7 @@ public class WebSocketUpgradeTest extends TestCase
 
     }
 
+    /* ------------------------------------------------------------ */
     protected void newServer() throws Exception
     {
         _server=new Server();
@@ -186,11 +198,13 @@ public class WebSocketUpgradeTest extends TestCase
         _server.setConnectors(new Connector[] { _connector });
     }
 
+    /* ------------------------------------------------------------ */
     protected void startServer() throws Exception
     {
         newServer();
         _handler= new WebSocketHandler()
         {
+            /* ------------------------------------------------------------ */
             public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
                 _websocket = new TestWebSocket();
@@ -203,6 +217,7 @@ public class WebSocketUpgradeTest extends TestCase
         _port=_connector.getLocalPort();
     }
 
+    /* ------------------------------------------------------------ */
     private void stopServer() throws Exception
     {
         _server.stop();
@@ -210,11 +225,11 @@ public class WebSocketUpgradeTest extends TestCase
     }
 
     /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     class TestWebSocket implements WebSocket.OnTextMessage
     {
         Connection _connection;
 
+        /* ------------------------------------------------------------ */
         public void onOpen(Connection connection)
         {
             _connection=connection;
@@ -223,18 +238,21 @@ public class WebSocketUpgradeTest extends TestCase
             _results.add(this);
         }
 
+        /* ------------------------------------------------------------ */
         public void onMessage(final String data)
         {
             _results.add("serverWS.onMessage");
             _results.add(data);
         }
 
+        /* ------------------------------------------------------------ */
         public void onClose(int code, String message)
         {
             _results.add("onDisconnect");
             _webSockets.remove(this);
         }
 
+        /* ------------------------------------------------------------ */
         public void sendMessage(String msg) throws IOException
         {
             _connection.sendMessage(msg);
