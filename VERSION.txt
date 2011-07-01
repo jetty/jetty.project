@@ -1,4 +1,5 @@
 jetty-7.4.4-SNAPSHOT
+ + 324704 JDBC Session Manager reloading session
 
 jetty-7.4.3.v20110630 June 30 2011
  + 295832 ProxyServlet more extensible and configurable
