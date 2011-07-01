@@ -11,23 +11,23 @@
 
 <h2>Internal URI rewrite</h2>
 <dl>
-<dt><a href="/some/old/context">Rewrite "/some/old/context" to "/rewritten/newcontext"</a></dt>
+<dt><a href="../some/old/context">Rewrite "../some/old/context" to "../rewritten/newcontext"</a></dt>
 <dd>This demo shows how the entire request URI can be internally rewritten to point to another context, using simple text matching</dd> 
 
-<dt><a href="/rewrite/for/beginning">Rewrite "/rewrite/for/beginning" to "/rewritten/beginning"</a></dt>
+<dt><a href="../rewrite/for/beginning">Rewrite "../rewrite/for/beginning" to "../rewritten/beginning"</a></dt>
 <dd>This demo shows how the beginning of the request URI can be rewritten, while keeping the ending section</dd>
 
-<dt><a href="/rewritten/reverse/bar/foo">Rewrite "bar/foo" to "foo/bar" using regex</a></dt>
+<dt><a href="../rewritten/reverse/bar/foo">Rewrite "bar/foo" to "foo/bar" using regex</a></dt>
 <dd>This demo shows how sections of the request URI can be rearranged. It uses regex to parse out each section, and then return them in reverse order</dd>
 
-<dt><a href="/rewrite/for/reverse/bar/foo">Rewrite the beginning, and reverse the path sections</a></dt>
+<dt><a href="../rewrite/for/reverse/bar/foo">Rewrite the beginning, and reverse the path sections</a></dt>
 <dd>This demo shows how rewrite patterns can be chained.</dd>
 
-<dt><a href="/dump/reverse/bar/foo">Rewrite "bar/foo" to "foo/bar", full dump view</a></dt>
+<dt><a href="../dump/reverse/bar/foo">Rewrite "bar/foo" to "foo/bar", full dump view</a></dt>
 <dd>This demo rewrites "bar/foo" to "foo/bar" the same as earlier, but shows a full dump of the request</dd>
 
 <h2>Redirect</h2>
-<dt><a href="/redirect/this">Redirect "/redirect/this" to "/redirected/this"</a></dt>
+<dt><a href="../redirect/this">Redirect "../redirect/this" to "../redirected/this"</a></dt>
 <dd>This demo redirects the request in a manner visible to the user agent, instead of doing an internal rewrite.</dd>
 
 <h2>Cookie</h2>
@@ -35,7 +35,7 @@
 <dd>This demo rule sets a "visited" cookie for each page you visit. The second time you go to any of the links above, you will see an additional line, "Previously visited: yes".</dd>
 
 <h2>Response Code</h2>
-<dt><a href="/400Error">Return a 400 error status</a></dt>
+<dt><a href="../400Error">Return a 400 error status</a></dt>
 <dd>This demo shows how to modify the response code of a page to an error, based on its URL</dd>
 
 </dl>
