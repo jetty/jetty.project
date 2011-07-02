@@ -34,6 +34,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Test;
 
 public class SecuredErrorStatusTest
     extends ErrorStatusTest
@@ -41,6 +42,8 @@ public class SecuredErrorStatusTest
     private Realm _testRealm;
     private Realm _dummyRealm;
     
+    /* ------------------------------------------------------------ */
+    @Test
     @Override
     public void testPutUnauthorized()
         throws Exception
@@ -52,6 +55,8 @@ public class SecuredErrorStatusTest
         setRealm(_testRealm);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPutWrongPassword()
         throws Exception
     {
@@ -62,6 +67,8 @@ public class SecuredErrorStatusTest
         setRealm(_testRealm);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     @Override
     public void testGetUnauthorized()
         throws Exception
@@ -73,6 +80,8 @@ public class SecuredErrorStatusTest
         setRealm(_testRealm);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGetWrongPassword()
         throws Exception
     {
@@ -83,6 +92,7 @@ public class SecuredErrorStatusTest
         setRealm(_testRealm);
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     protected void configureServer(Server server)
         throws Exception
@@ -91,16 +101,19 @@ public class SecuredErrorStatusTest
         
         _testRealm = new Realm()
                          {
+                             /* ------------------------------------------------------------ */
                              public String getId()
                              {
                                  return "MyRealm";
                              }
                                
+                             /* ------------------------------------------------------------ */
                              public String getPrincipal()
                              {
                                  return "jetty";
                              }
                           
+                             /* ------------------------------------------------------------ */
                              public String getCredentials()
                              {
                                  return "jetty";
@@ -109,16 +122,19 @@ public class SecuredErrorStatusTest
                          
         _dummyRealm = new Realm()
                           {
+                              /* ------------------------------------------------------------ */
                               public String getId()
                               {
                                   return "MyRealm";
                               }
                     
+                              /* ------------------------------------------------------------ */
                               public String getPrincipal()
                               {
                                   return "jetty";
                               }
                                                    
+                              /* ------------------------------------------------------------ */
                               public String getCredentials()
                               {
                                   return "dummy";

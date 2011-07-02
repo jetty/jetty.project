@@ -1,5 +1,6 @@
 jetty-7.4.4-SNAPSHOT
  + JETTY-1380 Jetty Rewrite example does not work in Hightide
+ + 308851 Converted all jetty-client module tests to JUnit 4
 
 jetty-7.4.3.v20110701 01 July 2011
  + 295832 ProxyServlet more extensible and configurable
