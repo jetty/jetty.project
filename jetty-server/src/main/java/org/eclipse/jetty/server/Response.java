@@ -1027,12 +1027,7 @@ public class Response implements HttpServletResponse
     public void fwdReset()
     {
         resetBuffer();
-        _mimeType=null;
-        _cachedMimeType=null;
-        _contentType=null;
-        _characterEncoding=null;
-        _explicitEncoding=false;
-        _locale=null;
+
         _outputState=NONE;
         _writer=null;
     }
