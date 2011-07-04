@@ -528,8 +528,8 @@ public class JDBCSessionManager extends AbstractSessionManager
                 {
                     if (!data.getLastNode().equals(getIdManager().getWorkerName()) || session==null)
                     {
-                        //if the session in the database has not already expired
-                        if (data._expiryTime > now)
+                        //if the session has no expiry, or it is not already expired
+                        if (data._expiryTime <= 0 || data._expiryTime > now)
                         {
                             Log.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getIdManager().getWorkerName());
                             data.setLastNode(getIdManager().getWorkerName());
@@ -541,6 +541,9 @@ public class JDBCSessionManager extends AbstractSessionManager
                             //the _dirty flag?
                             updateSessionNode(data);
                         }
+                        else
+                            if (Log.isDebugEnabled()) Log.debug("getSession("+idInCluster+"): Session has expired");
+                        
                     }
                     else
                         if (Log.isDebugEnabled()) Log.debug("getSession("+idInCluster+"): Session not stale "+session._data);

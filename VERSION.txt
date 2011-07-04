@@ -1,6 +1,7 @@
 jetty-7.4.4-SNAPSHOT
  + JETTY-1380 Jetty Rewrite example does not work in Hightide
  + 308851 Converted all jetty-client module tests to JUnit 4
+ + 345268 JDBCSessionManager does not work with maxInactiveInterval = -1
  + 351039 Forward dispatch should retain locale
 
 jetty-7.4.3.v20110701 01 July 2011
