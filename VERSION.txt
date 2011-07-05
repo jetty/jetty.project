@@ -1,4 +1,4 @@
-jetty-7.4.3-SNAPSHOT
+jetty-7.4.3.v20110630 June 30 2011
  + 295832 ProxyServlet more extensible and configurable
  + 302566 GZIP handler for embedded Jetty servers
  + 308851 Converted HttpExchangeTest and related tests to JUnit 4
