@@ -16,7 +16,7 @@ package org.eclipse.jetty.client;
 public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         _scheme="https://";
         startServer();
@@ -28,5 +28,4 @@ public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
         _httpClient.setMaxConnectionsPerAddress(2);
         _httpClient.start();
     }
-
 }

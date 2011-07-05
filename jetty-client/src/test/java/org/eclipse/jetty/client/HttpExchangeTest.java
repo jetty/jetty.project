@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,8 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpHeaders;
@@ -44,11 +47,15 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
+/* ------------------------------------------------------------ */
 /**
  * Functional testing for HttpExchange.
  */
-public class HttpExchangeTest extends TestCase
+public class HttpExchangeTest
 {
     protected int _maxConnectionsPerAddress = 2;
     protected String _scheme = "http://";
@@ -58,8 +65,9 @@ public class HttpExchangeTest extends TestCase
     protected Connector _connector;
     protected AtomicInteger _count = new AtomicInteger();
 
-    @Override
-    protected void setUp() throws Exception
+    /* ------------------------------------------------------------ */
+    @Before
+    public void setUp() throws Exception
     {
         startServer();
         _httpClient=new HttpClient();
@@ -71,20 +79,25 @@ public class HttpExchangeTest extends TestCase
         _httpClient.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    /* ------------------------------------------------------------ */
+    @After
+    public void tearDown() throws Exception
     {
         _httpClient.stop();
         Thread.sleep(500);
         stopServer();
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testResetNewExchange() throws Exception
     {
         HttpExchange exchange = new HttpExchange();
         exchange.reset();
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPerf() throws Exception
     {
         sender(1,false);
@@ -104,6 +117,7 @@ public class HttpExchangeTest extends TestCase
         }
     }
 
+    /* ------------------------------------------------------------ */
     /**
      * Test sending data through the exchange.
      *
@@ -124,12 +138,15 @@ public class HttpExchangeTest extends TestCase
             {
                 String result="pending";
                 int len=0;
+
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onRequestCommitted()
                 {
                     result="committed";
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onRequestComplete() throws IOException
                 {
@@ -137,16 +154,19 @@ public class HttpExchangeTest extends TestCase
                 }
 
                 @Override
+                /* ------------------------------------------------------------ */
                 protected void onResponseStatus(Buffer version, int status, Buffer reason)
                 {
                     result="status";
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onResponseHeader(Buffer name, Buffer value)
                 {
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onResponseHeaderComplete() throws IOException
                 {
@@ -154,12 +174,14 @@ public class HttpExchangeTest extends TestCase
                     super.onResponseHeaderComplete();
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onResponseContent(Buffer content)
                 {
                     len+=content.length();
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onResponseComplete()
                 {
@@ -173,6 +195,7 @@ public class HttpExchangeTest extends TestCase
                     complete.countDown();
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onConnectionFailed(Throwable ex)
                 {
@@ -182,6 +205,7 @@ public class HttpExchangeTest extends TestCase
                     super.onConnectionFailed(ex);
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onException(Throwable ex)
                 {
@@ -191,6 +215,7 @@ public class HttpExchangeTest extends TestCase
                     super.onException(ex);
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 protected void onExpire()
                 {
@@ -200,6 +225,7 @@ public class HttpExchangeTest extends TestCase
                     super.onExpire();
                 }
 
+                /* ------------------------------------------------------------ */
                 @Override
                 public String toString()
                 {
@@ -228,6 +254,8 @@ public class HttpExchangeTest extends TestCase
         assertEquals("nb="+nb+" close="+close,0,latch.getCount());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPostWithContentExchange() throws Exception
     {
         for (int i=0;i<20;i++)
@@ -246,6 +274,8 @@ public class HttpExchangeTest extends TestCase
         }
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGetWithContentExchange() throws Exception
     {
         for (int i=0;i<10;i++)
@@ -264,6 +294,8 @@ public class HttpExchangeTest extends TestCase
         }
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testLocalAddressAvailabilityWithContentExchange() throws Exception
     {
         for (int i=0;i<10;i++)
@@ -287,6 +319,8 @@ public class HttpExchangeTest extends TestCase
         }
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testShutdownWithExchange() throws Exception
     {
         final AtomicReference<Throwable> throwable=new AtomicReference<Throwable>();
@@ -304,6 +338,10 @@ public class HttpExchangeTest extends TestCase
                 throwable.set(x);
             }
 
+            /* ------------------------------------------------------------ */
+            /**
+             * @see org.eclipse.jetty.client.HttpExchange#onConnectionFailed(java.lang.Throwable)
+             */
             @Override
             protected void onConnectionFailed(Throwable x)
             {
@@ -330,6 +368,8 @@ public class HttpExchangeTest extends TestCase
         assertEquals(HttpExchange.STATUS_EXCEPTED, status);
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testBigPostWithContentExchange() throws Exception
     {   
         int size =32;
@@ -370,6 +410,8 @@ public class HttpExchangeTest extends TestCase
         assertEquals(HttpExchange.STATUS_COMPLETED, status);
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testSlowPost() throws Exception
     {
         ContentExchange httpExchange=new ContentExchange()
@@ -431,6 +473,8 @@ public class HttpExchangeTest extends TestCase
         assertEquals(data,result);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testProxy() throws Exception
     {
         if (_scheme.equals("https://"))
@@ -460,6 +504,8 @@ public class HttpExchangeTest extends TestCase
     }
 
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testReserveConnections () throws Exception
     {
        final HttpDestination destination = _httpClient.getDestination (new Address("localhost", _port), _scheme.equalsIgnoreCase("https://"));
@@ -485,10 +531,10 @@ public class HttpExchangeTest extends TestCase
        //reserving one should now work
        c = destination.reserveConnection(500);
        assertNotNull(c);
-
-
     }
-    public static void copyStrxeam(InputStream in, OutputStream out)
+
+    /* ------------------------------------------------------------ */
+    public static void copyStream(InputStream in, OutputStream out)
     {
         try
         {
@@ -509,6 +555,7 @@ public class HttpExchangeTest extends TestCase
         }
     }
 
+    /* ------------------------------------------------------------ */
     protected void newServer() throws Exception
     {
         _server=new Server();
@@ -521,6 +568,7 @@ public class HttpExchangeTest extends TestCase
         _server.setConnectors(new Connector[] { _connector });
     }
 
+    /* ------------------------------------------------------------ */
     protected void startServer() throws Exception
     {
         newServer();
@@ -587,6 +635,7 @@ public class HttpExchangeTest extends TestCase
         _port=_connector.getLocalPort();
     }
 
+    /* ------------------------------------------------------------ */
     private void stopServer() throws Exception
     {
         _server.stop();

@@ -83,7 +83,7 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
                 Log.warn("Binding: global context binding is enabled but no jetty-web.xml file has been registered");
             }
             
-            Resource globalContextSettings = new FileResource(new URL(_jettyXml));
+            Resource globalContextSettings = Resource.newResource(_jettyXml);
 
             if (globalContextSettings.exists())
             {

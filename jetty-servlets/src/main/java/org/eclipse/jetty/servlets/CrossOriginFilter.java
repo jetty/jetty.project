@@ -127,7 +127,7 @@ public class CrossOriginFilter implements Filter
         allowedMethods.addAll(Arrays.asList(allowedMethodsConfig.split(",")));
 
         String allowedHeadersConfig = config.getInitParameter(ALLOWED_HEADERS_PARAM);
-        if (allowedHeadersConfig == null) allowedHeadersConfig = "X-Requested-With,Content-Type,Accept";
+        if (allowedHeadersConfig == null) allowedHeadersConfig = "X-Requested-With,Content-Type,Accept,Origin";
         allowedHeaders.addAll(Arrays.asList(allowedHeadersConfig.split(",")));
 
         String preflightMaxAgeConfig = config.getInitParameter(PREFLIGHT_MAX_AGE_PARAM);

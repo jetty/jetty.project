@@ -120,9 +120,11 @@ public class ResourceTest
 		__userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
 		__relDir = "src/test/java/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);  
         
+	/*
         System.err.println("User Dir="+__userDir);
         System.err.println("Rel  Dir="+__relDir);
         System.err.println("User URL="+__userURL);
+	*/
 
         tmpFile=File.createTempFile("test",null).getCanonicalFile();
         tmpFile.deleteOnExit();
@@ -461,6 +463,7 @@ public class ResourceTest
     @Test
     public void testUncPathResourceFile() throws Exception
     {
+        // This test is intended to run only on Windows platform
         assumeTrue(OS.IS_WINDOWS);
         
         String uncPath = "\\\\127.0.0.1"+__userURL.toURI().getPath().replace('/','\\').replace(':','$')+"ResourceTest.java";
