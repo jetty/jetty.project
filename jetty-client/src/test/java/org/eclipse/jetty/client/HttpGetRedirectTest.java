@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -20,8 +22,6 @@ import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
@@ -31,13 +31,13 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 
 /* ------------------------------------------------------------ */
-/**
- */
 public class HttpGetRedirectTest
-    extends TestCase
 {
     private static String _content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
@@ -62,6 +62,8 @@ public class HttpGetRedirectTest
     private String _requestUrl2;
     private RedirectHandler _handler;
 
+    /* ------------------------------------------------------------ */
+    @Before
     public void setUp()
         throws Exception
     {
@@ -81,6 +83,8 @@ public class HttpGetRedirectTest
         _handler._toURL=_protocol+"://localhost:"+connector.getLocalPort()+ "/moved.txt";
     }
 
+    /* ------------------------------------------------------------ */
+    @After
     public void tearDown()
         throws Exception
     {
@@ -91,6 +95,8 @@ public class HttpGetRedirectTest
         }
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGet() throws Exception
     {
         startClient(_realm);
@@ -115,6 +121,7 @@ public class HttpGetRedirectTest
         stopClient();
     }
 
+    /* ------------------------------------------------------------ */
     protected void configureServer(Server server)
         throws Exception
     {
@@ -128,6 +135,7 @@ public class HttpGetRedirectTest
 
     }
 
+    /* ------------------------------------------------------------ */
     protected void startClient(Realm realm)
         throws Exception
     {
@@ -139,6 +147,7 @@ public class HttpGetRedirectTest
         _client.start();
     }
 
+    /* ------------------------------------------------------------ */
     protected void stopClient()
         throws Exception
     {
@@ -149,22 +158,26 @@ public class HttpGetRedirectTest
         }
     }
 
+    /* ------------------------------------------------------------ */
     protected String getBasePath()
     {
         return _docRoot.getAbsolutePath();
     }
 
+    /* ------------------------------------------------------------ */
     protected void setProtocol(String protocol)
     {
         _protocol = protocol;
     }
 
+    /* ------------------------------------------------------------ */
     protected void setRealm(Realm realm)
     {
         _realm = realm;
     }
 
 
+    /* ------------------------------------------------------------ */
     private static class RedirectHandler
         extends AbstractHandler
     {
@@ -174,6 +187,7 @@ public class HttpGetRedirectTest
         private int _redirectCount = 0;
         private String _toURL;
 
+        /* ------------------------------------------------------------ */
         public RedirectHandler( final int code, final String fromURI, final String toURL, final int maxRedirects )
         {
             this._code = code;
@@ -186,6 +200,7 @@ public class HttpGetRedirectTest
             
         }
 
+        /* ------------------------------------------------------------ */
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
         {

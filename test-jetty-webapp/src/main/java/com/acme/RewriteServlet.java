@@ -64,6 +64,6 @@ public class RewriteServlet extends HttpServlet
     @Override
     public String getServletInfo()
     {
-        return "Rewrite sServlet";
+        return "Rewrite Servlet";
     }
 }

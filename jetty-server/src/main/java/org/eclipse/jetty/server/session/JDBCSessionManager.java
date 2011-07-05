@@ -501,11 +501,13 @@ public class JDBCSessionManager extends AbstractSessionManager
                 if (Log.isDebugEnabled()) 
                 {
                     if (session==null)
-                        Log.debug("now="+now+
+                        Log.debug("getSession("+idInCluster+"): not in session map,"+
+                                " now="+now+
                                 " lastSaved="+(session==null?0:session._data._lastSaved)+
                                 " interval="+(_saveIntervalSec * 1000));
                     else
-                        Log.debug("now="+now+
+                        Log.debug("getSession("+idInCluster+"): in session map, "+
+                                " now="+now+
                                 " lastSaved="+(session==null?0:session._data._lastSaved)+
                                 " interval="+(_saveIntervalSec * 1000)+
                                 " lastNode="+session._data.getLastNode()+
@@ -515,16 +517,17 @@ public class JDBCSessionManager extends AbstractSessionManager
                 
                 if (session==null || ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000)))
                 {       
-                    Log.debug("no session ",idInCluster);
+                    Log.debug("getSession("+idInCluster+"): no session in session map or stale session. Reloading session data from db.");
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else if ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000))
                 {
-                    Log.debug("old session",idInCluster);
+                    Log.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else
                 {
+                    Log.debug("getSession("+idInCluster+"): session in session map"); 
                     data = session._data;
                 }
                 
@@ -532,10 +535,11 @@ public class JDBCSessionManager extends AbstractSessionManager
                 {
                     if (!data.getLastNode().equals(getSessionIdManager().getWorkerName()) || session==null)
                     {
-                        //if the session in the database has not already expired
-                        if (data._expiryTime > now)
+                        //if the session has no expiry, or it is not already expired
+                        if (data._expiryTime <= 0 || data._expiryTime > now)
                         {
-                            Log.debug("expired session",idInCluster);
+                            Log.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getIdManager().getWorkerName());
+                            data.setLastNode(getIdManager().getWorkerName());
                             //session last used on a different node, or we don't have it in memory
                             session = new Session(now,data);
                             _sessions.put(idInCluster, session);
@@ -544,16 +548,19 @@ public class JDBCSessionManager extends AbstractSessionManager
                             //the _dirty flag?
                             updateSessionNode(data);
                         }
+                        else
+                            if (Log.isDebugEnabled()) Log.debug("getSession("+idInCluster+"): Session has expired");
+                        
                     }
                     else
-                        if (Log.isDebugEnabled()) Log.debug("Session not stale "+session._data);
+                        if (Log.isDebugEnabled()) Log.debug("getSession("+idInCluster+"): Session not stale "+session._data);
                     //session in db shares same id, but is not for this context
                 }
                 else
                 {
                     //No session in db with matching id and context path.
                     session=null;
-                    if (Log.isDebugEnabled()) Log.debug("No session in database matching id="+idInCluster);
+                    if (Log.isDebugEnabled()) Log.debug("getSession("+idInCluster+"): No session in database matching id="+idInCluster);
                 }
                 
                 return session;

@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,8 +30,6 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.client.security.HashRealmResolver;
 import org.eclipse.jetty.client.security.Realm;
@@ -49,11 +50,15 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
+/* ------------------------------------------------------------ */
 /**
  * Functional testing.
  */
-public class SslSecurityListenerTest extends TestCase
+public class SslSecurityListenerTest
 {
     protected  Server _server;
     protected int _port;
@@ -62,8 +67,9 @@ public class SslSecurityListenerTest extends TestCase
     protected int _type = HttpClient.CONNECTOR_SOCKET;
     private static final String APP_CONTEXT = "localhost /";
 
-    @Override
-    protected void setUp() throws Exception
+    /* ------------------------------------------------------------ */
+    @Before
+    public void setUp() throws Exception
     {
         startServer();
         _httpClient = new HttpClient();
@@ -73,16 +79,19 @@ public class SslSecurityListenerTest extends TestCase
 
         _jettyRealm = new Realm()
         {
+            /* ------------------------------------------------------------ */
             public String getId()
             {
                 return "MyRealm";
             }
 
+            /* ------------------------------------------------------------ */
             public String getPrincipal()
             {
                 return "jetty";
             }
 
+            /* ------------------------------------------------------------ */
             public String getCredentials()
             {
                 return "jetty";
@@ -94,8 +103,9 @@ public class SslSecurityListenerTest extends TestCase
         _httpClient.setRealmResolver(resolver);
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    /* ------------------------------------------------------------ */
+    @After
+    public void tearDown() throws Exception
     {
         Thread.sleep(1000);
         _httpClient.stop();
@@ -103,6 +113,8 @@ public class SslSecurityListenerTest extends TestCase
         stopServer();
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testSslGet() throws Exception
     {
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
@@ -117,6 +129,7 @@ public class SslSecurityListenerTest extends TestCase
         
         ContentExchange httpExchange = new ContentExchange(true)
         {
+            /* ------------------------------------------------------------ */
             @Override
             protected void onResponseComplete() throws IOException
             {
@@ -138,6 +151,7 @@ public class SslSecurityListenerTest extends TestCase
         
     }
 
+    /* ------------------------------------------------------------ */
     protected void startServer() throws Exception
     {
         _server = new Server();
@@ -180,7 +194,7 @@ public class SslSecurityListenerTest extends TestCase
 
         Handler testHandler = new AbstractHandler()
         {
-
+            /* ------------------------------------------------------------ */
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 // System.err.println("passed authentication!\n"+((Request)request).getConnection().getRequestFields());
@@ -216,6 +230,7 @@ public class SslSecurityListenerTest extends TestCase
         _port = connector.getLocalPort();
     }
 
+    /* ------------------------------------------------------------ */
     public static void copyStream(InputStream in, OutputStream out)
     {
         try
@@ -237,6 +252,7 @@ public class SslSecurityListenerTest extends TestCase
         }
     }
 
+    /* ------------------------------------------------------------ */
     private void stopServer() throws Exception
     {
         _server.stop();

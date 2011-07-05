@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,8 +29,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
@@ -45,9 +46,11 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ContentExchangeTest
-    extends TestCase
 {
     private static String _content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
@@ -71,6 +74,8 @@ public class ContentExchangeTest
     private String _baseUrl;
     private String _requestContent;
 
+    /* ------------------------------------------------------------ */
+    @Before
     public void setUp()
         throws Exception
     {
@@ -91,6 +96,8 @@ public class ContentExchangeTest
         _baseUrl = _protocol+"://localhost:"+port+ "/";
     }
     
+    /* ------------------------------------------------------------ */
+    @After
     public void tearDown()
         throws Exception
     {
@@ -101,6 +108,8 @@ public class ContentExchangeTest
         }
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPut() throws Exception
     {
         startClient(_realm);
@@ -124,6 +133,8 @@ public class ContentExchangeTest
         assertEquals(_content,content);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testGet() throws Exception
     {
         startClient(_realm);
@@ -148,6 +159,8 @@ public class ContentExchangeTest
         assertEquals(_content,content);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHead() throws Exception
     {
         startClient(_realm);
@@ -166,6 +179,8 @@ public class ContentExchangeTest
         assertEquals(HttpStatus.OK_200,responseStatus);
     }
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testPost() throws Exception
     {
         startClient(_realm);
@@ -186,6 +201,7 @@ public class ContentExchangeTest
         assertEquals(_content,_requestContent);
     }
     
+    /* ------------------------------------------------------------ */
     protected void configureServer(Server server)
         throws Exception
     {
@@ -209,6 +225,7 @@ public class ContentExchangeTest
 
     }
     
+    /* ------------------------------------------------------------ */
     protected void startClient(Realm realm)
         throws Exception
     {
@@ -221,12 +238,14 @@ public class ContentExchangeTest
         _client.start();
     }
     
+    /* ------------------------------------------------------------ */
     protected void configureClient(HttpClient client)
         throws Exception
     {
         client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
     }
 
+    /* ------------------------------------------------------------ */
     protected void stopClient()
         throws Exception
     {
@@ -237,41 +256,49 @@ public class ContentExchangeTest
         }
     }
     
+    /* ------------------------------------------------------------ */
     protected String getBasePath()
     {
         return _docRoot.getAbsolutePath();
     }
     
+    /* ------------------------------------------------------------ */
     protected String getBaseUrl()
     {
         return _baseUrl;
     }
     
+    /* ------------------------------------------------------------ */
     protected HttpClient getClient()
     {
         return _client;
     }
     
+    /* ------------------------------------------------------------ */
     protected Realm getRealm()
     {
         return _realm;
     }
     
+    /* ------------------------------------------------------------ */
     protected String getContent()
     {
         return _content;
     }
     
+    /* ------------------------------------------------------------ */
     protected void setProtocol(String protocol)
     {
         _protocol = protocol;
     }
     
+    /* ------------------------------------------------------------ */
     protected void setRealm(Realm realm)
     {
         _realm = realm;
     }
     
+    /* ------------------------------------------------------------ */
     public static void copyStream(InputStream in, OutputStream out)
     {
         try
@@ -293,13 +320,16 @@ public class ContentExchangeTest
         }
     }
 
+    /* ------------------------------------------------------------ */
     protected class TestHandler extends AbstractHandler {
         private final String resourcePath;
 
+        /* ------------------------------------------------------------ */
         public TestHandler(String repositoryPath) {
             this.resourcePath = repositoryPath;
         }
 
+        /* ------------------------------------------------------------ */
         public void handle(String target, Request baseRequest,
                 HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
