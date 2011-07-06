@@ -102,17 +102,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     {
         synchronized(this)
         {
-            if(_manager.isRunning())
-            {
-                try
-                {
-                    _manager.stop();
-                }
-                catch (Exception e)
-                {
-                    Log.warn(e);
-                }
-            }
             if (_acceptChannel != null)
                 _acceptChannel.close();
             _acceptChannel = null;
@@ -297,6 +286,20 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     protected void doStop() throws Exception
     {
+        synchronized(this)
+        {
+            if(_manager.isRunning())
+            {
+                try
+                {
+                    _manager.stop();
+                }
+                catch (Exception e)
+                {
+                    Log.warn(e);
+                }
+            }
+        }
         super.doStop();
     }
 
