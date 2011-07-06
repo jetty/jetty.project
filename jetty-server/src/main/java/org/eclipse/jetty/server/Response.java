@@ -148,15 +148,18 @@ public class Response implements HttpServletResponse
         if (sessionManager==null)
             return url;
         
+        HttpURI uri = null;
         if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
         {
-            HttpURI uri = new HttpURI(url);
+            uri = new HttpURI(url);
+            String path = uri.getPath();
+            path = (path == null?"":path);
             int port=uri.getPort();
             if (port<0) 
                 port = HttpSchemes.HTTPS.equalsIgnoreCase(uri.getScheme())?443:80;
             if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
                 request.getServerPort()!=port ||
-                !uri.getPath().startsWith(request.getContextPath()))
+                !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
                 return url;
         }
         
@@ -197,6 +200,10 @@ public class Response implements HttpServletResponse
 
         String id=sessionManager.getNodeId(session);
 
+        if (uri == null)
+                uri = new HttpURI(url);
+     
+        
         // Already encoded
         int prefix=url.indexOf(sessionURLPrefix);
         if (prefix!=-1)
@@ -215,9 +222,16 @@ public class Response implements HttpServletResponse
         int suffix=url.indexOf('?');
         if (suffix<0)
             suffix=url.indexOf('#');
-        if (suffix<0)
-            return url+sessionURLPrefix+id;
+        if (suffix<0) 
+        {          
+            return url+ 
+                   ((HttpSchemes.HTTPS.equalsIgnoreCase(uri.getScheme()) || HttpSchemes.HTTP.equalsIgnoreCase(uri.getScheme())) && uri.getPath()==null?"/":"") + //if no path, insert the root path
+                   sessionURLPrefix+id;
+        }
+     
+        
         return url.substring(0,suffix)+
+            ((HttpSchemes.HTTPS.equalsIgnoreCase(uri.getScheme()) || HttpSchemes.HTTP.equalsIgnoreCase(uri.getScheme())) && uri.getPath()==null?"/":"")+ //if no path so insert the root path
             sessionURLPrefix+id+url.substring(suffix);
     }
 

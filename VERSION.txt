@@ -3,6 +3,7 @@ jetty-7.4.4-SNAPSHOT
  + 308851 Converted all jetty-client module tests to JUnit 4
  + 345268 JDBCSessionManager does not work with maxInactiveInterval = -1
  + 351039 Forward dispatch should retain locale
+ + 351199 HttpServletResponse.encodeURL() wrongly encodes an url without path when cookies are disabled
 
 jetty-7.4.3.v20110701 01 July 2011
  + 295832 ProxyServlet more extensible and configurable

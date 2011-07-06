@@ -67,6 +67,7 @@ public class HttpURITest
        /*29*/ {"/?x=y",null, null, null,null,"/", null,"x=y",null},
        /*30*/ {"/?abc=test",null, null, null,null,"/", null,"abc=test",null},
        /*31*/ {"/#fragment",null, null, null,null,"/", null,null,"fragment"},
+       /*32*/ {"http://localhost:8080", "http", "//localhost:8080", "localhost", "8080", null, null, null, null}
     };
 
     @Test
