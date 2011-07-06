@@ -77,7 +77,7 @@ public abstract class AbstractBuffer implements Buffer
     public ByteArrayBuffer duplicate(int access)
     {
         Buffer b=this.buffer();
-        if (b instanceof Buffer.CaseInsensitve)
+        if (this instanceof Buffer.CaseInsensitve || b instanceof Buffer.CaseInsensitve)
             return new ByteArrayBuffer.CaseInsensitive(asArray(), 0, length(),access);
         else
             return new ByteArrayBuffer(asArray(), 0, length(), access);

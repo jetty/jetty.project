@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.handler.UnreliableHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
@@ -97,8 +98,13 @@ public class LikeJettyXml
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         RequestLogHandler requestLogHandler = new RequestLogHandler();
+        
+
+        UnreliableHandler unreliable = new UnreliableHandler();
+        unreliable.setHandler(contexts);
+        
         handlers.setHandlers(new Handler[]
-        { contexts, new DefaultHandler(), requestLogHandler });
+        { unreliable, new DefaultHandler(), requestLogHandler });
         
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(handlers);
@@ -135,6 +141,7 @@ public class LikeJettyXml
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
+        
         
         server.start();
         

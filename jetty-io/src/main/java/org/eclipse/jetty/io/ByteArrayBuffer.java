@@ -26,11 +26,11 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ByteArrayBuffer extends AbstractBuffer
 {
-    protected byte[] _bytes;
+    final protected byte[] _bytes;
 
-    protected ByteArrayBuffer(int access, boolean isVolatile)
+    protected ByteArrayBuffer(int size, int access, boolean isVolatile)
     {
-        super(access, isVolatile);
+        this(new byte[size],0,0,access, isVolatile);
     }
     
     public ByteArrayBuffer(byte[] bytes)
@@ -63,7 +63,7 @@ public class ByteArrayBuffer extends AbstractBuffer
 
     public ByteArrayBuffer(int size)
     {
-        this(new byte[size], 0, size, READWRITE);
+        this(new byte[size], 0, 0, READWRITE);
         setPutIndex(0);
     }
 
@@ -332,38 +332,7 @@ public class ByteArrayBuffer extends AbstractBuffer
         
         return length;
     }
-
-    /* ------------------------------------------------------------ */
-    /** Wrap a byte array.
-     * @param b
-     * @param off
-     * @param len
-     */
-    public void wrap(byte[] b, int off, int len)
-    {
-        if (b==null)
-            throw new IllegalArgumentException();
-        if (isReadOnly()) throw new IllegalStateException(__READONLY);
-        if (isImmutable()) throw new IllegalStateException(__IMMUTABLE);
-        _bytes=b;
-        clear();
-        setGetIndex(off);
-        setPutIndex(off+len);
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Wrap a byte array
-     * @param b
-     */
-    public void wrap(byte[] b)
-    {
-        if (isReadOnly()) throw new IllegalStateException(__READONLY);
-        if (isImmutable()) throw new IllegalStateException(__IMMUTABLE);
-        _bytes=b;
-        setGetIndex(0);
-        setPutIndex(b.length);
-    }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public void writeTo(OutputStream out)
@@ -420,7 +389,7 @@ public class ByteArrayBuffer extends AbstractBuffer
         {
             super(s);
         }
-
+        
         public CaseInsensitive(byte[] b, int o, int l, int rw)
         {
             super(b,o,l,rw);

@@ -93,7 +93,7 @@ public class BlockingHttpConnection extends HttpConnection
                     }
                     _generator.sendError(e.getStatus(), e.getReason(), null, true);
 
-                    _parser.reset(true);
+                    _parser.reset();
                     _endp.close();
                 }
                 finally
@@ -110,7 +110,7 @@ public class BlockingHttpConnection extends HttpConnection
                         // have we switched?
                         if (switched!=null)
                         {
-                            _parser.reset(true);
+                            _parser.reset();
                             _generator.reset(true);
                             connection=switched;
                         }
@@ -119,7 +119,7 @@ public class BlockingHttpConnection extends HttpConnection
                             // No switch, so cleanup and reset
                             if (!_generator.isPersistent() || _endp.isInputShutdown())
                             {
-                                _parser.reset(true);
+                                _parser.reset();
                                 more_in_buffer=false;
                                 _endp.close();
                             }
@@ -151,6 +151,7 @@ public class BlockingHttpConnection extends HttpConnection
         }
         finally
         {
+            _parser.returnBuffers();
             setCurrentConnection(null);
             _handling=false;
         }

@@ -325,7 +325,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
      */
     @Override
     public int fill(Buffer buffer) throws IOException
-    {
+    {   
         // This end point only works on NIO buffer type (director
         // or indirect), so extract the NIO buffer that is wrapped
         // by the passed jetty Buffer.

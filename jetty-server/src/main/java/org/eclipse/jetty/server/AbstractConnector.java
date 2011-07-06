@@ -69,10 +69,10 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     private boolean _forwarded;
     private String _hostHeader;
 
-    private String _forwardedHostHeader = "X-Forwarded-Host";
-    private String _forwardedServerHeader = "X-Forwarded-Server";
-    private String _forwardedForHeader = "X-Forwarded-For";
-    private String _forwardedProtoHeader = "X-Forwarded-Proto";
+    private String _forwardedHostHeader = HttpHeaders.X_FORWARDED_HOST;
+    private String _forwardedServerHeader = HttpHeaders.X_FORWARDED_SERVER;
+    private String _forwardedForHeader = HttpHeaders.X_FORWARDED_FOR;
+    private String _forwardedProtoHeader = HttpHeaders.X_FORWARDED_PROTO;
     private String _forwardedCipherSuiteHeader;
     private String _forwardedSslSessionIdHeader;
     private boolean _reuseAddress = true;

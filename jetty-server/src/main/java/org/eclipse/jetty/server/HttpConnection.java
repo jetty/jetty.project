@@ -377,7 +377,9 @@ public class HttpConnection  extends AbstractConnection implements Connection
     /* ------------------------------------------------------------ */
     public void reset(boolean returnBuffers)
     {
-        _parser.reset(returnBuffers); // TODO maybe only release when low on resources
+        _parser.reset(); 
+        if (returnBuffers)
+            _parser.returnBuffers();
         _requestFields.clear();
         _request.recycle();
 
@@ -1057,7 +1059,7 @@ public class HttpConnection  extends AbstractConnection implements Connection
                 Buffer lm = httpContent.getLastModified();
                 long lml=httpContent.getResource().lastModified();
                 if (lm != null)
-                    _responseFields.put(HttpHeaders.LAST_MODIFIED_BUFFER, lm,lml);
+                    _responseFields.put(HttpHeaders.LAST_MODIFIED_BUFFER, lm);
                 else if (httpContent.getResource()!=null)
                 {
                     if (lml!=-1)

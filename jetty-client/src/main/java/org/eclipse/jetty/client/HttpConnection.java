@@ -535,7 +535,9 @@ public class HttpConnection extends AbstractConnection implements Dumpable
     {
         _requestComplete = false;
         _connectionHeader = null;
-        _parser.reset(returnBuffers);
+        _parser.reset();
+        if (returnBuffers)
+            _parser.returnBuffers();
         _generator.reset(returnBuffers);
         _http11 = true;
     }

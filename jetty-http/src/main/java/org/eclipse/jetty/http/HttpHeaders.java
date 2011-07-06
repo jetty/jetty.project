@@ -18,8 +18,6 @@ import org.eclipse.jetty.io.BufferCache;
 
 /* ------------------------------------------------------------------------------- */
 /** 
- * 
- * 
  */
 public class HttpHeaders extends BufferCache
 {
@@ -78,7 +76,10 @@ public class HttpHeaders extends BufferCache
         REFERER= "Referer",
         TE= "TE",
         USER_AGENT= "User-Agent",
-        X_FORWARDED_FOR= "X-Forwarded-For";
+        X_FORWARDED_FOR= "X-Forwarded-For",
+        X_FORWARDED_PROTO= "X-Forwarded-Proto",
+        X_FORWARDED_SERVER= "X-Forwarded-Server",
+        X_FORWARDED_HOST= "X-Forwarded-Host";
 
     /* ------------------------------------------------------------ */
     /** Response Fields.
@@ -160,7 +161,10 @@ public class HttpHeaders extends BufferCache
         MIME_VERSION_ORDINAL= 55,
         IDENTITY_ORDINAL= 56,
         CACHE_CONTROL_ORDINAL=57,
-        PROXY_CONNECTION_ORDINAL=58;
+        PROXY_CONNECTION_ORDINAL=58,
+        X_FORWARDED_PROTO_ORDINAL=59,
+        X_FORWARDED_SERVER_ORDINAL=60,
+        X_FORWARDED_HOST_ORDINAL=61;
 
     public final static HttpHeaders CACHE= new HttpHeaders();
     
@@ -208,6 +212,9 @@ public class HttpHeaders extends BufferCache
         TE_BUFFER=CACHE.add(TE,TE_ORDINAL),
         USER_AGENT_BUFFER=CACHE.add(USER_AGENT,USER_AGENT_ORDINAL),
         X_FORWARDED_FOR_BUFFER=CACHE.add(X_FORWARDED_FOR,X_FORWARDED_FOR_ORDINAL),
+        X_FORWARDED_PROTO_BUFFER=CACHE.add(X_FORWARDED_PROTO,X_FORWARDED_PROTO_ORDINAL),
+        X_FORWARDED_SERVER_BUFFER=CACHE.add(X_FORWARDED_SERVER,X_FORWARDED_SERVER_ORDINAL),
+        X_FORWARDED_HOST_BUFFER=CACHE.add(X_FORWARDED_HOST,X_FORWARDED_HOST_ORDINAL),
         ACCEPT_RANGES_BUFFER=CACHE.add(ACCEPT_RANGES,ACCEPT_RANGES_ORDINAL),
         AGE_BUFFER=CACHE.add(AGE,AGE_ORDINAL),
         ETAG_BUFFER=CACHE.add(ETAG,ETAG_ORDINAL),
@@ -224,4 +231,6 @@ public class HttpHeaders extends BufferCache
         MIME_VERSION_BUFFER=CACHE.add(MIME_VERSION,MIME_VERSION_ORDINAL),
         IDENTITY_BUFFER=CACHE.add(IDENTITY,IDENTITY_ORDINAL),
         PROXY_CONNECTION_BUFFER=CACHE.add(PROXY_CONNECTION,PROXY_CONNECTION_ORDINAL);
+    
+    
 }

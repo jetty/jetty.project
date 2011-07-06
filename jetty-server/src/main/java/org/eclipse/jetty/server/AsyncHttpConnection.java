@@ -60,7 +60,7 @@ public class AsyncHttpConnection extends HttpConnection
                         Log.debug(e);
                     }
                     _generator.sendError(e.getStatus(), e.getReason(), null, true);
-                    _parser.reset(true);
+                    _parser.reset();
                     _endp.close();
                 }
                 finally
@@ -83,7 +83,7 @@ public class AsyncHttpConnection extends HttpConnection
                             Connection switched=(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
                             {
-                                _parser.reset(true);
+                                _parser.reset();
                                 _generator.reset(true);
                                 return switched;
                             }
@@ -111,6 +111,7 @@ public class AsyncHttpConnection extends HttpConnection
         finally
         {
             setCurrentConnection(null);
+            _parser.returnBuffers();
 
             // Are we write blocked
             if (_generator.isCommitted() && !_generator.isComplete())

@@ -63,7 +63,21 @@ public class HttpFieldsTest
         assertEquals(e.nextElement(), "value0");
         assertEquals(false, e.hasMoreElements());
     }
+    
+    @Test
+    public void testGet() throws Exception
+    {
+        HttpFields header = new HttpFields();
 
+        header.put("name0", "value0");
+        header.put(new ByteArrayBuffer("name1"), new ByteArrayBuffer("value1"));
+
+        assertEquals("value0",header.getStringField("name0"));
+        assertEquals("value0",header.getStringField("Name0"));
+        assertEquals("value1",header.getStringField("name1"));
+        assertEquals("value1",header.getStringField("Name1"));
+    }
+    
     @Test
     public void testCRLF() throws Exception
     {
@@ -74,7 +88,7 @@ public class HttpFieldsTest
         header.put("name:2", "value:\r\n2");
 
         ByteArrayBuffer buffer = new ByteArrayBuffer(1024);
-        header.put(buffer);
+        header.putTo(buffer);
         assertTrue(buffer.toString().contains("name0: value0"));
         assertTrue(buffer.toString().contains("name1: value1"));
         assertTrue(buffer.toString().contains("name2: value:2"));
@@ -122,10 +136,10 @@ public class HttpFieldsTest
         assertNull(header.getStringField("name3"));
 
         int matches=0;
-        Enumeration e = header.getFieldNames();
+        Enumeration<String> e = header.getFieldNames();
         while (e.hasMoreElements())
         {
-            Object o=e.nextElement();
+            String o=e.nextElement();
             if ("name0".equals(o))
                 matches++;
             if ("name1".equals(o))
@@ -270,21 +284,6 @@ public class HttpFieldsTest
     }
 
     @Test
-    public void testDestroy() throws Exception
-    {
-        HttpFields header = new HttpFields();
-
-        header.put(new ByteArrayBuffer("name0"), new View(new ByteArrayBuffer("value0")));
-        assertTrue(header.getFieldNames().hasMoreElements());
-        assertNotNull(header.getStringField("name0"));
-        assertNull(header.getStringField("name1"));
-
-        header.destroy();
-
-        assertNull(header.getStringField("name0"));
-    }
-
-    @Test
     public void testCase() throws Exception
     {
         HttpFields fields= new HttpFields();
@@ -344,7 +343,6 @@ public class HttpFieldsTest
         assertTrue(s.contains("message-id"));
         assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
         assertEquals("value",fields.getStringField("message-id").toLowerCase());
-
     }
 
     @Test
@@ -352,7 +350,6 @@ public class HttpFieldsTest
     {
         assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("unknown value")).getOrdinal()<0);
         assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("close")).getOrdinal()>=0);
-        assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)")).getOrdinal()>=0);
     }
 
     @Test
