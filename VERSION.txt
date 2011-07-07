@@ -1,4 +1,4 @@
-jetty-7.4.4-SNAPSHOT
+jetty-7.4.4.v20110707 July 7th 2011
  + 308851 Converted all jetty-client module tests to JUnit 4
  + 345268 JDBCSessionManager does not work with maxInactiveInterval = -1
  + 350397 SelectChannelConnector does not shutdown gracefully
