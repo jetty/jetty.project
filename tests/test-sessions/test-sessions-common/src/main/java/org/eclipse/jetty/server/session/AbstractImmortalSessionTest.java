@@ -83,7 +83,7 @@ public abstract class AbstractImmortalSessionTest
                 exchange.waitForDone();
                 assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
                 response = exchange.getResponseContent();
-                assertEquals(response.trim(),String.valueOf(value));
+                assertEquals(String.valueOf(value),response.trim());
             }
             finally
             {
@@ -113,7 +113,8 @@ public abstract class AbstractImmortalSessionTest
             else if ("get".equals(action))
             {
                 HttpSession session = request.getSession(false);
-                result = (String)session.getAttribute("value");
+                if (session!=null)
+                    result = (String)session.getAttribute("value");
             }
             PrintWriter writer = response.getWriter();
             writer.println(result);

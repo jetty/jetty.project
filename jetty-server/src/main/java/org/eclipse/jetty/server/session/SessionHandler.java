@@ -29,12 +29,15 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** SessionHandler.
  */
 public class SessionHandler extends ScopedHandler
 {
+    final static Logger __log = Log.getLogger("org.eclipse.jetty.server.session");
+    
     /* -------------------------------------------------------------- */
     private SessionManager _sessionManager;
 
@@ -133,11 +136,9 @@ public class SessionHandler extends ScopedHandler
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
-        setRequestedId(baseRequest,request);
-
         SessionManager old_session_manager=null;
         HttpSession old_session=null;
-
+        HttpSession access=null;
         try
         {
             old_session_manager = baseRequest.getSessionManager();
@@ -148,6 +149,7 @@ public class SessionHandler extends ScopedHandler
                 // new session context
                 baseRequest.setSessionManager(_sessionManager);
                 baseRequest.setSession(null);
+                checkRequestedSessionId(baseRequest,request);
             }
 
             // access any existing session
@@ -159,6 +161,7 @@ public class SessionHandler extends ScopedHandler
                 {
                     if(session!=old_session)
                     {
+                        access=session;
                         HttpCookie cookie = _sessionManager.access(session,request.isSecure());
                         if (cookie!=null ) // Handle changed ID or max-age refresh
                             baseRequest.getResponse().addCookie(cookie);
@@ -172,10 +175,10 @@ public class SessionHandler extends ScopedHandler
                 }
             }
 
-            if(Log.isDebugEnabled())
+            if(__log.isDebugEnabled())
             {
-                Log.debug("sessionManager="+_sessionManager);
-                Log.debug("session="+session);
+                __log.debug("sessionManager="+_sessionManager);
+                __log.debug("session="+session);
             }
 
             // start manual inline of nextScope(target,baseRequest,request,response);
@@ -190,20 +193,19 @@ public class SessionHandler extends ScopedHandler
         }
         finally
         {
-            HttpSession session=request.getSession(false);
-
-            if (old_session_manager != _sessionManager)
+            if (access!=null)
+                _sessionManager.complete(access);
+            else 
             {
-                //leaving context, free up the session
-                if (session!=null)
+                HttpSession session = baseRequest.getSession(false);
+                if (session!=null && old_session==null)
                     _sessionManager.complete(session);
-                
-                // Leave last session in place
-                if (old_session_manager!=null )
-                {
-                    baseRequest.setSessionManager(old_session_manager);
-                    baseRequest.setSession(old_session);
-                }
+            }
+
+            if (old_session_manager!=null && old_session_manager != _sessionManager)
+            {
+                baseRequest.setSessionManager(old_session_manager);
+                baseRequest.setSession(old_session);
             }
         }
     }
@@ -231,13 +233,22 @@ public class SessionHandler extends ScopedHandler
      * @param baseRequest
      * @param request
      */
-    protected void setRequestedId(Request baseRequest, HttpServletRequest request)
+    protected void checkRequestedSessionId(Request baseRequest, HttpServletRequest request)
     {
         String requested_session_id=request.getRequestedSessionId();
-        if (!DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()) || requested_session_id!=null)
+        
+        SessionManager sessionManager = getSessionManager();
+        
+        if (requested_session_id!=null && sessionManager!=null)
+        {
+            HttpSession session=sessionManager.getHttpSession(requested_session_id);
+            if (session!=null && sessionManager.isValid(session))
+                baseRequest.setSession(session);
+            return;
+        }
+        else if (!DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             return;
 
-        SessionManager sessionManager = getSessionManager();
         boolean requested_session_id_from_cookie=false;
         HttpSession session=null;
 
@@ -251,22 +262,13 @@ public class SessionHandler extends ScopedHandler
                 {
                     if (sessionManager.getSessionCookie().equalsIgnoreCase(cookies[i].getName()))
                     {
-                        if (requested_session_id!=null)
-                        {
-                            // Multiple jsessionid cookies. Probably due to
-                            // multiple paths and/or domains. Pick the first
-                            // known session or the last defined cookie.
-                            if (sessionManager.getHttpSession(requested_session_id)!=null)
-                                break;
-                        }
-
                         requested_session_id=cookies[i].getValue();
                         requested_session_id_from_cookie = true;
-                        if(Log.isDebugEnabled())Log.debug("Got Session ID "+requested_session_id+" from cookie");
+                        if(__log.isDebugEnabled())__log.debug("Got Session ID "+requested_session_id+" from cookie");
                         
                         session=sessionManager.getHttpSession(requested_session_id);
-                        if (session!=null)
-                            baseRequest.setSession(session);
+                        if (session!=null && sessionManager.isValid(session))
+                            break;
                     }
                 }
             }
@@ -294,14 +296,17 @@ public class SessionHandler extends ScopedHandler
 
                     requested_session_id = uri.substring(s,i);
                     requested_session_id_from_cookie = false;
-                    if(Log.isDebugEnabled())
-                        Log.debug("Got Session ID "+requested_session_id+" from URL");                    
+                    session=sessionManager.getHttpSession(requested_session_id);
+                    if(__log.isDebugEnabled())
+                        __log.debug("Got Session ID "+requested_session_id+" from URL"); 
                 }
             }
         }
 
         baseRequest.setRequestedSessionId(requested_session_id);
-        baseRequest.setRequestedSessionIdFromCookie(requested_session_id!=null && requested_session_id_from_cookie);
+        baseRequest.setRequestedSessionIdFromCookie(requested_session_id!=null && requested_session_id_from_cookie); 
+        if (session!=null && sessionManager.isValid(session))
+            baseRequest.setSession(session);                 
     }
 
     /* ------------------------------------------------------------ */

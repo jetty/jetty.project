@@ -76,7 +76,7 @@ public class JdbcTestServer extends AbstractTestServer
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
      */
     @Override
-    public AbstractSessionManager newSessionManager()
+    public SessionManager newSessionManager()
     {
         JDBCSessionManager manager =  new JDBCSessionManager();
         manager.setIdManager((JDBCSessionIdManager)_sessionIdManager);

@@ -15,24 +15,18 @@ package org.eclipse.jetty.server.session;
 
 import static java.lang.Math.round;
 
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
-import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
@@ -44,9 +38,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
@@ -59,16 +52,29 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  * a specialised version of the Session inner class that provides an attribute
  * Map.
  * <p>
- *
- * 
  */
+@SuppressWarnings("deprecation")
 public abstract class AbstractSessionManager extends AbstractLifeCycle implements SessionManager
 {
+    final static Logger __log = SessionHandler.__log;
+    
     /* ------------------------------------------------------------ */
     public final static int __distantFuture=60*60*24*7*52*20;
 
-    private static final HttpSessionContext __nullSessionContext=new NullSessionContext();
-
+    static final HttpSessionContext __nullSessionContext=new HttpSessionContext()
+    {
+        public HttpSession getSession(String sessionId)
+        {
+            return null;
+        }
+        
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        public Enumeration getIds()
+        {
+            return Collections.enumeration(Collections.EMPTY_LIST);
+        }
+    };
+    
     private boolean _usingCookies=true;
 
     /* ------------------------------------------------------------ */
@@ -79,8 +85,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     protected boolean _httpOnly=false;
     protected SessionIdManager _sessionIdManager;
     protected boolean _secureCookies=false;
-    protected Object _sessionAttributeListeners;
-    protected Object _sessionListeners;
+    protected final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<HttpSessionAttributeListener>();
+    protected final List<HttpSessionListener> _sessionListeners= new CopyOnWriteArrayList<HttpSessionListener>();
 
     protected ClassLoader _loader;
     protected ContextHandler.Context _context;
@@ -107,22 +113,23 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         long now=System.currentTimeMillis();
 
-        Session s = ((SessionIf)session).getSession();
-        s.access(now);
+        AbstractSession s = ((SessionIf)session).getSession();
 
-        // Do we need to refresh the cookie?
-        if (isUsingCookies() &&
-            (s.isIdChanged() ||
-             (getMaxCookieAge()>0 && getRefreshCookieAge()>0 && ((now-s.getCookieSetTime())/1000>getRefreshCookieAge()))
-            )
-           )
+        if (s.access(now))
         {
-            HttpCookie cookie=getSessionCookie(session,_context==null?"/":(_context.getContextPath()),secure);
-            s.cookieSet();
-            s.setIdChanged(false);
-            return cookie;
+            // Do we need to refresh the cookie?
+            if (isUsingCookies() &&
+                    (s.isIdChanged() ||
+                            (getMaxCookieAge()>0 && getRefreshCookieAge()>0 && ((now-s.getCookieSetTime())/1000>getRefreshCookieAge()))
+                    )
+            )
+            {
+                HttpCookie cookie=getSessionCookie(session,_context==null?"/":(_context.getContextPath()),secure);
+                s.cookieSet();
+                s.setIdChanged(false);
+                return cookie;
+            }
         }
-
         return null;
     }
 
@@ -130,22 +137,22 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void addEventListener(EventListener listener)
     {
         if (listener instanceof HttpSessionAttributeListener)
-            _sessionAttributeListeners=LazyList.add(_sessionAttributeListeners,listener);
+            _sessionAttributeListeners.add((HttpSessionAttributeListener)listener);
         if (listener instanceof HttpSessionListener)
-            _sessionListeners=LazyList.add(_sessionListeners,listener);
+            _sessionListeners.add((HttpSessionListener)listener);
     }
 
     /* ------------------------------------------------------------ */
     public void clearEventListeners()
     {
-        _sessionAttributeListeners=null;
-        _sessionListeners=null;
+        _sessionAttributeListeners.clear();
+        _sessionListeners.clear();
     }
 
     /* ------------------------------------------------------------ */
     public void complete(HttpSession session)
     {
-        Session s = ((SessionIf)session).getSession();
+        AbstractSession s = ((SessionIf)session).getSession();
         s.complete();
     }
 
@@ -232,7 +239,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         String cluster_id = getIdManager().getClusterId(nodeId);
 
-        Session session = getSession(cluster_id);
+        AbstractSession session = getSession(cluster_id);
         if (session!=null && !session.getNodeId().equals(nodeId))
             session.setIdChanged(true);
         return session;
@@ -373,7 +380,11 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /**
      * @deprecated  Need to review if it is needed.
      */
-    public abstract Map getSessionMap();
+    @SuppressWarnings("rawtypes")
+    public Map getSessionMap()
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /* ------------------------------------------------------------ */
     public String getSessionPath()
@@ -411,21 +422,21 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     /* ------------------------------------------------------------ */
     public boolean isValid(HttpSession session)
     {
-        Session s = ((SessionIf)session).getSession();
+        AbstractSession s = ((SessionIf)session).getSession();
         return s.isValid();
     }
 
     /* ------------------------------------------------------------ */
     public String getClusterId(HttpSession session)
     {
-        Session s = ((SessionIf)session).getSession();
+        AbstractSession s = ((SessionIf)session).getSession();
         return s.getClusterId();
     }
 
     /* ------------------------------------------------------------ */
     public String getNodeId(HttpSession session)
     {
-        Session s = ((SessionIf)session).getSession();
+        AbstractSession s = ((SessionIf)session).getSession();
         return s.getNodeId();
     }
 
@@ -435,7 +446,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     public HttpSession newHttpSession(HttpServletRequest request)
     {
-        Session session=newSession(request);
+        AbstractSession session=newSession(request);
         session.setMaxInactiveInterval(_dftMaxIdleSecs);
         addSession(session,true);
         return session;
@@ -445,9 +456,9 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public void removeEventListener(EventListener listener)
     {
         if (listener instanceof HttpSessionAttributeListener)
-            _sessionAttributeListeners=LazyList.remove(_sessionAttributeListeners,listener);
+            _sessionAttributeListeners.remove(listener);
         if (listener instanceof HttpSessionListener)
-            _sessionListeners=LazyList.remove(_sessionListeners,listener);
+            _sessionListeners.remove(listener);
     }
     
     /* ------------------------------------------------------------ */
@@ -591,14 +602,14 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
 
-    protected abstract void addSession(Session session);
+    protected abstract void addSession(AbstractSession session);
 
     /* ------------------------------------------------------------ */
     /**
      * Add the session Registers the session with this manager and registers the
      * session ID with the sessionIDManager;
      */
-    protected void addSession(Session session, boolean created)
+    protected void addSession(AbstractSession session, boolean created)
     {
         synchronized (_sessionIdManager)
         {
@@ -612,8 +623,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             if (_sessionListeners!=null)
             {
                 HttpSessionEvent event=new HttpSessionEvent(session);
-                for (int i=0; i<LazyList.size(_sessionListeners); i++)
-                    ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionCreated(event);
+                for (HttpSessionListener listener : _sessionListeners)
+                    listener.sessionCreated(event);
             }
         }
     }
@@ -624,7 +635,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * @param idInCluster The session ID in the cluster, stripped of any worker name.
      * @return A Session or null if none exists.
      */
-    public abstract Session getSession(String idInCluster);
+    public abstract AbstractSession getSession(String idInCluster);
 
     protected abstract void invalidateSessions() throws Exception;
 
@@ -635,7 +646,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * @param request
      * @return the new session
      */
-    protected abstract Session newSession(HttpServletRequest request);
+    protected abstract AbstractSession newSession(HttpServletRequest request);
 
 
     /* ------------------------------------------------------------ */
@@ -664,7 +675,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     public void removeSession(HttpSession session, boolean invalidate)
     {
-        Session s = ((SessionIf)session).getSession();
+        AbstractSession s = ((SessionIf)session).getSession();
         removeSession(s,invalidate);
     }
 
@@ -674,7 +685,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
      * {@link SessionIdManager#invalidateAll(String)} should be called.
      */
-    public void removeSession(Session session, boolean invalidate)
+    public void removeSession(AbstractSession session, boolean invalidate)
     {
         // Remove session from context and global maps
         boolean removed = removeSession(session.getClusterId());
@@ -692,8 +703,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             if (invalidate && _sessionListeners!=null)
             {
                 HttpSessionEvent event=new HttpSessionEvent(session);
-                for (int i=LazyList.size(_sessionListeners); i-->0;)
-                    ((HttpSessionListener)LazyList.get(_sessionListeners,i)).sessionDestroyed(event);
+                for (HttpSessionListener listener : _sessionListeners)
+                    listener.sessionCreated(event);
             }
         }
     }
@@ -754,41 +765,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     {
         _checkingRemoteSessionIdEncoding=remote;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Null returning implementation of HttpSessionContext
-     *
-     * 
-     */
-    public static class NullSessionContext implements HttpSessionContext
-    {
-        /* ------------------------------------------------------------ */
-        private NullSessionContext()
-        {
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @deprecated From HttpSessionContext
-         */
-        @Deprecated
-        public Enumeration getIds()
-        {
-            return Collections.enumeration(Collections.EMPTY_LIST);
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @deprecated From HttpSessionContext
-         */
-        @Deprecated
-        public HttpSession getSession(String id)
-        {
-            return null;
-        }
-    }
-
+    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -799,496 +776,23 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
      */
     public interface SessionIf extends HttpSession
     {
-        public Session getSession();
+        public AbstractSession getSession();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     *
-     * <p>
-     * Implements {@link javax.servlet.http.HttpSession} from the <code>javax.servlet</code> package.
-     * </p>
-     * 
-     *
-     */
-    public abstract class Session implements SessionIf, Serializable
+    public void doSessionAttributeListeners(AbstractSession session, String name, Object old, Object value)
     {
-        protected final String _clusterId; // ID unique within cluster
-        protected final String _nodeId;    // ID unique within node
-        protected final Map<String,Object> _attributes=new HashMap<String, Object>();
-        protected boolean _idChanged;
-        protected final long _created;
-        protected long _cookieSet;
-        protected long _accessed;
-        protected long _lastAccessed;
-        protected boolean _invalid;
-        protected boolean _doInvalidate;
-        protected long _maxIdleMs=_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000:-1;
-        protected boolean _newSession;
-        protected int _requests;
+        if (!_sessionAttributeListeners.isEmpty())
+        {
+            HttpSessionBindingEvent event=new HttpSessionBindingEvent(session,name,old==null?value:old);
 
-        /* ------------------------------------------------------------- */
-        protected Session(HttpServletRequest request)
-        {
-            _newSession=true;
-            _created=System.currentTimeMillis();
-            _clusterId=_sessionIdManager.newSessionId(request,_created);
-            _nodeId=_sessionIdManager.getNodeId(_clusterId,request);
-            _accessed=_created;
-            _lastAccessed=_created;
-            _requests=1;
-            Log.debug("new session & id "+_nodeId+" "+_clusterId);
-        }
-
-        /* ------------------------------------------------------------- */
-        protected Session(long created, long accessed, String clusterId)
-        {
-            _created=created;
-            _clusterId=clusterId;
-            _nodeId=_sessionIdManager.getNodeId(_clusterId,null);
-            _accessed=accessed;
-            _lastAccessed=accessed;
-            _requests=1;
-            Log.debug("new session "+_nodeId+" "+_clusterId);
-        }
-        
-        /* ------------------------------------------------------------- */
-        /**
-         * @return True is the session is invalid or passivated.
-         */
-        protected boolean isNotAvailable()
-        {
-            return _invalid;
-        }
-        
-        /* ------------------------------------------------------------- */
-        public Session getSession()
-        {
-            return this;
-        }
-
-        /* ------------------------------------------------------------ */
-        public Object getAttribute(String name)
-        {
-            synchronized (Session.this)
+            for (HttpSessionAttributeListener l : _sessionAttributeListeners)
             {
-                if (isNotAvailable())
-                    throw new IllegalStateException();
-
-                return _attributes.get(name);
-            }
-        }
-
-        /* ------------------------------------------------------------ */
-        public Enumeration getAttributeNames()
-        {
-            synchronized (Session.this)
-            {
-                if (isNotAvailable())
-                    throw new IllegalStateException();
-                List names=_attributes==null?Collections.EMPTY_LIST:new ArrayList(_attributes.keySet());
-                return Collections.enumeration(names);
-            }
-        }
-
-        /* ------------------------------------------------------------- */
-        public long getCookieSetTime()
-        {
-            return _cookieSet;
-        }
-
-        /* ------------------------------------------------------------- */
-        public long getCreationTime() throws IllegalStateException
-        {
-            if (isNotAvailable())
-                throw new IllegalStateException();
-            return _created;
-        }
-
-        /* ------------------------------------------------------------ */
-        public String getId() throws IllegalStateException
-        {
-            return _nodeIdInSessionId?_nodeId:_clusterId;
-        }
-
-        /* ------------------------------------------------------------- */
-        protected String getNodeId()
-        {
-            return _nodeId;
-        }
-
-        /* ------------------------------------------------------------- */
-        protected String getClusterId()
-        {
-            return _clusterId;
-        }
-
-        /* ------------------------------------------------------------- */
-        public long getLastAccessedTime() throws IllegalStateException
-        {
-            if (isNotAvailable())
-                throw new IllegalStateException();
-            return _lastAccessed;
-        }
-
-        /* ------------------------------------------------------------- */
-        public int getMaxInactiveInterval()
-        {
-            if (isNotAvailable())
-                throw new IllegalStateException();
-            return (int)(_maxIdleMs/1000);
-        }
-
-        /* ------------------------------------------------------------ */
-        /*
-         * @see javax.servlet.http.HttpSession#getServletContext()
-         */
-        public ServletContext getServletContext()
-        {
-            return _context;
-        }
-
-        /* ------------------------------------------------------------- */
-        /**
-         * @deprecated
-         */
-        @Deprecated
-        public HttpSessionContext getSessionContext() throws IllegalStateException
-        {
-            if (isNotAvailable())
-                throw new IllegalStateException();
-            return __nullSessionContext;
-        }
-
-        /* ------------------------------------------------------------- */
-        /**
-         * @deprecated As of Version 2.2, this method is replaced by
-         *             {@link #getAttribute}
-         */
-        @Deprecated
-        public Object getValue(String name) throws IllegalStateException
-        {
-            return getAttribute(name);
-        }
-
-        /* ------------------------------------------------------------- */
-        /**
-         * @deprecated As of Version 2.2, this method is replaced by
-         *             {@link #getAttributeNames}
-         */
-        @Deprecated
-        public String[] getValueNames() throws IllegalStateException
-        {
-            synchronized(Session.this)
-            {
-                if (isNotAvailable())
-                    throw new IllegalStateException();
-                if (_attributes==null)
-                    return new String[0];
-                String[] a=new String[_attributes.size()];
-                return (String[])_attributes.keySet().toArray(a);
-            }
-        }
-
-        /* ------------------------------------------------------------ */
-        protected void access(long time)
-        {
-            synchronized(Session.this)
-            {
-                if (!_invalid) 
-                {
-                    _newSession=false;
-                    _lastAccessed=_accessed;
-                    _accessed=time;
-                
-                    if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time) 
-                    {
-                        invalidate();
-                    }
-                    else
-                    {
-                        _requests++;
-                    }
-                }
-            }
-        }
-
-        /* ------------------------------------------------------------ */
-        protected void complete()
-        {
-            synchronized(Session.this)
-            {
-                _requests--;
-                if (_doInvalidate && _requests<=0  )
-                    doInvalidate();
-            }
-        }
-
-
-        /* ------------------------------------------------------------- */
-        protected void timeout() throws IllegalStateException
-        {
-            // remove session from context and invalidate other sessions with same ID.
-            removeSession(this,true);
-
-            // Notify listeners and unbind values
-            synchronized (Session.this)
-            {
-                if (!_invalid)
-                {
-                    if (_requests<=0)
-                        doInvalidate();
-                    else
-                        _doInvalidate=true;
-                }
-            }
-        }
-
-        /* ------------------------------------------------------------- */
-        public void invalidate() throws IllegalStateException
-        {
-            // remove session from context and invalidate other sessions with same ID.
-            removeSession(this,true);
-            doInvalidate();
-        }
-
-        /* ------------------------------------------------------------- */
-        protected void doInvalidate() throws IllegalStateException
-        {
-            try
-            {
-                Log.debug("invalidate ",_clusterId);
-                // Notify listeners and unbind values
-                if (isNotAvailable())
-                    throw new IllegalStateException();
-                clearAttributes();
-            }
-            finally
-            {
-                // mark as invalid
-                _invalid=true;
-            }
-        }
-
-        /* ------------------------------------------------------------- */
-        protected void clearAttributes() 
-        {
-            while (_attributes!=null && _attributes.size()>0)
-            {
-                ArrayList keys;
-                synchronized (Session.this)
-                {
-                    keys=new ArrayList(_attributes.keySet());
-                }
-
-                Iterator iter=keys.iterator();
-                while (iter.hasNext())
-                {
-                    String key=(String)iter.next();
-
-                    Object value;
-                    synchronized (Session.this)
-                    {
-                        value=_attributes.remove(key);
-                    }
-                    unbindValue(key,value);
-
-                    if (_sessionAttributeListeners!=null)
-                    {
-                        HttpSessionBindingEvent event=new HttpSessionBindingEvent(this,key,value);
-
-                        for (int i=0; i<LazyList.size(_sessionAttributeListeners); i++)
-                            ((HttpSessionAttributeListener)LazyList.get(_sessionAttributeListeners,i)).attributeRemoved(event);
-                    }
-                }
-            } 
-            if (_attributes!=null)
-                _attributes.clear();
-        }
-        
-        /* ------------------------------------------------------------- */
-        public boolean isIdChanged()
-        {
-            return _idChanged;
-        }
-
-        /* ------------------------------------------------------------- */
-        public boolean isNew() throws IllegalStateException
-        {
-            if (isNotAvailable())
-                throw new IllegalStateException();
-            return _newSession;
-        }
-
-        /* ------------------------------------------------------------- */
-        /**
-         * @deprecated As of Version 2.2, this method is replaced by
-         *             {@link #setAttribute}
-         */
-        @Deprecated
-        public void putValue(java.lang.String name, java.lang.Object value) throws IllegalStateException
-        {
-            setAttribute(name,value);
-        }
-
-        /* ------------------------------------------------------------ */
-        public void removeAttribute(String name)
-        {
-            Object old;
-            synchronized(Session.this)
-            {
-                if (isNotAvailable())
-                    throw new IllegalStateException();
-                if (_attributes==null)
-                    return;
-
-                old=_attributes.remove(name);
-            }
-
-            if (old!=null)
-            {
-                unbindValue(name,old);
-                if (_sessionAttributeListeners!=null)
-                {
-                    HttpSessionBindingEvent event=new HttpSessionBindingEvent(this,name,old);
-
-                    for (int i=0; i<LazyList.size(_sessionAttributeListeners); i++)
-                        ((HttpSessionAttributeListener)LazyList.get(_sessionAttributeListeners,i)).attributeRemoved(event);
-                }
-            }
-
-        }
-
-        /* ------------------------------------------------------------- */
-        /**
-         * @deprecated As of Version 2.2, this method is replaced by
-         *             {@link #removeAttribute}
-         */
-        @Deprecated
-        public void removeValue(java.lang.String name) throws IllegalStateException
-        {
-            removeAttribute(name);
-        }
-
-        /* ------------------------------------------------------------ */
-        public void setAttribute(String name, Object value)
-        {
-            Object old_value=null;
-            synchronized (Session.this)
-            {
-                if (value==null)
-                {
-                    removeAttribute(name);
-                    return;
-                }
-
-                if (isNotAvailable())
-                    throw new IllegalStateException();
-                old_value=_attributes.put(name,value);
-            }
-            
-            if (old_value==null || !value.equals(old_value))
-            {
-                unbindValue(name,old_value);
-                bindValue(name,value);
-
-                if (_sessionAttributeListeners!=null)
-                {
-                    HttpSessionBindingEvent event=new HttpSessionBindingEvent(this,name,old_value==null?value:old_value);
-
-                    for (int i=0; i<LazyList.size(_sessionAttributeListeners); i++)
-                    {
-                        HttpSessionAttributeListener l=(HttpSessionAttributeListener)LazyList.get(_sessionAttributeListeners,i);
-
-                        if (old_value==null)
-                            l.attributeAdded(event);
-                        else
-                            l.attributeReplaced(event);
-                    }
-                }
-            }
-        }
-
-        /* ------------------------------------------------------------- */
-        public void setIdChanged(boolean changed)
-        {
-            _idChanged=changed;
-        }
-
-        /* ------------------------------------------------------------- */
-        public void setMaxInactiveInterval(int secs)
-        {
-            _maxIdleMs=(long)secs*1000;
-        }
-
-        /* ------------------------------------------------------------- */
-        @Override
-        public String toString()
-        {
-            return this.getClass().getName()+":"+getId()+"@"+hashCode();
-        }
-
-        /* ------------------------------------------------------------- */
-        /** If value implements HttpSessionBindingListener, call valueBound() */
-        protected void bindValue(java.lang.String name, Object value)
-        {
-            if (value!=null&&value instanceof HttpSessionBindingListener)
-                ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(this,name));
-        }
-
-        /* ------------------------------------------------------------ */
-        protected boolean isValid()
-        {
-            return !_invalid;
-        }
-
-        /* ------------------------------------------------------------- */
-        protected void cookieSet()
-        {
-            _cookieSet=_accessed;
-        }
-
-        /* ------------------------------------------------------------- */
-        /** If value implements HttpSessionBindingListener, call valueUnbound() */
-        protected void unbindValue(java.lang.String name, Object value)
-        {
-            if (value!=null&&value instanceof HttpSessionBindingListener)
-                ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(this,name));
-        }
-
-        /* ------------------------------------------------------------- */
-        protected void willPassivate()
-        {
-            synchronized(Session.this)
-            {
-                HttpSessionEvent event = new HttpSessionEvent(this);
-                for (Iterator iter = _attributes.values().iterator(); iter.hasNext();)
-                {
-                    Object value = iter.next();
-                    if (value instanceof HttpSessionActivationListener)
-                    {
-                        HttpSessionActivationListener listener = (HttpSessionActivationListener) value;
-                        listener.sessionWillPassivate(event);
-                    }
-                }
-            }
-        }
-
-        /* ------------------------------------------------------------- */
-        protected void didActivate()
-        {
-            synchronized(Session.this)
-            {
-                HttpSessionEvent event = new HttpSessionEvent(this);
-                for (Iterator iter = _attributes.values().iterator(); iter.hasNext();)
-                {
-                    Object value = iter.next();
-                    if (value instanceof HttpSessionActivationListener)
-                    {
-                        HttpSessionActivationListener listener = (HttpSessionActivationListener) value;
-                        listener.sessionDidActivate(event);
-                    }
-                }
+                if (old==null)
+                    l.attributeAdded(event);
+                else if (value==null)
+                    l.attributeRemoved(event);
+                else
+                    l.attributeReplaced(event);
             }
         }
     }
