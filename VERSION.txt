@@ -2,6 +2,7 @@ jetty-7.4.4-SNAPSHOT
  + 308851 Converted all jetty-client module tests to JUnit 4
  + 345268 JDBCSessionManager does not work with maxInactiveInterval = -1
  + 350397 SelectChannelConnector does not shutdown gracefully
+ + 350634 Reverted FileResource constructor changes
  + 351039 Forward dispatch should retain locale
  + 351199 HttpServletResponse.encodeURL() wrongly encodes an url without path when cookies are disabled
  + JETTY-1153 Default charset/encoding of HTTP POST requests
