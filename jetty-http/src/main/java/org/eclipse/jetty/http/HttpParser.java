@@ -58,7 +58,6 @@ public class HttpParser implements Parser
     private Buffer _header; // Buffer for header data (and small _content)
     private Buffer _body; // Buffer for large content
     private Buffer _buffer; // The current buffer in use (either _header or _content)
-    private final View  _contentView=new View(); // View of the content in the buffer for {@link Input}
     private CachedBuffer _cached;
     private View.CaseInsensitive _tok0; // Saved token: header name, request method or response version
     private View.CaseInsensitive _tok1; // Saved token: header value, request URI or response code
@@ -67,6 +66,7 @@ public class HttpParser implements Parser
     private boolean _forceContentBuffer;
     
     /* ------------------------------------------------------------------------------- */
+    protected final View  _contentView=new View(); // View of the content in the buffer for {@link Input}
     protected int _state=STATE_START;
     protected byte _eol;
     protected int _length;
@@ -191,7 +191,7 @@ public class HttpParser implements Parser
     public void parse() throws IOException
     {
         if (_state==STATE_END)
-            reset(false);
+            reset();
         if (_state!=STATE_START)
             throw new IllegalStateException("!START");
 
@@ -263,41 +263,8 @@ public class HttpParser implements Parser
         // Fill buffer if we can
         if (length == 0)
         {
-            int filled=-1;
-            if (_body!=null && _buffer!=_body)
-            {
-                _buffer=_body;
-                filled=_buffer.length();
-            }
-                
-            if (_buffer.markIndex() == 0 && _buffer.putIndex() == _buffer.capacity())
-                    throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL");
+            long filled=fill();
             
-            IOException ioex=null;
-            
-            if (_endp != null && filled<=0)
-            {
-                // Compress buffer if handling _content buffer
-                // TODO check this is not moving data too much
-                if (_buffer == _body) 
-                    _buffer.compact();
-
-                if (_buffer.space() == 0) 
-                    throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL "+(_buffer==_body?"body":"head"));                
-                try
-                {
-                    filled=_endp.fill(_buffer);
-                    if (filled>0)
-                        progress++;
-                }
-                catch(IOException e)
-                {
-                    Log.debug(e);
-                    ioex=e;
-                    filled=-1;
-                }
-            }
-
             if (filled < 0) 
             {
                 if (_headResponse && _state>STATE_END)
@@ -429,8 +396,7 @@ public class HttpParser implements Parser
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
                         // HTTP/0.9
-                        _handler.startRequest(HttpMethods.CACHE.lookup(_tok0), _buffer
-                                .sliceFromMark(), null);
+                        _handler.startRequest(HttpMethods.CACHE.lookup(_tok0), _buffer.sliceFromMark(), null);
                         _state=STATE_END;
                         _handler.headerComplete();
                         _handler.messageComplete(_contentPosition);
@@ -473,7 +439,7 @@ public class HttpParser implements Parser
                         if (_responseStatus>0)
                             _handler.startResponse(HttpVersions.CACHE.lookup(_tok0), _responseStatus,_buffer.sliceFromMark());
                         else
-                            _handler.startRequest(HttpMethods.CACHE.lookup(_tok0), _tok1,HttpVersions.CACHE.lookup(_buffer.sliceFromMark()));
+                            _handler.startRequest(HttpMethods.CACHE.lookup(_tok0), _tok1, HttpVersions.CACHE.lookup(_buffer.sliceFromMark()));
                         _eol=ch;
                         _state=STATE_HEADER;
                         _tok0.setPutIndex(_tok0.getIndex());
@@ -553,13 +519,12 @@ public class HttpParser implements Parser
                                 _tok1.setPutIndex(_tok1.getIndex());
                                 _multiLineValue=null;
                             }
+                            _buffer.setMarkIndex(-1);
                             
                             
                             // now handle ch
                             if (ch == HttpTokens.CARRIAGE_RETURN || ch == HttpTokens.LINE_FEED)
                             {
-                                // End of header
-
                                 // work out the _content demarcation
                                 if (_contentLength == HttpTokens.UNKNOWN_CONTENT)
                                 {
@@ -583,16 +548,11 @@ public class HttpParser implements Parser
                                 {
                                     case HttpTokens.EOF_CONTENT:
                                         _state=STATE_EOF_CONTENT;
-                                        if(_body==null && _buffers!=null)
-                                            _body=_buffers.getBuffer();
-                                        
                                         _handler.headerComplete(); // May recurse here !
                                         break;
                                         
                                     case HttpTokens.CHUNKED_CONTENT:
                                         _state=STATE_CHUNKED_CONTENT;
-                                        if (_body==null && _buffers!=null)
-                                            _body=_buffers.getBuffer();
                                         _handler.headerComplete(); // May recurse here !
                                         break;
                                         
@@ -604,9 +564,6 @@ public class HttpParser implements Parser
                                         
                                     default:
                                         _state=STATE_CONTENT;
-                                        if(_forceContentBuffer || 
-                                          (_buffers!=null && _body==null && _buffer==_header && _contentLength>=(_header.capacity()-_header.getIndex())))
-                                            _body=_buffers.getBuffer();
                                         _handler.headerComplete(); // May recurse here !
                                         break;
                                 }
@@ -930,43 +887,54 @@ public class HttpParser implements Parser
      */
     public long fill() throws IOException
     {
+        // Do we have a buffer?
         if (_buffer==null)
         {
             _buffer=_header=getHeaderBuffer();
             _tok0=new View.CaseInsensitive(_buffer);
             _tok1=new View.CaseInsensitive(_buffer);
         }
-        if (_body!=null && _buffer!=_body)
-            _buffer=_body;
-        if (_buffer == _body)
-            //noinspection ConstantConditions
-            _buffer.compact();
         
-        int space=_buffer.space();
-        
-        // Fill buffer if we can
-        if (space == 0) 
-            throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL "+(_buffer==_body?"body":"head"));
-        else
+        // Is there unconsumed content in body buffer
+        if (_state>STATE_END && _buffer==_header  && _body!=null && _body.hasContent() && _header!=null && !_header.hasContent())
         {
-            int filled=-1;
-            
-            if (_endp != null )
+            _buffer=_body;
+            return _buffer.length();
+        }
+        
+        // Do we need a body buffer?
+        if (_buffer==_header && _state>STATE_END && (_forceContentBuffer || _header.space()==0) && (_body!=null||_buffers!=null))
+        {
+            if (_body==null)
+                _body=_buffers.getBuffer();
+            _buffer=_body;
+        }
+        
+        // Do we have somewhere to fill from?
+        if (_endp != null )
+        {
+            // Shall we compact the body?
+            if (_buffer==_body || _state>STATE_END) 
             {
-                try
-                {
-                    filled=_endp.fill(_buffer);
-                }
-                catch(IOException e)
-                {
-                    Log.debug(e);
-                    reset(true);
-                    throw (e instanceof EofException) ? e:new EofException(e);
-                }
+                _buffer.compact();
             }
             
-            return filled;
+            // Are we full?
+            if (_buffer.space() == 0) 
+                throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL "+(_buffer==_body?"body":"head"));   
+            
+            try
+            {
+                return _endp.fill(_buffer);
+            }
+            catch(IOException e)
+            {
+                Log.debug(e);
+                throw (e instanceof EofException) ? e:new EofException(e);
+            }
         }
+
+        return -1;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1003,69 +971,74 @@ public class HttpParser implements Parser
     }
     
     /* ------------------------------------------------------------------------------- */
-    public void reset(boolean returnBuffers)
+    public void reset()
     {   
+        // reset state
         _contentView.setGetIndex(_contentView.putIndex());
-
         _state=STATE_START;
         _contentLength=HttpTokens.UNKNOWN_CONTENT;
         _contentPosition=0;
         _length=0;
         _responseStatus=0;
 
+        // Consume LF if CRLF
         if (_eol == HttpTokens.CARRIAGE_RETURN && _buffer!=null && _buffer.hasContent() && _buffer.peek() == HttpTokens.LINE_FEED)
             _eol=_buffer.get();
 
-        if (_body!=null)
-        {   
-            if (_body.hasContent())
+        if (_body!=null && _body.hasContent())
+        {
+            // There is content in the body after the end of the request.
+            // This is probably a pipelined header of the next request, so we need to
+            // copy it to the header buffer.
+            if (_header==null)
             {
-                // There is content in the body after the end of the request.
-                // This is probably a pipelined header of the next request, so we need to
-                // copy it to the header buffer.
-                _header.setMarkIndex(-1);
-                _header.compact();
-                int take=_header.space();
-                if (take>_body.length())
-                    take=_body.length();
-                _body.peek(_body.getIndex(),take);
-                _body.skip(_header.put(_body.peek(_body.getIndex(),take)));
-            }
-
-            if (_body.length()==0)
-            {
-                if (_buffers!=null && returnBuffers)
-                    _buffers.returnBuffer(_body);
-                _body=null; 
+                _header=_buffers.getHeader();
             }
             else
             {
-                _body.setMarkIndex(-1);
-                _body.compact();
+                _header.setMarkIndex(-1);
+                _header.compact();
             }
+            int take=_header.space();
+            if (take>_body.length())
+                take=_body.length();
+            _body.peek(_body.getIndex(),take);
+            _body.skip(_header.put(_body.peek(_body.getIndex(),take)));
         }
 
         if (_header!=null)
         {
             _header.setMarkIndex(-1);
-            if (!_header.hasContent() && _buffers!=null && returnBuffers)
-            {
-                _buffers.returnBuffer(_header);
-                _header=null;
-            }   
-            else
-            {
-                _header.compact();
-                _tok0.update(_header);
-                _tok0.update(0,0);
-                _tok1.update(_header);
-                _tok1.update(0,0);
-            }
+            _header.compact();
         }
+        if (_body!=null)
+            _body.setMarkIndex(-1);
 
         _buffer=_header;
     }
 
+
+    /* ------------------------------------------------------------------------------- */
+    public void returnBuffers()
+    {
+        if (_body!=null && !_body.hasContent() && _body.markIndex()==-1)
+        {   
+            if (_buffer==_body)
+                _buffer=_header;
+            if (_buffers!=null)
+                _buffers.returnBuffer(_body);
+            _body=null; 
+        }
+
+        if (_header!=null && !_header.hasContent() && _header.markIndex()==-1)
+        {
+            if (_buffer==_header)
+                _buffer=null;
+            _buffers.returnBuffer(_header);
+            _header=null;
+        }
+    }
+    
     /* ------------------------------------------------------------------------------- */
     public void setState(int state)
     {
@@ -1111,8 +1084,6 @@ public class HttpParser implements Parser
         _forceContentBuffer=force;
     } 
     
-
-    
     /* ------------------------------------------------------------ */
     public Buffer blockForContent(long maxIdleTime) throws IOException
     {
@@ -1121,49 +1092,32 @@ public class HttpParser implements Parser
         if (getState() <= HttpParser.STATE_END) 
             return null;
         
-        // Handle simple end points.
-        if (_endp==null)
-            parseNext();
-        
-        // Handle blocking end points
-        else if (_endp.isBlocking())
-        {
-            try
-            {
-                parseNext();
-
-                // parse until some progress is made (or IOException thrown for timeout)
-                while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp.isOpen())
-                {
-                    // Try to get more _parser._content
-                    parseNext();
-                }
-            }
-            catch(IOException e)
-            {
-                _endp.close();
-                throw e;
-            }
-        }
-        else // Handle non-blocking end point
+        try
         {
             parseNext();
             
             // parse until some progress is made (or IOException thrown for timeout)
-            while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp.isOpen())
+            while(_contentView.length() == 0 && !isState(HttpParser.STATE_END) && _endp!=null && _endp.isOpen())
             {
-                if (_endp.isBufferingInput() && parseNext()>0)
-                    continue;
-                
-                if (!_endp.blockReadable(maxIdleTime))
+                if (!_endp.isBlocking())
                 {
-                    _endp.close();
-                    throw new EofException("timeout");
+                    if (_endp.isBufferingInput() && parseNext()>0)
+                        continue;
+
+                    if (!_endp.blockReadable(maxIdleTime))
+                    {
+                        _endp.close();
+                        throw new EofException("timeout");
+                    }
                 }
 
-                // Try to get more _parser._content
                 parseNext();
             }
+        }
+        catch(IOException e)
+        {
+            _endp.close();
+            throw e;
         }
         
         return _contentView.length()>0?_contentView:null; 

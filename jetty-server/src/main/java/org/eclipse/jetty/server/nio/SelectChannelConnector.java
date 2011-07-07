@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
+import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -335,7 +336,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private class SelectChannelHttpConnection extends HttpConnection
+    private class SelectChannelHttpConnection extends AsyncHttpConnection
     {
         private final SelectChannelEndPoint _endpoint;
 

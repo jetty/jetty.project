@@ -25,7 +25,11 @@ public class NestedParser implements Parser
     {
     }
 
-    public void reset(boolean returnBuffers)
+    public void reset()
+    {
+    }
+
+    public void returnBuffers()
     {
     }
 

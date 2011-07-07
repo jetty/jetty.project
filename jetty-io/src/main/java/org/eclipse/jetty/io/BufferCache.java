@@ -66,12 +66,15 @@ public class BufferCache
 
     public Buffer lookup(Buffer buffer)
     {
+        if (buffer instanceof CachedBuffer)
+            return buffer;
+        
         Buffer b= get(buffer);
         if (b == null)
         {
             if (buffer instanceof Buffer.CaseInsensitve)
                 return buffer;
-            return new View.CaseInsensitive(buffer);
+            return new ByteArrayBuffer.CaseInsensitive(buffer.asArray(),0,buffer.length(),Buffer.IMMUTABLE);
         }
 
         return b;

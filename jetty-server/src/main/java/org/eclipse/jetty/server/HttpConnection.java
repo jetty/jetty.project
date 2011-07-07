@@ -94,7 +94,6 @@ public class HttpConnection  extends AbstractConnection implements Connection
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
     private int _requests;
-    private volatile boolean _handling;
 
     protected final Connector _connector;
     protected final Server _server;
@@ -364,158 +363,6 @@ public class HttpConnection  extends AbstractConnection implements Connection
     }
 
     /* ------------------------------------------------------------ */
-    public Connection handle() throws IOException
-    {
-        Connection connection = this;
-
-        // Loop while more in buffer
-        boolean more_in_buffer =true; // assume true until proven otherwise
-        boolean progress=true;
-
-        try
-        {
-            assert getCurrentConnection()==null;
-            assert _handling==false;
-            _handling=true;
-            setCurrentConnection(this);
-
-            while (more_in_buffer && _endp.isOpen())
-            {
-                try
-                {
-                    if (_request._async.isAsync())
-                    {
-                        // TODO - handle the case of input being read for a
-                        // suspended request.
-
-                        Log.debug("async request",_request);
-                        if (!_request._async.isComplete())
-                            handleRequest();
-                        else if (!_parser.isComplete())
-                        {
-                            int parsed=_parser.parseAvailable();
-                            if (parsed>0)
-                                progress=true;
-                        }
-
-                        if (_generator.isCommitted() && !_generator.isComplete())
-                            progress|=_generator.flushBuffer()>0;
-                        if (_endp.isBufferingOutput())
-                            _endp.flush();
-                    }
-                    else
-                    {
-                        // If we are not ended then parse available
-                        if (!_parser.isComplete())
-                        {
-                            int parsed=_parser.parseAvailable();
-                            if (parsed>0)
-                                progress=true;
-                        }
-
-                        // Do we have more generating to do?
-                        // Loop here because some writes may take multiple steps and
-                        // we need to flush them all before potentially blocking in the
-                        // next loop.
-                        while (_generator.isCommitted() && !_generator.isComplete())
-                        {
-                            long written=_generator.flushBuffer();
-                            if (written<=0)
-                                break;
-                            progress=true;
-                            if (_endp.isBufferingOutput())
-                                _endp.flush();
-                        }
-
-                        // Flush buffers
-                        if (_endp.isBufferingOutput())
-                        {
-                            _endp.flush();
-                            if (!_endp.isBufferingOutput())
-                                progress=true;
-                        }
-
-                        if (!progress)
-                            return this;
-                    }
-                    progress=false;
-                }
-                catch (HttpException e)
-                {
-                    if (Log.isDebugEnabled())
-                    {
-                        Log.debug("uri="+_uri);
-                        Log.debug("fields="+_requestFields);
-                        Log.debug(e);
-                    }
-                    _generator.sendError(e.getStatus(), e.getReason(), null, true);
-
-                    _parser.reset(true);
-                    _endp.close();
-                }
-                finally
-                {
-                    more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-                    
-                    // Is this request/response round complete?
-                    if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
-                    {
-                        // look for a switched connection instance?
-                        Connection switched=(_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
-                        ?(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection"):null;
-
-                        // have we switched?
-                        if (switched!=null)
-                        {
-                            _parser.reset(true);
-                            _generator.reset(true);
-                            connection=switched;
-                        }
-                        else
-                        {
-                            // No switch, so cleanup and reset
-                            if (!_generator.isPersistent() || _endp.isInputShutdown())
-                            {
-                                _parser.reset(true);
-                                more_in_buffer=false;
-                                _endp.close();
-                            }
-
-                            if (more_in_buffer)
-                            {
-                                reset(false);
-                                more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-                            }
-                            else
-                                reset(true);
-                            progress=true;
-                        }
-                    }
-                    else if (_parser.isIdle() && _endp.isInputShutdown())
-                    {
-                        more_in_buffer=false;
-                        _endp.close();
-                    }
-
-                    if (_request.isAsyncStarted())
-                    {
-                        Log.debug("return with suspended request");
-                        more_in_buffer=false;
-                    }
-                    else if (_generator.isCommitted() && !_generator.isComplete() && _endp instanceof AsyncEndPoint)
-                        ((AsyncEndPoint)_endp).scheduleWrite();
-                }
-            }
-        }
-        finally
-        {
-            setCurrentConnection(null);
-            _handling=false;
-        }
-        return connection;
-    }
-
-    /* ------------------------------------------------------------ */
     public void scheduleTimeout(Timeout.Task task, long timeoutMs)
     {
         throw new UnsupportedOperationException();
@@ -530,7 +377,9 @@ public class HttpConnection  extends AbstractConnection implements Connection
     /* ------------------------------------------------------------ */
     public void reset(boolean returnBuffers)
     {
-        _parser.reset(returnBuffers); // TODO maybe only release when low on resources
+        _parser.reset(); 
+        if (returnBuffers)
+            _parser.returnBuffers();
         _requestFields.clear();
         _request.recycle();
 
@@ -676,6 +525,12 @@ public class HttpConnection  extends AbstractConnection implements Connection
                 _request.setHandled(true);
             }
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public Connection handle() throws IOException
+    {
+        return this;
     }
 
     /* ------------------------------------------------------------ */
@@ -1204,7 +1059,7 @@ public class HttpConnection  extends AbstractConnection implements Connection
                 Buffer lm = httpContent.getLastModified();
                 long lml=httpContent.getResource().lastModified();
                 if (lm != null)
-                    _responseFields.put(HttpHeaders.LAST_MODIFIED_BUFFER, lm,lml);
+                    _responseFields.put(HttpHeaders.LAST_MODIFIED_BUFFER, lm);
                 else if (httpContent.getResource()!=null)
                 {
                     if (lml!=-1)

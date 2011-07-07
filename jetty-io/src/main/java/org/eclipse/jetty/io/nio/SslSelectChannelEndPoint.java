@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 {
-    static Logger __log = Log.getLogger("org.eclipse.jetty.http.ssl");
-
+    public static final Logger __log=Log.getLogger("org.eclipse.jetty.io.nio").getLogger("ssl");
+    
     private static final ByteBuffer[] __NO_BUFFERS={};
 
     private final Buffers _buffers;
@@ -325,7 +325,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
      */
     @Override
     public int fill(Buffer buffer) throws IOException
-    {
+    {   
         // This end point only works on NIO buffer type (director
         // or indirect), so extract the NIO buffer that is wrapped
         // by the passed jetty Buffer.

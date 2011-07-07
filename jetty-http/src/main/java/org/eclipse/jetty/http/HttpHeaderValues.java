@@ -73,38 +73,16 @@ public class HttpHeaderValues extends BufferCache
         NO_CACHE_BUFFER=CACHE.add(NO_CACHE,NO_CACHE_ORDINAL),
         UPGRADE_BUFFER=CACHE.add(UPGRADE,UPGRADE_ORDINAL);
         
-    static
-    {  
-        int index=100;
-        CACHE.add("gzip",index++);
-        CACHE.add("gzip,deflate",index++);
-        CACHE.add("deflate",index++);
 
-        InputStream ua = HttpHeaderValues.class.getResourceAsStream("/org/eclipse/jetty/http/useragents");
-        try
+    public static boolean hasKnownValues(int httpHeaderOrdinal)
+    {
+        switch(httpHeaderOrdinal)
         {
-            if (ua!=null)
-            {
-                try
-                {
-                    LineNumberReader in = new LineNumberReader(new InputStreamReader(ua));
-                    String line = in.readLine();
-                    while (line!=null)
-                    {
-                        CACHE.add(line,index++);
-                        line = in.readLine();
-                    }
-                }
-                finally
-                {
-                    ua.close();
-                }
-            }
+            case HttpHeaders.CONNECTION_ORDINAL:
+            case HttpHeaders.TRANSFER_ENCODING_ORDINAL:
+            case HttpHeaders.CONTENT_ENCODING_ORDINAL:
+                return true;
         }
-        catch(Exception e)
-        {
-            Log.warn(e.toString());
-            Log.debug(e);
-        }
+        return false;
     }
 }
