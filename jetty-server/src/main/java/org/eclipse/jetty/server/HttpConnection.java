@@ -687,6 +687,8 @@ public class HttpConnection  extends AbstractConnection implements Connection
         @Override
         public void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
         {
+            uri=uri.asImmutableBuffer();
+            
             _host = false;
             _expect = false;
             _expect100Continue=false;
