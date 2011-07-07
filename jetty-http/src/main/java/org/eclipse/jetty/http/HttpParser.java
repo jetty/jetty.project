@@ -896,14 +896,14 @@ public class HttpParser implements Parser
         }
         
         // Is there unconsumed content in body buffer
-        if (_state>STATE_END && _buffer==_header  && _body!=null && _body.hasContent() && _header!=null && !_header.hasContent())
+        if (_state>STATE_END && _buffer==_header && _header!=null && !_header.hasContent() && _body!=null && _body.hasContent())
         {
             _buffer=_body;
             return _buffer.length();
         }
         
-        // Do we need a body buffer?
-        if (_buffer==_header && _state>STATE_END && (_forceContentBuffer || _header.space()==0) && (_body!=null||_buffers!=null))
+        // Shall we switch to a body buffer?
+        if (_buffer==_header && _state>STATE_END && _header.length()==0 && (_forceContentBuffer || (_contentLength-_contentPosition)>_header.capacity()) && (_body!=null||_buffers!=null))
         {
             if (_body==null)
                 _body=_buffers.getBuffer();
