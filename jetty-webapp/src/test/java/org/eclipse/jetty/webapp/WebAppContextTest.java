@@ -87,24 +87,6 @@ public class WebAppContextTest
         assertTrue(Arrays.equals(configs,wac.getConfigurations()));
     }
     
-    @Test
-    public void testRealPathDoesNotExist() throws Exception
-    {
-        Server server = new Server(0);
-        WebAppContext context = new WebAppContext(".", "/");
-        server.setHandler(context);
-        server.start();
-
-        // When
-        ServletContext ctx = context.getServletContext();
-
-        // Then
-        // This passes:
-        assertNotNull(ctx.getRealPath("/doesnotexist"));
-        // This fails:
-        assertNotNull(ctx.getRealPath("/doesnotexist/"));
-    }
-    
     /**
      * tests that the servlet context white list works
      * 

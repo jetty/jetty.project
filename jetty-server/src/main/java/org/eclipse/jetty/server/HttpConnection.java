@@ -16,7 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -46,7 +46,7 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.UncheckedIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.server.nio.NIOConnector;
 import org.eclipse.jetty.server.ssl.SslConnector;
@@ -547,6 +547,7 @@ public class HttpConnection  extends AbstractConnection implements Connection
         boolean error = false;
 
         String threadName=null;
+        Throwable async_exception=null;
         try
         {
             if (Log.isDebugEnabled())
@@ -600,12 +601,14 @@ public class HttpConnection  extends AbstractConnection implements Connection
                 }
                 catch (EofException e)
                 {
+                    async_exception=e;
                     Log.debug(e);
                     _request.setHandled(true);
                     error=true;
                 }
-                catch (RuntimeIOException e)
+                catch (UncheckedIOException e)
                 {
+                    async_exception=e;
                     Log.debug(e);
                     _request.setHandled(true);
                     error=true;
@@ -622,6 +625,8 @@ public class HttpConnection  extends AbstractConnection implements Connection
                     if (e instanceof ThreadDeath)
                         throw (ThreadDeath)e;
 
+                    async_exception=e;
+                    
                     error=true;
                     Log.warn(String.valueOf(_uri),e);
                     _request.setHandled(true);
@@ -640,7 +645,8 @@ public class HttpConnection  extends AbstractConnection implements Connection
 
             if (_request._async.isUncompleted())
             {
-                _request._async.doComplete();
+                
+                _request._async.doComplete(async_exception);
 
                 if (_expect100Continue)
                 {

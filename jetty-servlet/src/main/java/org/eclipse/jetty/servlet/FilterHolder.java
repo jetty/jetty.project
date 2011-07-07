@@ -19,12 +19,13 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.eclipse.jetty.server.DispatcherType;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
-import org.eclipse.jetty.servlet.api.FilterRegistration;
+import javax.servlet.FilterRegistration;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.servlet.Holder.Source;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
@@ -44,14 +45,24 @@ public class FilterHolder extends Holder<Filter>
      */
     public FilterHolder()
     {
+        super (Source.EMBEDDED);
     }   
  
     
     /* ---------------------------------------------------------------- */
     /** Constructor 
      */
+    public FilterHolder(Holder.Source source)
+    {
+        super (source);
+    }   
+    
+    /* ---------------------------------------------------------------- */
+    /** Constructor 
+     */
     public FilterHolder(Class<? extends Filter> filter)
     {
+        super (Source.EMBEDDED);
         setHeldClass(filter);
     }
 
@@ -60,6 +71,7 @@ public class FilterHolder extends Holder<Filter>
      */
     public FilterHolder(Filter filter)
     {
+        super (Source.EMBEDDED);
         setFilter(filter);
     }
     

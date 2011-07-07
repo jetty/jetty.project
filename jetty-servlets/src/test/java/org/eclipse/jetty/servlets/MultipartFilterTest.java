@@ -19,7 +19,13 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.URL;
+import java.util.EnumSet;
+import java.util.Enumeration;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -52,7 +58,8 @@ public class MultipartFilterTest
         tester.setContextPath("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
         tester.addServlet(DumpServlet.class, "/");
-        FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*",FilterMapping.DEFAULT);
+        tester.setAttribute("javax.servlet.context.tempdir", _dir);
+        FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
         tester.start();
     }

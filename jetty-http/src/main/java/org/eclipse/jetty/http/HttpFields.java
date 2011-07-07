@@ -18,10 +18,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -313,6 +315,23 @@ public class HttpFields
     
     /* -------------------------------------------------------------- */
     /**
+     * Get Collection of header names. 
+     */
+    public Collection<String> getFieldNamesCollection()
+    {
+        final List<String> list = new ArrayList<String>(_fields.size());
+        final int revision=_revision;
+
+	for (Field f : _fields)
+	{
+	    if (f!=null && f._prev==null && f._revision==revision)
+	        list.add(BufferUtil.to8859_1_String(f._name));
+	}
+	return list;
+    }
+    
+    /* -------------------------------------------------------------- */
+    /**
      * Get enumeration of header _names. Returns an enumeration of strings representing the header
      * _names for this request.
      */
@@ -440,6 +459,32 @@ public class HttpFields
         if (field != null && field._revision == _revision) 
             return field._value;
         return null;
+    }
+
+
+    /* -------------------------------------------------------------- */
+    /**
+     * Get multi headers
+     * 
+     * @return Enumeration of the values, or null if no such header.
+     * @param name the case-insensitive field name
+     */
+    public Collection<String> getValuesCollection(String name)
+    {
+        Field field = getField(name);
+	if (field==null)
+	    return null;
+
+        final int revision=_revision;
+        final List<String> list = new ArrayList<String>();
+
+	while(field!=null)
+	{
+	    if (field._revision==revision)
+	        list.add(field.getValue());
+	    field=field._next;
+	}
+	return list;
     }
 
     /* -------------------------------------------------------------- */
@@ -1532,5 +1577,4 @@ public class HttpFields
             return ("[" + (_prev == null ? "" : "<-") + getName() + "="+_revision+"=" + _value + (_next == null ? "" : "->") + "]");
         }
     }
-
 }

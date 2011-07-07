@@ -311,7 +311,14 @@ public class MetaData
                 int j = fullname.lastIndexOf("/", i);
                 orderedLibs.add(fullname.substring(j+1,i+4));
             }
-            context.setAttribute(ORDERED_LIBS, orderedLibs);
+            context.setAttribute(ServletContext.ORDERED_LIBS, orderedLibs);
+        }
+
+        // set the webxml version
+        if (_webXmlRoot != null)
+        {
+            context.getServletContext().setEffectiveMajorVersion(_webXmlRoot.getMajorVersion());
+            context.getServletContext().setEffectiveMinorVersion(_webXmlRoot.getMinorVersion());
         }
 
         for (DescriptorProcessor p:_descriptorProcessors)

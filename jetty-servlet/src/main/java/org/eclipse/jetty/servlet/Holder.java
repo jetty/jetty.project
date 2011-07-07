@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.servlet.api.Registration;
+import javax.servlet.Registration;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
@@ -39,6 +39,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Holder<T> extends AbstractLifeCycle implements Dumpable
 {
+    public enum Source { EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION };
+    final private Source _source;
     protected transient Class<? extends T> _class;
     protected final Map<String,String> _initParams=new HashMap<String,String>(3);
     protected String _className;
@@ -51,10 +53,16 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     protected ServletHandler _servletHandler;
 
     /* ---------------------------------------------------------------- */
-    protected Holder()
+    protected Holder(Source source)
     {
+        _source=source;
     }
-
+    
+    public Source getSource()
+    {
+        return _source;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return True if this holder was created for a specific instance.
@@ -331,6 +339,12 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         public boolean setInitParameter(String name, String value)
         {
             illegalStateIfContextStarted();
+            if (name == null) {
+                throw new IllegalArgumentException("init parameter name required");
+            }
+            if (value == null) {
+                throw new IllegalArgumentException("non-null value required for init parameter " + name);
+            }
             if (Holder.this.getInitParameter(name)!=null)
                 return false;
             Holder.this.setInitParameter(name,value);
@@ -341,20 +355,28 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         {
             illegalStateIfContextStarted();
             Set<String> clash=null;
-            for (String name : initParameters.keySet())
+            for (Map.Entry<String, String> entry : initParameters.entrySet())
             {
-                if (Holder.this.getInitParameter(name)!=null)
+                if (entry.getKey() == null) {
+                    throw new IllegalArgumentException("init parameter name required");
+                }
+                if (entry.getValue() == null) {
+                    throw new IllegalArgumentException("non-null value required for init parameter " + entry.getKey());
+                }
+                if (Holder.this.getInitParameter(entry.getKey())!=null)
                 {
                     if (clash==null)
                         clash=new HashSet<String>();
-                    clash.add(name);
+                    clash.add(entry.getKey());
                 }
             }
             if (clash!=null)
                 return clash;
-            Holder.this.setInitParameters(initParameters);
+            Holder.this.getInitParameters().putAll(initParameters);
             return Collections.emptySet();
-        }; 
+        }
+        
+        
     }
 }
 

@@ -25,13 +25,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import org.eclipse.jetty.servlet.api.ServletRegistration;
+import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletSecurityElement;
 import javax.servlet.SingleThreadModel;
 import javax.servlet.UnavailableException;
 import org.eclipse.jetty.security.IdentityService;
@@ -76,14 +77,24 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder()
     {
+        super (Source.EMBEDDED);
     }
     
+    
+    /* ---------------------------------------------------------------- */
+    /** Constructor .
+     */
+    public ServletHolder(Holder.Source creator)
+    {
+        super (creator);
+    }
     
     /* ---------------------------------------------------------------- */
     /** Constructor for existing servlet.
      */
     public ServletHolder(Servlet servlet)
     {
+        super (Source.EMBEDDED);
         setServlet(servlet);
     }
 
@@ -92,6 +103,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder(Class<? extends Servlet> servlet)
     {
+        super (Source.EMBEDDED);
         setHeldClass(servlet);
     }
 
@@ -575,7 +587,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     public class Registration extends HolderRegistration implements ServletRegistration.Dynamic
-    {         
+    {
+        protected MultipartConfigElement _multipartConfig;       
+        
         public Set<String> addMapping(String... urlPatterns)
         {
             illegalStateIfContextStarted();
@@ -605,22 +619,27 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             ServletMapping[] mappings =_servletHandler.getServletMappings();
             List<String> patterns=new ArrayList<String>();
-            for (ServletMapping mapping : mappings)
+            if (mappings!=null)
             {
-                if (!mapping.getServletName().equals(getName()))
-                    continue;
-                String[] specs=mapping.getPathSpecs();
-                if (specs!=null && specs.length>0)
-                    patterns.addAll(Arrays.asList(specs));
+                for (ServletMapping mapping : mappings)
+                {
+                    if (!mapping.getServletName().equals(getName()))
+                        continue;
+                    String[] specs=mapping.getPathSpecs();
+                    if (specs!=null && specs.length>0)
+                        patterns.addAll(Arrays.asList(specs));
+                }
             }
             return patterns;
         }
 
+        @Override
         public String getRunAsRole() 
         {
             return _runAsRole;
         }
 
+        @Override
         public void setLoadOnStartup(int loadOnStartup)
         {
             illegalStateIfContextStarted();
@@ -631,17 +650,35 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             return ServletHolder.this.getInitOrder();
         }
- 
+
+        @Override
+        public void setMultipartConfig(MultipartConfigElement element) 
+        {
+            _multipartConfig = element;
+        }
+        
+        public MultipartConfigElement getMultipartConfig()
+        {
+            return _multipartConfig;
+        }
+
+        @Override
         public void setRunAsRole(String role) 
         {
             _runAsRole = role;
+        }
+
+        @Override
+        public Set<String> setServletSecurity(ServletSecurityElement securityElement) 
+        {
+            return _servletHandler.setServletSecurity(this, securityElement);
         }
     }
     
     public ServletRegistration.Dynamic getRegistration()
     {
         if (_registration == null)
-            _registration =  new Registration();
+            _registration = new Registration();
         return _registration;
     }
     
@@ -758,8 +795,3 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 }
-
-
-
-
-

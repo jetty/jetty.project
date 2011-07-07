@@ -580,7 +580,7 @@ public class ProxyServlet implements Servlet
      * </ul>
      * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context
      * and the Prefix was /foo, then the request would be proxied to http://host:80/context/bar
-     *
+     * 
      */
     public static class Transparent extends ProxyServlet
     {

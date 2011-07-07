@@ -1,0 +1,22 @@
+<web-fragment>
+	<servlet>
+		<display-name>SerialRestServlet</display-name>
+		<servlet-name>SerialRestServlet</servlet-name>
+		<servlet-class>org.eclipse.jetty.example.asyncrest.SerialRestServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>SerialRestServlet</servlet-name>
+		<url-pattern>/testSerial</url-pattern>
+	</servlet-mapping>
+	
+	<servlet>
+		<display-name>AsyncRestServlet</display-name>
+		<servlet-name>AsyncRestServlet</servlet-name>
+		<servlet-class>org.eclipse.jetty.example.asyncrest.AsyncRestServlet</servlet-class>
+		<async-supported>true</async-supported>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>AsyncRestServlet</servlet-name>
+		<url-pattern>/testAsync</url-pattern>
+	</servlet-mapping>	
+</web-fragment>

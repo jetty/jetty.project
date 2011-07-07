@@ -26,8 +26,6 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractBuffer implements Buffer
 {
-    private final static boolean __boundsChecking = Boolean.getBoolean("org.eclipse.jetty.io.AbstractBuffer.boundsChecking");
-    
     protected final static String 
     __IMMUTABLE = "IMMUTABLE", 
     __READONLY = "READONLY",
@@ -497,43 +495,37 @@ public abstract class AbstractBuffer implements Buffer
 
     public void setGetIndex(int getIndex)
     {
-        /* bounds checking */
-        if (__boundsChecking)
-        {
-            if (isImmutable()) 
-                throw new IllegalStateException(__IMMUTABLE);
-            if (getIndex < 0)
-                throw new IllegalArgumentException("getIndex<0: " + getIndex + "<0");
-            if (getIndex > putIndex())
-                throw new IllegalArgumentException("getIndex>putIndex: " + getIndex + ">" + putIndex());
-        }
-        
+        /* bounds checking
+        if (isImmutable()) 
+            throw new IllegalStateException(__IMMUTABLE);
+        if (getIndex < 0)
+            throw new IllegalArgumentException("getIndex<0: " + getIndex + "<0");
+        if (getIndex > putIndex())
+            throw new IllegalArgumentException("getIndex>putIndex: " + getIndex + ">" + putIndex());
+         */
         _get = getIndex;
         _hash=0;
     }
 
     public void setMarkIndex(int index)
     {
-        
+        /*
         if (index>=0 && isImmutable()) 
             throw new IllegalStateException(__IMMUTABLE);
-        
+        */
         _mark = index;
     }
 
     public void setPutIndex(int putIndex)
     {
-        if (__boundsChecking)
-        {
-            /* bounds checking */
-            if (isImmutable()) 
-                throw new IllegalStateException(__IMMUTABLE);
-            if (putIndex > capacity())
+        /* bounds checking
+        if (isImmutable()) 
+            throw new IllegalStateException(__IMMUTABLE);
+        if (putIndex > capacity())
                 throw new IllegalArgumentException("putIndex>capacity: " + putIndex + ">" + capacity());
-            if (getIndex() > putIndex)
+        if (getIndex() > putIndex)
                 throw new IllegalArgumentException("getIndex>putIndex: " + getIndex() + ">" + putIndex);
-        }
-
+         */
         _put = putIndex;
         _hash=0;
     }

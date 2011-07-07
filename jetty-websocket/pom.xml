@@ -2,7 +2,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>7.4.3-SNAPSHOT</version>
+    <version>8.0.0.RC0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
@@ -23,9 +23,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>javax.servlet</groupId>
-    	<artifactId>servlet-api</artifactId>
-    	<type>jar</type>
+      <groupId>${servlet.spec.groupId}</groupId>
+      <artifactId>${servlet.spec.artifactId}</artifactId>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   <build>

@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import org.eclipse.jetty.server.DispatcherType;
+import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.server.Handler;
@@ -169,8 +169,6 @@ public class FilterMapping implements Dumpable
                 _dispatches|=ASYNC;
         }
     }
-    
-    
     
     /* ------------------------------------------------------------ */
     /**

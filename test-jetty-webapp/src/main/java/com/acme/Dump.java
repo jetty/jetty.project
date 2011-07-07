@@ -103,6 +103,18 @@ public class Dump extends HttpServlet
     @Override
     public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
     {
+        if (!request.isUserInRole("user")) 
+        {
+            try 
+            {
+                request.login("user", "password");
+            } 
+            catch(ServletException se) 
+            {
+            	se.printStackTrace();
+            }
+        }
+        
         // Handle a dump of data
         final String data= request.getParameter("data");
         final String chars= request.getParameter("chars");

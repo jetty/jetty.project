@@ -36,7 +36,7 @@ public class ContinuationSupport
     static
     {
         boolean servlet3Support=false;
-        Constructor<? extends Continuation>s3cc=null;
+        Constructor<?>s3cc=null;
         try
         {
             boolean servlet3=ServletRequest.class.getMethod("startAsync")!=null;
@@ -52,11 +52,11 @@ public class ContinuationSupport
         finally
         {
             __servlet3=servlet3Support;
-            __newServlet3Continuation=s3cc;
+            __newServlet3Continuation=(Constructor<? extends Continuation>)s3cc;
         }
         
         boolean jetty6Support=false;
-        Constructor<? extends Continuation>j6cc=null;
+        Constructor<?>j6cc=null;
         try
         {
             Class<?> jetty6ContinuationClass = ContinuationSupport.class.getClassLoader().loadClass("org.mortbay.util.ajax.Continuation");
@@ -73,7 +73,7 @@ public class ContinuationSupport
         finally
         {
             __jetty6=jetty6Support;
-            __newJetty6Continuation=j6cc;
+            __newJetty6Continuation=(Constructor<? extends Continuation>)j6cc;
         }
         
         Class<?> waiting=null;

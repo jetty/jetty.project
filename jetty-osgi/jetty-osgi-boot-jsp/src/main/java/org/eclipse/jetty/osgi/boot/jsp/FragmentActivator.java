@@ -36,6 +36,7 @@ public class FragmentActivator implements BundleActivator
      * 
      */
     public void start(BundleContext context) throws Exception {
+    	System.setProperty("org.apache.jasper.compiler.disablejsr199", Boolean.TRUE.toString());
         WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS.add(new WebappRegistrationCustomizerImpl());
         WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS.add(new PluggableWebAppRegistrationCustomizerImpl());
     }

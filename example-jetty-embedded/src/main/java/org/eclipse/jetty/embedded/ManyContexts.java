@@ -69,5 +69,4 @@ public class ManyContexts
         System.err.println(server.dump());
         server.join();
     }
-
 }

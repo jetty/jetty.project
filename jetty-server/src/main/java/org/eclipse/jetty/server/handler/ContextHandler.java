@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.AccessController;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,7 +31,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.EnumSet;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
@@ -39,9 +42,16 @@ import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.SessionTrackingMode;
+import javax.servlet.Filter;
+import javax.servlet.FilterRegistration;
+import javax.servlet.FilterRegistration.Dynamic;
+import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -49,7 +59,6 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpConnection;
@@ -488,6 +497,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     {
         setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(),listener,EventListener.class));
     }
+    
+   
+    /**
+     * Apply any necessary restrictions on a programmatically added
+     * listener.
+     * 
+     * Superclasses should implement.
+     * 
+     * @param listener
+     */
+    public void restrictEventListener (EventListener listener)
+    {
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -637,13 +659,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             ServletContextEvent event = new ServletContextEvent(_scontext);
             for (int i = 0; i < LazyList.size(_contextListeners); i++)
             {
-                ((ServletContextListener)LazyList.get(_contextListeners,i)).contextInitialized(event);
+                callContextInitialized(((ServletContextListener)LazyList.get(_contextListeners, i)), event);
             }
         }
+    }
 
+    /* ------------------------------------------------------------ */
+    public void callContextInitialized (ServletContextListener l, ServletContextEvent e)
+    {
+        l.contextInitialized(e);
         Log.info("started {}",this);
     }
 
+    /* ------------------------------------------------------------ */
+    public void callContextDestroyed (ServletContextListener l, ServletContextEvent e)
+    {
+        l.contextDestroyed(e);
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
@@ -1328,6 +1361,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         _localeEncodingMap.put(locale,encoding);
     }
 
+    /* ------------------------------------------------------------ */
     public String getLocaleEncoding(String locale)
     {
         if (_localeEncodingMap == null)
@@ -1471,6 +1505,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public class Context implements ServletContext
     {
+        protected int _majorVersion = 3;
+        protected int _minorVersion = 0;
+        protected boolean _enabled = true; //whether or not the dynamic API is enabled for callers
+
         /* ------------------------------------------------------------ */
         protected Context()
         {
@@ -1487,6 +1525,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getContext(java.lang.String)
          */
+        @Override
         public ServletContext getContext(String uripath)
         {
             List<ContextHandler> contexts = new ArrayList<ContextHandler>();
@@ -1572,15 +1611,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getMajorVersion()
          */
+        @Override
         public int getMajorVersion()
         {
-            return 2;
+            return 3;
         }
+      
 
         /* ------------------------------------------------------------ */
         /*
          * @see javax.servlet.ServletContext#getMimeType(java.lang.String)
          */
+        @Override
         public String getMimeType(String file)
         {
             if (_mimeTypes == null)
@@ -1595,15 +1637,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getMinorVersion()
          */
+        @Override
         public int getMinorVersion()
         {
-            return 5;
+            return 0;
         }
 
         /* ------------------------------------------------------------ */
         /*
          * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
          */
+        @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {
             return null;
@@ -1613,6 +1657,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getRequestDispatcher(java.lang.String)
          */
+        @Override
         public RequestDispatcher getRequestDispatcher(String uriInContext)
         {
             if (uriInContext == null)
@@ -1649,6 +1694,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getRealPath(java.lang.String)
          */
+        @Override
         public String getRealPath(String path)
         {
             if (path == null)
@@ -1677,6 +1723,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public URL getResource(String path) throws MalformedURLException
         {
             Resource resource = ContextHandler.this.getResource(path);
@@ -1689,6 +1736,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getResourceAsStream(java.lang.String)
          */
+        @Override
         public InputStream getResourceAsStream(String path)
         {
             try
@@ -1709,6 +1757,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getResourcePaths(java.lang.String)
          */
+        @Override
         public Set getResourcePaths(String path)
         {
             return ContextHandler.this.getResourcePaths(path);
@@ -1718,6 +1767,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getServerInfo()
          */
+        @Override
         public String getServerInfo()
         {
             return "jetty/" + Server.getVersion();
@@ -1727,6 +1777,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getServlet(java.lang.String)
          */
+        @Override
+        @Deprecated
         public Servlet getServlet(String name) throws ServletException
         {
             return null;
@@ -1737,6 +1789,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          * @see javax.servlet.ServletContext#getServletNames()
          */
         @SuppressWarnings("unchecked")
+        @Override
+        @Deprecated
         public Enumeration getServletNames()
         {
             return Collections.enumeration(Collections.EMPTY_LIST);
@@ -1747,6 +1801,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          * @see javax.servlet.ServletContext#getServlets()
          */
         @SuppressWarnings("unchecked")
+        @Override
+        @Deprecated
         public Enumeration getServlets()
         {
             return Collections.enumeration(Collections.EMPTY_LIST);
@@ -1756,6 +1812,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#log(java.lang.Exception, java.lang.String)
          */
+        @Override
         public void log(Exception exception, String msg)
         {
             _logger.warn(msg,exception);
@@ -1765,6 +1822,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#log(java.lang.String)
          */
+        @Override
         public void log(String msg)
         {
             _logger.info(msg);
@@ -1774,6 +1832,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#log(java.lang.String, java.lang.Throwable)
          */
+        @Override
         public void log(String message, Throwable throwable)
         {
             _logger.warn(message,throwable);
@@ -1783,6 +1842,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getInitParameter(java.lang.String)
          */
+        @Override
         public String getInitParameter(String name)
         {
             return ContextHandler.this.getInitParameter(name);
@@ -1793,6 +1853,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          * @see javax.servlet.ServletContext#getInitParameterNames()
          */
         @SuppressWarnings("unchecked")
+        @Override
         public Enumeration getInitParameterNames()
         {
             return ContextHandler.this.getInitParameterNames();
@@ -1802,6 +1863,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getAttribute(java.lang.String)
          */
+        @Override
         public synchronized Object getAttribute(String name)
         {
             Object o = ContextHandler.this.getAttribute(name);
@@ -1815,6 +1877,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
          * @see javax.servlet.ServletContext#getAttributeNames()
          */
         @SuppressWarnings("unchecked")
+        @Override
         public synchronized Enumeration getAttributeNames()
         {
             HashSet<String> set = new HashSet<String>();
@@ -1835,6 +1898,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
          */
+        @Override
         public synchronized void setAttribute(String name, Object value)
         {
             checkManagedAttribute(name,value);
@@ -1867,6 +1931,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
          */
+        @Override
         public synchronized void removeAttribute(String name)
         {
             checkManagedAttribute(name,null);
@@ -1896,6 +1961,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         /*
          * @see javax.servlet.ServletContext#getServletContextName()
          */
+        @Override
         public String getServletContextName()
         {
             String name = ContextHandler.this.getDisplayName();
@@ -1905,6 +1971,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String getContextPath()
         {
             if ((_contextPath != null) && _contextPath.equals(URIUtil.SLASH))
@@ -1921,6 +1988,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public boolean setInitParameter(String name, String value)
         {
             if (ContextHandler.this.getInitParameter(name) != null)
@@ -1929,6 +1997,236 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             return true;
         }
 
+        /* ------------------------------------------------------------ */
+        final private static String __unimplmented="Unimplemented - use org.eclipse.jetty.servlet.ServletContextHandler";
+
+        @Override
+        public Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public Dynamic addFilter(String filterName, Filter filter)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public Dynamic addFilter(String filterName, String className)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public <T extends Filter> T createFilter(Class<T> c) throws ServletException
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public FilterRegistration getFilterRegistration(String filterName)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public Map<String, ? extends FilterRegistration> getFilterRegistrations()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public ServletRegistration getServletRegistration(String servletName)
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public Map<String, ? extends ServletRegistration> getServletRegistrations()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public SessionCookieConfig getSessionCookieConfig()
+        {
+            Log.warn(__unimplmented);
+            return null;
+        }
+
+        @Override
+        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
+        {
+            Log.warn(__unimplmented);
+        }
+
+        @Override
+        public void addListener(String className)
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            
+            try
+            {
+                Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):_classLoader.loadClass(className);
+                addListener(clazz);
+            }
+            catch (ClassNotFoundException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        @Override
+        public <T extends EventListener> void addListener(T t)
+        {            
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            ContextHandler.this.addEventListener(t);
+        }
+
+        @Override
+        public void addListener(Class<? extends EventListener> listenerClass)
+        {            
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
+            try
+            {
+                EventListener e = createListener(listenerClass);
+                ContextHandler.this.addEventListener(e);
+                ContextHandler.this.restrictEventListener(e);
+            }
+            catch (ServletException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        @Override
+        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
+        {
+            try
+            {
+                return clazz.newInstance();
+            }
+            catch (InstantiationException e)
+            {
+                throw new ServletException(e);
+            }
+            catch (IllegalAccessException e)
+            {
+                throw new ServletException(e);
+            }
+        }
+
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            AccessController.checkPermission(new RuntimePermission("getClassLoader"));
+            return _classLoader;
+        }
+
+        @Override
+        public int getEffectiveMajorVersion()
+        {
+            return _majorVersion;
+        }
+
+        @Override
+        public int getEffectiveMinorVersion()
+        {
+            return _minorVersion;
+        }
+
+        public void setEffectiveMajorVersion (int v)
+        {
+            _majorVersion = v;
+        }
+        
+        public void setEffectiveMinorVersion (int v)
+        {
+            _minorVersion = v;
+        }
+        
+        @Override
+        public JspConfigDescriptor getJspConfigDescriptor()
+        {
+            return null;
+        }
+
+        @Override
+        public void declareRoles(String... roleNames)
+        {
+            if (!isStarting())
+                throw new IllegalStateException ();
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            
+            // TODO Auto-generated method stub
+            
+        }
+
+        public void setEnabled(boolean enabled)
+        {
+            _enabled = enabled;
+        }
+
+        public boolean isEnabled()
+        {
+            return _enabled;
+        }
     }
 
     private static class CLDump implements Dumpable

@@ -25,7 +25,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * 
  * JettyWebConfiguration.
  * 
- * Looks for Xmlconfiguration files in WEB-INF.  Searches in order for the first of jettyX-web.xml, jetty-web.xml or web-jetty.xml
+ * Looks for Xmlconfiguration files in WEB-INF.  Searches in order for the first of jetty6-web.xml, jetty-web.xml or web-jetty.xml
  *
  * 
  *
@@ -64,7 +64,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
         if(web_inf!=null&&web_inf.isDirectory())
         {
             // do jetty.xml file
-            Resource jetty=web_inf.addPath("jetty7-web.xml");
+            Resource jetty=web_inf.addPath("jetty8-web.xml");
             if(!jetty.exists())
                 jetty=web_inf.addPath(JETTY_WEB_XML);
             if(!jetty.exists())
@@ -114,6 +114,13 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     private void setupXmlConfiguration(XmlConfiguration jetty_config, Resource web_inf)
     {
     	Map<String,String> props = jetty_config.getProperties();
+    	if (props == null)
+    	{
+    		props = new HashMap<String, String>();
+    		jetty_config.setProperties(props);
+    	}
+    	
+    	// TODO - should this be an id rather than a property?
     	props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
     }
     

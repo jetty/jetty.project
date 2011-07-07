@@ -1,3 +1,10 @@
+jetty-8.0.0.M3
+ + 324505 Implement API login
+ + 335500 request.getParts() throws a NullPointerException
+ + 343472 isUserInRole does not prevent subsequent login call.
+ + 346180 jsp-2.2 support
+ + Updated to jetty-7.4.2.v20110526
+
 jetty-7.4.2.v20110526
  + 334443 Improve the ability to specify extra class paths using the Jetty Maven Plugin
  + 336220 tmp directory is not set if you reload a webapp with jetty-maven-plugin
@@ -95,6 +102,20 @@ jetty-7.4.0.RC0
  + Ensure generated fragment names are unique
  + Added extra session removal test
 
+jetty-8.0.0.M2 16 November 2010
+ + 320073 Reconsile configuration mechanism
+ + 321068 JSF2 fails to initialize
+ + 324493 Registration init parameter handling null check, setInitParameters additive
+ + 324505 Request.login method must throw ServletException if it cant login
+ + 324872 allow disabling listener restriction from using *Registration interfaces
+ + 327416 Change meaning of @HandlesTypes in line with latest interpretation by JSR315
+ + 327489 Change meaning of @MultipartConfig to match servlet spec 3.0 maintenance release 3.0a
+ + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
+ + 330188 Reject web-fragment.xml with same <name> as another already loaded one
+ + 330208 Support new wording on servlet-mapping and filter-mapping merging from servlet3.0a
+ + 330292 request.getParts() returns only one part when the name is the same
+ + Update to jetty-7.2.1.v20101111
+
 jetty-7.3.1.v20110307 7 March 2011
  + 316382 Support a more strict SSL option with certificates
  + 333481 Handle UCS-4 codepoints in decode and encode
@@ -118,9 +139,7 @@ jetty-7.3.1.v20110307 7 March 2011
  + 338068 Leaking ConstraintMappings on redeploy
  + 338092 ProxyServlet leaks memory
  + 338607 Removed managed attributes when context is stopped
- + 338880 Fixed failing buffer range checks
- + 338920 Handle non existent real path directories
- + 338961 AJP packet size
+ + 338819 Externally control Deployment Manager application lifecycle
  + JETTY-1304 Allow quoted boundaries in Multipart filter
  + JETTY-1317 More elegent handling of bad URIs in requests
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
@@ -291,7 +310,6 @@ jetty-7.2.0.RC0 1 October 2010
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1250 Parallel start of HandlerCollection
- + JETTY-1252 Handle more multipart transfer encodings
  + JETTY-1256 annotation and jta jars from Orbit
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating session
  + JETTY-1261 errant listener usage in StandardDescriptorProcessor
@@ -316,6 +334,13 @@ jetty-7.1.6.v20100715
  + JETTY-1248 fix parsing of bad multiparts
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1251 Replace then close selector for JVM bugs
+
+jetty-8.0.0.M1 12 July 2010
+ + 306350 Ensure jars excluded by ordering are not scanned for annotations
+ + JETTY-1224 Change jetty-8 merge rules for fragment descriptors and annotations
+ + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in fragments
+ + Ensure empty <absolute-ordering> implies exclusion of all fragments
+ + Ensure servlet-api jar class inheritance hierarchy is scanned
 
 jetty-7.1.5.v20100705
  + Update ecj to 3.6 Helios release drop
@@ -473,6 +498,9 @@ jetty-7.1.0.RC0 27 April 2010
  + Fix jetty-plus.xml reference to addLifeCycle
  + JETTY-1200 SSL NIO Endpoint wraps non NIO buffers
  + JETTY-1202 Use platform default algorithm for SecureRandom
+ + Merged 7.0.2.v20100331
+ + Add NPE protection to ContainerInitializerConfiguration
+ + Temporarily remove jetty-osgi module to clarify jsp version compatibility
  + JETTY-1212 handle long content lengths
  + JETTY-1214 avoid ISE when scavenging invalid session
  + JETTY-903 Stop both caches
@@ -610,6 +638,13 @@ jetty-7.0.2.RC0
  + Updated Servlet3Continuation to final 3.0.20100224
  + 305997 Coalesce buffers in ChannelEndPoint.flush()
  + 306028 Enable TCP_NODELAY by default in client connectors
+
+
+jetty-8.0.0.M0 28 February 2010
+ + Updated servlet 3.0 spec 20100224
+ + Merged 7.0.1.v20091116
+ + Updated to cometd 1.0.1
+ 
 
 jetty-7.0.1.v20091125 25 November 2009
  + 274251 DefaultServlet supports exact match mode.

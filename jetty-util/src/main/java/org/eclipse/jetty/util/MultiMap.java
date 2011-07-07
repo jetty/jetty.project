@@ -82,7 +82,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param name The entry key. 
      * @return Unmodifieable List of values.
      */
-    public List<Object> getValues(Object name)
+    public List getValues(Object name)
     {
         return LazyList.getList(_map.get(name),true);
     }

@@ -2,11 +2,11 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.4.3-SNAPSHOT</version>
+    <version>8.0.0.RC0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>example-jetty-embedded</artifactId>
-  <name>Example :: Jetty Embedded</name>
+  <name>Example :: Embedded Jetty Examples</name>
   <description>Jetty Embedded Examples</description>
   <build>
     <plugins>

@@ -38,6 +38,7 @@ public class HttpOutput extends ServletOutputStream
 {
     protected final AbstractGenerator _generator;
     protected final long _maxIdleTime;
+    protected final ByteArrayBuffer _buf = new ByteArrayBuffer(AbstractGenerator.NO_BYTES);
     private boolean _closed;
     
     // These are held here for reuse by Writer

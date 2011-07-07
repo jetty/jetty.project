@@ -16,9 +16,11 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -26,15 +28,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
-import org.eclipse.jetty.server.DispatcherType;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletSecurityElement;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -43,7 +47,7 @@ import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.UncheckedIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
@@ -88,6 +92,7 @@ public class ServletHandler extends ScopedHandler
     private int _maxFilterChainsCacheSize=512;
     private boolean _startWithUnavailable=true;
     private IdentityService _identityService;
+    private SecurityHandler _securityHandler;
     
     private ServletHolder[] _servlets=new ServletHolder[0];
     private ServletMapping[] _servletMappings;
@@ -146,9 +151,9 @@ public class ServletHandler extends ScopedHandler
 
         if (_contextHandler!=null)
         {
-            SecurityHandler security_handler = (SecurityHandler)_contextHandler.getChildHandlerByClass(SecurityHandler.class);
-            if (security_handler!=null)
-                _identityService=security_handler.getIdentityService();
+            _securityHandler = (SecurityHandler)_contextHandler.getChildHandlerByClass(SecurityHandler.class);
+            if (_securityHandler!=null)
+                _identityService=_securityHandler.getIdentityService();
         }
         
         updateNameMappings();
@@ -396,6 +401,9 @@ public class ServletHandler extends ScopedHandler
             {
                 old_scope=baseRequest.getUserIdentityScope();
                 baseRequest.setUserIdentityScope(servlet_holder);
+                
+                //if this servlet supports multipart-mime, configure the request with it
+                baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, ((ServletHolder.Registration)servlet_holder.getRegistration()).getMultipartConfig());
 
                 // start manual inline of nextScope(target,baseRequest,request,response);
                 if (never())
@@ -482,7 +490,7 @@ public class ServletHandler extends ScopedHandler
         {
             throw e;
         }
-        catch(RuntimeIOException e)
+        catch(UncheckedIOException e)
         {
             throw e;
         }
@@ -515,10 +523,10 @@ public class ServletHandler extends ScopedHandler
                 if (cause!=null)
                     th=cause;
             }
-            else if (th instanceof RuntimeIOException)
+            else if (th instanceof UncheckedIOException)
             {
                 Log.debug(th);
-                Throwable cause=(IOException)((RuntimeIOException)th).getCause();
+                Throwable cause=(IOException)((UncheckedIOException)th).getCause();
                 if (cause!=null)
                     th=cause;
             }
@@ -526,8 +534,8 @@ public class ServletHandler extends ScopedHandler
             // handle or log exception
             if (th instanceof HttpException)
                 throw (HttpException)th;
-            else if (th instanceof RuntimeIOException)
-                throw (RuntimeIOException)th;
+            else if (th instanceof UncheckedIOException)
+                throw (UncheckedIOException)th;
             else if (th instanceof EofException)
                 throw (EofException)th;
 
@@ -787,12 +795,13 @@ public class ServletHandler extends ScopedHandler
     /**
      * see also newServletHolder(Class)
      */
-    public ServletHolder newServletHolder()
+    public ServletHolder newServletHolder(Holder.Source source)
     {
-        return new ServletHolder();
+        return new ServletHolder(source);
     }
     
     /* ------------------------------------------------------------ */
+    /** Convenience method to add a servlet Holder.
     public ServletHolder newServletHolder(Class<? extends Servlet> servlet)
     {
         return new ServletHolder(servlet);
@@ -817,7 +826,7 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletHolder addServletWithMapping (Class<? extends Servlet> servlet,String pathSpec)
     {
-        ServletHolder holder = newServletHolder();
+        ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(servlet);
         setServlets((ServletHolder[])LazyList.addToArray(getServlets(), holder, ServletHolder.class));
         addServletWithMapping(holder,pathSpec);
@@ -872,22 +881,22 @@ public class ServletHandler extends ScopedHandler
     {
         setServletMappings((ServletMapping[])LazyList.addToArray(getServletMappings(), mapping, ServletMapping.class));
     }
-    
-    /* ------------------------------------------------------------ */
-    public FilterHolder newFilterHolder(Class<? extends Filter> filter)
-    {
-        return new FilterHolder(filter);
+
+    public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) {
+        if (_contextHandler != null) {
+            return _contextHandler.setServletSecurity(registration, servletSecurityElement);
+        }
+        return Collections.emptySet();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** 
      * @see #newFilterHolder(Class)
      */
-    public FilterHolder newFilterHolder()
+    public FilterHolder newFilterHolder(Holder.Source source)
     {
-        return new FilterHolder();
+        return new FilterHolder(source);
     }
-
 
     /* ------------------------------------------------------------ */
     public FilterHolder getFilter(String name)
@@ -905,7 +914,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
-        FilterHolder holder = newFilterHolder();
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
         
@@ -921,7 +930,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
-        FilterHolder holder = newFilterHolder();
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
         
@@ -964,7 +973,6 @@ public class ServletHandler extends ScopedHandler
             
     }
     
-    
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter.
      * @param filter  class of filter to create
@@ -974,7 +982,8 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,int dispatches)
     {
-        FilterHolder holder = newFilterHolder(filter);
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
+        holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
         
         return holder;
@@ -1032,14 +1041,13 @@ public class ServletHandler extends ScopedHandler
             
     }
     
-    
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter with a mapping
      * @param className
      * @param pathSpec
      * @param dispatches
      * @return the filter holder created
-     * @deprecated use {@link #addFilterWithMapping(Class, String, int)} instead
+     * @deprecated use {@link #addFilterWithMapping(Class, String, EnumSet<DispatcherType>)} instead
      */
     public FilterHolder addFilter (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
@@ -1286,7 +1294,6 @@ public class ServletHandler extends ScopedHandler
         updateNameMappings();
         invalidateChainsCache();
     }
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

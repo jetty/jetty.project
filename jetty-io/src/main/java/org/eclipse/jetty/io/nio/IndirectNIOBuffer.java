@@ -37,10 +37,8 @@ public class IndirectNIOBuffer extends ByteArrayBuffer implements NIOBuffer
         if (buffer.isDirect())
             throw new IllegalArgumentException();
         _buf = buffer;
-        _get=buffer.position();
-        _put=buffer.limit();
-        buffer.position(0);
-        buffer.limit(buffer.capacity());
+        setGetIndex(buffer.position());
+        setPutIndex(buffer.limit());
         _bytes=_buf.array();
     }
     

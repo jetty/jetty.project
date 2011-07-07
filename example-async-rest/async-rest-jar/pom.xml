@@ -1,0 +1,24 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>example-async-rest</artifactId>
+    <version>8.0.0.RC0-SNAPSHOT</version>
+  </parent>  
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.example-async-rest</groupId>
+  <artifactId>example-async-rest-jar</artifactId>
+  <packaging>jar</packaging>
+  <name>Example Async Rest :: Jar</name>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+      <dependency>
+         <groupId>${servlet.spec.groupId}</groupId>
+         <artifactId>${servlet.spec.artifactId}</artifactId>
+         <scope>provided</scope>
+       </dependency>
+  </dependencies>
+</project>

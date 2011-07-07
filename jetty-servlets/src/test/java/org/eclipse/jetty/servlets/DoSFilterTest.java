@@ -32,7 +32,8 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     {
         public void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
         {
-            try {
+            try 
+            {
                 response.getWriter().append("DoSFilter: timeout");
                 super.closeConnection(request,response,thread);
             }

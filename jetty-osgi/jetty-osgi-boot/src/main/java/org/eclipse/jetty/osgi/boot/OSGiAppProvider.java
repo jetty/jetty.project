@@ -50,6 +50,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     private boolean _parentLoaderPriority = false;
     private String _defaultsDescriptor;
     private String _tldBundles;
+    private String[] _configurationClasses;
     
     /**
      * When a context file corresponds to a deployed bundle and is changed we
@@ -144,15 +145,20 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     public ContextHandler createContextHandler(App app) throws Exception
     {
         // return pre-created Context
-        if (app.getContextHandler() != null)
+        ContextHandler wah = app.getContextHandler();
+        if (wah == null)
         {
-            return app.getContextHandler();
+            // for some reason it was not defined when the App was constructed.
+            // we don't support this situation at this point.
+            // once the WebAppRegistrationHelper is refactored, the code
+            // that creates the ContextHandler will actually be here.
+            throw new IllegalStateException("The App must be passed the " + "instance of the ContextHandler when it is construsted");
         }
-        // for some reason it was not defined when the App was constructed.
-        // we don't support this situation at this point.
-        // once the WebAppRegistrationHelper is refactored, the code
-        // that creates the ContextHandler will actually be here.
-        throw new IllegalStateException("The App must be passed the " + "instance of the ContextHandler when it is construsted");
+        if (_configurationClasses != null && wah instanceof WebAppContext) 
+        {
+            ((WebAppContext)wah).setConfigurationClasses(_configurationClasses);
+        }
+        return app.getContextHandler();
     }
 
     /**
@@ -187,7 +193,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         // TODO apply configuration specific to this provider
     	if (context instanceof WebAppContext)
     	{
-    		((WebAppContext)context).setExtractWAR(isExtract());
+           ((WebAppContext)context).setExtractWAR(isExtract());
     	}
 
         // wrap context as an App
@@ -381,5 +387,23 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     {
     	return _tldBundles;
     }
+    
+    /**
+     * @param configurations The configuration class names.
+     */
+    public void setConfigurationClasses(String[] configurations)
+    {
+        _configurationClasses = configurations==null?null:(String[])configurations.clone();
+    }  
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * 
+     */
+    public String[] getConfigurationClasses()
+    {
+        return _configurationClasses;
+    }
+
 
 }

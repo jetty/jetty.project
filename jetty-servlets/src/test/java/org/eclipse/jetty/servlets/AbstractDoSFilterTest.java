@@ -2,6 +2,9 @@ package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.EnumSet;
+
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -43,7 +46,7 @@ public abstract class AbstractDoSFilterTest
         _tester.setContextPath("/ctx");
         _tester.addServlet(TestServlet.class, "/*");
 
-        _dosFilter = _tester.addFilter(filter, "/dos/*", 0);
+        _dosFilter = _tester.addFilter(filter, "/dos/*", EnumSet.allOf(DispatcherType.class));
         _dosFilter.setInitParameter("maxRequestsPerSec", "4");
         _dosFilter.setInitParameter("delayMs", "200");
         _dosFilter.setInitParameter("throttledRequests", "1");
@@ -52,7 +55,7 @@ public abstract class AbstractDoSFilterTest
         _dosFilter.setInitParameter("remotePort", "false");
         _dosFilter.setInitParameter("insertHeaders", "true");
 
-        _timeoutFilter = _tester.addFilter(filter, "/timeout/*", 0);
+        _timeoutFilter = _tester.addFilter(filter, "/timeout/*", EnumSet.allOf(DispatcherType.class));
         _timeoutFilter.setInitParameter("maxRequestsPerSec", "4");
         _timeoutFilter.setInitParameter("delayMs", "200");
         _timeoutFilter.setInitParameter("throttledRequests", "1");
@@ -174,7 +177,7 @@ public abstract class AbstractDoSFilterTest
                 {
                     // Cause a delay, then sleep while holding pass
                     String request="GET /ctx/dos/sleeper HTTP/1.1\r\nHost: localhost\r\n\r\n";
-                    String last="GET /ctx/dos/sleeper?sleep=2000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+                    String last="GET /ctx/dos/sleeper?sleep=3000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
                     String responses = doRequests(request+request+request+request,1,0,0,last);
                 }
                 catch(Exception e)
