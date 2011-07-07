@@ -1286,7 +1286,7 @@ public class Request implements HttpServletRequest
             return false;
         
         HttpSession session=getSession(false);
-        return (session != null && _sessionManager.getIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
+        return (session != null && _sessionManager.getSessionIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
     }
     
     /* ------------------------------------------------------------ */
