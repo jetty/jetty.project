@@ -558,6 +558,7 @@ public class HttpParser implements Parser
                                         
                                     case HttpTokens.NO_CONTENT:
                                         _state=STATE_END;
+                                        returnBuffers();
                                         _handler.headerComplete(); 
                                         _handler.messageComplete(_contentPosition);
                                         break;
