@@ -76,10 +76,10 @@ public class JdbcTestServer extends AbstractTestServer
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionManager()
      */
     @Override
-    public AbstractSessionManager newSessionManager()
+    public SessionManager newSessionManager()
     {
         JDBCSessionManager manager =  new JDBCSessionManager();
-        manager.setIdManager((JDBCSessionIdManager)_sessionIdManager);
+        manager.setSessionIdManager((JDBCSessionIdManager)_sessionIdManager);
         manager.setSaveInterval(SAVE_INTERVAL); //ensure we save any changes to the session at least once per second
         return manager;
     }

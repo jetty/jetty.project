@@ -3,7 +3,6 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
-import java.util.Random;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

@@ -187,14 +187,14 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return the cross context session id manager.
-     * @see #setIdManager(SessionIdManager)
+     * @see #setSessionIdManager(SessionIdManager)
      */
-    public SessionIdManager getIdManager();
+    public SessionIdManager getSessionIdManager();
 
     /* ------------------------------------------------------------ */
     /**
      * @return the cross context session id manager.
-     * @deprecated use {@link #getIdManager()}
+     * @deprecated use {@link #getSessionIdManager()}
      */
     @Deprecated
     public SessionIdManager getMetaManager();
@@ -204,9 +204,9 @@ public interface SessionManager extends LifeCycle
      * Sets the cross context session id manager
      *
      * @param idManager the cross context session id manager.
-     * @see #getIdManager()
+     * @see #getSessionIdManager()
      */
-    public void setIdManager(SessionIdManager idManager);
+    public void setSessionIdManager(SessionIdManager idManager);
 
     /* ------------------------------------------------------------ */
     /**
