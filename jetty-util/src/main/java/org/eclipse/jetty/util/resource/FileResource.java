@@ -183,7 +183,7 @@ public class FileResource extends URLResource
                 String can=_file.getCanonicalPath();
                 
                 if (abs.length()!=can.length() || !abs.equals(can))
-                    _alias=new File(can).toURI().toURL();
+                    _alias=Resource.toURL(new File(can));
                 
                 _aliasChecked=true;
                 

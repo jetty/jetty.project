@@ -160,7 +160,7 @@ public abstract class Resource implements ResourceFactory
                         resource=resource.substring(2);
                     
                     File file=new File(resource).getCanonicalFile();
-                    url=file.toURI().toURL();            
+                    url=Resource.toURL(file);            
                     
                     URLConnection connection=url.openConnection();
                     connection.setUseCaches(useCaches);
@@ -642,5 +642,15 @@ public abstract class Resource implements ResourceFactory
             throw new IllegalArgumentException(destination+" exists");
         writeTo(new FileOutputStream(destination),0,-1);
     }
-   
+
+    /* ------------------------------------------------------------ */
+    /** Generate a properly encoded URL from a {@link File} instance.
+     * @param file Target file. 
+     * @return URL of the target file.
+     * @throws MalformedURLException 
+     */
+    public static URL toURL(File file) throws MalformedURLException
+    {
+        return Resource.toURL(file);
+    }
 }

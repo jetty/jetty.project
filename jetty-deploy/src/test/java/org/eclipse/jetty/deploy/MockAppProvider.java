@@ -52,7 +52,7 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
         WebAppContext context = new WebAppContext();
 
         File war = new File(webappsDir,app.getOriginId().substring(5));
-        context.setWar(Resource.newResource(war.toURI().toURL()).toString());
+        context.setWar(Resource.newResource(Resource.toURL(war)).toString());
 
         String path = war.getName();
         
