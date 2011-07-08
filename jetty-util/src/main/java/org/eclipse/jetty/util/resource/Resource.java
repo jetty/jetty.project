@@ -651,6 +651,6 @@ public abstract class Resource implements ResourceFactory
      */
     public static URL toURL(File file) throws MalformedURLException
     {
-        return Resource.toURL(file);
+        return file.toURI().toURL();
     }
 }
