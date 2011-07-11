@@ -1,3 +1,7 @@
+jetty-7.5.0-SNAPSHOT
+ + 351516 Refactored sessions to better support nosql session managers
+ + 351576 Do not use deprecated method File.toURL()
+
 jetty-8.0.0.RC0
  + Merge from jetty-7.4.3
 

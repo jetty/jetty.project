@@ -31,6 +31,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.Resource;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
@@ -212,7 +213,7 @@ public class XmlParser
     {
         if (Log.isDebugEnabled())
             Log.debug("parse: " + file);
-        return parse(new InputSource(file.toURL().toString()));
+        return parse(new InputSource(Resource.toURL(file).toString()));
     }
 
     /* ------------------------------------------------------------ */

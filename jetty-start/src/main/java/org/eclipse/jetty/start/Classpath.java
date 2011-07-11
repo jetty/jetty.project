@@ -127,7 +127,7 @@ public class Classpath {
         URL[] urls = new URL[cnt];
         for (int i=0; i < cnt; i++) {
             try {
-                String u=((_elements.elementAt(i))).toURL().toString();
+                String u=_elements.elementAt(i).toURI().toURL().toString();
                 urls[i] = new URL(encodeFileURL(u));
             } catch (MalformedURLException e) {}
         }

@@ -161,7 +161,7 @@ public class SessionHandlerTest
                 return cookieName;
             }
         });
-        sessionHandler.setRequestedId(baseRequest,httpRequest);
+        sessionHandler.checkRequestedSessionId(baseRequest,httpRequest);
 
         assertEquals(sessionId,baseRequest.getRequestedSessionId());
         assertTrue(baseRequest.isRequestedSessionIdFromCookie());
@@ -202,7 +202,7 @@ public class SessionHandlerTest
             }
         });
 
-        sessionHandler.setRequestedId(baseRequest,httpRequest);
+        sessionHandler.checkRequestedSessionId(baseRequest,httpRequest);
 
         assertEquals(sessionId,baseRequest.getRequestedSessionId());
         assertFalse(baseRequest.isRequestedSessionIdFromCookie());
@@ -627,7 +627,7 @@ public class SessionHandlerTest
             return null;
         }
 
-        public SessionIdManager getIdManager()
+        public SessionIdManager getSessionIdManager()
         {
             return null;
         }
@@ -706,7 +706,7 @@ public class SessionHandlerTest
         {
         }
 
-        public void setIdManager(SessionIdManager idManager)
+        public void setSessionIdManager(SessionIdManager idManager)
         {
         }
 

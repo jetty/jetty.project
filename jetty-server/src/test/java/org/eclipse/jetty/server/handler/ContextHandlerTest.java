@@ -271,7 +271,7 @@ public class ContextHandlerTest
         ContextHandler handler = new ContextHandler();
 
         assertTrue("Not a directory " + testDirectory,testDirectory.isDirectory());
-        handler.setBaseResource(Resource.newResource(testDirectory.toURI().toURL()));
+        handler.setBaseResource(Resource.newResource(Resource.toURL(testDirectory)));
 
         List<String> paths = new ArrayList<String>(handler.getResourcePaths(root));
         assertEquals(2,paths.size());

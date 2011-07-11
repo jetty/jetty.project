@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -52,7 +53,9 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JDBCSessionIdManager extends AbstractSessionIdManager
 {    
-    protected final HashSet<String> _sessionIds = new HashSet();
+    final static Logger __log = SessionHandler.__log;
+    
+    protected final HashSet<String> _sessionIds = new HashSet<String>();
     protected Server _server;
     protected String _driverClassName;
     protected String _connectionUrl;
@@ -104,7 +107,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         throws SQLException
         {
             _dbName = dbMeta.getDatabaseProductName().toLowerCase(); 
-            Log.debug ("Using database "+_dbName);
+            __log.debug ("Using database "+_dbName);
             _isLower = dbMeta.storesLowerCaseIdentifiers();
             _isUpper = dbMeta.storesUpperCaseIdentifiers();
         }
@@ -228,7 +231,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         if ((System.currentTimeMillis()%2) == 0)
             _scavengeIntervalMs += tenPercent;
         
-        if (Log.isDebugEnabled()) Log.debug("Scavenging every "+_scavengeIntervalMs+" ms");
+        if (__log.isDebugEnabled()) __log.debug("Scavenging every "+_scavengeIntervalMs+" ms");
         if (_timer!=null && (period!=old_period || _task==null))
         {
             synchronized (this)
@@ -269,7 +272,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             }
             catch (Exception e)
             {
-                Log.warn("Problem storing session id="+id, e);
+                __log.warn("Problem storing session id="+id, e);
             }
         }
     }
@@ -292,8 +295,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         
         synchronized (_sessionIds)
         {  
-            if (Log.isDebugEnabled())
-                Log.debug("Removing session id="+id);
+            if (__log.isDebugEnabled())
+                __log.debug("Removing session id="+id);
             try
             {               
                 _sessionIds.remove(id);
@@ -301,7 +304,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             }
             catch (Exception e)
             {
-                Log.warn("Problem removing session id="+id, e);
+                __log.warn("Problem removing session id="+id, e);
             }
         }
         
@@ -356,7 +359,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         }
         catch (Exception e)
         {
-            Log.warn("Problem checking inUse for id="+clusterId, e);
+            __log.warn("Problem checking inUse for id="+clusterId, e);
             return false;
         }
     }
@@ -407,13 +410,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             initializeDatabase();
             prepareTables();        
             super.doStart();
-            if (Log.isDebugEnabled()) Log.debug("Scavenging interval = "+getScavengeInterval()+" sec");
+            if (__log.isDebugEnabled()) __log.debug("Scavenging interval = "+getScavengeInterval()+" sec");
             _timer=new Timer("JDBCSessionScavenger", true);
             setScavengeInterval(getScavengeInterval());
         }
         catch (Exception e)
         {
-            Log.warn("Problem initialising JettySessionIds table", e);
+            __log.warn("Problem initialising JettySessionIds table", e);
         }
     }
     
@@ -650,7 +653,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         List expiredSessionIds = new ArrayList();
         try
         {            
-            if (Log.isDebugEnabled()) Log.debug("Scavenge sweep started at "+System.currentTimeMillis());
+            if (__log.isDebugEnabled()) __log.debug("Scavenge sweep started at "+System.currentTimeMillis());
             if (_lastScavengeTime > 0)
             {
                 connection = getConnection();
@@ -659,7 +662,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 PreparedStatement statement = connection.prepareStatement(_selectExpiredSessions);
                 long lowerBound = (_lastScavengeTime - _scavengeIntervalMs);
                 long upperBound = _lastScavengeTime;
-                if (Log.isDebugEnabled()) Log.debug (" Searching for sessions expired between "+lowerBound + " and "+upperBound);
+                if (__log.isDebugEnabled()) __log.debug (" Searching for sessions expired between "+lowerBound + " and "+upperBound);
                 
                 statement.setLong(1, lowerBound);
                 statement.setLong(2, upperBound);
@@ -668,7 +671,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 {
                     String sessionId = result.getString("sessionId");
                     expiredSessionIds.add(sessionId);
-                    if (Log.isDebugEnabled()) Log.debug (" Found expired sessionId="+sessionId); 
+                    if (__log.isDebugEnabled()) __log.debug (" Found expired sessionId="+sessionId); 
                 }
 
                 //tell the SessionManagers to expire any sessions with a matching sessionId in memory
@@ -691,7 +694,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 upperBound = _lastScavengeTime - (2 * _scavengeIntervalMs);
                 if (upperBound > 0)
                 {
-                    if (Log.isDebugEnabled()) Log.debug("Deleting old expired sessions expired before "+upperBound);
+                    if (__log.isDebugEnabled()) __log.debug("Deleting old expired sessions expired before "+upperBound);
                     statement = connection.prepareStatement(_deleteOldExpiredSessions);
                     statement.setLong(1, upperBound);
                     statement.executeUpdate();
@@ -700,12 +703,12 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         }
         catch (Exception e)
         {
-            Log.warn("Problem selecting expired sessions", e);
+            __log.warn("Problem selecting expired sessions", e);
         }
         finally
         {           
             _lastScavengeTime=System.currentTimeMillis();
-            if (Log.isDebugEnabled()) Log.debug("Scavenge sweep ended at "+_lastScavengeTime);
+            if (__log.isDebugEnabled()) __log.debug("Scavenge sweep ended at "+_lastScavengeTime);
             if (connection != null)
             {
                 try
@@ -714,7 +717,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 }
                 catch (SQLException e)
                 {
-                    Log.warn(e);
+                    __log.warn(e);
                 }
             }
         }

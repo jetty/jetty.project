@@ -109,7 +109,6 @@ public abstract class AbstractLastAccessTimeTest
                     exchange1.waitForDone();
                     assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
                     
-                    // TODO shouldn't the session be expired????
                 }
                 finally
                 {
@@ -141,7 +140,8 @@ public abstract class AbstractLastAccessTimeTest
             else
             {
                 HttpSession session = request.getSession(false);
-                session.setAttribute("test", "test");
+                if (session!=null)
+                    session.setAttribute("test", "test");
             }
         }
     }

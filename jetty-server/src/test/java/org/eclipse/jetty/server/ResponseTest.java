@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.server.session.AbstractSessionManager;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.server.session.HashSessionManager;
@@ -332,7 +333,7 @@ public class ResponseTest
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
         AbstractSessionManager manager=new HashSessionManager();
-        manager.setIdManager(new HashSessionIdManager());
+        manager.setSessionIdManager(new HashSessionIdManager());
         request.setSessionManager(manager);
         request.setSession(new TestSession(manager,"12345"));
 
@@ -380,7 +381,7 @@ public class ResponseTest
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
         AbstractSessionManager manager=new HashSessionManager();
-        manager.setIdManager(new HashSessionIdManager());
+        manager.setSessionIdManager(new HashSessionIdManager());
         request.setSessionManager(manager);
         request.setSession(new TestSession(manager,"12345"));
         manager.setCheckingRemoteSessionIdEncoding(false);
@@ -473,11 +474,11 @@ public class ResponseTest
         return response;
     }
 
-    private class TestSession extends AbstractSessionManager.Session
+    private class TestSession extends AbstractSession
     {
         public TestSession(AbstractSessionManager abstractSessionManager, String id)
         {
-            abstractSessionManager.super(System.currentTimeMillis(),System.currentTimeMillis(), id);
+            super(abstractSessionManager, System.currentTimeMillis(),System.currentTimeMillis(), id);
         }
 
         public Object getAttribute(String name)

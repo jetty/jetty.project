@@ -50,7 +50,7 @@ public abstract class AbstractTestServer
 
 
     public abstract SessionIdManager newSessionIdManager();
-    public abstract AbstractSessionManager newSessionManager();
+    public abstract SessionManager newSessionManager();
     public abstract SessionHandler newSessionHandler(SessionManager sessionManager);
 
 
@@ -70,8 +70,8 @@ public abstract class AbstractTestServer
     {
         ServletContextHandler context = new ServletContextHandler(_contexts, contextPath);
 
-        AbstractSessionManager sessionManager = newSessionManager();
-        sessionManager.setIdManager(_sessionIdManager);
+        SessionManager sessionManager = newSessionManager();
+        sessionManager.setSessionIdManager(_sessionIdManager);
         sessionManager.setMaxInactiveInterval(_maxInactivePeriod);
 
         SessionHandler sessionHandler = newSessionHandler(sessionManager);
@@ -86,12 +86,17 @@ public abstract class AbstractTestServer
         _server.stop();
     }
 
+    public void join() throws Exception
+    {
+        _server.join();
+    }
+
     public WebAppContext addWebAppContext(String warPath, String contextPath)
     {
         WebAppContext context = new WebAppContext(_contexts, warPath, contextPath);
 
-        AbstractSessionManager sessionManager = newSessionManager();
-        sessionManager.setIdManager(_sessionIdManager);
+        SessionManager sessionManager = newSessionManager();
+        sessionManager.setSessionIdManager(_sessionIdManager);
         sessionManager.setMaxInactiveInterval(_maxInactivePeriod);
 
         SessionHandler sessionHandler = newSessionHandler(sessionManager);

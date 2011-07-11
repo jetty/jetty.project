@@ -83,11 +83,12 @@ public abstract class AbstractReentrantRequestSessionTest
         protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             HttpSession session = request.getSession(false);
-            if (session == null) session = request.getSession(true);
 
             String action = request.getParameter("action");
             if ("reenter".equals(action))
             {
+                if (session == null) 
+                    session = request.getSession(true);
                 int port = Integer.parseInt(request.getParameter("port"));
                 String path = request.getParameter("path");
 
@@ -103,10 +104,11 @@ public abstract class AbstractReentrantRequestSessionTest
                     {
                         ContentExchange exchange = new ContentExchange(true);
                         exchange.setMethod(HttpMethods.GET);
-                        exchange.setURL("http://localhost:" + port + path + "?action=none");
+                        exchange.setURL("http://localhost:" + port + path + ";jsessionid="+session.getId()+"?action=none");
                         client.send(exchange);
                         exchange.waitForDone();
                         assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                        assertEquals("true",session.getAttribute("reentrant"));
                     }
                     finally
                     {
@@ -120,7 +122,8 @@ public abstract class AbstractReentrantRequestSessionTest
             }
             else
             {
-                // Reentrancy was successful, just return
+                assertTrue(session!=null);
+                session.setAttribute("reentrant","true");
             }
         }
     }

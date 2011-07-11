@@ -14,16 +14,11 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -38,8 +33,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -54,16 +49,18 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class HashSessionManager extends AbstractSessionManager
 {
+    final static Logger __log = SessionHandler.__log;
+    
     protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
     private static int __id;
     private Timer _timer;
     private boolean _timerStop=false;
     private TimerTask _task;
-    private int _scavengePeriodMs=30000;
-    private int _savePeriodMs=0; //don't do period saves by default
-    private int _idleSavePeriodMs = 0; // don't idle save sessions by default.
+    int _scavengePeriodMs=30000;
+    int _savePeriodMs=0; //don't do period saves by default
+    int _idleSavePeriodMs = 0; // don't idle save sessions by default.
     private TimerTask _saveTask;
-    private File _storeDir;
+    File _storeDir;
     private boolean _lazyLoad=false;
     private volatile boolean _sessionsLoaded=false;
     
@@ -143,24 +140,16 @@ public class HashSessionManager extends AbstractSessionManager
         return _scavengePeriodMs/1000;
     }
 
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public Map getSessionMap()
-    {
-        return Collections.unmodifiableMap(_sessions);
-    }
-
 
     /* ------------------------------------------------------------ */
     @Override
     public int getSessions()
     {
         int sessions=super.getSessions();
-        if (Log.isDebugEnabled())
+        if (__log.isDebugEnabled())
         {
             if (_sessions.size()!=sessions)
-                Log.warn("sessions: "+_sessions.size()+"!="+sessions);
+                __log.warn("sessions: "+_sessions.size()+"!="+sessions);
         }
         return sessions;
     }
@@ -230,7 +219,7 @@ public class HashSessionManager extends AbstractSessionManager
                             }
                             catch (Exception e)
                             {
-                                Log.warn(e);
+                                __log.warn(e);
                             }
                         }   
                     };
@@ -311,13 +300,13 @@ public class HashSessionManager extends AbstractSessionManager
             for (Iterator<HashedSession> i=_sessions.values().iterator(); i.hasNext();)
             {
                 HashedSession session=i.next();
-                long idleTime=session._maxIdleMs;
-                if (idleTime>0&&session._accessed+idleTime<now)
+                long idleTime=session.getMaxInactiveInterval()*1000;
+                if (idleTime>0&&session.getAccessed()+idleTime<now)
                 {
                     // Found a stale session, add it to the list
                     session.timeout();
                 }
-                else if (_idleSavePeriodMs>0&&session._accessed+_idleSavePeriodMs<now)
+                else if (_idleSavePeriodMs>0&&session.getAccessed()+_idleSavePeriodMs<now)
                 {
                     session.idle(); 
                 }
@@ -328,7 +317,7 @@ public class HashSessionManager extends AbstractSessionManager
             if (t instanceof ThreadDeath)
                 throw ((ThreadDeath)t);
             else
-                Log.warn("Problem scavenging sessions", t);
+                __log.warn("Problem scavenging sessions", t);
         }
         finally
         {
@@ -338,7 +327,7 @@ public class HashSessionManager extends AbstractSessionManager
     
     /* ------------------------------------------------------------ */
     @Override
-    protected void addSession(AbstractSessionManager.Session session)
+    protected void addSession(AbstractSession session)
     {
         if (isRunning())
             _sessions.put(session.getClusterId(),(HashedSession)session);
@@ -346,7 +335,7 @@ public class HashSessionManager extends AbstractSessionManager
     
     /* ------------------------------------------------------------ */
     @Override
-    public AbstractSessionManager.Session getSession(String idInCluster)
+    public AbstractSession getSession(String idInCluster)
     {
         if ( _lazyLoad && !_sessionsLoaded)
         {
@@ -356,7 +345,7 @@ public class HashSessionManager extends AbstractSessionManager
             }
             catch(Exception e)
             {
-                Log.warn(e);
+                __log.warn(e);
             }
         }
 
@@ -409,15 +398,15 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     @Override
-    protected AbstractSessionManager.Session newSession(HttpServletRequest request)
+    protected AbstractSession newSession(HttpServletRequest request)
     {
-        return new HashedSession(request);
+        return new HashedSession(this, request);
     }
     
     /* ------------------------------------------------------------ */
-    protected AbstractSessionManager.Session newSession(long created, long accessed, String clusterId)
+    protected AbstractSession newSession(long created, long accessed, String clusterId)
     {
-        return new HashedSession(created,accessed, clusterId);
+        return new HashedSession(this, created,accessed, clusterId);
     }
     
     /* ------------------------------------------------------------ */
@@ -463,7 +452,7 @@ public class HashSessionManager extends AbstractSessionManager
 
         if (!_storeDir.canRead())
         {
-            Log.warn ("Unable to restore Sessions: Cannot read from Session storage directory "+_storeDir.getAbsolutePath());
+            __log.warn ("Unable to restore Sessions: Cannot read from Session storage directory "+_storeDir.getAbsolutePath());
             return;
         }
 
@@ -493,7 +482,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         catch (Exception e)
         {
-            Log.warn("Problem restoring session "+idInCuster, e);
+            __log.warn("Problem restoring session "+idInCuster, e);
         }
         return null;
     }
@@ -508,7 +497,7 @@ public class HashSessionManager extends AbstractSessionManager
         
         if (!_storeDir.canWrite())
         {
-            Log.warn ("Unable to save Sessions: Session persistence storage directory "+_storeDir.getAbsolutePath()+ " is not writeable");
+            __log.warn ("Unable to save Sessions: Session persistence storage directory "+_storeDir.getAbsolutePath()+ " is not writeable");
             return;
         }
 
@@ -526,23 +515,13 @@ public class HashSessionManager extends AbstractSessionManager
         DataInputStream in = new DataInputStream(is);
         String clusterId = in.readUTF();
         String nodeId = in.readUTF();
-        boolean idChanged = in.readBoolean();
         long created = in.readLong();
-        long cookieSet = in.readLong();
         long accessed = in.readLong();
-        long lastAccessed = in.readLong();
-        //boolean invalid = in.readBoolean();
-        //boolean invalidate = in.readBoolean();
-        //long maxIdle = in.readLong();
-        //boolean isNew = in.readBoolean();
         int requests = in.readInt();
       
         if (session == null)
-            session = (HashedSession)newSession(created, System.currentTimeMillis(), clusterId);
-        
-        session._cookieSet = cookieSet;
-        session._lastAccessed = lastAccessed;
-        
+            session = (HashedSession)newSession(created, accessed, clusterId);
+        session.setRequests(requests);
         int size = in.readInt();
         if (size>0)
         {
@@ -561,228 +540,6 @@ public class HashSessionManager extends AbstractSessionManager
     }
 
     
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    protected class HashedSession extends Session
-    {
-        /* ------------------------------------------------------------ */
-        private static final long serialVersionUID=-2134521374206116367L;
-        
-        /** Whether the session has been saved because it has been deemed idle; 
-         * in which case its attribute map will have been saved and cleared. */
-        private transient boolean _idled = false;
- 
-        /** Whether there has already been an attempt to save this session
-         * which has failed.  If there has, there will be no more save attempts
-         * for this session.  This is to stop the logs being flooded with errors
-         * due to serialization failures that are most likely caused by user
-         * data stored in the session that is not serializable. */
-        private transient boolean _saveFailed = false;
- 
-        /* ------------------------------------------------------------- */
-        protected HashedSession(HttpServletRequest request)
-        {
-            super(request);
-        }
-
-        /* ------------------------------------------------------------- */
-        protected HashedSession(long created, long accessed, String clusterId)
-        {
-            super(created, accessed, clusterId);
-        }
-
-        /* ------------------------------------------------------------- */
-        protected boolean isNotAvailable()
-        {
-            if (_idleSavePeriodMs!=0)
-                deIdle();
-            return _invalid;
-        }
-        
-        /* ------------------------------------------------------------- */
-        @Override
-        public void setMaxInactiveInterval(int secs)
-        {
-            super.setMaxInactiveInterval(secs);
-            if (_maxIdleMs>0&&(_maxIdleMs/10)<_scavengePeriodMs)
-                HashSessionManager.this.setScavengePeriod((secs+9)/10);
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        protected void doInvalidate()
-        throws IllegalStateException
-        {
-            super.doInvalidate();
-            
-            // Remove from the disk
-            if (_storeDir!=null && getId()!=null)
-            {
-                String id=getId();
-                File f = new File(_storeDir, id);
-                f.delete();
-            }
-        }
-
-        /* ------------------------------------------------------------ */
-        private synchronized void save(boolean reactivate)
-        {
-            // Only idle the session if not already idled and no previous save/idle has failed
-            if (!isIdled() && !_saveFailed)
-            {
-                if (Log.isDebugEnabled())
-                    Log.debug("Saving {} {}",super.getId(),reactivate);
-
-                File file = null;
-                FileOutputStream fos = null;
-                
-                try
-                {
-                    file = new File(_storeDir, super.getId());
-
-                    if (file.exists())
-                        file.delete();
-                    file.createNewFile();
-                    fos = new FileOutputStream(file);
-                    willPassivate();
-                    save(fos);
-                    if (reactivate)
-                        didActivate();
-                    else
-                        clearAttributes();
-                }
-                catch (Exception e)
-                {
-                    saveFailed(); // We won't try again for this session
-
-                    Log.warn("Problem saving session " + super.getId(), e);
-
-                    if (fos != null)
-                    {
-                        // Must not leave the file open if the saving failed
-                        IO.close(fos);
-                        // No point keeping the file if we didn't save the whole session
-                        file.delete();
-                        _idled=false; // assume problem was before _values.clear();
-                    }
-                }
-            }
-        }
-        /* ------------------------------------------------------------ */
-        public synchronized void save(OutputStream os)  throws IOException 
-        {
-            DataOutputStream out = new DataOutputStream(os);
-            out.writeUTF(_clusterId);
-            out.writeUTF(_nodeId);
-            out.writeBoolean(_idChanged);
-            out.writeLong( _created);
-            out.writeLong(_cookieSet);
-            out.writeLong(_accessed);
-            out.writeLong(_lastAccessed);
-            
-            /* Don't write these out, as they don't make sense to store because they
-             * either they cannot be true or their value will be restored in the 
-             * Session constructor.
-             */
-            //out.writeBoolean(_invalid);
-            //out.writeBoolean(_doInvalidate);
-            //out.writeLong(_maxIdleMs);
-            //out.writeBoolean( _newSession);
-            out.writeInt(_requests);
-            if (_attributes != null)
-            {
-                out.writeInt(_attributes.size());
-                ObjectOutputStream oos = new ObjectOutputStream(out);
-                for (Map.Entry<String,Object> entry: _attributes.entrySet())
-                {
-                    oos.writeUTF(entry.getKey());
-                    oos.writeObject(entry.getValue());
-                }
-                oos.close();
-            }
-            else
-            {
-                out.writeInt(0);
-                out.close();
-            }
-        }
-
-        /* ------------------------------------------------------------ */
-        public synchronized void deIdle()
-        {
-            if (isIdled())
-            {
-                // Access now to prevent race with idling period
-                access(System.currentTimeMillis());
-
-                
-                if (Log.isDebugEnabled())
-                {
-                    Log.debug("Deidling " + super.getId());
-                }
-
-                FileInputStream fis = null;
-
-                try
-                {
-                    File file = new File(_storeDir, super.getId());
-                    if (!file.exists() || !file.canRead())
-                        throw new FileNotFoundException(file.getName());
-
-                    fis = new FileInputStream(file);
-                    _idled = false;
-                    restoreSession(fis, this);
-
-                    didActivate();
-                    
-                    // If we are doing period saves, then there is no point deleting at this point 
-                    if (_savePeriodMs == 0)
-                        file.delete();
-                }
-                catch (Exception e)
-                {
-                    Log.warn("Problem deidling session " + super.getId(), e);
-                    IO.close(fis);
-                    invalidate();
-                }
-            }
-        }
-
-        
-        /* ------------------------------------------------------------ */
-        /**
-         * Idle the session to reduce session memory footprint.
-         * 
-         * The session is idled by persisting it, then clearing the session values attribute map and finally setting 
-         * it to an idled state.  
-         */
-        public synchronized void idle()
-        {
-            save(false);
-        }
-        
-        /* ------------------------------------------------------------ */
-        public boolean isIdled()
-        {
-          return _idled;
-        }
-
-        /* ------------------------------------------------------------ */
-        public boolean isSaveFailed()
-        {
-          return _saveFailed;
-        }
-        
-        /* ------------------------------------------------------------ */
-        public void saveFailed()
-        {
-          _saveFailed = true;
-        }
-
-    }
-    
-
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     protected class ClassLoadingObjectInputStream extends ObjectInputStream
