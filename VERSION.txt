@@ -4,6 +4,7 @@ jetty-7.5.0-SNAPSHOT
 
 jetty-8.0.0.RC0
  + Merge from jetty-7.4.3
+ + Enable annotations by default
 
 jetty-8.0.0.M3
  + 324505 Implement API login

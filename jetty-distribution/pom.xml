@@ -86,6 +86,8 @@
 
                 <!-- ${jetty.home}/lib/ -->
                 <mkdir dir="${assembly-directory}/lib" />
+                <copy file="${orbit-cache}/javax.servlet_${orbit-javax-servlet-version}.jar" tofile="${assembly-directory}/lib/servlet-api-3.0.jar" />
+
                
                 <!-- ${jetty.home}/lib/annotations/ -->
                 <mkdir dir="${assembly-directory}/lib/annotations" />
@@ -275,6 +277,16 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-overlay-deployer</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}</outputDirectory>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-annotations</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
                   <type>jar</type>
@@ -484,16 +496,6 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly-directory}</outputDirectory>
                   <destFileName>start.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>${servlet.spec.groupId}</groupId>
-                  <artifactId>${servlet.spec.artifactId}</artifactId>
-                  <version>${servlet.spec.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>servlet-api-3.0.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
