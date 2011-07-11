@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
@@ -45,16 +46,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
+/* ------------------------------------------------------------ */
 /**
  * Functional testing for HttpExchange.
- *
- * 
- * 
  */
-public class SecurityListenerTest extends TestCase
+public class SecurityListenerTest
 {
-   
     private Server _server;
     private int _port;
     private HttpClient _httpClient;
@@ -62,8 +63,9 @@ public class SecurityListenerTest extends TestCase
     private Realm _jettyRealm;
     private static final String APP_CONTEXT = "localhost /";
 
-    @Override
-    protected void setUp() throws Exception
+    /* ------------------------------------------------------------ */
+    @Before
+    public void setUp() throws Exception
     {
         startServer();
         _httpClient=new HttpClient();
@@ -92,13 +94,16 @@ public class SecurityListenerTest extends TestCase
         _httpClient.setRealmResolver( new SimpleRealmResolver(_jettyRealm) );
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    /* ------------------------------------------------------------ */
+    @After
+    public void tearDown() throws Exception
     {
         stopServer();
         _httpClient.stop();
     }
 
+    /* ------------------------------------------------------------ */
+//    @Test
     public void xtestPerf() throws Exception
     {
         sender(1);
@@ -112,6 +117,7 @@ public class SecurityListenerTest extends TestCase
         sender(10000);
     }
 
+    /* ------------------------------------------------------------ */
     public void sender(final int nb) throws Exception
     {
         final CountDownLatch latch=new CountDownLatch(nb);
@@ -204,6 +210,8 @@ public class SecurityListenerTest extends TestCase
 //    }
     
     
+    /* ------------------------------------------------------------ */
+    @Test
     public void testDestinationSecurityCaching() throws Exception
     {
         final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -248,6 +256,7 @@ public class SecurityListenerTest extends TestCase
         
     }   
 
+    /* ------------------------------------------------------------ */
     public static void copyStream(InputStream in, OutputStream out)
     {
         try
@@ -269,6 +278,7 @@ public class SecurityListenerTest extends TestCase
         }
     }
 
+    /* ------------------------------------------------------------ */
     private void startServer() throws Exception
      {
          _server = new Server();
@@ -332,7 +342,7 @@ public class SecurityListenerTest extends TestCase
          _port = connector.getLocalPort();
      }
 
-
+    /* ------------------------------------------------------------ */
     private void stopServer() throws Exception
     {
         _server.stop();

@@ -169,13 +169,13 @@ public interface EndPoint
      * the {@link java.net.Socket#getSoTimeout()} for blocking connections,
      * but {@link AsyncEndPoint} implementations must use other mechanisms
      * to implement the max idle time.
-     * @return the max idle time in ms.
+     * @return the max idle time in ms or if ms <= 0 implies an infinite timeout
      */
     public int getMaxIdleTime();
     
     /* ------------------------------------------------------------ */
     /** Set the max idle time.
-     * @param timeMs the max idle time in MS.
+     * @param timeMs the max idle time in MS. Timeout <= 0 implies an infinite timeout
      * @throws IOException if the timeout cannot be set.
      */
     public void setMaxIdleTime(int timeMs) throws IOException;

@@ -70,6 +70,7 @@ public class JettyBootstrapActivator implements BundleActivator
     private JettyContextHandlerServiceTracker _jettyContextHandlerTracker;
     private PackageAdminServiceTracker _packageAdminServiceTracker;
     private BundleTracker _webBundleTracker;
+    private BundleContext _bundleContext;
     
 //    private ServiceRegistration _jettyServerFactoryService;
     private JettyServerServiceTracker _jettyServerServiceTracker;
@@ -86,6 +87,7 @@ public class JettyBootstrapActivator implements BundleActivator
     public void start(BundleContext context) throws Exception
     {
         INSTANCE = this;
+        _bundleContext = context;
 
         // track other bundles and fragments attached to this bundle that we
         // should activate.
@@ -298,17 +300,27 @@ public class JettyBootstrapActivator implements BundleActivator
      */
     private static void checkBundleActivated()
     {
-    	if (INSTANCE == null) {
-    		Bundle thisBundle = FrameworkUtil.getBundle(JettyBootstrapActivator.class);
-    		try
-    		{
-				thisBundle.start();
-			}
-    		catch (BundleException e)
-			{
-				//nevermind.
-			}
-    	}
+        if (INSTANCE == null)
+        {
+            Bundle thisBundle = FrameworkUtil.getBundle(JettyBootstrapActivator.class);
+            try
+            {
+                thisBundle.start();
+            }
+            catch (BundleException e)
+            {
+                // nevermind.
+            }
+        }
+    }
+    
+    /**
+     * @return The bundle context for this bundle.
+     */
+    public static BundleContext getBundleContext()
+    {
+        checkBundleActivated();
+        return INSTANCE._bundleContext;
     }
     
 

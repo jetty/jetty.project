@@ -285,6 +285,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 					return (URL)BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn, null);
 				}
 			} catch (Throwable t) {
+				System.err.println("Unable to locate the OSGi url: '" + url + "'.");
 				t.printStackTrace();
 			}
 		}

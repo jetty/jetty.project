@@ -24,6 +24,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
+import org.eclipse.jetty.http.gzip.GzipStream;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 
 
@@ -55,16 +57,20 @@ public class IncludableGzipFilter extends GzipFilter
     }
 
     @Override
-    protected GZIPResponseWrapper newGZIPResponseWrapper(HttpServletRequest request, HttpServletResponse response)
+    protected GzipResponseWrapper newGzipResponseWrapper(HttpServletRequest request, HttpServletResponse response)
     {
         return new IncludableResponseWrapper(request,response);
     }
 
-    public class IncludableResponseWrapper extends GzipFilter.GZIPResponseWrapper
+    public class IncludableResponseWrapper extends GzipResponseWrapper
     {
         public IncludableResponseWrapper(HttpServletRequest request, HttpServletResponse response)
         {
             super(request,response);
+
+            _mimeTypes = IncludableGzipFilter.this._mimeTypes;
+            _bufferSize = IncludableGzipFilter.this._bufferSize;
+            _minGzipSize = IncludableGzipFilter.this._minGzipSize;
         }
 
         @Override
@@ -72,9 +78,15 @@ public class IncludableGzipFilter extends GzipFilter
         {
             return new IncludableGzipStream(request,response,contentLength,bufferSize,minGzipSize);
         }
+
+        @Override
+        protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
+        {
+            return IncludableGzipFilter.this.newWriter(out,encoding);
+        }
     }
     
-    public class IncludableGzipStream extends GzipFilter.GzipStream
+    public class IncludableGzipStream extends GzipStream
     {
         public IncludableGzipStream(HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize, int minGzipSize)
                 throws IOException
@@ -93,7 +105,7 @@ public class IncludableGzipFilter extends GzipFilter
             return _response.containsHeader("Content-Encoding");
         }
     }
-    
+
     @Override
     protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
     {

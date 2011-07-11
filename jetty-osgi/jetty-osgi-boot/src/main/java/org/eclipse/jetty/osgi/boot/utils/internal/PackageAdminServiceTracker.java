@@ -13,9 +13,9 @@
 package org.eclipse.jetty.osgi.boot.utils.internal;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.osgi.framework.Bundle;
@@ -26,11 +26,11 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * When the PackageAdmin service is activated we can look for the fragments
  * attached to this bundle and "activate" them.
- * 
  */
 public class PackageAdminServiceTracker implements ServiceListener
 {
@@ -38,6 +38,9 @@ public class PackageAdminServiceTracker implements ServiceListener
 
     private List<BundleActivator> _activatedFragments = new ArrayList<BundleActivator>();
     private boolean _fragmentsWereActivated = false;
+    //Use the deprecated StartLevel to stay compatible with older versions of OSGi.
+    private StartLevel _startLevel;
+    private int _maxStartLevel = 6;
     public static PackageAdminServiceTracker INSTANCE = null;
 
     public PackageAdminServiceTracker(BundleContext context)
@@ -66,6 +69,21 @@ public class PackageAdminServiceTracker implements ServiceListener
         _fragmentsWereActivated = sr != null;
         if (sr != null)
             invokeFragmentActivators(sr);
+        
+        sr = _context.getServiceReference(StartLevel.class.getName());
+        if (sr != null)
+        {
+        	_startLevel = (StartLevel)_context.getService(sr);
+        	try
+        	{
+        		_maxStartLevel = Integer.parseInt(System.getProperty("osgi.startLevel","6"));
+        	}
+        	catch (Exception e)
+        	{
+        		//nevermind default on the usual.
+        		_maxStartLevel = 6;
+        	}
+        }
         return _fragmentsWereActivated;
     }
 
@@ -105,8 +123,9 @@ public class PackageAdminServiceTracker implements ServiceListener
     }
     
     /**
-     * Returns the fragments and the required-bundles that have a jetty-web annotation attribute
-     * compatible with the webFragOrAnnotationOrResources.
+     * Returns the fragments and the required-bundles of a bundle.
+     * Recursively collect the required-bundles and fragment when the directive visibility:=reexport
+     * is added to a required-bundle.
      * @param bundle
      * @param webFragOrAnnotationOrResources
      * @return
@@ -119,60 +138,50 @@ public class PackageAdminServiceTracker implements ServiceListener
             return null;
         }
         PackageAdmin admin = (PackageAdmin)_context.getService(sr);
+        LinkedHashMap<String,Bundle> deps = new LinkedHashMap<String,Bundle>();
+    	collectFragmentsAndRequiredBundles(bundle, admin, deps, false);
+    	return deps.values().toArray(new Bundle[deps.size()]);
+    }
+    /**
+     * Returns the fragments and the required-bundles. Collects them transitively when the directive 'visibility:=reexport'
+     * is added to a required-bundle.
+     * @param bundle
+     * @param webFragOrAnnotationOrResources
+     * @return
+     */
+    protected void collectFragmentsAndRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String,Bundle> deps, boolean onlyReexport)
+    {
         Bundle[] fragments = admin.getFragments(bundle);
-        //get the required bundles. we can't use the org.osgi.framework.wiring package
-        //just yet: it is not supported by enough osgi implementations.
-        List<Bundle> requiredBundles = getRequiredBundles(bundle, admin);
         if (fragments != null)
         {
-        	Set<String> already = new HashSet<String>();
-        	for (Bundle b : requiredBundles)
-        	{
-        		already.add(b.getSymbolicName());
-        	}
 	        //Also add the bundles required by the fragments.
 	        //this way we can inject onto an existing web-bundle a set of bundles that extend it
         	for (Bundle f : fragments)
         	{
-        		List<Bundle> requiredBundlesByFragment = getRequiredBundles(f, admin);
-        		for (Bundle b : requiredBundlesByFragment)
+        		if (!deps.keySet().contains(f.getSymbolicName()))
         		{
-        			if (already.add(b.getSymbolicName()))
-        			{
-        				requiredBundles.add(b);
-        			}
+        			deps.put(f.getSymbolicName(), f);
+        			collectRequiredBundles(f, admin, deps, onlyReexport);
         		}
         	}
         }
-        ArrayList<Bundle> bundles = new ArrayList<Bundle>(
-        		(fragments != null ? fragments.length : 0) +
-        		(requiredBundles != null ? requiredBundles.size() : 0));
-        if (fragments != null)
-        {
-        	for (Bundle f : fragments)
-        	{
-        		bundles.add(f);
-        	}
-        }
-        if (requiredBundles != null)
-        {
-        	bundles.addAll(requiredBundles);
-        }
-        return bundles.toArray(new Bundle[bundles.size()]);
+        collectRequiredBundles(bundle, admin, deps, onlyReexport);
     }
     
     /**
      * A simplistic but good enough parser for the Require-Bundle header.
+     * Parses the version range attribute and the visibility directive.
+     * 
+     * @param onlyReexport true to collect resources and web-fragments transitively if and only if the directive visibility is reexport.
      * @param bundle
      * @return The map of required bundles associated to the value of the jetty-web attribute.
      */
-    protected List<Bundle> getRequiredBundles(Bundle bundle, PackageAdmin admin)
+    protected void collectRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String,Bundle> deps, boolean onlyReexport)
     {
-    	List<Bundle> res = new ArrayList<Bundle>();
     	String requiredBundleHeader = (String)bundle.getHeaders().get("Require-Bundle");
     	if (requiredBundleHeader == null)
     	{
-    		return res;
+    		return;
     	}
     	StringTokenizer tokenizer = new StringTokenizer(requiredBundleHeader, ",");
     	while (tokenizer.hasMoreTokens())
@@ -180,7 +189,13 @@ public class PackageAdminServiceTracker implements ServiceListener
     		String tok = tokenizer.nextToken().trim();
     		StringTokenizer tokenizer2 = new StringTokenizer(tok, ";");
     		String symbolicName = tokenizer2.nextToken().trim();
+    		if (deps.keySet().contains(symbolicName))
+    		{
+    			//was already added. 2 dependencies pointing at the same bundle.
+    			continue;
+    		}
     		String versionRange = null;
+    		boolean reexport = false;
     		while (tokenizer2.hasMoreTokens())
     		{
     			String next = tokenizer2.nextToken().trim();
@@ -195,21 +210,37 @@ public class PackageAdminServiceTracker implements ServiceListener
     					versionRange = next.substring("bundle-version=".length());
     				}
     			}
+    			else if (next.equals("visibility:=reexport"))
+    			{
+    				reexport = true;
+    			}
+    		}
+    		if (!reexport && onlyReexport)
+    		{
+    			return;
     		}
     		Bundle[] reqBundles = admin.getBundles(symbolicName, versionRange);
-    		if (reqBundles != null)
+    		if (reqBundles != null && reqBundles.length != 0)
     		{
+    			Bundle reqBundle = null;
 	    		for (Bundle b : reqBundles)
 	    		{
 	    			if (b.getState() == Bundle.ACTIVE || b.getState() == Bundle.STARTING)
 	    			{
-	    				res.add(b);
+	    				reqBundle = b;
 	    				break;
 	    			}
 	    		}
+	    		if (reqBundle == null)
+	    		{
+	    			//strange? in OSGi with Require-Bundle,
+	    			//the dependent bundle is supposed to be active already
+	    			reqBundle = reqBundles[0];
+	    		}
+				deps.put(reqBundle.getSymbolicName(),reqBundle);
+				collectFragmentsAndRequiredBundles(reqBundle, admin, deps, true);
     		}
     	}
-    	return res;
     }
     
 
@@ -272,6 +303,14 @@ public class PackageAdminServiceTracker implements ServiceListener
                 e.printStackTrace();
             }
         }
+    }
+    
+    /**
+     * @return true if the framework has completed all the start levels.
+     */
+    public boolean frameworkHasCompletedAutostarts()
+    {
+    	return _startLevel == null ? true : _startLevel.getStartLevel() >= _maxStartLevel;
     }
 
 }

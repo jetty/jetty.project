@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>example-jetty-embedded</artifactId>
-  <name>Example :: Embedded Jetty Examples</name>
+  <name>Example :: Jetty Embedded</name>
   <description>Jetty Embedded Examples</description>
   <build>
     <plugins>
@@ -47,6 +47,17 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-websocket</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>test-jetty-servlet</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

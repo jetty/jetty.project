@@ -562,7 +562,15 @@ public class Main
         if (_exec)
         {
             String cmd = buildCommandLine(classpath,configuredXmls);
-            Process process = Runtime.getRuntime().exec(cmd);
+            final Process process = Runtime.getRuntime().exec(cmd);
+            Runtime.getRuntime().addShutdownHook(new Thread()
+            {
+                public void run()
+                {
+                    Config.debug("Destroying " + process);
+                    process.destroy();
+                }  
+            });
             copyInThread(process.getErrorStream(),System.err);
             copyInThread(process.getInputStream(),System.out);
             copyInThread(System.in,process.getOutputStream());

@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.client;
 
+import org.junit.Before;
+
+/* ------------------------------------------------------------ */
 public class AsyncSslSecurityListenerTest extends SslSecurityListenerTest
 {
 
+    /* ------------------------------------------------------------ */
+    @Before
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         _type = HttpClient.CONNECTOR_SELECT_CHANNEL;
         super.setUp();

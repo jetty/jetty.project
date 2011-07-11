@@ -1,5 +1,7 @@
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.util.Enumeration;
 
@@ -7,26 +9,27 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.TestCase;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class CachedHeadersIsolationTest extends TestCase
+/* ------------------------------------------------------------ */
+public class CachedHeadersIsolationTest
 {
 
     Server server;
     HttpClient client;
     int port;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
-        super.setUp();
         server = new Server();
 
         Connector connector = new SelectChannelConnector();
@@ -35,7 +38,7 @@ public class CachedHeadersIsolationTest extends TestCase
 
         server.setHandler(new AbstractHandler()
         {
-
+            /* ------------------------------------------------------------ */
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                     ServletException
             {
@@ -58,14 +61,16 @@ public class CachedHeadersIsolationTest extends TestCase
 
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    /* ------------------------------------------------------------ */
+    @After
+    public void tearDown() throws Exception
     {
-        super.tearDown();
         server.stop();
         client.stop();
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHeaderWhenReadEarly() throws Exception
     {
 
@@ -88,6 +93,8 @@ public class CachedHeadersIsolationTest extends TestCase
         assertEquals("Overwritten buffer","Value",e1.getResponseFields().getStringField("Name"));
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHeaderWhenReadLate() throws Exception
     {
 

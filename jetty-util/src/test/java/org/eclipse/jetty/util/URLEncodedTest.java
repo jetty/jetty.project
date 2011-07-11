@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -28,13 +29,30 @@ import org.junit.Test;
  */
 public class URLEncodedTest
 {
+    
+    /* -------------------------------------------------------------- */
+    static 
+    {
+        /*
+         * Uncomment to set setting the System property to something other than the default of UTF-8.
+         * Beware however that you will have to @Ignore all the other tests other than testUrlEncodedStream!
+         
+            System.setProperty("org.eclipse.jetty.util.UrlEncoding.charset", StringUtil.__ISO_8859_1);
+         */
+    }
+
+    
     /* -------------------------------------------------------------- */
     @Test
     public void testUrlEncoded() throws UnsupportedEncodingException
     {
           
         UrlEncoded url_encoded = new UrlEncoded();
-        assertEquals("Empty",0, url_encoded.size());
+        assertEquals("Initially not empty",0, url_encoded.size());
+        
+        url_encoded.clear();
+        url_encoded.decode("");
+        assertEquals("Not empty after decode(\"\")",0, url_encoded.size());
 
         url_encoded.clear();
         url_encoded.decode("Name1=Value1");
@@ -156,6 +174,7 @@ public class URLEncodedTest
            {StringUtil.__UTF16,StringUtil.__UTF16},
         };
         
+
         for (int i=0;i<charsets.length;i++)
         {
             ByteArrayInputStream in = new ByteArrayInputStream("name\n=value+%30&name1=&name2&n\u00e3me3=value+3".getBytes(charsets[i][0]));
@@ -180,7 +199,28 @@ public class URLEncodedTest
         }
         else
             assertTrue("Charset Shift_JIS not supported by jvm", true);
+     
     }
+    
+    
+    /* -------------------------------------------------------------- */
+    @Test
+    public void testCharsetViaSystemProperty ()
+    throws Exception 
+    {        
+        /*
+         * Uncomment to test setting a non-UTF-8 default character encoding using the SystemProperty org.eclipse.jetty.util.UrlEncoding.charset.
+         * You will also need to uncomment the static initializer that sets this SystemProperty near the top of this file.
+  
+
+        ByteArrayInputStream in3 = new ByteArrayInputStream("name=libell%E9".getBytes(StringUtil.__ISO_8859_1));
+        MultiMap m3 = new MultiMap();
+        UrlEncoded.decodeTo(in3, m3, null, -1);
+        assertEquals("stream name", "libell\u00E9", m3.getString("name"));
+        
+        */ 
+    }
+    
 
     /* -------------------------------------------------------------- */
     @Test

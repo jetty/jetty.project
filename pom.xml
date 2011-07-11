@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>17</version>
+    <version>18</version>
   </parent>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
@@ -23,13 +23,13 @@
     <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
     <servlet.spec.version>3.0.20100224</servlet.spec.version>
     <build-support-version>1.0</build-support-version>
-    <jetty.test.helper>1.5</jetty.test.helper>
+    <jetty.test.helper>1.6</jetty.test.helper>
     <jetty.test.policy>1.2</jetty.test.policy>
   </properties>
   <scm>
-    <connection>scm:svn:http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</connection>
-    <developerConnection>scm:svn:svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</developerConnection>
-    <url>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/branches/jetty-8</url>
+    <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
+    <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</developerConnection>
+    <url>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree</url>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -45,7 +45,6 @@
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
         <configuration>
-          <tagBase>svn+ssh://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/tags</tagBase>
           <autoVersionSubmodules>true</autoVersionSubmodules>
         </configuration>
       </plugin>
@@ -420,14 +419,10 @@
         -->
       <id>osgi</id>
       <activation>
-
-	<activeByDefault>false</activeByDefault>
-        <!--
-	<activeByDefault>true</activeByDefault>
+        <activeByDefault>true</activeByDefault>
         <file>
           <exists>${basedir}/pom.xml</exists>
         </file>
-	-->
       </activation>
       <modules>
         <module>jetty-osgi</module>

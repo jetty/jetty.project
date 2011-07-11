@@ -18,11 +18,13 @@ package org.eclipse.jetty.deploy.bindings;
 import static org.hamcrest.Matchers.*;
 
 import java.io.File;
+import java.util.List;
 
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.After;
@@ -62,13 +64,20 @@ public class GlobalWebappConfigBindingTest
     @Test
     public void testServerAndSystemClassesOverride() throws Exception
     {
-        IO.copy(MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml"),new File(jetty.getJettyHome(),"context-binding-test-1.xml"));
+        File srcXml = MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml");
+        File destXml = new File(jetty.getJettyHome(),"context-binding-test-1.xml"); 
+        IO.copy(srcXml,destXml);
+        
+        PathAssert.assertFileExists("Context Binding XML",destXml);
 
         jetty.addConfiguration("binding-test-contexts-1.xml");
         jetty.load();
         jetty.start();
 
-        WebAppContext context = jetty.getWebAppContexts().get(0);
+        List<WebAppContext> contexts = jetty.getWebAppContexts();
+        Assert.assertThat("List of Contexts", contexts, hasSize(greaterThan(0)));
+        
+        WebAppContext context = contexts.get(0);
 
         Assert.assertNotNull("Context should not be null",context);
         String defaultClasses[] = context.getDefaultServerClasses();

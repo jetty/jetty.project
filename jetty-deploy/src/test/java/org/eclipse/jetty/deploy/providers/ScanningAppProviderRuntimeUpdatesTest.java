@@ -21,10 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -137,6 +139,10 @@ public class ScanningAppProviderRuntimeUpdatesTest
     @Test
     public void testAfterStartupThenUpdateContext() throws Exception
     {
+        // This test will not work on Windows as second war file would
+        // not be written over the first one because of a file lock
+        Assume.assumeTrue(!OS.IS_WINDOWS);
+        
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");
 

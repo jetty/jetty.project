@@ -586,7 +586,7 @@ public class HttpExchange
     public void setRequestContentSource(InputStream stream)
     {
         _requestContentSource = stream;
-        if (_requestContentSource.markSupported())
+        if (_requestContentSource != null && _requestContentSource.markSupported())
             _requestContentSource.mark(Integer.MAX_VALUE);
     }
 

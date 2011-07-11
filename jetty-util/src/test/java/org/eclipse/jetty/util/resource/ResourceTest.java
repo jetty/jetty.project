@@ -461,6 +461,7 @@ public class ResourceTest
     @Test
     public void testUncPathResourceFile() throws Exception
     {
+        // This test is intended to run only on Windows platform
         assumeTrue(OS.IS_WINDOWS);
         
         String uncPath = "\\\\127.0.0.1"+__userURL.toURI().getPath().replace('/','\\').replace(':','$')+"ResourceTest.java";

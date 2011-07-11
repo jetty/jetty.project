@@ -326,7 +326,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     try
                     {
                         updateKey();
-                        this.wait(end-now);
+                        this.wait(timeoutMs>=0?(end-now):10000);
                     }
                     catch (InterruptedException e)
                     {
@@ -337,7 +337,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         now=_selectSet.getNow();
                     }
 
-                    if (_readBlocked && now>=end)
+                    if (_readBlocked && timeoutMs>0 && now>=end)
                         return false;
                 }
             }
@@ -371,7 +371,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     try
                     {
                         updateKey();
-                        this.wait(end-now);
+                        this.wait(timeoutMs>=0?(end-now):10000);
                     }
                     catch (InterruptedException e)
                     {
@@ -381,7 +381,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     {
                         now=_selectSet.getNow();
                     }
-                    if (_writeBlocked && now>=end)
+                    if (_writeBlocked && timeoutMs>0 && now>=end)
                         return false;
                 }
             }

@@ -17,17 +17,26 @@ package org.eclipse.jetty.osgi.boot;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
+import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 
 /**
  * AppProvider for OSGi. Supports the configuration of ContextHandlers and
@@ -42,6 +51,12 @@ import org.osgi.framework.Bundle;
  * it supports the deployment of WebAppContexts. Except for the scanning of the
  * webapps directory.
  * </p>
+ * <p>
+ * When the parameter autoInstallOSGiBundles is set to true, OSGi bundles that
+ * are located in the monitored directory are installed and started after the
+ * framework as finished auto-starting all the other bundles.
+ * Warning: only use this for development.
+ * </p>
  */
 public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 {
@@ -51,7 +66,12 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     private String _defaultsDescriptor;
     private String _tldBundles;
     private String[] _configurationClasses;
+    private boolean _autoInstallOSGiBundles = true;
     
+    //Keep track of the bundles that were installed and that are waiting for the
+    //framework to complete its initialization.
+    Set<Bundle> _pendingBundlesToStart = null;
+        
     /**
      * When a context file corresponds to a deployed bundle and is changed we
      * reload the corresponding bundle.
@@ -59,10 +79,15 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     private static class Filter implements FilenameFilter
     {
         OSGiAppProvider _enclosedInstance;
-
+        
         public boolean accept(File dir, String name)
         {
-            if (!new File(dir,name).isDirectory())
+            File file = new File(dir,name);
+            if (fileMightBeAnOSGiBundle(file))
+            {
+                return true;
+            }
+            if (!file.isDirectory())
             {
                 String contextName = getDeployedAppName(name);
                 if (contextName != null)
@@ -352,6 +377,24 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         _extractWars=extract;
     }
 
+    /**
+     * @return true when this app provider locates osgi bundles and features in
+     * its monitored directory and installs them. By default true if there is a folder to monitor.
+     */
+    public boolean isAutoInstallOSGiBundles()
+    {
+    	return _autoInstallOSGiBundles;
+    }
+
+    /**
+     * &lt;autoInstallOSGiBundles&gt;true&lt;/autoInstallOSGiBundles&gt;
+     * @param installingOSGiBundles
+     */
+    public void setAutoInstallOSGiBundles(boolean installingOSGiBundles)
+    {
+        _autoInstallOSGiBundles=installingOSGiBundles;
+    }
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -361,6 +404,10 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
      * directory, then the ContextXmlDir is examined to see if a foo.xml file
      * exists. If it does, then this deployer will not deploy the webapp and the
      * ContextProvider should be used to act on the foo.xml file.
+     * </p>
+     * <p>
+     * Also if this directory contains some osgi bundles, it will install them.
+     * </p>
      * 
      * @see ContextProvider
      * @param contextsDir
@@ -405,5 +452,273 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         return _configurationClasses;
     }
 
+    /**
+     * Overridden to install the OSGi bundles found in the monitored folder.
+     */
+    protected void doStart() throws Exception
+    {
+        if (isAutoInstallOSGiBundles())
+        {
+        	if (getMonitoredDirResource()  == null)
+        	{
+        		setAutoInstallOSGiBundles(false);
+        		Log.info("Disable autoInstallOSGiBundles as there is not contexts folder to monitor.");
+        	}
+	    	else
+        	{
+	    		File scandir = null;
+	    		try
+	    		{
+	                scandir = getMonitoredDirResource().getFile();
+	                if (!scandir.exists() || !scandir.isDirectory())
+	                {
+	                	setAutoInstallOSGiBundles(false);
+	            		Log.warn("Disable autoInstallOSGiBundles as the contexts folder '" + scandir.getAbsolutePath() + " does not exist.");
+	            		scandir = null;
+	                }
+	    		}
+	    		catch (IOException ioe)
+	    		{
+                	setAutoInstallOSGiBundles(false);
+            		Log.warn("Disable autoInstallOSGiBundles as the contexts folder '" + getMonitoredDirResource().getURI() + " does not exist.");
+            		scandir = null;
+	    		}
+	    		if (scandir != null)
+	    		{
+		            for (File file : scandir.listFiles())
+		            {
+		                if (fileMightBeAnOSGiBundle(file))
+		                {
+		                    installBundle(file, false);
+		                }
+		            }
+	    		}
+        	}
+        }
+        super.doStart();
+        if (isAutoInstallOSGiBundles())
+        {
+            Scanner.ScanCycleListener scanCycleListner = new AutoStartWhenFrameworkHasCompleted(this);
+            super.addScannerListener(scanCycleListner);
+        }
+    }
+    
+    /**
+     * When the file is a jar or a folder, we look if it looks like an OSGi bundle.
+     * In that case we install it and start it.
+     * <p>
+     * Really a simple trick to get going quickly with development.
+     * </p>
+     */
+    @Override
+    protected void fileAdded(String filename) throws Exception
+    {
+        File file = new File(filename);
+        if (isAutoInstallOSGiBundles() && file.exists() && fileMightBeAnOSGiBundle(file))
+        {
+            installBundle(file, true);
+        }
+        else
+        {
+            super.fileAdded(filename);
+        }
+    }
+    
+    /**
+     * @param file
+     * @return
+     */
+    private static boolean fileMightBeAnOSGiBundle(File file)
+    {
+        if (file.isDirectory())
+        {
+            if (new File(file,"META-INF/MANIFEST.MF").exists())
+            {
+                return true;
+            }
+        }
+        else if (file.getName().endsWith(".jar"))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    protected void fileChanged(String filename) throws Exception
+    {
+        File file = new File(filename);
+        if (isAutoInstallOSGiBundles() && fileMightBeAnOSGiBundle(file))
+        {
+            updateBundle(file);
+        }
+        else
+        {
+            super.fileChanged(filename);
+        }
+    }
+
+    @Override
+    protected void fileRemoved(String filename) throws Exception
+    {
+        File file = new File(filename);
+        if (isAutoInstallOSGiBundles() && fileMightBeAnOSGiBundle(file))
+        {
+            uninstallBundle(file);
+        }
+        else
+        {
+            super.fileRemoved(filename);
+        }
+    }
+    
+    /**
+     * Returns a bundle according to its location.
+     * In the version 1.6 of org.osgi.framework, BundleContext.getBundle(String) is what we want.
+     * However to support older versions of OSGi. We use our own local refrence mechanism.
+     * @param location
+     * @return
+     */
+    protected Bundle getBundle(BundleContext bc, String location)
+    {
+    	//not available in older versions of OSGi:
+    	//return bc.getBundle(location);
+    	for (Bundle b : bc.getBundles())
+    	{
+    		if (b.getLocation().equals(location))
+    		{
+    			return b;
+    		}
+    	}
+    	return null;
+    }
+
+    protected synchronized Bundle installBundle(File file, boolean start)
+    {
+    	
+        try
+        {
+            BundleContext bc = JettyBootstrapActivator.getBundleContext();
+            String location = file.toURI().toString();
+            Bundle b = getBundle(bc, location);
+            if (b == null) 
+            {
+                b = bc.installBundle(location);
+            }
+            if (b == null)
+            {
+            	//not sure we will ever be here,
+            	//most likely a BundleException was thrown
+            	Log.warn("The file " + location + " is not an OSGi bundle.");
+            	return null;
+            }
+            if (start && b.getHeaders().get(Constants.FRAGMENT_HOST) == null)
+            {//not a fragment, try to start it. if the framework has finished auto-starting.
+            	if (!PackageAdminServiceTracker.INSTANCE.frameworkHasCompletedAutostarts())
+            	{
+            		if (_pendingBundlesToStart == null)
+            		{
+            			_pendingBundlesToStart = new HashSet<Bundle>();
+            		}
+            		_pendingBundlesToStart.add(b);
+            		return null;
+            	}
+            	else
+            	{
+            		b.start();
+            	}
+            }
+            return b;
+        }
+        catch (BundleException e)
+        {
+            Log.warn("Unable to " + (start? "start":"install") + " the bundle " + file.getAbsolutePath(), e);
+        }
+        return null;
+    }
+    
+    protected void uninstallBundle(File file)
+    {
+        try
+        {
+            Bundle b = getBundle(JettyBootstrapActivator.getBundleContext(), file.toURI().toString());
+            b.stop();
+            b.uninstall();
+        }
+        catch (BundleException e)
+        {
+            Log.warn("Unable to uninstall the bundle " + file.getAbsolutePath(), e);
+        }
+    }
+    
+    protected void updateBundle(File file)
+    {
+        try
+        {
+            Bundle b = getBundle(JettyBootstrapActivator.getBundleContext(), file.toURI().toString());
+            if (b == null)
+            {
+                installBundle(file, true);
+            }
+            else if (b.getState() == Bundle.ACTIVE)
+            {
+                b.update();
+            }
+            else
+            {
+                b.start();
+            }
+        }
+        catch (BundleException e)
+        {
+            Log.warn("Unable to update the bundle " + file.getAbsolutePath(), e);
+        }
+    }
+    
 
 }
+/**
+ * At the end of each scan, if there are some bundles to be started,
+ * look if the framework has completed its autostart. In that case start those bundles.
+ */
+class AutoStartWhenFrameworkHasCompleted implements Scanner.ScanCycleListener
+{
+	private final OSGiAppProvider _appProvider;
+	
+	AutoStartWhenFrameworkHasCompleted(OSGiAppProvider appProvider)
+	{
+		_appProvider = appProvider;
+	}
+	
+	public void scanStarted(int cycle) throws Exception
+	{
+	}
+	
+	public void scanEnded(int cycle) throws Exception
+	{
+		if (_appProvider._pendingBundlesToStart != null && PackageAdminServiceTracker.INSTANCE.frameworkHasCompletedAutostarts())
+		{
+			Iterator<Bundle> it = _appProvider._pendingBundlesToStart.iterator();
+			while (it.hasNext())
+			{
+				Bundle b = it.next();
+				if (b.getHeaders().get(Constants.FRAGMENT_HOST) != null)
+				{
+					continue;
+				}
+				try
+				{
+					b.start();
+				}
+		        catch (BundleException e)
+		        {
+		            Log.warn("Unable to start the bundle " + b.getLocation(), e);
+		        }
+
+			}
+			_appProvider._pendingBundlesToStart = null;
+		}
+	}
+
+}
+

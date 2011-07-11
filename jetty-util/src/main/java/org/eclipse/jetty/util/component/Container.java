@@ -12,6 +12,7 @@
 // ========================================================================
 
 package org.eclipse.jetty.util.component;
+import java.lang.ref.WeakReference;
 import java.util.EventListener;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -225,20 +226,19 @@ public class Container
     /* ------------------------------------------------------------ */
     /** A Container event.
      * @see Listener
-     *
      */
     public static class Relationship
     {
-        private Object _parent;
-        private Object _child;
+        private final WeakReference<Object> _parent;
+        private final WeakReference<Object> _child;
         private String _relationship;
         private Container _container;
         
         private Relationship(Container container, Object parent,Object child, String relationship)
         {
             _container=container;
-            _parent=parent;
-            _child=child;
+            _parent=new WeakReference<Object>(parent);
+            _child=new WeakReference<Object>(child);
             _relationship=relationship;
         }
         
@@ -249,12 +249,12 @@ public class Container
         
         public Object getChild()
         {
-            return _child;
+            return _child.get();
         }
         
         public Object getParent()
         {
-            return _parent;
+            return _parent.get();
         }
         
         public String getRelationship()
@@ -280,7 +280,7 @@ public class Container
             if (o==null || !(o instanceof Relationship))
                 return false;
             Relationship r = (Relationship)o;
-            return r._parent==_parent && r._child==_child && r._relationship.equals(_relationship);
+            return r._parent.get()==_parent.get() && r._child.get()==_child.get() && r._relationship.equals(_relationship);
         }
     }
     

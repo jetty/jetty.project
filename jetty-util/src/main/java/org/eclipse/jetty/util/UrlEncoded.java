@@ -231,7 +231,10 @@ public class UrlEncoded extends MultiMap
                 key = encoded
                     ?decodeString(content,mark+1,content.length()-mark-1,charset)
                     :content.substring(mark+1);
-                map.add(key,"");
+                if (key != null && key.length() > 0)
+                {
+                    map.add(key,"");
+                }
             }
         }
     }
@@ -504,7 +507,14 @@ public class UrlEncoded extends MultiMap
     public static void decodeTo(InputStream in, MultiMap map, String charset, int maxLength)
     throws IOException
     {
-        if (charset==null || StringUtil.__UTF8.equalsIgnoreCase(charset))
+        //no charset present, use the configured default
+        if (charset==null) 
+        {
+           charset=ENCODING;
+        }
+            
+            
+        if (StringUtil.__UTF8.equalsIgnoreCase(charset))
         {
             decodeUtf8To(in,map,maxLength);
             return;

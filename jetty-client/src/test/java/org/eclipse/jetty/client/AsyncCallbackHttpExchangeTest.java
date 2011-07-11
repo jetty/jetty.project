@@ -14,6 +14,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertNull;
+
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -22,13 +24,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
+/* ------------------------------------------------------------ */
 /**
  * @version $Revision$ $Date$
  */
-public class AsyncCallbackHttpExchangeTest extends TestCase
+public class AsyncCallbackHttpExchangeTest
 {
+    /* ------------------------------------------------------------ */
     /**
      * If the HttpExchange callbacks are called holding the lock on HttpExchange,
      * it will be impossible for the callback to perform some work asynchronously
@@ -37,6 +41,7 @@ public class AsyncCallbackHttpExchangeTest extends TestCase
      *
      * @throws Exception if the test fails
      */
+    @Test
     public void testAsyncCallback() throws Exception
     {
         ExecutorService executor = Executors.newCachedThreadPool();
@@ -56,22 +61,26 @@ public class AsyncCallbackHttpExchangeTest extends TestCase
         }
     }
 
+    /* ------------------------------------------------------------ */
     private class TestHttpExchange extends HttpExchange
     {
         private final ExecutorService executor;
         private final AtomicReference<Exception> failure;
 
+        /* ------------------------------------------------------------ */
         private TestHttpExchange(ExecutorService executor, AtomicReference<Exception> failure)
         {
             this.executor = executor;
             this.failure = failure;
         }
 
+        /* ------------------------------------------------------------ */
         @Override
         protected void onRequestCommitted() throws IOException
         {
             Future<Integer> future = executor.submit(new Callable<Integer>()
             {
+                /* ------------------------------------------------------------ */
                 public Integer call() throws Exception
                 {
                     // Method getStatus() reads synchronized state

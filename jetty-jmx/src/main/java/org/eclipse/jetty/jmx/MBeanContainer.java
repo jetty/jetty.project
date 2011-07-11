@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Container.Relationship;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**
@@ -39,10 +41,12 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
  */
 public class MBeanContainer extends AbstractLifeCycle implements Container.Listener, Dumpable
 {
+    private final static Logger __log = Log.getLogger(MBeanContainer.class.getName());
+    
     private final MBeanServer _server;
     private final WeakHashMap<Object, ObjectName> _beans = new WeakHashMap<Object, ObjectName>();
     private final HashMap<String, Integer> _unique = new HashMap<String, Integer>();
-    private final MultiMap<ObjectName> _relations = new MultiMap<ObjectName>();
+    private final WeakHashMap<ObjectName,List<Container.Relationship>> _relations = new WeakHashMap<ObjectName,List<Container.Relationship>>();
     private String _domain = null;
 
     /**
@@ -89,7 +93,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            __log.ignore(e);
         }
     }
 
@@ -130,6 +134,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized void add(Relationship relationship)
     {
+        __log.debug("add {}",relationship);
         ObjectName parent = _beans.get(relationship.getParent());
         if (parent == null)
         {
@@ -145,7 +150,15 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
         }
 
         if (parent != null && child != null)
-            _relations.add(parent, relationship);
+        {
+            List<Container.Relationship> rels = _relations.get(parent);
+            if (rels==null)
+            {
+                rels=new ArrayList<Container.Relationship>();
+                _relations.put(parent,rels);
+            }
+            rels.add(relationship);
+        }
     }
 
     /**
@@ -155,11 +168,23 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized void remove(Relationship relationship)
     {
+        __log.debug("remove {}",relationship);
         ObjectName parent = _beans.get(relationship.getParent());
         ObjectName child = _beans.get(relationship.getChild());
 
         if (parent != null && child != null)
-            _relations.removeValue(parent, relationship);
+        {
+            List<Container.Relationship> rels = _relations.get(parent);
+            if (rels!=null)
+            {
+                for (Iterator<Container.Relationship> i=rels.iterator();i.hasNext();)
+                {
+                    Container.Relationship r = i.next();
+                    if (relationship.equals(r) || r.getChild()==null)
+                        i.remove();
+                }
+            }
+        }
     }
 
     /**
@@ -169,14 +194,15 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized void removeBean(Object obj)
     {
+        __log.debug("removeBean {}",obj);
         ObjectName bean = _beans.remove(obj);
 
         if (bean != null)
         {
-            List<?> beanRelations = _relations.getValues(bean);
-            if (beanRelations != null && beanRelations.size() > 0)
+            List<Container.Relationship> beanRelations= _relations.remove(bean);
+            if (beanRelations != null)
             {
-                Log.debug("Unregister {}", beanRelations);
+                __log.debug("Unregister {}", beanRelations);
                 List<?> removeList = new ArrayList<Object>(beanRelations);
                 for (Object r : removeList)
                 {
@@ -188,15 +214,15 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
             try
             {
                 _server.unregisterMBean(bean);
-                Log.debug("Unregistered {}", bean);
+                __log.debug("Unregistered {}", bean);
             }
             catch (javax.management.InstanceNotFoundException e)
             {
-                Log.ignore(e);
+                __log.ignore(e);
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                __log.warn(e);
             }
         }
     }
@@ -208,6 +234,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
      */
     public synchronized void addBean(Object obj)
     {
+        __log.debug("addBean {}",obj);
         try
         {
             if (obj == null || _beans.containsKey(obj))
@@ -271,13 +298,13 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
             }
 
             ObjectInstance oinstance = _server.registerMBean(mbean, oname);
-            Log.debug("Registered {}", oinstance.getObjectName());
+            __log.debug("Registered {}", oinstance.getObjectName());
             _beans.put(obj, oinstance.getObjectName());
 
         }
         catch (Exception e)
         {
-            Log.warn("bean: " + obj, e);
+            __log.warn("bean: " + obj, e);
         }
     }
 

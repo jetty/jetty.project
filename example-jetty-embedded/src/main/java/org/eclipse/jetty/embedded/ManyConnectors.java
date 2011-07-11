@@ -50,7 +50,6 @@ public class ManyConnectors
         cf.setKeyStore(jetty_home + "/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        server.addConnector(ssl_connector);
 
         server.setConnectors(new Connector[]
         { connector0, connector1, ssl_connector });

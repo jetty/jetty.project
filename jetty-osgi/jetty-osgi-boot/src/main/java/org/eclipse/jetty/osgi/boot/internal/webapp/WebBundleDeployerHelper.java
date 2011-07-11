@@ -5,7 +5,6 @@
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
 // The Eclipse Public License is available at 
-// http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
 // You may elect to redistribute this code under either of these licenses. 
@@ -534,7 +533,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                                 + " the fragment '" + frag.getSymbolicName() + "'");
                     }
                     fragUrl = DefaultFileLocatorHelper.getLocalURL(fragUrl);
-                    String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
+                    String key = fragFolder.startsWith("/") ? fragFolder.substring(1) : fragFolder;
                     appendedResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(fragUrl));
                 }
                 if (patchFragFolder != null)
@@ -595,13 +594,23 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 	                        }
 	                        if (resEnum != null && resEnum.hasMoreElements())
 	                        {
-		                        if (resfrags == null)
-		                        {
-		                        	resfrags = new ArrayList<Resource>();
-		                            wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, resfrags);
-		                        }
-		                        resfrags.add(Resource.newResource(
-		                        		DefaultFileLocatorHelper.getLocalURL(frag.getEntry("/META-INF/resources"))));
+	                        	URL resourcesEntry = frag.getEntry("/META-INF/resources/");
+	                        	if (resourcesEntry == null)
+	                        	{
+	                        		//probably we found some fragments to a bundle.
+			                        //those are already contributed.
+	                        		//so we skip this.
+	                        	}
+	                        	else
+	                        	{
+			                        if (resfrags == null)
+			                        {
+			                        	resfrags = new ArrayList<Resource>();
+			                            wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, resfrags);
+			                        }
+	                        		resfrags.add(Resource.newResource(
+	                        				DefaultFileLocatorHelper.getLocalURL(resourcesEntry)));
+	                        	}
 	                        }
 	                        if (tldEnum != null && tldEnum.hasMoreElements())
 	                        {

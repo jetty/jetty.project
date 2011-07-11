@@ -141,6 +141,23 @@ public class HttpTester
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Parse one HTTP request or response
+     * @param rawHTTP Raw HTTP to parse
+     * @return Any unparsed data in the rawHTTP (eg pipelined requests)
+     * @throws IOException
+     */
+    public byte[] parse(byte[] rawHTTP) throws IOException
+    {
+        _charset = _defaultCharset;
+        ByteArrayBuffer buf = new ByteArrayBuffer(rawHTTP);
+        View view = new View(buf);
+        HttpParser parser = new HttpParser(view,new PH());
+        parser.parse();
+        return view.asArray();        
+    }
+    
+    /* ------------------------------------------------------------ */
     public String generate() throws IOException
     {
         _charset = _defaultCharset;
@@ -435,6 +452,16 @@ public class HttpTester
             return getString(_parsedContent.toByteArray());
         if (_genContent!=null)
             return getString(_genContent);
+        return null;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public byte[] getContentBytes()
+    {
+        if (_parsedContent!=null)
+            return _parsedContent.toByteArray();
+        if (_genContent!=null)
+            return _genContent;
         return null;
     }
     

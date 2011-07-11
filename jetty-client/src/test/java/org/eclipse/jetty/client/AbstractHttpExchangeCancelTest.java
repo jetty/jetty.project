@@ -14,6 +14,10 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 
@@ -21,8 +25,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.TestCase;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.server.Connector;
@@ -32,17 +34,20 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @version $Revision$ $Date$
  */
-public abstract class AbstractHttpExchangeCancelTest extends TestCase
+public abstract class AbstractHttpExchangeCancelTest
 {
     private Server server;
     private Connector connector;
 
-    @Override
-    protected void setUp() throws Exception
+    @Before
+    public void setUp() throws Exception
     {
         server = new Server();
         connector = new SelectChannelConnector();
@@ -51,13 +56,15 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         server.start();
     }
 
-    @Override
-    protected void tearDown() throws Exception
+    @After
+    public void tearDown() throws Exception
     {
         server.stop();
         server.join();
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnSend1() throws Exception
     {
         // One of the first things that HttpClient.send() does
@@ -93,6 +100,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnSend2() throws Exception
     {
         // One of the first things that HttpClient.send() does
@@ -129,6 +138,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnRequestCommitted() throws Exception
     {
         TestHttpExchange exchange = new TestHttpExchange()
@@ -152,6 +163,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnRequestComplete() throws Exception
     {
         TestHttpExchange exchange = new TestHttpExchange()
@@ -175,6 +188,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnResponseStatus() throws Exception
     {
         TestHttpExchange exchange = new TestHttpExchange()
@@ -198,6 +213,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnResponseHeader() throws Exception
     {
         TestHttpExchange exchange = new TestHttpExchange()
@@ -221,6 +238,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnResponseHeadersComplete() throws Exception
     {
         TestHttpExchange exchange = new TestHttpExchange()
@@ -244,6 +263,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnResponseContent() throws Exception
     {
         TestHttpExchange exchange = new TestHttpExchange()
@@ -267,6 +288,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeCancelOnResponseComplete() throws Exception
     {
         TestHttpExchange exchange = new TestHttpExchange()
@@ -290,6 +313,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertEquals(HttpExchange.STATUS_COMPLETED, status);
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeOnServerException() throws Exception
     {
         try
@@ -313,6 +338,8 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         }
     }
 
+    /* ------------------------------------------------------------ */
+    @Test
     public void testHttpExchangeOnExpire() throws Exception
     {
         HttpClient httpClient = getHttpClient();
@@ -338,15 +365,19 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         assertFalse(exchange.isAssociated());
     }
 
+    /* ------------------------------------------------------------ */
     protected abstract HttpClient getHttpClient();
 
+    /* ------------------------------------------------------------ */
     protected Address newAddress()
     {
         return new Address("localhost", connector.getLocalPort());
     }
 
+    /* ------------------------------------------------------------ */
     private static class EmptyHandler extends AbstractHandler
     {
+        /* ------------------------------------------------------------ */
         public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
             request.setHandled(true);
@@ -382,28 +413,33 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
         }
     }
 
+    /* ------------------------------------------------------------ */
     protected static class TestHttpExchange extends ContentExchange
     {
         private boolean responseCompleted;
         private boolean failed = false;
         private boolean expired = false;
 
+        /* ------------------------------------------------------------ */
         protected TestHttpExchange()
         {
             super(true);
         }
 
+        /* ------------------------------------------------------------ */
         @Override
         protected synchronized void onResponseComplete() throws IOException
         {
             this.responseCompleted = true;
         }
 
+        /* ------------------------------------------------------------ */
         public synchronized boolean isResponseCompleted()
         {
             return responseCompleted;
         }
 
+        /* ------------------------------------------------------------ */
         @Override
         protected synchronized void onException(Throwable ex)
         {
@@ -414,17 +450,20 @@ public abstract class AbstractHttpExchangeCancelTest extends TestCase
                 failed = true;
         }
 
+        /* ------------------------------------------------------------ */
         public synchronized boolean isFailed()
         {
             return failed;
         }
 
+        /* ------------------------------------------------------------ */
         @Override
         protected synchronized void onExpire()
         {
             this.expired = true;
         }
 
+        /* ------------------------------------------------------------ */
         public synchronized boolean isExpired()
         {
             return expired;

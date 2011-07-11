@@ -59,6 +59,7 @@ public class JettyPolicyRuntimeTest
     @Test
     public void testSimplePolicyReplacement() throws Exception
     {
+    	Assume.assumeTrue(!OS.IS_WINDOWS); // Ignore test if running under windows.
         JettyPolicy ap = new JettyPolicy(MavenTestingUtils.getTestResourceDir("runtime-test-1").getAbsolutePath(), evaluator);
         ap.refresh();
 
@@ -73,6 +74,7 @@ public class JettyPolicyRuntimeTest
     @Test
     public void testRepeatedPolicyReplacement() throws Exception
     {
+    	Assume.assumeTrue(!OS.IS_WINDOWS); // Ignore test if running under windows.
         JettyPolicy ap = new JettyPolicy(MavenTestingUtils.getTestResourceDir("runtime-test-2/a").getAbsolutePath(),evaluator);
         ap.refresh();
 

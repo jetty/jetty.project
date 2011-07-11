@@ -18,11 +18,13 @@ import java.util.regex.Matcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Request;
+
 /**
  * Rewrite the URI by matching with a regular expression. 
  * The replacement string may use $n" to replace the nth capture group.
  */
-public class RewriteRegexRule extends RegexRule
+public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
 {
     private String _replacement;
 
@@ -59,6 +61,25 @@ public class RewriteRegexRule extends RegexRule
         }
 
         return target;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
+    {
+        Matcher matcher=_regex.matcher(request.getRequestURI());
+        boolean matches = matcher.matches();
+        if (matches)
+        {
+            String uri=_replacement;
+            for (int g=1;g<=matcher.groupCount();g++)
+            {
+                String group = matcher.group(g);
+                uri=uri.replaceAll("\\$"+g,group);
+            }
+            request.setRequestURI(uri);
+        }
+        else
+            request.setRequestURI(newTarget);
     }
 
     /* ------------------------------------------------------------ */

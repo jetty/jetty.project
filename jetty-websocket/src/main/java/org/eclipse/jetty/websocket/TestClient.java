@@ -37,8 +37,8 @@ public class TestClient
     private final BufferedWriter _output;
     private final BufferedReader _input;
     private final SocketEndPoint _endp;
-    private final WebSocketGeneratorD07 _generator;
-    private final WebSocketParserD07 _parser;
+    private final WebSocketGeneratorD7_9 _generator;
+    private final WebSocketParserD7_9 _parser;
     private int _framesSent;
     private int _messagesSent;
     private int _framesReceived;
@@ -59,19 +59,19 @@ public class TestClient
             {
                 _framesReceived++;
                 _frames++;
-                if (opcode == WebSocketConnectionD07.OP_CLOSE)
+                if (opcode == WebSocketConnectionD7_9.OP_CLOSE)
                 {
                     byte[] data=buffer.asArray();
                     // System.err.println("CLOSED: "+((0xff&data[0])*0x100+(0xff&data[1]))+" "+new String(data,2,data.length-2,StringUtil.__UTF8));
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_CLOSE,data,0,data.length);
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD7_9.OP_CLOSE,data,0,data.length);
                     _generator.flush();
                     _socket.shutdownOutput();
                     _socket.close();
                     return;
                 }
-                else if (opcode == WebSocketConnectionD07.OP_PING)
+                else if (opcode == WebSocketConnectionD7_9.OP_PING)
                 {
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD07.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD7_9.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
                     _generator.flush();
                 }
                 
@@ -81,7 +81,7 @@ public class TestClient
                     _opcode=opcode;
                 
 
-                if (WebSocketConnectionD07.isLastFrame(flags))
+                if (WebSocketConnectionD7_9.isLastFrame(flags))
                 {
                     _messagesReceived++;
                     Long start=_starts.take();
@@ -123,8 +123,8 @@ public class TestClient
         _input = new BufferedReader(new InputStreamReader(_socket.getInputStream(), "ISO-8859-1"));
 
         _endp=new SocketEndPoint(_socket);
-        _generator = new WebSocketGeneratorD07(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD07.FixedMaskGen(new byte[4]));
-        _parser = new WebSocketParserD07(new WebSocketBuffers(32*1024),_endp,_handler,false);
+        _generator = new WebSocketGeneratorD7_9(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD7_9.FixedMaskGen(new byte[4]));
+        _parser = new WebSocketParserD7_9(new WebSocketBuffers(32*1024),_endp,_handler,false);
     }
 
     public int getSize()
@@ -170,7 +170,7 @@ public class TestClient
             if (line.startsWith("Sec-WebSocket-Accept:"))
             {
                 String accept=line.substring(21).trim();
-                accepted=accept.equals(WebSocketConnectionD07.hashKey(new String(B64Code.encode(key))));
+                accepted=accept.equals(WebSocketConnectionD7_9.hashKey(new String(B64Code.encode(key))));
             }
             else if (line.startsWith("Sec-WebSocket-Protocol:"))
             {
@@ -205,7 +205,7 @@ public class TestClient
                     break;
                 byte data[]=null;
 
-                if (opcode==WebSocketConnectionD07.OP_TEXT)
+                if (opcode==WebSocketConnectionD7_9.OP_TEXT)
                 {
                     StringBuilder b = new StringBuilder();
                     while (b.length()<_size)
@@ -228,7 +228,7 @@ public class TestClient
                 {                    
                     _framesSent++;
                     byte flags= (byte)(off+len==data.length?0x8:0);
-                    byte op=(byte)(off==0?opcode:WebSocketConnectionD07.OP_CONTINUATION);
+                    byte op=(byte)(off==0?opcode:WebSocketConnectionD7_9.OP_CONTINUATION);
 
                     if (_verbose)                
                         System.err.printf("%s#addFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
@@ -330,9 +330,9 @@ public class TestClient
             {
                 client.open();
                 if (protocol!=null && protocol.startsWith("echo"))
-                    client.ping(count,binary?WebSocketConnectionD07.OP_BINARY:WebSocketConnectionD07.OP_TEXT,fragment);
+                    client.ping(count,binary?WebSocketConnectionD7_9.OP_BINARY:WebSocketConnectionD7_9.OP_TEXT,fragment);
                 else
-                    client.ping(count,WebSocketConnectionD07.OP_PING,-1);
+                    client.ping(count,WebSocketConnectionD7_9.OP_PING,-1);
             }
             finally
             {

@@ -20,7 +20,7 @@
               <Set name="configurationManager">
                 <New class="org.eclipse.jetty.deploy.FileConfigurationManager">
                   <Set name="file">
-                    <Property name="test.targetdir" default="target" />/xml-configured-jetty.properties
+                    <SystemProperty name="jetty.home"/>/xml-configured-jetty.properties
                   </Set>
                 </New>
               </Set>
