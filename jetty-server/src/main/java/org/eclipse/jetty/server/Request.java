@@ -1108,31 +1108,25 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.http.HttpServletRequest#getSession(boolean)
      */
     public HttpSession getSession(boolean create)
-    {
-        if (_sessionManager==null && create)
+    {   
+        if (_session != null )
+        {
+            if (_sessionManager!=null && !_sessionManager.isValid(_session))
+                _session=null;
+            else
+                return _session;
+        }
+        
+        if (!create)
+            return null;
+        
+        if (_sessionManager==null)
             throw new IllegalStateException("No SessionManager");
-        
-        if (_session != null && _sessionManager!=null && _sessionManager.isValid(_session))
-            return _session;
-        
-        _session=null;
-        
-        String id=getRequestedSessionId();
-        
-        if (id != null && _sessionManager!=null)
-        {
-            _session=_sessionManager.getHttpSession(id);
-            if (_session == null && !create)
-                return null;
-        }
-        
-        if (_session == null && _sessionManager!=null && create )
-        {
-            _session=_sessionManager.newHttpSession(this);
-            HttpCookie cookie=_sessionManager.getSessionCookie(_session,getContextPath(),isSecure());
-            if (cookie!=null)
-                _connection.getResponse().addCookie(cookie);
-        }
+
+        _session=_sessionManager.newHttpSession(this);
+        HttpCookie cookie=_sessionManager.getSessionCookie(_session,getContextPath(),isSecure());
+        if (cookie!=null)
+            _connection.getResponse().addCookie(cookie);
         
         return _session;
     }
@@ -1292,7 +1286,7 @@ public class Request implements HttpServletRequest
             return false;
         
         HttpSession session=getSession(false);
-        return (session != null && _sessionManager.getIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
+        return (session != null && _sessionManager.getSessionIdManager().getClusterId(_requestedSessionId).equals(_sessionManager.getClusterId(session)));
     }
     
     /* ------------------------------------------------------------ */

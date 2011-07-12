@@ -219,7 +219,7 @@ public class ContextDeployer extends AbstractLifeCycle
     @Deprecated
     public void setConfigurationDir(File file) throws Exception
     {
-        setConfigurationDir(Resource.newResource(file.toURL()));
+        setConfigurationDir(Resource.newResource(Resource.toURL(file)));
     }
 
     /* ------------------------------------------------------------ */

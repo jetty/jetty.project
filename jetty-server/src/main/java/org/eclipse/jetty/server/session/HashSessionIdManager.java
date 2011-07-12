@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.session.AbstractSessionManager.Session;
 import org.eclipse.jetty.util.MultiMap;
 
 /* ------------------------------------------------------------ */
@@ -183,7 +182,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
         {
             for (WeakReference<HttpSession> ref: sessions)
             {
-                Session session=(Session)ref.get();
+                AbstractSession session=(AbstractSession)ref.get();
                 if (session!=null && session.isValid())
                     session.invalidate();
             }

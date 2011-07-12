@@ -86,6 +86,15 @@ public abstract class AbstractOrphanedSessionTest
 
                     System.err.println("FINISHED waiting for session to expire");
                     // Perform one request to server2 to be sure that the session has been expired
+//                    
+
+                    // force invalidate to test
+//                    ContentExchange exchange3 = new ContentExchange(true);
+//                    exchange3.setMethod(HttpMethods.GET);
+//                    exchange3.setURL("http://localhost:" + port2 + contextPath + servletMapping + "?action=remove");
+//                    exchange3.getRequestFields().add("Cookie", sessionCookie);
+//                    client.send(exchange3);
+//                    exchange3.waitForDone();
                     
                     System.err.println("CHECKING NODE2");
                     ContentExchange exchange2 = new ContentExchange(true);
@@ -122,6 +131,12 @@ public abstract class AbstractOrphanedSessionTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("A", "A");
+            }
+            else if ("remove".equals(action))
+            {
+                HttpSession session = request.getSession(false);
+                session.invalidate();
+                //assertTrue(session == null);
             }
             else if ("check".equals(action))
             {
