@@ -1022,7 +1022,7 @@ public class HttpParser implements Parser
     /* ------------------------------------------------------------------------------- */
     public void returnBuffers()
     {
-        if (_body!=null && !_body.hasContent() && _body.markIndex()==-1)
+        if (_body!=null && !_body.hasContent() && _body.markIndex()==-1 && _buffers!=null)
         {   
             if (_buffer==_body)
                 _buffer=_header;
@@ -1031,7 +1031,7 @@ public class HttpParser implements Parser
             _body=null; 
         }
 
-        if (_header!=null && !_header.hasContent() && _header.markIndex()==-1)
+        if (_header!=null && !_header.hasContent() && _header.markIndex()==-1 && _buffers!=null)
         {
             if (_buffer==_header)
                 _buffer=null;
