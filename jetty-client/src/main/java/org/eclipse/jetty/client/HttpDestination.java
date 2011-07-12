@@ -673,6 +673,7 @@ public class HttpDestination implements Dumpable
             this.proxyEndPoint = proxyEndPoint;
             this.exchange = exchange;
             setMethod(HttpMethods.CONNECT);
+            setVersion(exchange.getVersion());
             String serverHostAndPort = serverAddress.toString();
             setURI(serverHostAndPort);
             addRequestHeader(HttpHeaders.HOST, serverHostAndPort);
