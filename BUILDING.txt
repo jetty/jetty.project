@@ -4,5 +4,3 @@ Jetty is built with maven >= 2.0.8
   cd /my/work/directory/jetty-7
   mvn install
 
-
- 
