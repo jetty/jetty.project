@@ -108,7 +108,14 @@ public class XmlParser
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/validation", validating);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespaces", true);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespace-prefixes", false);  
-            _parser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
+            try
+            {
+                _parser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
+            }
+            catch (Exception e)
+            {
+                Log.warn(Log.EXCEPTION, e);
+            }
         }
         catch (Exception e)
         {
