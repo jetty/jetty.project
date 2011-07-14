@@ -88,7 +88,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </p>
  *
  */
-public class HttpConnection  extends AbstractConnection implements Connection
+public class HttpConnection  extends AbstractConnection
 {
     private static final int UNKNOWN = -2;
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();

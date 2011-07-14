@@ -29,20 +29,13 @@ public class BlockingHttpConnection extends HttpConnection
 
     public Connection handle() throws IOException
     {
-        // TODO - simplify this - as much of it is taken from the async case and does not apply to blocking.
-        
-        
         Connection connection = this;
 
         // Loop while more in buffer
         boolean more_in_buffer =true; // assume true until proven otherwise
-        boolean progress=true;
 
         try
         {
-            assert getCurrentConnection()==null;
-            assert _handling==false;
-            _handling=true;
             setCurrentConnection(this);
 
             while (more_in_buffer && _endp.isOpen())
@@ -51,11 +44,7 @@ public class BlockingHttpConnection extends HttpConnection
                 {
                     // If we are not ended then parse available
                     if (!_parser.isComplete())
-                    {
-                        int parsed=_parser.parseAvailable();
-                        if (parsed>0)
-                            progress=true;
-                    }
+                        _parser.parseAvailable();
 
                     // Do we have more generating to do?
                     // Loop here because some writes may take multiple steps and
@@ -66,22 +55,14 @@ public class BlockingHttpConnection extends HttpConnection
                         long written=_generator.flushBuffer();
                         if (written<=0)
                             break;
-                        progress=true;
                         if (_endp.isBufferingOutput())
                             _endp.flush();
                     }
 
                     // Flush buffers
                     if (_endp.isBufferingOutput())
-                    {
                         _endp.flush();
-                        if (!_endp.isBufferingOutput())
-                            progress=true;
-                    }
-
-                    if (!progress)
-                        return this;
-                    progress=false;
+      
                 }
                 catch (HttpException e)
                 {
@@ -131,7 +112,6 @@ public class BlockingHttpConnection extends HttpConnection
                             }
                             else
                                 reset(true);
-                            progress=true;
                         }
                     }
                     else if (_parser.isIdle() && _endp.isInputShutdown())
@@ -141,11 +121,7 @@ public class BlockingHttpConnection extends HttpConnection
                     }
 
                     if (_request.isAsyncStarted())
-                    {
                         throw new IllegalStateException();
-                    }
-                    else if (_generator.isCommitted() && !_generator.isComplete() && _endp instanceof AsyncEndPoint)
-                        ((AsyncEndPoint)_endp).scheduleWrite();
                 }
             }
         }
