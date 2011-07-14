@@ -474,10 +474,10 @@ public class XmlParser
     /**
      * XML Node. Represents an XML element with optional attributes and ordered content.
      */
-    public static class Node extends AbstractList
+    public static class Node extends AbstractList<Object>
     {
         Node _parent;
-        private ArrayList _list;
+        private ArrayList<Object> _list;
         private String _tag;
         private Attribute[] _attrs;
         private boolean _lastString = false;
@@ -617,7 +617,7 @@ public class XmlParser
         public void add(int i, Object o)
         {
             if (_list == null)
-                _list = new ArrayList();
+                _list = new ArrayList<Object>();
             if (o instanceof String)
             {
                 if (_lastString)
