@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.io.Externalizable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.LazyList;
-import org.eclipse.jetty.util.SingletonList;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -183,7 +183,7 @@ public class PathMap extends HashMap implements Externalizable
                     {
                         _default=entry;
                         _defaultSingletonList=
-                            SingletonList.newSingletonList(_default);
+                            Collections.singletonList(_default);
                     }
                 }
                 else
