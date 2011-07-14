@@ -427,6 +427,8 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         }
         finally
         {
+            _parser.returnBuffers();
+            
             // Do we have more stuff to write?
             if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
             {
