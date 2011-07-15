@@ -118,21 +118,25 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
                                 state=6;
                                 System.err.println("address="+address);
                                 String[] parts=address.split(":");
-                                String result="200 OK";
                                 try
                                 {
                                     toserver = new Socket(parts[0],Integer.parseInt(parts[1]));
+                                    out.write((
+                                            "HTTP/1.1 200 OK\r\n"+
+                                            "Server: fake\r\n"+
+                                            // "Content-Length: 0\r\n"+ 
+                                            "\r\n"
+                                            ).getBytes());
                                 }
                                 catch(IOException e)
                                 {
-                                    result="503 Unavailable";
+                                    out.write((
+                                            "HTTP/1.1 503 Unavailable\r\n"+
+                                            "Server: fake\r\n"+
+                                            "Content-Length: 0\r\n"+ 
+                                            "\r\n"
+                                            ).getBytes());
                                 }
-                                out.write((
-                                        "HTTP/1.1 "+result+"\r\n"+
-                                        "Server: fake\r\n"+
-                                        "Content-Length: 0\r\n"+ // TODO test fails without this!
-                                        "\r\n"
-                                        ).getBytes());
                                 out.flush();
            
                                 System.err.println(toserver);

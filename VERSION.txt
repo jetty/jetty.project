@@ -1,5 +1,5 @@
 jetty-7.5.0-SNAPSHOT
- + 298502 Added test harness to demonstrate issue
+ + 298502 Handle 200 Connect responses with no content-length
  + 351516 Refactored sessions to better support nosql session managers
  + 351576 Do not use deprecated method File.toURL()
  + 352046 Need try/catch around features set in XmlParser
