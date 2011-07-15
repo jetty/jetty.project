@@ -33,7 +33,7 @@ import javax.security.auth.callback.Callback;
 public class RequestParameterCallback implements Callback
 {
     private String _paramName;
-    private List _paramValues;
+    private List<?> _paramValues;
     
     public void setParameterName (String name)
     {
@@ -44,12 +44,12 @@ public class RequestParameterCallback implements Callback
         return _paramName;
     }
     
-    public void setParameterValues (List values)
+    public void setParameterValues (List<?> values)
     {
         _paramValues = values;
     }
     
-    public List getParameterValues ()
+    public List<?> getParameterValues ()
     {
         return _paramValues;
     }

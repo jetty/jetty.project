@@ -43,7 +43,7 @@ public class StrictRoleCheckPolicy implements RoleCheckPolicy
         {
             if (roles == null)
                 return false;
-            Enumeration rolesEnum = roles.members();
+            Enumeration<? extends Principal> rolesEnum = roles.members();
             boolean found = false;
             while (rolesEnum.hasMoreElements() && !found)
             {

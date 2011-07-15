@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Log;
 public class PropertyFileLoginModule extends AbstractLoginModule
 {
     public static final String DEFAULT_FILENAME = "realm.properties";
-    public static final Map fileMap = new HashMap(); 
+    public static final Map<String, Map<String, UserInfo>> fileMap = new HashMap<String, Map<String, UserInfo>>(); 
     
     private String propertyFileName;
     
@@ -52,7 +52,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
      * @param options
      */
     public void initialize(Subject subject, CallbackHandler callbackHandler,
-            Map sharedState, Map options)
+            Map<String,?> sharedState, Map<String,?> options)
     {
         super.initialize(subject, callbackHandler, sharedState, options);
         loadProperties((String)options.get("file"));
@@ -95,14 +95,14 @@ public class PropertyFileLoginModule extends AbstractLoginModule
                 return;
             }
             
-            Map userInfoMap = new HashMap();
+            Map<String, UserInfo> userInfoMap = new HashMap<String, UserInfo>();
             Properties props = new Properties();
             props.load(new FileInputStream(propsFile));
-            Iterator iter = props.entrySet().iterator();
+            Iterator<Map.Entry<Object,Object>> iter = props.entrySet().iterator();
             while(iter.hasNext())
             {
                 
-                Map.Entry entry = (Map.Entry)iter.next();
+                Map.Entry<Object,Object> entry = iter.next();
                 String username=entry.getKey().toString().trim();
                 String credentials=entry.getValue().toString().trim();
                 String roles=null;
@@ -116,7 +116,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
                 if (username!=null && username.length()>0 &&
                     credentials!=null && credentials.length()>0)
                 {
-                    ArrayList roleList = new ArrayList();
+                    ArrayList<String> roleList = new ArrayList<String>();
                     if(roles!=null && roles.length()>0)
                     {
                         StringTokenizer tok = new StringTokenizer(roles,", ");
@@ -146,7 +146,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
      */
     public UserInfo getUserInfo (String username) throws Exception
     {
-        Map userInfoMap = (Map)fileMap.get(propertyFileName);
+        Map<?, ?> userInfoMap = (Map<?, ?>)fileMap.get(propertyFileName);
         if (userInfoMap == null)
             return null;
         return (UserInfo)userInfoMap.get(username);

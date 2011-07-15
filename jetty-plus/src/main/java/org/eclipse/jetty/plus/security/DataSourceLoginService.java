@@ -60,7 +60,6 @@ public class DataSourceLoginService extends MappedLoginService
     private String _userRoleTableUserKey = "user_id";
     private String _userRoleTableRoleKey = "role_id";
     private int _cacheMs = 30000;
-    private long _lastHashPurge = 0;
     private String _userSql;
     private String _roleSql;
     private boolean _createTables = false;
@@ -350,6 +349,7 @@ public class DataSourceLoginService extends MappedLoginService
         if (_datasource != null)
             return;
         
+        @SuppressWarnings("unused")
         InitialContext ic = new InitialContext();
         
         //TODO webapp scope?
