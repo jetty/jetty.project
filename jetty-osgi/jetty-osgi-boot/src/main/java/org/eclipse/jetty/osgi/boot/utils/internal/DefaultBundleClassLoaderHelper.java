@@ -16,6 +16,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.List;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelper;
 import org.osgi.framework.Bundle;
@@ -145,8 +146,21 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
                         "m_modules");
                 Felix_BundleImpl_m_modules_field.setAccessible(true);
             }
-            Object[] moduleArray = (Object[])Felix_BundleImpl_m_modules_field.get(bundle);
-            Object currentModuleImpl = moduleArray[moduleArray.length - 1];
+
+            // Figure out which version of the modules is exported
+            Object currentModuleImpl;
+            try
+            {
+                Object[] moduleArray = (Object[])Felix_BundleImpl_m_modules_field.get(bundle);
+                currentModuleImpl = moduleArray[moduleArray.length - 1];
+            }
+            catch (Throwable t2)
+            {
+                @SuppressWarnings("unchecked")
+                List<Object> moduleArray = (List<Object>)Felix_BundleImpl_m_modules_field.get(bundle);
+                currentModuleImpl = moduleArray.get(moduleArray.size() - 1);
+            }
+            
             if (Felix_ModuleImpl_m_classLoader_field == null && currentModuleImpl != null)
             {
                 Felix_ModuleImpl_m_classLoader_field = bundle.getClass().getClassLoader().loadClass("org.apache.felix.framework.ModuleImpl").getDeclaredField(
