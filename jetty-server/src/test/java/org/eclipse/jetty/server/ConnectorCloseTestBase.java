@@ -190,7 +190,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
     /* ------------------------------------------------------------ */
     public class ResponseReader implements Runnable
     {
-        private int _last = 0;
         private boolean _done = false;
 
         protected char[] _buffer;
@@ -225,7 +224,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             try
             {
                 int count = 0;
-                while (!_done || _last > 0 || count > 0)
+                while (!_done || count > 0)
                 {
                     count = doRead();
                 }
@@ -245,10 +244,8 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         /* ------------------------------------------------------------ */
         protected int doRead() throws IOException, InterruptedException
         {
-            if (_last > 0)
+            if (!_reader.ready())
             {
-                _last = 0;
-
                 Thread.sleep(25);
             }
 
@@ -258,7 +255,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 count = _reader.read(_buffer);
                 if (count > 0)
                 {
-                    _last = count;
                     _response.append(_buffer, 0, count);
                 }
             }
