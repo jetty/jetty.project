@@ -89,7 +89,6 @@ public abstract class AbstractLastAccessTimeTest
                         client.send(exchange2);
                         exchange2.waitForDone();
                         assertEquals(HttpServletResponse.SC_OK , exchange2.getResponseStatus());
-                        System.out.println("test/" + exchange2.getResponseContent());
                         assertEquals("test", exchange2.getResponseContent());
 
                         String setCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
@@ -149,6 +148,7 @@ public abstract class AbstractLastAccessTimeTest
             {
                 HttpSession session = request.getSession(false);
 
+                // if we node hopped we should get the session and test should already be present
                 sendResult(session, httpServletResponse.getWriter());
 
                 if (session!=null)
@@ -163,9 +163,7 @@ public abstract class AbstractLastAccessTimeTest
         private void sendResult(HttpSession session, PrintWriter writer)
         {
                 if (session != null)
-                {
-                    System.out.println("Putting in : " + session.getAttribute("test"));
-                    
+                {                    
                         writer.print(session.getAttribute("test"));
                 }
                 else
