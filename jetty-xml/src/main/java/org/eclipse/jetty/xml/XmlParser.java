@@ -70,7 +70,6 @@ public class XmlParser
         boolean validating_dft = factory.getClass().toString().startsWith("org.apache.xerces.");
         String validating_prop = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validating_dft ? "true" : "false");
         boolean validating = Boolean.valueOf(validating_prop).booleanValue();
-
         setValidating(validating);
     }
 
@@ -110,11 +109,12 @@ public class XmlParser
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespace-prefixes", false);  
             try
             {
-                _parser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
+                if (validating)
+                    _parser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
             }
             catch (Exception e)
             {
-                Log.warn(Log.EXCEPTION, e);
+                Log.warn(e.getMessage());
             }
         }
         catch (Exception e)
@@ -296,7 +296,13 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         public void startElement(String uri, String localName, String qName, Attributes attrs) throws SAXException
         {
-            String name = (uri == null || uri.equals("")) ? qName : localName;
+            String name = null;
+            if (_parser.isNamespaceAware())
+                name = localName;
+
+            if (name == null || "".equals(name))
+                name = qName;
+
             Node node = new Node(_context, name, attrs);
             
 
