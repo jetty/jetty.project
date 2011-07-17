@@ -25,14 +25,14 @@ public class JAASGroup implements Group
     public static final String ROLES = "__roles__";
     
     private String _name = null;
-    private HashSet _members = null;
+    private HashSet<Principal> _members = null;
     
     
    
     public JAASGroup(String n)
     {
         this._name = n;
-        this._members = new HashSet();
+        this._members = new HashSet<Principal>();
     }
    
     /* ------------------------------------------------------------ */
@@ -72,14 +72,14 @@ public class JAASGroup implements Group
      *
      * @return <description>
      */
-    public Enumeration members()
+    public Enumeration<? extends Principal> members()
     {
 
-        class MembersEnumeration implements Enumeration
+        class MembersEnumeration implements Enumeration<Principal>
         {
-            private Iterator itor;
+            private Iterator<? extends Principal> itor;
             
-            public MembersEnumeration (Iterator itor)
+            public MembersEnumeration (Iterator<? extends Principal> itor)
             {
                 this.itor = itor;
             }
@@ -90,7 +90,7 @@ public class JAASGroup implements Group
             }
 
 
-            public Object nextElement ()
+            public Principal nextElement ()
             {
                 return this.itor.next();
             }

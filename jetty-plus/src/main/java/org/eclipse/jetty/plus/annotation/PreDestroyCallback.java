@@ -34,7 +34,7 @@ public class PreDestroyCallback extends LifeCycleCallback
      * - not static
      * @see org.eclipse.jetty.plus.annotation.LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
      */
-    public void validate(Class clazz, Method method)
+    public void validate(Class<?> clazz, Method method)
     {        
 
         if (method.getExceptionTypes().length > 0)

@@ -37,6 +37,11 @@ import java.security.Principal;
  */
 public class JAASPrincipal implements Principal, Serializable
 {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -5538962177019315479L;
+    
     private String _name = null;
     
     

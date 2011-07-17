@@ -196,7 +196,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         pwdCredential = convertCredentialLdapToJetty(pwdCredential);
         Credential credential = Credential.getCredential(pwdCredential);
-        List roles = getUserRoles(_rootContext, username);
+        List<String> roles = getUserRoles(_rootContext, username);
 
         return new UserInfo(username, credential, roles);
     }
@@ -257,7 +257,7 @@ public class LdapLoginModule extends AbstractLoginModule
         try
         {
             Object[] filterArguments = {_userObjectClass, _userIdAttribute, username};
-            NamingEnumeration results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
+            NamingEnumeration<SearchResult> results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
 
             Log.debug("Found user?: " + results.hasMoreElements());
 
@@ -305,16 +305,16 @@ public class LdapLoginModule extends AbstractLoginModule
      * @return
      * @throws LoginException
      */
-    private List getUserRoles(DirContext dirContext, String username) throws LoginException, NamingException
+    private List<String> getUserRoles(DirContext dirContext, String username) throws LoginException, NamingException
     {
         String userDn = _userRdnAttribute + "=" + username + "," + _userBaseDn;
 
         return getUserRolesByDn(dirContext, userDn);
     }
 
-    private List getUserRolesByDn(DirContext dirContext, String userDn) throws LoginException, NamingException
+    private List<String> getUserRolesByDn(DirContext dirContext, String userDn) throws LoginException, NamingException
     {
-        ArrayList roleList = new ArrayList();
+        List<String> roleList = new ArrayList<String>();
 
         if (dirContext == null || _roleBaseDn == null || _roleMemberAttribute == null || _roleObjectClass == null)
         {
@@ -327,7 +327,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         String filter = "(&(objectClass={0})({1}={2}))";
         Object[] filterArguments = {_roleObjectClass, _roleMemberAttribute, userDn};
-        NamingEnumeration results = dirContext.search(_roleBaseDn, filter, filterArguments, ctls);
+        NamingEnumeration<SearchResult> results = dirContext.search(_roleBaseDn, filter, filterArguments, ctls);
 
         Log.debug("Found user roles?: " + results.hasMoreElements());
 
@@ -349,10 +349,10 @@ public class LdapLoginModule extends AbstractLoginModule
                 continue;
             }
 
-            NamingEnumeration roles = roleAttribute.getAll();
+            NamingEnumeration<?> roles = roleAttribute.getAll();
             while (roles.hasMore())
             {
-                roleList.add(roles.next());
+                roleList.add(roles.next().toString());
             }
         }
 
@@ -468,12 +468,12 @@ public class LdapLoginModule extends AbstractLoginModule
 
         Log.info("Attempting authentication: " + userDn);
 
-        Hashtable environment = getEnvironment();
+        Hashtable<Object,Object> environment = getEnvironment();
         environment.put(Context.SECURITY_PRINCIPAL, userDn);
         environment.put(Context.SECURITY_CREDENTIALS, password);
 
         DirContext dirContext = new InitialDirContext(environment);
-        List roles = getUserRolesByDn(dirContext, userDn);
+        List<String> roles = getUserRolesByDn(dirContext, userDn);
 
         UserInfo userInfo = new UserInfo(username, null, roles);
         setCurrentUser(new JAASUserInfo(userInfo));
@@ -498,7 +498,7 @@ public class LdapLoginModule extends AbstractLoginModule
             _userIdAttribute,
             username
         };
-        NamingEnumeration results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
+        NamingEnumeration<SearchResult> results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
 
         Log.info("Found user?: " + results.hasMoreElements());
 
@@ -522,8 +522,8 @@ public class LdapLoginModule extends AbstractLoginModule
      */
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,
-                           Map sharedState,
-                           Map options)
+                           Map<String,?> sharedState,
+                           Map<String,?> options)
     {
         super.initialize(subject, callbackHandler, sharedState, options);
 
@@ -595,7 +595,7 @@ public class LdapLoginModule extends AbstractLoginModule
         return super.abort();
     }
 
-    private String getOption(Map options, String key, String defaultValue)
+    private String getOption(Map<String,?> options, String key, String defaultValue)
     {
         Object value = options.get(key);
 

@@ -17,6 +17,11 @@ package org.eclipse.jetty.plus.jaas;
 public class JAASRole extends JAASPrincipal
 {
     
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 3465114254970134526L;
+
     public JAASRole(String name)
     {
         super (name);

@@ -571,9 +571,14 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         @Override
         public void startResponse(Buffer version, int status, Buffer reason) throws IOException
         {
+            
             HttpExchange exchange = _exchange;
             if (exchange!=null)
             {
+                // handle special case for CONNECT 200 responses
+                if (status==HttpStatus.OK_200 && HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
+                    _parser.setHeadResponse(true);
+                
                 _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
                 _status=status;
                 exchange.getEventListener().onResponseStatus(version,status,reason);

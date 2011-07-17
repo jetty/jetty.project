@@ -71,7 +71,7 @@ public class LifeCycleCallbackCollection
         if (o == null)
             return null;
         
-        Class clazz = o.getClass();
+        Class<? extends Object> clazz = o.getClass();
         return preDestroyCallbacksMap.get(clazz.getName());
     }
     
@@ -80,7 +80,7 @@ public class LifeCycleCallbackCollection
         if (o == null)
             return null;
         
-        Class clazz = o.getClass();
+        Class<? extends Object> clazz = o.getClass();
         return postConstructCallbacksMap.get(clazz.getName());
     }
     
@@ -96,7 +96,7 @@ public class LifeCycleCallbackCollection
         if (o == null)
             return;
         
-        Class clazz = o.getClass();
+        Class<? extends Object> clazz = o.getClass();
         List<LifeCycleCallback> callbacks = postConstructCallbacksMap.get(clazz.getName());
 
         if (callbacks == null)
@@ -120,7 +120,7 @@ public class LifeCycleCallbackCollection
         if (o == null)
             return;
         
-        Class clazz = o.getClass();
+        Class<? extends Object> clazz = o.getClass();
         List<LifeCycleCallback> callbacks = preDestroyCallbacksMap.get(clazz.getName());
         if (callbacks == null)
             return;

@@ -52,7 +52,7 @@ public abstract class AbstractLoginModule implements LoginModule
     {
         private UserInfo user;
         private Principal principal;
-        private List roles;
+        private List<JAASRole> roles;
               
         public JAASUserInfo (UserInfo u)
         {
@@ -73,10 +73,10 @@ public abstract class AbstractLoginModule implements LoginModule
         {
             this.user = u;
             this.principal = new JAASPrincipal(u.getUserName());
-            this.roles = new ArrayList();
+            this.roles = new ArrayList<JAASRole>();
             if (u.getRoleNames() != null)
             {
-                Iterator itor = u.getRoleNames().iterator();
+                Iterator<String> itor = u.getRoleNames().iterator();
                 while (itor.hasNext())
                     this.roles.add(new JAASRole((String)itor.next()));
             }
@@ -269,7 +269,7 @@ public abstract class AbstractLoginModule implements LoginModule
      * @param options
      */
     public void initialize(Subject subject, CallbackHandler callbackHandler,
-            Map sharedState, Map options)
+            Map<String,?> sharedState, Map<String,?> options)
     {
         this.callbackHandler = callbackHandler;
         this.subject = subject;

@@ -255,6 +255,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
 
 
     /* ------------------------------------------------------------ */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private String[] getGroups (Subject subject)
     {
         //get all the roles of the various types

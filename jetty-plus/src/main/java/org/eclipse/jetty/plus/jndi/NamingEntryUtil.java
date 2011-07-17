@@ -96,20 +96,15 @@ public class NamingEntryUtil
         return entry;
     }
     
-    
-    public static Object lookup (Object scope, String jndiName)
-    throws NamingException
+    public static Object lookup(Object scope, String jndiName) throws NamingException
     {
-        Object o = null;
-                
-            Name scopeName = getNameForScope(scope);
-            InitialContext ic = new InitialContext();   
-            NameParser parser = ic.getNameParser("");          
-            scopeName.addAll(parser.parse(jndiName));           
-            return ic.lookup(scopeName);
+        Name scopeName = getNameForScope(scope);
+        InitialContext ic = new InitialContext();
+        NameParser parser = ic.getNameParser("");
+        scopeName.addAll(parser.parse(jndiName));
+        return ic.lookup(scopeName);
     }
 
-    
     /** 
      * Get all NameEntries of a certain type in the given naming
      * environment scope (server-wide names or context-specific names)
@@ -119,20 +114,20 @@ public class NamingEntryUtil
      * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
      * @throws NamingException
      */
-    public static List lookupNamingEntries (Object scope, Class clazz)
+    public static List<Object> lookupNamingEntries (Object scope, Class<?> clazz)
     throws NamingException
     { 
         try
         {
             Context scopeContext = getContextForScope(scope);
             Context namingEntriesContext = (Context)scopeContext.lookup(NamingEntry.__contextName);
-            ArrayList list = new ArrayList();
+            ArrayList<Object> list = new ArrayList<Object>();
             lookupNamingEntries(list, namingEntriesContext, clazz);
             return list;
         }
         catch (NameNotFoundException e)
         {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList(); 
         }
     }
     
@@ -211,15 +206,15 @@ public class NamingEntryUtil
      * @return
      * @throws NamingException
      */
-    private static List lookupNamingEntries (List list, Context context, Class clazz)
+    private static List<Object> lookupNamingEntries (List<Object> list, Context context, Class<?> clazz)
     throws NamingException
     {
         try
         {
-            NamingEnumeration nenum = context.listBindings("");
+            NamingEnumeration<Binding> nenum = context.listBindings("");
             while (nenum.hasMoreElements())
             {
-                Binding binding = (Binding)nenum.next();
+                Binding binding = nenum.next();
                 if (binding.getObject() instanceof Context)
                     lookupNamingEntries (list, (Context)binding.getObject(), clazz);
                 else if (clazz.isInstance(binding.getObject()))

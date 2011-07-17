@@ -31,7 +31,7 @@ public abstract class LifeCycleCallback
 {
     public static final Object[] __EMPTY_ARGS = new Object[] {};
     private Method _target;
-    private Class _targetClass;
+    private Class<?> _targetClass;
     private String _className;
     private String _methodName;
     
@@ -44,7 +44,7 @@ public abstract class LifeCycleCallback
     /**
      * @return the _targetClass
      */
-    public Class getTargetClass()
+    public Class<?> getTargetClass()
     {
         return _targetClass;
     }
@@ -74,7 +74,7 @@ public abstract class LifeCycleCallback
         _methodName = methodName;
     }
 
-    public void setTarget (Class clazz, String methodName)
+    public void setTarget (Class<?> clazz, String methodName)
     {
         try
         {
@@ -125,7 +125,7 @@ public abstract class LifeCycleCallback
      * @param checkInheritance false on first entry, true if a superclass is being introspected
      * @return the method
      */
-    public Method findMethod (Package pack, Class clazz, String methodName, boolean checkInheritance)
+    public Method findMethod (Package pack, Class<?> clazz, String methodName, boolean checkInheritance)
     {
         if (clazz == null)
             return null;
@@ -175,5 +175,5 @@ public abstract class LifeCycleCallback
         return true;
     }
     
-    public abstract void validate (Class clazz, Method m);
+    public abstract void validate (Class<?> clazz, Method m);
 }

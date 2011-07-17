@@ -87,7 +87,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
             statement = connection.prepareStatement (rolesQuery);
             statement.setString (1, userName);
             results = statement.executeQuery();
-            List roles = new ArrayList();
+            List<String> roles = new ArrayList<String>();
             
             while (results.next())
             {
@@ -110,8 +110,8 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
 
     public void initialize(Subject subject,
             CallbackHandler callbackHandler,
-            Map sharedState,
-            Map options)
+            Map<String,?> sharedState,
+            Map<String,?> options)
     {
         super.initialize(subject, callbackHandler, sharedState, options);
         

@@ -45,8 +45,8 @@ public class DataSourceLoginModule extends AbstractDatabaseLoginModule
      */
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,
-                           Map sharedState,
-                           Map options)
+                           Map<String,?> sharedState,
+                           Map<String,?> options)
     {
         try
         {

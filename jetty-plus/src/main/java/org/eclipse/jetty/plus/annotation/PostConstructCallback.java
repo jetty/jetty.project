@@ -33,7 +33,7 @@ public class PostConstructCallback extends LifeCycleCallback
      *  - cannot be static
      * @see org.eclipse.jetty.plus.annotation.LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
      */
-    public void validate(Class clazz, Method method)
+    public void validate(Class<?> clazz, Method method)
     {
         if (method.getExceptionTypes().length > 0)
             throw new IllegalArgumentException(clazz.getName()+"."+method.getName()+ " cannot not throw a checked exception");

@@ -17,10 +17,8 @@ import java.util.HashMap;
 
 import javax.servlet.ServletException;
 
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 
 /**
@@ -31,7 +29,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class RunAsCollection
 {
     public static final String RUNAS_COLLECTION = "org.eclipse.jetty.runAsCollection";
-    private HashMap _runAsMap = new HashMap();//map of classname to run-as
+    private HashMap<String, RunAs> _runAsMap = new HashMap<String, RunAs>();//map of classname to run-as
   
     
     
