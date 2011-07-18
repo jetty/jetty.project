@@ -33,10 +33,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
 
+import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -55,7 +59,7 @@ public class ResponseTest
 {
     private Server server;
     private LocalConnector connector;
-
+    
     @Before
     public void init() throws Exception
     {
@@ -76,7 +80,7 @@ public class ResponseTest
     @Test
     public void testContentType() throws Exception
     {
-        HttpConnection connection = new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = connection.getResponse();
 
         assertEquals(null,response.getContentType());
@@ -121,7 +125,7 @@ public class ResponseTest
     public void testLocale() throws Exception
     {
 
-        HttpConnection connection = new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Request request = connection.getRequest();
         Response response = connection.getResponse();
         ContextHandler context = new ContextHandler();
@@ -145,7 +149,7 @@ public class ResponseTest
     @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {
-        HttpConnection connection = new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
 
         Request request = connection.getRequest();
         Response response = connection.getResponse();
@@ -178,7 +182,7 @@ public class ResponseTest
     @Test
     public void testCharacterEncodingContentType() throws Exception
     {
-        Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         response.setCharacterEncoding("utf-8");
         response.setContentType("foo/bar");
@@ -207,7 +211,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithCharacterEncoding() throws Exception
     {
-        Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; charset=utf-8");
@@ -236,7 +240,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithOther() throws Exception
     {
-        Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         response.setContentType("foo/bar; other=xyz");
         assertEquals("foo/bar; other=xyz",response.getContentType());
@@ -259,7 +263,7 @@ public class ResponseTest
     @Test
     public void testContentTypeWithCharacterEncodingAndOther() throws Exception
     {
-        Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; charset=utf-8 other=xyz");
@@ -319,7 +323,7 @@ public class ResponseTest
     public void testEncodeRedirect()
         throws Exception
     {
-        HttpConnection connection=new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        HttpConnection connection=new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = new Response(connection);
         Request request = connection.getRequest();
         request.setServerName("myhost");
@@ -369,7 +373,7 @@ public class ResponseTest
         throws Exception
     {
         ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
-        HttpConnection connection=new HttpConnection(connector,out, connector.getServer());
+        HttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
         Response response = new Response(connection);
         Request request = connection.getRequest();
         request.setServerName("myhost");
@@ -398,7 +402,7 @@ public class ResponseTest
     @Test
     public void testSetBufferSize () throws Exception
     {
-        Response response = new Response(new HttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
         response.setBufferSize(20*1024);
         response.getWriter().print("hello");
         try
@@ -464,7 +468,7 @@ public class ResponseTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         endPoint.setOut(new ByteArrayBuffer(1024));
         endPoint.setGrowOutput(true);
-        HttpConnection connection=new HttpConnection(connector, endPoint, connector.getServer());
+        HttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
         connection.getGenerator().reset(false);
         HttpConnection.setCurrentConnection(connection);
         Response response = connection.getResponse();
@@ -564,5 +568,26 @@ public class ResponseTest
         {
             return null;
         }
+    }
+    
+    static class TestHttpConnection extends HttpConnection
+    {
+        
+        public TestHttpConnection(Connector connector, EndPoint endpoint, Server server)
+        {
+            super(connector,endpoint,server);
+        }
+
+        public TestHttpConnection(Connector connector, EndPoint endpoint, Server server, Parser parser, Generator generator, Request request)
+        {
+            super(connector,endpoint,server,parser,generator,request);
+        }
+
+        @Override
+        public Connection handle() throws IOException
+        {
+            return this;
+        }
+        
     }
 }
