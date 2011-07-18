@@ -14,7 +14,6 @@ package org.eclipse.jetty.webapp;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.List;
 
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
