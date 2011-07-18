@@ -185,15 +185,17 @@ public class ChannelEndPoint implements EndPoint
                     Log.ignore(xx);
                 }
                 
-                if (len>=0)
+                if (len>0)
                     throw x;
+                Log.ignore(x);
+                len=-1;
             }
         }
         else
         {
             throw new IOException("Not Implemented");
         }
-
+        
         return len;
     }
 
