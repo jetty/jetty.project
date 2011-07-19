@@ -9,7 +9,7 @@
 // provided.
 
 
-grant codeBase "file:${jetty.home}/work/-" {
+grant codeBase "file:${jetty.home${/}work${/}-" {
    permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
    permission java.io.FilePermission "${jetty.home}${/}work${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
