@@ -316,6 +316,13 @@ public class WebAppClassLoader extends URLClassLoader
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * Get a resource from the classloader
+     * 
+     * NOTE: this method provides a convenience of hacking off a leading /
+     * should one be present. This is non-standard and it is recommended 
+     * to not rely on this behavior
+     */
     public URL getResource(String name)
     {
         URL url= null;
