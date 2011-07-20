@@ -4,7 +4,7 @@
 // Review of this file is recommended and possible tweaking of the codeBase
 // is likely in the future.
 
-grant codeBase "file:${jetty.home}/lib/-" {
+grant codeBase "file:${jetty.home}${/}lib${/}-" {
 	 
    permission java.lang.RuntimePermission "getClassLoader";
 	 

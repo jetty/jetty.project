@@ -105,4 +105,9 @@ public abstract class AbstractTestServer
 
         return context;
     }
+    
+    public Server getServer()
+    {
+        return _server;
+    }
 }

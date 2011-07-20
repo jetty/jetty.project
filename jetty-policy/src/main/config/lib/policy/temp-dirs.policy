@@ -6,7 +6,7 @@
 //
 // the tmp directory is where webapps are unpacked by default so setup their restricted permissions
 //
-grant codeBase "file:${java.io.tmpdir}/-" {
+grant codeBase "file:${java.io.tmpdir}${/}" {
 
    permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebases
    permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read";
@@ -19,10 +19,10 @@ grant codeBase "file:${java.io.tmpdir}/-" {
 //
 // some operating systems have tmp as a symbolic link to /private/tmp
 //
-grant codeBase "file:/private${java.io.tmpdir}/-" {
+grant codeBase "file:/private${java.io.tmpdir}${/}-" {
 
    permission java.io.FilePermission "${jetty.home}${/}webapps${/}-", "read"; // Ought to go up a specific codebase
-   permission java.io.FilePermission "/private/${java.io.tmpdir}/-", "read";
+   permission java.io.FilePermission "/private/${java.io.tmpdir}${/}-", "read";
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.class", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.stderr.DEBUG", "read";  
    permission java.util.PropertyPermission "org.eclipse.jetty.util.log.IGNORED", "read";

@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -650,7 +649,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private void scavenge ()
     {
         Connection connection = null;
-        List expiredSessionIds = new ArrayList();
+        List<String> expiredSessionIds = new ArrayList<String>();
         try
         {            
             if (__log.isDebugEnabled()) __log.debug("Scavenge sweep started at "+System.currentTimeMillis());

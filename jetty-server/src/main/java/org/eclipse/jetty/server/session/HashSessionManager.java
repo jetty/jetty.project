@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Timer;
@@ -32,7 +31,6 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -513,7 +511,7 @@ public class HashSessionManager extends AbstractSessionManager
          */
         DataInputStream in = new DataInputStream(is);
         String clusterId = in.readUTF();
-        String nodeId = in.readUTF();
+        in.readUTF(); // nodeId
         long created = in.readLong();
         long accessed = in.readLong();
         int requests = in.readInt();
