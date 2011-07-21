@@ -35,7 +35,7 @@ public class ThreadMonitorTest
     public void monitorTest() throws Exception
     {
         
-        ThreadMonitor monitor = new ThreadMonitor(1,50,2)
+        ThreadMonitor monitor = new ThreadMonitor(1000,50,2)
         {
             @Override
             protected void dump(List<ThreadInfo> threads)
