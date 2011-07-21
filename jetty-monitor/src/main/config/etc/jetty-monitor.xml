@@ -5,7 +5,11 @@
   <!-- Create Thread Monitor, and add to the Server as a lifecycle -->
   <Call name="addBean">
     <Arg>
-      <New class="org.eclipse.jetty.monitor.ThreadMonitor"/>
+      <New class="org.eclipse.jetty.monitor.ThreadMonitor">
+        <Set name="scanInterval">2000</Set>
+        <Set name="busyThreshold">90</Set>
+        <Set name="stackDepth">3</Set>
+      </New>
     </Arg>
   </Call>
 </Configure>

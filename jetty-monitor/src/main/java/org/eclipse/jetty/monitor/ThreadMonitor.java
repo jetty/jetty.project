@@ -52,21 +52,21 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      */
     public ThreadMonitor() throws Exception
     {
-        this(5, 95, 3);
+        this(5000, 95, 3);
     }
     
     /* ------------------------------------------------------------ */
     /**
      * Instantiates a new thread monitor.
      *
-     * @param interval scan interval
+     * @param intervalMs scan interval
      * @param threshold busy threshold
      * @param depth stack compare depth
      * @throws Exception
      */
-    public ThreadMonitor(int interval, int threshold, int depth) throws Exception
+    public ThreadMonitor(int intervalMs, int threshold, int depth) throws Exception
     {
-        _scanInterval = interval * 1000;
+        _scanInterval = intervalMs;
         _busyThreshold = threshold;
         _stackDepth = depth;
         
@@ -75,6 +75,9 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
        
         init();
     }
+    
+    
+
     
     /* ------------------------------------------------------------ */
     /**
@@ -90,6 +93,42 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         Log.info("Thread Monitor started successfully");
     }
     
+    /* ------------------------------------------------------------ */
+    public int getScanInterval()
+    {
+        return _scanInterval;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setScanInterval(int ms)
+    {
+        _scanInterval = ms;
+    }
+
+    /* ------------------------------------------------------------ */
+   public int getBusyThreshold()
+    {
+        return _busyThreshold;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setBusyThreshold(int percent)
+    {
+        _busyThreshold = percent;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getStackDepth()
+    {
+        return _stackDepth;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setStackDepth(int stackDepth)
+    {
+        _stackDepth = stackDepth;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
