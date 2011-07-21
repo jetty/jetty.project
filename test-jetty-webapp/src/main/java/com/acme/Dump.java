@@ -122,6 +122,13 @@ public class Dump extends HttpServlet
             
         request.setCharacterEncoding("UTF-8");
         
+        if (request.getParameter("busy")!=null)
+        {
+            long end = System.currentTimeMillis()+Long.parseLong(request.getParameter("busy"));
+            while(System.currentTimeMillis()<end)
+            {}
+        }
+        
         if (request.getParameter("empty")!=null)
         {
             response.setStatus(200);

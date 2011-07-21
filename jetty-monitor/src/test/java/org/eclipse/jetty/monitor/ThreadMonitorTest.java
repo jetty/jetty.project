@@ -18,6 +18,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.management.ThreadInfo;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
@@ -27,20 +28,19 @@ import org.junit.Test;
  */
 public class ThreadMonitorTest
 {
-    public final static int DURATION=5000;
-    private int count;
+    public final static int DURATION=9000;
+    private AtomicInteger count=new AtomicInteger(0);
     
     @Test
     public void monitorTest() throws Exception
     {
-        count = 0;
         
-        ThreadMonitor monitor = new ThreadMonitor(1,95,2)
+        ThreadMonitor monitor = new ThreadMonitor(1,50,2)
         {
             @Override
             protected void dump(List<ThreadInfo> threads)
             {
-                ++count;
+                count.incrementAndGet();
                 super.dump(threads);
             }
         };
@@ -55,13 +55,13 @@ public class ThreadMonitorTest
         spinner.setDone();
         monitor.stop();
         
-        assertTrue(count >= 2);
+        assertTrue(count.get() >= 2);
     }
 
 
     private class Spinner implements Runnable
     {
-        private boolean done = false;
+        private volatile boolean done = false;
 
         /* ------------------------------------------------------------ */
         /**
@@ -73,6 +73,12 @@ public class ThreadMonitorTest
 
         /* ------------------------------------------------------------ */
         public void run()
+        {
+            spin();
+        }
+
+        /* ------------------------------------------------------------ */
+        public void spin()
         {
             long result=-1;
             long end=System.currentTimeMillis()+DURATION+1000;
