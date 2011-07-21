@@ -39,8 +39,8 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     private Method findDeadlockedThreadsMethod;
     
     private Thread _runner;
-    private boolean _done;
     private Logger _logger;
+    private volatile boolean _done = true;
 
     private Map<Long,ExtThreadInfo> _extInfo;
     
@@ -74,23 +74,6 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         _extInfo = new HashMap<Long, ExtThreadInfo>();
        
         init();
-    }
-    
-    
-
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
-    public void doStart()
-    {
-        _done = false;
-        
-        _runner = new Thread(this);
-        _runner.start();
-
-        Log.info("Thread Monitor started successfully");
     }
     
     /* ------------------------------------------------------------ */
@@ -129,6 +112,20 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         _stackDepth = stackDepth;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
+    public void doStart()
+    {
+        _done = false;
+        
+        _runner = new Thread(this);
+        _runner.start();
+
+        Log.info("Thread Monitor started successfully");
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
