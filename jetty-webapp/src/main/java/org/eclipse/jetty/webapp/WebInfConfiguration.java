@@ -143,6 +143,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         
         // Look for extra resource
+        @SuppressWarnings("unchecked")
         List<Resource> resources = (List<Resource>)context.getAttribute(RESOURCE_URLS);
         if (resources!=null)
         {
@@ -169,7 +170,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             //clear out the context attributes for the tmp dir only if we had to
             //create the tmp dir
             context.setAttribute(TEMPDIR_CONFIGURED, null);
-            context.setAttribute(context.TEMPDIR, null);
+            context.setAttribute(WebAppContext.TEMPDIR, null);
         }
 
         

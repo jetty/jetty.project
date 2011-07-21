@@ -4,6 +4,7 @@ jetty-7.5.0-SNAPSHOT
  + 351576 Do not use deprecated method File.toURL()
  + 352046 Need try/catch around features set in XmlParser
  + 352176 xml parsing on startElement should be more flexible on using qName or localName
+ + 352684 Implemented spinning thread analyzer
 
 jetty-7.4.4.v20110707 July 7th 2011
  + 308851 Converted all jetty-client module tests to JUnit 4

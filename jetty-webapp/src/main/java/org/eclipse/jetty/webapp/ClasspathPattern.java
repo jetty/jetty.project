@@ -15,7 +15,6 @@
 package org.eclipse.jetty.webapp;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
 

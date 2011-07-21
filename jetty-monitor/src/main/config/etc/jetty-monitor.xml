@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <!-- Create Thread Monitor, and add to the Server as a lifecycle -->
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.monitor.ThreadMonitor"/>
+    </Arg>
+  </Call>
+</Configure>
+

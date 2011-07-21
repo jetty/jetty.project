@@ -206,10 +206,10 @@ public class WebDescriptor extends Descriptor
            return;
         
         _isOrdered = true;
-        //If an absolute-ordering was already set, then ignore it in favour of this new one
+        //If an absolute-ordering was already set, then ignore it in favor of this new one
        // _processor.setOrdering(new AbsoluteOrdering());
    
-        Iterator iter = ordering.iterator();
+        Iterator<Object> iter = ordering.iterator();
         XmlParser.Node node = null;
         while (iter.hasNext())
         {
