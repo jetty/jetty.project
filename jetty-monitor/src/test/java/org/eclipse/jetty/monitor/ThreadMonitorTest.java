@@ -27,6 +27,7 @@ import org.junit.Test;
  */
 public class ThreadMonitorTest
 {
+    public final static int DURATION=5000;
     private int count;
     
     @Test
@@ -49,12 +50,12 @@ public class ThreadMonitorTest
         Thread runner = new Thread(spinner);
         runner.start();
         
-        Thread.sleep(15000);
-        
+        Thread.sleep(DURATION);
+                
         spinner.setDone();
         monitor.stop();
         
-        assertTrue(count > 10);
+        assertTrue(count >= 2);
     }
 
 
@@ -73,22 +74,17 @@ public class ThreadMonitorTest
         /* ------------------------------------------------------------ */
         public void run()
         {
-            while (!done)
+            long result=-1;
+            long end=System.currentTimeMillis()+DURATION+1000;
+            while (!done && System.currentTimeMillis()<end)
             {
-                foo();
+                for (int i=0;i<1000000000;i++)
+                    result^=i;
             }
+            
+            if (result==42)
+                System.err.println("Bingo!");
         }
         
-        private void foo()
-        {
-            for (int i=0; i<Integer.MAX_VALUE; i++)
-            {
-                long f = 1;
-                for(int j=1; j<=i; j++)
-                {
-                    f += j;
-                }
-            }
-        }
     }
 }
