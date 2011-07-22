@@ -4,6 +4,7 @@ jetty-7.5.0-SNAPSHOT
  + 351576 Do not use deprecated method File.toURL()
  + 352046 Need try/catch around features set in XmlParser
  + 352176 xml parsing on startElement should be more flexible on using qName or localName
+ + 352421 HttpURI paths beginning with '.'
  + 352684 Implemented spinning thread analyzer
 
 jetty-7.4.4.v20110707 July 7th 2011
@@ -50,7 +51,7 @@ jetty-7.4.2.v20110526
  + 345615 Enable SSL Session caching
  + 345763 Source file is updated during the build
  + 345873 Update jetty-ssl.xml to new style
- + 345900 Handle ipv6 with default port
+ + 345900 Handle IPv6 with default port
  + 346014 Fixed full HttpGenerator
  + 346124 ServletContext resources paths not resolved correctly when using UNC shares
  + 346179 o.e.j.util.ScannerTest fails on MacOS X platform
