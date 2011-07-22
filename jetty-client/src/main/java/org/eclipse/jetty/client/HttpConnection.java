@@ -645,9 +645,10 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         //if there is a live, unfinished exchange, set its status to be
         //excepted and wake up anyone waiting on waitForDone()
 
-        if (_exchange != null && !_exchange.isDone())
+        HttpExchange exchange = _exchange;
+        if (exchange != null && !exchange.isDone())
         {
-            switch (_exchange.getStatus())
+            switch (exchange.getStatus())
             {
                 case HttpExchange.STATUS_CANCELLED:
                 case HttpExchange.STATUS_CANCELLING:
@@ -656,8 +657,10 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                 case HttpExchange.STATUS_EXPIRED:
                     break;
                 default:
-                    _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                    _exchange.getEventListener().onException(new EOFException("local close"));
+                    String exch= exchange.toString();
+                    String reason = _endp.isOpen()?(_endp.isInputShutdown()?"half closed: ":"local close: "):"closed: ";
+                    exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                    exchange.getEventListener().onException(new EOFException(reason+exch));
             }
         }
 

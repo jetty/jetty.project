@@ -497,9 +497,8 @@ public abstract class HttpConnection  extends AbstractConnection
                     // We didn't send 100 continues, but the latest interpretation
                     // of the spec (see httpbis) is that the client will either
                     // send the body anyway, or close.  So we no longer need to
-                    // do anything special here.
+                    // do anything special here other than make the connection not persistent
                     _expect100Continue = false;
-                    
                     if (!_response.isCommitted())
                         _generator.setPersistent(false);
                 }
@@ -507,7 +506,7 @@ public abstract class HttpConnection  extends AbstractConnection
                 if(_endp.isOpen())
                 {
                     if (error)
-                        _endp.close();
+                        _endp.shutdownOutput();
                     else
                     {
                         if (!_response.isCommitted() && !_request.isHandled())

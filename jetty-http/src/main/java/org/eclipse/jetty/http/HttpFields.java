@@ -313,6 +313,8 @@ public class HttpFields
 
     // TODO externalize this cache so it can be configurable
     private static ConcurrentMap<String, Buffer> __cache = new ConcurrentHashMap<String, Buffer>();
+    private static int __cacheSize = Integer.getInteger("org.eclipse.jetty.http.HttpFields.CACHE",2000);
+    
     /* -------------------------------------------------------------- */
     private Buffer convertValue(String value)
     {
@@ -321,11 +323,15 @@ public class HttpFields
             return buffer;
         
         try
-        {
-            if (__cache.size()>1000)
-                __cache.clear();
+        {   
             buffer = new ByteArrayBuffer(value,StringUtil.__ISO_8859_1);
-            __cache.putIfAbsent(value,buffer);
+            
+            if (__cacheSize>0)
+            {
+                if (__cache.size()>__cacheSize)
+                    __cache.clear();
+                __cache.putIfAbsent(value,buffer);
+            }
             
             return buffer;
         }

@@ -890,9 +890,14 @@ public class HttpGenerator extends AbstractGenerator
                     if (!_needCRLF && !_needEOC && (_content==null || _content.length()==0))
                     {
                         if (_state == STATE_FLUSHING)
+                        {
                             _state = STATE_END;
+                        }
+                        
                         if (_state==STATE_END && _persistent != null && !_persistent && _status!=100 && _method==null)
+                        {
                             _endp.shutdownOutput();
+                        }
                     }
                     else
                         // Try to prepare more to write.
