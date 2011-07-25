@@ -20,7 +20,8 @@ import java.io.IOException;
  */
 public interface Parser
 {
-    void reset(boolean returnBuffers);
+    void returnBuffers();
+    void reset();
 
     boolean isComplete();
 

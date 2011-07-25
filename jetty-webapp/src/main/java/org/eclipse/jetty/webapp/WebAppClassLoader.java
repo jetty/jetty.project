@@ -20,7 +20,6 @@ import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -28,12 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -322,6 +316,13 @@ public class WebAppClassLoader extends URLClassLoader
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * Get a resource from the classloader
+     * 
+     * NOTE: this method provides a convenience of hacking off a leading /
+     * should one be present. This is non-standard and it is recommended 
+     * to not rely on this behavior
+     */
     public URL getResource(String name)
     {
         URL url= null;

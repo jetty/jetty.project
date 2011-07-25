@@ -139,10 +139,10 @@ public class TagLibConfiguration extends AbstractConfiguration
                     _context.getBaseResource()!=null && 
                     _context.getBaseResource().exists())
             {
-                Iterator iter=_context.getResourceAliases().values().iterator();
+                Iterator<String> iter=_context.getResourceAliases().values().iterator();
                 while(iter.hasNext())
                 {
-                    String location = (String)iter.next();
+                    String location = iter.next();
                     if (location!=null && location.toLowerCase().endsWith(".tld"))
                     {
                         if (!location.startsWith("/"))
@@ -187,6 +187,7 @@ public class TagLibConfiguration extends AbstractConfiguration
             // Add in tlds found in META-INF of jars. The jars that will be scanned are controlled by
             // the patterns defined in the context attributes: org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern,
             // and org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern
+            @SuppressWarnings("unchecked")
             Collection<Resource> tld_resources=(Collection<Resource>)_context.getAttribute(TLD_RESOURCES);
             if (tld_resources!=null)
                 tlds.addAll(tld_resources);
@@ -204,12 +205,12 @@ public class TagLibConfiguration extends AbstractConfiguration
             List<TldDescriptor> descriptors = new ArrayList<TldDescriptor>();
             
             Resource tld = null;
-            Iterator iter = tlds.iterator();
+            Iterator<Resource> iter = tlds.iterator();
             while (iter.hasNext())
             {
                 try
                 {
-                    tld = (Resource)iter.next();
+                    tld = iter.next();
                     if (Log.isDebugEnabled()) Log.debug("TLD="+tld);
                    
                     TldDescriptor d = new TldDescriptor(tld);
@@ -278,7 +279,7 @@ public class TagLibConfiguration extends AbstractConfiguration
 
             try
             {
-                Class jsp_page = Loader.loadClass(WebXmlConfiguration.class,"javax.servlet.jsp.JspPage");
+                Class<?> jsp_page = Loader.loadClass(WebXmlConfiguration.class,"javax.servlet.jsp.JspPage");
                 taglib11=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_1_1.dtd");
                 taglib12=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_1_2.dtd");
                 taglib20=jsp_page.getResource("javax/servlet/jsp/resources/web-jsptaglibrary_2_0.xsd");
@@ -330,7 +331,6 @@ public class TagLibConfiguration extends AbstractConfiguration
         throws Exception
         {
             ensureParser();
-            XmlParser.Node root;
             try
             {
                 //xerces on apple appears to sometimes close the zip file instead
@@ -379,7 +379,7 @@ public class TagLibConfiguration extends AbstractConfiguration
 
             try
             {
-                Class listenerClass = context.loadClass(className);
+                Class<?> listenerClass = context.loadClass(className);
                 EventListener l = (EventListener)listenerClass.newInstance();
                 _listeners.add(l);
             }
@@ -417,7 +417,7 @@ public class TagLibConfiguration extends AbstractConfiguration
     {
         try
         {
-            Class jsp_page = Loader.loadClass(WebXmlConfiguration.class,"javax.servlet.jsp.JspPage");
+            Class<?> jsp_page = Loader.loadClass(WebXmlConfiguration.class,"javax.servlet.jsp.JspPage");
         }
         catch (Exception e)
         {

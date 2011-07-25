@@ -16,7 +16,6 @@
 
 package org.eclipse.jetty.server.session.jmx;
 
-import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.jmx.AbstractHandlerMBean;

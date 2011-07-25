@@ -18,7 +18,6 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
@@ -126,13 +125,13 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------ */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public Enumeration getAttributeNames()
+    @SuppressWarnings({ "unchecked" })
+    public Enumeration<String> getAttributeNames()
     {
         synchronized (this)
         {
             checkValid();
-            List names=_attributes==null?Collections.EMPTY_LIST:new ArrayList(_attributes.keySet());
+            List<String> names=_attributes==null?Collections.EMPTY_LIST:new ArrayList<String>(_attributes.keySet());
             return Collections.enumeration(names);
         }
     }
@@ -491,7 +490,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         synchronized(this)
         {
             HttpSessionEvent event = new HttpSessionEvent(this);
-            for (Iterator iter = _attributes.values().iterator(); iter.hasNext();)
+            for (Iterator<Object> iter = _attributes.values().iterator(); iter.hasNext();)
             {
                 Object value = iter.next();
                 if (value instanceof HttpSessionActivationListener)
@@ -509,7 +508,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         synchronized(this)
         {
             HttpSessionEvent event = new HttpSessionEvent(this);
-            for (Iterator iter = _attributes.values().iterator(); iter.hasNext();)
+            for (Iterator<Object> iter = _attributes.values().iterator(); iter.hasNext();)
             {
                 Object value = iter.next();
                 if (value instanceof HttpSessionActivationListener)

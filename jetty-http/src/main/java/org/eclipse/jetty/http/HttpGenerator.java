@@ -523,7 +523,7 @@ public class HttpGenerator extends AbstractGenerator
                                 content_length = null;
 
                             // write the field to the header buffer
-                            field.put(_header);
+                            field.putTo(_header);
                             break;
 
                         case HttpHeaders.CONTENT_TYPE_ORDINAL:
@@ -531,7 +531,7 @@ public class HttpGenerator extends AbstractGenerator
 
                             // write the field to the header buffer
                             content_type=true;
-                            field.put(_header);
+                            field.putTo(_header);
                             break;
 
                         case HttpHeaders.TRANSFER_ENCODING_ORDINAL:
@@ -542,7 +542,7 @@ public class HttpGenerator extends AbstractGenerator
 
                         case HttpHeaders.CONNECTION_ORDINAL:
                             if (isRequest())
-                                field.put(_header);
+                                field.putTo(_header);
 
                             int connection_value = field.getValueOrdinal();
                             switch (connection_value)
@@ -601,7 +601,7 @@ public class HttpGenerator extends AbstractGenerator
                                     // special case for websocket connection ordering
                                     if (isResponse())
                                     {
-                                        field.put(_header);
+                                        field.putTo(_header);
                                         continue;
                                     }
                                 }
@@ -641,13 +641,13 @@ public class HttpGenerator extends AbstractGenerator
                             if (getSendServerVersion())
                             {
                                 has_server=true;
-                                field.put(_header);
+                                field.putTo(_header);
                             }
                             break;
 
                         default:
                             // write the field to the header buffer
-                            field.put(_header);
+                            field.putTo(_header);
                     }
                 }
             }
@@ -721,7 +721,7 @@ public class HttpGenerator extends AbstractGenerator
                 {
                     String c = transfer_encoding.getValue();
                     if (c.endsWith(HttpHeaderValues.CHUNKED))
-                        transfer_encoding.put(_header);
+                        transfer_encoding.putTo(_header);
                     else
                         throw new IllegalArgumentException("BAD TE");
                 }
@@ -890,9 +890,14 @@ public class HttpGenerator extends AbstractGenerator
                     if (!_needCRLF && !_needEOC && (_content==null || _content.length()==0))
                     {
                         if (_state == STATE_FLUSHING)
+                        {
                             _state = STATE_END;
+                        }
+                        
                         if (_state==STATE_END && _persistent != null && !_persistent && _status!=100 && _method==null)
+                        {
                             _endp.shutdownOutput();
+                        }
                     }
                     else
                         // Try to prepare more to write.

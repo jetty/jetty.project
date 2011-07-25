@@ -137,7 +137,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private String _extraClasspath;
     private Throwable _unavailableException;
     
-    private Map _resourceAliases;
+    private Map<String, String> _resourceAliases;
     private boolean _ownClassLoader=false;
     private boolean _configurationDiscovered=true;
     private boolean _configurationClassesSet=false;
@@ -245,12 +245,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setResourceAlias(String alias, String uri)
     {
         if (_resourceAliases == null)
-            _resourceAliases= new HashMap(5);
+            _resourceAliases= new HashMap<String, String>(5);
         _resourceAliases.put(alias, uri);
     }
 
     /* ------------------------------------------------------------ */
-    public Map getResourceAliases()
+    public Map<String, String> getResourceAliases()
     {
         if (_resourceAliases == null)
             return null;
@@ -258,7 +258,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
     
     /* ------------------------------------------------------------ */
-    public void setResourceAliases(Map map)
+    public void setResourceAliases(Map<String, String> map)
     {
         _resourceAliases = map;
     }
@@ -268,7 +268,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (_resourceAliases == null)
             return null;
-        return (String)_resourceAliases.get(alias);
+        return _resourceAliases.get(alias);
     }
 
     /* ------------------------------------------------------------ */
@@ -276,7 +276,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         if (_resourceAliases == null)
             return null;
-        return (String)_resourceAliases.remove(alias);
+        return _resourceAliases.remove(alias);
     }
 
     /* ------------------------------------------------------------ */

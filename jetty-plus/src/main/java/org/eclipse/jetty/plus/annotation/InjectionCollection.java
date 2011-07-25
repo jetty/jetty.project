@@ -63,7 +63,7 @@ public class InjectionCollection
   
     
     
-    public Injection getInjection (String jndiName, Class clazz, Field field)
+    public Injection getInjection (String jndiName, Class<?> clazz, Field field)
     {
         if (field == null || clazz == null)
             return null;
@@ -82,8 +82,8 @@ public class InjectionCollection
         
         return injection;
     }
-    
-    public Injection getInjection (String jndiName, Class clazz, Method method, Class paramClass)
+     
+    public Injection getInjection (String jndiName, Class<?> clazz, Method method, Class<?> paramClass)
     {
         if (clazz == null || method == null || paramClass == null)
             return null;

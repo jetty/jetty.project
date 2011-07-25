@@ -1,7 +1,3 @@
-jetty-7.5.0-SNAPSHOT
- + 351516 Refactored sessions to better support nosql session managers
- + 351576 Do not use deprecated method File.toURL()
-
 jetty-8.0.0.RC0-SNAPSHOT
  + Merge from jetty-7.4.3
  + Enable annotations by default
@@ -12,6 +8,16 @@ jetty-8.0.0.M3 27 May 2011
  + 343472 isUserInRole does not prevent subsequent login call.
  + 346180 jsp-2.2 support
  + Updated to jetty-7.4.2.v20110526
+
+jetty-7.5.0-SNAPSHOT
+ + 298502 Handle 200 Connect responses with no content-length
+ + 351516 Refactored sessions to better support nosql session managers
+ + 351576 Do not use deprecated method File.toURL()
+ + 352046 Need try/catch around features set in XmlParser
+ + 352176 xml parsing on startElement should be more flexible on using qName or localName
+ + 352421 HttpURI paths beginning with '.'
+ + 352684 Implemented spinning thread analyzer
+ + 352786 GzipFilter fails to pass parameters to GzipResponseWrapper
 
 jetty-7.4.4.v20110707 July 7th 2011
  + 308851 Converted all jetty-client module tests to JUnit 4
@@ -57,7 +63,7 @@ jetty-7.4.2.v20110526
  + 345615 Enable SSL Session caching
  + 345763 Source file is updated during the build
  + 345873 Update jetty-ssl.xml to new style
- + 345900 Handle ipv6 with default port
+ + 345900 Handle IPv6 with default port
  + 346014 Fixed full HttpGenerator
  + 346124 ServletContext resources paths not resolved correctly when using UNC shares
  + 346179 o.e.j.util.ScannerTest fails on MacOS X platform

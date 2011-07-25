@@ -102,6 +102,9 @@ public class HttpExchange
     // a timeout for this exchange
     private long _timeout = -1;
     private volatile Timeout.Task _timeoutTask;
+    
+    private long _lastStateChange=-1;
+    private long _sent=-1;
 
     boolean _onRequestCompleteDone;
     boolean _onResponseCompleteDone;
@@ -179,7 +182,13 @@ public class HttpExchange
         {
             int oldStatus = _status.get();
             boolean set = false;
-
+            if (oldStatus!=newStatus)
+            {
+                _lastStateChange=System.currentTimeMillis();
+                if (newStatus==STATUS_SENDING_REQUEST)
+                    _sent=_lastStateChange;
+            }
+            
             // State machine: from which old status you can go into which new status
             switch (oldStatus)
             {
@@ -720,7 +729,29 @@ public class HttpExchange
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "@" + hashCode() + "=" + _method + "//" + _address + _uri + "#" + getStatus();
+        String state;
+        switch(getStatus())
+        {
+            case STATUS_START: state="START"; break;
+            case STATUS_WAITING_FOR_CONNECTION: state="CONNECTING"; break;
+            case STATUS_WAITING_FOR_COMMIT: state="CONNECTED"; break;
+            case STATUS_SENDING_REQUEST: state="SENDING"; break;
+            case STATUS_WAITING_FOR_RESPONSE: state="WAITING"; break;
+            case STATUS_PARSING_HEADERS: state="HEADERS"; break;
+            case STATUS_PARSING_CONTENT: state="CONTENT"; break;
+            case STATUS_COMPLETED: state="COMPLETED"; break;
+            case STATUS_EXPIRED: state="EXPIRED"; break;
+            case STATUS_EXCEPTED: state="EXCEPTED"; break;
+            case STATUS_CANCELLING: state="CANCELLING"; break;
+            case STATUS_CANCELLED: state="CANCELLED"; break;
+            default: state="UNKNOWN";
+        }
+        long now=System.currentTimeMillis();
+        long forMs = now -_lastStateChange;
+        String s= String.format("%s@%x=%s//%s%s#%s(%dms)",getClass().getSimpleName(),hashCode(),_method,_address,_uri,state,forMs);
+        if (getStatus()>=STATUS_SENDING_REQUEST)
+            s+="sent="+(now-_sent)+"ms";
+        return s;
     }
 
     /**

@@ -23,10 +23,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.StringTokenizer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -49,17 +48,13 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
     private static int __length = __content.length();
     
-    private StringBuffer _response;
-    private boolean _continue;
-
     /* ------------------------------------------------------------ */
     @Test
     public void testCloseBetweenRequests() throws Exception
     {
-        int total = 0;
-
-        _continue = true;
-        _response = new StringBuffer();
+        int maxLength = 32;
+        int requestCount = iterations(maxLength);
+        final CountDownLatch latch = new CountDownLatch(requestCount);
         
         configureServer(new HelloWorldHandler());
 
@@ -68,16 +63,35 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         {
             OutputStream os = client.getOutputStream();
 
-            ResponseReader reader = new ResponseReader(client);
+            ResponseReader reader = new ResponseReader(client) {
+                private int _index = 0;
+                
+                /* ------------------------------------------------------------ */
+                @Override
+                protected int doRead() throws IOException, InterruptedException
+                {
+                    int count = super.doRead();
+                    if (count > 0)
+                    {
+                        int idx;
+                        while ((idx=_response.indexOf("HTTP/1.1 200 OK", _index)) >= 0)
+                        {
+                            latch.countDown();
+                            _index = idx + 15;
+                        }
+                    }
+                    
+                    return count;
+                }
+            };
+            
             Thread runner = new Thread(reader);
             runner.start();
 
-            for (int pipeline = 1; pipeline < 32; pipeline++)
+            for (int pipeline = 1; pipeline < maxLength; pipeline++)
             {
-                if (pipeline == 16)
+                if (pipeline == maxLength / 2)
                     _connector.close();
-
-                total += pipeline;
 
                 String request = "";
                 for (int i = 0; i < pipeline; i++)
@@ -93,38 +107,32 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 os.write(request.getBytes());
                 os.flush();
 
-                Thread.sleep(50);
+                Thread.sleep(25);
             }
             
-            _continue = false;
+            latch.await(30, TimeUnit.SECONDS);
+
+            reader.setDone();
             runner.join();
         }
         finally
         {
             client.close();
 
-            int count = 0;
-            StringTokenizer lines = new StringTokenizer(_response.toString(),"\r\n");
-            while(lines.hasMoreTokens())
-            {
-                String line = lines.nextToken();
-                if (line.equals("HTTP/1.1 200 OK"))
-                {
-                    ++count;
-                }
-            }
-            
-            assertEquals(total, count);
+            assertEquals(requestCount, requestCount - latch.getCount());
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    private int iterations(int cnt)
+    {
+        return cnt > 0 ? iterations(--cnt) + cnt : 0;
     }
 
     /* ------------------------------------------------------------ */
     @Test
     public void testCloseBetweenChunks() throws Exception
     {
-        _continue = true;
-        _response = new StringBuffer();
-
         configureServer(new EchoHandler());
 
         Socket client = newSocket(HOST,_connector.getLocalPort());
@@ -136,7 +144,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             Thread runner = new Thread(reader);
             runner.start();
 
-            String content = "abcdefghij";
             byte[] bytes = __content.getBytes("utf-8");
             
             os.write((
@@ -154,6 +161,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             {
                 os.write(bytes, offset, 64);
                 offset += 64;
+                Thread.sleep(25);
             }
             
             _connector.close();
@@ -162,15 +170,14 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             {
                 os.write(bytes, offset, len-offset <=64 ? len-offset : 64);
                 offset += 64;
+                Thread.sleep(25);
             }
             os.flush();
 
-            Thread.sleep(50);
-
-            _continue = false;
+            reader.setDone();
             runner.join();
             
-            String in = _response.toString();
+            String in = reader.getResponse().toString();
             assertTrue(in.indexOf(__content.substring(__length-64))>0);
         }
         finally
@@ -183,12 +190,29 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
     /* ------------------------------------------------------------ */
     public class ResponseReader implements Runnable
     {
-        private BufferedReader _reader;
+        private boolean _done = false;
+
+        protected char[] _buffer;
+        protected StringBuffer _response;
+        protected BufferedReader _reader;
         
         /* ------------------------------------------------------------ */
         public ResponseReader(Socket client) throws IOException
         {
+            _buffer = new char[256];
+            _response = new StringBuffer();
             _reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void setDone()
+        {
+            _done = true;
+        }
+        
+        public StringBuffer getResponse()
+        {
+            return _response;
         }
         
         /* ------------------------------------------------------------ */
@@ -197,24 +221,12 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
          */
         public void run()
         {
-            int count = 0;
-            char[] buffer = new char[256];
-            
             try
             {
-                while (_continue)
+                int count = 0;
+                while (!_done || count > 0)
                 {
-                    if (_reader.ready())
-                    {
-                        count = _reader.read(buffer);
-                        _response.append(buffer, 0, count);
-                    }
-                    else
-                    {
-                        count = 0;
-                        Thread.sleep(10);
-                    }
-                    
+                    count = doRead();
                 }
             }
             catch (IOException ex) { }
@@ -227,6 +239,27 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 }
                 catch (IOException e) { }
             }
+        }
+
+        /* ------------------------------------------------------------ */
+        protected int doRead() throws IOException, InterruptedException
+        {
+            if (!_reader.ready())
+            {
+                Thread.sleep(25);
+            }
+
+            int count = 0;           
+            if (_reader.ready())
+            {
+                count = _reader.read(_buffer);
+                if (count > 0)
+                {
+                    _response.append(_buffer, 0, count);
+                }
+            }
+            
+            return count;
         }
     }
 }

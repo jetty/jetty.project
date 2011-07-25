@@ -237,10 +237,7 @@ public class HttpURI
                             break;
 
                         default:
-                            if (Character.isLetterOrDigit(c))
-                                state=SCHEME_OR_PATH;
-                            else
-                                throw new IllegalArgumentException("!(SCHEME|PATH|AUTH):"+StringUtil.toString(_raw,offset,length,URIUtil.__CHARSET));
+                            state=SCHEME_OR_PATH;
                     }
 
                     continue;

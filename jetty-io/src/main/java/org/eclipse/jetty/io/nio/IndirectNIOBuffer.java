@@ -18,28 +18,28 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 
 public class IndirectNIOBuffer extends ByteArrayBuffer implements NIOBuffer
 {
-    protected ByteBuffer _buf;
+    protected final ByteBuffer _buf;
 
     /* ------------------------------------------------------------ */
     public IndirectNIOBuffer(int size)
     {
-        super(READWRITE,NON_VOLATILE);
-        _buf = ByteBuffer.allocate(size);
+        super(size,READWRITE,NON_VOLATILE);
+        _buf = ByteBuffer.wrap(_bytes);
         _buf.position(0);
         _buf.limit(_buf.capacity());
-        _bytes=_buf.array();
     }
 
     /* ------------------------------------------------------------ */
     public IndirectNIOBuffer(ByteBuffer buffer,boolean immutable)
     {
-        super(immutable?IMMUTABLE:READWRITE,NON_VOLATILE);
+        super(buffer.array(),0,0, immutable?IMMUTABLE:READWRITE,NON_VOLATILE);
         if (buffer.isDirect())
             throw new IllegalArgumentException();
         _buf = buffer;
-        setGetIndex(buffer.position());
-        setPutIndex(buffer.limit());
-        _bytes=_buf.array();
+        _get=buffer.position();
+        _put=buffer.limit();
+        buffer.position(0);
+        buffer.limit(buffer.capacity());
     }
     
     /* ------------------------------------------------------------ */

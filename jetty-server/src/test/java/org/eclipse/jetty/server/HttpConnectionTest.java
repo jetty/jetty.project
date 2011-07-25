@@ -154,7 +154,9 @@ public class HttpConnectionTest
         {
             ((StdErrLog)Log.getLog()).setHideStacks(true);
 
-            String response=connector.getResponses("GET & HTTP/1.1\n"+
+            String response;
+            
+            response=connector.getResponses("GET % HTTP/1.1\n"+
                     "Host: localhost\n"+
             "\015\012");
             checkContains(response,0,"HTTP/1.1 400");

@@ -97,6 +97,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
     public void addResource (WebAppContext context, String attribute, Resource jar)
     {
+        @SuppressWarnings("unchecked")
         List<Resource> list = (List<Resource>)context.getAttribute(attribute);
         if (list==null)
         {

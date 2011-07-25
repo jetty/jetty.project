@@ -70,7 +70,6 @@ public class XmlParser
         boolean validating_dft = factory.getClass().toString().startsWith("org.apache.xerces.");
         String validating_prop = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validating_dft ? "true" : "false");
         boolean validating = Boolean.valueOf(validating_prop).booleanValue();
-
         setValidating(validating);
     }
 
@@ -108,7 +107,15 @@ public class XmlParser
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/validation", validating);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespaces", true);
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/namespace-prefixes", false);  
-            _parser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
+            try
+            {
+                if (validating)
+                    _parser.getXMLReader().setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", validating);
+            }
+            catch (Exception e)
+            {
+                Log.warn(e.getMessage());
+            }
         }
         catch (Exception e)
         {
@@ -289,7 +296,13 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         public void startElement(String uri, String localName, String qName, Attributes attrs) throws SAXException
         {
-            String name = (uri == null || uri.equals("")) ? qName : localName;
+            String name = null;
+            if (_parser.isNamespaceAware())
+                name = localName;
+
+            if (name == null || "".equals(name))
+                name = qName;
+
             Node node = new Node(_context, name, attrs);
             
 
@@ -467,10 +480,10 @@ public class XmlParser
     /**
      * XML Node. Represents an XML element with optional attributes and ordered content.
      */
-    public static class Node extends AbstractList
+    public static class Node extends AbstractList<Object>
     {
         Node _parent;
-        private ArrayList _list;
+        private ArrayList<Object> _list;
         private String _tag;
         private Attribute[] _attrs;
         private boolean _lastString = false;
@@ -610,7 +623,7 @@ public class XmlParser
         public void add(int i, Object o)
         {
             if (_list == null)
-                _list = new ArrayList();
+                _list = new ArrayList<Object>();
             if (o instanceof String)
             {
                 if (_lastString)

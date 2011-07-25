@@ -286,7 +286,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             { 
                 Descriptor otherFragment = context.getMetaData().getOriginDescriptor("resource-ref."+jndiName);
                 XmlParser.Node otherFragmentRoot = otherFragment.getRoot();
-                Iterator iter = otherFragmentRoot.iterator();
+                Iterator<Object> iter = otherFragmentRoot.iterator();
                 XmlParser.Node otherNode = null;
                 while (iter.hasNext() && otherNode == null)
                 {
@@ -395,7 +395,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 Descriptor otherFragment = context.getMetaData().getOriginDescriptor("resource-env-ref."+jndiName);
                 XmlParser.Node otherFragmentRoot = otherFragment.getRoot();
-                Iterator iter = otherFragmentRoot.iterator();
+                Iterator<Object> iter = otherFragmentRoot.iterator();
                 XmlParser.Node otherNode = null;
                 while (iter.hasNext() && otherNode == null)
                 {
@@ -491,7 +491,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 Descriptor otherFragment = context.getMetaData().getOriginDescriptor("message-destination-ref."+jndiName);
                 XmlParser.Node otherFragmentRoot = otherFragment.getRoot();
-                Iterator iter = otherFragmentRoot.iterator();
+                Iterator<Object> iter = otherFragmentRoot.iterator();
                 XmlParser.Node otherNode = null;
                 while (iter.hasNext() && otherNode == null)
                 {
@@ -706,11 +706,11 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void addInjections (WebAppContext context, Descriptor descriptor, XmlParser.Node node, String jndiName, Class<?> valueClass)
     {
-        Iterator  itor = node.iterator("injection-target");
+        Iterator<XmlParser.Node>  itor = node.iterator("injection-target");
         
         while(itor.hasNext())
         {
-            XmlParser.Node injectionNode = (XmlParser.Node)itor.next(); 
+            XmlParser.Node injectionNode = itor.next(); 
             String targetClassName = injectionNode.getString("injection-target-class", false, true);
             String targetName = injectionNode.getString("injection-target-name", false, true);
             if ((targetClassName==null) || targetClassName.equals(""))
@@ -852,7 +852,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         {
             //if we found a mapping, get out name it is mapped to in the environment
             nameInEnvironment = ((Link)ne).getLink();
-            Link l = (Link)ne;
         }
 
         //try finding that mapped name in the webapp's environment first

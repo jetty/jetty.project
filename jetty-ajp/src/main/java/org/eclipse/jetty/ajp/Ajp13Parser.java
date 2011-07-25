@@ -133,7 +133,7 @@ public class Ajp13Parser implements Parser
     public void parse() throws IOException
     {
         if (_state == STATE_END)
-            reset(false);
+            reset();
         if (_state != STATE_START)
             throw new IllegalStateException("!START");
 
@@ -206,7 +206,7 @@ public class Ajp13Parser implements Parser
             {
                 // This is normal in AJP since the socket closes on timeout only
                 Log.debug(e);
-                reset(true);
+                reset();
                 throw (e instanceof EofException) ? e : new EofException(e);
             }
         }
@@ -219,7 +219,7 @@ public class Ajp13Parser implements Parser
                 _handler.messageComplete(_contentPosition);
                 return filled;
             }
-            reset(true);
+            reset();
             throw new EofException();
         }
     
@@ -317,7 +317,7 @@ public class Ajp13Parser implements Parser
 
                     _buffer= null;
 
-                    reset(true);
+                    reset();
 
                     return -1;
                 case Ajp13Packet.SHUTDOWN_ORDINAL:
@@ -606,7 +606,7 @@ public class Ajp13Parser implements Parser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public void reset(boolean returnBuffers)
+    public void reset()
     {
         _state = STATE_START;
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
@@ -614,51 +614,59 @@ public class Ajp13Parser implements Parser
         _length = 0;
         _packetLength = 0;
 
-        if (_body != null)
+        if (_body!=null && _body.hasContent())
         {
-            if (_body.hasContent())
+            // There is content in the body after the end of the request.
+            // This is probably a pipelined header of the next request, so we need to
+            // copy it to the header buffer.
+            if (_header==null)
+            {
+                _header=_buffers.getHeader();
+                _tok0.update(_header);
+                _tok0.update(0,0);
+                _tok1.update(_header);
+                _tok1.update(0,0);
+            }
+            else
             {
                 _header.setMarkIndex(-1);
                 _header.compact();
-                // TODO if pipelined requests received after big
-                // input - maybe this is not good?.
-                _body.skip(_header.put(_body));
-
             }
-
-            if (_body.length() == 0)
-            {
-                if (_buffers != null && returnBuffers)
-                    _buffers.returnBuffer(_body);
-                _body = null;
-            }
-            else
-            {
-                _body.setMarkIndex(-1);
-                _body.compact();
-            }
+            int take=_header.space();
+            if (take>_body.length())
+                take=_body.length();
+            _body.peek(_body.getIndex(),take);
+            _body.skip(_header.put(_body.peek(_body.getIndex(),take)));
         }
 
-        if (_header != null)
-        {
+        if (_header!=null)
             _header.setMarkIndex(-1);
-            if (!_header.hasContent() && _buffers != null && returnBuffers)
-            {
-                _buffers.returnBuffer(_header);
-                _header = null;
-                _buffer = null;
-            }
-            else
-            {
-                _header.compact();
-                _tok0.update(_header);
-                _tok0.update(0, 0);
-                _tok1.update(_header);
-                _tok1.update(0, 0);
-            }
+        if (_body!=null)
+            _body.setMarkIndex(-1);
+
+        _buffer=_header;
+    }
+
+
+    /* ------------------------------------------------------------------------------- */
+    public void returnBuffers()
+    {
+        if (_body!=null && !_body.hasContent() && _body.markIndex()==-1)
+        {   
+            if (_buffer==_body)
+                _buffer=_header;
+            if (_buffers!=null)
+                _buffers.returnBuffer(_body);
+            _body=null; 
         }
 
-        _buffer = _header;
+        if (_header!=null && !_header.hasContent() && _header.markIndex()==-1)
+        {
+            if (_buffer==_header)
+                _buffer=null;
+            _buffers.returnBuffer(_header);
+            _header=null;
+        }
     }
 
     /* ------------------------------------------------------------------------------- */

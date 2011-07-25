@@ -29,38 +29,40 @@ import org.eclipse.jetty.http.security.Credential;
 public class UserInfo
 {
     
-    private String userName;
-    private Credential credential;
-    private List roleNames;
+    private String _userName;
+    private Credential _credential;
+    private List<String> _roleNames;
     
     
-    public UserInfo (String userName, Credential credential, List roleNames)
+    public UserInfo (String userName, Credential credential, List<String> roleNames)
     {
-        this.userName = userName;
-        this.credential = credential;
-        this.roleNames = new ArrayList();
+        _userName = userName;
+        _credential = credential;
+        _roleNames = new ArrayList<String>();
         if (roleNames != null)
-            this.roleNames.addAll(roleNames);
+        {
+            _roleNames.addAll(roleNames);
+        }
     }
     
     public String getUserName()
     {
-        return this.userName;
+        return this._userName;
     }
     
-    public List getRoleNames ()
+    public List<String> getRoleNames ()
     {
-        return new ArrayList(this.roleNames);
+        return new ArrayList<String>(_roleNames);
     }
     
     public boolean checkCredential (Object suppliedCredential)
     {
-        return this.credential.check(suppliedCredential);
+        return _credential.check(suppliedCredential);
     }
     
     protected Credential getCredential ()
     {
-        return this.credential;
+        return _credential;
     }
     
 }

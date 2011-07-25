@@ -364,7 +364,8 @@ public class HttpExchangeTest
         }.start();
         int status = httpExchange.waitForDone();
 
-        assertTrue(throwable.get().toString().indexOf("local close")>=0);
+        System.err.println(throwable.get());
+        assertTrue(throwable.get().toString().indexOf("close")>=0);
         assertEquals(HttpExchange.STATUS_EXCEPTED, status);
     }
 

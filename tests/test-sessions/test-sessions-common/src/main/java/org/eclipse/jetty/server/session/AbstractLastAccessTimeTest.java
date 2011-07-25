@@ -13,6 +13,7 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Random;
 
 import javax.servlet.ServletException;
@@ -67,6 +68,7 @@ public abstract class AbstractLastAccessTimeTest
                     client.send(exchange1);
                     exchange1.waitForDone();
                     assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
+                    assertEquals("test", exchange1.getResponseContent());
                     String sessionCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
@@ -87,6 +89,8 @@ public abstract class AbstractLastAccessTimeTest
                         client.send(exchange2);
                         exchange2.waitForDone();
                         assertEquals(HttpServletResponse.SC_OK , exchange2.getResponseStatus());
+                        assertEquals("test", exchange2.getResponseContent());
+
                         String setCookie = exchange1.getResponseFields().getStringField("Set-Cookie");
                         if (setCookie!=null)                    
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -136,13 +140,36 @@ public abstract class AbstractLastAccessTimeTest
             {
                 HttpSession session = request.getSession(true);
                 session.setAttribute("test", "test");
+                
+                sendResult(session, httpServletResponse.getWriter());
+
             }
             else
             {
                 HttpSession session = request.getSession(false);
+
+                // if we node hopped we should get the session and test should already be present
+                sendResult(session, httpServletResponse.getWriter());
+
                 if (session!=null)
+                {                                       
                     session.setAttribute("test", "test");
+                }
+                
+
             }
+        }
+        
+        private void sendResult(HttpSession session, PrintWriter writer)
+        {
+                if (session != null)
+                {                    
+                        writer.print(session.getAttribute("test"));
+                }
+                else
+                {
+                        writer.print("null");
+                }
         }
     }
 }

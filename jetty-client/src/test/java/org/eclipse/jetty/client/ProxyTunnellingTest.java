@@ -37,7 +37,12 @@ public class ProxyTunnellingTest
     private Connector proxyConnector;
     private int serverConnectTimeout = 1000;
 
-    private void startSSLServer(Handler handler) throws Exception
+    protected int proxyPort()
+    {
+        return proxyConnector.getLocalPort();
+    }
+    
+    protected void startSSLServer(Handler handler) throws Exception
     {
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
@@ -48,7 +53,7 @@ public class ProxyTunnellingTest
         startServer(connector, handler);
     }
 
-    private void startServer(Connector connector, Handler handler) throws Exception
+    protected void startServer(Connector connector, Handler handler) throws Exception
     {
         server = new Server();
         serverConnector = connector;
@@ -57,7 +62,7 @@ public class ProxyTunnellingTest
         server.start();
     }
 
-    private void startProxy() throws Exception
+    protected void startProxy() throws Exception
     {
         proxy = new Server();
         proxyConnector = new SelectChannelConnector();
@@ -77,13 +82,13 @@ public class ProxyTunnellingTest
         stopServer();
     }
 
-    private void stopServer() throws Exception
+    protected void stopServer() throws Exception
     {
         server.stop();
         server.join();
     }
 
-    private void stopProxy() throws Exception
+    protected void stopProxy() throws Exception
     {
         proxy.stop();
         proxy.join();
@@ -96,7 +101,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient();
-        httpClient.setProxy(new Address("localhost", proxyConnector.getLocalPort()));
+        httpClient.setProxy(new Address("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -124,7 +129,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient();
-        httpClient.setProxy(new Address("localhost", proxyConnector.getLocalPort()));
+        httpClient.setProxy(new Address("localhost", proxyPort()));
         httpClient.start();
 
         try
@@ -163,7 +168,7 @@ public class ProxyTunnellingTest
     {
         startSSLServer(new ServerHandler());
         startProxy();
-        int proxyPort = proxyConnector.getLocalPort();
+        int proxyPort = proxyPort();
         stopProxy();
 
         HttpClient httpClient = new HttpClient();
@@ -203,7 +208,7 @@ public class ProxyTunnellingTest
         startProxy();
 
         HttpClient httpClient = new HttpClient();
-        httpClient.setProxy(new Address("localhost", proxyConnector.getLocalPort()));
+        httpClient.setProxy(new Address("localhost", proxyPort()));
         httpClient.start();
 
         try

@@ -21,8 +21,6 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.util.IntrospectionUtil;
-import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 
 /**

@@ -36,11 +36,21 @@ public abstract class AbstractConnection implements Connection
     {
         try
         {
-            _endp.close();
+            _endp.shutdownOutput();
         }
         catch(IOException e)
         {
             Log.ignore(e);
+
+            try
+            {
+                _endp.close();
+            }
+            catch(IOException e2)
+            {
+                Log.ignore(e2);
+                
+            }
         }
     }
     

@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -35,7 +36,7 @@ import org.eclipse.jetty.server.Server;
  * duplication of HttpConnection
  * 
  */
-public class Ajp13Connection extends HttpConnection
+public class Ajp13Connection extends BlockingHttpConnection
 {
     public Ajp13Connection(Connector connector, EndPoint endPoint, Server server)
     {

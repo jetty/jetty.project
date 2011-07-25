@@ -28,10 +28,8 @@ import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
-import org.eclipse.jetty.jndi.java.javaRootURLContext;
 import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
-import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
@@ -148,6 +146,7 @@ public class EnvConfiguration extends AbstractConfiguration
             compCtx.destroySubcontext("env");
 
             //unbind any NamingEntries that were configured in this webapp's name space
+            @SuppressWarnings("unchecked")
             List<Bound> bindings = (List<Bound>)context.getAttribute(JETTY_ENV_BINDINGS);
             context.setAttribute(JETTY_ENV_BINDINGS,null);
             if (bindings!=null)
@@ -203,8 +202,8 @@ public class EnvConfiguration extends AbstractConfiguration
         InitialContext ic = new InitialContext();
         Context envCtx = (Context)ic.lookup("java:comp/env");
         Object scope = null;
-        List list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
-        Iterator itor = list.iterator();
+        List<Object> list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
+        Iterator<Object> itor = list.iterator();
         while (itor.hasNext())
         {
             EnvEntry ee = (EnvEntry)itor.next();

@@ -427,6 +427,8 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         }
         finally
         {
+            _parser.returnBuffers();
+            
             // Do we have more stuff to write?
             if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
             {
@@ -535,7 +537,9 @@ public class HttpConnection extends AbstractConnection implements Dumpable
     {
         _requestComplete = false;
         _connectionHeader = null;
-        _parser.reset(returnBuffers);
+        _parser.reset();
+        if (returnBuffers)
+            _parser.returnBuffers();
         _generator.reset(returnBuffers);
         _http11 = true;
     }
@@ -567,9 +571,14 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         @Override
         public void startResponse(Buffer version, int status, Buffer reason) throws IOException
         {
+            
             HttpExchange exchange = _exchange;
             if (exchange!=null)
             {
+                // handle special case for CONNECT 200 responses
+                if (status==HttpStatus.OK_200 && HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
+                    _parser.setHeadResponse(true);
+                
                 _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
                 _status=status;
                 exchange.getEventListener().onResponseStatus(version,status,reason);
@@ -636,9 +645,10 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         //if there is a live, unfinished exchange, set its status to be
         //excepted and wake up anyone waiting on waitForDone()
 
-        if (_exchange != null && !_exchange.isDone())
+        HttpExchange exchange = _exchange;
+        if (exchange != null && !exchange.isDone())
         {
-            switch (_exchange.getStatus())
+            switch (exchange.getStatus())
             {
                 case HttpExchange.STATUS_CANCELLED:
                 case HttpExchange.STATUS_CANCELLING:
@@ -647,8 +657,10 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                 case HttpExchange.STATUS_EXPIRED:
                     break;
                 default:
-                    _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                    _exchange.getEventListener().onException(new EOFException("local close"));
+                    String exch= exchange.toString();
+                    String reason = _endp.isOpen()?(_endp.isInputShutdown()?"half closed: ":"local close: "):"closed: ";
+                    exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                    exchange.getEventListener().onException(new EOFException(reason+exch));
             }
         }
 

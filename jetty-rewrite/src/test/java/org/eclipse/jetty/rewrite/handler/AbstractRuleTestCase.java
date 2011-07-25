@@ -13,6 +13,7 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import org.eclipse.jetty.io.bio.StringEndPoint;
+import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.LocalConnector;
@@ -61,7 +62,7 @@ public abstract class AbstractRuleTestCase
 
     protected void reset()
     {
-        _connection = new HttpConnection(_connector, _endpoint, _server);
+        _connection = new BlockingHttpConnection(_connector, _endpoint, _server);
         _request = new Request(_connection);
         _response = new Response(_connection);
         _request.setRequestURI("/test/");

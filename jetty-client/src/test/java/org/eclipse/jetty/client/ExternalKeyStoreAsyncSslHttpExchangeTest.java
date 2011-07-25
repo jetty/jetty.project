@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.FileInputStream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Test;
 
 public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
@@ -34,6 +35,13 @@ public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTes
         _httpClient.setKeyStorePassword("storepwd");
         _httpClient.setKeyManagerPassword("keypwd");
         _httpClient.start();
+    }
+
+    @Override
+    @Test
+    public void testBigPostWithContentExchange() throws Exception
+    {
+        super.testBigPostWithContentExchange();
     }
 
 }

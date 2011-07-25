@@ -41,7 +41,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
@@ -197,7 +196,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
 
         // init params  
-        Iterator iParamsIter = node.iterator("init-param");
+        Iterator<?> iParamsIter = node.iterator("init-param");
         while (iParamsIter.hasNext())
         {
             XmlParser.Node paramNode = (XmlParser.Node) iParamsIter.next();

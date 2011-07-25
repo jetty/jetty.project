@@ -24,7 +24,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -40,7 +39,6 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
 
 /**
@@ -77,7 +75,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     protected  String __updateSessionAccessTime;
     protected  String __sessionTableRowId;
     
-    private ConcurrentHashMap _sessions;
+    private ConcurrentHashMap<String, AbstractSession> _sessions;
     protected long _saveIntervalSec = 60; //only persist changes to session access times every 60 secs
   
     /**
@@ -402,7 +400,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
 
         @Override
-        public Class resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
+        public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
         {
             try
             {
@@ -605,7 +603,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         
         prepareTables();
      
-        _sessions = new ConcurrentHashMap();
+        _sessions = new ConcurrentHashMap<String, AbstractSession>();
         super.doStart();
     }
     
@@ -773,7 +771,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * 
      * @param sessionIds
      */
-    protected void expire (List sessionIds)
+    protected void expire (List<?> sessionIds)
     { 
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
@@ -782,7 +780,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         //Remove any sessions we already have in memory that match the ids
         Thread thread=Thread.currentThread();
         ClassLoader old_loader=thread.getContextClassLoader();
-        ListIterator itor = sessionIds.listIterator();
+        ListIterator<?> itor = sessionIds.listIterator();
 
         try
         {
@@ -854,6 +852,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         final AtomicReference<Exception> _exception = new AtomicReference<Exception>();
         Runnable load = new Runnable()
         {
+            @SuppressWarnings("unchecked")
             public void run()
             {
                 SessionData data = null;

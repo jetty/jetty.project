@@ -97,8 +97,8 @@ public class LikeJettyXml
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         RequestLogHandler requestLogHandler = new RequestLogHandler();
-        handlers.setHandlers(new Handler[]
-        { contexts, new DefaultHandler(), requestLogHandler });
+        
+        handlers.setHandlers(new Handler[] { contexts, new DefaultHandler(), requestLogHandler });
         
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(handlers);
@@ -135,6 +135,7 @@ public class LikeJettyXml
 
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
+        
         
         server.start();
         

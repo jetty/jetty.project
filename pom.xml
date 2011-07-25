@@ -316,6 +316,7 @@
     <module>jetty-plus</module>
     <module>jetty-rewrite</module>
     <module>jetty-policy</module>
+    <module>jetty-monitor</module>
     <module>jetty-start</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>

@@ -15,7 +15,6 @@ package org.eclipse.jetty.plus.annotation;
 
 import javax.servlet.ServletException;
 
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 /**

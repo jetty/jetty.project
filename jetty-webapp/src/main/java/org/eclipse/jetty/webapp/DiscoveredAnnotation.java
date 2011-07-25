@@ -27,7 +27,7 @@ public abstract class DiscoveredAnnotation
 {
     protected WebAppContext _context;
     protected String _className;
-    protected Class _clazz;
+    protected Class<?> _clazz;
     
     public abstract void apply();
     
@@ -35,10 +35,10 @@ public abstract class DiscoveredAnnotation
     {
         _context = context;
         _className = className;
-    }
+    } 
     
     
-    public Class getTargetClass()
+    public Class<?> getTargetClass()
     {
         if (_clazz != null)
             return _clazz;

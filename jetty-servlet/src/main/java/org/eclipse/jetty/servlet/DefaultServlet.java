@@ -957,7 +957,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             HttpFields fields = r.getHttpFields();
 
             if (content.getLastModified()!=null)
-                fields.put(HttpHeaders.LAST_MODIFIED_BUFFER,content.getLastModified(),content.getResource().lastModified());
+                fields.put(HttpHeaders.LAST_MODIFIED_BUFFER,content.getLastModified());
             else if (content.getResource()!=null)
             {
                 long lml=content.getResource().lastModified();
