@@ -1,7 +1,8 @@
 jetty-7.5.0-SNAPSHOT
+ + 347484 / - > ${/} in some paths in grant codebases
+ + 352133 resolve some 1.5isms
  + 352421 HttpURI paths beginning with '.'
  + 352786 GzipFilter fails to pass parameters to GzipResponseWrapper
- + 352133 resolve some 1.5isms
 
 jetty-7.4.4.v20110707 July 7th 2011
  + 308851 Converted all jetty-client module tests to JUnit 4
