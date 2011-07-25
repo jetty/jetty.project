@@ -6,7 +6,7 @@
 // doPrivledged freeing any further permissions being required to this 
 // module.
 
-grant codeBase "file:${jetty.home}/start.jar" {
+grant codeBase "file:${jetty.home}${/}start.jar" {
 
    permission java.io.FilePermission "${jetty.home}${/}-", "read";
    

@@ -1,6 +1,6 @@
 // This file contains permissions related to jmx support
 
-grant codeBase "file:${jetty.home}/lib/-" {
+grant codeBase "file:${jetty.home}${/}lib${/}-" {
 
    // related to using JMX
    permission javax.management.MBeanTrustPermission "register";
