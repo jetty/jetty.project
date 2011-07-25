@@ -191,9 +191,9 @@ public class GzipFilter extends UserAgentFilter
         return new GzipResponseWrapper(request, response)
         {
             {
-                _mimeTypes = GzipFilter.this._mimeTypes;
-                _bufferSize = GzipFilter.this._bufferSize;
-                _minGzipSize = GzipFilter.this._minGzipSize;
+                setMimeTypes(GzipFilter.this._mimeTypes);
+                setBufferSize(GzipFilter.this._bufferSize);
+                setMinGzipSize(GzipFilter.this._minGzipSize);
             }
             
             @Override

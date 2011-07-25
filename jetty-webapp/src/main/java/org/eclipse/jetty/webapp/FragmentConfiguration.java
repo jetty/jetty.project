@@ -64,6 +64,7 @@ public class FragmentConfiguration extends AbstractConfiguration
      */
     public void findWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
     {
+        @SuppressWarnings("unchecked")
         List<Resource> frags = (List<Resource>)context.getAttribute(FRAGMENT_RESOURCES);
         if (frags!=null)
         {

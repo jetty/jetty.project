@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;

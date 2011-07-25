@@ -278,9 +278,9 @@ public class GzipHandler extends HandlerWrapper
         return new GzipResponseWrapper(request, response)
         {
             {
-                _mimeTypes = GzipHandler.this._mimeTypes;
-                _bufferSize = GzipHandler.this._bufferSize;
-                _minGzipSize = GzipHandler.this._minGzipSize;
+                setMimeTypes(GzipHandler.this._mimeTypes);
+                setBufferSize(GzipHandler.this._bufferSize);
+                setMinGzipSize(GzipHandler.this._minGzipSize);
             }
             
             @Override

@@ -96,7 +96,7 @@ public class FragmentDescriptor extends WebDescriptor
         if (before == null)
             return;
 
-        Iterator iter = before.iterator();
+        Iterator<?> iter = before.iterator();
         XmlParser.Node node = null;
         while (iter.hasNext())
         {
@@ -122,7 +122,7 @@ public class FragmentDescriptor extends WebDescriptor
         if (after == null)
             return;
         
-        Iterator iter = after.iterator();
+        Iterator<?> iter = after.iterator();
         XmlParser.Node node = null;
         while (iter.hasNext())
         {
