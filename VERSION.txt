@@ -1,4 +1,4 @@
-jetty-7.5.0-SNAPSHOT
+jetty-7.5.0.v20110725 July 25th 2011
  + 347484 / - > ${/} in some paths in grant codebases
  + 352133 resolve some 1.5isms
  + 352421 HttpURI paths beginning with '.'
