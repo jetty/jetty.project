@@ -63,7 +63,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project/version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -87,7 +87,7 @@
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-sessions-common</artifactId>
-      <version>${jetty-version}</version>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
