@@ -1,4 +1,4 @@
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.nosql.mongodb;
 
 // ========================================================================
 // Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
@@ -13,20 +13,23 @@ package org.eclipse.jetty.mongodb;
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-import org.eclipse.jetty.server.session.AbstractServerCrossContextSessionTest;
+import org.eclipse.jetty.server.session.AbstractOrphanedSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.Test;
 
-public class ServerCrossContextSessionTest extends AbstractServerCrossContextSessionTest
+/**
+ * OrphanedSessionTest
+ */
+public class OrphanedSessionTest extends AbstractOrphanedSessionTest
 {
-    public AbstractTestServer createServer(int port)
+    public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new MongoTestServer(port);
+       return new MongoTestServer(port,max,scavenge);
     }
 
     @Test
-    public void testCrossContextDispatch() throws Exception
+    public void testOrphanedSession() throws Exception
     {
-        super.testCrossContextDispatch();
+        super.testOrphanedSession();
     }
 }

@@ -1,4 +1,4 @@
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.nosql.mongodb;
 
 // ========================================================================
 // Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
@@ -13,24 +13,24 @@ package org.eclipse.jetty.mongodb;
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-import org.eclipse.jetty.server.session.AbstractReentrantRequestSessionTest;
+import org.eclipse.jetty.server.session.AbstractNewSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.Test;
 
 /**
- * ReentrantRequestSessionTest
+ * NewSessionTest
  */
-public class ReentrantRequestSessionTest extends AbstractReentrantRequestSessionTest
+public class NewSessionTest extends AbstractNewSessionTest
 {
-    public AbstractTestServer createServer(int port)
+
+    public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new MongoTestServer(port);
+        return new MongoTestServer(port,max,scavenge);
     }
 
     @Test
-    public void testReentrantRequestSession() throws Exception
+    public void testNewSession() throws Exception
     {
-        super.testReentrantRequestSession();
+        super.testNewSession();
     }
-
 }

@@ -1,6 +1,6 @@
-package org.eclipse.jetty.mongodb.jmx;
+package org.eclipse.jetty.nosql.mongodb.jmx;
 
-import org.eclipse.jetty.mongodb.MongoSessionManager;
+import org.eclipse.jetty.nosql.mongodb.MongoSessionManager;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.AbstractSessionManager;

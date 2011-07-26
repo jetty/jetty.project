@@ -1,4 +1,4 @@
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.nosql.mongodb;
 //========================================================================
 //Copyright (c) 2011 Intalio, Inc.
 //------------------------------------------------------------------------
@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.jetty.nosql.NoSqlSession;
+import org.eclipse.jetty.nosql.NoSqlSessionManager;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

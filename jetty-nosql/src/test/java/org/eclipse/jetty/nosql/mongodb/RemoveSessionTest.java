@@ -1,4 +1,4 @@
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.nosql.mongodb;
 //========================================================================
 //Copyright (c) 2011 Intalio, Inc.
 //------------------------------------------------------------------------

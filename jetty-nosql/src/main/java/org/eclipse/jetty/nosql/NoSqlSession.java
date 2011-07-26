@@ -1,4 +1,4 @@
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.nosql;
 //========================================================================
 //Copyright (c) 2011 Intalio, Inc.
 //------------------------------------------------------------------------
@@ -33,7 +33,7 @@ public class NoSqlSession extends AbstractSession
     private long _lastSync;
 
     /* ------------------------------------------------------------ */
-    protected NoSqlSession(NoSqlSessionManager manager, long created, long accessed, String clusterId)
+    public NoSqlSession(NoSqlSessionManager manager, long created, long accessed, String clusterId)
     {
         super(manager, created,accessed,clusterId);
         _manager=manager;
@@ -42,7 +42,7 @@ public class NoSqlSession extends AbstractSession
     }
     
     /* ------------------------------------------------------------ */
-    protected NoSqlSession(NoSqlSessionManager manager, long created, long accessed, String clusterId, Object version)
+    public NoSqlSession(NoSqlSessionManager manager, long created, long accessed, String clusterId, Object version)
     {
         super(manager, created,accessed,clusterId);
         _manager=manager;
@@ -51,7 +51,7 @@ public class NoSqlSession extends AbstractSession
     
     /* ------------------------------------------------------------ */
     @Override
-    protected Object doPutOrRemove(String name, Object value)
+    public Object doPutOrRemove(String name, Object value)
     {
         synchronized (this)
         {

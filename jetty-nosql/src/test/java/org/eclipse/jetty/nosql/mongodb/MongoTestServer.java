@@ -1,4 +1,4 @@
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.nosql.mongodb;
 
 // ========================================================================
 // Copyright (c) 1996-2009 Mort Bay Consulting Pty. Ltd.
@@ -17,8 +17,8 @@ package org.eclipse.jetty.mongodb;
 
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.mongodb.MongoSessionIdManager;
-import org.eclipse.jetty.mongodb.MongoSessionManager;
+import org.eclipse.jetty.nosql.mongodb.MongoSessionIdManager;
+import org.eclipse.jetty.nosql.mongodb.MongoSessionManager;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
