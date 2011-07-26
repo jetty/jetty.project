@@ -1,0 +1,175 @@
+package org.eclipse.jetty.mongodb;
+//========================================================================
+//Copyright (c) 2011 Intalio, Inc.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.eclipse.jetty.server.session.AbstractSession;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
+
+/* ------------------------------------------------------------ */
+public class NoSqlSession extends AbstractSession
+{
+    private final static Logger __log = Log.getLogger("org.eclipse.jetty.server.session");
+
+    private final NoSqlSessionManager _manager;
+    private Set<String> _dirty;
+    private final AtomicInteger _active = new AtomicInteger();
+    private Object _version;
+    private long _lastSync;
+
+    /* ------------------------------------------------------------ */
+    protected NoSqlSession(NoSqlSessionManager manager, long created, long accessed, String clusterId)
+    {
+        super(manager, created,accessed,clusterId);
+        _manager=manager;
+        save(true);
+        _active.incrementAndGet();
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected NoSqlSession(NoSqlSessionManager manager, long created, long accessed, String clusterId, Object version)
+    {
+        super(manager, created,accessed,clusterId);
+        _manager=manager;
+        _version=version;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected Object doPutOrRemove(String name, Object value)
+    {
+        synchronized (this)
+        {
+            if (_dirty==null)
+                _dirty=new HashSet<String>();
+            _dirty.add(name);
+            Object old = super.doPutOrRemove(name,value);
+            if (_manager.getSavePeriod()==-2)
+                save(true);
+            return old;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void checkValid() throws IllegalStateException
+    {
+        super.checkValid();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected boolean access(long time)
+    {
+        __log.debug("NoSqlSession:access:active "+_active);
+        if (_active.incrementAndGet()==1)
+        {
+            int period=_manager.getStalePeriod()*1000;
+            if (period==0)
+                refresh();
+            else if (period>0)
+            {
+                long stale=time-_lastSync;
+                __log.debug("NoSqlSession:access:stale "+stale);
+                if (stale>period)
+                    refresh();
+            }
+        }
+
+        return super.access(time);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void complete()
+    {
+        super.complete();
+        if(_active.decrementAndGet()==0)
+        {
+            switch(_manager.getSavePeriod())
+            {
+                case 0: 
+                    save(isValid());
+                    break;
+                case 1:
+                    if (isDirty())
+                        save(isValid());
+                    break;
+
+            }
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doInvalidate() throws IllegalStateException
+    {
+        super.doInvalidate();
+        save(false);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void save(boolean activateAfterSave)
+    {
+        synchronized (this)
+        {
+            _version=_manager.save(this,_version,activateAfterSave);
+            _lastSync=getAccessed();
+        }
+    }
+
+
+    /* ------------------------------------------------------------ */
+    protected void refresh()
+    {
+        synchronized (this)
+        {
+            _version=_manager.refresh(this,_version);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isDirty()
+    {
+        synchronized (this)
+        {
+            return _dirty!=null && !_dirty.isEmpty();
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Set<String> takeDirty()
+    {
+        synchronized (this)
+        {
+            Set<String> dirty=_dirty;
+            if (dirty==null)
+                dirty= new HashSet<String>();
+            else
+                _dirty=null;
+            return dirty;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public Object getVersion()
+    {
+    	return _version;
+    }
+    
+}

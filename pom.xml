@@ -319,6 +319,7 @@
     <module>jetty-start</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
+    <module>jetty-nosql</module>
     <module>test-continuation</module>
     <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
