@@ -87,7 +87,7 @@ public class WebSocketParserD7_9Test
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         endPoint.setNonBlocking(true);
         _handler = new Handler();
-        _parser=new WebSocketParserD7_9(buffers, endPoint,_handler,true);
+        _parser=new WebSocketParserD10(buffers, endPoint,_handler,true);
         _in = new MaskedByteArrayBuffer();
         
         endPoint.setIn(_in);
@@ -187,7 +187,7 @@ public class WebSocketParserD7_9Test
     {
         WebSocketBuffers buffers = new WebSocketBuffers(0x20000);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        WebSocketParser parser=new WebSocketParserD7_9(buffers, endPoint,_handler,false);
+        WebSocketParser parser=new WebSocketParserD10(buffers, endPoint,_handler,false);
         ByteArrayBuffer in = new ByteArrayBuffer(0x20000);
         endPoint.setIn(in);
         
@@ -261,7 +261,7 @@ public class WebSocketParserD7_9Test
 
         assertTrue(progress>0);
        
-        assertEquals(WebSocketConnectionD7_9.CLOSE_LARGE,_handler._code);
+        assertEquals(WebSocketConnectionD10.CLOSE_LARGE,_handler._code);
         for (int i=0;i<2048;i++)
             _in.put((byte)'a');
         progress =_parser.parseNext();

@@ -5,12 +5,19 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.URI;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
@@ -18,6 +25,8 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.websocket.WebSocket.Connection;
+import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
 
 /**
  * @version $Revision$ $Date$
@@ -25,250 +34,139 @@ import org.eclipse.jetty.util.log.Log;
  * This is not a general purpose websocket client.
  * It's only for testing the websocket server and is hardwired to a specific draft version of the protocol.
  */
-public class TestClient
+public class TestClient implements WebSocket.OnFrame
 {
-    private final static Random __random = new SecureRandom();
+    private static WebSocketClient __client = new WebSocketClient();
     private static boolean _verbose=false;
+
+    private static final Random __random = new Random();
+    
     private final String _host;
     private final int _port;
     private final String _protocol;
-    private int _size=64;
-    private final Socket _socket;
-    private final BufferedWriter _output;
-    private final BufferedReader _input;
-    private final SocketEndPoint _endp;
-    private final WebSocketGeneratorD7_9 _generator;
-    private final WebSocketParserD7_9 _parser;
-    private int _framesSent;
-    private int _messagesSent;
-    private int _framesReceived;
-    private int _messagesReceived;
-    private long _totalTime;
-    private long _minDuration=Long.MAX_VALUE;
-    private long _maxDuration=Long.MIN_VALUE;
-    private long _start;
+    private final int _timeout;
+    
+    private static int __framesSent;
+    private static int __messagesSent;
+    private static AtomicInteger __framesReceived=new AtomicInteger();
+    private static AtomicInteger __messagesReceived=new AtomicInteger();
+    
+    private static AtomicLong __totalTime=new AtomicLong();
+    private static AtomicLong __minDuration=new AtomicLong(Long.MAX_VALUE);
+    private static AtomicLong __maxDuration=new AtomicLong(Long.MIN_VALUE);
+    private static long __start;
     private BlockingQueue<Long> _starts = new LinkedBlockingQueue<Long>();
     int _messageBytes;
     int _frames;
     byte _opcode=-1;
-    private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
+    private volatile WebSocket.FrameConnection _connection;
+    private final CountDownLatch _handshook = new CountDownLatch(1);
+    
+    
+    public void onOpen(Connection connection)
     {
-        public synchronized void onFrame(byte flags, byte opcode, Buffer buffer)
+    }
+
+    public void onClose(int closeCode, String message)
+    {
+        _handshook.countDown();
+    }
+
+    public boolean onFrame(byte flags, byte opcode, byte[] data, int offset, int length)
+    {
+        try
         {
-            try
-            {
-                _framesReceived++;
-                _frames++;
-                if (opcode == WebSocketConnectionD7_9.OP_CLOSE)
-                {
-                    byte[] data=buffer.asArray();
-                    // System.err.println("CLOSED: "+((0xff&data[0])*0x100+(0xff&data[1]))+" "+new String(data,2,data.length-2,StringUtil.__UTF8));
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD7_9.OP_CLOSE,data,0,data.length);
-                    _generator.flush();
-                    _socket.shutdownOutput();
-                    _socket.close();
-                    return;
-                }
-                else if (opcode == WebSocketConnectionD7_9.OP_PING)
-                {
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD7_9.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
-                    _generator.flush();
-                }
-                
-                _messageBytes+=buffer.length();
-                
-                if (_opcode==-1)
-                    _opcode=opcode;
-                
+            __framesReceived.incrementAndGet();
+            _frames++;
+            _messageBytes+=length;
+            
+            if (_opcode==-1)
+                _opcode=opcode;
+            
+            if (_connection.isControl(opcode) || _connection.isMessageComplete(flags))
+            {  
+                int recv =__messagesReceived.incrementAndGet();
+                Long start=_starts.poll();
 
-                if (WebSocketConnectionD7_9.isLastFrame(flags))
+                if (start!=null)
                 {
-                    _messagesReceived++;
-                    Long start=_starts.take();
-
                     long duration = System.nanoTime()-start.longValue();
-                    if (duration>_maxDuration)
-                        _maxDuration=duration;
-                    if (duration<_minDuration)
-                        _minDuration=duration;
-                    _totalTime+=duration;
-                    System.out.printf("%d bytes from %s: frames=%d req=%d time=%.1fms opcode=0x%s\n",_messageBytes,_host,_frames,_messagesReceived,((double)duration/1000000.0),TypeUtil.toHexString(_opcode));
-                    _frames=0;
-                    _messageBytes=0;
-                    _opcode=-1;
+                    long max=__maxDuration.get();
+                    while(duration>max && !__maxDuration.compareAndSet(max,duration))
+                        max=__maxDuration.get();
+                    long min=__minDuration.get();
+                    while(duration<min && !__minDuration.compareAndSet(min,duration))
+                        min=__minDuration.get();
+                    __totalTime.addAndGet(duration);
+                    System.out.printf("%d bytes from %s: frames=%d req=%d time=%.1fms opcode=0x%s\n",_messageBytes,_host,_frames,recv,((double)duration/1000000.0),TypeUtil.toHexString(_opcode));
                 }
-                
+                _frames=0;
+                _messageBytes=0;
+                _opcode=-1;   
             }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-            }
-
         }
-
-        public void close(int code,String message)
+        catch(Exception e)
         {
+            e.printStackTrace();
         }
-    };
+        return false;
+    }
+
+    public void onHandshake(FrameConnection connection)
+    {
+        _connection=connection;
+        _handshook.countDown();
+    }
+
     
     
-    public TestClient(String host, int port,String protocol, int timeoutMS) throws IOException
+    public TestClient(String host, int port,String protocol, int timeoutMS) throws Exception
     {
         _host=host;
         _port=port;
         _protocol=protocol;
-        _socket = new Socket(host, port);
-        _socket.setSoTimeout(timeoutMS);
-        _output = new BufferedWriter(new OutputStreamWriter(_socket.getOutputStream(), "ISO-8859-1"));
-        _input = new BufferedReader(new InputStreamReader(_socket.getInputStream(), "ISO-8859-1"));
-
-        _endp=new SocketEndPoint(_socket);
-        _generator = new WebSocketGeneratorD7_9(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD7_9.FixedMaskGen(new byte[4]));
-        _parser = new WebSocketParserD7_9(new WebSocketBuffers(32*1024),_endp,_handler,false);
+        _timeout=timeoutMS;
+        
     }
 
-    public int getSize()
+
+    private void open() throws Exception
     {
-        return _size;
+        __client.open(new URI("ws://"+_host+":"+_port+"/"),this,_protocol,_timeout);
+        _handshook.await(10,TimeUnit.SECONDS);
     }
 
-    public void setSize(int size)
+    public void ping(byte opcode,byte[] data,int fragment) throws Exception
     {
-        _size = size;
-    }
+        _starts.add(System.nanoTime());
 
-    private void open() throws IOException
-    {
-        System.out.println("Jetty WebSocket PING "+_host+":"+_port+
-                " ("+_socket.getRemoteSocketAddress()+") " +_size+" bytes of data.");
-        byte[] key = new byte[16];
-        __random.nextBytes(key);
-        
-        
-        _output.write("GET /chat HTTP/1.1\r\n"+
-                "Host: "+_host+":"+_port+"\r\n"+
-                "Upgrade: websocket\r\n"+
-                "Connection: Upgrade\r\n"+
-                "Sec-WebSocket-Key: "+new String(B64Code.encode(key))+"\r\n"+
-                "Sec-WebSocket-Origin: http://example.com\r\n"+
-                "Sec-WebSocket-Protocol: "+_protocol+"\r\n" +
-                "Sec-WebSocket-Version: 7\r\n"+
-        "\r\n");
-        _output.flush();
+        int off=0;
+        int len=data.length;
+        if (fragment>0&& len>fragment)
+            len=fragment;
+        __messagesSent++;
+        while(off<data.length)
+        {                    
+            __framesSent++;
+            byte flags= (byte)(off+len==data.length?0x8:0);
+            byte op=(byte)(off==0?opcode:WebSocketConnectionD10.OP_CONTINUATION);
 
-        String responseLine = _input.readLine();
-        if(!responseLine.startsWith("HTTP/1.1 101 Switching Protocols"))
-            throw new IOException(responseLine);
-        // Read until we find Response key
-        String line;
-        boolean accepted=false;
-        String protocol="";
-        while ((line = _input.readLine()) != null)
-        {
-            if (line.length() == 0)
-                break;
-            if (line.startsWith("Sec-WebSocket-Accept:"))
-            {
-                String accept=line.substring(21).trim();
-                accepted=accept.equals(WebSocketConnectionD7_9.hashKey(new String(B64Code.encode(key))));
-            }
-            else if (line.startsWith("Sec-WebSocket-Protocol:"))
-            {
-                protocol=line.substring(24).trim();
-            }
-        }
-        
-        if (!accepted)
-            throw new IOException("Bad Sec-WebSocket-Accept");
-        System.out.println("handshake OK for protocol '"+protocol+"'");
-        
-        new Thread()
-        {
-            public void run()
-            {
-                while (_endp.isOpen())
-                {
-                    _parser.parseNext();
-                }
-            }
-        }.start();
-    }
+            if (_verbose)                
+                System.err.printf("%s#addFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
 
-    public void ping(int count,byte opcode,int fragment)
-    {
-        try
-        {
-            _start=System.currentTimeMillis();
-            for (int i=0;i<count && !_socket.isClosed();i++)
-            {
-                if (_socket.isClosed())
-                    break;
-                byte data[]=null;
+            _connection.sendFrame(flags,op,data,off,len);
 
-                if (opcode==WebSocketConnectionD7_9.OP_TEXT)
-                {
-                    StringBuilder b = new StringBuilder();
-                    while (b.length()<_size)
-                        b.append('A'+__random.nextInt(26));
-                    data=b.toString().getBytes(StringUtil.__UTF8);
-                }
-                else
-                {             
-                    data= new byte[_size];
-                    __random.nextBytes(data);
-                }
-                _starts.add(System.nanoTime());
-
-                int off=0;
-                int len=data.length;
-                if (fragment>0&& len>fragment)
-                    len=fragment;
-                _messagesSent++;
-                while(off<data.length)
-                {                    
-                    _framesSent++;
-                    byte flags= (byte)(off+len==data.length?0x8:0);
-                    byte op=(byte)(off==0?opcode:WebSocketConnectionD7_9.OP_CONTINUATION);
-
-                    if (_verbose)                
-                        System.err.printf("%s#addFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
-                    _generator.addFrame(flags,op,data,off,len);
-
-                    off+=len;
-                    if(data.length-off>len)
-                        len=data.length-off;
-                    if (fragment>0&& len>fragment)
-                        len=fragment;
-                }
-
-                _generator.flush();
-
-                Thread.sleep(1000);
-            }
-        }
-        catch (Exception x)
-        {
-            throw new RuntimeException(x);
+            off+=len;
+            if(data.length-off>len)
+                len=data.length-off;
+            if (fragment>0&& len>fragment)
+                len=fragment;
         }
     }
 
-    public void dump() throws Exception
+    public void disconnect() throws Exception
     {
-        for (int i=0;i<250;i++)
-        {
-            if (_messagesSent==_messagesReceived)
-                break;
-            _generator.flush();
-            Thread.sleep(100);
-        }
-        
-        _socket.close();
-        long duration=System.currentTimeMillis()-_start;
-        System.out.println("--- "+_host+" websocket ping statistics using 1 connection ---");
-        System.out.println(_framesSent+" frames transmitted, "+_framesReceived+" received, "+
-                _messagesSent+" messages transmitted, "+_messagesReceived+" received, "+
-                "time "+duration+"ms");
-        System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",_minDuration/1000000.0,_messagesReceived==0?0.0:(_totalTime/_messagesReceived/1000000.0),_maxDuration/1000000.0);
+        _connection.disconnect();
     }
     
 
@@ -284,66 +182,109 @@ public class TestClient
         System.err.println("  -s|--size n     (default 64)");
         System.err.println("  -f|--fragment n (default 4000) ");
         System.err.println("  -P|--protocol echo|echo-assemble|echo-fragment|echo-broadcast");
+        System.err.println("  -C|--clients n  (default 1) ");
         System.exit(1);
     }
     
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
+        __client.start();
+
+        String host="localhost";
+        int port=8080;
+        String protocol=null;
+        int count=10;
+        int size=64;
+        int fragment=4000;
+        boolean binary=false;
+        int clients=1;
+
+        for (int i=0;i<args.length;i++)
+        {
+            String a=args[i];
+            if ("-p".equals(a)||"--port".equals(a))
+                port=Integer.parseInt(args[++i]);
+            else if ("-h".equals(a)||"--host".equals(a))
+                port=Integer.parseInt(args[++i]);
+            else if ("-c".equals(a)||"--count".equals(a))
+                count=Integer.parseInt(args[++i]);
+            else if ("-s".equals(a)||"--size".equals(a))
+                size=Integer.parseInt(args[++i]);
+            else if ("-f".equals(a)||"--fragment".equals(a))
+                fragment=Integer.parseInt(args[++i]);
+            else if ("-P".equals(a)||"--protocol".equals(a))
+                protocol=args[++i];
+            else if ("-v".equals(a)||"--verbose".equals(a))
+                _verbose=true;
+            else if ("-b".equals(a)||"--binary".equals(a))
+                binary=true;
+            else if ("-C".equals(a)||"--clients".equals(a))
+                clients=Integer.parseInt(args[++i]);
+            else if (a.startsWith("-"))
+                usage(args);
+        }
+
+
+        TestClient[] client = new TestClient[clients];
+        
         try
         {
-            String host="localhost";
-            int port=8080;
-            String protocol=null;
-            int count=10;
-            int size=64;
-            int fragment=4000;
-            boolean binary=false;
-            
-            for (int i=0;i<args.length;i++)
+            __start=System.currentTimeMillis();
+            for (int i=0;i<clients;i++)
             {
-                String a=args[i];
-                if ("-p".equals(a)||"--port".equals(a))
-                    port=Integer.parseInt(args[++i]);
-                else if ("-h".equals(a)||"--host".equals(a))
-                    port=Integer.parseInt(args[++i]);
-                else if ("-c".equals(a)||"--count".equals(a))
-                    count=Integer.parseInt(args[++i]);
-                else if ("-s".equals(a)||"--size".equals(a))
-                    size=Integer.parseInt(args[++i]);
-                else if ("-f".equals(a)||"--fragment".equals(a))
-                    fragment=Integer.parseInt(args[++i]);
-                else if ("-P".equals(a)||"--protocol".equals(a))
-                    protocol=args[++i];
-                else if ("-v".equals(a)||"--verbose".equals(a))
-                    _verbose=true;
-                else if ("-b".equals(a)||"--binary".equals(a))
-                    binary=true;
-                else if (a.startsWith("-"))
-                    usage(args);
+                client[i]=new TestClient(host,port,protocol==null?null:protocol,10000);
+                client[i].open();
             }
+
+            System.out.println("Jetty WebSocket PING "+host+":"+port+
+                    " ("+ new InetSocketAddress(host,port)+") "+clients+" clients");
             
-
-            TestClient client = new TestClient(host,port,protocol==null?null:protocol,10000);
-            client.setSize(size);
-
-            try
+            
+            for (int p=0;p<count;p++)
             {
-                client.open();
-                if (protocol!=null && protocol.startsWith("echo"))
-                    client.ping(count,binary?WebSocketConnectionD7_9.OP_BINARY:WebSocketConnectionD7_9.OP_TEXT,fragment);
+                long next = System.currentTimeMillis()+1000;
+                
+                byte opcode=binary?WebSocketConnectionD10.OP_BINARY:WebSocketConnectionD10.OP_TEXT;
+                
+                byte data[]=null;
+
+                if (opcode==WebSocketConnectionD10.OP_TEXT)
+                {
+                    StringBuilder b = new StringBuilder();
+                    while (b.length()<size)
+                        b.append('A'+__random.nextInt(26));
+                    data=b.toString().getBytes(StringUtil.__UTF8);
+                }
                 else
-                    client.ping(count,WebSocketConnectionD7_9.OP_PING,-1);
+                {             
+                    data= new byte[size];
+                    __random.nextBytes(data);
+                }
+
+                for (int i=0;i<clients;i++)
+                    client[i].ping(opcode,data,opcode==WebSocketConnectionD10.OP_PING?-1:fragment);
+                
+                while(System.currentTimeMillis()<next)
+                    Thread.sleep(10);
             }
-            finally
-            {
-                client.dump();
-            }
-            
         }
-        catch (Exception e)
+        finally
         {
-            Log.warn(e);
+            for (int i=0;i<clients;i++)
+                if (client[i]!=null)
+                    client[i].disconnect();
+            
+
+            long duration=System.currentTimeMillis()-__start;
+            System.out.println("--- "+host+" websocket ping statistics using "+clients+" connection"+(clients>1?"s":"")+" ---");
+            System.out.println(__framesSent+" frames transmitted, "+__framesReceived+" received, "+
+                    __messagesSent+" messages transmitted, "+__messagesReceived+" received, "+
+                    "time "+duration+"ms");
+            System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",__minDuration.get()/1000000.0,__messagesReceived.get()==0?0.0:(__totalTime.get()/__messagesReceived.get()/1000000.0),__maxDuration.get()/1000000.0);
+            
+            __client.stop();
         }
+
     }
     
     

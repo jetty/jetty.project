@@ -142,8 +142,8 @@ public class WebSocketLoadD7_9Test
         private final int iterations;
         private final CountDownLatch latch;
         private final SocketEndPoint _endp;
-        private final WebSocketGeneratorD7_9 _generator;
-        private final WebSocketParserD7_9 _parser;
+        private final WebSocketGeneratorD10 _generator;
+        private final WebSocketParserD10 _parser;
         private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
         {
             public void onFrame(byte flags, byte opcode, Buffer buffer)
@@ -167,8 +167,8 @@ public class WebSocketLoadD7_9Test
             this.iterations = iterations;
             
             _endp=new SocketEndPoint(socket);
-            _generator = new WebSocketGeneratorD7_9(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD7_9.FixedMaskGen());
-            _parser = new WebSocketParserD7_9(new WebSocketBuffers(32*1024),_endp,_handler,false);
+            _generator = new WebSocketGeneratorD10(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD10.FixedMaskGen());
+            _parser = new WebSocketParserD10(new WebSocketBuffers(32*1024),_endp,_handler,false);
             
         }
 
@@ -202,7 +202,7 @@ public class WebSocketLoadD7_9Test
                 for (int i = 0; i < iterations; ++i)
                 {
                     byte[] data = message.getBytes(StringUtil.__UTF8);
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD7_9.OP_TEXT,data,0,data.length);
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD10.OP_TEXT,data,0,data.length);
                     _generator.flush();
                     
                     //System.err.println("-> "+message);

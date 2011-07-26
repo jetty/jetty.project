@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.TypeUtil;
  * threads will call the addMessage methods while other
  * threads are flushing the generator.
  */
-public class WebSocketGeneratorD7_9 implements WebSocketGenerator
+public class WebSocketGeneratorD10 implements WebSocketGenerator
 {
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
@@ -80,7 +80,7 @@ public class WebSocketGeneratorD7_9 implements WebSocketGenerator
         final Random _random;
         public RandomMaskGen()
         {
-            _random=new SecureRandom(); 
+            _random=new Random(); 
         }
         
         public RandomMaskGen(Random random)
@@ -95,14 +95,14 @@ public class WebSocketGeneratorD7_9 implements WebSocketGenerator
     }
 
     
-    public WebSocketGeneratorD7_9(WebSocketBuffers buffers, EndPoint endp)
+    public WebSocketGeneratorD10(WebSocketBuffers buffers, EndPoint endp)
     {
         _buffers=buffers;
         _endp=endp;
         _maskGen=null;
     }
     
-    public WebSocketGeneratorD7_9(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
+    public WebSocketGeneratorD10(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
     {
         _buffers=buffers;
         _endp=endp;
@@ -118,14 +118,14 @@ public class WebSocketGeneratorD7_9 implements WebSocketGenerator
         if (_buffer==null)
             _buffer=mask?_buffers.getBuffer():_buffers.getDirectBuffer();
             
-        boolean last=WebSocketConnectionD7_9.isLastFrame(flags);
+        boolean last=WebSocketConnectionD10.isLastFrame(flags);
         byte orig=opcode;
         
         int space=mask?14:10;
         
         do
         {
-            opcode = _opsent?WebSocketConnectionD7_9.OP_CONTINUATION:opcode;
+            opcode = _opsent?WebSocketConnectionD10.OP_CONTINUATION:opcode;
             opcode=(byte)(((0xf&flags)<<4)+(0xf&opcode));
             _opsent=true;
             

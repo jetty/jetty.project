@@ -34,7 +34,7 @@ public class WebSocketBuffers
 {
     final private int _bufferSize;
     final private Buffers _buffers;
-    final private int _maxBuffers=1024;
+    final private int _maxBuffers=-1;
     
     public WebSocketBuffers(final int bufferSize)
     {
