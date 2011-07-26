@@ -15,6 +15,7 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
@@ -25,6 +26,7 @@ public class ClientCrossContextSessionTest extends AbstractClientCrossContextSes
     }
 
     @Test
+    @Ignore ("requires mongodb server")
     public void testCrossContextDispatch() throws Exception
     {
         super.testCrossContextDispatch();

@@ -14,6 +14,7 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractRemoveSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class RemoveSessionTest extends AbstractRemoveSessionTest
@@ -25,6 +26,7 @@ public class RemoveSessionTest extends AbstractRemoveSessionTest
     }
     
     @Test
+    @Ignore ("requires mongodb server")
     public void testRemoveSession() throws Exception
     {
         super.testRemoveSession();

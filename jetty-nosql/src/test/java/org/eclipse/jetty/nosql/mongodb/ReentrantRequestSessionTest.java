@@ -15,6 +15,7 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractReentrantRequestSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -28,6 +29,7 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
     }
 
     @Test
+    @Ignore ("requires mongodb server")
     public void testReentrantRequestSession() throws Exception
     {
         super.testReentrantRequestSession();

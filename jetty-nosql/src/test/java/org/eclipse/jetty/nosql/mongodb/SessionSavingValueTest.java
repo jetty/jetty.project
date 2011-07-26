@@ -36,6 +36,7 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.server.session.AbstractSessionValueSavingTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SessionSavingValueTest extends AbstractSessionValueSavingTest
@@ -80,6 +81,7 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
     }
 
     @Test
+    @Ignore ("requires mongodb server")
     public void testSessionValueSaving() throws Exception
     {
         String contextPath = "";

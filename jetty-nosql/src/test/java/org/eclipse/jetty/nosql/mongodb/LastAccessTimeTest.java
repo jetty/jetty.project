@@ -14,6 +14,7 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractLastAccessTimeTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.Ignore;
 
 public class LastAccessTimeTest extends AbstractLastAccessTimeTest
 {
@@ -24,6 +25,7 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     }
 
     @Override
+    @Ignore ("requires mongodb server")
     public void testLastAccessTime() throws Exception
     {
         super.testLastAccessTime();

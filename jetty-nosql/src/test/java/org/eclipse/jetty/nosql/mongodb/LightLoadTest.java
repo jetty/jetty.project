@@ -15,6 +15,7 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractLightLoadTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -29,6 +30,7 @@ public class LightLoadTest extends AbstractLightLoadTest
     }
 
     @Test
+    @Ignore ("requires mongodb server")
     public void testLightLoad() throws Exception
     {
         super.testLightLoad();
