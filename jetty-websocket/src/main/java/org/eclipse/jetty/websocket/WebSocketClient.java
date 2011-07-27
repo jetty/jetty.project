@@ -43,8 +43,8 @@ public class WebSocketClient extends AggregateLifeCycle
     public WebSocketClient(ThreadPool threadpool)
     {
         _threadPool=threadpool;
-        addBean(_threadPool);
         addBean(_selector);
+        addBean(_threadPool);
     }
     
     public WebSocketClient()
@@ -387,33 +387,4 @@ public class WebSocketClient extends AggregateLifeCycle
         }
     }
     
-    
-    
-    
-    public static void main(String... args) throws Exception
-    {
-        Log.getLog().setDebugEnabled(true);
-        
-        
-        WebSocketClient client = new WebSocketClient();
-        client.start();
-        
-        client.open(new URI("ws://localhost:8080/websocket"),new WebSocket.OnTextMessage()
-        {
-            public void onOpen(org.eclipse.jetty.websocket.WebSocket.Connection connection)
-            {
-                System.err.println("onOpen "+connection);
-            }
-            
-            public void onClose(int closeCode, String message)
-            {
-                System.err.println("onClose "+closeCode+" "+message);
-            }
-            
-            public void onMessage(String data)
-            {
-                System.err.println("onMessage "+data);   
-            }
-        });
-    }
 }

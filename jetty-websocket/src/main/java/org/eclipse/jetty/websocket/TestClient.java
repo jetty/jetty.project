@@ -46,6 +46,7 @@ public class TestClient implements WebSocket.OnFrame
     private final String _protocol;
     private final int _timeout;
     
+    private static boolean __quiet;
     private static int __framesSent;
     private static int __messagesSent;
     private static AtomicInteger __framesReceived=new AtomicInteger();
@@ -76,6 +77,9 @@ public class TestClient implements WebSocket.OnFrame
     {
         try
         {
+            if (_connection.isClose(opcode))
+                return false;
+            
             __framesReceived.incrementAndGet();
             _frames++;
             _messageBytes+=length;
@@ -98,7 +102,8 @@ public class TestClient implements WebSocket.OnFrame
                     while(duration<min && !__minDuration.compareAndSet(min,duration))
                         min=__minDuration.get();
                     __totalTime.addAndGet(duration);
-                    System.out.printf("%d bytes from %s: frames=%d req=%d time=%.1fms opcode=0x%s\n",_messageBytes,_host,_frames,recv,((double)duration/1000000.0),TypeUtil.toHexString(_opcode));
+                    if (!__quiet)
+                        System.out.printf("%d bytes from %s: frames=%d req=%d time=%.1fms opcode=0x%s\n",_messageBytes,_host,_frames,recv,((double)duration/1000000.0),TypeUtil.toHexString(_opcode));
                 }
                 _frames=0;
                 _messageBytes=0;
@@ -117,8 +122,6 @@ public class TestClient implements WebSocket.OnFrame
         _connection=connection;
         _handshook.countDown();
     }
-
-    
     
     public TestClient(String host, int port,String protocol, int timeoutMS) throws Exception
     {
@@ -126,9 +129,7 @@ public class TestClient implements WebSocket.OnFrame
         _port=port;
         _protocol=protocol;
         _timeout=timeoutMS;
-        
     }
-
 
     private void open() throws Exception
     {
@@ -183,6 +184,7 @@ public class TestClient implements WebSocket.OnFrame
         System.err.println("  -f|--fragment n (default 4000) ");
         System.err.println("  -P|--protocol echo|echo-assemble|echo-fragment|echo-broadcast");
         System.err.println("  -C|--clients n  (default 1) ");
+        System.err.println("  -d|--delay n    (default 1000ms) ");
         System.exit(1);
     }
     
@@ -198,6 +200,7 @@ public class TestClient implements WebSocket.OnFrame
         int fragment=4000;
         boolean binary=false;
         int clients=1;
+        int delay=1000;
 
         for (int i=0;i<args.length;i++)
         {
@@ -220,6 +223,10 @@ public class TestClient implements WebSocket.OnFrame
                 binary=true;
             else if ("-C".equals(a)||"--clients".equals(a))
                 clients=Integer.parseInt(args[++i]);
+            else if ("-d".equals(a)||"--delay".equals(a))
+                delay=Integer.parseInt(args[++i]);
+            else if ("-q".equals(a)||"--quiet".equals(a))
+                __quiet=true;
             else if (a.startsWith("-"))
                 usage(args);
         }
@@ -242,7 +249,7 @@ public class TestClient implements WebSocket.OnFrame
             
             for (int p=0;p<count;p++)
             {
-                long next = System.currentTimeMillis()+1000;
+                long next = System.currentTimeMillis()+delay;
                 
                 byte opcode=binary?WebSocketConnectionD10.OP_BINARY:WebSocketConnectionD10.OP_TEXT;
                 
@@ -274,12 +281,11 @@ public class TestClient implements WebSocket.OnFrame
                 if (client[i]!=null)
                     client[i].disconnect();
             
-
             long duration=System.currentTimeMillis()-__start;
             System.out.println("--- "+host+" websocket ping statistics using "+clients+" connection"+(clients>1?"s":"")+" ---");
             System.out.println(__framesSent+" frames transmitted, "+__framesReceived+" received, "+
                     __messagesSent+" messages transmitted, "+__messagesReceived+" received, "+
-                    "time "+duration+"ms");
+                    "time "+duration+"ms "+ (1000L*__messagesReceived.get()/duration)+" req/s");
             System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",__minDuration.get()/1000000.0,__messagesReceived.get()==0?0.0:(__totalTime.get()/__messagesReceived.get()/1000000.0),__maxDuration.get()/1000000.0);
             
             __client.stop();
