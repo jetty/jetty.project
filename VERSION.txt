@@ -8,6 +8,7 @@ jetty-7.5.0-SNAPSHOT
  + 352684 Implemented spinning thread analyzer
  + 352786 GzipFilter fails to pass parameters to GzipResponseWrapper
  + 353073 WebSocketClient
+ + 353095 maven-jetty-plugin: PermGen leak due to javax.el.BeanELResolver
  
 jetty-7.4.4.v20110707 July 7th 2011
  + 308851 Converted all jetty-client module tests to JUnit 4
