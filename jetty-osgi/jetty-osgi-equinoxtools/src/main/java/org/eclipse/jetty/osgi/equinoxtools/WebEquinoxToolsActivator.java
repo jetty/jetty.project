@@ -57,19 +57,16 @@ public class WebEquinoxToolsActivator implements BundleActivator
                 
         ServiceTrackerCustomizer httpServiceTrackerCustomizer = new ServiceTrackerCustomizer()
         {
-            @Override
             public void removedService(ServiceReference reference, Object service)
             {
                 _httpService = null;
             }
 
-            @Override
             public void modifiedService(ServiceReference reference, Object service)
             {
                 _httpService = (HttpService)context.getService(reference);
             }
 
-            @Override
             public Object addingService(ServiceReference reference)
             {
                 _httpService = (HttpService)context.getService(reference);

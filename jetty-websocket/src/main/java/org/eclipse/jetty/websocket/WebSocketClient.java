@@ -22,14 +22,14 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class WebSocketClient extends AggregateLifeCycle
 {
+    private final static Logger __log = org.eclipse.jetty.util.log.Log.getLogger(WebSocketClient.class.getCanonicalName());
     private final static Random __random = new Random();
     private final static ByteArrayBuffer __ACCEPT = new ByteArrayBuffer.CaseInsensitive("Sec-WebSocket-Accept");
     
@@ -112,7 +112,7 @@ public class WebSocketClient extends AggregateLifeCycle
                         }
                         catch (IOException e)
                         {
-                            Log.warn(e);
+                            __log.warn(e);
                         }
                     }
                 }
@@ -233,14 +233,16 @@ public class WebSocketClient extends AggregateLifeCycle
                 @Override
                 public void startRequest(Buffer method, Buffer url, Buffer version) throws IOException
                 {
-                    _error="Bad response";
+                    if (_error==null)
+                        _error="Bad response: "+method+" "+url+" "+version;
                     _endp.close();
                 }
                 
                 @Override
                 public void content(Buffer ref) throws IOException
                 {
-                    _error="Bad response";
+                    if (_error==null)
+                        _error="Bad response. "+ref.length()+"B of content?";
                     _endp.close();
                 }
             });
@@ -280,7 +282,7 @@ public class WebSocketClient extends AggregateLifeCycle
             }
             catch(IOException e)
             {
-                Log.debug(e);
+                __log.debug(e);
                 _holder.getWebSocket().onClose(WebSocketConnectionD10.CLOSE_PROTOCOL,"Handshake failed: "+e.toString());
             }
         }
