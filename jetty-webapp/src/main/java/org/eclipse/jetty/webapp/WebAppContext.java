@@ -111,6 +111,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.plus.jaas.",    // don't hide jaas classes
         "-org.eclipse.jetty.websocket.",    // don't hide websocket extension
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
+        "-org.eclipse.jetty.servlet.listener.", //don't hide useful listeners
         "org.eclipse.jetty."                // hide other jetty classes
     } ; 
 
