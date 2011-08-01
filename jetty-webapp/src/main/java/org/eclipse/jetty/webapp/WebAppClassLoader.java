@@ -264,7 +264,8 @@ public class WebAppClassLoader extends URLClassLoader
                 {
                     Resource fn=lib.addPath(files[f]);
                     String fnlc=fn.getName().toLowerCase();
-                    if (!fn.isDirectory() && isFileSupported(fnlc))
+                    // don't check if this is a directory, see Bug 353165
+                    if (isFileSupported(fnlc))
                     {
                         String jar=fn.toString();
                         jar=StringUtil.replace(jar, ",", "%2C");
