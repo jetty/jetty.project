@@ -140,6 +140,11 @@ public class EquinoxConsoleWebSocketServlet extends WebSocketServlet implements 
             _members.remove(this);
         }
 
+        public void onError(String message, Throwable ex)
+        {
+            
+        }
+
     }
     
     
