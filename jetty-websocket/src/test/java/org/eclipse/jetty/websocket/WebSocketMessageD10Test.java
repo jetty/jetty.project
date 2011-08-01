@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketMessageD7_9Test
+public class WebSocketMessageD10Test
 {
     private static Server _server;
     private static Connector _connector;
@@ -982,6 +982,11 @@ public class WebSocketMessageD7_9Test
             return disconnected.await(time, TimeUnit.MILLISECONDS);
         }
 
+        public void onError(String message,Throwable ex)
+        {
+            disconnected.countDown();
+        }
+        
         public void onClose(int code,String message)
         {
             disconnected.countDown();

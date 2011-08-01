@@ -93,7 +93,13 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
             channel.socket().setTcpNoDelay(true);
 
-            if (!_httpClient.isConnectBlocking())
+            if (_httpClient.isConnectBlocking())
+            {
+                channel.socket().connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
+                channel.configureBlocking(false);
+                _selectorManager.register( channel, destination );
+            }
+            else
             {
                 channel.configureBlocking( false );
                 channel.connect(address.toSocketAddress());
@@ -101,12 +107,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 ConnectTimeout connectTimeout = new ConnectTimeout(channel, destination);
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
                 _connectingChannels.put(channel, connectTimeout);
-            }
-            else
-            {
-                channel.socket().connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
-                channel.configureBlocking(false);
-                _selectorManager.register( channel, destination );
             }
 
         }

@@ -11,7 +11,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketGeneratorD7_9Test
+public class WebSocketGeneratorD10Test
 {
     private ByteArrayBuffer _out;
     private WebSocketGenerator _generator;

@@ -56,6 +56,9 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     final static int CLOSE_PROTOCOL=1002;
     final static int CLOSE_BADDATA=1003;
     final static int CLOSE_LARGE=1004;
+    final static int CLOSE_NOCODE=1005;
+    final static int CLOSE_NOCLOSE=1006;
+    final static int CLOSE_NOTUTF8=1007;
     
     static boolean isLastFrame(byte flags)
     {
@@ -81,6 +84,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     private final OnControl _onControl;
     private final String _protocol;
     private final int _draft;
+    private int _close;
     private boolean _closedIn;
     private boolean _closedOut;
     private int _maxTextMessageSize;
@@ -240,7 +244,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                 if (_closedIn && _closedOut && _outbound.isBufferEmpty())
                     _endp.close();
                 else if (_endp.isInputShutdown() && !_closedIn)
-                    closeIn(CLOSE_PROTOCOL,null);
+                    closeIn(CLOSE_NOCLOSE,null);
                 else
                     checkWriteable();
             }
@@ -271,57 +275,98 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closed()
     {
-        _webSocket.onClose(WebSocketConnectionD10.CLOSE_NORMAL,"");
+        final boolean closed;
+        synchronized (this)
+        {
+            closed=_close==0;
+            if (closed)
+                _close=WebSocketConnectionD10.CLOSE_NOCLOSE;
+        }
+        if (closed)
+            _webSocket.onClose(WebSocketConnectionD10.CLOSE_NOCLOSE,"closed");
     }
 
     /* ------------------------------------------------------------ */
-    public synchronized void closeIn(int code,String message)
+    public void closeIn(int code,String message)
     {
         Log.debug("ClosedIn {} {}",this,message);
+        
+        final boolean closedOut;
+        final boolean closed;
+        synchronized (this)
+        {
+            closedOut=_closedOut;
+            _closedIn=true;
+            closed=_close==0;
+            if (closed)
+                _close=code;
+        }
+
         try
         {
-            if (_closedOut)
-                _endp.close();
-            else 
-                closeOut(code,message);
-        }
-        catch(IOException e)
-        {
-            Log.ignore(e);
+            if (closed)
+                _webSocket.onClose(code,message);
         }
         finally
         {
-            _closedIn=true;
+            try
+            {
+                if (closedOut)
+                    _endp.close();
+                else 
+                    closeOut(code,message);
+            }
+            catch(IOException e)
+            {
+                Log.ignore(e);
+            }
         }
     }
 
     /* ------------------------------------------------------------ */
-    public synchronized void closeOut(int code,String message)
+    public void closeOut(int code,String message)
     {
         Log.debug("ClosedOut {} {}",this,message);
+        
+        final boolean close;
+        final boolean closed;
+        synchronized (this)
+        {
+            close=_closedIn || _closedOut;
+            _closedOut=true;
+            closed=_close==0;
+            if (closed)
+                _close=code;
+        }
+        
+
         try
         {
-            if (_closedIn || _closedOut)
-                _endp.close();
-            else 
-            {
-                if (code<=0)
-                    code=WebSocketConnectionD10.CLOSE_NORMAL;
-                byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
-                bytes[0]=(byte)(code/0x100);
-                bytes[1]=(byte)(code%0x100);
-                _outbound.addFrame((byte)0x8,WebSocketConnectionD10.OP_CLOSE,bytes,0,bytes.length);
-            }
-            _outbound.flush();
-            
-        }
-        catch(IOException e)
-        {
-            Log.ignore(e);
+            if (closed)
+                _webSocket.onClose(code,message);
         }
         finally
         {
-            _closedOut=true;
+            try
+            {
+                if (close)
+                    _endp.close();
+                else 
+                {
+                    if (code<=0)
+                        code=WebSocketConnectionD10.CLOSE_NORMAL;
+                    byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
+                    bytes[0]=(byte)(code/0x100);
+                    bytes[1]=(byte)(code%0x100);
+                    _outbound.addFrame((byte)0x8,WebSocketConnectionD10.OP_CLOSE,bytes,0,bytes.length);
+                }
+                _outbound.flush();
+
+            }
+            catch(IOException e)
+            {
+                Log.ignore(e);
+            }
         }
     }
 
@@ -626,11 +671,11 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
 
                         case WebSocketConnectionD10.OP_CLOSE:
                         {
-                            int code=-1;
+                            int code=WebSocketConnectionD10.CLOSE_NOCODE;
                             String message=null;
                             if (buffer.length()>=2)
                             {
-                                code=buffer.array()[buffer.getIndex()]*0xff+buffer.array()[buffer.getIndex()+1];
+                                code=buffer.array()[buffer.getIndex()]*0x100+buffer.array()[buffer.getIndex()+1];
                                 if (buffer.length()>2)
                                     message=new String(buffer.array(),buffer.getIndex()+2,buffer.length()-2,StringUtil.__UTF8);
                             }

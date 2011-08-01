@@ -20,7 +20,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketParserD7_9Test
+public class WebSocketParserD10Test
 {
     private MaskedByteArrayBuffer _in;
     private Handler _handler;

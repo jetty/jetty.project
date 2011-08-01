@@ -68,6 +68,14 @@ public class TestClient implements WebSocket.OnFrame
     {
     }
 
+    public void onError(String message, Throwable ex)
+    {
+        System.err.println("onError: "+message);
+        if (ex!=null)
+            ex.printStackTrace();
+        _handshook.countDown();
+    }
+
     public void onClose(int closeCode, String message)
     {
         _handshook.countDown();
@@ -167,7 +175,8 @@ public class TestClient implements WebSocket.OnFrame
 
     public void disconnect() throws Exception
     {
-        _connection.disconnect();
+        if (_connection!=null)
+            _connection.disconnect();
     }
     
 
