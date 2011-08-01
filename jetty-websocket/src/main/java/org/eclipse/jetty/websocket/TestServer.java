@@ -107,6 +107,12 @@ public class TestServer extends Server
                 System.err.printf("%s#onOpen %s\n",this.getClass().getSimpleName(),connection);
         }
         
+        public void onError(String message, Throwable ex)
+        {
+            if (_verbose)
+                System.err.printf("%s#onOpen %s\n",this.getClass().getSimpleName(),message);
+        }
+        
         public void onHandshake(FrameConnection connection)
         {
             if (_verbose)

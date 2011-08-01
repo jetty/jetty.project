@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.log.Log;
 public class HttpFields
 {    
     /* ------------------------------------------------------------ */
+    public static final String __COOKIE_DELIM="\"\\\n\r\t\f\b%+ ;=";
     public static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
     public static final BufferDateCache __dateCache = new BufferDateCache("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
 
@@ -966,7 +967,7 @@ public class HttpFields
             final boolean isHttpOnly, 
             int version)
     {
-    	String delim=_maxCookieVersion==0?"":"\"\\\n\r\t\f\b%+ ;=";
+    	String delim=_maxCookieVersion==0?"":__COOKIE_DELIM;
     	
         // Check arguments
         if (name == null || name.length() == 0) 

@@ -28,6 +28,13 @@ public interface WebSocket
      * @param connection The Connection object to use to send messages.
      */
     void onOpen(Connection connection);
+
+    /**
+     * Called when a new websocket connection cannot be created
+     * @param message The error message
+     * @param ex The exception or null
+     */
+    void onError(String message, Throwable ex);
     
     /**
      * Called when an established websocket connection closes

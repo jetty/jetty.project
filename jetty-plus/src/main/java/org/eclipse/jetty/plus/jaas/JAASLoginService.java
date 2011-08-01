@@ -35,6 +35,7 @@ import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 
@@ -173,28 +174,38 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     {
         try
         {
-            CallbackHandler callbackHandler = new CallbackHandler()
+            CallbackHandler callbackHandler = null;
+            
+            
+            if (_callbackHandlerClass == null)
             {
-
-                public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
+                callbackHandler = new CallbackHandler()
                 {
-                    for (Callback callback: callbacks)
+                    public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
                     {
-                        if (callback instanceof NameCallback)
+                        for (Callback callback: callbacks)
                         {
-                            ((NameCallback)callback).setName(username);
-                        }
-                        else if (callback instanceof PasswordCallback)
-                        {
-                            ((PasswordCallback)callback).setPassword((char[]) credentials.toString().toCharArray());
-                        }
-                        else if (callback instanceof ObjectCallback)
-                        {
-                            ((ObjectCallback)callback).setObject(credentials);
+                            if (callback instanceof NameCallback)
+                            {
+                                ((NameCallback)callback).setName(username);
+                            }
+                            else if (callback instanceof PasswordCallback)
+                            {
+                                ((PasswordCallback)callback).setPassword((char[]) credentials.toString().toCharArray());
+                            }
+                            else if (callback instanceof ObjectCallback)
+                            {
+                                ((ObjectCallback)callback).setObject(credentials);
+                            }
                         }
                     }
-                }
-            };
+                };
+            }
+            else
+            {
+                Class clazz = Loader.loadClass(getClass(), _callbackHandlerClass);
+                callbackHandler = (CallbackHandler)clazz.newInstance();
+            }
             //set up the login context
             //TODO jaspi requires we provide the Configuration parameter
             Subject subject = new Subject();
@@ -219,6 +230,18 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         catch (UnsupportedCallbackException e)
         {
            Log.warn(e);
+        }
+        catch (InstantiationException e)
+        {
+            Log.warn(e);
+        }
+        catch (IllegalAccessException e)
+        {
+            Log.warn(e);
+        }
+        catch (ClassNotFoundException e)
+        {
+            Log.warn(e);
         }
         return null;
     }

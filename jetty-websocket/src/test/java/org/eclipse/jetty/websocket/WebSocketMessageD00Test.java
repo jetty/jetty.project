@@ -250,6 +250,10 @@ public class WebSocketMessageD00Test
             return latch.await(time, TimeUnit.MILLISECONDS);
         }
 
+        public void onError(String message,Throwable ex)
+        {
+        }
+        
         public void onClose(int code,String message)
         {
         }

@@ -166,8 +166,9 @@ public class WebSocketFactory
             case 7: 
             case 8: 
             case 9: 
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD7_9.OP_EXT_DATA, 16-WebSocketConnectionD7_9.OP_EXT_CTRL,3);
-                connection = new WebSocketConnectionD7_9(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+            case 10: 
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD10.OP_EXT_DATA, 16-WebSocketConnectionD10.OP_EXT_CTRL,3);
+                connection = new WebSocketConnectionD10(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
                 Log.warn("Unsupported Websocket version: "+draft);
