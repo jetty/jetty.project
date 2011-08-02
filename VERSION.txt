@@ -7,6 +7,7 @@ jetty-7.5.0-SNAPSHOT
  + 352421 HttpURI paths beginning with '.'
  + 352684 Implemented spinning thread analyzer
  + 352786 GzipFilter fails to pass parameters to GzipResponseWrapper
+ + 352999 ExpireTest running too long
  + 353073 WebSocketClient
  + 353095 maven-jetty-plugin: PermGen leak due to javax.el.BeanELResolver
  + 353165 addJars can follow symbolic link jar files
