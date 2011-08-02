@@ -13,6 +13,7 @@ jetty-7.5.0-SNAPSHOT
  + 353165 addJars can follow symbolic link jar files
  + 353210 Bundle-Version in o.e.j.o.boot.logback fix
  + 353465 JAASLoginService ignores callbackHandlerClass
+ + 353563 HttpDestinationQueueTest too slow
  
 jetty-7.4.4.v20110707 July 7th 2011
  + 308851 Converted all jetty-client module tests to JUnit 4
