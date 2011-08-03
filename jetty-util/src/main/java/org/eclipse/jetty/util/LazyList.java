@@ -28,13 +28,13 @@ import java.util.ListIterator;
  * creation.   If a method needs to create a List to return, but it is
  * expected that this will either be empty or frequently contain a
  * single item, then using LazyList will avoid additional object
- * creations by using Collections.EMPTY_LIST or
- * Collections.singletonList where possible.
+ * creations by using {@link Collections#EMPTY_LIST} or
+ * {@link Collections#singletonList(Object)} where possible.
  * <p>
  * LazyList works by passing an opaque representation of the list in
  * and out of all the LazyList methods.  This opaque object is either
  * null for an empty list, an Object for a list with a single entry
- * or an ArrayList<Object> for a list of items.
+ * or an {@link ArrayList} for a list of items.
  *
  * <p><h4>Usage</h4>
  * <pre>
@@ -155,7 +155,7 @@ public class LazyList
     }
 
     /* ------------------------------------------------------------ */
-    /** Ensure the capcity of the underlying list.
+    /** Ensure the capacity of the underlying list.
      * 
      */
     public static Object ensureSize(Object list, int initialSize)
