@@ -19,6 +19,8 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +34,9 @@ import org.eclipse.jetty.util.log.Logger;
 public class ThreadMonitor extends AbstractLifeCycle implements Runnable
 {
     private int _scanInterval;
+    private int _dumpInterval;
     private int _busyThreshold;
+    private int _dumpThreshold;
     private int _stackDepth;
     
     private ThreadMXBean _threadBean;
@@ -70,7 +74,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         _busyThreshold = threshold;
         _stackDepth = depth;
         
-        _logger = Log.getLogger(getClass().getName());
+        _logger = Log.getLogger(ThreadMonitor.class.getName());
         _extInfo = new HashMap<Long, ExtThreadInfo>();
        
         init();
@@ -89,7 +93,19 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     }
 
     /* ------------------------------------------------------------ */
-   public int getBusyThreshold()
+    public int getDumpInterval()
+    {
+        return _dumpInterval;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setDumpInterval(int ms)
+    {
+        _dumpInterval = ms;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getBusyThreshold()
     {
         return _busyThreshold;
     }
@@ -98,6 +114,18 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     public void setBusyThreshold(int percent)
     {
         _busyThreshold = percent;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getDumpThreshold()
+    {
+        return _dumpThreshold;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setDumpThreshold(int percent)
+    {
+        _dumpThreshold = percent;
     }
 
     /* ------------------------------------------------------------ */
@@ -110,6 +138,13 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     public void setStackDepth(int stackDepth)
     {
         _stackDepth = stackDepth;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void enableDumpAll(int ms, int percent)
+    {
+        setDumpInterval(ms);
+        setDumpThreshold(percent);
     }
 
     /* ------------------------------------------------------------ */
@@ -249,6 +284,34 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
             }
         }
     }
+    
+    protected void dumpAll()
+    {
+        if (_extInfo.size() > 0)
+        {
+            List<ExtThreadInfo> sorted = new ArrayList<ExtThreadInfo>(_extInfo.values()); 
+            Collections.sort(sorted, new Comparator<ExtThreadInfo>() {
+                    /* ------------------------------------------------------------ */
+                    public int compare(ExtThreadInfo eti1, ExtThreadInfo eti2)
+                        {
+                            return (int)Math.signum(eti2.getCpuUtilization()-eti1.getCpuUtilization());
+                        }
+                 });
+            
+            for (ExtThreadInfo info : sorted)
+            {
+                ThreadInfo threadInfo = info.getThreadInfo();
+                
+                if (info.getCpuUtilization() > 1.0f)
+                {
+                    _logger.info(String.format("Thread %s[%d] is using %.2f of CPU", threadInfo.getThreadName(), threadInfo.getThreadId(), info.getCpuUtilization()));
+                }
+
+                info.setDumpCpuTime(info.getLastCpuTime());
+                info.setDumpSampleTime(info.getLastSampleTime());
+            }
+        }
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -256,8 +319,9 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      */
     public void run()
     {
-        long currTime; 
-        long lastTime = 0;
+        long currTime = System.currentTimeMillis(); 
+        long lastTime = currTime;
+        long lastDumpTime = currTime;
         while (!_done)
         {
             currTime = System.currentTimeMillis();
@@ -284,6 +348,13 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
             if (threadInfo.size() > 0)
             {
                 dump(threadInfo);
+            }
+
+            if (_dumpInterval > 0 && lastTime > lastDumpTime + _dumpInterval)
+            {
+                lastDumpTime = lastTime;
+            
+                dumpAll();
             }
         }
         
@@ -321,7 +392,9 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
                         long elapsedCpuTime = currCpuTime - currExtInfo.getLastCpuTime();
                         long elapsedNanoTime = currNanoTime - currExtInfo.getLastSampleTime();
     
-                        if (((elapsedCpuTime * 100.0) / elapsedNanoTime) > _busyThreshold)
+                        float cpuUtilization = Math.min((elapsedCpuTime * 100.0f) / elapsedNanoTime, 100.0f); 
+                        currExtInfo.setCpuUtilization(cpuUtilization);
+                        if (cpuUtilization > _busyThreshold)
                         {
                             ThreadInfo currInfo = getThreadInfo(currId, Integer.MAX_VALUE);
                             if (currInfo != null)
@@ -338,7 +411,12 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
                     }
                     else
                     {
-                        currExtInfo = new ExtThreadInfo(currId);
+                        currExtInfo = new ExtThreadInfo(getThreadInfo(currId, 0));
+                        currExtInfo.setFirstCpuTime(currCpuTime);
+                        currExtInfo.setFirstSampleTime(currNanoTime);
+                        currExtInfo.setDumpCpuTime(currCpuTime);
+                        currExtInfo.setDumpSampleTime(currNanoTime);
+
                         _extInfo.put(Long.valueOf(currId), currExtInfo);
                     }
                     
@@ -418,25 +496,72 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     /* ------------------------------------------------------------ */
     private class ExtThreadInfo
     {
-        private long _threadId;
+        private ThreadInfo _threadInfo;
 
+        private long _firstCpuTime;
+        private long _firstSampleTime;
         private long _lastCpuTime;
         private long _lastSampleTime;
+        private long _dumpCpuTime;
+        private long _dumpSampleTime;
+        
+        private float _cpuUtilization;
+        
         private StackTraceElement[] _stackTrace;
 
         /* ------------------------------------------------------------ */
-        public ExtThreadInfo(long threadId)
+        public ExtThreadInfo(ThreadInfo threadInfo)
         {
-            _threadId = threadId;   
+            _threadInfo = threadInfo;   
         }
 
         /* ------------------------------------------------------------ */
         /**
          * @return thread id associated with the instance
          */
-        public long getThreadId()
+        public ThreadInfo getThreadInfo()
         {
-            return _threadId;
+            return _threadInfo;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @return the first CPU time of the thread
+         */
+        public long getFirstCpuTime()
+        {
+            return _firstCpuTime;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * Set the first CPU time.
+         *
+         * @param ns new last CPU time
+         */
+        public void setFirstCpuTime(long ns)
+        {
+            _firstCpuTime = ns;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @return the time of first sample  
+         */
+        public long getFirstSampleTime()
+        {
+            return _firstSampleTime;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * Sets the first sample time.
+         *
+         * @param ns the time of first sample
+         */
+        public void setFirstSampleTime(long ns)
+        {
+            _firstSampleTime = ns;
         }
 
         /* ------------------------------------------------------------ */
@@ -452,11 +577,11 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         /**
          * Set the last CPU time.
          *
-         * @param lastCpuTime new last CPU time
+         * @param ns new last CPU time
          */
-        public void setLastCpuTime(long lastCpuTime)
+        public void setLastCpuTime(long ns)
         {
-            this._lastCpuTime = lastCpuTime;
+            _lastCpuTime = ns;
         }
 
         /* ------------------------------------------------------------ */
@@ -472,11 +597,73 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         /**
          * Sets the last sample time.
          *
-         * @param lastSampleTime the time of last sample
+         * @param ns the time of last sample
          */
-        public void setLastSampleTime(long lastSampleTime)
+        public void setLastSampleTime(long ns)
         {
-            _lastSampleTime = lastSampleTime;
+            _lastSampleTime = ns;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @return the dump CPU time of the thread
+         */
+        public long getDumpCpuTime()
+        {
+            return _dumpCpuTime;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * Set the dump CPU time.
+         *
+         * @param ns new dump CPU time
+         */
+        public void setDumpCpuTime(long ns)
+        {
+            _dumpCpuTime = ns;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @return the time of dump sample  
+         */
+        public long getDumpSampleTime()
+        {
+            return _dumpSampleTime;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * Sets the dump sample time.
+         *
+         * @param ns the time of dump sample
+         */
+        public void setDumpSampleTime(long ns)
+        {
+            _dumpSampleTime = ns;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * Gets the CPU utilization.
+         *
+         * @return the CPU utilization percentage
+         */
+        public float getCpuUtilization()
+        {
+            return _cpuUtilization;
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * Sets the CPU utilization.
+         *
+         * @param percentage the new CPU utilization percentage
+         */
+        public void setCpuUtilization(float percentage)
+        {
+            _cpuUtilization = percentage;
         }
 
         /* ------------------------------------------------------------ */

@@ -30,6 +30,7 @@ public class ThreadMonitorTest
 {
     public final static int DURATION=9000;
     private AtomicInteger count=new AtomicInteger(0);
+    private AtomicInteger countDump=new AtomicInteger(0);
     
     @Test
     public void monitorTest() throws Exception
@@ -43,7 +44,14 @@ public class ThreadMonitorTest
                 count.incrementAndGet();
                 super.dump(threads);
             }
+            @Override
+            protected void dumpAll()
+            {
+                countDump.incrementAndGet();
+                super.dumpAll();
+            }
         };
+        monitor.enableDumpAll(2000,1);
         monitor.start();
         
         Spinner spinner = new Spinner();
@@ -56,6 +64,7 @@ public class ThreadMonitorTest
         monitor.stop();
         
         assertTrue(count.get() >= 2);
+        assertTrue(countDump.get() >= 1);
     }
 
 
