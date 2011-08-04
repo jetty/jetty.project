@@ -4,16 +4,17 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
@@ -27,7 +28,7 @@ import java.util.StringTokenizer;
  * Quotes can be escaped with '\'.
  *
  * @see java.util.StringTokenizer
- * 
+ *
  */
 public class QuotedStringTokenizer
     extends StringTokenizer
@@ -43,7 +44,7 @@ public class QuotedStringTokenizer
     private int _lastStart=0;
     private boolean _double=true;
     private boolean _single=true;
-    
+
     /* ------------------------------------------------------------ */
     public QuotedStringTokenizer(String str,
                                  String delim,
@@ -56,11 +57,11 @@ public class QuotedStringTokenizer
             _delim=delim;
         _returnDelimiters=returnDelimiters;
         _returnQuotes=returnQuotes;
-        
+
         if (_delim.indexOf('\'')>=0 ||
             _delim.indexOf('"')>=0)
             throw new Error("Can't use quotes as delimiters: "+_delim);
-        
+
         _token=new StringBuffer(_string.length()>1024?512:_string.length()/2);
     }
 
@@ -71,7 +72,7 @@ public class QuotedStringTokenizer
     {
         this(str,delim,returnDelimiters,false);
     }
-    
+
     /* ------------------------------------------------------------ */
     public QuotedStringTokenizer(String str,
                                  String delim)
@@ -92,15 +93,15 @@ public class QuotedStringTokenizer
         // Already found a token
         if (_hasToken)
             return true;
-        
+
         _lastStart=_i;
-        
+
         int state=0;
         boolean escape=false;
         while (_i<_string.length())
         {
             char c=_string.charAt(_i++);
-            
+
             switch (state)
             {
               case 0: // Start
@@ -130,8 +131,8 @@ public class QuotedStringTokenizer
                       _hasToken=true;
                       state=1;
                   }
-                  continue;
-                  
+                  break;
+
               case 1: // Token
                   _hasToken=true;
                   if(_delim.indexOf(c)>=0)
@@ -153,10 +154,11 @@ public class QuotedStringTokenizer
                       state=3;
                   }
                   else
+                  {
                       _token.append(c);
-                  continue;
+                  }
+                  break;
 
-                  
               case 2: // Single Quote
                   _hasToken=true;
                   if (escape)
@@ -177,10 +179,11 @@ public class QuotedStringTokenizer
                       escape=true;
                   }
                   else
+                  {
                       _token.append(c);
-                  continue;
+                  }
+                  break;
 
-                  
               case 3: // Double Quote
                   _hasToken=true;
                   if (escape)
@@ -201,8 +204,10 @@ public class QuotedStringTokenizer
                       escape=true;
                   }
                   else
+                  {
                       _token.append(c);
-                  continue;
+                  }
+                  break;
             }
         }
 
@@ -212,7 +217,7 @@ public class QuotedStringTokenizer
     /* ------------------------------------------------------------ */
     @Override
     public String nextToken()
-        throws NoSuchElementException 
+        throws NoSuchElementException
     {
         if (!hasMoreTokens() || _token==null)
             throw new NoSuchElementException();
@@ -225,7 +230,7 @@ public class QuotedStringTokenizer
     /* ------------------------------------------------------------ */
     @Override
     public String nextToken(String delim)
-        throws NoSuchElementException 
+        throws NoSuchElementException
     {
         _delim=delim;
         _i=_lastStart;
@@ -244,7 +249,7 @@ public class QuotedStringTokenizer
     /* ------------------------------------------------------------ */
     @Override
     public Object nextElement()
-        throws NoSuchElementException 
+        throws NoSuchElementException
     {
         return nextToken();
     }
@@ -258,13 +263,14 @@ public class QuotedStringTokenizer
         return -1;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /** Quote a string.
      * The string is quoted only if quoting is required due to
-     * embeded delimiters, quote characters or the
+     * embedded delimiters, quote characters or the
      * empty string.
      * @param s The string to quote.
+     * @param delim the delimiter to use to quote the string
      * @return quoted string
      */
     public static String quoteIfNeeded(String s, String delim)
@@ -274,7 +280,7 @@ public class QuotedStringTokenizer
         if (s.length()==0)
             return "\"\"";
 
-        
+
         for (int i=0;i<s.length();i++)
         {
             char c = s.charAt(i);
@@ -285,7 +291,7 @@ public class QuotedStringTokenizer
                 return b.toString();
             }
         }
-        
+
         return s;
     }
 
@@ -303,81 +309,73 @@ public class QuotedStringTokenizer
             return null;
         if (s.length()==0)
             return "\"\"";
-        
+
         StringBuffer b=new StringBuffer(s.length()+8);
         quote(b,s);
         return b.toString();
-   
+
+    }
+
+    private static final char[] escapes = new char[31];
+    static
+    {
+        Arrays.fill(escapes, (char)-1);
+        escapes['\b'] = 'b';
+        escapes['\t'] = 't';
+        escapes['\n'] = 'n';
+        escapes['\f'] = 'f';
+        escapes['\r'] = 'r';
     }
 
     /* ------------------------------------------------------------ */
     /** Quote a string into an Appendable.
      * The characters ", \, \n, \r, \t, \f and \b are escaped
-     * @param buf The Appendable
-     * @param s The String to quote.
+     * @param buffer The Appendable
+     * @param input The String to quote.
      */
-    public static void quote(Appendable buf, String s)
+    public static void quote(Appendable buffer, String input)
     {
         try
         {
-            buf.append('"');
-
-            for (int i=0;i<s.length();i++)
+            buffer.append('"');
+            for (int i = 0; i < input.length(); ++i)
             {
-                char c = s.charAt(i);
-                switch(c)
+                char c = input.charAt(i);
+                if (c >= 32)
                 {
-                    case '"':
-                        buf.append("\\\"");
-                        continue;
-                    case '\\':
-                        buf.append("\\\\");
-                        continue;
-                    case '\n':
-                        buf.append("\\n");
-                        continue;
-                    case '\r':
-                        buf.append("\\r");
-                        continue;
-                    case '\t':
-                        buf.append("\\t");
-                        continue;
-                    case '\f':
-                        buf.append("\\f");
-                        continue;
-                    case '\b':
-                        buf.append("\\b");
-                        continue;
-
-                    default:
-                        if (c<0x10)
-                        {
-                            buf.append("\\u000");
-                            buf.append(Integer.toString(c,16));
-                        }
-                        else if (c<=0x1f)
-                        {
-                            buf.append("\\u00");
-                            buf.append(Integer.toString(c,16));
-                        }
-                        else
-                            buf.append(c);
-                        continue;
+                    if (c == '"' || c == '\\')
+                        buffer.append('\\');
+                    buffer.append(c);
+                }
+                else
+                {
+                    char escape = escapes[c];
+                    if (escape == -1)
+                    {
+                        // Unicode escape
+                        buffer.append('\\').append('0').append('0');
+                        if (c < 0x10)
+                            buffer.append('0');
+                        buffer.append(Integer.toString(c, 16));
+                    }
+                    else
+                    {
+                        buffer.append('\\').append(escape);
+                    }
                 }
             }
-
-            buf.append('"');
-        } 
-        catch(IOException e)
+            buffer.append('"');
+        }
+        catch (IOException x)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException(x);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Quote a string into a StringBuffer only if needed.
      * Quotes are forced if any delim characters are present.
-     * 
+     *
      * @param buf The StringBuffer
      * @param s The String to quote.
      * @param delim String of characters that must be quoted.
@@ -394,7 +392,7 @@ public class QuotedStringTokenizer
             	return true;
             }
         }
-    	
+
         try
         {
             buf.append(s);
@@ -405,7 +403,7 @@ public class QuotedStringTokenizer
             throw new RuntimeException(e);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Unquote a string.
      * @param s The string to unquote.
@@ -422,68 +420,66 @@ public class QuotedStringTokenizer
         char last=s.charAt(s.length()-1);
         if (first!=last || (first!='"' && first!='\''))
             return s;
-        
-        StringBuffer b=new StringBuffer(s.length()-2);
-        synchronized(b)
-        {
-            boolean escape=false;
-            for (int i=1;i<s.length()-1;i++)
-            {
-                char c = s.charAt(i);
 
-                if (escape)
+        StringBuilder b = new StringBuilder(s.length() - 2);
+        boolean escape=false;
+        for (int i=1;i<s.length()-1;i++)
+        {
+            char c = s.charAt(i);
+
+            if (escape)
+            {
+                escape=false;
+                switch (c)
                 {
-                    escape=false;
-                    switch (c)
-                    {
-                        case 'n':
-                            b.append('\n');
-                            break;
-                        case 'r':
-                            b.append('\r');
-                            break;
-                        case 't':
-                            b.append('\t');
-                            break;
-                        case 'f':
-                            b.append('\f');
-                            break;
-                        case 'b':
-                            b.append('\b');
-                            break;
-                        case '\\':
-                            b.append('\\');
-                            break;
-                        case '/':
-                            b.append('/');
-                            break;
-                        case '"':
-                            b.append('"');
-                            break;
-                        case 'u':
-                            b.append((char)(
-                                    (TypeUtil.convertHexDigit((byte)s.charAt(i++))<<24)+
-                                    (TypeUtil.convertHexDigit((byte)s.charAt(i++))<<16)+
-                                    (TypeUtil.convertHexDigit((byte)s.charAt(i++))<<8)+
-                                    (TypeUtil.convertHexDigit((byte)s.charAt(i++)))
-                                    ) 
-                            );
-                            break;
-                        default:
-                            b.append(c);
-                    }
+                    case 'n':
+                        b.append('\n');
+                        break;
+                    case 'r':
+                        b.append('\r');
+                        break;
+                    case 't':
+                        b.append('\t');
+                        break;
+                    case 'f':
+                        b.append('\f');
+                        break;
+                    case 'b':
+                        b.append('\b');
+                        break;
+                    case '\\':
+                        b.append('\\');
+                        break;
+                    case '/':
+                        b.append('/');
+                        break;
+                    case '"':
+                        b.append('"');
+                        break;
+                    case 'u':
+                        b.append((char)(
+                                (TypeUtil.convertHexDigit((byte)s.charAt(i++))<<24)+
+                                (TypeUtil.convertHexDigit((byte)s.charAt(i++))<<16)+
+                                (TypeUtil.convertHexDigit((byte)s.charAt(i++))<<8)+
+                                (TypeUtil.convertHexDigit((byte)s.charAt(i++)))
+                                )
+                        );
+                        break;
+                    default:
+                        b.append(c);
                 }
-                else if (c=='\\')
-                {
-                    escape=true;
-                    continue;
-                }
-                else
-                    b.append(c);
             }
-            
-            return b.toString();
+            else if (c=='\\')
+            {
+                escape=true;
+            }
+            else
+            {
+                b.append(c);
+            }
         }
+
+        return b.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -522,15 +518,3 @@ public class QuotedStringTokenizer
         _single=single;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
