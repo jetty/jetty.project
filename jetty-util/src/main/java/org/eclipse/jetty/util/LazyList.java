@@ -124,7 +124,7 @@ public class LazyList
         List<Object> l=new ArrayList<Object>();
         l.add(list);
         l.add(index,item);
-        return l;    
+        return l;
     }
     
     /* ------------------------------------------------------------ */
@@ -284,7 +284,6 @@ public class LazyList
      * @param clazz The class of the array, which may be a primitive type
      * @return array of the lazylist entries passed in
      */
-    @SuppressWarnings("unchecked")
     public static Object toArray(Object list,Class<?> clazz)
     {
         if (list==null)
@@ -429,7 +428,6 @@ public class LazyList
      * @param type The type of the array (in case of null array)
      * @return new array with contents of array plus item
      */
-    @SuppressWarnings("unchecked")
     public static Object[] addToArray(Object[] array, Object item, Class<?> type)
     {
         if (array==null)
@@ -451,7 +449,6 @@ public class LazyList
     }
 
     /* ------------------------------------------------------------ */
-    @SuppressWarnings("unchecked")
     public static Object removeFromArray(Object[] array, Object item)
     {
         if (item==null || array==null)

@@ -190,11 +190,11 @@ public class LazyListTest
     @Test
     public void testAddObjectIntObject_NullInput_NonListItem2()
     {
-        Assume.assumeTrue(STRICT);
+        Assume.assumeTrue(STRICT); // Only run in STRICT mode.
         
         String item = "a";
         // Test branch of logic "index>0"
-        Object list = LazyList.add(null, 1, item);
+        Object list = LazyList.add(null, 1, item); // Always throws exception?
         assertNotNull(list);
         assertTrue(list instanceof List);
         assertEquals(1,LazyList.size(list));
@@ -770,21 +770,21 @@ public class LazyListTest
     @Test
     public void testEnsureSize_GenericListInput_LinkedList()
     {
-        if(STRICT) {
-            // Using LinkedList concrete type as LazyList internal 
-            // implementation does not look for this specifically.
-            List<String> input = new LinkedList<String>();
-            input.add("a");
-            input.add("b");
-            
-            Object list = LazyList.ensureSize(input,10);
-            assertNotNull(list);
-            assertTrue(list instanceof List);
-            // Not possible to test for List capacity value.
-            assertEquals(2, LazyList.size(list));
-            assertEquals("a", LazyList.get(list,0));
-            assertEquals("b", LazyList.get(list,1));
-        }
+        Assume.assumeTrue(STRICT); // Only run in STRICT mode.
+        
+        // Using LinkedList concrete type as LazyList internal 
+        // implementation does not look for this specifically.
+        List<String> input = new LinkedList<String>();
+        input.add("a");
+        input.add("b");
+        
+        Object list = LazyList.ensureSize(input,10);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        // Not possible to test for List capacity value.
+        assertEquals(2, LazyList.size(list));
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
     }
 
     /**
@@ -819,122 +819,389 @@ public class LazyListTest
     @Test
     public void testEnsureSize_Growth_LinkedList()
     {
-        if(STRICT) {
-            // Using LinkedList concrete type as LazyList internal 
-            // implementation does not look for this specifically.
-            List<String> l = new LinkedList<String>();
-            l.add("a");
-            l.add("b");
-            l.add("c");
-            
-            // NOTE: Testing for object equality might be viewed as
-            //       fragile by most developers, however, for this
-            //       specific implementation, we don't want the
-            //       provided list to change if the size requirements
-            //       have been met.
-            
-            // Trigger growth
-            Object ret = LazyList.ensureSize(l,10);
-            assertTrue("Should have returned a new list object", ret != l);
-            
-            // Growth not neeed.
-            ret = LazyList.ensureSize(l,1);
-            assertTrue("Should have returned same list object", ret == l);
-        }
+        Assume.assumeTrue(STRICT); // Only run in STRICT mode.
+        
+        // Using LinkedList concrete type as LazyList internal 
+        // implementation has not historically looked for this 
+        // specifically.
+        List<String> l = new LinkedList<String>();
+        l.add("a");
+        l.add("b");
+        l.add("c");
+        
+        // NOTE: Testing for object equality might be viewed as
+        //       fragile by most developers, however, for this
+        //       specific implementation, we don't want the
+        //       provided list to change if the size requirements
+        //       have been met.
+        
+        // Trigger growth
+        Object ret = LazyList.ensureSize(l,10);
+        assertTrue("Should have returned a new list object", ret != l);
+        
+        // Growth not neeed.
+        ret = LazyList.ensureSize(l,1);
+        assertTrue("Should have returned same list object", ret == l);
     }
 
     /**
      * Test for {@link LazyList#remove(Object, Object)}
      */
     @Test
-    public void testRemoveObjectObject()
+    public void testRemoveObjectObject_NullInput()
     {
-        Object list=null;
+        Object input = null;
         
-        assertTrue(LazyList.remove(null,"a")==null);
+        assertNull(LazyList.remove(input,null));
+        assertNull(LazyList.remove(input,"a"));
+        assertNull(LazyList.remove(input,new ArrayList<Object>()));
+        assertNull(LazyList.remove(input,Integer.valueOf(42)));
+    }
+    
+    /**
+     * Test for {@link LazyList#remove(Object, Object)}
+     */
+    @Test
+    public void testRemoveObjectObject_NonListInput()
+    {
+        String input = "a";
         
-        list=LazyList.add(list,"a");
-        assertEquals("a",LazyList.remove(list,"z"));
-        assertTrue(LazyList.remove(list,"a")==null);
+        // Remove null item
+        Object list = LazyList.remove(input, null);
+        assertNotNull(list);
+        if(STRICT) {
+            assertTrue(list instanceof List);
+        }
+        assertEquals(1, LazyList.size(list));
         
-        list=LazyList.add(list,"b");
-        list=LazyList.remove(list,"b");
-        list=LazyList.add(list,"b");
-        list=LazyList.add(list,"c");
-        list=LazyList.add(list,"d");
-        list=LazyList.add(list,"e");
-        list=LazyList.remove(list,"a");
-        list=LazyList.remove(list,"d");
-        list=LazyList.remove(list,"e");
-        
-        assertEquals(2,LazyList.size(list));
-        assertEquals("b",LazyList.get(list,0));
-        assertEquals("c",LazyList.get(list,1));
+        // Remove item that doesn't exist
+        list = LazyList.remove(input, "b");
+        assertNotNull(list);
+        if(STRICT) {
+            assertTrue(list instanceof List);
+        }
+        assertEquals(1, LazyList.size(list));
 
-        list=LazyList.remove(list,"b");
-        list=LazyList.remove(list,"c");
-        assertEquals(null,list);
+        // Remove item that exists
+        list = LazyList.remove(input, "a");
+        // TODO: should this be null? or an empty list?
+        assertNull(list); // nothing left in list
+        assertEquals(0, LazyList.size(list));
+    }
+
+    /**
+     * Test for {@link LazyList#remove(Object, Object)}
+     */
+    @Test
+    public void testRemoveObjectObject_LazyListInput()
+    {
+        Object input = LazyList.add(null, "a");
+        input = LazyList.add(input, "b");
+        input = LazyList.add(input, "c");
+        
+        // Remove null item
+        Object list = LazyList.remove(input, null);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(3, LazyList.size(list));
+        
+        // Attempt to remove something that doesn't exist
+        list = LazyList.remove(input, "z");
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(3, LazyList.size(list));
+
+        // Remove something that exists in input
+        list = LazyList.remove(input, "b");
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(2, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
+    }
+    
+    /**
+     * Test for {@link LazyList#remove(Object, Object)}
+     */
+    @Test
+    public void testRemoveObjectObject_GenericListInput()
+    {
+        List<String> input = new ArrayList<String>();
+        input.add("a");
+        input.add("b");
+        input.add("c");
+        
+        // Remove null item
+        Object list = LazyList.remove(input, null);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertTrue("Should not have recreated list obj", input == list);
+        assertEquals(3, LazyList.size(list));
+        
+        // Attempt to remove something that doesn't exist
+        list = LazyList.remove(input, "z");
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertTrue("Should not have recreated list obj", input == list);
+        assertEquals(3, LazyList.size(list));
+
+        // Remove something that exists in input
+        list = LazyList.remove(input, "b");
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertTrue("Should not have recreated list obj", input == list);
+        assertEquals(2, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
+        
+        // Try to remove the rest.
+        list = LazyList.remove(list,"a");
+        list = LazyList.remove(list,"c");
+        assertNull(list);
+    }
+    
+    /**
+     * Test for {@link LazyList#remove(Object, Object)}
+     */
+    @Test
+    public void testRemoveObjectObject_LinkedListInput()
+    {
+        // Should be able to use any collection object.
+        List<String> input = new LinkedList<String>();
+        input.add("a");
+        input.add("b");
+        input.add("c");
+        
+        // Remove null item
+        Object list = LazyList.remove(input, null);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertTrue("Should not have recreated list obj", input == list);
+        assertEquals(3, LazyList.size(list));
+        
+        // Attempt to remove something that doesn't exist
+        list = LazyList.remove(input, "z");
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertTrue("Should not have recreated list obj", input == list);
+        assertEquals(3, LazyList.size(list));
+
+        // Remove something that exists in input
+        list = LazyList.remove(input, "b");
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertTrue("Should not have recreated list obj", input == list);
+        assertEquals(2, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
     }
 
     /**
      * Tests for {@link LazyList#remove(Object, int)}
      */
     @Test
-    public void testRemoveObjectint()
+    public void testRemoveObjectInt_NullInput()
     {
-        Object list=null;
-        assertTrue(LazyList.remove(list,0)==null);
+        Object input = null;
         
-        list=LazyList.add(list,"a");
-        assertEquals("a",LazyList.remove(list,1));
-        assertTrue(LazyList.remove(list,0)==null);
+        assertNull(LazyList.remove(input,0));
+        assertNull(LazyList.remove(input,2));
+        assertNull(LazyList.remove(input,-2));
+    }
+    
+    /**
+     * Tests for {@link LazyList#remove(Object, int)}
+     */
+    @Test
+    public void testRemoveObjectInt_NonListInput()
+    {
+        String input = "a";
         
-        list=LazyList.add(list,"b");
-        list=LazyList.remove(list,1);
-        list=LazyList.add(list,"b");
-        list=LazyList.add(list,"c");
-        list=LazyList.add(list,"d");
-        list=LazyList.add(list,"e");
-        list=LazyList.remove(list,0);
-        list=LazyList.remove(list,2);
-        list=LazyList.remove(list,2);
+        // Invalid index
+        Object list = LazyList.remove(input, 1);
+        assertNotNull(list);
+        if(STRICT) {
+            assertTrue(list instanceof List);
+        }
+        assertEquals(1, LazyList.size(list));
         
-        assertEquals(2,LazyList.size(list));
-        assertEquals("b",LazyList.get(list,0));
-        assertEquals("c",LazyList.get(list,1));
+        // Valid index
+        list = LazyList.remove(input, 0);
+        // TODO: should this be null? or an empty list?
+        assertNull(list); // nothing left in list
+        assertEquals(0, LazyList.size(list));
+    }
 
-        list=LazyList.remove(list,0);
-        list=LazyList.remove(list,0);
-        assertEquals(null,list);
+    /**
+     * Tests for {@link LazyList#remove(Object, int)}
+     */
+    @Test
+    public void testRemoveObjectInt_LazyListInput()
+    {
+        Object input = LazyList.add(null, "a");
+        input = LazyList.add(input, "b");
+        input = LazyList.add(input, "c");
+        
+        Object list = null;
+        
+        if (STRICT)
+        {
+            // Invalid index
+            // Shouldn't cause a IndexOutOfBoundsException as this is not the
+            // same behavior you experience in testRemoveObjectInt_NonListInput and
+            // testRemoveObjectInt_NullInput when using invalid indexes.
+            list = LazyList.remove(input,5);
+            assertNotNull(list);
+            assertTrue(list instanceof List);
+            assertEquals(3, LazyList.size(list));
+        }
+        
+        // Valid index
+        list = LazyList.remove(input, 1); // remove the 'b'
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(2, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
+    }
+
+    /**
+     * Tests for {@link LazyList#remove(Object, int)}
+     */
+    @Test
+    public void testRemoveObjectInt_GenericListInput()
+    {
+        List<String> input = new ArrayList<String>();
+        input.add("a");
+        input.add("b");
+        input.add("c");
+        
+        Object list = null;
+        
+        if (STRICT)
+        {
+            // Invalid index
+            // Shouldn't cause a IndexOutOfBoundsException as this is not the
+            // same behavior you experience in testRemoveObjectInt_NonListInput and
+            // testRemoveObjectInt_NullInput when using invalid indexes.
+            list = LazyList.remove(input,5);
+            assertNotNull(list);
+            assertTrue(list instanceof List);
+            assertEquals(3, LazyList.size(list));
+        }
+        
+        // Valid index
+        list = LazyList.remove(input, 1); // remove the 'b'
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(2, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("c", LazyList.get(list, 1));
+        
+        // Remove the rest
+        list = LazyList.remove(list, 0); // the 'a'
+        list = LazyList.remove(list, 0); // the 'c'
+        assertNull(list);
     }
 
     /**
      * Test for {@link LazyList#getList(Object)}
      */
     @Test
-    @SuppressWarnings("unchecked")
-    public void testGetListObject()
+    public void testGetListObject_NullInput()
     {
-        assertEquals(0,LazyList.getList(null).size());
-        assertEquals(1,LazyList.getList("a").size());
-
-        @SuppressWarnings("rawtypes")
-        ArrayList l=new ArrayList();
-        l.add("a");
-        l.add("b");
-        assertEquals(2,LazyList.getList(l).size());   
+        Object input = null;
+        
+        Object list = LazyList.getList(input);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(0, LazyList.size(list));
+    }
+    
+    /**
+     * Test for {@link LazyList#getList(Object)}
+     */
+    @Test
+    public void testGetListObject_NonListInput()
+    {
+        String input = "a";
+        
+        Object list = LazyList.getList(input);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(1, LazyList.size(list));
     }
 
     /**
-     * Test for List getList(Object, boolean)
+     * Test for {@link LazyList#getList(Object)}
      */
     @Test
-    public void testGetListObjectboolean()
+    public void testGetListObject_LazyListInput()
     {
-        assertEquals(0,LazyList.getList(null,false).size());
-        assertEquals(null,LazyList.getList(null,true));
+        Object input = LazyList.add(null, "a");
+        input = LazyList.add(input, "b");
+        input = LazyList.add(input, "c");
+        
+        Object list = LazyList.getList(input);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(3, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
     }
 
+    /**
+     * Test for {@link LazyList#getList(Object)}
+     */
+    @Test
+    public void testGetListObject_GenericListInput()
+    {
+        List<String> input = new ArrayList<String>();
+        input.add("a");
+        input.add("b");
+        input.add("c");
+        
+        Object list = LazyList.getList(input);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(3, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
+    }
+
+    /**
+     * Test for {@link LazyList#getList(Object)}
+     */
+    @Test
+    public void testGetListObject_LinkedListInput()
+    {
+        List<String> input = new LinkedList<String>();
+        input.add("a");
+        input.add("b");
+        input.add("c");
+        
+        Object list = LazyList.getList(input);
+        assertNotNull(list);
+        assertTrue(list instanceof List);
+        assertEquals(3, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
+    }
+
+
+    /**
+     * Test for {@link LazyList#getList(Object)}
+     */
+    @Test
+    public void testGetListObject_NullForEmpty()
+    {
+        assertNull(LazyList.getList(null, true));
+        assertNotNull(LazyList.getList(null, false));
+    }
+    
     /**
      * Tests for {@link LazyList#toStringArray(Object)}
      */
@@ -959,6 +1226,114 @@ public class LazyListTest
         assertEquals(null,a[1]);
         assertEquals("2",a[2]);
         
+    }
+    
+    /**
+     * Tests for {@link LazyList#toArray(Object, Class)}
+     */
+    @Test
+    public void testToArray_NullInput_Object() {
+        Object input = null;
+        
+        Object arr = LazyList.toArray(input,Object.class);
+        assertNotNull(arr);
+        assertTrue(arr.getClass().isArray());
+    }
+
+    /**
+     * Tests for {@link LazyList#toArray(Object, Class)}
+     */
+    @Test
+    public void testToArray_NullInput_String() {
+        String input = null;
+        
+        Object arr = LazyList.toArray(input,String.class);
+        assertNotNull(arr);
+        assertTrue(arr.getClass().isArray());
+        assertTrue(arr instanceof String[]);
+    }
+
+    /**
+     * Tests for {@link LazyList#toArray(Object, Class)}
+     */
+    @Test
+    public void testToArray_NonListInput() {
+        String input = "a";
+        
+        Object arr = LazyList.toArray(input,String.class);
+        assertNotNull(arr);
+        assertTrue(arr.getClass().isArray());
+        assertTrue(arr instanceof String[]);
+        
+        String strs[] = (String[])arr;
+        assertEquals(1, strs.length);
+        assertEquals("a", strs[0]);
+    }
+
+    /**
+     * Tests for {@link LazyList#toArray(Object, Class)}
+     */
+    @Test
+    public void testToArray_LazyListInput() {
+        Object input = LazyList.add(null, "a");
+        input = LazyList.add(input, "b");
+        input = LazyList.add(input, "c");
+        
+        Object arr = LazyList.toArray(input,String.class);
+        assertNotNull(arr);
+        assertTrue(arr.getClass().isArray());
+        assertTrue(arr instanceof String[]);
+        
+        String strs[] = (String[])arr;
+        assertEquals(3, strs.length);
+        assertEquals("a", strs[0]);
+        assertEquals("b", strs[1]);
+        assertEquals("c", strs[2]);
+    }
+
+    /**
+     * Tests for {@link LazyList#toArray(Object, Class)}
+     */
+    @Test
+    public void testToArray_LazyListInput_Primitives() {
+        Object input = LazyList.add(null, 22);
+        input = LazyList.add(input, 333);
+        input = LazyList.add(input, 4444);
+        input = LazyList.add(input, 55555);
+        
+        Object arr = LazyList.toArray(input,int.class);
+        assertNotNull(arr);
+        assertTrue(arr.getClass().isArray());
+        assertTrue(arr instanceof int[]);
+        
+        int nums[] = (int[])arr;
+        assertEquals(4, nums.length);
+        assertEquals(22, nums[0]);
+        assertEquals(333, nums[1]);
+        assertEquals(4444, nums[2]);
+        assertEquals(55555, nums[3]);
+    }
+
+    /**
+     * Tests for {@link LazyList#toArray(Object, Class)}
+     */
+    @Test
+    public void testToArray_GenericListInput() {
+        List<String> input = new ArrayList<String>();
+        input.add("a");
+        input.add("b");
+        input.add("c");
+        
+        Object arr = LazyList.toArray(input,String.class);
+        assertNotNull(arr);
+        assertTrue(arr.getClass().isArray());
+        assertTrue(arr instanceof String[]);
+        
+        String strs[] = (String[])arr;
+        assertEquals(3, strs.length);
+        assertEquals("a", strs[0]);
+        assertEquals("b", strs[1]);
+        assertEquals("c", strs[2]);
     }
 
     /**
@@ -1148,7 +1523,129 @@ public class LazyListTest
         assertTrue(LazyList.contains(input, "a"));
         assertTrue(LazyList.contains(input, "b"));
     }
+    
+    /**
+     * Tests for {@link LazyList#clone(Object)}
+     */
+    @Test
+    public void testClone_NullInput()
+    {
+        Object input = null;
+        
+        Object list = LazyList.clone(input);
+        assertNull(list);
+    }
 
+    /**
+     * Tests for {@link LazyList#clone(Object)}
+     */
+    @Test
+    public void testClone_NonListInput()
+    {
+        String input = "a";
+        
+        Object list = LazyList.clone(input);
+        assertNotNull(list);
+        assertTrue("Should be the same object", input == list);
+    }
+    
+    /**
+     * Tests for {@link LazyList#clone(Object)}
+     */
+    @Test
+    public void testClone_LazyListInput()
+    {
+        Object input = LazyList.add(null,"a");
+        input = LazyList.add(input,"b");
+        input = LazyList.add(input,"c");
+        
+        Object list = LazyList.clone(input);
+        assertNotNull(list);
+        assertTrue("Should be a List object", list instanceof List);
+        assertFalse("Should NOT be the same object", input == list);
+        assertEquals(3, LazyList.size(list));
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
+        assertEquals("c", LazyList.get(list,2));
+    }
+
+    /**
+     * Tests for {@link LazyList#clone(Object)}
+     */
+    @Test
+    public void testClone_GenericListInput()
+    {
+        List<String> input = new ArrayList<String>();
+        input.add("a");
+        input.add("b");
+        input.add("c");
+        
+        // TODO: decorate the .clone(Object) method to return
+        //       the same generic object element type
+        Object list = LazyList.clone(input);
+        assertNotNull(list);
+        assertTrue("Should be a List object", list instanceof List);
+        assertFalse("Should NOT be the same object", input == list);
+        assertEquals(3, LazyList.size(list));
+        assertEquals("a", LazyList.get(list,0));
+        assertEquals("b", LazyList.get(list,1));
+        assertEquals("c", LazyList.get(list,2));
+    }
+    
+    /**
+     * Tests for {@link LazyList#toString(Object)}
+     */
+    @Test
+    public void testToString_NullInput()
+    {
+        Object input = null;
+        assertEquals("[]", LazyList.toString(input));
+    }
+    
+    /**
+     * Tests for {@link LazyList#toString(Object)}
+     */
+    @Test
+    public void testToString_NonListInput()
+    {
+        String input = "a";
+        assertEquals("[a]", LazyList.toString(input));
+    }
+
+    /**
+     * Tests for {@link LazyList#toString(Object)}
+     */
+    @Test
+    public void testToString_LazyListInput()
+    {
+        Object input = LazyList.add(null,"a");
+
+        assertEquals("[a]", LazyList.toString(input));
+
+        input = LazyList.add(input,"b");
+        input = LazyList.add(input,"c");
+
+        assertEquals("[a, b, c]", LazyList.toString(input));
+    }
+
+    
+    /**
+     * Tests for {@link LazyList#toString(Object)}
+     */
+    @Test
+    public void testToString_GenericListInput()
+    {
+        List<String> input = new ArrayList<String>();
+        input.add("a");
+
+        assertEquals("[a]", LazyList.toString(input));
+
+        input.add("b");
+        input.add("c");
+
+        assertEquals("[a, b, c]", LazyList.toString(input));
+    }
+    
     /**
      * Tests for {@link LazyList#iterator(Object)}
      */
@@ -1293,17 +1790,302 @@ public class LazyListTest
         assertEquals("a", iter.previous());
         assertFalse(iter.hasPrevious());
     }
-
+    
+    
+    /**
+     * Tests for {@link LazyList#array2List(Object[])}
+     */
     @Test
-    public void testCloneToString()
+    public void testArray2List_NullInput()
     {
-        ArrayList l=new ArrayList();
-        l.add("a");
-        l.add("b");
+        Object input[] = null;
         
-        assertEquals("[]",LazyList.toString(LazyList.clone(null)));
-        assertEquals("[a]",LazyList.toString(LazyList.clone("a")));
-        assertEquals("[a, b]",LazyList.toString(LazyList.clone(l)));
+        Object list = LazyList.array2List(input);
+        assertNotNull(list);
+        assertTrue("Should be a List object", list instanceof List);
+        assertEquals(0, LazyList.size(list));
     }
 
+    /**
+     * Tests for {@link LazyList#array2List(Object[])}
+     */
+    @Test
+    public void testArray2List_EmptyInput()
+    {
+        String input[] = new String[0];
+        
+        Object list = LazyList.array2List(input);
+        assertNotNull(list);
+        assertTrue("Should be a List object", list instanceof List);
+        assertEquals(0, LazyList.size(list));
+    }
+
+    /**
+     * Tests for {@link LazyList#array2List(Object[])}
+     */
+    @Test
+    public void testArray2List_SingleInput()
+    {
+        String input[] = new String[] { "a" };
+        
+        Object list = LazyList.array2List(input);
+        assertNotNull(list);
+        assertTrue("Should be a List object", list instanceof List);
+        assertEquals(1, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+    }
+
+    /**
+     * Tests for {@link LazyList#array2List(Object[])}
+     */
+    @Test
+    public void testArray2List_MultiInput()
+    {
+        String input[] = new String[] { "a", "b", "c" };
+        
+        Object list = LazyList.array2List(input);
+        assertNotNull(list);
+        assertTrue("Should be a List object", list instanceof List);
+        assertEquals(3, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
+    }
+    
+    /**
+     * Tests for {@link LazyList#array2List(Object[])}
+     */
+    @Test
+    public void testArray2List_GenericsInput()
+    {
+        String input[] = new String[] { "a", "b", "c" };
+        
+        // Test the Generics definitions for array2List
+        List<String> list = LazyList.array2List(input);
+        assertNotNull(list);
+        assertTrue("Should be a List object", list instanceof List);
+        assertEquals(3, LazyList.size(list));
+        assertEquals("a", LazyList.get(list, 0));
+        assertEquals("b", LazyList.get(list, 1));
+        assertEquals("c", LazyList.get(list, 2));
+    }
+
+    /**
+     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     */
+    @Test
+    public void testAddToArray_NullInput_NullItem()
+    {
+        Object input[] = null;
+        
+        Object arr[] = LazyList.addToArray(input,null,Object.class);
+        assertNotNull(arr);
+        if(STRICT) {
+            // Adding null item to array should result in nothing added?
+            assertEquals(0, arr.length);
+        } else {
+            assertEquals(1, arr.length);
+        }
+    }
+
+    /**
+     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     */
+    @Test
+    public void testAddToArray_NullNullNull()
+    {
+        // NPE if item && type are both null.
+        Assume.assumeTrue(STRICT);
+        
+        // Harsh test case.
+        Object input[] = null;
+        
+        Object arr[] = LazyList.addToArray(input,null,null);
+        assertNotNull(arr);
+        if(STRICT) {
+            // Adding null item to array should result in nothing added?
+            assertEquals(0, arr.length);
+        } else {
+            assertEquals(1, arr.length);
+        }
+    }
+
+    /**
+     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     */
+    @Test
+    public void testAddToArray_NullInput_SimpleItem()
+    {
+        Object input[] = null;
+        
+        Object arr[] = LazyList.addToArray(input,"a",String.class);
+        assertNotNull(arr);
+        assertEquals(1, arr.length);
+        assertEquals("a", arr[0]);
+        
+        // Same test, but with an undefined type
+        arr = LazyList.addToArray(input,"b",null);
+        assertNotNull(arr);
+        assertEquals(1, arr.length);
+        assertEquals("b", arr[0]);
+    }
+
+    /**
+     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     */
+    @Test
+    public void testAddToArray_EmptyInput_NullItem()
+    {
+        String input[] = new String[0];
+        
+        Object arr[] = LazyList.addToArray(input,null,Object.class);
+        assertNotNull(arr);
+        if(STRICT) {
+            // Adding null item to array should result in nothing added?
+            assertEquals(0, arr.length);
+        } else {
+            assertEquals(1, arr.length);
+        }
+    }
+
+    /**
+     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     */
+    @Test
+    public void testAddToArray_EmptyInput_SimpleItem()
+    {
+        String input[] = new String[0];
+        
+        Object arr[] = LazyList.addToArray(input,"a",String.class);
+        assertNotNull(arr);
+        assertEquals(1, arr.length);
+        assertEquals("a", arr[0]);
+    }
+
+    /**
+     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     */
+    @Test
+    public void testAddToArray_SingleInput_NullItem()
+    {
+        String input[] = new String[] { "z" };
+        
+        Object arr[] = LazyList.addToArray(input,null,Object.class);
+        assertNotNull(arr);
+        if(STRICT) {
+            // Should a null item be added to an array?
+            assertEquals(1, arr.length);
+        } else {
+            assertEquals(2, arr.length);
+            assertEquals("z", arr[0]);
+            assertEquals(null, arr[1]);
+        }
+    }
+
+    /**
+     * Tests for {@link LazyList#addToArray(Object[], Object, Class)}
+     */
+    @Test
+    public void testAddToArray_SingleInput_SimpleItem()
+    {
+        String input[] = new String[] { "z" };
+        
+        Object arr[] = LazyList.addToArray(input,"a",String.class);
+        assertNotNull(arr);
+        assertEquals(2, arr.length);
+        assertEquals("z", arr[0]);
+        assertEquals("a", arr[1]);
+    }
+
+    /**
+     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     */
+    @Test
+    public void testRemoveFromArray_NullInput_NullItem() {
+        Object input[] = null;
+        
+        // TODO: change over to be genericized
+        Object arr[] = (Object[])LazyList.removeFromArray(input,null);
+        assertNull(arr);
+    }
+    
+    /**
+     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     */
+    @Test
+    public void testRemoveFromArray_NullInput_SimpleItem() {
+        Object input[] = null;
+        
+        // TODO: change over to be genericized
+        Object arr[] = (Object[])LazyList.removeFromArray(input,"a");
+        assertNull(arr);
+    }
+
+    /**
+     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     */
+    @Test
+    public void testRemoveFromArray_EmptyInput_NullItem() {
+        String input[] = new String[0];
+        
+        // TODO: change over to be genericized
+        Object arr[] = (Object[])LazyList.removeFromArray(input,null);
+        assertNotNull("Should not be null", arr);
+        assertEquals(0, arr.length);
+    }
+
+    /**
+     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     */
+    @Test
+    public void testRemoveFromArray_EmptyInput_SimpleItem() {
+        String input[] = new String[0];
+        
+        // TODO: change over to be genericized
+        Object arr[] = (Object[])LazyList.removeFromArray(input,"a");
+        assertNotNull("Should not be null", arr);
+        assertEquals(0, arr.length);
+    }
+
+    /**
+     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     */
+    @Test
+    public void testRemoveFromArray_SingleInput() {
+        Object input[] = new String[] { "a" };
+        
+        // TODO: change over to be genericized
+        Object arr[] = (Object[])LazyList.removeFromArray(input,null);
+        assertNotNull("Should not be null", arr);
+        assertEquals(1, arr.length);
+        assertEquals("a", arr[0]);
+        
+        // Remove actual item
+        arr = (Object[])LazyList.removeFromArray(input,"a");
+        assertNotNull("Should not be null", arr);
+        assertEquals(0, arr.length);
+    }
+
+    /**
+     * Tests for {@link LazyList#removeFromArray(Object[], Object)}
+     */
+    @Test
+    public void testRemoveFromArray_MultiInput() {
+        String input[] = new String[] { "a", "b", "c" };
+        
+        // TODO: change over to be genericized
+        Object arr[] = (Object[])LazyList.removeFromArray(input,null);
+        assertNotNull("Should not be null", arr);
+        assertEquals(3, arr.length);
+        assertEquals("a", arr[0]);
+        assertEquals("b", arr[1]);
+        assertEquals("c", arr[2]);
+        
+        // Remove an actual item
+        arr = (Object[])LazyList.removeFromArray(input,"b");
+        assertNotNull("Should not be null", arr);
+        assertEquals(2, arr.length);
+        assertEquals("a", arr[0]);
+        assertEquals("c", arr[1]);
+    }
 }
