@@ -385,20 +385,19 @@ public class WebSocketClientTest
         });
         
         Socket connection = server.accept();
-        consumeClientRequest(connection);
+        respondToClient(connection, "HTTP/1.1 404 NOT FOUND\r\n\r\n");
 
-        write(connection, "HTTP/1.1 404 NOT FOUND\r\n\r\n");
-        
         Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(50,TimeUnit.SECONDS));
-        Assert.assertThat("error.get()", error.get(), notNullValue());
+        Assert.assertTrue(latch.await(2,TimeUnit.SECONDS));
+        Assert.assertThat("error.get()", error.get(), containsString("404 NOT FOUND"));
     }
     
-    private void consumeClientRequest(Socket connection) throws IOException
+    private void respondToClient(Socket connection, String serverResponse) throws IOException
     {
         InputStream in = null;
         InputStreamReader isr = null;
         BufferedReader buf = null;
+        OutputStream out = null;
         try {
             in = connection.getInputStream();
             isr = new InputStreamReader(in);
@@ -406,11 +405,21 @@ public class WebSocketClientTest
             String line;
             while((line = buf.readLine())!=null) {
                 System.err.println(line);
+                if(line.length() == 0) {
+                    // Got the "\r\n" line.
+                    break;
+                }
             }
+
+            // System.out.println("[Server-Out] " + serverResponse);
+            out = connection.getOutputStream();
+            out.write(serverResponse.getBytes());
+            out.flush();
         } finally {
             IO.close(buf);
             IO.close(isr);
             IO.close(in);
+            IO.close(out);
         }
     }
 
@@ -698,22 +707,5 @@ public class WebSocketClientTest
         socket.getOutputStream().flush();
         
         Assert.assertEquals(new Integer(1111),close.exchange(null,1,TimeUnit.SECONDS));
-    }
-    
-    private void write(Socket connection, String str) throws IOException
-    {
-        write(connection, str.getBytes());
-    }
-
-    private void write(Socket connection, byte buffer[]) throws IOException
-    {
-        OutputStream out = null;
-        try {
-            out = connection.getOutputStream();
-            out.write(buffer);
-            out.flush();
-        } finally {
-            IO.close(out);
-        }
     }
 }
