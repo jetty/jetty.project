@@ -1,8 +1,11 @@
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.CoreMatchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
@@ -15,14 +18,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.websocket.WebSocket.Connection;
+import org.eclipse.jetty.util.IO;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
-
 
 public class WebSocketClientTest
 {
-
+    private ServerSocket server;
+    private int serverPort;
+    
+    @Before
+    public void startServer() throws IOException {
+        server = new ServerSocket();
+        server.bind(null);
+        serverPort = server.getLocalPort();
+    }
+    
+    @After
+    public void stopServer() throws IOException {
+        if(server != null) {
+            server.close();
+        }
+    }
+    
     @Test
     public void testBadURL() throws Exception
     {
@@ -151,17 +171,12 @@ public class WebSocketClientTest
         client.setBlockingConnect(true);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicReference<String> error = new AtomicReference<String>(null);
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -198,11 +213,6 @@ public class WebSocketClientTest
         client.setConnectTimeout(300);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
@@ -210,7 +220,7 @@ public class WebSocketClientTest
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -250,17 +260,12 @@ public class WebSocketClientTest
         client.setBlockingConnect(true);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicReference<String> error = new AtomicReference<String>(null);
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -299,11 +304,6 @@ public class WebSocketClientTest
         client.setConnectTimeout(300);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
@@ -311,7 +311,7 @@ public class WebSocketClientTest
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -353,61 +353,48 @@ public class WebSocketClientTest
         client.setConnectTimeout(300);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
-        boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
-        try
+        
+        client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            public void onOpen(Connection connection)
             {
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                    latch.countDown();
-                }
+                open.set(true);
+                latch.countDown();
+            }
 
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
+            public void onError(String message, Throwable ex)
+            {
+                error.set(message);
+                latch.countDown();
+            }
 
-                public void onClose(int closeCode, String message)
-                {
-                    close.set(closeCode);
-                    latch.countDown();
-                }
-            });
-        }
-        catch(IOException e)
-        {
-            bad=true;
-        }
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+                latch.countDown();
+            }
+        });
         
         Socket connection = server.accept();
         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         for (String line=in.readLine();line!=null;line=in.readLine())
         {
-            // System.err.println(line);
+            System.err.println(line);
             if (line.length()==0)
                 break;
         }
         
-        connection.getOutputStream().write("HTTP/1.1 404 NOT FOUND\r\n\r\n".getBytes());
+        write(connection, "HTTP/1.1 404 NOT FOUND\r\n\r\n");
         
-        Assert.assertFalse(bad);
         Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
-        Assert.assertNotNull(error.get());
+        Assert.assertTrue(latch.await(15,TimeUnit.SECONDS));
+        Assert.assertThat("error.get()", error.get(), notNullValue());
     }
-
+    
     @Test
     public void testBadUpgrade() throws Exception
     {
@@ -416,11 +403,6 @@ public class WebSocketClientTest
         client.setConnectTimeout(10000);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
@@ -428,7 +410,7 @@ public class WebSocketClientTest
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -483,11 +465,6 @@ public class WebSocketClientTest
         client.setConnectTimeout(10000);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
@@ -495,7 +472,7 @@ public class WebSocketClientTest
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -551,17 +528,13 @@ public class WebSocketClientTest
         client.setMaxIdleTime(500);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(2);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -617,10 +590,6 @@ public class WebSocketClientTest
         client.setMaxIdleTime(500);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final Exchanger<Integer> close = new Exchanger<Integer>();
@@ -629,7 +598,7 @@ public class WebSocketClientTest
         final BlockingQueue<String> queue = new BlockingArrayQueue<String>();
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket.OnTextMessage()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket.OnTextMessage()
             {
                 public void onOpen(Connection c)
                 {
@@ -712,4 +681,20 @@ public class WebSocketClientTest
         Assert.assertEquals(new Integer(1111),close.exchange(null,1,TimeUnit.SECONDS));
     }
     
+    private void write(Socket connection, String str) throws IOException
+    {
+        write(connection, str.getBytes());
+    }
+
+    private void write(Socket connection, byte buffer[]) throws IOException
+    {
+        OutputStream out = null;
+        try {
+            out = connection.getOutputStream();
+            out.write(buffer);
+            out.flush();
+        } finally {
+            IO.close(out);
+        }
+    }
 }
