@@ -4,10 +4,12 @@ import static org.hamcrest.CoreMatchers.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -362,39 +364,56 @@ public class WebSocketClientTest
         {
             public void onOpen(Connection connection)
             {
+                System.out.printf("onOpen(%s)%n", connection);
                 open.set(true);
                 latch.countDown();
             }
 
             public void onError(String message, Throwable ex)
             {
+                System.out.printf("onError(%s, %s)%n", message, ex);
                 error.set(message);
                 latch.countDown();
             }
 
             public void onClose(int closeCode, String message)
             {
+                System.out.printf("onClose(%d, %s)%n", closeCode, message);
                 close.set(closeCode);
                 latch.countDown();
             }
         });
         
         Socket connection = server.accept();
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        for (String line=in.readLine();line!=null;line=in.readLine())
-        {
-            System.err.println(line);
-            if (line.length()==0)
-                break;
-        }
-        
+        consumeClientRequest(connection);
+
         write(connection, "HTTP/1.1 404 NOT FOUND\r\n\r\n");
         
         Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(15,TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(50,TimeUnit.SECONDS));
         Assert.assertThat("error.get()", error.get(), notNullValue());
     }
     
+    private void consumeClientRequest(Socket connection) throws IOException
+    {
+        InputStream in = null;
+        InputStreamReader isr = null;
+        BufferedReader buf = null;
+        try {
+            in = connection.getInputStream();
+            isr = new InputStreamReader(in);
+            buf = new BufferedReader(isr);
+            String line;
+            while((line = buf.readLine())!=null) {
+                System.err.println(line);
+            }
+        } finally {
+            IO.close(buf);
+            IO.close(isr);
+            IO.close(in);
+        }
+    }
+
     @Test
     public void testBadUpgrade() throws Exception
     {
