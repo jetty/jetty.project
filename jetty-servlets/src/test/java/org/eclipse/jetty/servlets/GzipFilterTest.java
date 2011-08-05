@@ -69,6 +69,12 @@ public class GzipFilterTest
         IO.copy(testIn,testOut);
         testOut.close();
         
+        testFile = testdir.getFile("file.mp3");
+        testOut = new BufferedOutputStream(new FileOutputStream(testFile));
+        testIn = new ByteArrayInputStream(__content.getBytes("ISO8859_1"));
+        IO.copy(testIn,testOut);
+        testOut.close();
+
         tester=new ServletTester();
         tester.setContextPath("/context");
         tester.setResourceBase(testdir.getDir().getCanonicalPath());
@@ -86,7 +92,7 @@ public class GzipFilterTest
     }
 
     @Test
-    public void testGzipFilter() throws Exception
+    public void testGzip() throws Exception
     {
         // generated and parsed test
         HttpTester request = new HttpTester();
@@ -107,6 +113,34 @@ public class GzipFilterTest
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn,testOut);
+        
+        assertEquals(__content, testOut.toString("ISO8859_1"));
+    }
+
+    @Test
+    public void testNotGzip() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        request.setMethod("GET");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("accept-encoding","gzip");
+        request.setURI("/context/file.mp3");
+        
+        ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
+        ByteArrayBuffer respBuff = tester.getResponses(reqsBuff);
+        response.parse(respBuff.asArray());
+                
+        assertTrue(response.getMethod()==null);
+        assertEquals(__content.getBytes().length, Integer.parseInt(response.getHeader("Content-Length")));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        
+        InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
         
