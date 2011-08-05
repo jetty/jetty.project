@@ -231,7 +231,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     {
         return _threadBean.getAllThreadIds();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the cpu time for specified thread.
@@ -272,12 +272,17 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
                 StringBuffer msg = new StringBuffer();
                 if (info.getLockOwnerId() < 0)
                 {
-                    msg.append(String.format("Thread %s[%d] is spinning", info.getThreadName(), info.getThreadId()));
+                    String state = info.isInNative() ? "IN_NATIVE" : 
+                        info.getThreadState().toString();
+                    msg.append(String.format("Thread %s[id:%d,%s] is spinning", 
+                            info.getThreadName(), info.getThreadId(), state));
                 }
                 else
                 {
-                    msg.append(String.format("Thread %s[%d] is %s", info.getThreadName(), info.getThreadId(), info.getThreadState()));
-                    msg.append(String.format(" on %s owned by %s[%d]", info.getLockName(), info.getLockOwnerName(), info.getLockOwnerId()));
+                    msg.append(String.format("Thread %s[id:%d,%s]", 
+                            info.getThreadName(), info.getThreadId(), info.getThreadState()));
+                    msg.append(String.format(" on %s owned by %s[id:%d]", 
+                            info.getLockName(), info.getLockOwnerName(), info.getLockOwnerId()));
                 }
                 
                 _logger.warn(new ThreadMonitorException(msg.toString(), info.getStackTrace()));
@@ -300,11 +305,15 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
             
             for (ExtThreadInfo info : sorted)
             {
-                ThreadInfo threadInfo = info.getThreadInfo();
+                ThreadInfo threadInfo = getThreadInfo(info.getThreadId(), 0);
                 
                 if (info.getCpuUtilization() > 1.0f)
                 {
-                    _logger.info(String.format("Thread %s[%d] is using %.2f of CPU", threadInfo.getThreadName(), threadInfo.getThreadId(), info.getCpuUtilization()));
+                    String state = threadInfo.isInNative() ? "IN_NATIVE" : 
+                        threadInfo.getThreadState().toString();
+                    _logger.info(String.format("Thread %s[id:%d,%s] is using %.2f%% of CPU", 
+                            threadInfo.getThreadName(), threadInfo.getThreadId(), 
+                            state, info.getCpuUtilization()));
                 }
 
                 info.setDumpCpuTime(info.getLastCpuTime());
@@ -522,6 +531,14 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         public ThreadInfo getThreadInfo()
         {
             return _threadInfo;
+        }
+
+        /**
+         * @return the thread Id
+         */
+        public long getThreadId()
+        {
+            return _threadInfo.getThreadId();
         }
 
         /* ------------------------------------------------------------ */
