@@ -17,7 +17,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +45,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
         _map=new HashMap<K, Object>();
     }
     
-    public MultiMap(Map map)
+    public MultiMap(Map<K,Object> map)
     {
         if (map instanceof ConcurrentMap)
             _map=_cmap=new ConcurrentHashMap<K, Object>(map);
@@ -173,7 +172,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param values The List of multiple values.
      * @return The previous value or null.
      */
-    public Object putValues(K name, List values) 
+    public Object putValues(K name, List<? extends Object> values) 
     {
         return _map.put(name,values);
     }
@@ -184,12 +183,12 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param values The String array of multiple values.
      * @return The previous value or null.
      */
-    public Object putValues(K name, String[] values) 
+    public Object putValues(K name, String... values) 
     {
         Object list=null;
         for (int i=0;i<values.length;i++)
             list=LazyList.add(list,values[i]);
-        return put(name,list);
+        return _map.put(name,list);
     }
     
     
@@ -215,7 +214,7 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
      * @param name The entry key. 
      * @param values The List of multiple values.
      */
-    public void addValues(K name, List values) 
+    public void addValues(K name, List<? extends Object> values) 
     {
         Object lo = _map.get(name);
         Object ln = LazyList.addCollection(lo,values);
@@ -260,21 +259,25 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
         return LazyList.size(ln)!=s;
     }
     
+    
     /* ------------------------------------------------------------ */
     /** Put all contents of map.
      * @param m Map
      */
-    public void putAll(Map m)
+    public void putAll(Map<? extends K, ? extends Object> m)
     {
-        Iterator i = m.entrySet().iterator();
-        boolean multi=m instanceof MultiMap;
-        while(i.hasNext())
+        boolean multi = (m instanceof MultiMap);
+
+        if (multi)
         {
-            Map.Entry entry = (Map.Entry)i.next();
-            if (multi)
-                _map.put((K)(entry.getKey()),LazyList.clone(entry.getValue()));
-            else
-                put((K)(entry.getKey()),entry.getValue());
+            for (Map.Entry<? extends K, ? extends Object> entry : m.entrySet())
+            {
+                _map.put(entry.getKey(),LazyList.clone(entry.getValue()));
+            }
+        }
+        else
+        {
+            _map.putAll(m);
         }
     }
 
@@ -282,19 +285,13 @@ public class MultiMap<K> implements ConcurrentMap<K,Object>, Serializable
     /** 
      * @return Map of String arrays
      */
-    public Map toStringArrayMap()
+    public Map<K,String[]> toStringArrayMap()
     {
-        HashMap map = new HashMap(_map.size()*3/2);
+        HashMap<K,String[]> map = new HashMap<K,String[]>(_map.size()*3/2);
         
-        Iterator i = _map.entrySet().iterator();
-        while(i.hasNext())
+        for(Map.Entry<K,Object> entry: _map.entrySet())
         {
-            Map.Entry entry = (Map.Entry)i.next();
-            Object l = entry.getValue();
-            String[] a = LazyList.toStringArray(l);
-            // for (int j=a.length;j-->0;)
-            //    if (a[j]==null)
-            //         a[j]="";
+            String[] a = LazyList.toStringArray(entry.getValue());
             map.put(entry.getKey(),a);
         }
         return map;
