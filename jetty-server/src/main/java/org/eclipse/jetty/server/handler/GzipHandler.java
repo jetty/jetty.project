@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Log;
  * 
  * <p>
  * Compressing the content can greatly improve the network bandwidth usage, but at a cost of memory and CPU cycles. If this handler is used for static content,
- * then use of efficient direct NIO may be prevented, thus use of the gzip mechanism of the {@link org.eclipse.jetty.servlet.DefaultServlet} is advised instead.
+ * then use of efficient direct NIO may be prevented, thus use of the gzip mechanism of the <code>org.eclipse.jetty.servlet.DefaultServlet</code> is advised instead.
  * </p>
  */
 public class GzipHandler extends HandlerWrapper

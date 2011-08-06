@@ -81,7 +81,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     
     /* ------------------------------------------------------------- */
     /**
-     * @return True is the session is invalid or passivated.
+     * asserts that the session is valid
      */
     protected void checkValid() throws IllegalStateException
     {
