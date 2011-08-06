@@ -428,20 +428,23 @@ public class LazyList
      * @param type The type of the array (in case of null array)
      * @return new array with contents of array plus item
      */
-    public static Object[] addToArray(Object[] array, Object item, Class<?> type)
+    public static<T> T[] addToArray(T[] array, T item, Class<?> type)
     {
         if (array==null)
         {
             if (type==null && item!=null)
                 type= item.getClass();
-            Object[] na = (Object[])Array.newInstance(type, 1);
+            @SuppressWarnings("unchecked")
+            T[] na = (T[])Array.newInstance(type, 1);
             na[0]=item;
             return na;
         }
         else
         {
+            // TODO: Replace with Arrays.copyOf(T[] original, int newLength) from Java 1.6+
             Class<?> c = array.getClass().getComponentType();
-            Object[] na = (Object[])Array.newInstance(c, Array.getLength(array)+1);
+            @SuppressWarnings("unchecked")
+            T[] na = (T[])Array.newInstance(c, Array.getLength(array)+1);
             System.arraycopy(array, 0, na, 0, array.length);
             na[array.length]=item;
             return na;
@@ -449,7 +452,7 @@ public class LazyList
     }
 
     /* ------------------------------------------------------------ */
-    public static Object removeFromArray(Object[] array, Object item)
+    public static<T> T[] removeFromArray(T[] array, Object item)
     {
         if (item==null || array==null)
             return array;
@@ -458,7 +461,8 @@ public class LazyList
             if (item.equals(array[i]))
             {
                 Class<?> c = array==null?item.getClass():array.getClass().getComponentType();
-                Object[] na = (Object[])Array.newInstance(c, Array.getLength(array)-1);
+                @SuppressWarnings("unchecked")
+                T[] na = (T[])Array.newInstance(c, Array.getLength(array)-1);
                 if (i>0)
                     System.arraycopy(array, 0, na, 0, i);
                 if (i+1<array.length)

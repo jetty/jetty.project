@@ -32,8 +32,6 @@ import java.util.Set;
  * objects from being created just to look up in the map.
  *
  * This map is NOT synchronized.
- *
- * 
  */
 public class StringMap extends AbstractMap implements Externalizable
 {

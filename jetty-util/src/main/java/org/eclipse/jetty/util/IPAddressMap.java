@@ -36,6 +36,7 @@ import java.util.StringTokenizer;
  * a,b,... - a list of wildcard specifications
  * </pre>
  */
+@SuppressWarnings("serial")
 public class IPAddressMap<TYPE> extends HashMap<String, TYPE>
 {
     private final HashMap<String,IPAddrPattern> _patterns = new HashMap<String,IPAddrPattern>();

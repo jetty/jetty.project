@@ -21,8 +21,10 @@ import java.util.Map;
 /* ------------------------------------------------------------ */
 /**
  */
+@SuppressWarnings("serial")
 public class HostMap<TYPE> extends HashMap<String, TYPE>
 {
+
     /* --------------------------------------------------------------- */
     /** Construct empty HostMap.
      */

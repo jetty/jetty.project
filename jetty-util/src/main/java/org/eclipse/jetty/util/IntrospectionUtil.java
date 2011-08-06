@@ -45,7 +45,7 @@ public class IntrospectionUtil
         return true;
     }
     
-    public static Method findMethod (Class clazz, String methodName, Class[] args, boolean checkInheritance, boolean strictArgs)
+    public static Method findMethod (Class<?> clazz, String methodName, Class<?>[] args, boolean checkInheritance, boolean strictArgs)
     throws NoSuchMethodException
     {
         if (clazz == null)
@@ -78,7 +78,7 @@ public class IntrospectionUtil
     
     
 
-    public static Field findField (Class clazz, String targetName, Class targetType, boolean checkInheritance, boolean strictType)
+    public static Field findField (Class<?> clazz, String targetName, Class<?> targetType, boolean checkInheritance, boolean strictType)
     throws NoSuchFieldException
     {
         if (clazz == null)
@@ -137,7 +137,7 @@ public class IntrospectionUtil
    
     
     
-    public static boolean checkParams (Class[] formalParams, Class[] actualParams, boolean strict)
+    public static boolean checkParams (Class<?>[] formalParams, Class<?>[] actualParams, boolean strict)
     {
         if (formalParams==null && actualParams==null)
             return true;
@@ -182,8 +182,8 @@ public class IntrospectionUtil
         if (methodB==null)
             return false;
         
-        List parameterTypesA = Arrays.asList(methodA.getParameterTypes());
-        List parameterTypesB = Arrays.asList(methodB.getParameterTypes());
+        List<Class<?>> parameterTypesA = Arrays.asList(methodA.getParameterTypes());
+        List<Class<?>> parameterTypesB = Arrays.asList(methodB.getParameterTypes());
        
         if (methodA.getName().equals(methodB.getName())
             &&
@@ -193,7 +193,7 @@ public class IntrospectionUtil
         return false;
     }
     
-    public static boolean isTypeCompatible (Class formalType, Class actualType, boolean strict)
+    public static boolean isTypeCompatible (Class<?> formalType, Class<?> actualType, boolean strict)
     {
         if (formalType==null && actualType != null)
             return false;
@@ -211,7 +211,7 @@ public class IntrospectionUtil
     
     
     
-    public static boolean containsSameMethodSignature (Method method, Class c, boolean checkPackage)
+    public static boolean containsSameMethodSignature (Method method, Class<?> c, boolean checkPackage)
     {
         if (checkPackage)
         {
@@ -230,7 +230,7 @@ public class IntrospectionUtil
     }
     
     
-    public static boolean containsSameFieldName(Field field, Class c, boolean checkPackage)
+    public static boolean containsSameFieldName(Field field, Class<?> c, boolean checkPackage)
     {
         if (checkPackage)
         {
@@ -250,7 +250,7 @@ public class IntrospectionUtil
     
     
     
-    protected static Method findInheritedMethod (Package pack, Class clazz, String methodName, Class[] args, boolean strictArgs)
+    protected static Method findInheritedMethod (Package pack, Class<?> clazz, String methodName, Class<?>[] args, boolean strictArgs)
     throws NoSuchMethodException
     {
         if (clazz==null)
@@ -275,7 +275,7 @@ public class IntrospectionUtil
             return findInheritedMethod(clazz.getPackage(), clazz.getSuperclass(), methodName, args, strictArgs);
     }
     
-    protected static Field findInheritedField (Package pack, Class clazz, String fieldName, Class fieldType, boolean strictType)
+    protected static Field findInheritedField (Package pack, Class<?> clazz, String fieldName, Class<?> fieldType, boolean strictType)
     throws NoSuchFieldException
     {
         if (clazz==null)
