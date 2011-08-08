@@ -22,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Set;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
@@ -34,10 +35,13 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class GzipResponseWrapper extends HttpServletResponseWrapper
 {
+    public static int DEFAULT_BUFFER_SIZE = 8192;
+    public static int DEFAULT_MIN_GZIP_SIZE = 256;
+    
     private HttpServletRequest _request;
     private Set<String> _mimeTypes;
-    private int _bufferSize=8192;
-    private int _minGzipSize=256;
+    private int _bufferSize=DEFAULT_BUFFER_SIZE;
+    private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
 
     private PrintWriter _writer;
     private GzipStream _gzStream;
@@ -138,11 +142,29 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
      */
     public void setContentLength(int length)
     {
+        setContentLength((long)length);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void setContentLength(long length)
+    {
         _contentLength=length;
         if (_gzStream!=null)
             _gzStream.setContentLength(length);
+        else if (_noGzip && _contentLength>=0)
+        {
+            HttpServletResponse response = (HttpServletResponse)getResponse();
+            if(_contentLength<Integer.MAX_VALUE)
+            {
+                response.setContentLength((int)_contentLength);
+            }
+            else
+            {
+                response.setHeader("Content-Length", Long.toString(_contentLength));
+            }
+        }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#addHeader(java.lang.String, java.lang.String)
@@ -179,9 +201,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     {
         if ("content-length".equalsIgnoreCase(name))
         {
-            _contentLength=Long.parseLong(value);
-            if (_gzStream!=null)
-                _gzStream.setContentLength(_contentLength);
+            setContentLength(Long.parseLong(value));
         }
         else if ("content-type".equalsIgnoreCase(name))
         {   
@@ -296,7 +316,10 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
         if (_gzStream==null)
         {
             if (getResponse().isCommitted() || _noGzip)
+            {
+                setContentLength(_contentLength);
                 return getResponse().getOutputStream();
+            }
             
             _gzStream=newGzipStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minGzipSize);
         }
@@ -318,7 +341,10 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
                 throw new IllegalStateException("getOutputStream() called");
             
             if (getResponse().isCommitted() || _noGzip)
+            {
+                setContentLength(_contentLength);
                 return getResponse().getWriter();
+            }
             
             _gzStream=newGzipStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minGzipSize);
             _writer=newWriter(_gzStream,getCharacterEncoding());
