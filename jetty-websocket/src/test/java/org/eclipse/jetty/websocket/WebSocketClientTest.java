@@ -369,6 +369,7 @@ public class WebSocketClientTest
             {
                 public void onOpen(Connection connection)
                 {
+                    new Throwable().printStackTrace();
                     open.set(true);
                     latch.countDown();
                 }
@@ -404,7 +405,7 @@ public class WebSocketClientTest
         
         Assert.assertFalse(bad);
         Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(2,TimeUnit.SECONDS));
         Assert.assertNotNull(error.get());
     }
 

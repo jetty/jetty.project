@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.SimpleBuffers;
+import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.util.B64Code;
@@ -356,7 +357,7 @@ public class WebSocketClient extends AggregateLifeCycle
             
             try
             {
-                ByteArrayBuffer handshake = new ByteArrayBuffer(request);
+                Buffer handshake = new View(new ByteArrayBuffer(request));
                 int len=handshake.length();
                 if (len!=_endp.flush(handshake))
                     throw new IOException("incomplete");
@@ -384,25 +385,27 @@ public class WebSocketClient extends AggregateLifeCycle
                         break;    
                 }
             }
-            
-            if (_error==null && _accept==null)
-                _error="No Sec-WebSocket-Accept";
-            else if (_error==null && !WebSocketConnectionD10.hashKey(_key).equals(_accept))
-                _error="Bad Sec-WebSocket-Accept";
-            else
+            if (_error==null)
             {
-                Buffer header=_parser.getHeaderBuffer();
-                WebSocketConnectionD10 connection = new WebSocketConnectionD10(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10, new WebSocketGeneratorD10.RandomMaskGen());
-                
-                if (header.hasContent())
-                    connection.fillBuffersFrom(header);
-                _buffers.returnBuffer(header);
+                if (_accept==null)
+                    _error="No Sec-WebSocket-Accept";
+                else if (!WebSocketConnectionD10.hashKey(_key).equals(_accept))
+                    _error="Bad Sec-WebSocket-Accept";
+                else 
+                {
+                    Buffer header=_parser.getHeaderBuffer();
+                    WebSocketConnectionD10 connection = new WebSocketConnectionD10(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10, new WebSocketGeneratorD10.RandomMaskGen());
 
-                if (_holder.getWebSocket() instanceof WebSocket.OnFrame)
-                    ((WebSocket.OnFrame)_holder.getWebSocket()).onHandshake((WebSocket.FrameConnection)connection.getConnection());
-                _holder.cancel();
-                _holder.getWebSocket().onOpen(connection.getConnection());
-                return connection;
+                    if (header.hasContent())
+                        connection.fillBuffersFrom(header);
+                    _buffers.returnBuffer(header);
+
+                    if (_holder.getWebSocket() instanceof WebSocket.OnFrame)
+                        ((WebSocket.OnFrame)_holder.getWebSocket()).onHandshake((WebSocket.FrameConnection)connection.getConnection());
+                    _holder.cancel();
+                    _holder.getWebSocket().onOpen(connection.getConnection());
+                    return connection;
+                }
             }
 
             _endp.close();
