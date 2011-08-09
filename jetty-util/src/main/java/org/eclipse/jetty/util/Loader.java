@@ -37,7 +37,7 @@ import java.util.ResourceBundle;
 public class Loader
 {
     /* ------------------------------------------------------------ */
-    public static URL getResource(Class loadClass,String name, boolean checkParents)
+    public static URL getResource(Class<?> loadClass,String name, boolean checkParents)
         throws ClassNotFoundException
     {
         URL url =null;
@@ -64,6 +64,7 @@ public class Loader
     }
 
     /* ------------------------------------------------------------ */
+    @SuppressWarnings("rawtypes")
     public static Class loadClass(Class loadClass,String name)
         throws ClassNotFoundException
     {
@@ -79,11 +80,12 @@ public class Loader
      * @return Class
      * @throws ClassNotFoundException
      */
+    @SuppressWarnings("rawtypes")
     public static Class loadClass(Class loadClass,String name,boolean checkParents)
         throws ClassNotFoundException
     {
         ClassNotFoundException ex=null;
-        Class c =null;
+        Class<?> c =null;
         ClassLoader loader=Thread.currentThread().getContextClassLoader();
         while (c==null && loader!=null )
         {
@@ -111,7 +113,7 @@ public class Loader
         throw ex;
     }
 
-    public static ResourceBundle getResourceBundle(Class loadClass,String name,boolean checkParents, Locale locale)
+    public static ResourceBundle getResourceBundle(Class<?> loadClass,String name,boolean checkParents, Locale locale)
         throws MissingResourceException
     {
         MissingResourceException ex=null;

@@ -1,10 +1,15 @@
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.CoreMatchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -15,14 +20,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.websocket.WebSocket.Connection;
+import org.eclipse.jetty.util.IO;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
-
 
 public class WebSocketClientTest
 {
-
+    private ServerSocket server;
+    private int serverPort;
+    
+    @Before
+    public void startServer() throws IOException {
+        server = new ServerSocket();
+        server.bind(null);
+        serverPort = server.getLocalPort();
+    }
+    
+    @After
+    public void stopServer() throws IOException {
+        if(server != null) {
+            server.close();
+        }
+    }
+    
     @Test
     public void testBadURL() throws Exception
     {
@@ -151,17 +173,12 @@ public class WebSocketClientTest
         client.setBlockingConnect(true);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicReference<String> error = new AtomicReference<String>(null);
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -198,11 +215,6 @@ public class WebSocketClientTest
         client.setConnectTimeout(300);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
@@ -210,7 +222,7 @@ public class WebSocketClientTest
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -250,17 +262,12 @@ public class WebSocketClientTest
         client.setBlockingConnect(true);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicReference<String> error = new AtomicReference<String>(null);
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -299,11 +306,6 @@ public class WebSocketClientTest
         client.setConnectTimeout(300);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
@@ -311,7 +313,7 @@ public class WebSocketClientTest
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -353,60 +355,88 @@ public class WebSocketClientTest
         client.setConnectTimeout(300);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
-        boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(1);
-        try
+        
+        client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            public void onOpen(Connection connection)
             {
-                public void onOpen(Connection connection)
-                {
-                    new Throwable().printStackTrace();
-                    open.set(true);
-                    latch.countDown();
-                }
+                new Throwable().printStackTrace();
+                System.out.printf("onOpen(%s)%n", connection);
+                System.out.flush();
+                
+                // TODO I don't think we should be seeing onOpen called on the
+                // bad handshake because the error here should mean that there is no 
+                // websocket, so no onOpen call
+                // what we are seeing is the onOpen is intermittently showing up before the 
+                // onError which triggers the countdown latch and the error message is null
+                // at that point.
+                
+                open.set(true);
+                latch.countDown();
+            }
 
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
+            public void onError(String message, Throwable ex)
+            {
+                System.out.printf("onError(%s, %s)%n", message, ex);
+                System.out.flush();
+                error.set(message);
+                latch.countDown();
+            }
 
-                public void onClose(int closeCode, String message)
-                {
-                    close.set(closeCode);
-                    latch.countDown();
-                }
-            });
-        }
-        catch(IOException e)
-        {
-            bad=true;
-        }
+            public void onClose(int closeCode, String message)
+            {
+                System.out.printf("onClose(%d, %s)%n", closeCode, message);
+                System.out.flush();
+                close.set(closeCode);
+                latch.countDown();
+            }
+        });
         
         Socket connection = server.accept();
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        for (String line=in.readLine();line!=null;line=in.readLine())
-        {
-            // System.err.println(line);
-            if (line.length()==0)
-                break;
-        }
-        
-        connection.getOutputStream().write("HTTP/1.1 404 NOT FOUND\r\n\r\n".getBytes());
-        
-        Assert.assertFalse(bad);
+        respondToClient(connection, "HTTP/1.1 404 NOT FOUND\r\n\r\n");
+
         Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(2,TimeUnit.SECONDS));
-        Assert.assertNotNull(error.get());
+        Assert.assertTrue(latch.await(10,TimeUnit.SECONDS));
+        Assert.assertThat("error.get()", error.get(), containsString("404 NOT FOUND"));
+    }
+    
+    private void respondToClient(Socket connection, String serverResponse) throws IOException
+    {
+        InputStream in = null;
+        InputStreamReader isr = null;
+        BufferedReader buf = null;
+        OutputStream out = null;
+        try {
+            in = connection.getInputStream();
+            isr = new InputStreamReader(in);
+            buf = new BufferedReader(isr);
+            String line;
+            while((line = buf.readLine())!=null) 
+	    {
+                System.err.println(line);
+                if(line.length() == 0) 
+		{
+                    // Got the "\r\n" line.
+                    break;
+                }
+            }
+
+            // System.out.println("[Server-Out] " + serverResponse);
+            out = connection.getOutputStream();
+            out.write(serverResponse.getBytes());
+            out.flush();
+        } 
+	finally 
+	{
+            IO.close(buf);
+            IO.close(isr);
+            IO.close(in);
+            IO.close(out);
+        }
     }
 
     @Test
@@ -417,11 +447,6 @@ public class WebSocketClientTest
         client.setConnectTimeout(10000);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
@@ -429,7 +454,7 @@ public class WebSocketClientTest
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -484,11 +509,6 @@ public class WebSocketClientTest
         client.setConnectTimeout(10000);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
-
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicReference<String> error = new AtomicReference<String>(null);
@@ -496,7 +516,7 @@ public class WebSocketClientTest
         final CountDownLatch latch = new CountDownLatch(1);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -552,17 +572,13 @@ public class WebSocketClientTest
         client.setMaxIdleTime(500);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(2);
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
             {
                 public void onOpen(Connection connection)
                 {
@@ -618,10 +634,6 @@ public class WebSocketClientTest
         client.setMaxIdleTime(500);
         client.start();
 
-        ServerSocket server = new ServerSocket();
-        server.bind(null);
-        int port = server.getLocalPort();
-        
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final Exchanger<Integer> close = new Exchanger<Integer>();
@@ -630,7 +642,7 @@ public class WebSocketClientTest
         final BlockingQueue<String> queue = new BlockingArrayQueue<String>();
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+port),new WebSocket.OnTextMessage()
+            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket.OnTextMessage()
             {
                 public void onOpen(Connection c)
                 {
@@ -712,5 +724,4 @@ public class WebSocketClientTest
         
         Assert.assertEquals(new Integer(1111),close.exchange(null,1,TimeUnit.SECONDS));
     }
-    
 }

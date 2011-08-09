@@ -65,7 +65,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static final String REQUEST2_HEADER=
         "POST / HTTP/1.0\n"+
         "Host: localhost\n"+
-        "Content-Type: text/xml\n"+
+        "Content-Type: text/xml;charset=ISO-8859-1\n"+
         "Content-Length: ";
     private static final String REQUEST2_CONTENT=
         "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"+

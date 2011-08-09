@@ -9,3 +9,5 @@ To run ThreadMonitor on a Jetty installation that doesn't include jetty-monitor 
     java -jar start.jar etc/jetty-monitor.xml
 
 If running Jetty on Java VM version 1.5, the -Dcom.sun.management.jmxremote option should be added to the command lines above in order to enable the JMX agent.
+
+In order to log CPU utilization for threads that are above specified threshold, you need to follow instructions inside jetty-monitor.xml configuration file.

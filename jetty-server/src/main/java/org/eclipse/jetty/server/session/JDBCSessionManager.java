@@ -680,7 +680,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     /** 
      * Add a newly created session to our in-memory list for this node and persist it.
      * 
-     * @see org.eclipse.jetty.server.session.AbstractSessionManager#addSession(org.eclipse.jetty.server.session.AbstractSessionManager.AbstractSession)
+     * @see org.eclipse.jetty.server.session.AbstractSessionManager#addSession(org.eclipse.jetty.server.session.AbstractSession)
      */
     @Override
     protected void addSession(AbstractSession session)

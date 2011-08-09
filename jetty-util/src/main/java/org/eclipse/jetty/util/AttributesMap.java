@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -109,10 +110,9 @@ public class AttributesMap implements Attributes
     {
         if (attrs instanceof AttributesMap)
             return Collections.enumeration(((AttributesMap)attrs)._map.keySet());
-        ArrayList names = new ArrayList();
-        Enumeration e = attrs.getAttributeNames();
-        while (e.hasMoreElements())
-            names.add(e.nextElement());
+        
+        List<String> names = new ArrayList<String>();
+        names.addAll(Collections.list(attrs.getAttributeNames()));
         return Collections.enumeration(names);
     }
 

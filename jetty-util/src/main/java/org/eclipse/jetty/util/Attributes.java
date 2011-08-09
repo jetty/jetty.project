@@ -26,6 +26,6 @@ public interface Attributes
     public void removeAttribute(String name);
     public void setAttribute(String name, Object attribute);
     public Object getAttribute(String name);
-    public Enumeration getAttributeNames();
+    public Enumeration<String> getAttributeNames();
     public void clearAttributes();
 }

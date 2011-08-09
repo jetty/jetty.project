@@ -140,6 +140,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
     
     /* ------------------------------------------------------------ */
+    @SuppressWarnings("unchecked")
     public E peek()
     {
         if (_size.get() == 0)
@@ -218,6 +219,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
 
 
     /* ------------------------------------------------------------ */
+    @SuppressWarnings("unchecked")
     public E poll()
     {
         if (_size.get() == 0)
@@ -253,6 +255,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
      * @return the head of this queue
      * @throws InterruptedException if interrupted while waiting.
      */
+    @SuppressWarnings("unchecked")
     public E take() throws InterruptedException
     {
         E e = null;
@@ -301,6 +304,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
      * specified waiting time elapses before an element is present.
      * @throws InterruptedException if interrupted while waiting.
      */
+    @SuppressWarnings("unchecked")
     public E poll(long time, TimeUnit unit) throws InterruptedException
     {
         
@@ -390,6 +394,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
 
     /* ------------------------------------------------------------ */
+    @SuppressWarnings("unchecked")
     @Override
     public E get(int index)
     {
@@ -434,6 +439,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 int i = _head+index;
                 if (i>=_capacity)
                     i-=_capacity;
+                @SuppressWarnings("unchecked")
                 E old=(E)_elements[i];
 
                 if (i<_tail)
@@ -490,6 +496,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
                 int i = _head+index;
                 if (i>=_capacity)
                     i-=_capacity;
+                @SuppressWarnings("unchecked")
                 E old=(E)_elements[i];
                 _elements[i]=e;
                 return old;

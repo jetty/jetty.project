@@ -28,13 +28,13 @@ import java.util.ListIterator;
  * creation.   If a method needs to create a List to return, but it is
  * expected that this will either be empty or frequently contain a
  * single item, then using LazyList will avoid additional object
- * creations by using Collections.EMPTY_LIST or
- * Collections.singletonList where possible.
+ * creations by using {@link Collections#EMPTY_LIST} or
+ * {@link Collections#singletonList(Object)} where possible.
  * <p>
  * LazyList works by passing an opaque representation of the list in
  * and out of all the LazyList methods.  This opaque object is either
  * null for an empty list, an Object for a list with a single entry
- * or an ArrayList<Object> for a list of items.
+ * or an {@link ArrayList} for a list of items.
  *
  * <p><h4>Usage</h4>
  * <pre>
@@ -124,7 +124,7 @@ public class LazyList
         List<Object> l=new ArrayList<Object>();
         l.add(list);
         l.add(index,item);
-        return l;    
+        return l;
     }
     
     /* ------------------------------------------------------------ */
@@ -155,7 +155,7 @@ public class LazyList
     }
 
     /* ------------------------------------------------------------ */
-    /** Ensure the capcity of the underlying list.
+    /** Ensure the capacity of the underlying list.
      * 
      */
     public static Object ensureSize(Object list, int initialSize)
@@ -284,7 +284,6 @@ public class LazyList
      * @param clazz The class of the array, which may be a primitive type
      * @return array of the lazylist entries passed in
      */
-    @SuppressWarnings("unchecked")
     public static Object toArray(Object list,Class<?> clazz)
     {
         if (list==null)
@@ -429,21 +428,23 @@ public class LazyList
      * @param type The type of the array (in case of null array)
      * @return new array with contents of array plus item
      */
-    @SuppressWarnings("unchecked")
-    public static Object[] addToArray(Object[] array, Object item, Class<?> type)
+    public static<T> T[] addToArray(T[] array, T item, Class<?> type)
     {
         if (array==null)
         {
             if (type==null && item!=null)
                 type= item.getClass();
-            Object[] na = (Object[])Array.newInstance(type, 1);
+            @SuppressWarnings("unchecked")
+            T[] na = (T[])Array.newInstance(type, 1);
             na[0]=item;
             return na;
         }
         else
         {
+            // TODO: Replace with Arrays.copyOf(T[] original, int newLength) from Java 1.6+
             Class<?> c = array.getClass().getComponentType();
-            Object[] na = (Object[])Array.newInstance(c, Array.getLength(array)+1);
+            @SuppressWarnings("unchecked")
+            T[] na = (T[])Array.newInstance(c, Array.getLength(array)+1);
             System.arraycopy(array, 0, na, 0, array.length);
             na[array.length]=item;
             return na;
@@ -451,8 +452,7 @@ public class LazyList
     }
 
     /* ------------------------------------------------------------ */
-    @SuppressWarnings("unchecked")
-    public static Object removeFromArray(Object[] array, Object item)
+    public static<T> T[] removeFromArray(T[] array, Object item)
     {
         if (item==null || array==null)
             return array;
@@ -461,7 +461,8 @@ public class LazyList
             if (item.equals(array[i]))
             {
                 Class<?> c = array==null?item.getClass():array.getClass().getComponentType();
-                Object[] na = (Object[])Array.newInstance(c, Array.getLength(array)-1);
+                @SuppressWarnings("unchecked")
+                T[] na = (T[])Array.newInstance(c, Array.getLength(array)-1);
                 if (i>0)
                     System.arraycopy(array, 0, na, 0, i);
                 if (i+1<array.length)

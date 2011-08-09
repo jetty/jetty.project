@@ -142,6 +142,8 @@ public class ScanningAppProviderRuntimeUpdatesTest
         // This test will not work on Windows as second war file would
         // not be written over the first one because of a file lock
         Assume.assumeTrue(!OS.IS_WINDOWS);
+        Assume.assumeTrue(!OS.IS_OSX); // build server has issues with finding itself apparently
+
         
         jetty.copyWebapp("foo-webapp-1.war","foo.war");
         jetty.copyContext("foo.xml","foo.xml");

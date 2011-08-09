@@ -14,6 +14,7 @@
 package org.eclipse.jetty.servlets;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedOutputStream;
@@ -26,6 +27,7 @@ import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.testing.HttpTester;
@@ -39,24 +41,37 @@ import org.junit.Test;
 
 public class GzipFilterTest
 {
-    private static String __content =
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
-        "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
-        "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. "+
-        "Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam "+
-        "at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate "+
-        "velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. "+
-        "Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum "+
-        "eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa "+
-        "sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam "+
-        "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. "+
-        "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
-        "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
+    public static String __content;
+
+    static
+    {
+        // The size of content must be greater then
+        // buffer size in GzipResponseWrapper class. 
+        StringBuilder builder = new StringBuilder();
+        do
+        {
+            builder.append("Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. ");
+            builder.append("Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque ");
+            builder.append("habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. ");
+            builder.append("Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam ");
+            builder.append("at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate ");
+            builder.append("velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. ");
+            builder.append("Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum ");
+            builder.append("eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa ");
+            builder.append("sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam ");
+            builder.append("consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. ");
+            builder.append("Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse ");
+            builder.append("et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.");
+        }
+        while (builder.length() < GzipResponseWrapper.DEFAULT_BUFFER_SIZE);
+            
+        __content = builder.toString();
+    }
 
     @Rule
     public TestingDir testdir = new TestingDir();
 
-    private ServletTester tester;
+    protected ServletTester tester;
 
     @Before
     public void setUp() throws Exception
@@ -69,10 +84,16 @@ public class GzipFilterTest
         IO.copy(testIn,testOut);
         testOut.close();
         
+        testFile = testdir.getFile("file.mp3");
+        testOut = new BufferedOutputStream(new FileOutputStream(testFile));
+        testIn = new ByteArrayInputStream(__content.getBytes("ISO8859_1"));
+        IO.copy(testIn,testOut);
+        testOut.close();
+
         tester=new ServletTester();
         tester.setContextPath("/context");
         tester.setResourceBase(testdir.getDir().getCanonicalPath());
-        tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
+        tester.addServlet(getServletClass(), "/");
         FilterHolder holder = tester.addFilter(GzipFilter.class,"/*",0);
         holder.setInitParameter("mimeTypes","text/plain");
         tester.start();
@@ -84,9 +105,14 @@ public class GzipFilterTest
         tester.stop();
         IO.delete(testdir.getDir());
     }
-
+    
+    public Class<?> getServletClass()
+    {
+        return org.eclipse.jetty.servlet.DefaultServlet.class;
+    }
+    
     @Test
-    public void testGzipFilter() throws Exception
+    public void testGzip() throws Exception
     {
         // generated and parsed test
         HttpTester request = new HttpTester();
@@ -103,10 +129,40 @@ public class GzipFilterTest
         response.parse(respBuff.asArray());
                 
         assertTrue(response.getMethod()==null);
+        assertNotNull("Content-Length header is missing", response.getHeader("Content-Length"));
         assertTrue(response.getHeader("Content-Encoding").equalsIgnoreCase("gzip"));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         
         InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn,testOut);
+        
+        assertEquals(__content, testOut.toString("ISO8859_1"));
+    }
+
+    @Test
+    public void testNotGzip() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        request.setMethod("GET");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setHeader("accept-encoding","gzip");
+        request.setURI("/context/file.mp3");
+        
+        ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
+        ByteArrayBuffer respBuff = tester.getResponses(reqsBuff);
+        response.parse(respBuff.asArray());
+                
+        assertTrue(response.getMethod()==null);
+        assertNotNull("Content-Length header is missing", response.getHeader("Content-Length"));
+        assertEquals(__content.getBytes().length, Integer.parseInt(response.getHeader("Content-Length")));
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        
+        InputStream testIn = new ByteArrayInputStream(response.getContentBytes());
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
         

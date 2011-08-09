@@ -5,25 +5,34 @@ import java.net.Socket;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class HttpDestinationQueueTest
 {
+    private static HttpClient _httpClient;
+    private static long _timeout = 200;
+
+    @BeforeClass
+    public static void beforeOnce() throws Exception
+    {
+        _httpClient = new HttpClient();
+        _httpClient.setMaxConnectionsPerAddress(1);
+        _httpClient.setMaxQueueSizePerAddress(1);
+        _httpClient.setTimeout(_timeout);
+        _httpClient.start();
+    }
+
     @Test
     public void testDestinationMaxQueueSize() throws Exception
     {
-        HttpClient client = new HttpClient();
-        client.setMaxConnectionsPerAddress(1);
-        client.setMaxQueueSizePerAddress(1);
-        client.start();
-
         ServerSocket server = new ServerSocket(0);
 
         // This will keep the connection busy
         HttpExchange exchange1 = new HttpExchange();
         exchange1.setMethod("GET");
         exchange1.setURL("http://localhost:" + server.getLocalPort() + "/exchange1");
-        client.send(exchange1);
+        _httpClient.send(exchange1);
 
         // Read request so we are sure that this exchange is out of the queue
         Socket socket = server.accept();
@@ -32,7 +41,7 @@ public class HttpDestinationQueueTest
         while (true)
         {
             int read = socket.getInputStream().read(buffer);
-            request.append(new String(buffer, 0, read, "UTF-8"));
+            request.append(new String(buffer,0,read,"UTF-8"));
             if (request.toString().endsWith("\r\n\r\n"))
                 break;
         }
@@ -42,7 +51,7 @@ public class HttpDestinationQueueTest
         HttpExchange exchange2 = new HttpExchange();
         exchange2.setMethod("GET");
         exchange2.setURL("http://localhost:" + server.getLocalPort() + "/exchange2");
-        client.send(exchange2);
+        _httpClient.send(exchange2);
 
         // This will be rejected, since the connection is busy and the queue is full
         HttpExchange exchange3 = new HttpExchange();
@@ -50,7 +59,7 @@ public class HttpDestinationQueueTest
         exchange3.setURL("http://localhost:" + server.getLocalPort() + "/exchange3");
         try
         {
-            client.send(exchange3);
+            _httpClient.send(exchange3);
             Assert.fail();
         }
         catch (RejectedExecutionException x)
@@ -60,14 +69,14 @@ public class HttpDestinationQueueTest
 
         // Send the response to avoid exceptions in the console
         socket.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes("UTF-8"));
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, exchange1.waitForDone());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED,exchange1.waitForDone());
 
         // Be sure that the second exchange can be sent
         request.setLength(0);
         while (true)
         {
             int read = socket.getInputStream().read(buffer);
-            request.append(new String(buffer, 0, read, "UTF-8"));
+            request.append(new String(buffer,0,read,"UTF-8"));
             if (request.toString().endsWith("\r\n\r\n"))
                 break;
         }
@@ -75,31 +84,23 @@ public class HttpDestinationQueueTest
 
         socket.getOutputStream().write("HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n".getBytes("UTF-8"));
         socket.close();
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, exchange2.waitForDone());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED,exchange2.waitForDone());
 
         server.close();
-
-        client.stop();
     }
 
     @Test
     public void testDefaultTimeoutIncludesQueuingExchangeExpiresInQueue() throws Exception
     {
-        HttpClient client = new HttpClient();
-        client.setMaxConnectionsPerAddress(1);
-        client.setMaxQueueSizePerAddress(1);
-        long timeout = 1000;
-        client.setTimeout(timeout);
-        client.start();
 
         ServerSocket server = new ServerSocket(0);
 
         // This will keep the connection busy
         HttpExchange exchange1 = new HttpExchange();
-        exchange1.setTimeout(timeout * 3); // Be sure it does not expire
+        exchange1.setTimeout(_timeout * 3); // Be sure it does not expire
         exchange1.setMethod("GET");
         exchange1.setURL("http://localhost:" + server.getLocalPort() + "/exchange1");
-        client.send(exchange1);
+        _httpClient.send(exchange1);
 
         // Read request so we are sure that this exchange is out of the queue
         Socket socket = server.accept();
@@ -108,7 +109,7 @@ public class HttpDestinationQueueTest
         while (true)
         {
             int read = socket.getInputStream().read(buffer);
-            request.append(new String(buffer, 0, read, "UTF-8"));
+            request.append(new String(buffer,0,read,"UTF-8"));
             if (request.toString().endsWith("\r\n\r\n"))
                 break;
         }
@@ -118,39 +119,30 @@ public class HttpDestinationQueueTest
         HttpExchange exchange2 = new HttpExchange();
         exchange2.setMethod("GET");
         exchange2.setURL("http://localhost:" + server.getLocalPort() + "/exchange2");
-        client.send(exchange2);
+        _httpClient.send(exchange2);
 
         // Wait until the queued exchange times out in the queue
-        Thread.sleep(timeout * 2);
+        Thread.sleep(_timeout * 2);
 
-        Assert.assertEquals(HttpExchange.STATUS_EXPIRED, exchange2.getStatus());
+        Assert.assertEquals(HttpExchange.STATUS_EXPIRED,exchange2.getStatus());
 
         // Send the response to the first exchange to avoid exceptions in the console
         socket.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes("UTF-8"));
-        Assert.assertEquals(HttpExchange.STATUS_COMPLETED, exchange1.waitForDone());
+        Assert.assertEquals(HttpExchange.STATUS_COMPLETED,exchange1.waitForDone());
         socket.close();
 
         server.close();
-
-        client.stop();
     }
 
     @Test
     public void testDefaultTimeoutIncludesQueuingExchangeExpiresDuringRequest() throws Exception
     {
-        HttpClient client = new HttpClient();
-        client.setMaxConnectionsPerAddress(1);
-        client.setMaxQueueSizePerAddress(1);
-        long timeout = 1000;
-        client.setTimeout(timeout);
-        client.start();
-
         ServerSocket server = new ServerSocket(0);
 
         HttpExchange exchange1 = new HttpExchange();
         exchange1.setMethod("GET");
         exchange1.setURL("http://localhost:" + server.getLocalPort() + "/exchange1");
-        client.send(exchange1);
+        _httpClient.send(exchange1);
 
         // Read request so we are sure that this exchange is out of the queue
         Socket socket = server.accept();
@@ -159,32 +151,25 @@ public class HttpDestinationQueueTest
         while (true)
         {
             int read = socket.getInputStream().read(buffer);
-            request.append(new String(buffer, 0, read, "UTF-8"));
+            request.append(new String(buffer,0,read,"UTF-8"));
             if (request.toString().endsWith("\r\n\r\n"))
                 break;
         }
         Assert.assertTrue(request.toString().contains("exchange1"));
 
         // Wait until the exchange times out during the request
-        Thread.sleep(timeout * 2);
+        Thread.sleep(_timeout * 2);
 
-        Assert.assertEquals(HttpExchange.STATUS_EXPIRED, exchange1.getStatus());
+        Assert.assertEquals(HttpExchange.STATUS_EXPIRED,exchange1.getStatus());
 
         socket.close();
 
         server.close();
-
-        client.stop();
     }
 
     @Test
     public void testExchangeTimeoutIncludesQueuingExchangeExpiresDuringResponse() throws Exception
     {
-        HttpClient client = new HttpClient();
-        client.setMaxConnectionsPerAddress(1);
-        client.setMaxQueueSizePerAddress(1);
-        client.start();
-
         ServerSocket server = new ServerSocket(0);
 
         long timeout = 1000;
@@ -192,7 +177,7 @@ public class HttpDestinationQueueTest
         exchange1.setTimeout(timeout);
         exchange1.setMethod("GET");
         exchange1.setURL("http://localhost:" + server.getLocalPort() + "/exchange1");
-        client.send(exchange1);
+        _httpClient.send(exchange1);
 
         // Read request so we are sure that this exchange is out of the queue
         Socket socket = server.accept();
@@ -201,7 +186,7 @@ public class HttpDestinationQueueTest
         while (true)
         {
             int read = socket.getInputStream().read(buffer);
-            request.append(new String(buffer, 0, read, "UTF-8"));
+            request.append(new String(buffer,0,read,"UTF-8"));
             if (request.toString().endsWith("\r\n\r\n"))
                 break;
         }
@@ -213,12 +198,10 @@ public class HttpDestinationQueueTest
         // Wait until the exchange times out during the response
         Thread.sleep(timeout * 2);
 
-        Assert.assertEquals(HttpExchange.STATUS_EXPIRED, exchange1.getStatus());
+        Assert.assertEquals(HttpExchange.STATUS_EXPIRED,exchange1.getStatus());
 
         socket.close();
 
         server.close();
-
-        client.stop();
     }
 }

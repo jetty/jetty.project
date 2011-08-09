@@ -9,6 +9,13 @@
         <Set name="scanInterval">2000</Set>
         <Set name="busyThreshold">90</Set>
         <Set name="stackDepth">3</Set>
+<!-- To enable logging CPU utilization for threads above specified threshold, -->
+<!-- uncomment the following lines, changing dump interval (in milliseconds)  -->
+<!-- and dump threshold (in percent) as desired.                              -->
+<!-- 
+        <Set name="dumpInterval">10000</Arg>
+        <Set name="dumpThreshold">1</Arg>
+-->
       </New>
     </Arg>
   </Call>
