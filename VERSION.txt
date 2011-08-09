@@ -16,6 +16,7 @@ jetty-7.5.0-SNAPSHOT
  + 353563 HttpDestinationQueueTest too slow
  + 353862 Improve performance of QuotedStringTokenizer.quote()
  + 354014 Content-Length is passed to wrapped response in GZipFilter
+ + 354204 Charset encodings property file not used
 
 jetty-7.4.4.v20110707 July 7th 2011
  + 308851 Converted all jetty-client module tests to JUnit 4
