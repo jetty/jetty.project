@@ -16,8 +16,6 @@ package org.eclipse.jetty.monitor;
 
 import static org.junit.Assert.assertTrue;
 
-import java.lang.management.ThreadInfo;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -29,42 +27,62 @@ import org.junit.Test;
 public class ThreadMonitorTest
 {
     public final static int DURATION=9000;
-    private AtomicInteger count=new AtomicInteger(0);
-    private AtomicInteger countDump=new AtomicInteger(0);
     
     @Test
     public void monitorTest() throws Exception
     {
+        final AtomicInteger countSpins=new AtomicInteger(0);
+        final AtomicInteger countCpuLogs=new AtomicInteger(0);
+        final AtomicInteger countStateLogs=new AtomicInteger(0);
         
-        ThreadMonitor monitor = new ThreadMonitor(1000,50,2)
+        ThreadMonitor monitor = new ThreadMonitor(1000,50,1)
         {
             @Override
-            protected void dump(List<ThreadInfo> threads)
+            protected void spinAnalyzer(ThreadMonitorInfo info)
             {
-                count.incrementAndGet();
-                super.dump(threads);
+                countSpins.incrementAndGet();
+                super.spinAnalyzer(info);
             }
             @Override
-            protected void dumpAll()
+            protected void logCpuUsage()
             {
-                countDump.incrementAndGet();
-                super.dumpAll();
+                countCpuLogs.incrementAndGet();
+                super.logCpuUsage();
+            }
+            @Override
+            protected void logThreadState()
+            {
+                countStateLogs.incrementAndGet();
+                super.logThreadState();
             }
         };
-        monitor.enableDumpAll(2000,1);
+        monitor.logCpuUsage(2000,1);
+        monitor.logSpinInfo(100,20);
         monitor.start();
         
         Spinner spinner = new Spinner();
         Thread runner = new Thread(spinner);
         runner.start();
         
+        Locker locker1 = new Locker();
+        Locker locker2 = new Locker();
+        locker1.setLock(locker2);
+        locker2.setLock(locker1);
+        Thread runner1 = new Thread(locker1);
+        Thread runner2 = new Thread(locker2);
+        runner1.start();
+        runner2.start();
+        
         Thread.sleep(DURATION);
                 
         spinner.setDone();
         monitor.stop();
+        runner1.interrupt();
+        runner2.interrupt();
         
-        assertTrue(count.get() >= 2);
-        assertTrue(countDump.get() >= 1);
+        assertTrue(countSpins.get() >= 1);
+        assertTrue(countCpuLogs.get() >= 1);
+        assertTrue(countStateLogs.get() >= 1);
     }
 
 
@@ -100,6 +118,34 @@ public class ThreadMonitorTest
             if (result==42)
                 System.err.println("Bingo!");
         }
+    }
+    
+    private class Locker implements Runnable
+    {
+        private Object _lock;
         
+        public void setLock(Object lock)
+        {
+            _lock = lock;
+        }
+        
+        public void run()
+        {
+            try
+            {
+                lockOn();
+            }
+            catch (InterruptedException ex) {}
+        }
+        
+        public synchronized void lockOn() throws InterruptedException
+        {
+            Thread.sleep(100);
+            
+            synchronized (_lock)
+            {
+                Thread.sleep(100);
+            }
+        }
     }
 }
