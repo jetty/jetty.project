@@ -14,9 +14,6 @@
 
 package org.eclipse.jetty.monitor;
 
-import java.lang.management.ThreadInfo;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /* ------------------------------------------------------------ */
@@ -24,57 +21,26 @@ import java.util.List;
  */
 public class ThreadMonitorInfo
 {
-    private long _threadId;
-    private String _threadName;
-    private String _threadState;
+    private Thread _thread;
     
-    private long _lockOwnerId;
-    private String _lockOwnerName;
-    private String _lockName;
-    
-    private List<StackTraceElement[]> _stackTraces;
+    private StackTraceElement[] _stackTrace;
+    private boolean _threadSpinning;    
 
     private long _prevCpuTime;
     private long _prevSampleTime;
     private long _currCpuTime;
     private long _currSampleTime;
 
-    private boolean _threadSpinning;    
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Instantiates a new thread monitor info.
      *
      * @param threadInfo the thread info
      */
-    public ThreadMonitorInfo(ThreadInfo threadInfo)
+    public ThreadMonitorInfo(Thread thread)
     {
-        _stackTraces = new ArrayList<StackTraceElement[]>();
-        
-        setInfo(threadInfo);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Sets the thread info.
-     *
-     * @param threadInfo the new thread info
-     */
-    public void setInfo(ThreadInfo threadInfo)
-    {
-        _threadId = threadInfo.getThreadId();
-        _threadName = threadInfo.getThreadName();
-        _threadState = threadInfo.isInNative() ? "IN_NATIVE" : 
-            threadInfo.getThreadState().toString();
-        
-        _lockOwnerId = threadInfo.getLockOwnerId();
-        _lockOwnerName = threadInfo.getLockOwnerName();
-        _lockName = threadInfo.getLockName();
-        
-        _stackTraces.clear();
-        addStackTrace(threadInfo.getStackTrace());
-        
-        _threadSpinning = false;
+        _thread = thread;
     }
 
     /* ------------------------------------------------------------ */
@@ -83,7 +49,7 @@ public class ThreadMonitorInfo
      */
     public long getThreadId()
     {
-        return _threadId;
+        return _thread.getId();
     }
     
     /* ------------------------------------------------------------ */
@@ -94,7 +60,7 @@ public class ThreadMonitorInfo
      */
     public String getThreadName()
     {
-        return _threadName;
+        return _thread.getName();
     }
     
     /* ------------------------------------------------------------ */
@@ -105,52 +71,51 @@ public class ThreadMonitorInfo
      */
     public String getThreadState()
     {
-        return _threadState;
+        return _thread.getState().toString();
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the lockOwnerId.
-     * @return the lockOwnerId
+    /**
+     * Gets the stack trace.
+     *
+     * @return the stack trace
      */
-    public long getLockOwnerId()
-    {
-        return _lockOwnerId;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the lockOwnerName.
-     * @return the lockOwnerName
-     */
-    public String getLockOwnerName()
-    {
-        return _lockOwnerName;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the lockName.
-     * @return the lockName
-     */
-    public String getLockName()
-    {
-        return _lockName;
-    }
-    
-    public List<StackTraceElement[]> getStackTraces()
-    {
-        return _stackTraces;
-    }
-
     public StackTraceElement[] getStackTrace()
     {
-        return _stackTraces.size() == 0 ? null : _stackTraces.get(0);
+        return _stackTrace; 
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the stack trace.
+     *
+     * @param stackTrace the new stack trace
+     */
+    public void setStackTrace(StackTraceElement[] stackTrace)
+    {
+        _stackTrace = stackTrace;
     }
 
-    public void addStackTrace(StackTraceElement[] stackTrace)
+    /* ------------------------------------------------------------ */
+    /**
+     * Checks if is spinning.
+     *
+     * @return true, if is spinning
+     */
+    public boolean isSpinning()
     {
-        if (stackTrace != null && stackTrace.length > 0)
-        {
-            _stackTraces.add(stackTrace);
-        }
+        return _threadSpinning;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the spinning flag.
+     *
+     * @param value the new value
+     */
+    public void setSpinning(boolean value)
+    {
+        _threadSpinning = value;
     }
     
     /* ------------------------------------------------------------ */
@@ -207,17 +172,5 @@ public class ThreadMonitorInfo
         long elapsedNanoTime = _currSampleTime - _prevSampleTime;
 
         return elapsedNanoTime > 0 ? Math.min((elapsedCpuTime * 100.0f) / elapsedNanoTime, 100.0f) : 0; 
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setSpinning(boolean value)
-    {
-        _threadSpinning = value;
-    }
-    
-    /* ------------------------------------------------------------ */
-    public boolean isSpinning()
-    {
-        return _threadSpinning;
     }
 }

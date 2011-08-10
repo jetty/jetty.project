@@ -31,18 +31,11 @@ public class ThreadMonitorTest
     @Test
     public void monitorTest() throws Exception
     {
-        final AtomicInteger countSpins=new AtomicInteger(0);
         final AtomicInteger countCpuLogs=new AtomicInteger(0);
         final AtomicInteger countStateLogs=new AtomicInteger(0);
         
         ThreadMonitor monitor = new ThreadMonitor(1000,50,1)
         {
-            @Override
-            protected void spinAnalyzer(ThreadMonitorInfo info)
-            {
-                countSpins.incrementAndGet();
-                super.spinAnalyzer(info);
-            }
             @Override
             protected void logCpuUsage()
             {
@@ -57,30 +50,17 @@ public class ThreadMonitorTest
             }
         };
         monitor.logCpuUsage(2000,1);
-        monitor.logSpinInfo(100,20);
         monitor.start();
         
         Spinner spinner = new Spinner();
         Thread runner = new Thread(spinner);
         runner.start();
         
-        Locker locker1 = new Locker();
-        Locker locker2 = new Locker();
-        locker1.setLock(locker2);
-        locker2.setLock(locker1);
-        Thread runner1 = new Thread(locker1);
-        Thread runner2 = new Thread(locker2);
-        runner1.start();
-        runner2.start();
-        
         Thread.sleep(DURATION);
                 
         spinner.setDone();
         monitor.stop();
-        runner1.interrupt();
-        runner2.interrupt();
         
-        assertTrue(countSpins.get() >= 1);
         assertTrue(countCpuLogs.get() >= 1);
         assertTrue(countStateLogs.get() >= 1);
     }
@@ -117,35 +97,6 @@ public class ThreadMonitorTest
             
             if (result==42)
                 System.err.println("Bingo!");
-        }
-    }
-    
-    private class Locker implements Runnable
-    {
-        private Object _lock;
-        
-        public void setLock(Object lock)
-        {
-            _lock = lock;
-        }
-        
-        public void run()
-        {
-            try
-            {
-                lockOn();
-            }
-            catch (InterruptedException ex) {}
-        }
-        
-        public synchronized void lockOn() throws InterruptedException
-        {
-            Thread.sleep(100);
-            
-            synchronized (_lock)
-            {
-                Thread.sleep(100);
-            }
         }
     }
 }
