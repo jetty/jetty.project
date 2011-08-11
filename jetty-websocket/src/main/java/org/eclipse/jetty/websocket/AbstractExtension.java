@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.WebSocketParser.FrameHandler;
 
 public class AbstractExtension implements Extension

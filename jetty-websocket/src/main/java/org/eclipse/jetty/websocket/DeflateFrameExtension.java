@@ -8,7 +8,6 @@ import java.util.zip.Inflater;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.log.Log;
 
 public class DeflateFrameExtension extends AbstractExtension

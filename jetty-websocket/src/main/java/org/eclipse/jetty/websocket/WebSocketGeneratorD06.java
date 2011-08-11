@@ -20,7 +20,6 @@ import java.util.Random;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.TypeUtil;
 
 
 /* ------------------------------------------------------------ */
