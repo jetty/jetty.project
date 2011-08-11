@@ -15,9 +15,7 @@
 package org.eclipse.jetty.monitor;
 
 import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -34,19 +32,18 @@ import org.eclipse.jetty.util.log.Logger;
 public class ThreadMonitor extends AbstractLifeCycle implements Runnable
 {
     private int _scanInterval;
-    private int _dumpInterval;
+    private int _logInterval;
     private int _busyThreshold;
-    private int _dumpThreshold;
+    private int _logThreshold;
     private int _stackDepth;
     
     private ThreadMXBean _threadBean;
-    private Method findDeadlockedThreadsMethod;
     
     private Thread _runner;
     private Logger _logger;
     private volatile boolean _done = true;
 
-    private Map<Long,ExtThreadInfo> _extInfo;
+    private Map<Long,ThreadMonitorInfo> _monitorInfo;
     
     /* ------------------------------------------------------------ */
     /**
@@ -75,7 +72,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         _stackDepth = depth;
         
         _logger = Log.getLogger(ThreadMonitor.class.getName());
-        _extInfo = new HashMap<Long, ExtThreadInfo>();
+        _monitorInfo = new HashMap<Long, ThreadMonitorInfo>();
        
         init();
     }
@@ -93,15 +90,15 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     }
 
     /* ------------------------------------------------------------ */
-    public int getDumpInterval()
+    public int getLogInterval()
     {
-        return _dumpInterval;
+        return _logInterval;
     }
 
     /* ------------------------------------------------------------ */
-    public void setDumpInterval(int ms)
+    public void setLogInterval(int ms)
     {
-        _dumpInterval = ms;
+        _logInterval = ms;
     }
 
     /* ------------------------------------------------------------ */
@@ -117,15 +114,15 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     }
 
     /* ------------------------------------------------------------ */
-    public int getDumpThreshold()
+    public int getLogThreshold()
     {
-        return _dumpThreshold;
+        return _logThreshold;
     }
 
     /* ------------------------------------------------------------ */
-    public void setDumpThreshold(int percent)
+    public void setLogThreshold(int percent)
     {
-        _dumpThreshold = percent;
+        _logThreshold = percent;
     }
 
     /* ------------------------------------------------------------ */
@@ -141,12 +138,12 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     }
     
     /* ------------------------------------------------------------ */
-    public void enableDumpAll(int ms, int percent)
+    public void logCpuUsage(int frequencyMs, int thresholdPercent)
     {
-        setDumpInterval(ms);
-        setDumpThreshold(percent);
+        setLogInterval(frequencyMs);
+        setLogThreshold(thresholdPercent);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
@@ -156,6 +153,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         _done = false;
         
         _runner = new Thread(this);
+        _runner.setDaemon(true);
         _runner.start();
 
         Log.info("Thread Monitor started successfully");
@@ -178,49 +176,6 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Initialize JMX objects.
-     */
-    protected void init()
-    {
-        _threadBean = ManagementFactory.getThreadMXBean();
-        if (_threadBean.isThreadCpuTimeSupported())
-        {
-            _threadBean.setThreadCpuTimeEnabled(true);
-        }
-        
-        String versionStr = System.getProperty("java.version");
-        float version = Float.valueOf(versionStr.substring(0,versionStr.lastIndexOf('.')));
-        try
-        {
-            if (version < 1.6)
-            { 
-                findDeadlockedThreadsMethod = ThreadMXBean.class.getMethod("findMonitorDeadlockedThreads");
-            }
-            else
-            {
-                findDeadlockedThreadsMethod = ThreadMXBean.class.getMethod("findDeadlockedThreads");
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.debug(ex);
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Find deadlocked threads.
-     *
-     * @return array of the deadlocked thread ids
-     * @throws Exception the exception
-     */
-    protected long[] findDeadlockedThreads() throws Exception
-    {
-        return (long[]) findDeadlockedThreadsMethod.invoke(_threadBean,(Object[])null);
-    }
-    
     /* ------------------------------------------------------------ */
     /**
      * Retrieve all avaliable thread ids
@@ -246,82 +201,17 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     
     /* ------------------------------------------------------------ */
     /**
-     * Retrieve thread info.
-     *
-     * @param id thread id
-     * @param maxDepth maximum stack depth
-     * @return thread info
+     * Initialize JMX objects.
      */
-    protected ThreadInfo getThreadInfo(long id, int maxDepth)
+    protected void init()
     {
-        return _threadBean.getThreadInfo(id,maxDepth);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Output thread info to log.
-     *
-     * @param threads thread info list
-     */
-    protected void dump(final List<ThreadInfo> threads)
-    {
-        if (threads != null && threads.size() > 0)
+        _threadBean = ManagementFactory.getThreadMXBean();
+        if (_threadBean.isThreadCpuTimeSupported())
         {
-            for (ThreadInfo info : threads)
-            {
-                StringBuffer msg = new StringBuffer();
-                if (info.getLockOwnerId() < 0)
-                {
-                    String state = info.isInNative() ? "IN_NATIVE" : 
-                        info.getThreadState().toString();
-                    msg.append(String.format("Thread %s[id:%d,%s] is spinning", 
-                            info.getThreadName(), info.getThreadId(), state));
-                }
-                else
-                {
-                    msg.append(String.format("Thread %s[id:%d,%s]", 
-                            info.getThreadName(), info.getThreadId(), info.getThreadState()));
-                    msg.append(String.format(" on %s owned by %s[id:%d]", 
-                            info.getLockName(), info.getLockOwnerName(), info.getLockOwnerId()));
-                }
-                
-                _logger.warn(new ThreadMonitorException(msg.toString(), info.getStackTrace()));
-            }
+            _threadBean.setThreadCpuTimeEnabled(true);
         }
     }
     
-    protected void dumpAll()
-    {
-        if (_extInfo.size() > 0)
-        {
-            List<ExtThreadInfo> sorted = new ArrayList<ExtThreadInfo>(_extInfo.values()); 
-            Collections.sort(sorted, new Comparator<ExtThreadInfo>() {
-                    /* ------------------------------------------------------------ */
-                    public int compare(ExtThreadInfo eti1, ExtThreadInfo eti2)
-                        {
-                            return (int)Math.signum(eti2.getCpuUtilization()-eti1.getCpuUtilization());
-                        }
-                 });
-            
-            for (ExtThreadInfo info : sorted)
-            {
-                ThreadInfo threadInfo = getThreadInfo(info.getThreadId(), 0);
-                
-                if (info.getCpuUtilization() > 1.0f)
-                {
-                    String state = threadInfo.isInNative() ? "IN_NATIVE" : 
-                        threadInfo.getThreadState().toString();
-                    _logger.info(String.format("Thread %s[id:%d,%s] is using %.2f%% of CPU", 
-                            threadInfo.getThreadName(), threadInfo.getThreadId(), 
-                            state, info.getCpuUtilization()));
-                }
-
-                info.setDumpCpuTime(info.getLastCpuTime());
-                info.setDumpSampleTime(info.getLastSampleTime());
-            }
-        }
-    }
-
     /* ------------------------------------------------------------ */
     /**
      * @see java.lang.Runnable#run()
@@ -338,7 +228,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
             {
                 try
                 {
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                 }
                 catch (InterruptedException ex)
                 {
@@ -347,135 +237,133 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
                 continue;
             }
             
-            List<ThreadInfo> threadInfo = new ArrayList<ThreadInfo>(); 
-            
-            findSpinningThreads(threadInfo);
-            findDeadlockedThreads(threadInfo);
-
+            collectThreadInfo();
             lastTime = System.currentTimeMillis();
-            
-            if (threadInfo.size() > 0)
-            {
-                dump(threadInfo);
-            }
 
-            if (_dumpInterval > 0 && lastTime > lastDumpTime + _dumpInterval)
+            if (_logInterval > 0 && lastTime > lastDumpTime + _logInterval)
             {
+                logCpuUsage();
                 lastDumpTime = lastTime;
-            
-                dumpAll();
             }
+            logThreadState();
         }
         
     }
     
     /* ------------------------------------------------------------ */
     /**
-     * Find spinning threads.
-     *
-     * @param threadInfo thread info list to add the results
-     * @return thread info list
+     * Collect thread info.
      */
-    private List<ThreadInfo> findSpinningThreads(final List<ThreadInfo> threadInfo)
+    private void collectThreadInfo()
     {
-        if (threadInfo != null)
+        try
         {
-            try
+            Map<Thread,StackTraceElement[]> all = Thread.getAllStackTraces();            
+            for (Map.Entry<Thread,StackTraceElement[]> entry : all.entrySet())
             {
-                long[] allThreadId = getAllThreadIds();            
-                for (int idx=0; idx < allThreadId.length; idx++)
+                Thread thread = entry.getKey();
+                long threadId = thread.getId();
+                
+                if (threadId == _runner.getId())
                 {
-                    long currId = allThreadId[idx];
-                    
-                    if (currId == _runner.getId())
-                    {
-                        continue;
-                    }
-    
-                    long currCpuTime = getThreadCpuTime(currId);
-                    long currNanoTime = System.nanoTime();
-                    
-                    ExtThreadInfo currExtInfo = _extInfo.get(Long.valueOf(currId));
-                    if (currExtInfo != null)
-                    {
-                        long elapsedCpuTime = currCpuTime - currExtInfo.getLastCpuTime();
-                        long elapsedNanoTime = currNanoTime - currExtInfo.getLastSampleTime();
-    
-                        float cpuUtilization = Math.min((elapsedCpuTime * 100.0f) / elapsedNanoTime, 100.0f); 
-                        currExtInfo.setCpuUtilization(cpuUtilization);
-                        if (cpuUtilization > _busyThreshold)
-                        {
-                            ThreadInfo currInfo = getThreadInfo(currId, Integer.MAX_VALUE);
-                            if (currInfo != null)
-                            {
-                                StackTraceElement[] lastStackTrace = currExtInfo.getStackTrace();
-                                currExtInfo.setStackTrace(currInfo.getStackTrace());
+                    continue;
+                }
 
-                                if (lastStackTrace != null 
-                                && matchStackTraces(lastStackTrace, currInfo.getStackTrace())) {
-                                    threadInfo.add(currInfo);
-                                }
-                            }
+                ThreadMonitorInfo currMonitorInfo = _monitorInfo.get(Long.valueOf(threadId));
+                if (currMonitorInfo == null)
+                {
+                    currMonitorInfo = new ThreadMonitorInfo(thread);
+                    currMonitorInfo.setStackTrace(entry.getValue());
+                    currMonitorInfo.setCpuTime(getThreadCpuTime(threadId));
+                    currMonitorInfo.setSampleTime(System.nanoTime());
+                    _monitorInfo.put(Long.valueOf(threadId), currMonitorInfo);
+                }
+                else
+                {
+                    currMonitorInfo.setStackTrace(entry.getValue());
+                    currMonitorInfo.setCpuTime(getThreadCpuTime(threadId));
+                    currMonitorInfo.setSampleTime(System.nanoTime());
+    
+                    currMonitorInfo.setSpinning(false);
+                    if (currMonitorInfo.getCpuUtilization() > _busyThreshold)
+                    {
+                        StackTraceElement[] lastStackTrace = currMonitorInfo.getStackTrace();
+    
+                        if (lastStackTrace != null 
+                        && matchStackTraces(lastStackTrace, entry.getValue()))
+                        {
+                            currMonitorInfo.setSpinning(true);
                         }
                     }
-                    else
-                    {
-                        currExtInfo = new ExtThreadInfo(getThreadInfo(currId, 0));
-                        currExtInfo.setFirstCpuTime(currCpuTime);
-                        currExtInfo.setFirstSampleTime(currNanoTime);
-                        currExtInfo.setDumpCpuTime(currCpuTime);
-                        currExtInfo.setDumpSampleTime(currNanoTime);
-
-                        _extInfo.put(Long.valueOf(currId), currExtInfo);
-                    }
-                    
-                    currExtInfo.setLastCpuTime(currCpuTime);
-                    currExtInfo.setLastSampleTime(currNanoTime);
                 }
             }
-            catch (Exception ex)
+        }
+        catch (Exception ex)
+        {
+            Log.debug(ex);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    protected void logCpuUsage()
+    {
+        if (_monitorInfo.size() > 0)
+        {
+            long[] running = getAllThreadIds();
+            List<ThreadMonitorInfo> all = new ArrayList<ThreadMonitorInfo>();
+            for (int idx=0; idx<running.length; idx++)
             {
-                Log.debug(ex);
+                ThreadMonitorInfo info = _monitorInfo.get(running[idx]); 
+                if (info != null)
+                {
+                    all.add(info);
+                }
+            }
+            
+            Collections.sort(all, new Comparator<ThreadMonitorInfo>()
+            {
+                /* ------------------------------------------------------------ */
+                public int compare(ThreadMonitorInfo info1, ThreadMonitorInfo info2)
+                {
+                    return (int)Math.signum(info2.getCpuUtilization()-info1.getCpuUtilization());
+                }
+            });
+            
+            String format = "Thread %1$s[id:%2$d,%3$s] - %4$.2f%%";
+            for (ThreadMonitorInfo info : all)
+            {
+                if (info.getCpuUtilization() > _logThreshold)
+                {
+                    String message = String.format(format, info.getThreadName(), 
+                            info.getThreadId(), info.getThreadState(), info.getCpuUtilization());
+                   _logger.info(message);
+                }
             }
         }
-        
-        return threadInfo;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * Find deadlocked threads.
+     * Output thread info to log.
      *
-     * @param threadInfo thread info list to add the results
-     * @return thread info list
+     * @param detected thread info list
      */
-    private List<ThreadInfo> findDeadlockedThreads(final List<ThreadInfo> threadInfo)
+    protected void logThreadState()
     {
-        if (threadInfo != null)
+        if (_monitorInfo.size() > 0)
         {
-            try
+            long[] all = getAllThreadIds();
+            for (int idx=0; idx<all.length; idx++)
             {
-                long[] threads = findDeadlockedThreads();
-                if (threads != null && threads.length > 0)
+                ThreadMonitorInfo info = _monitorInfo.get(all[idx]); 
+                if (info != null && info.isSpinning())
                 {
-                    ThreadInfo currInfo;
-                    for (int idx=0; idx < threads.length; idx++)
-                    {
-                        currInfo = getThreadInfo(threads[idx], Integer.MAX_VALUE);
-                        if (currInfo != null)
-                        {
-                            threadInfo.add(currInfo);
-                        }
-                    }
+                    String message = String.format("%1$s[id:%2$d,%3$s] is SPINNING",
+                            info.getThreadName(), info.getThreadId(), info.getThreadState());
+                    _logger.warn(new ThreadMonitorException(message, info.getStackTrace()));
                 }
             }
-            catch (Exception ex)
-            {
-                Log.debug(ex);
-            }
         }
-            
-        return threadInfo;
     }
 
     /* ------------------------------------------------------------ */
@@ -500,209 +388,5 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
             }
         }
         return match;
-    }
-
-    /* ------------------------------------------------------------ */
-    private class ExtThreadInfo
-    {
-        private ThreadInfo _threadInfo;
-
-        private long _firstCpuTime;
-        private long _firstSampleTime;
-        private long _lastCpuTime;
-        private long _lastSampleTime;
-        private long _dumpCpuTime;
-        private long _dumpSampleTime;
-        
-        private float _cpuUtilization;
-        
-        private StackTraceElement[] _stackTrace;
-
-        /* ------------------------------------------------------------ */
-        public ExtThreadInfo(ThreadInfo threadInfo)
-        {
-            _threadInfo = threadInfo;   
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return thread id associated with the instance
-         */
-        public ThreadInfo getThreadInfo()
-        {
-            return _threadInfo;
-        }
-
-        /**
-         * @return the thread Id
-         */
-        public long getThreadId()
-        {
-            return _threadInfo.getThreadId();
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return the first CPU time of the thread
-         */
-        public long getFirstCpuTime()
-        {
-            return _firstCpuTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Set the first CPU time.
-         *
-         * @param ns new last CPU time
-         */
-        public void setFirstCpuTime(long ns)
-        {
-            _firstCpuTime = ns;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return the time of first sample  
-         */
-        public long getFirstSampleTime()
-        {
-            return _firstSampleTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Sets the first sample time.
-         *
-         * @param ns the time of first sample
-         */
-        public void setFirstSampleTime(long ns)
-        {
-            _firstSampleTime = ns;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return the last CPU time of the thread
-         */
-        public long getLastCpuTime()
-        {
-            return _lastCpuTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Set the last CPU time.
-         *
-         * @param ns new last CPU time
-         */
-        public void setLastCpuTime(long ns)
-        {
-            _lastCpuTime = ns;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return the time of last sample  
-         */
-        public long getLastSampleTime()
-        {
-            return _lastSampleTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Sets the last sample time.
-         *
-         * @param ns the time of last sample
-         */
-        public void setLastSampleTime(long ns)
-        {
-            _lastSampleTime = ns;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return the dump CPU time of the thread
-         */
-        public long getDumpCpuTime()
-        {
-            return _dumpCpuTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Set the dump CPU time.
-         *
-         * @param ns new dump CPU time
-         */
-        public void setDumpCpuTime(long ns)
-        {
-            _dumpCpuTime = ns;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return the time of dump sample  
-         */
-        public long getDumpSampleTime()
-        {
-            return _dumpSampleTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Sets the dump sample time.
-         *
-         * @param ns the time of dump sample
-         */
-        public void setDumpSampleTime(long ns)
-        {
-            _dumpSampleTime = ns;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Gets the CPU utilization.
-         *
-         * @return the CPU utilization percentage
-         */
-        public float getCpuUtilization()
-        {
-            return _cpuUtilization;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Sets the CPU utilization.
-         *
-         * @param percentage the new CPU utilization percentage
-         */
-        public void setCpuUtilization(float percentage)
-        {
-            _cpuUtilization = percentage;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Gets the stack trace.
-         *
-         * @return the stack trace
-         */
-        public StackTraceElement[] getStackTrace()
-        {
-            return _stackTrace;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Sets the stack trace.
-         *
-         * @param stackTrace the new stack trace
-         */
-        public void setStackTrace(StackTraceElement[] stackTrace)
-        {
-            _stackTrace = stackTrace;
-        }
     }
 }
