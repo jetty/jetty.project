@@ -3,6 +3,7 @@ package org.eclipse.jetty.websocket;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ProtocolException;
 import java.net.URI;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SelectionKey;
@@ -237,6 +238,10 @@ public class WebSocketClient extends AggregateLifeCycle
             Throwable cause = e.getCause();
             if (cause instanceof IOException)
                 throw (IOException)cause;
+            if (cause instanceof Error)
+                throw (Error)cause;
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException)cause;
             throw new RuntimeException(cause);
         }
     }
@@ -539,18 +544,6 @@ public class WebSocketClient extends AggregateLifeCycle
                 _holder.handshakeFailed(new ProtocolException(_error));
             else
                 _holder.handshakeFailed(new EOFException());
-        }
-    }
-
-    
-    /* ------------------------------------------------------------ */
-    /** Exception recording a WebSocket handshake protocol exception.
-     */
-    class ProtocolException extends IOException
-    {
-        ProtocolException(String reason)
-        {
-            super(reason);
         }
     }
 
