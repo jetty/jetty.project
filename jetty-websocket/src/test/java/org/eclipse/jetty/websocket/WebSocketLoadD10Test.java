@@ -116,10 +116,6 @@ public class WebSocketLoadD10Test
         {
             this.outbound = outbound;
         }
-
-        public void onError(String message,Throwable ex)
-        {
-        }
         
         public void onMessage(String data)
         {

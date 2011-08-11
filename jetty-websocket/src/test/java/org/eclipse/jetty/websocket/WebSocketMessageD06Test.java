@@ -756,10 +756,6 @@ public class WebSocketMessageD06Test
         {
             this.connection = connection;
         }
-
-        public void onError(String message,Throwable ex)
-        {
-        }
         
         public void onOpen(Connection connection)
         {

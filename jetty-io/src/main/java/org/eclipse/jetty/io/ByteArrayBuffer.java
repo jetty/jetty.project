@@ -76,6 +76,19 @@ public class ByteArrayBuffer extends AbstractBuffer
         _access=IMMUTABLE;
         _string = value;
     }
+    
+    public ByteArrayBuffer(String value,boolean immutable)
+    {
+        super(READWRITE,NON_VOLATILE);
+        _bytes = StringUtil.getBytes(value);
+        setGetIndex(0);
+        setPutIndex(_bytes.length);
+        if (immutable)
+        {
+            _access=IMMUTABLE;
+            _string = value;
+        }
+    }
 
     public ByteArrayBuffer(String value,String encoding) throws UnsupportedEncodingException
     {

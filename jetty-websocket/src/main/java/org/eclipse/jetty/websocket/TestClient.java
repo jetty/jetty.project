@@ -68,14 +68,6 @@ public class TestClient implements WebSocket.OnFrame
     {
     }
 
-    public void onError(String message, Throwable ex)
-    {
-        System.err.println("onError: "+message);
-        if (ex!=null)
-            ex.printStackTrace();
-        _handshook.countDown();
-    }
-
     public void onClose(int closeCode, String message)
     {
         _handshook.countDown();
@@ -141,8 +133,10 @@ public class TestClient implements WebSocket.OnFrame
 
     private void open() throws Exception
     {
-        __client.open(new URI("ws://"+_host+":"+_port+"/"),this,_protocol,_timeout);
-        _handshook.await(10,TimeUnit.SECONDS);
+        WebSocketClient client = new WebSocketClient(__client);
+        client.setProtocol(_protocol);
+        client.setMaxIdleTime(_timeout);
+        client.open(new URI("ws://"+_host+":"+_port+"/"),this).get(10,TimeUnit.SECONDS);
     }
 
     public void ping(byte opcode,byte[] data,int fragment) throws Exception

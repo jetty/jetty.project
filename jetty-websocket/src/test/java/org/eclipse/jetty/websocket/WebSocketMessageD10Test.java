@@ -981,11 +981,6 @@ public class WebSocketMessageD10Test
         {
             return disconnected.await(time, TimeUnit.MILLISECONDS);
         }
-
-        public void onError(String message,Throwable ex)
-        {
-            disconnected.countDown();
-        }
         
         public void onClose(int code,String message)
         {

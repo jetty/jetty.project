@@ -60,6 +60,8 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     final static int CLOSE_NOCLOSE=1006;
     final static int CLOSE_NOTUTF8=1007;
     
+    final static int VERSION=8;
+    
     static boolean isLastFrame(byte flags)
     {
         return (flags&0x8)!=0;
