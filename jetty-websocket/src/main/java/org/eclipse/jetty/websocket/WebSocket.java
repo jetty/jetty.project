@@ -148,7 +148,10 @@ public interface WebSocket
         byte textOpcode();
         byte continuationOpcode();
         byte finMask();
+        String getProtocol();
+        void setFakeFragments(boolean fake);
         
+        boolean isFakeFragments();
         boolean isControl(byte opcode);
         boolean isText(byte opcode);
         boolean isBinary(byte opcode);

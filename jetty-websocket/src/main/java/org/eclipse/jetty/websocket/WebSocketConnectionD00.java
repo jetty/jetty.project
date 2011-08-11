@@ -530,4 +530,16 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     {
         return 0;
     }
+
+    public void setFakeFragments(boolean fake)
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    public boolean isFakeFragments()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 }

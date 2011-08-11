@@ -491,6 +491,15 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         {
             return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
         }
+
+        public void setFakeFragments(boolean fake)
+        {
+        }
+
+        public boolean isFakeFragments()
+        {
+            return false;
+        }
     }
 
     /* ------------------------------------------------------------ */
