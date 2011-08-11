@@ -202,6 +202,19 @@ public class WebSocketClient extends AggregateLifeCycle
     }
     
     /* ------------------------------------------------------------ */
+    public Map<String,String> getCookies()
+    {
+        return _cookies;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public List<String> getExtensions()
+    {
+        return _extensions;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
     /** Open a WebSocket connection.
      * Open a websocket connection to the URI and block until the connection is accepted or there is an error.
      * @param uri The URI to connect to.
