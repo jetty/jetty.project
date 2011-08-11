@@ -103,14 +103,6 @@ public class WebSocketUpgradeTest
                 _results.add("clientWS.onMessage");
                 _results.add(data);
             }
-            
-            /* ------------------------------------------------------------ */
-            public void onError(String message, Throwable ex)
-            {
-                _results.add("clientWS.onError");
-                _results.add(message);
-                _results.add(ex);
-            }
         };
 
 
@@ -252,19 +244,11 @@ public class WebSocketUpgradeTest
             _results.add("serverWS.onMessage");
             _results.add(data);
         }
-
-        /* ------------------------------------------------------------ */
-        public void onError(String message, Throwable ex)
-        {
-            _results.add("serverWS.onError");
-            _results.add(message);
-            _results.add(ex);
-        }
         
         /* ------------------------------------------------------------ */
         public void onClose(int code, String message)
         {
-            _results.add("onDisconnect");
+            _results.add("onClose");
             _webSockets.remove(this);
         }
 

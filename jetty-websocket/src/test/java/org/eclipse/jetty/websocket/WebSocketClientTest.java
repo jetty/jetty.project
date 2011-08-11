@@ -1,23 +1,22 @@
 package org.eclipse.jetty.websocket;
 
-import static org.hamcrest.CoreMatchers.*;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Exchanger;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
@@ -28,20 +27,20 @@ import org.junit.Test;
 
 public class WebSocketClientTest
 {
-    private ServerSocket server;
-    private int serverPort;
+    private ServerSocket _server;
+    private int _serverPort;
     
     @Before
     public void startServer() throws IOException {
-        server = new ServerSocket();
-        server.bind(null);
-        serverPort = server.getLocalPort();
+        _server = new ServerSocket();
+        _server.bind(null);
+        _serverPort = _server.getLocalPort();
     }
     
     @After
     public void stopServer() throws IOException {
-        if(server != null) {
-            server.close();
+        if(_server != null) {
+            _server.close();
         }
     }
     
@@ -61,10 +60,6 @@ public class WebSocketClientTest
                 {
                     open.set(true);
                 }
-
-                public void onError(String message, Throwable ex)
-                {
-                }
                 
                 public void onClose(int closeCode, String message)
                 {}
@@ -79,543 +74,287 @@ public class WebSocketClientTest
         Assert.assertTrue(bad);
         Assert.assertFalse(open.get());
     }
-    
-    
-    @Test
-    public void testBlockingConnectionRefused() throws Exception
-    {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
-        client.setBlockingConnect(true);
 
-        boolean bad=false;
-        final AtomicBoolean open = new AtomicBoolean();
-        try
-        {
-            client.open(new URI("ws://127.0.0.1:1"),new WebSocket()
-            {
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                }
-
-                public void onError(String message, Throwable ex)
-                {
-                }
-
-                public void onClose(int closeCode, String message)
-                {}
-            });
-            
-            Assert.fail();
-        }
-        catch(IOException e)
-        {
-            bad=true;
-        }
-        Assert.assertTrue(bad);
-        Assert.assertFalse(open.get());
-    }
     
     @Test
     public void testAsyncConnectionRefused() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
-        client.setConnectTimeout(1000);
         client.start();
-        client.setBlockingConnect(false);
 
-        boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
-        final AtomicReference<String> error = new AtomicReference<String>(null);
         final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(1);
+
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:1"),new WebSocket()
+        {
+            public void onOpen(Connection connection)
+            {
+                open.set(true);
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+            }
+        });
+
+        Throwable error=null;
         try
         {
-            client.open(new URI("ws://127.0.0.1:1"),new WebSocket()
-            {
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                    latch.countDown();
-                }
-
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    close.set(closeCode);
-                    latch.countDown();
-                }
-            });
+            future.get(1,TimeUnit.SECONDS);
+            Assert.fail();
         }
-        catch(IOException e)
+        catch(ExecutionException e)
         {
-            bad=true;
+            error=e.getCause();
         }
         
-        Assert.assertFalse(bad);
         Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
-        Assert.assertNotNull(error.get());
+        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NOCLOSE,close.get());
+        Assert.assertTrue(error instanceof ConnectException);
         
     }
     
-    @Test
-    public void testBlockingConnectionNotAccepted() throws Exception
-    {
-        WebSocketClient client = new WebSocketClient();
-        client.setConnectTimeout(500);
-        client.setBlockingConnect(true);
-        client.start();
 
-        boolean bad=false;
-        final AtomicReference<String> error = new AtomicReference<String>(null);
-        final CountDownLatch latch = new CountDownLatch(1);
-        try
-        {
-            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
-            {
-                public void onOpen(Connection connection)
-                {
-                    latch.countDown();
-                }
-
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    latch.countDown();
-                }
-            });
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-            bad=true;
-        }
-
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
-        Assert.assertTrue(bad||error.get()!=null);
-    }
     
     @Test
-    public void testAsyncConnectionNotAccepted() throws Exception
+    public void testConnectionNotAccepted() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
-        client.setBlockingConnect(true);
-        client.setConnectTimeout(300);
         client.start();
 
-        boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
-        final AtomicReference<String> error = new AtomicReference<String>(null);
         final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(1);
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort),new WebSocket()
+        {
+            public void onOpen(Connection connection)
+            {
+                open.set(true);
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+            }
+        });
+
+
+        Throwable error=null;
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
-            {
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                    latch.countDown();
-                }
-
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    close.set(closeCode);
-                    latch.countDown();
-                }
-            });
+            future.get(250,TimeUnit.MILLISECONDS);
+            Assert.fail();
         }
-        catch(IOException e)
+        catch(TimeoutException e)
         {
-            bad=true;
+            error=e;
         }
         
-        Assert.assertFalse(bad);
         Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
-        Assert.assertNotNull(error.get());
-    }
-    
-    @Test
-    public void testBlockingConnectionTimeout() throws Exception
-    {
-        WebSocketClient client = new WebSocketClient();
-        client.setConnectTimeout(500);
-        client.setBlockingConnect(true);
-        client.start();
-
-        boolean bad=false;
-        final AtomicReference<String> error = new AtomicReference<String>(null);
-        final CountDownLatch latch = new CountDownLatch(1);
-        try
-        {
-            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
-            {
-                public void onOpen(Connection connection)
-                {
-                    latch.countDown();
-                }
-
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    latch.countDown();
-                }
-            });
-        }
-        catch(IOException e)
-        {
-            e.printStackTrace();
-            bad=true;
-        }
+        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NOCLOSE,close.get());
+        Assert.assertTrue(error instanceof TimeoutException);
         
-        Assert.assertNotNull(server.accept());
-
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
-        Assert.assertTrue(bad||error.get()!=null);
     }
-    
+
     @Test
-    public void testAsyncConnectionTimeout() throws Exception
+    public void testConnectionTimeout() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
-        client.setBlockingConnect(true);
-        client.setConnectTimeout(300);
         client.start();
 
-        boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
-        final AtomicReference<String> error = new AtomicReference<String>(null);
         final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(1);
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort),new WebSocket()
+        {
+            public void onOpen(Connection connection)
+            {
+                open.set(true);
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+            }
+        });
+
+        Assert.assertNotNull(_server.accept());
+
+        Throwable error=null;
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
-            {
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                    latch.countDown();
-                }
-
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    close.set(closeCode);
-                    latch.countDown();
-                }
-            });
+            future.get(250,TimeUnit.MILLISECONDS);
+            Assert.fail();
         }
-        catch(IOException e)
+        catch(TimeoutException e)
         {
-            bad=true;
+            error=e;
         }
-        Assert.assertNotNull(server.accept());
         
-        Assert.assertFalse(bad);
         Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
-        Assert.assertNotNull(error.get());
+        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NOCLOSE,close.get());
+        Assert.assertTrue(error instanceof TimeoutException);
+        
     }
-    
+
     
     @Test
     public void testBadHandshake() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
-        client.setBlockingConnect(true);
-        client.setConnectTimeout(300);
         client.start();
 
         final AtomicBoolean open = new AtomicBoolean();
-        final AtomicReference<String> error = new AtomicReference<String>(null);
         final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(1);
-        
-        client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket()
         {
             public void onOpen(Connection connection)
             {
-                System.out.printf("onOpen(%s)%n", connection);
-                System.out.flush();
-                
-                // TODO I don't think we should be seeing onOpen called on the
-                // bad handshake because the error here should mean that there is no 
-                // websocket, so no onOpen call
-                // what we are seeing is the onOpen is intermittently showing up before the 
-                // onError which triggers the countdown latch and the error message is null
-                // at that point.
-                
-                //open.set(true);
-                //latch.countDown();
-            }
-
-            public void onError(String message, Throwable ex)
-            {
-                System.out.printf("onError(%s, %s)%n", message, ex);
-                System.out.flush();
-                error.set(message);
-                latch.countDown();
+                open.set(true);
             }
 
             public void onClose(int closeCode, String message)
             {
-                System.out.printf("onClose(%d, %s)%n", closeCode, message);
-                System.out.flush();
                 close.set(closeCode);
-                latch.countDown();
             }
         });
-        
-        Socket connection = server.accept();
+
+        Socket connection = _server.accept();
         respondToClient(connection, "HTTP/1.1 404 NOT FOUND\r\n\r\n");
 
-        Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(10,TimeUnit.SECONDS));
-        Assert.assertThat("error.get()", error.get(), containsString("404 NOT FOUND"));
-    }
-    
-    private void respondToClient(Socket connection, String serverResponse) throws IOException
-    {
-        InputStream in = null;
-        InputStreamReader isr = null;
-        BufferedReader buf = null;
-        OutputStream out = null;
-        try {
-            in = connection.getInputStream();
-            isr = new InputStreamReader(in);
-            buf = new BufferedReader(isr);
-            String line;
-            while((line = buf.readLine())!=null) {
-                System.err.println(line);
-                if(line.length() == 0) {
-                    // Got the "\r\n" line.
-                    break;
-                }
-            }
-
-            // System.out.println("[Server-Out] " + serverResponse);
-            out = connection.getOutputStream();
-            out.write(serverResponse.getBytes());
-            out.flush();
-        } finally {
-            IO.close(buf);
-            IO.close(isr);
-            IO.close(in);
-            IO.close(out);
+        Throwable error=null;
+        try
+        {
+            future.get(250,TimeUnit.MILLISECONDS);
+            Assert.fail();
         }
+        catch(ExecutionException e)
+        {
+            error=e.getCause();
+        }
+        
+        Assert.assertFalse(open.get());
+        Assert.assertEquals(WebSocketConnectionD10.CLOSE_PROTOCOL,close.get());
+        Assert.assertTrue(error instanceof IOException);
+        Assert.assertTrue(error.getMessage().indexOf("404 NOT FOUND")>0);
+      
     }
 
     @Test
     public void testBadUpgrade() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
-        client.setBlockingConnect(true);
-        client.setConnectTimeout(10000);
         client.start();
 
-        boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
-        final AtomicReference<String> error = new AtomicReference<String>(null);
         final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(1);
-        try
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket()
         {
-            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
+            public void onOpen(Connection connection)
             {
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                    latch.countDown();
-                }
+                open.set(true);
+            }
 
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+            }
+        });
 
-                public void onClose(int closeCode, String message)
-                {
-                    close.set(closeCode);
-                    latch.countDown();
-                }
-            });
-        }
-        catch(IOException e)
-        {
-            bad=true;
-        }
-        
-        Socket connection = server.accept();
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        for (String line=in.readLine();line!=null;line=in.readLine())
-        {
-            // System.err.println(line);
-            if (line.length()==0)
-                break;
-        }
-        
-        connection.getOutputStream().write((
+        Socket connection = _server.accept();
+        respondToClient(connection,
                 "HTTP/1.1 101 Upgrade\r\n" +
                 "Sec-WebSocket-Accept: rubbish\r\n" +
-                "\r\n").getBytes());
-        
-        Assert.assertFalse(bad);
-        Assert.assertFalse(open.get());
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
-        Assert.assertNotNull(error.get());
-    }
+                "\r\n" );
 
-    
-    @Test
-    public void testUpgrade() throws Exception
-    {
-        WebSocketClient client = new WebSocketClient();
-        client.setBlockingConnect(true);
-        client.setConnectTimeout(10000);
-        client.start();
-
-        boolean bad=false;
-        final AtomicBoolean open = new AtomicBoolean();
-        final AtomicReference<String> error = new AtomicReference<String>(null);
-        final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(1);
+        Throwable error=null;
         try
         {
-            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
+            future.get(250,TimeUnit.MILLISECONDS);
+            Assert.fail();
+        }
+        catch(ExecutionException e)
+        {
+            error=e.getCause();
+        }
+        Assert.assertFalse(open.get());
+        Assert.assertEquals(WebSocketConnectionD10.CLOSE_PROTOCOL,close.get());
+        Assert.assertTrue(error instanceof IOException);
+        Assert.assertTrue(error.getMessage().indexOf("Bad Sec-WebSocket-Accept")>=0);
+    }
+
+    @Test
+    public void testUpgradeThenTCPClose() throws Exception
+    {
+        WebSocketClient client = new WebSocketClient();
+        client.start();
+
+        final AtomicBoolean open = new AtomicBoolean();
+        final AtomicInteger close = new AtomicInteger();
+        final CountDownLatch _latch = new CountDownLatch(1);
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket()
+        {
+            public void onOpen(Connection connection)
             {
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                    latch.countDown();
-                }
+                open.set(true);
+            }
 
-                public void onError(String message, Throwable ex)
-                {
-                    error.set(message);
-                    latch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    close.set(closeCode);
-                    latch.countDown();
-                }
-            });
-        }
-        catch(IOException e)
-        {
-            bad=true;
-        }
-        Assert.assertFalse(bad);
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+                _latch.countDown();
+            }
+        });
         
-        String key="not sent";
-        Socket connection = server.accept();
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        for (String line=in.readLine();line!=null;line=in.readLine())
-        {
-            if (line.length()==0)
-                break;
-            if (line.startsWith("Sec-WebSocket-Key:"))
-                key=line.substring(18).trim();
-        }
-        connection.getOutputStream().write((
-                "HTTP/1.1 101 Upgrade\r\n" +
-                "Sec-WebSocket-Accept: "+ WebSocketConnectionD10.hashKey(key) +"\r\n" +
-                "\r\n").getBytes());
+        Socket socket = _server.accept();
+        accept(socket);
 
-        Assert.assertTrue(latch.await(1,TimeUnit.SECONDS));
-        Assert.assertNull(error.get());
+        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        Assert.assertNotNull(connection);
         Assert.assertTrue(open.get());
+        Assert.assertEquals(0,close.get());
+        
+        socket.close();
+        _latch.await(10,TimeUnit.SECONDS);
+
+        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NOCLOSE,close.get());
+        
     }
 
     @Test
     public void testIdle() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
-        client.setBlockingConnect(true);
-        client.setConnectTimeout(10000);
         client.setMaxIdleTime(500);
         client.start();
 
-        boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(2);
-        try
+        final CountDownLatch _latch = new CountDownLatch(1);
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket()
         {
-            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket()
+            public void onOpen(Connection connection)
             {
-                public void onOpen(Connection connection)
-                {
-                    open.set(true);
-                    latch.countDown();
-                }
+                open.set(true);
+            }
 
-                public void onError(String message, Throwable ex)
-                {
-                    latch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    close.set(closeCode);
-                    latch.countDown();
-                }
-            });
-        }
-        catch(IOException e)
-        {
-            bad=true;
-        }
-        Assert.assertFalse(bad);
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+                _latch.countDown();
+            }
+        });
         
-        String key="not sent";
-        Socket connection = server.accept();
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        for (String line=in.readLine();line!=null;line=in.readLine())
-        {
-            if (line.length()==0)
-                break;
-            if (line.startsWith("Sec-WebSocket-Key:"))
-                key=line.substring(18).trim();
-        }
-        connection.getOutputStream().write((
-                "HTTP/1.1 101 Upgrade\r\n" +
-                "Sec-WebSocket-Accept: "+ WebSocketConnectionD10.hashKey(key) +"\r\n" +
-                "\r\n").getBytes());
+        Socket socket = _server.accept();
+        accept(socket);
 
-        Assert.assertTrue(latch.await(10,TimeUnit.SECONDS));
+        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        Assert.assertNotNull(connection);
         Assert.assertTrue(open.get());
+        Assert.assertEquals(0,close.get());
+        
+        long start=System.currentTimeMillis();
+        _latch.await(10,TimeUnit.SECONDS);
+        Assert.assertTrue(System.currentTimeMillis()-start<5000);
         Assert.assertEquals(WebSocketConnectionD10.CLOSE_NORMAL,close.get());
     }
     
@@ -624,73 +363,41 @@ public class WebSocketClientTest
     public void testNotIdle() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
-        client.setBlockingConnect(true);
-        client.setConnectTimeout(10000);
         client.setMaxIdleTime(500);
         client.start();
 
-        boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
-        final Exchanger<Integer> close = new Exchanger<Integer>();
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicReference<WebSocket.Connection> connection = new AtomicReference<WebSocket.Connection>();
+        final AtomicInteger close = new AtomicInteger();
+        final CountDownLatch _latch = new CountDownLatch(1);
         final BlockingQueue<String> queue = new BlockingArrayQueue<String>();
-        try
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket.OnTextMessage()
         {
-            client.open(new URI("ws://127.0.0.1:"+serverPort),new WebSocket.OnTextMessage()
+            public void onOpen(Connection connection)
             {
-                public void onOpen(Connection c)
-                {
-                    open.set(true);
-                    connection.set(c);
-                    latch.countDown();
-                }
+                open.set(true);
+            }
 
-                public void onError(String message, Throwable ex)
-                {
-                    latch.countDown();
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    try
-                    {
-                        close.exchange(closeCode);
-                    }
-                    catch(InterruptedException ex)
-                    {}
-                    latch.countDown();
-                }
-                
-                public void onMessage(String data)
-                {
-                    queue.add(data);
-                }
-            });
-        }
-        catch(IOException e)
-        {
-            bad=true;
-        }
-        Assert.assertFalse(bad);
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+                _latch.countDown();
+            }
+            
+            public void onMessage(String data)
+            {
+                queue.add(data);
+            }
+        });
         
-        String key="not sent";
-        Socket socket = server.accept();
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        for (String line=in.readLine();line!=null;line=in.readLine())
-        {
-            if (line.length()==0)
-                break;
-            if (line.startsWith("Sec-WebSocket-Key:"))
-                key=line.substring(18).trim();
-        }
-        socket.getOutputStream().write((
-                "HTTP/1.1 101 Upgrade\r\n" +
-                "Sec-WebSocket-Accept: "+ WebSocketConnectionD10.hashKey(key) +"\r\n" +
-                "\r\n").getBytes());
+        Socket socket = _server.accept();
+        accept(socket);
 
-        Assert.assertTrue(latch.await(10,TimeUnit.SECONDS));
+        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        Assert.assertNotNull(connection);
         Assert.assertTrue(open.get());
+        Assert.assertEquals(0,close.get());
+        
+        
         
         // Send some messages client to server
         byte[] recv = new byte[1024];
@@ -698,7 +405,7 @@ public class WebSocketClientTest
         for (int i=0;i<10;i++)
         {
             Thread.sleep(250);
-            connection.get().sendMessage("Hello");
+            connection.sendMessage("Hello");
             len=socket.getInputStream().read(recv,0,recv.length);
             Assert.assertTrue(len>0);
         }
@@ -714,9 +421,68 @@ public class WebSocketClientTest
             Assert.assertEquals("Hi",queue.poll(1,TimeUnit.SECONDS));
         }
 
+        // Close with code
+        long start=System.currentTimeMillis();
         socket.getOutputStream().write(new byte[]{(byte)0x88, (byte) 0x02, (byte)4, (byte)87 },0,4);
         socket.getOutputStream().flush();
+
+        _latch.await(10,TimeUnit.SECONDS);
+        Assert.assertTrue(System.currentTimeMillis()-start<5000);
+        Assert.assertEquals(1111,close.get());
         
-        Assert.assertEquals(new Integer(1111),close.exchange(null,1,TimeUnit.SECONDS));
+    }
+    
+    
+
+    private void respondToClient(Socket connection, String serverResponse) throws IOException
+    {
+        InputStream in = null;
+        InputStreamReader isr = null;
+        BufferedReader buf = null;
+        OutputStream out = null;
+        try {
+            in = connection.getInputStream();
+            isr = new InputStreamReader(in);
+            buf = new BufferedReader(isr);
+            String line;
+            while((line = buf.readLine())!=null) 
+            {
+                // System.err.println(line);
+                if(line.length() == 0) 
+                {
+                    // Got the "\r\n" line.
+                    break;
+                }
+            }
+
+            // System.out.println("[Server-Out] " + serverResponse);
+            out = connection.getOutputStream();
+            out.write(serverResponse.getBytes());
+            out.flush();
+        } 
+        finally 
+        {
+            IO.close(buf);
+            IO.close(isr);
+            IO.close(in);
+            IO.close(out);
+        }
+    }
+
+    private void accept(Socket connection) throws IOException
+    {
+        String key="not sent";
+        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        for (String line=in.readLine();line!=null;line=in.readLine())
+        {
+            if (line.length()==0)
+                break;
+            if (line.startsWith("Sec-WebSocket-Key:"))
+                key=line.substring(18).trim();
+        }
+        connection.getOutputStream().write((
+                "HTTP/1.1 101 Upgrade\r\n" +
+                "Sec-WebSocket-Accept: "+ WebSocketConnectionD10.hashKey(key) +"\r\n" +
+                "\r\n").getBytes());
     }
 }

@@ -17,4 +17,6 @@ public interface WebSocketConnection extends Connection
     void handshake(HttpServletRequest request, HttpServletResponse response, String origin, String subprotocol) throws IOException;
     
     List<Extension> getExtensions();
+    
+    WebSocket.Connection getConnection();
 }

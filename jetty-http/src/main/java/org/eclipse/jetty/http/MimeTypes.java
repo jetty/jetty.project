@@ -293,7 +293,6 @@ public class MimeTypes
                 case TEXT_XML_8859_1_ORDINAL:
                     return StringUtil.__ISO_8859_1;
 
-                case TEXT_JSON_ORDINAL:
                 case TEXT_HTML_UTF_8_ORDINAL:
                 case TEXT_PLAIN_UTF_8_ORDINAL:
                 case TEXT_XML_UTF_8_ORDINAL:
@@ -363,6 +362,7 @@ public class MimeTypes
         
         if (state==10)
             return CACHE.lookup(value.peek(start,i-start)).toString();
-        return null;
+        
+        return (String)__encodings.get(value);
     }
 }

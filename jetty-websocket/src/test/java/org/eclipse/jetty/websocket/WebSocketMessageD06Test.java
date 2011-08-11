@@ -22,7 +22,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -755,10 +754,6 @@ public class WebSocketMessageD06Test
         public void onHandshake(FrameConnection connection)
         {
             this.connection = connection;
-        }
-
-        public void onError(String message,Throwable ex)
-        {
         }
         
         public void onOpen(Connection connection)

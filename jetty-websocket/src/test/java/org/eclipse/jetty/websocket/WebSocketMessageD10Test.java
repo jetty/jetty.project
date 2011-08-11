@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -980,11 +979,6 @@ public class WebSocketMessageD10Test
         private boolean awaitDisconnected(long time) throws InterruptedException
         {
             return disconnected.await(time, TimeUnit.MILLISECONDS);
-        }
-
-        public void onError(String message,Throwable ex)
-        {
-            disconnected.countDown();
         }
         
         public void onClose(int code,String message)

@@ -18,8 +18,6 @@ import java.io.IOException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 
 
@@ -48,7 +46,6 @@ public class WebSocketParserD10 implements WebSocketParser
         }
     };
 
-
     private final WebSocketBuffers _buffers;
     private final EndPoint _endp;
     private final FrameHandler _handler;
@@ -63,6 +60,7 @@ public class WebSocketParserD10 implements WebSocketParser
     private final byte[] _mask = new byte[4];
     private int _m;
     private boolean _skip;
+    private boolean _fakeFragments=true;
 
     /* ------------------------------------------------------------ */
     /**
@@ -79,6 +77,24 @@ public class WebSocketParserD10 implements WebSocketParser
         _handler=handler;
         _shouldBeMasked=shouldBeMasked;
         _state=State.START;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if fake fragments should be created for frames larger than the buffer.
+     */
+    public boolean isFakeFragments()
+    {
+        return _fakeFragments;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param fakeFragments True if fake fragments should be created for frames larger than the buffer.
+     */
+    public void setFakeFragments(boolean fakeFragments)
+    {
+        _fakeFragments = fakeFragments;
     }
 
     /* ------------------------------------------------------------ */
@@ -122,7 +138,33 @@ public class WebSocketParserD10 implements WebSocketParser
 
                 // if no space, then the data is too big for buffer
                 if (_buffer.space() == 0)
+                {
+                    // Can we send a fake frame?
+                    if (_fakeFragments && _state==State.DATA)
+                    {
+                        Buffer data =_buffer.get(4*(available/4));
+                        _buffer.compact();
+                        if (_masked)
+                        {
+                            if (data.array()==null)
+                                data=_buffer.asMutableBuffer();
+                            byte[] array = data.array();
+                            final int end=data.putIndex();
+                            for (int i=data.getIndex();i<end;i++)
+                                array[i]^=_mask[_m++%4];
+                        }
+
+                        // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
+                        events++;
+                        _bytesNeeded-=data.length();
+                        _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionD10.FLAG_FIN)), _opcode, data);
+                        
+                        _opcode=WebSocketConnectionD10.OP_CONTINUATION;
+                    }
+                    
+                    if (_buffer.space() == 0)
                     throw new IllegalStateException("FULL: "+_state+" "+_bytesNeeded+">"+_buffer.capacity());
+                }
 
                 // catch IOExceptions (probably EOF) and try to parse what we have
                 try
@@ -202,7 +244,7 @@ public class WebSocketParserD10 implements WebSocketParser
                         _length = _length*0x100 + (0xff&b);
                         if (--_bytesNeeded==0)
                         {
-                            if (_length>_buffer.capacity())
+                            if (_length>_buffer.capacity() && !_fakeFragments)
                             {
                                 events++;
                                 _handler.close(WebSocketConnectionD10.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());

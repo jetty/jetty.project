@@ -33,10 +33,10 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.websocket.WebSocket.OnFrame;
-import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 import org.eclipse.jetty.websocket.WebSocket.OnBinaryMessage;
 import org.eclipse.jetty.websocket.WebSocket.OnControl;
+import org.eclipse.jetty.websocket.WebSocket.OnFrame;
+import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 
 public class WebSocketConnectionD06 extends AbstractConnection implements WebSocketConnection
 {
@@ -490,6 +490,15 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         public String toString()
         {
             return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
+        }
+
+        public void setFakeFragments(boolean fake)
+        {
+        }
+
+        public boolean isFakeFragments()
+        {
+            return false;
         }
     }
 

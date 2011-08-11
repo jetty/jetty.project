@@ -657,8 +657,8 @@ public class Response implements HttpServletResponse
             if (encoding==null)
             {
                 /* implementation of educated defaults */
-                if(_mimeType!=null)
-                    encoding = null; // TODO getHttpContext().getEncodingByMimeType(_mimeType);
+                if(_cachedMimeType != null)
+                    encoding = MimeTypes.getCharsetFromContentType(_cachedMimeType);
 
                 if (encoding==null)
                     encoding = StringUtil.__ISO_8859_1;

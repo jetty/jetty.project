@@ -67,12 +67,6 @@ public class WebSocketChatServlet extends WebSocketServlet
                 }
             }
         }
-
-        public void onError(String message,Throwable ex)
-        {
-            Log.warn(this+" onError",ex);
-            _members.remove(this);
-        }
         
         public void onClose(int code, String message)
         {

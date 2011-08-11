@@ -24,7 +24,7 @@ public class WebSocketParserD10Test
 {
     private MaskedByteArrayBuffer _in;
     private Handler _handler;
-    private WebSocketParser _parser;
+    private WebSocketParserD10 _parser;
     private byte[] _mask = new byte[] {(byte)0x00,(byte)0xF0,(byte)0x0F,(byte)0xFF};
     private int _m;
 
@@ -88,6 +88,7 @@ public class WebSocketParserD10Test
         endPoint.setNonBlocking(true);
         _handler = new Handler();
         _parser=new WebSocketParserD10(buffers, endPoint,_handler,true);
+        _parser.setFakeFragments(false);
         _in = new MaskedByteArrayBuffer();
         
         endPoint.setIn(_in);
@@ -250,6 +251,7 @@ public class WebSocketParserD10Test
     public void testFrameTooLarge() throws Exception
     {
         // Buffers are only 1024, so this frame is too large
+        _parser.setFakeFragments(false);
         
         _in.putUnmasked((byte)0x81);
         _in.putUnmasked((byte)(0x80|0x7E));
@@ -287,6 +289,27 @@ public class WebSocketParserD10Test
         assertEquals(1024,_handler._data.get(0).length());
     }
 
+    @Test
+    public void testFakeFragement() throws Exception
+    {
+        // Buffers are only 1024, so this frame will be fake fragmented
+        _parser.setFakeFragments(true);
+        
+        _in.putUnmasked((byte)0x81);
+        _in.putUnmasked((byte)(0x80|0x7E));
+        _in.putUnmasked((byte)(2048>>8));
+        _in.putUnmasked((byte)(2048&0xff));
+        _in.sendMask();
+        for (int i=0;i<2048;i++)
+            _in.put((byte)'a');
+        
+        int progress =_parser.parseNext();
+        assertTrue(progress>0);
+
+        assertEquals(2,_handler._frames);
+        assertEquals(WebSocketConnectionD10.OP_CONTINUATION,_handler._opcode);
+    }
+
     private class Handler implements WebSocketParser.FrameHandler
     {
         Utf8StringBuilder _utf8 = new Utf8StringBuilder();
@@ -295,9 +318,11 @@ public class WebSocketParserD10Test
         private byte _opcode;
         int _code;
         String _message;
+        int _frames;
 
         public void onFrame(byte flags, byte opcode, Buffer buffer)
         {
+            _frames++;
             _flags=flags;
             _opcode=opcode;
             if ((flags&0x8)==0)
