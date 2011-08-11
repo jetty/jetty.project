@@ -176,6 +176,13 @@ public class WebSocketClient extends AggregateLifeCycle
                             Thread.sleep(200); // TODO configure?
                             _connectQ.tick(System.currentTimeMillis());
                         }
+                        catch(InterruptedException e)
+                        {
+                            if (isRunning())
+                                __log.warn(e);
+                            else
+                                __log.ignore(e);
+                        }
                         catch(Exception e)
                         {
                             __log.warn(e);
