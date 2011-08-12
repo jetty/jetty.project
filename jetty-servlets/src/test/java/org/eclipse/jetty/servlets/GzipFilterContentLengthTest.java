@@ -8,10 +8,12 @@ import javax.servlet.Servlet;
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
+import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthTypeStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletStreamTypeLengthWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
+import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,10 +45,12 @@ public class GzipFilterContentLengthTest
     {
         return Arrays.asList(new Object[][]
         {
+        { TestServletLengthStreamTypeWrite.class },
         { TestServletLengthTypeStreamWrite.class },
         { TestServletStreamLengthTypeWrite.class },
         { TestServletStreamTypeLengthWrite.class },
-        { TestServletTypeLengthStreamWrite.class } });
+        { TestServletTypeLengthStreamWrite.class },
+        { TestServletTypeStreamLengthWrite.class } });
     }
 
     private static final int LARGE = GzipResponseWrapper.DEFAULT_BUFFER_SIZE * 8;
