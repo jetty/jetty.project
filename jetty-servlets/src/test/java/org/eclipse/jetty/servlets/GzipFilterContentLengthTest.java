@@ -143,7 +143,7 @@ public class GzipFilterContentLengthTest
      * Tests for problems with Content-Length header on small size files 
      * that are not being compressed encountered when using GzipFilter
      * 
-     * @see Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
     public void testIsNotGzipCompressedTiny() throws Exception
@@ -155,7 +155,7 @@ public class GzipFilterContentLengthTest
      * Tests for problems with Content-Length header on small size files 
      * that are not being compressed encountered when using GzipFilter
      * 
-     * @see Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
     public void testIsNotGzipCompressedSmall() throws Exception
@@ -167,7 +167,7 @@ public class GzipFilterContentLengthTest
      * Tests for problems with Content-Length header on medium size files 
      * that are not being compressed encountered when using GzipFilter
      * 
-     * @see Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
     public void testIsNotGzipCompressedMedium() throws Exception
@@ -179,7 +179,7 @@ public class GzipFilterContentLengthTest
      * Tests for problems with Content-Length header on large size files 
      * that were not being compressed encountered when using GzipFilter
      * 
-     * @see Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
     public void testIsNotGzipCompressedLarge() throws Exception
