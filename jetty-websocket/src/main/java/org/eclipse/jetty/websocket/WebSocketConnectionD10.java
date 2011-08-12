@@ -89,6 +89,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     private final OnControl _onControl;
     private final String _protocol;
     private final int _draft;
+    private final ClassLoader _context;
     private int _close;
     private volatile boolean _closedIn;
     private volatile boolean _closedOut;
@@ -128,6 +129,8 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         throws IOException
     {
         super(endpoint,timestamp);
+        
+        _context=Thread.currentThread().getContextClassLoader();
         
         // TODO - can we use the endpoint idle mechanism?
         if (endpoint instanceof AsyncEndPoint)
@@ -209,6 +212,9 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public Connection handle() throws IOException
     {
+        Thread current = Thread.currentThread();
+        ClassLoader oldcontext = current.getContextClassLoader();
+        current.setContextClassLoader(_context);
         try
         {
             // handle the framing protocol
@@ -242,6 +248,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         }
         finally
         {
+            current.setContextClassLoader(oldcontext);
             if (_endp.isOpen())
             {
                 _generator.idle();
@@ -590,7 +597,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         private ByteArrayBuffer _aggregate;
         private byte _opcode=-1;
 
-        public void onFrame(byte flags, byte opcode, Buffer buffer)
+        public void onFrame(final byte flags, final byte opcode, final Buffer buffer)
         {
             boolean lastFrame = isLastFrame(flags); 
             
@@ -622,12 +629,12 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                     case WebSocketConnectionD10.OP_CONTINUATION:
                     {
                         // If text, append to the message buffer
-                        if (_opcode==WebSocketConnectionD10.OP_TEXT && _connection.getMaxTextMessageSize()>=0)
+                        if (_onTextMessage!=null && _opcode==WebSocketConnectionD10.OP_TEXT)
                         {
                             if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
                             {
                                 // If this is the last fragment, deliver the text buffer
-                                if (lastFrame && _onTextMessage!=null)
+                                if (lastFrame)
                                 {
                                     _opcode=-1;
                                     String msg =_utf8.toString();
@@ -636,21 +643,12 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                                 }
                             }
                             else
-                            {
-                                _connection.close(WebSocketConnectionD10.CLOSE_LARGE,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
-                                _utf8.reset();
-                                _opcode=-1;
-                            }    
+                                textMessageTooLarge();
                         }
-                        else if (_opcode>=0 && _connection.getMaxBinaryMessageSize()>=0)
+                        
+                        if (_opcode>=0 && _connection.getMaxBinaryMessageSize()>=0)
                         {
-                            if (_aggregate.space()<_aggregate.length())
-                            {
-                                _connection.close(WebSocketConnectionD10.CLOSE_LARGE,"Message size > "+_connection.getMaxBinaryMessageSize());
-                                _aggregate.clear();
-                                _opcode=-1;
-                            }
-                            else
+                            if (checkBinaryMessageSize(_aggregate.length(),buffer.length()))
                             {
                                 _aggregate.put(buffer);
 
@@ -699,62 +697,50 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                         break;
                     }
 
-
                     case WebSocketConnectionD10.OP_TEXT:
                     {
                         if(_onTextMessage!=null)
                         {
-                            if (lastFrame)
+                            if (_connection.getMaxTextMessageSize()<=0)
                             {
-                                // Deliver the message
-                                _onTextMessage.onMessage(buffer.toString(StringUtil.__UTF8));
+                                // No size limit, so handle only final frames
+                                if (lastFrame)
+                                    _onTextMessage.onMessage(buffer.toString(StringUtil.__UTF8));
                             }
-                            else 
+                            else if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
                             {
-                                if (_connection.getMaxTextMessageSize()>=0)
+                                if (lastFrame)
                                 {
-                                    // If this is a text fragment, append to buffer
-                                    if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
-                                        _opcode=WebSocketConnectionD10.OP_TEXT;
-                                    else
-                                    {
-                                        _utf8.reset();
-                                        _opcode=-1;                                    
-                                        _connection.close(WebSocketConnectionD10.CLOSE_LARGE,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
-                                    }
+                                    String msg =_utf8.toString();
+                                    _utf8.reset();
+                                    _onTextMessage.onMessage(msg);
+                                }
+                                else
+                                {
+                                    _opcode=WebSocketConnectionD10.OP_TEXT;
                                 }
                             }
+                            else
+                                textMessageTooLarge();
                         }
                         break;
                     }
 
                     default:
                     {
-                        if (_onBinaryMessage!=null)
+                        if (_onBinaryMessage!=null && checkBinaryMessageSize(0,buffer.length()))
                         {
                             if (lastFrame)
                             {
                                 _onBinaryMessage.onMessage(array,buffer.getIndex(),buffer.length());
                             }
-                            else   
+                            else if (_connection.getMaxBinaryMessageSize()>=0)
                             {
-                                if (_connection.getMaxBinaryMessageSize()>=0)
-                                {
-                                    if (buffer.length()>_connection.getMaxBinaryMessageSize())
-                                    {
-                                        _connection.close(WebSocketConnectionD10.CLOSE_LARGE,"Message size > "+_connection.getMaxBinaryMessageSize());
-                                        if (_aggregate!=null)
-                                            _aggregate.clear();
-                                        _opcode=-1;
-                                    }
-                                    else
-                                    {
-                                        _opcode=opcode;
-                                        if (_aggregate==null)
-                                            _aggregate=new ByteArrayBuffer(_connection.getMaxBinaryMessageSize());
-                                        _aggregate.put(buffer);
-                                    }
-                                }
+                                _opcode=opcode;
+                                // TODO use a growing buffer rather than a fixed one.
+                                if (_aggregate==null)
+                                    _aggregate=new ByteArrayBuffer(_connection.getMaxBinaryMessageSize());
+                                _aggregate.put(buffer);
                             }
                         }
                     }      
@@ -768,6 +754,28 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             {
                 Log.warn(th);
             }
+        }
+
+        private boolean checkBinaryMessageSize(int bufferLen, int length)
+        {
+            int max = _connection.getMaxBinaryMessageSize();
+            if (max>0 && (bufferLen+length)>max)
+            {
+                _connection.close(WebSocketConnectionD10.CLOSE_LARGE,"Message size > "+_connection.getMaxBinaryMessageSize());
+                _opcode=-1;
+                if (_aggregate!=null)
+                    _aggregate.clear();
+                return false;
+            }
+            return true;
+        }
+        
+        private void textMessageTooLarge()
+        {
+            _connection.close(WebSocketConnectionD10.CLOSE_LARGE,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
+
+            _opcode=-1;
+            _utf8.reset();
         }
 
         public void close(int code,String message)
