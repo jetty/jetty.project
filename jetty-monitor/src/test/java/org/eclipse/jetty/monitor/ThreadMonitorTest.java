@@ -16,6 +16,7 @@ package org.eclipse.jetty.monitor;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -26,31 +27,38 @@ import org.junit.Test;
  */
 public class ThreadMonitorTest
 {
-    public final static int DURATION=9000;
+    public final static int DURATION=4000;
     
     @Test
     public void monitorTest() throws Exception
     {
-        final AtomicInteger countCpuLogs=new AtomicInteger(0);
-        final AtomicInteger countStateLogs=new AtomicInteger(0);
+        final AtomicInteger countLogs=new AtomicInteger(0);
+        final AtomicInteger countSpin=new AtomicInteger(0);
         
-        ThreadMonitor monitor = new ThreadMonitor(1000,50,1)
+        ThreadMonitor monitor = new ThreadMonitor(1000,50,1,1)
         {
             @Override
-            protected void logCpuUsage()
+            protected void logThreadInfo(boolean logAll)
             {
-                countCpuLogs.incrementAndGet();
-                super.logCpuUsage();
-            }
-            @Override
-            protected void logThreadState()
-            {
-                countStateLogs.incrementAndGet();
-                super.logThreadState();
+                if (logAll)
+                    countLogs.incrementAndGet();
+                else
+                    countSpin.incrementAndGet();
+                super.logThreadInfo(logAll);
             }
         };
-        monitor.logCpuUsage(2000,1);
+        monitor.logCpuUsage(2000,0);
         monitor.start();
+        
+        Random rnd = new Random();
+        for (long cnt=0; cnt<100; cnt++)
+        {
+            long value = rnd.nextLong() % 50 + 50;
+            Sleeper sleeper = new Sleeper(value);
+            Thread runner = new Thread(sleeper);
+            runner.setDaemon(true);
+            runner.start();
+        }
         
         Spinner spinner = new Spinner();
         Thread runner = new Thread(spinner);
@@ -61,8 +69,8 @@ public class ThreadMonitorTest
         spinner.setDone();
         monitor.stop();
         
-        assertTrue(countCpuLogs.get() >= 1);
-        assertTrue(countStateLogs.get() >= 1);
+        assertTrue(countLogs.get() >= 1);
+        assertTrue(countSpin.get() >= 2);
     }
 
 
@@ -71,8 +79,6 @@ public class ThreadMonitorTest
         private volatile boolean done = false;
 
         /* ------------------------------------------------------------ */
-        /**
-         */
         public void setDone()
         {
             done = true;
@@ -97,6 +103,37 @@ public class ThreadMonitorTest
             
             if (result==42)
                 System.err.println("Bingo!");
+        }
+    }
+    
+    private class Sleeper implements Runnable
+    {
+        private long _value;
+        
+        /* ------------------------------------------------------------ */
+        public Sleeper(long value)
+        {
+            _value = value;
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void run()
+        {
+            try
+            {
+                fn(_value);
+            }
+            catch (InterruptedException e) {}
+        }
+        
+        /* ------------------------------------------------------------ */
+        public long fn(long value) throws InterruptedException
+        {
+            long result = value > 1 ? fn(value-1) : 1;
+            
+            Thread.sleep(50);
+            
+            return result;
         }
     }
 }
