@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -43,6 +44,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     private Thread _runner;
     private Logger _logger;
     private volatile boolean _done = true;
+    private Dumpable _dumpable;
 
     private Map<Long,ThreadMonitorInfo> _monitorInfo;
     
@@ -264,6 +266,24 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         setLogThreshold(thresholdPercent);
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * @return A {@link Dumpable} that is dumped whenever spinning threads are detected
+     */
+    public Dumpable getDumpable()
+    {
+        return _dumpable;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param dumpable A {@link Dumpable} that is dumped whenever spinning threads are detected
+     */
+    public void setDumpable(Dumpable dumpable)
+    {
+        _dumpable = dumpable;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
@@ -502,6 +522,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
             
             // Log thread information for threads that exceed logging threshold
             // or log spinning threads if their trace count is zero
+            boolean spinning=false;
             for (ThreadMonitorInfo info : all)
             {
                 if (logAll && info.getCpuUtilization() > _logThreshold 
@@ -512,7 +533,14 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
                             info.getThreadState(), info.getCpuUtilization(),
                             info.isSpinning() ? " SPINNING" : "");
                    _logger.info(message);
+                   spinning=true;
                 }
+            }
+            
+            // Dump info
+            if (spinning && _dumpable!=null)
+            {
+                System.err.println(_dumpable.dump());
             }
 
             // Log stack traces for spinning threads with positive trace count

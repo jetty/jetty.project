@@ -18,6 +18,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
+import junit.framework.Assert;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -123,8 +125,12 @@ public class LogTest
     public void testStdErrLogName()
     {
         StdErrLog log = new StdErrLog("test");
-            
+        Assert.assertEquals("test",log.getName());
+        
         Logger next=log.getLogger("next");
+        
+        Assert.assertEquals("test.next",next.getName());
+        
         next.info("testing {} {}","next","info");
         logContains(":test.next:testing next info");
         

@@ -16,9 +16,13 @@ package org.eclipse.jetty.monitor;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Test;
 
 
@@ -32,6 +36,9 @@ public class ThreadMonitorTest
     @Test
     public void monitorTest() throws Exception
     {
+        ((StdErrLog)Log.getLogger(ThreadMonitor.class.getName())).setHideStacks(true);
+        ((StdErrLog)Log.getLogger(ThreadMonitor.class.getName())).setSource(false);
+        
         final AtomicInteger countLogs=new AtomicInteger(0);
         final AtomicInteger countSpin=new AtomicInteger(0);
         
@@ -47,6 +54,19 @@ public class ThreadMonitorTest
                 super.logThreadInfo(logAll);
             }
         };
+        monitor.setDumpable(new Dumpable()
+        {
+            public void dump(Appendable out, String indent) throws IOException
+            {
+                out.append(dump());
+            }
+            
+            public String dump()
+            {
+                return "Dump Spinning";
+            }
+        });
+        
         monitor.logCpuUsage(2000,0);
         monitor.start();
         
