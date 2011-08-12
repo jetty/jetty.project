@@ -9,12 +9,13 @@
         <Set name="scanInterval">2000</Set>
         <Set name="busyThreshold">90</Set>
         <Set name="stackDepth">3</Set>
+        <Set name="trailLength">2</Set>
 <!-- To enable logging CPU utilization for threads above specified threshold, -->
-<!-- uncomment the following lines, changing dump interval (in milliseconds)  -->
-<!-- and dump threshold (in percent) as desired.                              -->
+<!-- uncomment the following lines, changing log interval (in milliseconds)  -->
+<!-- and log threshold (in percent) as desired.                              -->
 <!-- 
-        <Set name="dumpInterval">10000</Arg>
-        <Set name="dumpThreshold">1</Arg>
+        <Set name="logInterval">10000</Arg>
+        <Set name="logThreshold">1</Arg>
 -->
       </New>
     </Arg>

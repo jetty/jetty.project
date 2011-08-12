@@ -15,16 +15,16 @@
 package org.eclipse.jetty.monitor;
 
 
-
 /* ------------------------------------------------------------ */
 /**
  */
 public class ThreadMonitorInfo
 {
     private Thread _thread;
-    
     private StackTraceElement[] _stackTrace;
-    private boolean _threadSpinning;    
+
+    private boolean _threadSpinning = false;
+    private int _traceCount = -1;
 
     private long _prevCpuTime;
     private long _prevSampleTime;
@@ -118,6 +118,28 @@ public class ThreadMonitorInfo
         _threadSpinning = value;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the trace count.
+     *
+     * @param traceCount the new trace count
+     */
+    public void setTraceCount(int traceCount)
+    {
+        _traceCount = traceCount;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Gets the trace count.
+     *
+     * @return the trace count
+     */
+    public int getTraceCount()
+    {
+        return _traceCount;
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * @return the CPU time of the thread

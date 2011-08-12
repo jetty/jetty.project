@@ -81,6 +81,12 @@ public class ServletTester
     }
 
     /* ------------------------------------------------------------ */
+    public void dump()
+    {
+        _server.dump();
+    }
+
+    /* ------------------------------------------------------------ */
     public void start() throws Exception
     {
         _server.start();
