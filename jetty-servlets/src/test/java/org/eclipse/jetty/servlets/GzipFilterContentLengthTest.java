@@ -93,7 +93,7 @@ public class GzipFilterContentLengthTest
 
         tester.prepareServerFile("file.mp3",filesize);
 
-        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        FilterHolder holder = tester.setContentServlet(servletClass);
         holder.setInitParameter("mimeTypes","text/plain");
 
         try
