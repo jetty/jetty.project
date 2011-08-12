@@ -6,6 +6,7 @@ import java.util.List;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
@@ -32,11 +33,13 @@ public class GzipFilterContentLengthTest
     /**
      * These are the junit parameters for running this test.
      * <p>
-     * We have 4 test servlets, that arrange the content-length/content-type/get stream in different orders so as to
-     * simulate the real world scenario that caused the bug in <a
-     * href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * In addition to Jetty's DefaultServlet we have multiple test
+     * servlets that arrange content-length/content-type/get stream
+     * in different order so as to simulate the real world scenario
+     * that caused the bug in Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
      * <p>
-     * This test case will be run with each entry in the array below as setup parameters for the test case.
+     * This test case will be run with each of the entries in 
+     * the array below as setup parameters for the test case.
      * 
      * @return the junit parameters
      */
@@ -45,6 +48,7 @@ public class GzipFilterContentLengthTest
     {
         return Arrays.asList(new Object[][]
         {
+        { DefaultServlet.class },
         { TestServletLengthStreamTypeWrite.class },
         { TestServletLengthTypeStreamWrite.class },
         { TestServletStreamLengthTypeWrite.class },
@@ -56,6 +60,7 @@ public class GzipFilterContentLengthTest
     private static final int LARGE = GzipResponseWrapper.DEFAULT_BUFFER_SIZE * 8;
     private static final int MEDIUM = GzipResponseWrapper.DEFAULT_BUFFER_SIZE;
     private static final int SMALL = GzipResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
+    private static final int TINY = GzipResponseWrapper.DEFAULT_MIN_GZIP_SIZE / 2;
 
     @Rule
     public TestingDir testingdir = new TestingDir();
@@ -67,19 +72,19 @@ public class GzipFilterContentLengthTest
         this.testServlet = testServlet;
     }
 
-    private void assertIsGzipCompressed(Class<? extends Servlet> servletClass, int filesize) throws Exception
+    private void assertIsGzipCompressed(String filename, int filesize) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir);
 
-        tester.prepareServerFile("file.txt",filesize);
+        tester.prepareServerFile(filename,filesize);
 
-        FilterHolder holder = tester.setContentServlet(servletClass);
+        FilterHolder holder = tester.setContentServlet(testServlet);
         holder.setInitParameter("mimeTypes","text/plain");
 
         try
         {
             tester.start();
-            tester.assertIsResponseGzipCompressed("file.txt");
+            tester.assertIsResponseGzipCompressed(filename);
         }
         finally
         {
@@ -87,62 +92,98 @@ public class GzipFilterContentLengthTest
         }
     }
 
-    private void assertIsNotGzipCompressed(Class<? extends Servlet> servletClass, int filesize) throws Exception
+    private void assertIsNotGzipCompressed(String filename, int filesize) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir);
 
-        tester.prepareServerFile("file.mp3",filesize);
+        tester.prepareServerFile(filename,filesize);
 
-        FilterHolder holder = tester.setContentServlet(servletClass);
+        FilterHolder holder = tester.setContentServlet(testServlet);
         holder.setInitParameter("mimeTypes","text/plain");
 
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed("file.mp3",filesize);
+            tester.assertIsResponseNotGzipCompressed(filename,filesize);
         }
         finally
         {
             tester.stop();
         }
-    }
-
-    @Test
-    public void testIsGzipCompressedTiny() throws Exception
-    {
-        assertIsGzipCompressed(testServlet,SMALL);
     }
 
     /**
-     * Tests for Length>Type>Stream>Write problems encountered in GzipFilter
-     * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * Tests gzip compression of a small size file
+     */
+    @Test
+    public void testIsGzipCompressedSmall() throws Exception
+    {
+        assertIsGzipCompressed("file.txt",SMALL);
+    }
+
+    /**
+     * Tests gzip compression of a medium size file
      */
     @Test
     public void testIsGzipCompressedMedium() throws Exception
     {
-        assertIsGzipCompressed(testServlet,MEDIUM);
+        assertIsGzipCompressed("file.txt",MEDIUM);
     }
 
     /**
-     * Tests for Length>Type>Stream>Write problems encountered in GzipFilter
-     * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * Tests gzip compression of a large size file
      */
     @Test
     public void testIsGzipCompressedLarge() throws Exception
     {
-        assertIsGzipCompressed(testServlet,LARGE);
+        assertIsGzipCompressed("file.txt",LARGE);
     }
 
     /**
-     * Tests for Length>Type>Stream>Write problems encountered in GzipFilter
+     * Tests for problems with Content-Length header on small size files 
+     * that are not being compressed encountered when using GzipFilter
      * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @see Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
-    public void testIsNotGzipCompressed() throws Exception
+    public void testIsNotGzipCompressedTiny() throws Exception
     {
-        assertIsNotGzipCompressed(TestServletLengthTypeStreamWrite.class,LARGE);
+        assertIsNotGzipCompressed("file.txt",TINY);
+    }
+
+    /**
+     * Tests for problems with Content-Length header on small size files 
+     * that are not being compressed encountered when using GzipFilter
+     * 
+     * @see Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
+     */
+    @Test
+    public void testIsNotGzipCompressedSmall() throws Exception
+    {
+        assertIsNotGzipCompressed("file.mp3",SMALL);
+    }
+
+    /**
+     * Tests for problems with Content-Length header on medium size files 
+     * that are not being compressed encountered when using GzipFilter
+     * 
+     * @see Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
+     */
+    @Test
+    public void testIsNotGzipCompressedMedium() throws Exception
+    {
+        assertIsNotGzipCompressed("file.mp3",MEDIUM);
+    }
+
+    /**
+     * Tests for problems with Content-Length header on large size files 
+     * that were not being compressed encountered when using GzipFilter
+     * 
+     * @see Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
+     */
+    @Test
+    public void testIsNotGzipCompressedLarge() throws Exception
+    {
+        assertIsNotGzipCompressed("file.mp3",LARGE);
     }
 }
