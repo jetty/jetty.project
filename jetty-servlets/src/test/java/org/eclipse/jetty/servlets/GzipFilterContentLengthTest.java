@@ -71,7 +71,6 @@ public class GzipFilterContentLengthTest
     {
         GzipTester tester = new GzipTester(testingdir);
 
-        // Test content that is smaller than the buffer.
         tester.prepareServerFile("file.txt",filesize);
 
         FilterHolder holder = tester.setContentServlet(servletClass);
@@ -92,7 +91,6 @@ public class GzipFilterContentLengthTest
     {
         GzipTester tester = new GzipTester(testingdir);
 
-        // Test content that is smaller than the buffer.
         tester.prepareServerFile("file.mp3",filesize);
 
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
