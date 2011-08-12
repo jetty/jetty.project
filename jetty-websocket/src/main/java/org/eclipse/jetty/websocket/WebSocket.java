@@ -30,13 +30,6 @@ public interface WebSocket
     void onOpen(Connection connection);
 
     /**
-     * Called when a new websocket connection cannot be created
-     * @param message The error message
-     * @param ex The exception or null
-     */
-    void onError(String message, Throwable ex);
-    
-    /**
      * Called when an established websocket connection closes
      * @param closeCode
      * @param message
@@ -155,7 +148,10 @@ public interface WebSocket
         byte textOpcode();
         byte continuationOpcode();
         byte finMask();
+        String getProtocol();
+        void setFakeFragments(boolean fake);
         
+        boolean isFakeFragments();
         boolean isControl(byte opcode);
         boolean isText(byte opcode);
         boolean isBinary(byte opcode);

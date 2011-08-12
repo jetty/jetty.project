@@ -178,12 +178,12 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <failIfNoTests>false</failIfNoTests>
-            <systemProperties>
+            <!--systemProperties>
               <property>
                 <name>org.eclipse.jetty.io.AbstractBuffer.boundsChecking</name>
                 <value>true</value>
               </property>
-            </systemProperties>
+            </systemProperties-->
           </configuration>
         </plugin>
         <plugin>

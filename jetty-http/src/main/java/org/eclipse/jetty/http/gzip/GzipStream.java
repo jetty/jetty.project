@@ -42,6 +42,7 @@ public class GzipStream extends ServletOutputStream
     protected int _bufferSize;
     protected int _minGzipSize;
     protected long _contentLength;
+    protected boolean _doNotGzip;
 
     /**
      * Instantiates a new gzip stream.
@@ -77,6 +78,7 @@ public class GzipStream extends ServletOutputStream
         if (_gzOut!=null)
             _response.setHeader("Content-Encoding",null);
         _gzOut=null;
+        _doNotGzip=false;
     }
 
     /**
@@ -87,6 +89,13 @@ public class GzipStream extends ServletOutputStream
     public void setContentLength(long length)
     {
         _contentLength=length;
+        if (_doNotGzip && length>=0)
+        {
+            if(_contentLength<Integer.MAX_VALUE)
+                _response.setContentLength((int)_contentLength);
+            else
+                _response.setHeader("Content-Length",Long.toString(_contentLength));
+        }
     }
     
     /* ------------------------------------------------------------ */
@@ -245,14 +254,10 @@ public class GzipStream extends ServletOutputStream
             throw new IllegalStateException();
         if (_out==null || _bOut!=null )
         {
+            _doNotGzip = true;
+
             _out=_response.getOutputStream();
-            if (_contentLength>=0)
-            {
-                if(_contentLength<Integer.MAX_VALUE)
-                    _response.setContentLength((int)_contentLength);
-                else
-                    _response.setHeader("Content-Length",Long.toString(_contentLength));
-            }
+            setContentLength(_contentLength);
 
             if (_bOut!=null)
                 _out.write(_bOut.getBuf(),0,_bOut.getCount());

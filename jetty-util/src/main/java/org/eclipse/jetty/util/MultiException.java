@@ -24,6 +24,7 @@ import java.util.List;
  *
  * 
  */
+@SuppressWarnings("serial")
 public class MultiException extends Exception
 {
     private Object nested;
@@ -54,7 +55,7 @@ public class MultiException extends Exception
     }
     
     /* ------------------------------------------------------------ */
-    public List getThrowables()
+    public List<Throwable> getThrowables()
     {
         return LazyList.getList(nested);
     }

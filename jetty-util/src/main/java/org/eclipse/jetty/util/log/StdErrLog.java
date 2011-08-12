@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.log;
 
 import java.security.AccessControlException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.DateCache;
 
@@ -43,6 +45,8 @@ public class StdErrLog implements Logger
             System.getProperty("org.eclipse.jetty.util.log.SOURCE",
                     System.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE", "false")));
 
+    private final static ConcurrentMap<String,StdErrLog> __loggers = new ConcurrentHashMap<String, StdErrLog>();
+    
     static
     {
         try
@@ -315,9 +319,21 @@ public class StdErrLog implements Logger
 
     public Logger getLogger(String name)
     {
-        if ((name == null && this._name == null) || (name != null && name.equals(this._name)))
+        String fullname=_name == null || _name.length() == 0?name:_name + "." + name;
+        
+        if ((name == null && this._name == null) || fullname.equals(_name))
             return this;
-        return new StdErrLog(_name == null || _name.length() == 0?name:_name + "." + name);
+        
+        StdErrLog logger = __loggers.get(name);
+        if (logger==null)
+        {
+            StdErrLog sel=new StdErrLog(fullname);
+            logger=__loggers.putIfAbsent(fullname,sel);
+            if (logger==null)
+                logger=sel;
+        }
+        
+        return logger;
     }
 
     @Override

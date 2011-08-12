@@ -88,6 +88,13 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public org.eclipse.jetty.websocket.WebSocket.Connection getConnection()
+    {
+        return this;
+    }
+
+
+    /* ------------------------------------------------------------ */
     public void setHixieKeys(String key1,String key2)
     {
         _key1=key1;
@@ -522,5 +529,17 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     public byte finMask()
     {
         return 0;
+    }
+
+    public void setFakeFragments(boolean fake)
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    public boolean isFakeFragments()
+    {
+        // TODO Auto-generated method stub
+        return false;
     }
 }

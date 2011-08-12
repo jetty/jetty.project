@@ -3,14 +3,21 @@ package org.eclipse.jetty.websocket;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ProtocolException;
 import java.net.URI;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.UnsupportedAddressTypeException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpParser;
@@ -29,150 +36,227 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.util.thread.Timeout;
 
+
+/* ------------------------------------------------------------ */
+/** WebSocket Client
+ * <p>This WebSocket Client class can create multiple websocket connections to multiple destinations.  
+ * It uses the same {@link WebSocket} endpoint API as the server. 
+ * Simple usage is as follows: <pre>
+ *   WebSocketClient client = new WebSocketClient();
+ *   client.setMaxIdleTime(500);
+ *   client.start();
+ *
+ *   WebSocket.Connection connection =  client.open(new URI("ws://127.0.0.1:8080/"),new WebSocket.OnTextMessage()
+ *   {
+ *     public void onOpen(Connection connection)
+ *     {
+ *       // open notification
+ *     }
+ *
+ *     public void onClose(int closeCode, String message)
+ *     {
+ *       // close notification
+ *     }
+ *         
+ *     public void onMessage(String data)
+ *     {
+ *       // handle incoming message
+ *     }
+ *   }).get(5,TimeUnit.SECONDS);
+ *      
+ *   connection.sendMessage("Hello World");
+ * </pre>      
+ */
 public class WebSocketClient extends AggregateLifeCycle
-{
+{   
     private final static Logger __log = org.eclipse.jetty.util.log.Log.getLogger(WebSocketClient.class.getCanonicalName());
     private final static Random __random = new Random();
     private final static ByteArrayBuffer __ACCEPT = new ByteArrayBuffer.CaseInsensitive("Sec-WebSocket-Accept");
-    
+
+    private final WebSocketClient _root;
+    private final WebSocketClient _parent;
     private final ThreadPool _threadPool;
-    private final Selector _selector=new Selector();
-    private final Timeout _connectQ=new Timeout();
-    private int _connectTimeout=30000;
+    private final WebSocketClientSelector _selector;
+
+    private final Map<String,String> _cookies=new ConcurrentHashMap<String, String>();
+    private final List<String> _extensions=new CopyOnWriteArrayList<String>();
+    
     private int _bufferSize=64*1024;
-    private boolean _blockingConnect=false;
+    private String _protocol;
+    private int _maxIdleTime=-1;
     
     private WebSocketBuffers _buffers;
     
-    public WebSocketClient(ThreadPool threadpool)
-    {
-        _threadPool=threadpool;
-        addBean(_selector);
-        addBean(_threadPool);
-    }
-    
+
+    /* ------------------------------------------------------------ */
+    /** Create a WebSocket Client with default configuration.
+     */
     public WebSocketClient()
     {
         this(new QueuedThreadPool());
     }
     
+    /* ------------------------------------------------------------ */
+    /** Create a WebSocket Client with shared threadpool.
+     * @param threadpool
+     */
+    public WebSocketClient(ThreadPool threadpool)
+    {
+        _root=this;
+        _parent=null;
+        _threadPool=threadpool;
+        _selector=new WebSocketClientSelector();
+        addBean(_selector);
+        addBean(_threadPool);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Create a WebSocket Client from another.
+     * <p>If multiple clients are required so that connections created may have different 
+     * configurations, then it is more efficient to create a client based on another, so 
+     * that the thread pool and IO infrastructure may be shared.
+     */
+    public WebSocketClient(WebSocketClient parent)
+    {
+        _root=parent._root;
+        _parent=parent;
+        _threadPool=parent._threadPool;
+        _selector=parent._selector;
+        _parent.addBean(this);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Get the selectorManager. Used to configure the manager.
+     * @return The {@link SelectorManager} instance.
+     */
     public SelectorManager getSelectorManager()
     {
         return _selector;
     }
     
+    /* ------------------------------------------------------------ */
+    /** Get the ThreadPool.
+     * <p>Used to set/query the thread pool configuration.
+     * @return The {@link ThreadPool}
+     */
     public ThreadPool getThreadPool()
     {
         return _threadPool;
     }
     
-    public int getConnectTimeout()
-    {
-        return _connectTimeout;
-    }
-
-    public void setConnectTimeout(int connectTimeout)
-    {
-        if (isRunning())
-            throw new IllegalStateException(getState());
-        _connectTimeout = connectTimeout;
-    }
-    
+    /* ------------------------------------------------------------ */
+    /** Get the maxIdleTime for connections opened by this client.
+     * @return The maxIdleTime in ms, or -1 if the default from {@link #getSelectorManager()} is used.
+     */
     public int getMaxIdleTime()
     {
-        return (int)_selector.getMaxIdleTime();
+        return _maxIdleTime;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set the maxIdleTime for connections opened by this client.
+     * @param maxIdleTime max idle time in ms
+     */
     public void setMaxIdleTime(int maxIdleTime)
     {
-        _selector.setMaxIdleTime(maxIdleTime);
+        _maxIdleTime=maxIdleTime;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Get the WebSocket Buffer size for connections opened by this client.
+     * @return the buffer size in bytes.
+     */
     public int getBufferSize()
     {
         return _bufferSize;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set the WebSocket Buffer size for connections opened by this client.
+     * @param bufferSize the buffer size in bytes.
+     */
     public void setBufferSize(int bufferSize)
     {
+        if (isRunning())
+            throw new IllegalStateException(getState());
         _bufferSize = bufferSize;
     }
-
-    public boolean isBlockingConnect()
+    
+    /* ------------------------------------------------------------ */
+    /** Get the subprotocol string for connections opened by this client.
+     * @return The subprotocol
+     */
+    public String getProtocol()
     {
-        return _blockingConnect;
+        return _protocol;
     }
 
-    public void setBlockingConnect(boolean blockingConnect)
+    /* ------------------------------------------------------------ */
+    /** Set the subprotocol string for connections opened by this client.
+     * @param protocol The subprotocol
+     */
+    public void setProtocol(String protocol)
     {
-        _blockingConnect = blockingConnect;
+        _protocol = protocol;
     }
-
-    @Override
-    protected void doStart() throws Exception
+    
+    /* ------------------------------------------------------------ */
+    public Map<String,String> getCookies()
     {
-        _buffers = new WebSocketBuffers(_bufferSize); 
-
-        super.doStart();
-        for (int i=0;i<_selector.getSelectSets();i++)
+        return _cookies;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public List<String> getExtensions()
+    {
+        return _extensions;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /** Open a WebSocket connection.
+     * Open a websocket connection to the URI and block until the connection is accepted or there is an error.
+     * @param uri The URI to connect to.
+     * @param websocket The {@link WebSocket} instance to handle incoming events.
+     * @param maxConnectTime The interval to wait for a successful connection
+     * @param units the units of the maxConnectTime
+     * @return A {@link WebSocket.Connection}
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws TimeoutException
+     */
+    public WebSocket.Connection open(URI uri, WebSocket websocket,long maxConnectTime,TimeUnit units) throws IOException, InterruptedException, TimeoutException
+    {
+        try
         {
-            final int id=i;
-            _threadPool.dispatch(new Runnable(){
-                public void run()
-                {
-                    while(isRunning())
-                    {
-                        try
-                        {
-                            _selector.doSelect(id);
-                        }
-                        catch (IOException e)
-                        {
-                            __log.warn(e);
-                        }
-                    }
-                }
-            });
+            return open(uri,websocket).get(maxConnectTime,units);
         }
-        
-        _connectQ.setDuration(_connectTimeout);
-        _threadPool.dispatch(new Runnable(){
-            public void run()
-            {
-                while(isRunning())
-                {
-                    try
-                    {
-                        Thread.sleep(200); // TODO configure?
-                        _connectQ.tick(System.currentTimeMillis());
-                    }
-                    catch(Exception e)
-                    {
-                        __log.warn(e);
-                    }
-                }
-            }
-        });
-    }
-
-    public void open(URI uri, WebSocket websocket) throws IOException
-    {
-        open(uri,websocket,null,(int)_selector.getMaxIdleTime(),null,null);
+        catch (ExecutionException e)
+        {
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException)
+                throw (IOException)cause;
+            if (cause instanceof Error)
+                throw (Error)cause;
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException)cause;
+            throw new RuntimeException(cause);
+        }
     }
     
-    public void open(URI uri, WebSocket websocket, String protocol,int maxIdleTime) throws IOException
-    {
-        open(uri,websocket,protocol,(int)_selector.getMaxIdleTime(),null,null);
-    }
-    
-    public void open(URI uri, WebSocket websocket, String protocol,int maxIdleTime,Map<String,String> cookies) throws IOException
-    {
-        open(uri,websocket,protocol,(int)_selector.getMaxIdleTime(),cookies,null);
-    }
-    
-    public void open(URI uri, WebSocket websocket, String protocol,int maxIdleTime,Map<String,String> cookies,List<String> extensions) throws IOException
+    /* ------------------------------------------------------------ */
+    /** Asynchronously open a websocket connection.
+     * Open a websocket connection and return a {@link Future} to obtain the connection.  
+     * The caller must call {@link Future#get(long, TimeUnit)} if they wish to impose a connect timeout on the open.
+     * 
+     * @param uri The URI to connect to.
+     * @param websocket The {@link WebSocket} instance to handle incoming events.
+     * @return A {@link Future} to the {@link WebSocket.Connection}
+     * @throws IOException
+     */
+    public Future<WebSocket.Connection> open(URI uri, WebSocket websocket) throws IOException
     {
         if (!isStarted())
             throw new IllegalStateException("!started");
@@ -184,40 +268,66 @@ public class WebSocketClient extends AggregateLifeCycle
         
         SocketChannel channel = SocketChannel.open();
         channel.socket().setTcpNoDelay(true);
-        channel.socket().setSoTimeout(getMaxIdleTime());
+        int maxIdleTime = getMaxIdleTime();
+        if (maxIdleTime<0)
+            maxIdleTime=(int)_selector.getMaxIdleTime();
+        if (maxIdleTime>0)
+            channel.socket().setSoTimeout(maxIdleTime);
 
         InetSocketAddress address=new InetSocketAddress(uri.getHost(),uri.getPort());
 
-        WebSocketHolder holder=new WebSocketHolder(websocket,uri,protocol,maxIdleTime,cookies,extensions,channel);
-        
+        final WebSocketFuture holder=new WebSocketFuture(websocket,uri,_protocol,maxIdleTime,_cookies,_extensions,channel);
 
-        _connectQ.schedule(holder);
-        boolean thrown=true;
-        try
-        {
-            if (isBlockingConnect())
-            {
-                channel.socket().connect(address,0);
-                channel.configureBlocking(false);
-            }
-            else
-            {
-                channel.configureBlocking(false);
-                channel.connect(address);
-            }
+        channel.configureBlocking(false);
+        channel.connect(address);
+        _selector.register( channel, holder);
 
-            _selector.register( channel, holder);
-            thrown=false;
-        }
-        finally
-        {
-            if (thrown)
-                holder.cancel();
-        }
+        return holder;
     }
    
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (_parent!=null && !_parent.isRunning())
+            throw new IllegalStateException("parent:"+getState());
+        
+        _buffers = new WebSocketBuffers(_bufferSize); 
+
+        super.doStart();
+        
+        // Start a selector and timer if this is the root client
+        if (_parent==null)
+        {
+            for (int i=0;i<_selector.getSelectSets();i++)
+            {
+                final int id=i;
+                _threadPool.dispatch(new Runnable()
+                {
+                    public void run()
+                    {
+                        while(isRunning())
+                        {
+                            try
+                            {
+                                _selector.doSelect(id);
+                            }
+                            catch (IOException e)
+                            {
+                                __log.warn(e);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    }
+
     
-    class Selector extends SelectorManager
+    /* ------------------------------------------------------------ */
+    /** WebSocket Client Selector Manager
+     */
+    class WebSocketClientSelector extends SelectorManager
     {
         @Override
         public boolean dispatch(Runnable task)
@@ -234,18 +344,20 @@ public class WebSocketClient extends AggregateLifeCycle
         @Override
         protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
         {
-            WebSocketHolder holder = (WebSocketHolder) endpoint.getSelectionKey().attachment();
+            WebSocketFuture holder = (WebSocketFuture) endpoint.getSelectionKey().attachment();
             return new HandshakeConnection(endpoint,holder);
         }
         
         @Override
         protected void endPointOpened(SelectChannelEndPoint endpoint)
         {
+            // TODO expose on outer class
         }
 
         @Override
         protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
         {
+            throw new IllegalStateException();
         }
 
         @Override
@@ -257,29 +369,34 @@ public class WebSocketClient extends AggregateLifeCycle
         @Override
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
-            if (!(attachment instanceof WebSocketHolder))
+            if (!(attachment instanceof WebSocketFuture))
                 super.connectionFailed(channel,ex,attachment);
             else
             {
                 __log.debug(ex);
-                WebSocketHolder holder = (WebSocketHolder)attachment;
-                holder.cancel();
-                holder.getWebSocket().onError(ex.toString(),ex);
+                WebSocketFuture holder = (WebSocketFuture)attachment;
+                
+                holder.handshakeFailed(ex);
             } 
         }
     }
     
+    
+    /* ------------------------------------------------------------ */
+    /** Handshake Connection.
+     * Handles the connection until the handshake succeeds or fails.
+     */
     class HandshakeConnection extends AbstractConnection
     {
         private final SelectChannelEndPoint _endp;
-        private final WebSocketHolder _holder;
+        private final WebSocketFuture _holder;
         private final String _key;
         private final HttpParser _parser;
         private String _accept;
         private String _error;
         
         
-        public HandshakeConnection(SelectChannelEndPoint endpoint, WebSocketHolder holder)
+        public HandshakeConnection(SelectChannelEndPoint endpoint, WebSocketFuture holder)
         {
             super(endpoint,System.currentTimeMillis());
             _endp=endpoint;
@@ -328,15 +445,18 @@ public class WebSocketClient extends AggregateLifeCycle
                 }
             });
             
+            String path=_holder.getURI().getPath();
+            if (path==null || path.length()==0)
+                path="/";
             
             String request=
-                "GET "+_holder.getURI().getPath()+" HTTP/1.1\r\n"+
+                "GET "+path+" HTTP/1.1\r\n"+
                 "Host: "+holder.getURI().getHost()+":"+_holder.getURI().getPort()+"\r\n"+
                 "Upgrade: websocket\r\n"+
                 "Connection: Upgrade\r\n"+
                 "Sec-WebSocket-Key: "+_key+"\r\n"+
                 "Sec-WebSocket-Origin: http://example.com\r\n"+
-                "Sec-WebSocket-Version: 8\r\n";
+                "Sec-WebSocket-Version: "+WebSocketConnectionD10.VERSION+"\r\n";
             
             if (holder.getProtocol()!=null)
                 request+="Sec-WebSocket-Protocol: "+holder.getProtocol()+"\r\n";
@@ -356,16 +476,16 @@ public class WebSocketClient extends AggregateLifeCycle
             
             try
             {
-                ByteArrayBuffer handshake = new ByteArrayBuffer(request);
+                Buffer handshake = new ByteArrayBuffer(request,false);
                 int len=handshake.length();
                 if (len!=_endp.flush(handshake))
                     throw new IOException("incomplete");
             }
             catch(IOException e)
             {
-                __log.debug(e);
-                _holder.getWebSocket().onError("Handshake failed",e);
+                holder.handshakeFailed(e);
             }
+            
         }
 
         public Connection handle() throws IOException
@@ -375,8 +495,7 @@ public class WebSocketClient extends AggregateLifeCycle
                 switch (_parser.parseAvailable())
                 {
                     case -1:
-                        _holder.cancel();
-                        _holder.getWebSocket().onError("EOF",new EOFException());
+                        _holder.handshakeFailed(new IOException("Incomplete handshake response"));
                         return this;
                     case 0:
                         return this;
@@ -384,25 +503,25 @@ public class WebSocketClient extends AggregateLifeCycle
                         break;    
                 }
             }
-            
-            if (_error==null && _accept==null)
-                _error="No Sec-WebSocket-Accept";
-            else if (_error==null && !WebSocketConnectionD10.hashKey(_key).equals(_accept))
-                _error="Bad Sec-WebSocket-Accept";
-            else
+            if (_error==null)
             {
-                Buffer header=_parser.getHeaderBuffer();
-                WebSocketConnectionD10 connection = new WebSocketConnectionD10(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10, new WebSocketGeneratorD10.RandomMaskGen());
-                
-                if (header.hasContent())
-                    connection.fillBuffersFrom(header);
-                _buffers.returnBuffer(header);
+                if (_accept==null)
+                    _error="No Sec-WebSocket-Accept";
+                else if (!WebSocketConnectionD10.hashKey(_key).equals(_accept))
+                    _error="Bad Sec-WebSocket-Accept";
+                else 
+                {
+                    Buffer header=_parser.getHeaderBuffer();
+                    WebSocketConnectionD10 connection = new WebSocketConnectionD10(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10, new WebSocketGeneratorD10.RandomMaskGen());
 
-                if (_holder.getWebSocket() instanceof WebSocket.OnFrame)
-                    ((WebSocket.OnFrame)_holder.getWebSocket()).onHandshake((WebSocket.FrameConnection)connection.getConnection());
-                _holder.cancel();
-                _holder.getWebSocket().onOpen(connection.getConnection());
-                return connection;
+                    if (header.hasContent())
+                        connection.fillBuffersFrom(header);
+                    _buffers.returnBuffer(header);
+
+                    _holder.onConnection(connection);
+                    
+                    return connection;
+                }
             }
 
             _endp.close();
@@ -421,13 +540,18 @@ public class WebSocketClient extends AggregateLifeCycle
 
         public void closed()
         {
-            _holder.cancel();
-            _holder.getWebSocket().onError(_error==null?"EOF":_error,null);
+            if (_error!=null)
+                _holder.handshakeFailed(new ProtocolException(_error));
+            else
+                _holder.handshakeFailed(new EOFException());
         }
     }
 
-
-    class WebSocketHolder extends Timeout.Task
+    
+    /* ------------------------------------------------------------ */
+    /** The Future Websocket Connection.
+     */
+    class WebSocketFuture implements Future<WebSocket.Connection>
     {
         final WebSocket _websocket;;
         final URI _uri;
@@ -435,9 +559,13 @@ public class WebSocketClient extends AggregateLifeCycle
         final int _maxIdleTime;
         final Map<String,String> _cookies;
         final List<String> _extensions;
-        final ByteChannel _channel;
+        final CountDownLatch _done = new CountDownLatch(1);
+
+        ByteChannel _channel;
+        WebSocketConnection _connection;
+        Throwable _exception;
         
-        public WebSocketHolder(WebSocket websocket, URI uri, String protocol, int maxIdleTime, Map<String,String> cookies,List<String> extensions, ByteChannel channel)
+        public WebSocketFuture(WebSocket websocket, URI uri, String protocol, int maxIdleTime, Map<String,String> cookies,List<String> extensions, ByteChannel channel)
         {
             _websocket=websocket;
             _uri=uri;
@@ -448,6 +576,60 @@ public class WebSocketClient extends AggregateLifeCycle
             _channel=channel;
         }
         
+        public void onConnection(WebSocketConnection connection)
+        {   
+            try
+            {
+                synchronized (this)
+                {
+                    if (_channel!=null)
+                        _connection=connection;
+                }
+
+                if (_connection!=null)
+                {
+                    if (_websocket instanceof WebSocket.OnFrame)
+                        ((WebSocket.OnFrame)_websocket).onHandshake((WebSocket.FrameConnection)connection.getConnection());
+
+                    _websocket.onOpen(connection.getConnection());
+
+                } 
+            }
+            finally
+            {
+                _done.countDown();
+            }
+        }
+
+        public void handshakeFailed(Throwable ex)
+        {  
+            try
+            {
+                ByteChannel channel=null;
+                synchronized (this)
+                {
+                    if (_channel!=null)
+                    {
+                        channel=_channel;
+                        _channel=null;
+                        _exception=ex;
+                    }
+                }
+
+                if (channel!=null)
+                {
+                    if (ex instanceof ProtocolException)
+                        closeChannel(channel,WebSocketConnectionD10.CLOSE_PROTOCOL,ex.getMessage());
+                    else
+                        closeChannel(channel,WebSocketConnectionD10.CLOSE_NOCLOSE,ex.getMessage());
+                }
+            }
+            finally
+            {
+                _done.countDown();
+            }
+        }
+
         public Map<String,String> getCookies()
         {
             return _cookies;
@@ -472,25 +654,115 @@ public class WebSocketClient extends AggregateLifeCycle
         {
             return _maxIdleTime;
         }
-
-        @Override
-        public void expired()
-        {
-            try
-            {
-                __log.debug("expired "+this);
-                getWebSocket().onError("expired",null);
-                _channel.close();
-            }
-            catch(IOException e)
-            {
-                __log.ignore(e);
-            }
-        }
         
         public String toString()
         {
             return "[" + _uri + ","+_websocket+"]@"+hashCode();
+        }
+
+        public boolean cancel(boolean mayInterruptIfRunning)
+        {
+            try
+            {
+                ByteChannel channel=null;
+                synchronized (this)
+                {
+                    if (_connection==null && _exception==null && _channel!=null)
+                    {
+                        channel=_channel;
+                        _channel=null;
+                    }
+                }
+
+                if (channel!=null)
+                {
+                    closeChannel(channel,WebSocketConnectionD10.CLOSE_NOCLOSE,"cancelled");
+                    return true;
+                }
+                return false;
+            }
+            finally
+            {
+                _done.countDown();
+            }
+        }
+
+        public boolean isCancelled()
+        {
+            synchronized (this)
+            {
+                return _channel==null && _connection==null;
+            }
+        }
+
+        public boolean isDone()
+        {
+            synchronized (this)
+            {
+                return _connection!=null && _exception==null;
+            }
+        }
+
+        public org.eclipse.jetty.websocket.WebSocket.Connection get() throws InterruptedException, ExecutionException
+        {
+            try
+            {
+                return get(Long.MAX_VALUE,TimeUnit.SECONDS);
+            }
+            catch(TimeoutException e)
+            {
+                throw new IllegalStateException("The universe has ended",e);
+            }
+        }
+
+        public org.eclipse.jetty.websocket.WebSocket.Connection get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException,
+                TimeoutException
+        {
+            _done.await(timeout,unit);
+            ByteChannel channel=null;
+            org.eclipse.jetty.websocket.WebSocket.Connection connection=null;
+            Throwable exception=null;
+            synchronized (this)
+            {
+                exception=_exception;
+                if (_connection==null)
+                {
+                    exception=_exception;
+                    channel=_channel;
+                    _channel=null;
+                }
+                else
+                    connection=_connection.getConnection();
+            }
+            
+            if (channel!=null)
+                closeChannel(channel,WebSocketConnectionD10.CLOSE_NOCLOSE,"timeout");
+            if (exception!=null)
+                throw new ExecutionException(exception);
+            if (connection!=null)
+                return connection;
+            throw new TimeoutException();
+        }
+
+        private void closeChannel(ByteChannel channel,int code, String message)
+        {
+            try
+            {
+                _websocket.onClose(code,message);
+            }
+            catch(Exception e)
+            {
+                __log.warn(e);
+            }
+            
+            try
+            {
+                channel.close();
+            }
+            catch(IOException e)
+            {
+                __log.debug(e);
+            }
         }
     }
     

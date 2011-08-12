@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -105,7 +104,6 @@ public class ExpireTest
             exchange.setURL(baseUrl);
 
             client.send(exchange);
-            Thread.sleep(50);
         }
 
         // Wait to be sure that all exchanges have expired

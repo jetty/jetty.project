@@ -15,11 +15,8 @@ package org.eclipse.jetty.websocket;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.Buffers.Type;
-import org.eclipse.jetty.io.ThreadLocalBuffers;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+import org.eclipse.jetty.io.BuffersFactory;
 
 
 /* ------------------------------------------------------------ */

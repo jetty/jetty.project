@@ -15,15 +15,16 @@
 package org.eclipse.jetty.monitor;
 
 import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -32,17 +33,20 @@ import org.eclipse.jetty.util.log.Logger;
 public class ThreadMonitor extends AbstractLifeCycle implements Runnable
 {
     private int _scanInterval;
+    private int _logInterval;
     private int _busyThreshold;
+    private int _logThreshold;
     private int _stackDepth;
+    private int _trailLength;
     
     private ThreadMXBean _threadBean;
-    private Method findDeadlockedThreadsMethod;
     
     private Thread _runner;
     private Logger _logger;
     private volatile boolean _done = true;
+    private Dumpable _dumpable;
 
-    private Map<Long,ExtThreadInfo> _extInfo;
+    private Map<Long,ThreadMonitorInfo> _monitorInfo;
     
     /* ------------------------------------------------------------ */
     /**
@@ -52,7 +56,32 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      */
     public ThreadMonitor() throws Exception
     {
-        this(5000, 95, 3);
+        this(5000);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Instantiates a new thread monitor.
+     *
+     * @param intervalMs scan interval
+     * @throws Exception
+     */
+    public ThreadMonitor(int intervalMs) throws Exception
+    {
+        this(intervalMs, 95);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Instantiates a new thread monitor.
+     *
+     * @param intervalMs scan interval
+     * @param threshold busy threshold
+     * @throws Exception
+     */
+    public ThreadMonitor(int intervalMs, int threshold) throws Exception
+    {
+        this(intervalMs, threshold, 3);
     }
     
     /* ------------------------------------------------------------ */
@@ -66,50 +95,193 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      */
     public ThreadMonitor(int intervalMs, int threshold, int depth) throws Exception
     {
+        this(intervalMs, threshold, depth, 3);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Instantiates a new thread monitor.
+     *
+     * @param intervalMs scan interval
+     * @param threshold busy threshold
+     * @param depth stack compare depth
+     * @param trail length of stack trail
+     * @throws Exception
+     */
+    public ThreadMonitor(int intervalMs, int threshold, int depth, int trail) throws Exception
+    {
         _scanInterval = intervalMs;
         _busyThreshold = threshold;
         _stackDepth = depth;
+        _trailLength = trail;
         
-        _logger = Log.getLogger(getClass().getName());
-        _extInfo = new HashMap<Long, ExtThreadInfo>();
+        _logger = Log.getLogger(ThreadMonitor.class.getName());
+        _monitorInfo = new HashMap<Long, ThreadMonitorInfo>();
        
         init();
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * Gets the scan interval.
+     *
+     * @return the scan interval
+     */
     public int getScanInterval()
     {
         return _scanInterval;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Sets the scan interval.
+     *
+     * @param ms the new scan interval
+     */
     public void setScanInterval(int ms)
     {
         _scanInterval = ms;
     }
 
     /* ------------------------------------------------------------ */
-   public int getBusyThreshold()
+    /**
+     * Gets the log interval.
+     *
+     * @return the log interval
+     */
+    public int getLogInterval()
+    {
+        return _logInterval;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the log interval.
+     *
+     * @param ms the new log interval
+     */
+    public void setLogInterval(int ms)
+    {
+        _logInterval = ms;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Gets the busy threshold.
+     *
+     * @return the busy threshold
+     */
+    public int getBusyThreshold()
     {
         return _busyThreshold;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Sets the busy threshold.
+     *
+     * @param percent the new busy threshold
+     */
     public void setBusyThreshold(int percent)
     {
         _busyThreshold = percent;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Gets the log threshold.
+     *
+     * @return the log threshold
+     */
+    public int getLogThreshold()
+    {
+        return _logThreshold;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the log threshold.
+     *
+     * @param percent the new log threshold
+     */
+    public void setLogThreshold(int percent)
+    {
+        _logThreshold = percent;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Gets the stack depth.
+     *
+     * @return the stack depth
+     */
     public int getStackDepth()
     {
         return _stackDepth;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Sets the stack depth.
+     *
+     * @param stackDepth the new stack depth
+     */
     public void setStackDepth(int stackDepth)
     {
         _stackDepth = stackDepth;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the stack trace trail length.
+     *
+     * @param trailLength the new trail length
+     */
+    public void setTrailLength(int trailLength)
+    {
+        _trailLength = trailLength;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Gets the stack trace trail length.
+     *
+     * @return the trail length
+     */
+    public int getTrailLength()
+    {
+        return _trailLength;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Enable logging of CPU usage.
+     *
+     * @param frequencyMs the logging frequency 
+     * @param thresholdPercent the logging threshold
+     */
+    public void logCpuUsage(int frequencyMs, int thresholdPercent)
+    {
+        setLogInterval(frequencyMs);
+        setLogThreshold(thresholdPercent);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return A {@link Dumpable} that is dumped whenever spinning threads are detected
+     */
+    public Dumpable getDumpable()
+    {
+        return _dumpable;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param dumpable A {@link Dumpable} that is dumped whenever spinning threads are detected
+     */
+    public void setDumpable(Dumpable dumpable)
+    {
+        _dumpable = dumpable;
     }
 
     /* ------------------------------------------------------------ */
@@ -121,6 +293,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         _done = false;
         
         _runner = new Thread(this);
+        _runner.setDaemon(true);
         _runner.start();
 
         Log.info("Thread Monitor started successfully");
@@ -145,49 +318,6 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
 
     /* ------------------------------------------------------------ */
     /**
-     * Initialize JMX objects.
-     */
-    protected void init()
-    {
-        _threadBean = ManagementFactory.getThreadMXBean();
-        if (_threadBean.isThreadCpuTimeSupported())
-        {
-            _threadBean.setThreadCpuTimeEnabled(true);
-        }
-        
-        String versionStr = System.getProperty("java.version");
-        float version = Float.valueOf(versionStr.substring(0,versionStr.lastIndexOf('.')));
-        try
-        {
-            if (version < 1.6)
-            { 
-                findDeadlockedThreadsMethod = ThreadMXBean.class.getMethod("findMonitorDeadlockedThreads");
-            }
-            else
-            {
-                findDeadlockedThreadsMethod = ThreadMXBean.class.getMethod("findDeadlockedThreads");
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.debug(ex);
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Find deadlocked threads.
-     *
-     * @return array of the deadlocked thread ids
-     * @throws Exception the exception
-     */
-    protected long[] findDeadlockedThreads() throws Exception
-    {
-        return (long[]) findDeadlockedThreadsMethod.invoke(_threadBean,(Object[])null);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
      * Retrieve all avaliable thread ids
      *
      * @return array of thread ids
@@ -196,7 +326,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     {
         return _threadBean.getAllThreadIds();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Retrieve the cpu time for specified thread.
@@ -211,79 +341,62 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     
     /* ------------------------------------------------------------ */
     /**
-     * Retrieve thread info.
-     *
-     * @param id thread id
-     * @param maxDepth maximum stack depth
-     * @return thread info
+     * Initialize JMX objects.
      */
-    protected ThreadInfo getThreadInfo(long id, int maxDepth)
+    protected void init()
     {
-        return _threadBean.getThreadInfo(id,maxDepth);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Output thread info to log.
-     *
-     * @param threads thread info list
-     */
-    protected void dump(final List<ThreadInfo> threads)
-    {
-        if (threads != null && threads.size() > 0)
+        _threadBean = ManagementFactory.getThreadMXBean();
+        if (_threadBean.isThreadCpuTimeSupported())
         {
-            for (ThreadInfo info : threads)
-            {
-                StringBuffer msg = new StringBuffer();
-                if (info.getLockOwnerId() < 0)
-                {
-                    msg.append(String.format("Thread %s[%d] is spinning", info.getThreadName(), info.getThreadId()));
-                }
-                else
-                {
-                    msg.append(String.format("Thread %s[%d] is %s", info.getThreadName(), info.getThreadId(), info.getThreadState()));
-                    msg.append(String.format(" on %s owned by %s[%d]", info.getLockName(), info.getLockOwnerName(), info.getLockOwnerId()));
-                }
-                
-                _logger.warn(new ThreadMonitorException(msg.toString(), info.getStackTrace()));
-            }
+            _threadBean.setThreadCpuTimeEnabled(true);
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see java.lang.Runnable#run()
      */
     public void run()
     {
-        long currTime; 
-        long lastTime = 0;
+        // Initialize repeat flag
+        boolean repeat = false;
+        boolean scanNow, logNow;
+
+        // Set next scan time and log time
+        long nextScanTime = System.currentTimeMillis();
+        long nextLogTime = nextScanTime + _logInterval;
+        
         while (!_done)
         {
-            currTime = System.currentTimeMillis();
-            if (currTime < lastTime + _scanInterval)
+            long currTime = System.currentTimeMillis();
+            scanNow = (currTime > nextScanTime);
+            logNow = (_logInterval > 0 && currTime > nextLogTime);
+            if (repeat || scanNow || logNow)
+            {
+                repeat = collectThreadInfo();
+                logThreadInfo(logNow);
+
+                if (scanNow)
+                {
+                    nextScanTime = System.currentTimeMillis() + _scanInterval;
+                }
+                if (logNow)
+                {
+                    nextLogTime = System.currentTimeMillis() + _logInterval;
+                }
+            }
+
+            // Sleep only if not going to repeat scanning immediately
+            if (!repeat)
             {
                 try
                 {
-                    Thread.sleep(50);
+                    Thread.sleep(100);
                 }
                 catch (InterruptedException ex)
                 {
                     Log.ignore(ex);
                 }
-                continue;
-            }
-            
-            List<ThreadInfo> threadInfo = new ArrayList<ThreadInfo>(); 
-            
-            findSpinningThreads(threadInfo);
-            findDeadlockedThreads(threadInfo);
-
-            lastTime = System.currentTimeMillis();
-            
-            if (threadInfo.size() > 0)
-            {
-                dump(threadInfo);
             }
         }
         
@@ -291,104 +404,158 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     
     /* ------------------------------------------------------------ */
     /**
-     * Find spinning threads.
-     *
-     * @param threadInfo thread info list to add the results
-     * @return thread info list
+     * Collect thread info.
      */
-    private List<ThreadInfo> findSpinningThreads(final List<ThreadInfo> threadInfo)
+    private boolean collectThreadInfo()
     {
-        if (threadInfo != null)
+        boolean repeat = false;
+        try
         {
-            try
+            // Retrieve stack traces for all threads at once as it 
+            // was proven to be an order of magnitude faster when
+            // retrieving a single thread stack trace.
+            Map<Thread,StackTraceElement[]> all = Thread.getAllStackTraces();
+            
+            for (Map.Entry<Thread,StackTraceElement[]> entry : all.entrySet())
             {
-                long[] allThreadId = getAllThreadIds();            
-                for (int idx=0; idx < allThreadId.length; idx++)
+                Thread thread = entry.getKey();
+                long threadId = thread.getId();
+                
+                // Skip our own runner thread
+                if (threadId == _runner.getId())
                 {
-                    long currId = allThreadId[idx];
-                    
-                    if (currId == _runner.getId())
-                    {
-                        continue;
-                    }
-    
-                    long currCpuTime = getThreadCpuTime(currId);
-                    long currNanoTime = System.nanoTime();
-                    
-                    ExtThreadInfo currExtInfo = _extInfo.get(Long.valueOf(currId));
-                    if (currExtInfo != null)
-                    {
-                        long elapsedCpuTime = currCpuTime - currExtInfo.getLastCpuTime();
-                        long elapsedNanoTime = currNanoTime - currExtInfo.getLastSampleTime();
-    
-                        if (((elapsedCpuTime * 100.0) / elapsedNanoTime) > _busyThreshold)
-                        {
-                            ThreadInfo currInfo = getThreadInfo(currId, Integer.MAX_VALUE);
-                            if (currInfo != null)
-                            {
-                                StackTraceElement[] lastStackTrace = currExtInfo.getStackTrace();
-                                currExtInfo.setStackTrace(currInfo.getStackTrace());
+                    continue;
+                }
 
-                                if (lastStackTrace != null 
-                                && matchStackTraces(lastStackTrace, currInfo.getStackTrace())) {
-                                    threadInfo.add(currInfo);
-                                }
+                ThreadMonitorInfo currMonitorInfo = _monitorInfo.get(Long.valueOf(threadId));
+                if (currMonitorInfo == null)
+                {
+                    // Create thread info object for a new thread 
+                    currMonitorInfo = new ThreadMonitorInfo(thread);
+                    currMonitorInfo.setStackTrace(entry.getValue());
+                    currMonitorInfo.setCpuTime(getThreadCpuTime(threadId));
+                    currMonitorInfo.setSampleTime(System.nanoTime());
+                    _monitorInfo.put(Long.valueOf(threadId), currMonitorInfo);
+                }
+                else
+                {
+                    // Update the existing thread info object
+                    currMonitorInfo.setStackTrace(entry.getValue());
+                    currMonitorInfo.setCpuTime(getThreadCpuTime(threadId));
+                    currMonitorInfo.setSampleTime(System.nanoTime());
+    
+                    // Stack trace count holds logging state
+                    int count = currMonitorInfo.getTraceCount();
+                    if (count >= 0 && currMonitorInfo.isSpinning())
+                    {
+                        // Thread was spinning and was logged before
+                        if (count < _trailLength) 
+                        {
+                            // Log another stack trace
+                            currMonitorInfo.setTraceCount(count+1);
+                            repeat = true;
+                            continue;
+                        }
+                        
+                        // Reset spin flag and trace count
+                        currMonitorInfo.setSpinning(false);
+                        currMonitorInfo.setTraceCount(-1);
+                    }
+                    if (currMonitorInfo.getCpuUtilization() > _busyThreshold)
+                    {
+                        // Thread is busy
+                        StackTraceElement[] lastStackTrace = currMonitorInfo.getStackTrace();
+    
+                        if (lastStackTrace != null 
+                        && matchStackTraces(lastStackTrace, entry.getValue()))
+                        {
+                            // Thread is spinning
+                            currMonitorInfo.setSpinning(true);
+                            if (count < 0)
+                            {
+                                // Enable logging of spin status and stack traces 
+                                // only if the incoming trace count is negative
+                                // that indicates a new scan for this thread
+                                currMonitorInfo.setTraceCount(0);
+                                repeat = (_trailLength > 0);
                             }
                         }
                     }
-                    else
-                    {
-                        currExtInfo = new ExtThreadInfo(currId);
-                        _extInfo.put(Long.valueOf(currId), currExtInfo);
-                    }
-                    
-                    currExtInfo.setLastCpuTime(currCpuTime);
-                    currExtInfo.setLastSampleTime(currNanoTime);
                 }
             }
-            catch (Exception ex)
-            {
-                Log.debug(ex);
-            }
         }
-        
-        return threadInfo;
+        catch (Exception ex)
+        {
+            Log.debug(ex);
+        }
+        return repeat;
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * Find deadlocked threads.
-     *
-     * @param threadInfo thread info list to add the results
-     * @return thread info list
-     */
-    private List<ThreadInfo> findDeadlockedThreads(final List<ThreadInfo> threadInfo)
+    protected void logThreadInfo(boolean logAll)
     {
-        if (threadInfo != null)
+        if (_monitorInfo.size() > 0)
         {
-            try
+            // Select thread objects for all live threads
+            long[] running = getAllThreadIds();
+            List<ThreadMonitorInfo> all = new ArrayList<ThreadMonitorInfo>();
+            for (int idx=0; idx<running.length; idx++)
             {
-                long[] threads = findDeadlockedThreads();
-                if (threads != null && threads.length > 0)
+                ThreadMonitorInfo info = _monitorInfo.get(running[idx]); 
+                if (info != null)
                 {
-                    ThreadInfo currInfo;
-                    for (int idx=0; idx < threads.length; idx++)
-                    {
-                        currInfo = getThreadInfo(threads[idx], Integer.MAX_VALUE);
-                        if (currInfo != null)
-                        {
-                            threadInfo.add(currInfo);
-                        }
-                    }
+                    all.add(info);
                 }
             }
-            catch (Exception ex)
+
+            // Sort selected thread objects by their CPU utilization
+            Collections.sort(all, new Comparator<ThreadMonitorInfo>()
             {
-                Log.debug(ex);
+                /* ------------------------------------------------------------ */
+                public int compare(ThreadMonitorInfo info1, ThreadMonitorInfo info2)
+                {
+                    return (int)Math.signum(info2.getCpuUtilization()-info1.getCpuUtilization());
+                }
+            });
+            
+            String format = "Thread '%2$s'[%3$s,id:%1$d,cpu:%4$.2f%%]%5$s";
+            
+            // Log thread information for threads that exceed logging threshold
+            // or log spinning threads if their trace count is zero
+            boolean spinning=false;
+            for (ThreadMonitorInfo info : all)
+            {
+                if (logAll && info.getCpuUtilization() > _logThreshold 
+                || info.isSpinning() && info.getTraceCount() == 0)
+                {
+                    String message = String.format(format, 
+                            info.getThreadId(), info.getThreadName(), 
+                            info.getThreadState(), info.getCpuUtilization(),
+                            info.isSpinning() ? " SPINNING" : "");
+                   _logger.info(message);
+                   spinning=true;
+                }
+            }
+            
+            // Dump info
+            if (spinning && _dumpable!=null)
+            {
+                System.err.println(_dumpable.dump());
+            }
+
+            // Log stack traces for spinning threads with positive trace count
+            for (ThreadMonitorInfo info : all)
+            {
+                if (info.isSpinning() && info.getTraceCount() >= 0)
+                {
+                    String message = String.format(format,
+                            info.getThreadId(), info.getThreadName(), 
+                            info.getThreadState(), info.getCpuUtilization(),
+                            " STACK TRACE");
+                    _logger.warn(new ThreadMonitorException(message, info.getStackTrace()));
+                }
             }
         }
-            
-        return threadInfo;
     }
 
     /* ------------------------------------------------------------ */
@@ -413,92 +580,5 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
             }
         }
         return match;
-    }
-
-    /* ------------------------------------------------------------ */
-    private class ExtThreadInfo
-    {
-        private long _threadId;
-
-        private long _lastCpuTime;
-        private long _lastSampleTime;
-        private StackTraceElement[] _stackTrace;
-
-        /* ------------------------------------------------------------ */
-        public ExtThreadInfo(long threadId)
-        {
-            _threadId = threadId;   
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return thread id associated with the instance
-         */
-        public long getThreadId()
-        {
-            return _threadId;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return the last CPU time of the thread
-         */
-        public long getLastCpuTime()
-        {
-            return _lastCpuTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Set the last CPU time.
-         *
-         * @param lastCpuTime new last CPU time
-         */
-        public void setLastCpuTime(long lastCpuTime)
-        {
-            this._lastCpuTime = lastCpuTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * @return the time of last sample  
-         */
-        public long getLastSampleTime()
-        {
-            return _lastSampleTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Sets the last sample time.
-         *
-         * @param lastSampleTime the time of last sample
-         */
-        public void setLastSampleTime(long lastSampleTime)
-        {
-            _lastSampleTime = lastSampleTime;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Gets the stack trace.
-         *
-         * @return the stack trace
-         */
-        public StackTraceElement[] getStackTrace()
-        {
-            return _stackTrace;
-        }
-
-        /* ------------------------------------------------------------ */
-        /**
-         * Sets the stack trace.
-         *
-         * @param stackTrace the new stack trace
-         */
-        public void setStackTrace(StackTraceElement[] stackTrace)
-        {
-            _stackTrace = stackTrace;
-        }
     }
 }
