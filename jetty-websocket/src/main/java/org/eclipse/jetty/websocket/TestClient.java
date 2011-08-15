@@ -228,7 +228,7 @@ public class TestClient implements WebSocket.OnFrame
             __start=System.currentTimeMillis();
             for (int i=0;i<clients;i++)
             {
-                client[i]=new TestClient(host,port,protocol==null?null:protocol,10000);
+                client[i]=new TestClient(host,port,protocol==null?null:protocol,60000);
                 client[i].open();
             }
 
