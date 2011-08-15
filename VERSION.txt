@@ -1,4 +1,4 @@
-jetty-7.5.0-SNAPSHOT
+jetty-7.5.0.RC0 August 15th 2011
  + 298502 Handle 200 Connect responses with no content-length
  + 351516 Refactored sessions to better support nosql session managers
  + 351576 Do not use deprecated method File.toURL()
