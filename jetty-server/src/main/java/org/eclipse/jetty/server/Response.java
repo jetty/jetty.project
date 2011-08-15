@@ -125,7 +125,7 @@ public class Response implements HttpServletResponse
                 cookie.getMaxAge(),
                 cookie.getComment(),
                 cookie.getSecure(),
-                false,//cookie.isHttpOnly(),
+                cookie.isHttpOnly(),
                 cookie.getVersion());
     }
 

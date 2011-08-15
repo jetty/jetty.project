@@ -1,6 +1,7 @@
 jetty-8.0.0.RC0-SNAPSHOT
  + Merge from jetty-7.4.3
  + Enable annotations by default
+ + 352565 cookie httponly flag ignored
  + 353285 ServletSecurity annotation ignored
 
 jetty-8.0.0.M3 27 May 2011
