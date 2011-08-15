@@ -2317,7 +2317,7 @@ jetty-6.0.0rc0 - 7 July 2006
  + fixed HttpGenerator convertion of non UTF-8: JETTY-82
  + added html module from jetty 5 - but deprecated until maintainer found
 
-jetty-6.0.0beta17 - 1/6/2006
+jetty-6.0.0beta17 - 1 Jun 2006
  + Added config to disable file memory mapped buffers for windows
  + Added Request.isHandled()
  + Refactored Synchronization of SelectChannelConnector
@@ -2333,11 +2333,11 @@ jetty-6.0.0beta17 - 1/6/2006
  + don't reset headers during forward
  + BoundedThreadPool.doStop waits for threads to complete
 
-jetty-6.0.0beta16 - 12/5/2006
+jetty-6.0.0beta16 - 12 May 2006
  + remove a couple of System.err.printlns
  + replace backwards compativle API in UrlEncoded
 
-jetty-6.0.0beta15 - 11/5/2006
+jetty-6.0.0beta15 - 11 May 2006
  + Added Server attribute org.mortbay.jetty.Request.maxFormContentSize
  + Renamed NotFoundHandler to DefaultHandler
  + Added automatic scan of all WEB-INF/jetty-*.xml files for plugin
@@ -2364,7 +2364,7 @@ jetty-6.0.0beta15 - 11/5/2006
  + don't accept partial authority in request line.
  + enforce 204 and 304 have no content
 
-jetty-6.0.0beta14 - 9/4/2006
+jetty-6.0.0beta14 - 9 Apr 2006
  + ignore dirs and files that don't exist in plugin scanner
  + added support for stopping jetty using "java -jar start.jar --stop"
  + added configurability for webdefault.xml in maven plugin
@@ -2388,7 +2388,7 @@ jetty-6.0.0beta14 - 9/4/2006
  + added reset to Continuation
 
 
-jetty-6.0.0beta12 - 16/3/2006
+jetty-6.0.0beta12 - 16 Mar 2006
  + Fixed maven plugin JNDI for redeploys
  + Fixed tld discovery for plugin (search dependencies)
  + Fixed JettyPlus for root contexts
@@ -2398,7 +2398,7 @@ jetty-6.0.0beta12 - 16/3/2006
  + Added provider support to SslListener
  + Log ERROR for runtimeExceptions
 
-jetty-6.0.0beta11 - 14/3/2006
+jetty-6.0.0beta11 - 14 Mar 2006
  + added JAAS
  + added webapp-specific JNDI entries
  + added missing Configurations for maven plugin
@@ -2411,7 +2411,7 @@ jetty-6.0.0beta11 - 14/3/2006
  + Added HttpURI and improved UTF-8 parsing.
  + refactored writers and improved UTF-8 generation.
 
-jetty-6.0.0beta10 25/2/2006
+jetty-6.0.0beta10 25 Feb 2006
  + Added support for java:comp/env
  + Added support for pluggable transaction manager
  + Forward masks include attributes and vice versa
@@ -2425,7 +2425,7 @@ jetty-6.0.0beta10 25/2/2006
  + Fix http://jira.codehaus.org/browse/JETTY-6. hi byte reader
  + Updates javax to MR2 release
 
-jetty-6.0.0beta9 9/2/2006
+jetty-6.0.0beta9 9 Feb 2006
  + PathMap for direct context mapping.
  + Refactored chat demo and upgraded prototype.js
  + Continuation cleanup
@@ -2439,7 +2439,7 @@ jetty-6.0.0beta9 9/2/2006
  + fixed setLocale bug sf1426940
  + Added TLD tag listener handling.
 
-jetty-6.0.0beta8 24/1/2006
+jetty-6.0.0beta8 24 Jan 2006
  + fixed dispatch of new session problem. sf:1407090
  + reinstated rfc2616 test harness
  + Handle pipeline requests without hangs
@@ -3208,7 +3208,7 @@ Jetty-4.2.0 - 16 November 2002
  + Added upload demo to dump servlet.
  + Many more optimizations.
 
-Jetty-4.1.4 - 16 November
+Jetty-4.1.4 - 16 November 2002
  + Fixed ContextLoader parent delegation bug
  + Fixed remove SocketListener bug.
  + Fixed Invoker servlet for RD.include
@@ -3237,7 +3237,7 @@ Jetty-4.2.0rc0 - 24 October 2002
  + Added authenticator to admin.xml
  + Fixed Session timeout NPE.
 
- Jetty-4.1.3 - 24 October 2002
+Jetty-4.1.3 - 24 October 2002
  + Fixed RolloverFileOutputStream without date.
  + Fixed SessionManager initialization
  + Added authenticator to admin.xml
