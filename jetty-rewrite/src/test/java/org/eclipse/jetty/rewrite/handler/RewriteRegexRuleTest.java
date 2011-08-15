@@ -26,6 +26,8 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             {"/foo/bar",".*","/replace","/replace"},
             {"/foo/bar","/xxx.*","/replace",null},
             {"/foo/bar","/(.*)/(.*)","/$2/$1/xxx","/bar/foo/xxx"},
+            {"/foo/$bar",".*","/$replace","/$replace"},
+            {"/foo/$bar","/foo/(.*)","/$1/replace","/$bar/replace"},
     };
     private RewriteRegexRule _rule;
 

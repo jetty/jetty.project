@@ -56,7 +56,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         target=_replacement;
         for (int g=1;g<=matcher.groupCount();g++)
         {
-            String group = matcher.group(g);
+            String group = Matcher.quoteReplacement(matcher.group(g));
             target=target.replaceAll("\\$"+g,group);
         }
 
@@ -73,7 +73,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
             String uri=_replacement;
             for (int g=1;g<=matcher.groupCount();g++)
             {
-                String group = matcher.group(g);
+                String group = Matcher.quoteReplacement(matcher.group(g));
                 uri=uri.replaceAll("\\$"+g,group);
             }
             request.setRequestURI(uri);
