@@ -38,9 +38,21 @@ public class WebSocketFactory
 {
     public interface Acceptor
     {
+        /* ------------------------------------------------------------ */
+        /**
+         * @param request
+         * @param protocol
+         * @return
+         */
         WebSocket doWebSocketConnect(HttpServletRequest request, String protocol);
 
-        String checkOrigin(HttpServletRequest request, String host, String origin);
+        /* ------------------------------------------------------------ */
+        /** Check the origin of an incoming WebSocket handshake request
+         * @param request
+         * @param origin
+         * @return boolean to indicate that the origin is acceptable.
+         */
+        boolean checkOrigin(HttpServletRequest request, String origin);
     }
 
     private final Map<String,Class<? extends Extension>> _extensionClasses = new HashMap<String, Class<? extends Extension>>();
@@ -128,7 +140,7 @@ public class WebSocketFactory
      * @param protocol  The websocket protocol
      * @throws IOException in case of I/O errors
      */
-    public void upgrade(HttpServletRequest request, HttpServletResponse response, WebSocket websocket, String origin, String protocol)
+    public void upgrade(HttpServletRequest request, HttpServletResponse response, WebSocket websocket, String protocol)
             throws IOException
     {
         if (!"websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
@@ -176,7 +188,7 @@ public class WebSocketFactory
         }
 
         // Let the connection finish processing the handshake
-        connection.handshake(request, response, origin, protocol);
+        connection.handshake(request, response, protocol);
         response.flushBuffer();
 
         // Give the connection any unused data from the HTTP connection.
@@ -205,11 +217,20 @@ public class WebSocketFactory
     {
         if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {
+            String origin = request.getHeader("Sec-WebSocket-Origin");
+            if (origin==null)
+                origin = request.getHeader("Origin");
+            if (!_acceptor.checkOrigin(request,origin))
+            {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return false;
+            }
+            
+            // Try each requested protocol
+            WebSocket websocket = null;
             String protocol = request.getHeader("Sec-WebSocket-Protocol");
             if (protocol == null) // TODO remove once draft period is over
                 protocol = request.getHeader("WebSocket-Protocol");
-
-            WebSocket websocket = null;
             for (String p : parseProtocols(protocol))
             {
                 websocket = _acceptor.doWebSocketConnect(request, p);
@@ -220,17 +241,16 @@ public class WebSocketFactory
                 }
             }
 
-            String host = request.getHeader("Host");
-            String origin = request.getHeader("Origin");
-            origin = _acceptor.checkOrigin(request, host, origin);
-
-            if (websocket != null)
+            // Did we get a websocket?
+            if (websocket == null)
             {
-                upgrade(request, response, websocket, origin, protocol);
-                return true;
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                return false;
             }
 
-            response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            // Send the upgrade
+            upgrade(request, response, websocket, protocol);
+            return true;
         }
 
         return false;

@@ -14,6 +14,8 @@
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -65,11 +67,10 @@ public abstract class WebSocketServlet extends HttpServlet implements WebSocketF
         super.service(request,response);
     }
 
-    public String checkOrigin(HttpServletRequest request, String host, String origin)
+    /* ------------------------------------------------------------ */
+    public boolean checkOrigin(HttpServletRequest request, String origin)
     {
-        if (origin==null)
-            origin=host;
-        return origin;
+        return true;
     }
     
     

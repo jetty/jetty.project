@@ -362,7 +362,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         void access(EndPoint endp);
     }
 
-    public void handshake(HttpServletRequest request, HttpServletResponse response, String origin, String subprotocol) throws IOException
+    public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
     {
         String uri=request.getRequestURI();
         String query=request.getQueryString();
@@ -370,7 +370,9 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             uri+="?"+query;
         String host=request.getHeader("Host");
         
+        String origin=request.getHeader("Host");
         String key1 = request.getHeader("Sec-WebSocket-Key1");
+        
         if (key1!=null)
         {
             String key2 = request.getHeader("Sec-WebSocket-Key2");

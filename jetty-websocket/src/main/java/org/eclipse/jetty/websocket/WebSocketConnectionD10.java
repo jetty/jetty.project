@@ -806,7 +806,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void handshake(HttpServletRequest request, HttpServletResponse response, String origin, String subprotocol) throws IOException
+    public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
     {
         String uri=request.getRequestURI();
         String query=request.getQueryString();
