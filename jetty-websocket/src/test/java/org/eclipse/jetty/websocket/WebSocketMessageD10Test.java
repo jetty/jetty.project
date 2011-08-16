@@ -745,7 +745,7 @@ public class WebSocketMessageD10Test
         lookFor("sent on connect",input);
 
         assertEquals((byte)0x88,(byte)input.read());
-        assertEquals(0x06,input.read());
+        assertEquals(17,input.read());
         assertEquals(1000/0x100,input.read());
         assertEquals(1000%0x100,input.read());
         lookFor("Idle",input);

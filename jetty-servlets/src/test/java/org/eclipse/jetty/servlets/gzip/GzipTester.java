@@ -113,8 +113,9 @@ public class GzipTester
      * @param testResourceSha1Sum
      *            the sha1sum file that contains the SHA1SUM checksum that will be used to verify that the response
      *            contents are what is intended.
+     * @param expectedContentType
      */
-    public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum) throws Exception
+    public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum, String expectedContentType) throws Exception
     {
         System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester request = new HttpTester();
@@ -135,13 +136,13 @@ public class GzipTester
         dumpHeaders(requestedFilename + " / Response Headers",response);
 
         // Assert the response headers
-        Assert.assertThat(requestedFilename + " / Response.method",response.getMethod(),nullValue());
-        Assert.assertThat(requestedFilename + " / Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
-        Assert.assertThat(requestedFilename + " / Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
-        Assert.assertThat(requestedFilename + " / Response.header[Content-Encoding] (should not be recompressed by GzipFilter)",
-                response.getHeader("Content-Encoding"),nullValue());
-        Assert.assertThat(requestedFilename + " / Response.header[Content-Type] (should have a Content-Type associated with it)",
-                response.getHeader("Content-Type"),notNullValue());
+        String prefix = requestedFilename + " / Response";
+        Assert.assertThat(prefix + ".method",response.getMethod(),nullValue());
+        Assert.assertThat(prefix + ".status",response.getStatus(),is(HttpServletResponse.SC_OK));
+        Assert.assertThat(prefix + ".header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
+        Assert.assertThat(prefix + ".header[Content-Encoding] (should not be recompressed by GzipFilter)",response.getHeader("Content-Encoding"),nullValue());
+        Assert.assertThat(prefix + ".header[Content-Type] (should have a Content-Type associated with it)",response.getHeader("Content-Type"),notNullValue());
+        Assert.assertThat(prefix + ".header[Content-Type]",response.getHeader("Content-Type"),is(expectedContentType));
 
         ByteArrayInputStream bais = null;
         DigestOutputStream digester = null;

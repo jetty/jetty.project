@@ -120,6 +120,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
+    public long getIdleTimestamp()
+    {
+        return _idleTimestamp;
+    }
+    
+    /* ------------------------------------------------------------ */
     /** Called by selectSet to schedule handling
      *
      */

@@ -14,7 +14,7 @@ public interface WebSocketConnection extends Connection
 {
     void fillBuffersFrom(Buffer buffer);
     
-    void handshake(HttpServletRequest request, HttpServletResponse response, String origin, String subprotocol) throws IOException;
+    void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException;
     
     List<Extension> getExtensions();
     

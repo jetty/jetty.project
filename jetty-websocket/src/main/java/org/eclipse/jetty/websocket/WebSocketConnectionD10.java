@@ -90,7 +90,8 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     private final String _protocol;
     private final int _draft;
     private final ClassLoader _context;
-    private int _close;
+    private volatile int _closeCode;
+    private volatile String _closeMessage;
     private volatile boolean _closedIn;
     private volatile boolean _closedOut;
     private int _maxTextMessageSize;
@@ -275,7 +276,8 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     @Override
     public void idleExpired()
     {
-        closeOut(WebSocketConnectionD10.CLOSE_NORMAL,"Idle");
+        long idle = System.currentTimeMillis()-((SelectChannelEndPoint)_endp).getIdleTimestamp();
+        closeOut(WebSocketConnectionD10.CLOSE_NORMAL,"Idle for "+idle+"ms");
     }
 
     /* ------------------------------------------------------------ */
@@ -290,9 +292,9 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         final boolean closed;
         synchronized (this)
         {
-            closed=_close==0;
+            closed=_closeCode==0;
             if (closed)
-                _close=WebSocketConnectionD10.CLOSE_NOCLOSE;
+                _closeCode=WebSocketConnectionD10.CLOSE_NOCLOSE;
         }
         if (closed)
             _webSocket.onClose(WebSocketConnectionD10.CLOSE_NOCLOSE,"closed");
@@ -309,9 +311,12 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         {
             closedOut=_closedOut;
             _closedIn=true;
-            closed=_close==0;
+            closed=_closeCode==0;
             if (closed)
-                _close=code;
+            {
+                _closeCode=code;
+                _closeMessage=message;
+            }
         }
 
         try
@@ -346,9 +351,12 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         {
             close=_closedIn || _closedOut;
             _closedOut=true;
-            closed=_close==0;
+            closed=_closeCode==0;
             if (closed)
-                _close=code;
+            {
+                _closeCode=code;
+                _closeMessage=message;
+            }
         }
         
         try
@@ -409,7 +417,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         public void sendMessage(String content) throws IOException
         {
             if (_closedOut)
-                throw new IOException("closing");
+                throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             byte[] data = content.getBytes(StringUtil.__UTF8);
             _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD10.OP_TEXT,data,0,data.length);
             checkWriteable();
@@ -420,7 +428,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         public void sendMessage(byte[] content, int offset, int length) throws IOException
         {
             if (_closedOut)
-                throw new IOException("closing");
+                throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD10.OP_BINARY,content,offset,length);
             checkWriteable();
             _idle.access(_endp);
@@ -430,7 +438,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         public void sendFrame(byte flags,byte opcode, byte[] content, int offset, int length) throws IOException
         {
             if (_closedOut)
-                throw new IOException("closing");
+                throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             _outbound.addFrame(flags,opcode,content,offset,length);
             checkWriteable();
             _idle.access(_endp);
@@ -440,7 +448,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         public void sendControl(byte ctrl, byte[] data, int offset, int length) throws IOException
         {
             if (_closedOut)
-                throw new IOException("closing");
+                throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             _outbound.addFrame((byte)FLAG_FIN,ctrl,data,offset,length);
             checkWriteable();
             _idle.access(_endp);
@@ -798,7 +806,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void handshake(HttpServletRequest request, HttpServletResponse response, String origin, String subprotocol) throws IOException
+    public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
     {
         String uri=request.getRequestURI();
         String query=request.getQueryString();
