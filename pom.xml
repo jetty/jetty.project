@@ -19,7 +19,7 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <junit-version>4.8.1</junit-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <slf4j-version>1.5.11</slf4j-version>
+    <slf4j-version>1.6.1</slf4j-version>
     <build-support-version>1.0</build-support-version>
     <jetty.test.helper>1.6</jetty.test.helper>
     <jetty.test.policy>1.2</jetty.test.policy>
@@ -352,7 +352,7 @@
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-simple</artifactId>
+        <artifactId>log4j-over-slf4j</artifactId>
         <version>${slf4j-version}</version>
       </dependency>
       <dependency>
