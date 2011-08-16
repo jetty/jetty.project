@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util.log;
 
+
+
 /**
  * Slf4jLog Logger
  */
@@ -23,11 +25,31 @@ public class Slf4jLog implements Logger
     public Slf4jLog() throws Exception
     {
         this("org.eclipse.jetty.util.log");
+
     }
 
     public Slf4jLog(String name)
     {
-        _logger = org.slf4j.LoggerFactory.getLogger( name );
+        // This checks to make sure that an slf4j implementation is present.
+        // It is needed because slf4j-api 1.6.x defaults to using NOPLogger.
+        try
+        {
+            Class.forName("org.slf4j.impl.StaticLoggerBinder");
+        }
+        catch (ClassNotFoundException ex)
+        {
+            throw new NoClassDefFoundError("org.slf4j.impl.StaticLoggerBinder");
+        }
+
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger( name );
+        if (logger instanceof org.slf4j.spi.LocationAwareLogger)
+        {
+            _logger = new JettyAwareLogger((org.slf4j.spi.LocationAwareLogger)logger);
+        }
+        else
+        {
+            _logger = logger;
+        }
     }
 
     public String getName()
