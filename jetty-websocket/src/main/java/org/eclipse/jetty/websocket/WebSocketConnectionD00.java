@@ -370,7 +370,10 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             uri+="?"+query;
         String host=request.getHeader("Host");
         
-        String origin=request.getHeader("Host");
+        String origin=request.getHeader("Sec-WebSocket-Origin");
+        if (origin==null)
+            origin=request.getHeader("Origin");
+        
         String key1 = request.getHeader("Sec-WebSocket-Key1");
         
         if (key1!=null)
@@ -380,7 +383,8 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
             response.setHeader("Upgrade","WebSocket");
             response.addHeader("Connection","Upgrade");
-            response.addHeader("Sec-WebSocket-Origin",origin);
+            if (origin!=null)
+                response.addHeader("Sec-WebSocket-Origin",origin);
             response.addHeader("Sec-WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
             if (subprotocol!=null)
                 response.addHeader("Sec-WebSocket-Protocol",subprotocol);

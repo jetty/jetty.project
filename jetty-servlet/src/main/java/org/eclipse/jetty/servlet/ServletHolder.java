@@ -30,6 +30,8 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import org.eclipse.jetty.servlet.api.ServletRegistration;
+
+import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.SingleThreadModel;
@@ -404,7 +406,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             makeUnavailable((UnavailableException)e);
         else
         {
-            _servletHandler.getServletContext().log("unavailable",e);
+            ServletContext ctx = _servletHandler.getServletContext();
+            if (ctx==null)
+                Log.info("unavailable",e);
+            else
+                ctx.log("unavailable",e);
             _unavailableEx=new UnavailableException(String.valueOf(e),-1)
             {
                 {
@@ -745,7 +751,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         try
         {
-            return ((ServletContextHandler.Context)getServletHandler().getServletContext()).createServlet(getHeldClass());
+            ServletContext ctx = getServletHandler().getServletContext();
+            if (ctx==null)
+                return getHeldClass().newInstance();
+            return ((ServletContextHandler.Context)ctx).createServlet(getHeldClass());
         }
         catch (ServletException se)
         {
