@@ -33,10 +33,10 @@ public class AsyncProxyServer
         ServletHandler handler=new ServletHandler();
         server.setHandler(handler);
         
-        FilterHolder gzip = handler.addFilterWithMapping("org.eclipse.jetty.servlet.GzipFilter","/*",0);
-        gzip.setAsyncSupported(true);
-        gzip.setInitParameter("minGzipSize","256");
-        ServletHolder proxy = handler.addServletWithMapping("org.eclipse.proxy.AsyncProxyServlet","/");
+        //FilterHolder gzip = handler.addFilterWithMapping("org.eclipse.jetty.servlets.GzipFilter","/*",0);
+        //gzip.setAsyncSupported(true);
+        //gzip.setInitParameter("minGzipSize","256");
+        ServletHolder proxy = handler.addServletWithMapping("org.eclipse.jetty.servlets.ProxyServlet","/");
         proxy.setAsyncSupported(true);
         
         server.start();
