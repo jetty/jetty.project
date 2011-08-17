@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.management.Attribute;
 import javax.management.AttributeList;
@@ -139,12 +141,11 @@ public class ObjectMBean implements DynamicMBean
                 }
                 catch (ClassNotFoundException e)
                 {
-                    // The code below was modified to fix bug 332200.
-                    // The issue was caused by additional information
-                    // added to the message after the class name when
-                    // Jetty is running in Apache Felix.
-                    String klass = e.getMessage().split("[ ]", 2)[0];
-                    if (klass.endsWith("MBean"))
+                    // The code below was modified to fix bugs 332200 and JETTY-1416 
+                    // The issue was caused by additional information added to the 
+                    // message after the class name when running in Apache Felix,
+                    // as well as before the class name when running in JBoss.
+                    if (e.getMessage().contains(mName))
                         Log.ignore(e);
                     else
                         Log.warn(e);
