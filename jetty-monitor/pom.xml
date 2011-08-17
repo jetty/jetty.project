@@ -9,7 +9,7 @@
   <name>Jetty :: Monitoring</name>
   <description>Performance monitoring artifact for jetty.</description>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jmx</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.monitor</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>
