@@ -29,6 +29,7 @@ jetty-7.5.0.RC0 - 15 August 2011
  + 354204 Charset encodings property file not used
  + 354397 RewriteRegexRule handles special characters in regex group
  + 354466 Typo in example config of jetty-plus.xml
+ + 355162 Allow creating an empty resource collection
 
 jetty-7.4.4.v20110707 - 07 July 2011
  + 308851 Converted all jetty-client module tests to JUnit 4

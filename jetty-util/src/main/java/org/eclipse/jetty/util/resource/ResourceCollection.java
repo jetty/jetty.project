@@ -39,9 +39,25 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ResourceCollection extends Resource
 {
-    private final Resource[] _resources;
+    private Resource[] _resources;
 
     /* ------------------------------------------------------------ */
+    /**
+     * Instantiates an empty resource collection.
+     * 
+     * This constructor is used when configuring jetty-maven-plugin.
+     */
+    public ResourceCollection()
+    {
+        _resources = new Resource[0];
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Instantiates a new resource collection.
+     *
+     * @param resources the resources to be added to collection
+     */
     public ResourceCollection(Resource... resources)
     {
         List<Resource> list = new ArrayList<Resource>();
@@ -67,6 +83,11 @@ public class ResourceCollection extends Resource
     
     
     /* ------------------------------------------------------------ */
+    /**
+     * Instantiates a new resource collection.
+     *
+     * @param resources the resource strings to be added to collection
+     */
     public ResourceCollection(String[] resources)
     {
         _resources = new Resource[resources.length];
@@ -90,12 +111,55 @@ public class ResourceCollection extends Resource
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * Instantiates a new resource collection.
+     *
+     * @param csvResources the string containing comma-separated resource strings
+     */
     public ResourceCollection(String csvResources)
+    {
+        setResourcesAsCSV(csvResources);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Retrieves the resource collection's resources.
+     * 
+     * @return the resource array
+     */
+    public Resource[] getResources()
+    {
+        return _resources;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the resource collection's resources.
+     *
+     * @param resources the new resource array
+     */
+    public void setResources(Resource[] resources)
+    {
+        _resources = resources != null ? resources : new Resource[0];
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Sets the resources as string of comma-separated values.
+     * This method should be used when configuring jetty-maven-plugin.
+     *
+     * @param csvResources the comma-separated string containing
+     *                     one or more resource strings.
+     */
+    public void setResourcesAsCSV(String csvResources)
     {
         StringTokenizer tokenizer = new StringTokenizer(csvResources, ",;");
         int len = tokenizer.countTokens();
         if(len==0)
-            throw new IllegalArgumentException("arg *resources* must be one or more resources.");
+        {
+            throw new IllegalArgumentException("ResourceCollection@setResourcesAsCSV(String) " +
+                    " argument must be a string containing one or more comma-separated resource strings.");
+        }
         
         _resources = new Resource[len];
         try
@@ -111,23 +175,6 @@ public class ResourceCollection extends Resource
         {
             throw new RuntimeException(e);
         }
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * 
-     * @return the resource array
-     */
-    public Resource[] getResources()
-    {
-        return _resources;
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public void setResources(Resource[] resources)
-    {
-        throw new UnsupportedOperationException("ResourceCollection@setResources(Resource[])");
     }
     
     /* ------------------------------------------------------------ */
