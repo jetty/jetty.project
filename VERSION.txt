@@ -1,3 +1,6 @@
+jetty-7.5.0-SNAPSHOT
+ + 355103 Make allowCredentials default to true in CrossOriginFilter
+
 jetty-7.5.0.RC0 August 15th 2011
  + 298502 Handle 200 Connect responses with no content-length
  + 351516 Refactored sessions to better support nosql session managers

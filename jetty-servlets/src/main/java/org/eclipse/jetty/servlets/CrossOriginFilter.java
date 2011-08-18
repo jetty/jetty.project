@@ -97,7 +97,7 @@ public class CrossOriginFilter implements Filter
     private List<String> allowedMethods = new ArrayList<String>();
     private List<String> allowedHeaders = new ArrayList<String>();
     private int preflightMaxAge = 0;
-    private boolean allowCredentials = false;
+    private boolean allowCredentials = true;
 
     public void init(FilterConfig config) throws ServletException
     {
