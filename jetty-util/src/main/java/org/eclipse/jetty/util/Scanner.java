@@ -502,7 +502,7 @@ public class Scanner extends AbstractLifeCycle
         }
         
         if (Log.isDebugEnabled())
-            Log.debug("scanned "+_notifications);
+            Log.debug("scanned "+_scanDirs+": "+_notifications);
                 
         // Process notifications
         // Only process notifications that are for stable files (ie same in old and current scan).
