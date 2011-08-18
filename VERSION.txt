@@ -1,4 +1,4 @@
-jetty-7.5.0.-SNAPSHOT
+jetty-7.5.0-SNAPSHOT
  + 276670 SLF4J loggers show correct location information
  + 335001 Eliminate expected exceptions from log when running in JBoss
  + JETTY-1414 HashLoginService doesn't refresh realm if specified config filename is not an absolute platform specific value
