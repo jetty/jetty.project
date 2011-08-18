@@ -47,6 +47,20 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-version-maven-plugin</artifactId>
+        <version>1.0.0</version>
+        <executions>
+          <execution>
+            <id>gen-versiontxt</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>gen-version-text</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-remote-resources-plugin</artifactId>
         <executions>
