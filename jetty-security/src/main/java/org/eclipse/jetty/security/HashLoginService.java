@@ -207,11 +207,16 @@ public class HashLoginService extends MappedLoginService
             });
             _scanner.addListener(new BulkListener()
             {
-                public void filesChanged(List filenames) throws Exception
+                public void filesChanged(List<String> filenames) throws Exception
                 {
                     if (filenames == null) return;
                     if (filenames.isEmpty()) return;
-                    if (filenames.size() == 1 && filenames.get(0).equals(_config)) loadUsers();
+                    if (filenames.size() == 1)
+                    {
+                        Resource r = Resource.newResource(filenames.get(0));
+                        if (r.getFile().equals(_configResource.getFile()))
+                            loadUsers();
+                    }
                 }
 
                 public String toString()
