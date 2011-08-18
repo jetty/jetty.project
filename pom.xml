@@ -49,7 +49,7 @@
       <plugin>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-version-maven-plugin</artifactId>
-        <version>1-SNAPSHOT</version>
+        <version>1.0.0</version>
         <executions>
           <execution>
             <id>gen-versiontxt</id>
