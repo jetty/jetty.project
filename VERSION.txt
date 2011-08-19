@@ -1,8 +1,9 @@
 jetty-7.5.0.RC1 - 19 August 2011
  + 276670 SLF4J loggers show correct location information
  + 335001 Eliminate expected exceptions from log when running in JBoss
- + JETTY-1414 HashLoginService doesn't refresh realm if specified config filename is not an absolute platform specific value
  + 355103 Make allowCredentials default to true in CrossOriginFilter
+ + 355162 Allow creating an empty resource collection
+ + JETTY-1414 HashLoginService doesn't refresh realm if specified config filename is not an absolute platform specific value
 
 jetty-7.5.0.RC0 - 15 August 2011
  + 298502 Handle 200 Connect responses with no content-length
@@ -29,7 +30,6 @@ jetty-7.5.0.RC0 - 15 August 2011
  + 354204 Charset encodings property file not used
  + 354397 RewriteRegexRule handles special characters in regex group
  + 354466 Typo in example config of jetty-plus.xml
- + 355162 Allow creating an empty resource collection
 
 jetty-7.4.4.v20110707 - 07 July 2011
  + 308851 Converted all jetty-client module tests to JUnit 4
