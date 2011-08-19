@@ -36,7 +36,7 @@ public class ThreadMonitorInfo
     /**
      * Instantiates a new thread monitor info.
      *
-     * @param threadInfo the thread info
+     * @param thread the thread this object is created for
      */
     public ThreadMonitorInfo(Thread thread)
     {

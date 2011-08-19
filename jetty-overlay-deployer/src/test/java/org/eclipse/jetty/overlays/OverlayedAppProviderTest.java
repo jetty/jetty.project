@@ -75,7 +75,7 @@ public class OverlayedAppProviderTest
         {
             /* ------------------------------------------------------------ */
             /**
-             * @see org.eclipse.jetty.overlays.OverlayedAppProvider#updateLayers(java.util.List)
+             * @see org.eclipse.jetty.overlays.OverlayedAppProvider#updateLayers(java.util.Set)
              */
             @Override
             protected void updateLayers(Set<String> filenames)
@@ -144,7 +144,7 @@ public class OverlayedAppProviderTest
         {
             /* ------------------------------------------------------------ */
             /**
-             * @see org.eclipse.jetty.overlays.OverlayedAppProvider#updateLayers(java.util.List)
+             * @see org.eclipse.jetty.overlays.OverlayedAppProvider#updateLayers(java.util.Set)
              */
             @Override
             protected void updateLayers(Set<String> filenames)

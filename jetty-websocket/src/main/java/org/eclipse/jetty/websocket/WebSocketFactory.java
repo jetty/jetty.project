@@ -42,7 +42,7 @@ public class WebSocketFactory
         /**
          * @param request
          * @param protocol
-         * @return
+         * @returns
          */
         WebSocket doWebSocketConnect(HttpServletRequest request, String protocol);
 
@@ -136,7 +136,6 @@ public class WebSocketFactory
      * @param request   The request to upgrade
      * @param response  The response to upgrade
      * @param websocket The websocket handler implementation to use
-     * @param origin    The origin of the websocket connection
      * @param protocol  The websocket protocol
      * @throws IOException in case of I/O errors
      */
