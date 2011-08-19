@@ -129,7 +129,6 @@
                   </fileset>
                 </copy>
 
-                <copy file="../VERSION.txt" todir="${assembly-directory}" />
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
             </configuration>
@@ -307,6 +306,16 @@
             </goals>
             <configuration>
               <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-project</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>version</classifier>
+                  <type>txt</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/</outputDirectory>
+                  <destFileName>VERSION.txt</destFileName>
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-util</artifactId>
