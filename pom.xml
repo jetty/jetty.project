@@ -115,6 +115,26 @@
             <goals>
               <goal>parse-version</goal>
             </goals>
+            <configuration>
+               <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+            </configuration>
+          </execution>
+          <execution>
+            <id>attach-version-classifier</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+              <artifacts>
+                <artifact>
+                  <file>VERSION.txt</file>
+                  <type>txt</type>
+                  <classifier>version</classifier>
+                </artifact>
+              </artifacts>
+            </configuration>
           </execution>
         </executions>
       </plugin>
