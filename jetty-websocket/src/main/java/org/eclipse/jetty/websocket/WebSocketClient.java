@@ -83,6 +83,7 @@ public class WebSocketClient extends AggregateLifeCycle
     private final List<String> _extensions=new CopyOnWriteArrayList<String>();
     
     private int _bufferSize=64*1024;
+    private String _origin;
     private String _protocol;
     private int _maxIdleTime=-1;
     
@@ -202,6 +203,24 @@ public class WebSocketClient extends AggregateLifeCycle
         _protocol = protocol;
     }
     
+    /* ------------------------------------------------------------ */
+    /** Get the origin of the client
+     * @return The clients Origin
+     */
+    public String getOrigin()
+    {
+        return _origin;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the origin of the client
+     * @param origin the origin of the client (eg "http://example.com")
+     */
+    public void setOrigin(String origin)
+    {
+        _origin = origin;
+    }
+
     /* ------------------------------------------------------------ */
     public Map<String,String> getCookies()
     {
@@ -455,7 +474,7 @@ public class WebSocketClient extends AggregateLifeCycle
                 "Upgrade: websocket\r\n"+
                 "Connection: Upgrade\r\n"+
                 "Sec-WebSocket-Key: "+_key+"\r\n"+
-                "Sec-WebSocket-Origin: http://example.com\r\n"+
+                (_origin==null?"":"Sec-WebSocket-Origin: "+_origin+"\r\n")+
                 "Sec-WebSocket-Version: "+WebSocketConnectionD10.VERSION+"\r\n";
             
             if (holder.getProtocol()!=null)
