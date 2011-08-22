@@ -3,6 +3,7 @@ jetty-7.5.0.RC1 - 19 August 2011
  + 335001 Eliminate expected exceptions from log when running in JBoss
  + 355103 Make allowCredentials default to true in CrossOriginFilter
  + 355162 Allow creating an empty resource collection
+ + JETTY-1410 HTTP client handles CONTINUE 100 response correctly
  + JETTY-1414 HashLoginService doesn't refresh realm if specified config filename is not an absolute platform specific value
 
 jetty-7.5.0.RC0 - 15 August 2011
