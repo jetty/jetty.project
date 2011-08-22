@@ -178,7 +178,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.2-SNAPSHOT</version>
+          <version>1.0.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
