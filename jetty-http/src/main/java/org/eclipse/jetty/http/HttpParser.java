@@ -557,10 +557,18 @@ public class HttpParser implements Parser
                                         break;
                                         
                                     case HttpTokens.NO_CONTENT:
-                                        _state=STATE_END;
-                                        returnBuffers();
-                                        _handler.headerComplete(); 
-                                        _handler.messageComplete(_contentPosition);
+                                        if (_responseStatus != 100) // continue
+                                        {
+                                            _state=STATE_END;
+                                            returnBuffers();
+                                            _handler.headerComplete(); 
+                                            _handler.messageComplete(_contentPosition);
+                                        }
+                                        else
+                                        {
+                                            reset();
+                                        }
+
                                         break;
                                         
                                     default:

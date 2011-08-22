@@ -70,7 +70,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         super(endp);
-
+        
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
@@ -575,10 +575,19 @@ public class HttpConnection extends AbstractConnection implements Dumpable
             HttpExchange exchange = _exchange;
             if (exchange!=null)
             {
-                // handle special case for CONNECT 200 responses
-                if (status==HttpStatus.OK_200 && HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
-                    _parser.setHeadResponse(true);
-                
+                switch(status)
+                {
+                    case HttpStatus.CONTINUE_100:
+                        // handle special case for CONTINUE 100 responses
+                        return;
+
+                    case HttpStatus.OK_200:
+                        // handle special case for CONNECT 200 responses
+                        if (HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
+                            _parser.setHeadResponse(true);
+                        break;
+                }
+
                 _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
                 _status=status;
                 exchange.getEventListener().onResponseStatus(version,status,reason);
