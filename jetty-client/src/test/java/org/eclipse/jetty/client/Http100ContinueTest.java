@@ -19,9 +19,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -34,14 +33,17 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.junit.After;
-import org.junit.Before;
+import org.eclipse.jetty.util.log.Log;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 
 /* ------------------------------------------------------------ */
 public class Http100ContinueTest
 {
+    private static final int TIMEOUT = 500;
+    
     private static final String CONTENT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "
             + "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "
             + "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. "
@@ -55,12 +57,15 @@ public class Http100ContinueTest
             + "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "
             + "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
     
-    private Server _server;
-    private TestHandler _handler;
-    private int _port;
-    
-    @Before
-    public void init() throws Exception
+    private static TestFeature _feature;
+
+    private static Server _server;
+    private static TestHandler _handler;
+    private static HttpClient _client;
+    private static String _requestUrl;
+
+    @BeforeClass
+    public static void init() throws Exception
     {
         File docRoot = new File("target/test-output/docroot/");
         if (!docRoot.exists())
@@ -76,47 +81,114 @@ public class Http100ContinueTest
     
         _server.start();
     
-        _port = connector.getLocalPort();
+        _client = new HttpClient();
+        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
+        _client.setTimeout(TIMEOUT);
+        _client.setMaxRetries(0);
+        _client.start();
+
+        _requestUrl = "http://localhost:" + connector.getLocalPort() + "/";
+
     }
     
-    @After
-    public void destroy() throws Exception
+    @AfterClass
+    public static void destroy() throws Exception
     {
+        _client.stop();
+        
         _server.stop();
         _server.join();
     }
     
     @Test
-    public void testSelectConnector() throws Exception
+    public void testSuccess() throws Exception
     {
-        HttpClient httpClient = new HttpClient();
-        httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        httpClient.start();
-        try
+        // Handler to send CONTINUE 100
+        _feature = TestFeature.CONTINUE;
+        
+        ContentExchange exchange = sendExchange();
+
+        int state = exchange.waitForDone();
+        assertEquals(HttpExchange.STATUS_COMPLETED, state);
+        
+        int responseStatus = exchange.getResponseStatus();
+        assertEquals(HttpStatus.OK_200,responseStatus);
+
+        String content = exchange.getResponseContent();
+        assertEquals(Http100ContinueTest.CONTENT,content);
+    }
+
+    @Test
+    public void testMissingContinue() throws Exception
+    {
+        // Handler does not send CONTINUE 100
+        _feature = TestFeature.NORMAL;
+        
+        ContentExchange exchange = sendExchange();
+
+        int state = exchange.waitForDone();
+        assertEquals(HttpExchange.STATUS_COMPLETED, state);
+        
+        int responseStatus = exchange.getResponseStatus();
+        assertEquals(HttpStatus.OK_200,responseStatus);
+
+        String content = exchange.getResponseContent();
+        assertEquals(Http100ContinueTest.CONTENT,content);
+    }
+
+    @Test
+    public void testError() throws Exception
+    {
+        // Handler sends NOT FOUND 404 response
+        _feature = TestFeature.NOTFOUND;
+        
+        ContentExchange exchange = sendExchange();
+
+        int state = exchange.waitForDone();
+        assertEquals(HttpExchange.STATUS_COMPLETED, state);
+        
+        int responseStatus = exchange.getResponseStatus();
+        assertEquals(HttpStatus.NOT_FOUND_404,responseStatus);
+    }
+
+    @Test
+    public void testTimeout() throws Exception
+    {
+        // Handler delays response till client times out
+        _feature = TestFeature.TIMEOUT;
+        
+        final CountDownLatch expires = new CountDownLatch(1);
+        ContentExchange exchange = new ContentExchange()
         {
-            String requestUrl = "http://localhost:" + _port + "/header";
+            @Override
+            protected void onExpire()
+            {
+                expires.countDown();
+            }
+        };
+
+        configureExchange(exchange);
+        _client.send(exchange);
+
+        assertTrue(expires.await(TIMEOUT*10,TimeUnit.MILLISECONDS));
+    }
+
+    public ContentExchange sendExchange() throws Exception
+    {
+        ContentExchange exchange = new ContentExchange();
+
+        configureExchange(exchange);
+        _client.send(exchange);
+
+        return exchange;
+    }
     
-            ContentExchange exchange = new ContentExchange();
-            exchange.setURL(requestUrl);
-            exchange.setMethod(HttpMethods.GET);
-            exchange.addRequestHeader("User-Agent","Jetty-Client/7.0");
-            exchange.addRequestHeader("Expect","100-continue"); //server to send CONTINUE 100
-    
-            httpClient.send(exchange);
-    
-            int state = exchange.waitForDone();
-            assertEquals(HttpExchange.STATUS_COMPLETED, state);
-            int responseStatus = exchange.getResponseStatus();
-            assertEquals(HttpStatus.OK_200,responseStatus);
-    
-            String content = exchange.getResponseContent();
-    
-            assertEquals(Http100ContinueTest.CONTENT,content);
-        }
-        finally
-        {
-            httpClient.stop();
-        }
+    public void configureExchange(ContentExchange exchange)
+    {
+        exchange.setURL(_requestUrl);
+        exchange.setMethod(HttpMethods.GET);
+        exchange.addRequestHeader("User-Agent","Jetty-Client/7.0");
+        exchange.addRequestHeader("Expect","100-continue"); //server to send CONTINUE 100
     }
 
     private static class TestHandler extends AbstractHandler
@@ -126,15 +198,43 @@ public class Http100ContinueTest
             if (baseRequest.isHandled())
                 return;
             
-            // force 100 Continue response to be sent
-            request.getInputStream();
-    
-            response.setContentType("text/plain");
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().print(CONTENT);
-    
             baseRequest.setHandled(true);
+
+            switch (_feature)
+            {
+                case CONTINUE:
+                    // force 100 Continue response to be sent
+                    request.getInputStream();
+                    // next send data
+
+                case NORMAL:
+                    response.setContentType("text/plain");
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    response.getWriter().print(CONTENT);
+                    break;
+                    
+                case NOTFOUND:
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    break;
+
+                case TIMEOUT:
+                    try
+                    {
+                        Thread.sleep(TIMEOUT*4);
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        Log.ignore(ex);
+                    }
+                    break;
+            }
         }
+    }
     
+    enum TestFeature {
+        CONTINUE,
+        NORMAL,
+        NOTFOUND,
+        TIMEOUT
     }
 }
