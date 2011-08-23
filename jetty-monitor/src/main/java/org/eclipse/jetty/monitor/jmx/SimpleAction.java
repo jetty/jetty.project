@@ -11,20 +11,31 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
+package org.eclipse.jetty.monitor.jmx;
 
-package org.eclipse.jetty.monitor;
+import java.security.InvalidParameterException;
+
 
 
 /* ------------------------------------------------------------ */
 /**
  */
-public class ThreadMonitorException extends Exception
+public class SimpleAction extends MonitorAction
 {
-    private static final long serialVersionUID = -4345223166315716918L;
-    
-    public ThreadMonitorException(String message, StackTraceElement[] stackTrace)
+    public SimpleAction(EventTrigger trigger, EventNotifier notifier, long pollInterval)
+        throws InvalidParameterException
     {
-        super(message);
-        setStackTrace(stackTrace);
+        super(trigger,notifier,pollInterval);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.monitor.jmx.MonitorAction#execute(org.eclipse.jetty.monitor.jmx.EventTrigger, org.eclipse.jetty.monitor.jmx.EventState, long)
+     */
+
+    @Override
+    public void execute(EventTrigger trigger, EventState<?> state, long timestamp)
+    {
+        System.out.printf("Action time: %tc%n", timestamp);
     }
 }
