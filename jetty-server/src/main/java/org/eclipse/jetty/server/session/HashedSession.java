@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 
-class HashedSession extends AbstractSession
+public class HashedSession extends AbstractSession
 {
     private final HashSessionManager _hashSessionManager;
 
