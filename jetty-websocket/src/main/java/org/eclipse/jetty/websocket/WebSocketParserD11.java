@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Log;
  * Parser the WebSocket protocol.
  *
  */
-public class WebSocketParserD10 implements WebSocketParser
+public class WebSocketParserD11 implements WebSocketParser
 {    
     public enum State { 
         
@@ -70,7 +70,7 @@ public class WebSocketParserD10 implements WebSocketParser
      * @param endp
      * @param handler
      */
-    public WebSocketParserD10(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean shouldBeMasked)
+    public WebSocketParserD11(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean shouldBeMasked)
     {
         _buffers=buffers;
         _endp=endp;
@@ -157,9 +157,9 @@ public class WebSocketParserD10 implements WebSocketParser
                         // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
                         events++;
                         _bytesNeeded-=data.length();
-                        _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionD10.FLAG_FIN)), _opcode, data);
+                        _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionD11.FLAG_FIN)), _opcode, data);
                         
-                        _opcode=WebSocketConnectionD10.OP_CONTINUATION;
+                        _opcode=WebSocketConnectionD11.OP_CONTINUATION;
                     }
                     
                     if (_buffer.space() == 0)
@@ -202,11 +202,11 @@ public class WebSocketParserD10 implements WebSocketParser
                         _opcode=(byte)(b&0xf);
                         _flags=(byte)(0xf&(b>>4));
                         
-                        if (WebSocketConnectionD10.isControlFrame(_opcode)&&!WebSocketConnectionD10.isLastFrame(_flags))
+                        if (WebSocketConnectionD11.isControlFrame(_opcode)&&!WebSocketConnectionD11.isLastFrame(_flags))
                         {
                             events++;
                             Log.warn("Fragmented Control from "+_endp);
-                            _handler.close(WebSocketConnectionD10.CLOSE_PROTOCOL,"Fragmented control");
+                            _handler.close(WebSocketConnectionD11.CLOSE_PROTOCOL,"Fragmented control");
                             _skip=true;
                         }
 
@@ -247,7 +247,7 @@ public class WebSocketParserD10 implements WebSocketParser
                             if (_length>_buffer.capacity() && !_fakeFragments)
                             {
                                 events++;
-                                _handler.close(WebSocketConnectionD10.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionD11.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -266,7 +266,7 @@ public class WebSocketParserD10 implements WebSocketParser
                             if (_length>=_buffer.capacity())
                             {
                                 events++;
-                                _handler.close(WebSocketConnectionD10.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionD11.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -309,7 +309,7 @@ public class WebSocketParserD10 implements WebSocketParser
                     _buffer.skip(_bytesNeeded);
                     _state=State.START;
                     events++;
-                    _handler.close(WebSocketConnectionD10.CLOSE_PROTOCOL,"bad mask");
+                    _handler.close(WebSocketConnectionD11.CLOSE_PROTOCOL,"bad mask");
                 }
                 else
                 {

@@ -178,8 +178,9 @@ public class WebSocketFactory
             case 8: 
             case 9: 
             case 10: 
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD10.OP_EXT_DATA, 16-WebSocketConnectionD10.OP_EXT_CTRL,3);
-                connection = new WebSocketConnectionD10(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+            case 11: 
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD11.OP_EXT_DATA, 16-WebSocketConnectionD11.OP_EXT_CTRL,3);
+                connection = new WebSocketConnectionD11(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
                 Log.warn("Unsupported Websocket version: "+draft);
@@ -216,9 +217,9 @@ public class WebSocketFactory
     {
         if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {
-            String origin = request.getHeader("Sec-WebSocket-Origin");
+            String origin = request.getHeader("Origin");
             if (origin==null)
-                origin = request.getHeader("Origin");
+                origin = request.getHeader("Sec-WebSocket-Origin");
             if (!_acceptor.checkOrigin(request,origin))
             {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);

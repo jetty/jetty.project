@@ -474,8 +474,8 @@ public class WebSocketClient extends AggregateLifeCycle
                 "Upgrade: websocket\r\n"+
                 "Connection: Upgrade\r\n"+
                 "Sec-WebSocket-Key: "+_key+"\r\n"+
-                (_origin==null?"":"Sec-WebSocket-Origin: "+_origin+"\r\n")+
-                "Sec-WebSocket-Version: "+WebSocketConnectionD10.VERSION+"\r\n";
+                (_origin==null?"":"Origin: "+_origin+"\r\n")+
+                "Sec-WebSocket-Version: "+WebSocketConnectionD11.VERSION+"\r\n";
             
             if (holder.getProtocol()!=null)
                 request+="Sec-WebSocket-Protocol: "+holder.getProtocol()+"\r\n";
@@ -526,12 +526,12 @@ public class WebSocketClient extends AggregateLifeCycle
             {
                 if (_accept==null)
                     _error="No Sec-WebSocket-Accept";
-                else if (!WebSocketConnectionD10.hashKey(_key).equals(_accept))
+                else if (!WebSocketConnectionD11.hashKey(_key).equals(_accept))
                     _error="Bad Sec-WebSocket-Accept";
                 else 
                 {
                     Buffer header=_parser.getHeaderBuffer();
-                    WebSocketConnectionD10 connection = new WebSocketConnectionD10(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10, new WebSocketGeneratorD10.RandomMaskGen());
+                    WebSocketConnectionD11 connection = new WebSocketConnectionD11(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10, new WebSocketGeneratorD11.RandomMaskGen());
 
                     if (header.hasContent())
                         connection.fillBuffersFrom(header);
@@ -638,9 +638,9 @@ public class WebSocketClient extends AggregateLifeCycle
                 if (channel!=null)
                 {
                     if (ex instanceof ProtocolException)
-                        closeChannel(channel,WebSocketConnectionD10.CLOSE_PROTOCOL,ex.getMessage());
+                        closeChannel(channel,WebSocketConnectionD11.CLOSE_PROTOCOL,ex.getMessage());
                     else
-                        closeChannel(channel,WebSocketConnectionD10.CLOSE_NOCLOSE,ex.getMessage());
+                        closeChannel(channel,WebSocketConnectionD11.CLOSE_NOCLOSE,ex.getMessage());
                 }
             }
             finally
@@ -695,7 +695,7 @@ public class WebSocketClient extends AggregateLifeCycle
 
                 if (channel!=null)
                 {
-                    closeChannel(channel,WebSocketConnectionD10.CLOSE_NOCLOSE,"cancelled");
+                    closeChannel(channel,WebSocketConnectionD11.CLOSE_NOCLOSE,"cancelled");
                     return true;
                 }
                 return false;
@@ -755,7 +755,7 @@ public class WebSocketClient extends AggregateLifeCycle
             }
             
             if (channel!=null)
-                closeChannel(channel,WebSocketConnectionD10.CLOSE_NOCLOSE,"timeout");
+                closeChannel(channel,WebSocketConnectionD11.CLOSE_NOCLOSE,"timeout");
             if (exception!=null)
                 throw new ExecutionException(exception);
             if (connection!=null)

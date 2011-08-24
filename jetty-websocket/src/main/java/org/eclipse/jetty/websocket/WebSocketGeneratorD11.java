@@ -28,7 +28,7 @@ import org.eclipse.jetty.io.EofException;
  * threads will call the addMessage methods while other
  * threads are flushing the generator.
  */
-public class WebSocketGeneratorD10 implements WebSocketGenerator
+public class WebSocketGeneratorD11 implements WebSocketGenerator
 {
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
@@ -93,14 +93,14 @@ public class WebSocketGeneratorD10 implements WebSocketGenerator
     }
 
     
-    public WebSocketGeneratorD10(WebSocketBuffers buffers, EndPoint endp)
+    public WebSocketGeneratorD11(WebSocketBuffers buffers, EndPoint endp)
     {
         _buffers=buffers;
         _endp=endp;
         _maskGen=null;
     }
     
-    public WebSocketGeneratorD10(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
+    public WebSocketGeneratorD11(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
     {
         _buffers=buffers;
         _endp=endp;
@@ -116,14 +116,14 @@ public class WebSocketGeneratorD10 implements WebSocketGenerator
         if (_buffer==null)
             _buffer=mask?_buffers.getBuffer():_buffers.getDirectBuffer();
             
-        boolean last=WebSocketConnectionD10.isLastFrame(flags);
+        boolean last=WebSocketConnectionD11.isLastFrame(flags);
         byte orig=opcode;
         
         int space=mask?14:10;
         
         do
         {
-            opcode = _opsent?WebSocketConnectionD10.OP_CONTINUATION:opcode;
+            opcode = _opsent?WebSocketConnectionD11.OP_CONTINUATION:opcode;
             opcode=(byte)(((0xf&flags)<<4)+(0xf&opcode));
             _opsent=true;
             
