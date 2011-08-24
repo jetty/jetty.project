@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!-- 
+// ========================================================================
+// Copyright (c) Webtide LLC
+// 
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+//
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+//
+// The Apache License v2.0 is available at
+// http://www.apache.org/licenses/LICENSE-2.0.txt
+//
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
+-->
+
+<Configure id="Monitor" class="org.eclipse.jetty.monitor.JMXMonitor">
+  <Call name="setUrl">
+    <Arg>service:jmx:rmi://localhost/jndi/rmi://localhost:1099/jettyjmx</Arg>
+  </Call>
+  <Call name="addActions">
+    <Arg>
+      <Array type="org.eclipse.jetty.monitor.jmx.MonitorAction">
+        <Item>
+          <New class="org.eclipse.jetty.monitor.jmx.SimpleAction">
+            <Arg>
+              <New class="org.eclipse.jetty.monitor.triggers.OrEventTrigger">
+                <Arg>
+                  <Array type="org.eclipse.jetty.monitor.jmx.EventTrigger">
+                    <Item>
+                      <New
+                        class="org.eclipse.jetty.monitor.triggers.LessThanOrEqualToAttrEventTrigger">
+                        <Arg>org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0
+                        </Arg>
+                        <Arg>idleThreads</Arg>
+                        <Arg type="java.lang.Integer">4</Arg>
+                      </New>
+                    </Item>
+                    <Item>
+                      <New
+                        class="org.eclipse.jetty.monitor.triggers.GreaterThanAttrEventTrigger">
+                        <Arg>org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0
+                        </Arg>
+                        <Arg>idleThreads</Arg>
+                        <Arg type="java.lang.Integer">7</Arg>
+                      </New>
+                    </Item>
+                  </Array>
+                </Arg>
+              </New>
+            </Arg>
+            <Arg>
+              <New class="org.eclipse.jetty.monitor.jmx.ConsoleNotifier">
+                <Arg>%s</Arg>
+              </New>
+            </Arg>
+            <Arg type="java.lang.Long">500</Arg>
+          </New>
+        </Item>
+      </Array>
+    </Arg>
+  </Call>
+</Configure>
