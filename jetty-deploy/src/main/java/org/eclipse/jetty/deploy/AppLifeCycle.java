@@ -25,6 +25,7 @@ import java.util.Set;
 import org.eclipse.jetty.deploy.graph.Graph;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * The lifecycle of an App in the {@link DeploymentManager}.
@@ -36,6 +37,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class AppLifeCycle extends Graph
 {
+    private static final Logger LOG = Log.getLogger(AppLifeCycle.class);
+
     private static final String ALL_NODES = "*";
 
     public static interface Binding
@@ -175,8 +178,8 @@ public class AppLifeCycle extends Graph
     {
         for (Binding binding : getBindings(node))
         {
-            if (Log.isDebugEnabled())
-                Log.debug("Calling " + binding.getClass().getName()+" for "+app);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Calling " + binding.getClass().getName()+" for "+app);
             binding.processBinding(node,app);
         }
     }

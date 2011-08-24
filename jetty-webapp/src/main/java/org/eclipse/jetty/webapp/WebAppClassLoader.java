@@ -29,6 +29,7 @@ import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
@@ -53,6 +54,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  */
 public class WebAppClassLoader extends URLClassLoader
 {
+    private static final Logger LOG = Log.getLogger(WebAppClassLoader.class);
+
     private final Context _context;
     private final ClassLoader _parent;
     private final Set<String> _extensions=new HashSet<String>();
@@ -215,8 +218,8 @@ public class WebAppClassLoader extends URLClassLoader
         while (tokenizer.hasMoreTokens())
         {
             Resource resource= _context.newResource(tokenizer.nextToken().trim());
-            if (Log.isDebugEnabled())
-                Log.debug("Path resource=" + resource);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Path resource=" + resource);
 
             // Add the resource
             if (resource.isDirectory() && resource instanceof ResourceCollection)
@@ -275,7 +278,7 @@ public class WebAppClassLoader extends URLClassLoader
                 }
                 catch (Exception ex)
                 {
-                    Log.warn(Log.EXCEPTION,ex);
+                    LOG.warn(Log.EXCEPTION,ex);
                 }
             }
         }
@@ -348,8 +351,8 @@ public class WebAppClassLoader extends URLClassLoader
 
             if (url == null && name.startsWith("/"))
             {
-                if (Log.isDebugEnabled())
-                    Log.debug("HACK leading / off " + name);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("HACK leading / off " + name);
                 url= this.findResource(name.substring(1));
             }
         }
@@ -361,8 +364,8 @@ public class WebAppClassLoader extends URLClassLoader
         }
 
         if (url != null)
-            if (Log.isDebugEnabled())
-                Log.debug("getResource("+name+")=" + url);
+            if (LOG.isDebugEnabled())
+                LOG.debug("getResource("+name+")=" + url);
 
         return url;
     }
@@ -396,8 +399,8 @@ public class WebAppClassLoader extends URLClassLoader
             try
             {
                 c= _parent.loadClass(name);
-                if (Log.isDebugEnabled())
-                    Log.debug("loaded " + c);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("loaded " + c);
             }
             catch (ClassNotFoundException e)
             {
@@ -426,8 +429,8 @@ public class WebAppClassLoader extends URLClassLoader
         if (resolve)
             resolveClass(c);
 
-        if (Log.isDebugEnabled())
-            Log.debug("loaded " + c+ " from "+c.getClassLoader());
+        if (LOG.isDebugEnabled())
+            LOG.debug("loaded " + c+ " from "+c.getClassLoader());
         
         return c;
     }

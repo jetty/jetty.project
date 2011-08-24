@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /**
@@ -50,6 +51,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class HttpConnection extends AbstractConnection implements Dumpable
 {
+    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+
     private HttpDestination _destination;
     private HttpGenerator _generator;
     private HttpParser _parser;
@@ -195,7 +198,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                                 _parser.skipCRLF();
                                 if (_parser.isMoreInBuffer())
                                 {
-                                    Log.warn("Unexpected data received but no request sent");
+                                    LOG.warn("Unexpected data received but no request sent");
                                     close();
                                 }
                             }
@@ -292,7 +295,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                 }
                 catch (Throwable e)
                 {
-                    Log.debug("Failure on " + _exchange, e);
+                    LOG.debug("Failure on " + _exchange, e);
 
                     if (e instanceof ThreadDeath)
                         throw (ThreadDeath)e;
@@ -706,7 +709,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                 }
                 catch (IOException x)
                 {
-                    Log.ignore(x);
+                    LOG.ignore(x);
                 }
             }
         }

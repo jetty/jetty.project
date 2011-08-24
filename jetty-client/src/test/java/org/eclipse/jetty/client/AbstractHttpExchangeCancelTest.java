@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
@@ -43,6 +44,8 @@ import org.junit.Test;
  */
 public abstract class AbstractHttpExchangeCancelTest
 {
+    private static final Logger LOG = Log.getLogger(AbstractHttpExchangeCancelTest.class);
+
     private Server server;
     private Connector connector;
 
@@ -319,7 +322,7 @@ public abstract class AbstractHttpExchangeCancelTest
     {
         try
         {
-            ((StdErrLog)Log.getLog()).setHideStacks(!Log.isDebugEnabled());
+            ((StdErrLog)Log.getLog()).setHideStacks(!LOG.isDebugEnabled());
             TestHttpExchange exchange = new TestHttpExchange();
             exchange.setAddress(newAddress());
             exchange.setURI("/?action=throw");

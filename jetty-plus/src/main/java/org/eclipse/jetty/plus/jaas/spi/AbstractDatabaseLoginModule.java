@@ -26,6 +26,7 @@ import javax.security.auth.callback.CallbackHandler;
 
 import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * AbstractDatabaseLoginModule
@@ -37,6 +38,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
 {
+    private static final Logger LOG = Log.getLogger(AbstractDatabaseLoginModule.class);
+
     private String userQuery;
     private String rolesQuery;
     private String dbUserTable;
@@ -130,7 +133,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
         
         rolesQuery = "select "+dbUserRoleTableRoleField+" from "+dbUserRoleTable+" where "+dbUserRoleTableUserField+"=?";
         
-        if(Log.isDebugEnabled())Log.debug("userQuery = "+userQuery);
-        if(Log.isDebugEnabled())Log.debug("rolesQuery = "+rolesQuery);
+        if(LOG.isDebugEnabled())LOG.debug("userQuery = "+userQuery);
+        if(LOG.isDebugEnabled())LOG.debug("rolesQuery = "+rolesQuery);
     }
 }

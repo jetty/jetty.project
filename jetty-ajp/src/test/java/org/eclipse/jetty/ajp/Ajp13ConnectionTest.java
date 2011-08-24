@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -42,6 +43,8 @@ import static org.junit.Assert.assertTrue;
 
 public class Ajp13ConnectionTest
 {
+    private static final Logger LOG = Log.getLogger(Ajp13ConnectionTest.class);
+
     private static Server _server;
     private static Ajp13SocketConnector _connector;
     private Socket _client;
@@ -305,7 +308,7 @@ public class Ajp13ConnectionTest
         }
         catch(SocketTimeoutException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return bout.toString("utf-8");
     }

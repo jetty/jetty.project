@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /**
@@ -66,6 +67,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class HttpExchange
 {
+    private static final Logger LOG = Log.getLogger(HttpExchange.class);
+
     public static final int STATUS_START = 0;
     public static final int STATUS_WAITING_FOR_CONNECTION = 1;
     public static final int STATUS_WAITING_FOR_COMMIT = 2;
@@ -348,7 +351,7 @@ public class HttpExchange
         }
         catch (IOException x)
         {
-            Log.warn(x);
+            LOG.warn(x);
         }
     }
 
@@ -693,7 +696,7 @@ public class HttpExchange
             }
             catch (IOException x)
             {
-                Log.debug(x);
+                LOG.debug(x);
             }
             finally
             {
@@ -838,7 +841,7 @@ public class HttpExchange
      */
     protected void onConnectionFailed(Throwable x)
     {
-        Log.warn("CONNECTION FAILED " + this,x);
+        LOG.warn("CONNECTION FAILED " + this,x);
     }
 
     /**
@@ -848,7 +851,7 @@ public class HttpExchange
      */
     protected void onException(Throwable x)
     {
-        Log.warn("EXCEPTION " + this,x);
+        LOG.warn("EXCEPTION " + this,x);
     }
 
     /**
@@ -857,7 +860,7 @@ public class HttpExchange
      */
     protected void onExpire()
     {
-        Log.warn("EXPIRED " + this);
+        LOG.warn("EXPIRED " + this);
     }
 
     /**
@@ -1042,7 +1045,7 @@ public class HttpExchange
             }
             catch (IOException e)
             {
-                Log.debug(e);
+                LOG.debug(e);
             }
         }
     }

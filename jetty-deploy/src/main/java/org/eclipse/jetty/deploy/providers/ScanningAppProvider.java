@@ -27,12 +27,15 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
  */
 public abstract class ScanningAppProvider extends AbstractLifeCycle implements AppProvider
 {
+    private static final Logger LOG = Log.getLogger(ScanningAppProvider.class);
+
     private Map<String, App> _appMap = new HashMap<String, App>();
 
     private DeploymentManager _deploymentManager;
@@ -96,14 +99,14 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     @Override
     protected void doStart() throws Exception
     {
-        if (Log.isDebugEnabled()) Log.debug(this.getClass().getSimpleName() + ".doStart()");
+        if (LOG.isDebugEnabled()) LOG.debug(this.getClass().getSimpleName() + ".doStart()");
         if (_monitoredDir == null)
         {
             throw new IllegalStateException("No configuration dir specified");
         }
 
         File scandir = _monitoredDir.getFile();
-        Log.info("Deployment monitor " + scandir + " at interval " + _scanInterval);
+        LOG.info("Deployment monitor " + scandir + " at interval " + _scanInterval);
         _scanner = new Scanner();
         _scanner.setScanDirs(Collections.singletonList(scandir));
         _scanner.setScanInterval(_scanInterval);
@@ -129,7 +132,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     protected void fileAdded(String filename) throws Exception
     {
-        if (Log.isDebugEnabled()) Log.debug("added ",filename);
+        if (LOG.isDebugEnabled()) LOG.debug("added ",filename);
         App app = ScanningAppProvider.this.createApp(filename);
         if (app != null)
         {
@@ -141,7 +144,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     protected void fileChanged(String filename) throws Exception
     {
-        if (Log.isDebugEnabled()) Log.debug("changed ",filename);
+        if (LOG.isDebugEnabled()) LOG.debug("changed ",filename);
         App app = _appMap.remove(filename);
         if (app != null)
         {
@@ -158,7 +161,7 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     protected void fileRemoved(String filename) throws Exception
     {
-        if (Log.isDebugEnabled()) Log.debug("removed ",filename);
+        if (LOG.isDebugEnabled()) LOG.debug("removed ",filename);
         App app = _appMap.remove(filename);
         if (app != null)
             _deploymentManager.removeApp(app);

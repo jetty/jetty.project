@@ -21,6 +21,7 @@ import javax.naming.NamingException;
 import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /** javaURLContextFactory
@@ -32,16 +33,9 @@ import org.eclipse.jetty.util.log.Log;
  * <p><h4>Usage</h4>
  * <pre>
  */
-/*
-* </pre>
-*
-* @see
-*
-* 
-* @version 1.0
-*/
 public class javaURLContextFactory implements ObjectFactory 
 {
+    private static final Logger LOG = Log.getLogger(javaURLContextFactory.class);
         
     /**
      * Either return a new context or the resolution of a url.
@@ -59,14 +53,14 @@ public class javaURLContextFactory implements ObjectFactory
         // null object means return a root context for doing resolutions
         if (url == null)
         {
-            if(Log.isDebugEnabled())Log.debug(">>> new root context requested ");
+            if(LOG.isDebugEnabled())LOG.debug(">>> new root context requested ");
             return new javaRootURLContext(env);
         }
         
         // return the resolution of the url
         if (url instanceof String)
         {
-            if(Log.isDebugEnabled())Log.debug(">>> resolution of url "+url+" requested");
+            if(LOG.isDebugEnabled())LOG.debug(">>> resolution of url "+url+" requested");
             Context rootctx = new javaRootURLContext (env);
             return rootctx.lookup ((String)url);
         }
@@ -74,7 +68,7 @@ public class javaURLContextFactory implements ObjectFactory
         // return the resolution of at least one of the urls
         if (url instanceof String[])
         {
-            if(Log.isDebugEnabled())Log.debug(">>> resolution of array of urls requested");
+            if(LOG.isDebugEnabled())LOG.debug(">>> resolution of array of urls requested");
             String[] urls = (String[])url; 
             Context rootctx = new javaRootURLContext (env);
             Object object = null;
@@ -97,7 +91,7 @@ public class javaURLContextFactory implements ObjectFactory
                 return object;
         }
 
-        if(Log.isDebugEnabled())Log.debug(">>> No idea what to do, so return a new root context anyway");
+        if(LOG.isDebugEnabled())LOG.debug(">>> No idea what to do, so return a new root context anyway");
         return new javaRootURLContext (env);
     }
 };

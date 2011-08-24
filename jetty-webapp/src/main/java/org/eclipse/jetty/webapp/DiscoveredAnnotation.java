@@ -15,6 +15,7 @@ package org.eclipse.jetty.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * DiscoveredAnnotation
@@ -25,6 +26,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class DiscoveredAnnotation
 {
+    private static final Logger LOG = Log.getLogger(DiscoveredAnnotation.class);
+
     protected WebAppContext _context;
     protected String _className;
     protected Class<?> _clazz;
@@ -62,7 +65,7 @@ public abstract class DiscoveredAnnotation
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }  
 }

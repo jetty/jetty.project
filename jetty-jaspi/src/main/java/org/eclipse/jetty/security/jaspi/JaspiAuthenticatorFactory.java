@@ -34,9 +34,12 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 {
+    private static final Logger LOG = Log.getLogger(JaspiAuthenticatorFactory.class);
+
     private static String MESSAGE_LAYER = "HTTP";
     
     private Subject _serviceSubject;
@@ -114,7 +117,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         } 
         catch (AuthException e) 
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         return authenticator;
     }

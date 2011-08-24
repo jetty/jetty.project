@@ -27,6 +27,7 @@ import javax.security.auth.callback.CallbackHandler;
 
 import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * PropertyFileLoginModule
@@ -35,6 +36,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class PropertyFileLoginModule extends AbstractLoginModule
 {
+    private static final Logger LOG = Log.getLogger(PropertyFileLoginModule.class);
+
     public static final String DEFAULT_FILENAME = "realm.properties";
     public static final Map<String, Map<String, UserInfo>> fileMap = new HashMap<String, Map<String, UserInfo>>(); 
     
@@ -80,7 +83,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         //give up, can't find a property file to load
         if (!propsFile.exists())
         {
-            Log.warn("No property file found");
+            LOG.warn("No property file found");
             throw new IllegalStateException ("No property file specified in login module configuration file");
         }
             
@@ -91,7 +94,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
             this.propertyFileName = propsFile.getCanonicalPath();
             if (fileMap.get(propertyFileName) != null)
             {
-                if (Log.isDebugEnabled()) {Log.debug("Properties file "+propertyFileName+" already in cache, skipping load");}
+                if (LOG.isDebugEnabled()) {LOG.debug("Properties file "+propertyFileName+" already in cache, skipping load");}
                 return;
             }
             
@@ -133,7 +136,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         }
         catch (Exception e)
         {
-            Log.warn("Error loading properties from file", e);
+            LOG.warn("Error loading properties from file", e);
             throw new RuntimeException(e);
         }
     }

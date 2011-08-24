@@ -23,6 +23,7 @@ import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -34,6 +35,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class PlusConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(PlusConfiguration.class);
+
     private Integer _key;
     
     @Override
@@ -84,7 +87,7 @@ public class PlusConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            Log.info("No Transaction manager found - if your webapp requires one, please configure one.");
+            LOG.info("No Transaction manager found - if your webapp requires one, please configure one.");
         }
     }
     

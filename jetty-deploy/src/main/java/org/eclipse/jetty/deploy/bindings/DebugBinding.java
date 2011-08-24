@@ -19,9 +19,12 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class DebugBinding implements AppLifeCycle.Binding
 {
+    private static final Logger LOG = Log.getLogger(DebugBinding.class);
+
     final String[] _targets;
     
     public DebugBinding(String target)
@@ -41,6 +44,6 @@ public class DebugBinding implements AppLifeCycle.Binding
 
     public void processBinding(Node node, App app) throws Exception
     {
-        Log.info("processBinding {} {}",node,app.getContextHandler());
+        LOG.info("processBinding {} {}",node,app.getContextHandler());
     }
 }

@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,6 +58,8 @@ import org.junit.Test;
  */
 public class HttpExchangeTest
 {
+    private static final Logger LOG = Log.getLogger(HttpExchangeTest.class);
+
     protected int _maxConnectionsPerAddress = 2;
     protected String _scheme = "http://";
     protected Server _server;
@@ -615,7 +618,7 @@ public class HttpExchangeTest
                 }
                 catch(InterruptedException e)
                 {
-                    Log.debug(e);
+                    LOG.debug(e);
                 }
                 catch(IOException e)
                 {

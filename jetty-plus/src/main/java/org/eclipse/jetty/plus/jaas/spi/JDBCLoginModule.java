@@ -22,6 +22,7 @@ import javax.security.auth.callback.CallbackHandler;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -42,6 +43,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JDBCLoginModule extends AbstractDatabaseLoginModule
 {
+    private static final Logger LOG = Log.getLogger(JDBCLoginModule.class);
+
     private String dbDriver;
     private String dbUrl;
     private String dbUserName;
@@ -62,7 +65,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
                 (dbUrl != null)))
             throw new IllegalStateException ("Database connection information not configured");
         
-        if(Log.isDebugEnabled())Log.debug("Connecting using dbDriver="+dbDriver+"+ dbUserName="+dbUserName+", dbPassword="+dbUrl);
+        if(LOG.isDebugEnabled())LOG.debug("Connecting using dbDriver="+dbDriver+"+ dbUserName="+dbUserName+", dbPassword="+dbUrl);
         
         return DriverManager.getConnection (dbUrl,
                 dbUserName,

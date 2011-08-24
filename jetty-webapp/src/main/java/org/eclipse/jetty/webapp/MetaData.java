@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -31,7 +32,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * All data associated with the configuration and deployment of a web application.
  */
 public class MetaData
-{        
+{
+    private static final Logger LOG = Log.getLogger(MetaData.class);
+        
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
 
     protected Map<String, OriginInfo> _origins  =new HashMap<String,OriginInfo>();
@@ -292,7 +295,7 @@ public class MetaData
     public void resolve (WebAppContext context)
     throws Exception
     {
-        Log.debug("metadata resolve {}",context);
+        LOG.debug("metadata resolve {}",context);
         
         //Ensure origins is fresh
         _origins.clear();
@@ -318,14 +321,14 @@ public class MetaData
             p.process(context,getWebXml());
             for (WebDescriptor wd : getOverrideWebs())   
             {
-                Log.debug("process {} {}",context,wd);
+                LOG.debug("process {} {}",context,wd);
                 p.process(context,wd);
             }
         }
         
         for (DiscoveredAnnotation a:_annotations)
         {
-            Log.debug("apply {}",a);
+            LOG.debug("apply {}",a);
             a.apply();
         }
     
@@ -338,7 +341,7 @@ public class MetaData
             {
                 for (DescriptorProcessor p:_descriptorProcessors)
                 {
-                    Log.debug("process {} {}",context,fd);
+                    LOG.debug("process {} {}",context,fd);
                     p.process(context,fd);
                 }
             }
@@ -348,7 +351,7 @@ public class MetaData
             {
                 for (DiscoveredAnnotation a:fragAnnotations)
                 {
-                    Log.debug("apply {}",a);
+                    LOG.debug("apply {}",a);
                     a.apply();
                 }
             }

@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  *
@@ -36,6 +37,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Ajp13Generator extends AbstractGenerator
 {
+    private static final Logger LOG = Log.getLogger(Ajp13Generator.class);
+
     private static HashMap __headerHash = new HashMap();
 
     static
@@ -214,7 +217,7 @@ public class Ajp13Generator extends AbstractGenerator
 
         if (_last || _state == STATE_END)
         {
-            Log.debug("Ignoring extra content {}", content);
+            LOG.debug("Ignoring extra content {}", content);
             content.clear();
             return;
         }
@@ -627,7 +630,7 @@ public class Ajp13Generator extends AbstractGenerator
         }
         catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
             throw (e instanceof EofException) ? e : new EofException(e);
         }
 

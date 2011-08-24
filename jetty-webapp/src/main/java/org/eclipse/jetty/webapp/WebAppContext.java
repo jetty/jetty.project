@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
@@ -65,6 +66,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  */
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
 {
+    private static final Logger LOG = Log.getLogger(WebAppContext.class);
+
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
     public final static String WEB_DEFAULTS_XML="org/eclipse/jetty/webapp/webdefault.xml";
@@ -292,7 +295,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         
 //        if ( !(classLoader instanceof WebAppClassLoader) )
 //        {
-//            Log.info("NOTE: detected a classloader which is not an instance of WebAppClassLoader being set on WebAppContext, some typical class and resource locations may be missing on: " + toString() );
+//            LOG.info("NOTE: detected a classloader which is not an instance of WebAppClassLoader being set on WebAppContext, some typical class and resource locations may be missing on: " + toString() );
 //        }
         
         if (classLoader!=null && classLoader instanceof WebAppClassLoader && getDisplayName()!=null)
@@ -321,7 +324,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
                 if (ioe==null)
                     ioe= e;
             }
@@ -394,14 +397,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             _ownClassLoader=true;
         }
 
-        if (Log.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             ClassLoader loader = getClassLoader();
-            Log.debug("Thread Context class loader is: " + loader);
+            LOG.debug("Thread Context class loader is: " + loader);
             loader=loader.getParent();
             while(loader!=null)
             {
-                Log.debug("Parent class loader is: " + loader);
+                LOG.debug("Parent class loader is: " + loader);
                 loader=loader.getParent();
             }
         }
@@ -409,7 +412,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Prepare for configuration     
         for (int i=0;i<_configurations.length;i++)
         {
-            Log.debug("preConfigure {} with {}",this,_configurations[i]);
+            LOG.debug("preConfigure {} with {}",this,_configurations[i]);
             _configurations[i].preConfigure(this);
         }
     }
@@ -420,7 +423,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Configure webapp
         for (int i=0;i<_configurations.length;i++)
         {
-            Log.debug("configure {} with {}",this,_configurations[i]);
+            LOG.debug("configure {} with {}",this,_configurations[i]);
             _configurations[i].configure(this);
         }
     }
@@ -431,7 +434,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // Clean up after configuration
         for (int i=0;i<_configurations.length;i++)
         {
-            Log.debug("postConfigure {} with {}",this,_configurations[i]);
+            LOG.debug("postConfigure {} with {}",this,_configurations[i]);
             _configurations[i].postConfigure(this);
         }
     }
@@ -456,7 +459,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         catch (Exception e)
         {
             //start up of the webapp context failed, make sure it is not started
-            Log.warn("Failed startup of context "+this, e);
+            LOG.warn("Failed startup of context "+this, e);
             _unavailableException=e;
             setAvailable(false);
             if (isThrowUnavailableOnStartupException())
@@ -533,7 +536,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             if (displayName == null)
                 displayName = "WebApp@"+connectors.hashCode();
            
-            Log.info(displayName + " at http://" + connectorName + getContextPath());
+            LOG.info(displayName + " at http://" + connectorName + getContextPath());
         }
     }
 
@@ -1073,7 +1076,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (dir!=null)
         {
             try{dir=new File(dir.getCanonicalPath());}
-            catch (IOException e){Log.warn(Log.EXCEPTION,e);}
+            catch (IOException e){LOG.warn(Log.EXCEPTION,e);}
         }
 
         if (dir!=null && !dir.exists())
@@ -1092,7 +1095,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         catch(Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         _tmpDir=dir;
         setAttribute(TEMPDIR,_tmpDir);

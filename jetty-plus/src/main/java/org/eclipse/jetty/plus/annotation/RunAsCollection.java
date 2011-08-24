@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -28,6 +29,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class RunAsCollection
 {
+    private static final Logger LOG = Log.getLogger(RunAsCollection.class);
+
     public static final String RUNAS_COLLECTION = "org.eclipse.jetty.runAsCollection";
     private HashMap<String, RunAs> _runAsMap = new HashMap<String, RunAs>();//map of classname to run-as
   
@@ -38,8 +41,8 @@ public class RunAsCollection
         if ((runAs==null) || (runAs.getTargetClassName()==null)) 
             return;
         
-        if (Log.isDebugEnabled())
-            Log.debug("Adding run-as for class="+runAs.getTargetClassName());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding run-as for class="+runAs.getTargetClassName());
         _runAsMap.put(runAs.getTargetClassName(), runAs);
     }
 

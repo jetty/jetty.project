@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -28,6 +29,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class LifeCycleCallbackCollection
 {
+    private static final Logger LOG = Log.getLogger(LifeCycleCallbackCollection.class);
+
     public static final String LIFECYCLE_CALLBACK_COLLECTION = "org.eclipse.jetty.lifecyleCallbackCollection";
 
     private HashMap<String, List<LifeCycleCallback>> postConstructCallbacksMap = new HashMap<String, List<LifeCycleCallback>>();
@@ -43,8 +46,8 @@ public class LifeCycleCallbackCollection
         if ((callback==null) || (callback.getTargetClassName()==null))
             return;
 
-        if (Log.isDebugEnabled())
-            Log.debug("Adding callback for class="+callback.getTargetClass()+ " on "+callback.getTarget());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding callback for class="+callback.getTargetClass()+ " on "+callback.getTarget());
         Map<String, List<LifeCycleCallback>> map = null;
         if (callback instanceof PreDestroyCallback)
             map = preDestroyCallbacksMap;

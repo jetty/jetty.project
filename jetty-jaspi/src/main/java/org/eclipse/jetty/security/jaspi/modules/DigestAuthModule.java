@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * @deprecated use *ServerAuthentication
@@ -42,6 +43,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DigestAuthModule extends BaseAuthModule
 {
+    private static final Logger LOG = Log.getLogger(DigestAuthModule.class);
+
 
     protected long maxNonceAge = 0;
 
@@ -88,7 +91,7 @@ public class DigestAuthModule extends BaseAuthModule
             long timestamp = System.currentTimeMillis();
             if (credentials != null)
             {
-                if (Log.isDebugEnabled()) Log.debug("Credentials: " + credentials);
+                if (LOG.isDebugEnabled()) LOG.debug("Credentials: " + credentials);
                 QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
                 final Digest digest = new Digest(request.getMethod());
                 String last = null;
@@ -192,7 +195,7 @@ public class DigestAuthModule extends BaseAuthModule
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
 
         for (int i = 0; i < hash.length; i++)
@@ -229,7 +232,7 @@ public class DigestAuthModule extends BaseAuthModule
             }
 
             long age = timestamp - ts;
-            if (Log.isDebugEnabled()) Log.debug("age=" + age);
+            if (LOG.isDebugEnabled()) LOG.debug("age=" + age);
 
             byte[] hash = null;
             try
@@ -241,7 +244,7 @@ public class DigestAuthModule extends BaseAuthModule
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
 
             for (int i = 0; i < 16; i++)
@@ -253,7 +256,7 @@ public class DigestAuthModule extends BaseAuthModule
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return -1;
     }
@@ -337,7 +340,7 @@ public class DigestAuthModule extends BaseAuthModule
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
 
             return false;

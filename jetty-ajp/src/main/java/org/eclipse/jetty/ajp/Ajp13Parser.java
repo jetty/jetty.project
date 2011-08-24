@@ -27,12 +27,15 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * 
  */
 public class Ajp13Parser implements Parser
 {
+    private static final Logger LOG = Log.getLogger(Ajp13Parser.class);
+
     private final static int STATE_START = -1;
     private final static int STATE_END = 0;
     private final static int STATE_AJP13CHUNK_START = 1;
@@ -205,7 +208,7 @@ public class Ajp13Parser implements Parser
             catch (IOException e)
             {
                 // This is normal in AJP since the socket closes on timeout only
-                Log.debug(e);
+                LOG.debug(e);
                 reset();
                 throw (e instanceof EofException) ? e : new EofException(e);
             }
@@ -328,7 +331,7 @@ public class Ajp13Parser implements Parser
                 default:
                     // XXX Throw an Exception here?? Close
                     // connection!
-                    Log.warn("AJP13 message type ({PING}: "+packetType+" ) not supported/recognized as an AJP request");
+                    LOG.warn("AJP13 message type ({PING}: "+packetType+" ) not supported/recognized as an AJP request");
                 throw new IllegalStateException("PING is not implemented");
             }
 
@@ -459,7 +462,7 @@ public class Ajp13Parser implements Parser
 
                         break;
                     default:
-                        Log.warn("Unsupported Ajp13 Request Attribute {}", new Integer(attr_type));
+                        LOG.warn("Unsupported Ajp13 Request Attribute {}", new Integer(attr_type));
                     break;
                 }
 
@@ -681,37 +684,37 @@ public class Ajp13Parser implements Parser
 
         if(!Ajp13SocketConnector.__allowShutdown)
         {
-            Log.warn("AJP13: Shutdown Request is Denied, allowShutdown is set to false!!!");
+            LOG.warn("AJP13: Shutdown Request is Denied, allowShutdown is set to false!!!");
             return;
         }
 
         if(Ajp13SocketConnector.__secretWord != null)
         {
-            Log.warn("AJP13: Validating Secret Word");
+            LOG.warn("AJP13: Validating Secret Word");
             try
             {
                 String secretWord = Ajp13RequestPacket.getString(_buffer, _tok1).toString();
 
                 if(!Ajp13SocketConnector.__secretWord.equals(secretWord))
                 {
-                    Log.warn("AJP13: Shutdown Request Denied, Invalid Sercret word!!!");
+                    LOG.warn("AJP13: Shutdown Request Denied, Invalid Sercret word!!!");
                     throw new IllegalStateException("AJP13: Secret Word is Invalid: Peer has requested shutdown but, Secret Word did not match");
                 }
             }
             catch (Exception e)
             {
-                Log.warn("AJP13: Secret Word is Required!!!");
-                Log.debug(e);
+                LOG.warn("AJP13: Secret Word is Required!!!");
+                LOG.debug(e);
                 throw new IllegalStateException("AJP13: Secret Word is Required: Peer has requested shutdown but, has not provided a Secret Word");
             }
 
 
-            Log.warn("AJP13: Shutdown Request is Denied, allowShutdown is set to false!!!");
+            LOG.warn("AJP13: Shutdown Request is Denied, allowShutdown is set to false!!!");
             return;
         }
 
-        Log.warn("AJP13: Peer Has Requested for Shutdown!!!");
-        Log.warn("AJP13: Jetty 6 is shutting down !!!");
+        LOG.warn("AJP13: Peer Has Requested for Shutdown!!!");
+        LOG.warn("AJP13: Jetty 6 is shutting down !!!");
         System.exit(0);
     }
 

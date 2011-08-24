@@ -19,10 +19,13 @@ import org.eclipse.jetty.client.CachedExchange;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 public class MkcolExchange extends CachedExchange
 {
+    private static final Logger LOG = Log.getLogger(MkcolExchange.class);
+
     boolean exists = false;
 
     public MkcolExchange()
@@ -36,13 +39,13 @@ public class MkcolExchange extends CachedExchange
     {
         if ( status == HttpStatus.CREATED_201 )
         {
-            Log.debug( "MkcolExchange:Status: Successfully created resource" );
+            LOG.debug( "MkcolExchange:Status: Successfully created resource" );
             exists = true;
         }
 
         if ( status == HttpStatus.METHOD_NOT_ALLOWED_405 ) // returned when resource exists
         {
-            Log.debug( "MkcolExchange:Status: Resource must exist" );
+            LOG.debug( "MkcolExchange:Status: Resource must exist" );
             exists = true;
         }
 

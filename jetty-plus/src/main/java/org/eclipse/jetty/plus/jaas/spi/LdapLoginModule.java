@@ -38,6 +38,7 @@ import javax.security.auth.login.LoginException;
 import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.plus.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A LdapLoginModule for use with JAAS setups
@@ -80,6 +81,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class LdapLoginModule extends AbstractLoginModule
 {
+    private static final Logger LOG = Log.getLogger(LdapLoginModule.class);
+
     /**
      * hostname of the ldap server
      */
@@ -252,14 +255,14 @@ public class LdapLoginModule extends AbstractLoginModule
 
         String filter = "(&(objectClass={0})({1}={2}))";
 
-        Log.debug("Searching for users with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
+        LOG.debug("Searching for users with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
 
         try
         {
             Object[] filterArguments = {_userObjectClass, _userIdAttribute, username};
             NamingEnumeration<SearchResult> results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
 
-            Log.debug("Found user?: " + results.hasMoreElements());
+            LOG.debug("Found user?: " + results.hasMoreElements());
 
             if (!results.hasMoreElements())
             {
@@ -281,7 +284,7 @@ public class LdapLoginModule extends AbstractLoginModule
                 }
                 catch (NamingException e)
                 {
-                    Log.debug("no password available under attribute: " + _userPasswordAttribute);
+                    LOG.debug("no password available under attribute: " + _userPasswordAttribute);
                 }
             }
         }
@@ -290,7 +293,7 @@ public class LdapLoginModule extends AbstractLoginModule
             throw new LoginException("Root context binding failure.");
         }
 
-        Log.debug("user cred is: " + ldapCredential);
+        LOG.debug("user cred is: " + ldapCredential);
 
         return ldapCredential;
     }
@@ -329,7 +332,7 @@ public class LdapLoginModule extends AbstractLoginModule
         Object[] filterArguments = {_roleObjectClass, _roleMemberAttribute, userDn};
         NamingEnumeration<SearchResult> results = dirContext.search(_roleBaseDn, filter, filterArguments, ctls);
 
-        Log.debug("Found user roles?: " + results.hasMoreElements());
+        LOG.debug("Found user roles?: " + results.hasMoreElements());
 
         while (results.hasMoreElements())
         {
@@ -466,7 +469,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         String userDn = searchResult.getNameInNamespace();
 
-        Log.info("Attempting authentication: " + userDn);
+        LOG.info("Attempting authentication: " + userDn);
 
         Hashtable<Object,Object> environment = getEnvironment();
         environment.put(Context.SECURITY_PRINCIPAL, userDn);
@@ -491,7 +494,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         String filter = "(&(objectClass={0})({1}={2}))";
 
-        Log.info("Searching for users with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
+        LOG.info("Searching for users with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
 
         Object[] filterArguments = new Object[]{
             _userObjectClass,
@@ -500,7 +503,7 @@ public class LdapLoginModule extends AbstractLoginModule
         };
         NamingEnumeration<SearchResult> results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
 
-        Log.info("Found user?: " + results.hasMoreElements());
+        LOG.info("Found user?: " + results.hasMoreElements());
 
         if (!results.hasMoreElements())
         {

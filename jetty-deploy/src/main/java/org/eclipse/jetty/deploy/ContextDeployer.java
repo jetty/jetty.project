@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -75,6 +76,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 @Deprecated
 public class ContextDeployer extends AbstractLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(ContextDeployer.class);
+
     private int _scanInterval=10;
     private Scanner _scanner;
     private ScannerListener _scannerListener;
@@ -130,7 +133,7 @@ public class ContextDeployer extends AbstractLifeCycle
      */
     public ContextDeployer() 
     {
-        Log.warn("ContextDeployer is deprecated. Use ContextProvider");
+        LOG.warn("ContextDeployer is deprecated. Use ContextProvider");
         _scanner=new Scanner();
     }
 
@@ -344,7 +347,7 @@ public class ContextDeployer extends AbstractLifeCycle
     private void deploy(String filename) throws Exception
     {
         ContextHandler context=createContext(filename);
-        Log.info("Deploy "+filename+" -> "+ context);
+        LOG.info("Deploy "+filename+" -> "+ context);
         _contexts.addHandler(context);
         _currentDeployments.put(filename,context);
         if (_contexts.isStarted())
@@ -355,7 +358,7 @@ public class ContextDeployer extends AbstractLifeCycle
     private void undeploy(String filename) throws Exception
     {
         ContextHandler context=(ContextHandler)_currentDeployments.get(filename);
-        Log.info("Undeploy "+filename+" -> "+context);
+        LOG.info("Undeploy "+filename+" -> "+context);
         if (context==null)
             return;
         context.stop();
@@ -402,7 +405,7 @@ public class ContextDeployer extends AbstractLifeCycle
                 }
                 catch (Exception e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                     return false;
                 }
             }

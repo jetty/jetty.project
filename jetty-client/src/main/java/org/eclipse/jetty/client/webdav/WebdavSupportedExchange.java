@@ -18,18 +18,21 @@ import java.io.IOException;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 public class WebdavSupportedExchange extends HttpExchange
 {
+    private static final Logger LOG = Log.getLogger(WebdavSupportedExchange.class);
+
     private boolean _webdavSupported = false;
     private boolean _isComplete = false;
 
     @Override
     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
     {
-        if (Log.isDebugEnabled())
-            Log.debug("WebdavSupportedExchange:Header:" + name.toString() + " / " + value.toString() );
+        if (LOG.isDebugEnabled())
+            LOG.debug("WebdavSupportedExchange:Header:" + name.toString() + " / " + value.toString() );
         if ( "DAV".equals( name.toString() ) )
         {
             if ( value.toString().indexOf( "1" ) >= 0 || value.toString().indexOf( "2" ) >= 0 )

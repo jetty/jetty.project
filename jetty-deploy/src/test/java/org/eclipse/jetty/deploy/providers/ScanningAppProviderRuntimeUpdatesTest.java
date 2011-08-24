@@ -25,6 +25,7 @@ import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -37,6 +38,8 @@ import org.junit.Test;
  */
 public class ScanningAppProviderRuntimeUpdatesTest
 {
+    private static final Logger LOG = Log.getLogger(ScanningAppProviderRuntimeUpdatesTest.class);
+
     @Rule
     public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
@@ -93,7 +96,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
             }
             catch(InterruptedException e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
         }
         while(_scans.get()<scan);

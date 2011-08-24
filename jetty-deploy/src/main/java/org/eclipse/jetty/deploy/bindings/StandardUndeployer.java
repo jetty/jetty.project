@@ -23,9 +23,12 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class StandardUndeployer implements AppLifeCycle.Binding
 {
+    private static final Logger LOG = Log.getLogger(StandardUndeployer.class);
+
     public String[] getBindingTargets()
     {
         return new String[]
@@ -48,13 +51,13 @@ public class StandardUndeployer implements AppLifeCycle.Binding
         for (int i = 0, n = children.length; i < n; i++)
         {
             Handler child = children[i];
-            Log.debug("Child handler: " + child);
+            LOG.debug("Child handler: " + child);
             if (child.equals(context))
             {
-                Log.debug("Removing handler: " + child);
+                LOG.debug("Removing handler: " + child);
                 coll.removeHandler(child);
                 child.destroy();
-                Log.debug(String.format("After removal: %d (originally %d)",coll.getHandlers().length,originalCount));
+                LOG.debug(String.format("After removal: %d (originally %d)",coll.getHandlers().length,originalCount));
             }
             else if (child instanceof HandlerCollection)
             {

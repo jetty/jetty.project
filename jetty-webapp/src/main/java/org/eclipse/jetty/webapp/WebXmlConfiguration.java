@@ -18,6 +18,7 @@ import java.net.MalformedURLException;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------------------------- */
@@ -27,6 +28,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class WebXmlConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(WebXmlConfiguration.class);
+
     
     /* ------------------------------------------------------------------------------- */
     /**
@@ -76,7 +79,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         // cannot configure if the context is already started
         if (context.isStarted())
         {
-            if (Log.isDebugEnabled()) Log.debug("Cannot configure webapp after it is started");
+            if (LOG.isDebugEnabled()) LOG.debug("Cannot configure webapp after it is started");
             return;
         }
 
@@ -99,7 +102,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
             // do web.xml file
             Resource web = web_inf.addPath("web.xml");
             if (web.exists()) return web;
-            Log.debug("No WEB-INF/web.xml in " + context.getWar() + ". Serving files and default/dynamic servlets only");
+            LOG.debug("No WEB-INF/web.xml in " + context.getWar() + ". Serving files and default/dynamic servlets only");
         }
         return null;
     }

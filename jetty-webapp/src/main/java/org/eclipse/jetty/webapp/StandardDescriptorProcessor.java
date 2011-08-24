@@ -40,6 +40,7 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -50,6 +51,8 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 {
+    private static final Logger LOG = Log.getLogger(StandardDescriptorProcessor.class);
+
     public static final String STANDARD_PROCESSOR = "org.eclipse.jetty.standardDescriptorProcessor";
     
     
@@ -144,7 +147,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
         }
-        if (Log.isDebugEnabled()) Log.debug("ContextParam: " + name + "=" + value);
+        if (LOG.isDebugEnabled()) LOG.debug("ContextParam: " + name + "=" + value);
 
     }
     
@@ -249,7 +252,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
             catch (ClassNotFoundException e)
             {
-                Log.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servlet_class);
+                LOG.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servlet_class);
                 jspServletClass = servlet_class = "org.eclipse.jetty.servlet.NoJspServlet";
             }
             if (holder.getInitParameter("scratchdir") == null)
@@ -262,7 +265,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 if ("?".equals(holder.getInitParameter("classpath")))
                 {
                     String classpath = context.getClassPath();
-                    Log.debug("classpath=" + classpath);
+                    LOG.debug("classpath=" + classpath);
                     if (classpath != null) 
                         holder.setInitParameter("classpath", classpath);
                 }
@@ -328,7 +331,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             int order = 0;
             if (s.startsWith("t"))
             {
-                Log.warn("Deprecated boolean load-on-startup.  Please use integer");
+                LOG.warn("Deprecated boolean load-on-startup.  Please use integer");
                 order = 1; 
             }
             else
@@ -339,8 +342,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (Exception e)
                 {
-                    Log.warn("Cannot parse load-on-startup " + s + ". Please use integer");
-                    Log.ignore(e);
+                    LOG.warn("Cannot parse load-on-startup " + s + ". Please use integer");
+                    LOG.ignore(e);
                 }
             }
 
@@ -384,7 +387,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String roleLink = securityRef.getString("role-link", false, true);
             if (roleName != null && roleName.length() > 0 && roleLink != null && roleLink.length() > 0)
             {
-                if (Log.isDebugEnabled()) Log.debug("link role " + roleName + " to " + roleLink + " for " + this);
+                if (LOG.isDebugEnabled()) LOG.debug("link role " + roleName + " to " + roleLink + " for " + this);
                 Origin o = context.getMetaData().getOrigin(servlet_name+".servlet.role-name."+roleName);
                 switch (o)
                 {
@@ -417,7 +420,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
             else
             {
-                Log.warn("Ignored invalid security-role-ref element: " + "servlet-name=" + holder.getName() + ", " + securityRef);
+                LOG.warn("Ignored invalid security-role-ref element: " + "servlet-name=" + holder.getName() + ", " + securityRef);
             }
         }
 
@@ -922,7 +925,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
                 else
                 {
-                    Log.warn("Unknown user-data-constraint:" + guarantee);
+                    LOG.warn("Unknown user-data-constraint:" + guarantee);
                     scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
                 }
             }
@@ -966,7 +969,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         catch (CloneNotSupportedException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
     
@@ -1362,7 +1365,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 listener = newListenerInstance(context,listenerClass);
                 if (!(listener instanceof EventListener))
                 {
-                    Log.warn("Not an EventListener: " + listener);
+                    LOG.warn("Not an EventListener: " + listener);
                     return;
                 }
                 context.addEventListener(listener);
@@ -1372,7 +1375,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         catch (Exception e)
         {
-            Log.warn("Could not instantiate listener " + className, e);
+            LOG.warn("Could not instantiate listener " + className, e);
             return;
         }
     }
@@ -1459,7 +1462,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                     catch (IOException e)
                     {
-                        Log.debug(e);
+                        LOG.debug(e);
                     }
                 }
             }
