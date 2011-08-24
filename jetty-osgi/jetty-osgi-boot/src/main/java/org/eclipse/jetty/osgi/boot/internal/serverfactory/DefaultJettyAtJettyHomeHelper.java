@@ -27,6 +27,7 @@ import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -36,6 +37,8 @@ import org.osgi.framework.BundleContext;
  * then setup the corresponding jetty server and starts it.
  */
 public class DefaultJettyAtJettyHomeHelper {
+    private static final Logger LOG = Log.getLogger(DefaultJettyAtJettyHomeHelper.class);
+
 	
     /**
      * contains a comma separated list of pathes to the etc/jetty-*.xml files
@@ -101,13 +104,13 @@ public class DefaultJettyAtJettyHomeHelper {
     		}
     		if (jettyHomeBundleSysProp != null)
     		{
-    			Log.warn("Both the jetty.home property and the jetty.home.bundle property are defined."
+    			LOG.warn("Both the jetty.home property and the jetty.home.bundle property are defined."
     					+ " jetty.home.bundle is not taken into account.");
     		}
     		jettyHome = new File(jettyHomeSysProp);
     		if (!jettyHome.exists() || !jettyHome.isDirectory())
     		{
-    			Log.warn("Unable to locate the jetty.home folder " + jettyHomeSysProp);
+    			LOG.warn("Unable to locate the jetty.home folder " + jettyHomeSysProp);
     			return;
     		}
     	}
@@ -124,14 +127,14 @@ public class DefaultJettyAtJettyHomeHelper {
     		}
     		if (jettyHomeBundle == null)
     		{
-    			Log.warn("Unable to find the jetty.home.bundle named " + jettyHomeSysProp);
+    			LOG.warn("Unable to find the jetty.home.bundle named " + jettyHomeSysProp);
     			return;
     		}
     		
     	}
     	if (jettyHome == null && jettyHomeBundle == null)
     	{
-    		Log.warn("No default jetty started.");
+    		LOG.warn("No default jetty started.");
     		return;
     	}
 		try
@@ -143,7 +146,7 @@ public class DefaultJettyAtJettyHomeHelper {
 			String configURLs = jettyHome != null ? getJettyConfigurationURLs(jettyHome) : getJettyConfigurationURLs(jettyHomeBundle);
 			properties.put(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS, configURLs);
 
-			Log.info("Configuring the default jetty server with " + configURLs);
+			LOG.info("Configuring the default jetty server with " + configURLs);
 			
 			//these properties usually are the ones passed to this type of configuration.
 			setProperty(properties,SYS_PROP_JETTY_HOME,System.getProperty(SYS_PROP_JETTY_HOME));

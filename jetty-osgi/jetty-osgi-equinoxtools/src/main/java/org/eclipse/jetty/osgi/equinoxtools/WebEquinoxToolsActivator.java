@@ -20,6 +20,7 @@ import org.eclipse.jetty.osgi.equinoxtools.console.EquinoxConsoleSyncServlet;
 import org.eclipse.jetty.osgi.equinoxtools.console.EquinoxConsoleWebSocketServlet;
 import org.eclipse.jetty.osgi.equinoxtools.console.WebConsoleSession;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.osgi.framework.console.ConsoleSession;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -34,6 +35,8 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  */
 public class WebEquinoxToolsActivator implements BundleActivator
 {
+    private static final Logger LOG = Log.getLogger(WebEquinoxToolsActivator.class);
+
 
     private static BundleContext context;
     public static BundleContext getContext()
@@ -95,11 +98,11 @@ public class WebEquinoxToolsActivator implements BundleActivator
                 }
                 catch (ServletException e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
                 catch (NamespaceException e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
                 return _httpService;
             }

@@ -19,6 +19,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Simple Jetty FileServer.
@@ -33,6 +34,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class FileServer
 {
+    private static final Logger LOG = Log.getLogger(FileServer.class);
+
     public static void main(String[] args) throws Exception
     {
         Server server = new Server(args.length == 0?8080:Integer.parseInt(args[0]));
@@ -42,7 +45,7 @@ public class FileServer
         resource_handler.setWelcomeFiles(new String[]{ "index.html" });
 
         resource_handler.setResourceBase(args.length == 2?args[1]:".");
-        Log.info("serving " + resource_handler.getBaseResource());
+        LOG.info("serving " + resource_handler.getBaseResource());
         
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[] { resource_handler, new DefaultHandler() });

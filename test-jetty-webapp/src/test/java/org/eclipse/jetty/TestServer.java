@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -49,6 +50,8 @@ import org.junit.Ignore;
 @Ignore("Not a test case")
 public class TestServer
 {
+    private static final Logger LOG = Log.getLogger(TestServer.class);
+
     public static void main(String[] args) throws Exception
     {
         ((StdErrLog)Log.getLog()).setSource(false);
@@ -189,7 +192,7 @@ public class TestServer
                         }
                         catch(Exception e)
                         {
-                            Log.warn(e);
+                            LOG.warn(e);
                         }
                     }
                 }.start();

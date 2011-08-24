@@ -28,6 +28,7 @@ import org.eclipse.jetty.nosql.NoSqlSessionManager;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 import org.omg.CORBA._IDLTypeStub;
 
 import com.mongodb.BasicDBObject;
@@ -36,7 +37,9 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 
 public class MongoSessionManager extends NoSqlSessionManager
-{  
+{
+    private static final Logger LOG = Log.getLogger(MongoSessionManager.class);
+  
     private final static Logger __log = Log.getLogger("org.eclipse.jetty.server.session");
    
     /*
@@ -184,7 +187,7 @@ public class MongoSessionManager extends NoSqlSessionManager
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         return null;
     }
@@ -265,7 +268,7 @@ public class MongoSessionManager extends NoSqlSessionManager
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
 
         return null;
@@ -325,7 +328,7 @@ public class MongoSessionManager extends NoSqlSessionManager
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         return null;
     }

@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.CertificateValidator;
 
 
@@ -59,7 +60,9 @@ import org.eclipse.jetty.util.security.CertificateValidator;
  * - check performance of the synch'd map I am using for the protection domain mapping
  */
 public class JettyPolicy extends Policy
-{    
+{
+    private static final Logger LOG = Log.getLogger(JettyPolicy.class);
+    
     private static boolean __DEBUG = false;
     private static boolean __RELOAD = false;
 
@@ -363,7 +366,7 @@ public class JettyPolicy extends Policy
     {
         try
         {
-            Log.info(message);
+            LOG.info(message);
         }
         catch ( AccessControlException ace )
         {
@@ -396,7 +399,7 @@ public class JettyPolicy extends Policy
     {
         try
         {
-            Log.info(message, t);
+            LOG.info(message, t);
         }
         catch ( AccessControlException ace )
         {

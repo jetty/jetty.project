@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Base container to group rules. Can be extended so that the contained rules
@@ -33,6 +34,8 @@ import org.eclipse.jetty.util.log.Log;
 
 public class RuleContainer extends Rule
 {
+    private static final Logger LOG = Log.getLogger(RuleContainer.class);
+
     protected Rule[] _rules;
     
     protected String _originalPathAttribute;
@@ -194,10 +197,10 @@ public class RuleContainer extends Rule
             String applied=rule.matchAndApply(target,request, response);
             if (applied!=null)
             {       
-                Log.debug("applied {}",rule);
+                LOG.debug("applied {}",rule);
                 if (!target.equals(applied))
                 { 
-                    Log.debug("rewrote {} to {}",target,applied);
+                    LOG.debug("rewrote {} to {}",target,applied);
                     if (!original_set)
                     {
                         original_set=true;
@@ -220,13 +223,13 @@ public class RuleContainer extends Rule
                 
                 if (rule.isHandling())
                 {
-                    Log.debug("handling {}",rule);
+                    LOG.debug("handling {}",rule);
                     (request instanceof Request?(Request)request:HttpConnection.getCurrentConnection().getRequest()).setHandled(true);
                 }
 
                 if (rule.isTerminating())
                 {
-                    Log.debug("terminating {}",rule);
+                    LOG.debug("terminating {}",rule);
                     break;
                 }
             }

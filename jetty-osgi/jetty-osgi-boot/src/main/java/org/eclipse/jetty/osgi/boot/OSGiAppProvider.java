@@ -31,6 +31,7 @@ import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
@@ -60,6 +61,8 @@ import org.osgi.framework.Constants;
  */
 public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 {
+    private static final Logger LOG = Log.getLogger(OSGiAppProvider.class);
+
 
     private boolean _extractWars = true;
     private boolean _parentLoaderPriority = false;
@@ -190,6 +193,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     /**
      * @see AppProvider
      */
+    @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {
         // _manager=deploymentManager;
@@ -456,6 +460,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     /**
      * Overridden to install the OSGi bundles found in the monitored folder.
      */
+    @Override
     protected void doStart() throws Exception
     {
         if (isAutoInstallOSGiBundles())
@@ -463,7 +468,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         	if (getMonitoredDirResource()  == null)
         	{
         		setAutoInstallOSGiBundles(false);
-        		Log.info("Disable autoInstallOSGiBundles as there is not contexts folder to monitor.");
+        		LOG.info("Disable autoInstallOSGiBundles as there is not contexts folder to monitor.");
         	}
 	    	else
         	{
@@ -474,14 +479,14 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
 	                if (!scandir.exists() || !scandir.isDirectory())
 	                {
 	                	setAutoInstallOSGiBundles(false);
-	            		Log.warn("Disable autoInstallOSGiBundles as the contexts folder '" + scandir.getAbsolutePath() + " does not exist.");
+	            		LOG.warn("Disable autoInstallOSGiBundles as the contexts folder '" + scandir.getAbsolutePath() + " does not exist.");
 	            		scandir = null;
 	                }
 	    		}
 	    		catch (IOException ioe)
 	    		{
                 	setAutoInstallOSGiBundles(false);
-            		Log.warn("Disable autoInstallOSGiBundles as the contexts folder '" + getMonitoredDirResource().getURI() + " does not exist.");
+            		LOG.warn("Disable autoInstallOSGiBundles as the contexts folder '" + getMonitoredDirResource().getURI() + " does not exist.");
             		scandir = null;
 	    		}
 	    		if (scandir != null)
@@ -610,7 +615,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
             {
             	//not sure we will ever be here,
             	//most likely a BundleException was thrown
-            	Log.warn("The file " + location + " is not an OSGi bundle.");
+            	LOG.warn("The file " + location + " is not an OSGi bundle.");
             	return null;
             }
             if (start && b.getHeaders().get(Constants.FRAGMENT_HOST) == null)
@@ -633,7 +638,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         }
         catch (BundleException e)
         {
-            Log.warn("Unable to " + (start? "start":"install") + " the bundle " + file.getAbsolutePath(), e);
+            LOG.warn("Unable to " + (start? "start":"install") + " the bundle " + file.getAbsolutePath(), e);
         }
         return null;
     }
@@ -648,7 +653,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         }
         catch (BundleException e)
         {
-            Log.warn("Unable to uninstall the bundle " + file.getAbsolutePath(), e);
+            LOG.warn("Unable to uninstall the bundle " + file.getAbsolutePath(), e);
         }
     }
     
@@ -672,7 +677,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         }
         catch (BundleException e)
         {
-            Log.warn("Unable to update the bundle " + file.getAbsolutePath(), e);
+            LOG.warn("Unable to update the bundle " + file.getAbsolutePath(), e);
         }
     }
     
@@ -684,6 +689,8 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
  */
 class AutoStartWhenFrameworkHasCompleted implements Scanner.ScanCycleListener
 {
+        private static final Logger LOG = Log.getLogger(AutoStartWhenFrameworkHasCompleted.class);
+    
 	private final OSGiAppProvider _appProvider;
 	
 	AutoStartWhenFrameworkHasCompleted(OSGiAppProvider appProvider)
@@ -713,7 +720,7 @@ class AutoStartWhenFrameworkHasCompleted implements Scanner.ScanCycleListener
 				}
 		        catch (BundleException e)
 		        {
-		            Log.warn("Unable to start the bundle " + b.getLocation(), e);
+		            LOG.warn("Unable to start the bundle " + b.getLocation(), e);
 		        }
 
 			}

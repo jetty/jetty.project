@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -37,6 +38,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SecureModeServlet extends HttpServlet
 {
+    private static final Logger LOG = Log.getLogger(SecureModeServlet.class);
+
     /* ------------------------------------------------------------ */
     @Override
     public void init(ServletConfig config) throws ServletException
@@ -118,7 +121,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check ability to log<br/>");
-            Log.info("testing logging");
+            LOG.info("testing logging");
             out.println("status: <b>SUCCESS - expected</b><br/>");
         }
         catch (SecurityException e)

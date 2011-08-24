@@ -18,6 +18,7 @@ import java.util.Dictionary;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.util.tracker.BundleTracker;
@@ -49,6 +50,8 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
  * @author hmalphettes
  */
 public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
+    private static final Logger LOG = Log.getLogger(WebBundleTrackerCustomizer.class);
+
 	
 
 	/**
@@ -152,7 +155,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             String contextPath = getWebContextPath(bundle, dic, false);//(String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
             if (contextPath == null || !contextPath.startsWith("/"))
             {
-            	Log.warn("The manifest header '" + OSGiWebappConstants.JETTY_WAR_FOLDER_PATH +
+            	LOG.warn("The manifest header '" + OSGiWebappConstants.JETTY_WAR_FOLDER_PATH +
                 		": " + warFolderRelativePath + "' in the bundle " + bundle.getSymbolicName() + 
                 		" is not valid: there is no Web-ContextPath defined in the manifest.");
             	return false;
@@ -166,7 +169,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             }
             catch (Throwable e)
             {
-            	Log.warn("Starting the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
+            	LOG.warn("Starting the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
                 return true;//maybe it did not work maybe it did. safer to track this bundle.
             }
         }

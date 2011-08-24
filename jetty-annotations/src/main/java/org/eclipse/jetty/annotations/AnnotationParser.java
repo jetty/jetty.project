@@ -28,6 +28,7 @@ import java.util.jar.JarEntry;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.JarScanner;
 import org.objectweb.asm.AnnotationVisitor;
@@ -43,7 +44,9 @@ import org.objectweb.asm.commons.EmptyVisitor;
  * a handler being able to be registered to handle each annotation type.
  */
 public class AnnotationParser
-{ 
+{
+    private static final Logger LOG = Log.getLogger(AnnotationParser.class);
+ 
     protected List<String> _parsedClassNames = new ArrayList<String>();
     protected Map<String, List<DiscoverableAnnotationHandler>> _annotationHandlers = new HashMap<String, List<DiscoverableAnnotationHandler>>();
     protected List<ClassHandler> _classHandlers = new ArrayList<ClassHandler>();
@@ -528,7 +531,7 @@ public class AnnotationParser
             }
             catch (Exception ex)
             {
-                Log.warn(Log.EXCEPTION,ex);
+                LOG.warn(Log.EXCEPTION,ex);
             }
         }
     }
@@ -574,7 +577,7 @@ public class AnnotationParser
                 }
                 catch (Exception e)
                 {
-                    Log.warn("Problem processing jar entry "+entry, e);
+                    LOG.warn("Problem processing jar entry "+entry, e);
                 }
             }
             
@@ -619,7 +622,7 @@ public class AnnotationParser
                 }
                 catch (Exception e)
                 {
-                    Log.warn("Problem processing jar entry "+entry, e);
+                    LOG.warn("Problem processing jar entry "+entry, e);
                 }
             }
             

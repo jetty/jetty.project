@@ -22,6 +22,7 @@ import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -29,6 +30,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
+    private static final Logger LOG = Log.getLogger(RunAsAnnotationHandler.class);
+
     protected WebAppContext _context;
 
     public RunAsAnnotationHandler (WebAppContext wac)
@@ -74,7 +77,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                 }
             }
             else
-                Log.warn("Bad value for @RunAs annotation on class "+clazz.getName());
+                LOG.warn("Bad value for @RunAs annotation on class "+clazz.getName());
         }
 
     }
@@ -82,13 +85,13 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
                             List<Value> values)
     {
-       Log.warn ("@RunAs annotation not applicable for fields: "+className+"."+fieldName);
+       LOG.warn ("@RunAs annotation not applicable for fields: "+className+"."+fieldName);
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
                              List<Value> values)
     {
-        Log.warn("@RunAs annotation ignored on method: "+className+"."+methodName+" "+signature);
+        LOG.warn("@RunAs annotation ignored on method: "+className+"."+methodName+" "+signature);
     }
 
     private ServletHolder getServletHolderForClass (Class clazz)

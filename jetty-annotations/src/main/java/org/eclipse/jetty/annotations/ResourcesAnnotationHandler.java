@@ -19,10 +19,13 @@ import javax.naming.NamingException;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
+    private static final Logger LOG = Log.getLogger(ResourcesAnnotationHandler.class);
+
 
     protected WebAppContext _wac;
 
@@ -40,7 +43,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
             Resource[] resArray = resources.value();
             if (resArray==null||resArray.length==0)
             {
-                Log.warn ("Skipping empty or incorrect Resources annotation on "+clazz.getName());
+                LOG.warn ("Skipping empty or incorrect Resources annotation on "+clazz.getName());
                 return;
             }
 
@@ -62,11 +65,11 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
 
                     if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name, mappedName))
                         if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name, mappedName))
-                            Log.warn("Skipping Resources(Resource) annotation on "+clazz.getName()+" for name "+name+": No resource bound at "+(mappedName==null?name:mappedName));
+                            LOG.warn("Skipping Resources(Resource) annotation on "+clazz.getName()+" for name "+name+": No resource bound at "+(mappedName==null?name:mappedName));
                 }
                 catch (NamingException e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
             }
         }

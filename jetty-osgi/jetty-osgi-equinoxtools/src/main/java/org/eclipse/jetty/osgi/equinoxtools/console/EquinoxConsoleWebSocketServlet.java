@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.osgi.equinoxtools.WebEquinoxToolsActivator;
 import org.eclipse.jetty.osgi.equinoxtools.console.WebConsoleWriterOutputStream.OnFlushListener;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 import org.eclipse.osgi.framework.console.ConsoleSession;
@@ -34,6 +35,8 @@ import org.eclipse.osgi.framework.console.ConsoleSession;
  */
 public class EquinoxConsoleWebSocketServlet extends WebSocketServlet implements OnFlushListener
 {
+    private static final Logger LOG = Log.getLogger(EquinoxConsoleWebSocketServlet.class);
+
     private final Set<ChatWebSocket> _members = new CopyOnWriteArraySet<ChatWebSocket>();
     private static final long serialVersionUID = 1L;
     private WebConsoleSession _consoleSession;
@@ -93,19 +96,19 @@ public class EquinoxConsoleWebSocketServlet extends WebSocketServlet implements 
         
         public void onOpen(Connection connection)
         {
-            // Log.info(this+" onConnect");
+            // LOG.info(this+" onConnect");
             _connection=connection;
             _members.add(this);
         }
         
         public void onMessage(byte frame, byte[] data,int offset, int length)
         {
-            // Log.info(this+" onMessage: "+TypeUtil.toHexString(data,offset,length));
+            // LOG.info(this+" onMessage: "+TypeUtil.toHexString(data,offset,length));
         }
 
         public void onMessage(String data)
         {
-            Log.info("onMessage: {}",data);
+            LOG.info("onMessage: {}",data);
             if (data.indexOf("disconnect")>=0)
                 _connection.disconnect();
             else
@@ -129,14 +132,14 @@ public class EquinoxConsoleWebSocketServlet extends WebSocketServlet implements 
                 {
                     _username = data.substring(0, data.length()-":has joined!".length());
                 }
-                // Log.info(this+" onMessage: "+data);
+                // LOG.info(this+" onMessage: "+data);
                 onFlush();
             }
         }
 
         public void onClose(int code, String message)
         {
-            // Log.info(this+" onDisconnect");
+            // LOG.info(this+" onDisconnect");
             _members.remove(this);
         }
 
@@ -165,7 +168,7 @@ public class EquinoxConsoleWebSocketServlet extends WebSocketServlet implements 
             }
             catch(IOException e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
         }
     }    

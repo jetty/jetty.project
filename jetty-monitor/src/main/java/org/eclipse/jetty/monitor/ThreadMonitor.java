@@ -27,11 +27,14 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
 public class ThreadMonitor extends AbstractLifeCycle implements Runnable
 {
+    private static final Logger LOG = Log.getLogger(ThreadMonitor.class);
+
     private int _scanInterval;
     private int _logInterval;
     private int _busyThreshold;
@@ -296,7 +299,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         _runner.setDaemon(true);
         _runner.start();
 
-        Log.info("Thread Monitor started successfully");
+        LOG.info("Thread Monitor started successfully");
     }
     
     /* ------------------------------------------------------------ */
@@ -395,7 +398,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
                 }
                 catch (InterruptedException ex)
                 {
-                    Log.ignore(ex);
+                    LOG.ignore(ex);
                 }
             }
         }
@@ -486,7 +489,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
         }
         catch (Exception ex)
         {
-            Log.debug(ex);
+            LOG.debug(ex);
         }
         return repeat;
     }
