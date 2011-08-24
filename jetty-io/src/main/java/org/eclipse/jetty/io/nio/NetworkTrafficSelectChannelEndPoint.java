@@ -22,9 +22,12 @@ import java.util.List;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
 {
+    private static final Logger LOG = Log.getLogger(NetworkTrafficSelectChannelEndPoint.class);
+
     private final List<NetworkTrafficListener> listeners;
 
     public NetworkTrafficSelectChannelEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, int maxIdleTime, List<NetworkTrafficListener> listeners) throws IOException
@@ -74,7 +77,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
                 }
                 catch (Exception x)
                 {
-                    Log.warn(x);
+                    LOG.warn(x);
                 }
             }
         }
@@ -93,7 +96,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
                 }
                 catch (Exception x)
                 {
-                    Log.warn(x);
+                    LOG.warn(x);
                 }
             }
         }
@@ -114,7 +117,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
                 }
                 catch (Exception x)
                 {
-                    Log.warn(x);
+                    LOG.warn(x);
                 }
             }
         }
@@ -132,7 +135,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
                 }
                 catch (Exception x)
                 {
-                    Log.warn(x);
+                    LOG.warn(x);
                 }
             }
         }

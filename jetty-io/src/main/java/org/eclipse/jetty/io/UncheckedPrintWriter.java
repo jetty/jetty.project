@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.io.Writer;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -31,6 +32,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class UncheckedPrintWriter extends PrintWriter
 {
+    private static final Logger LOG = Log.getLogger(UncheckedPrintWriter.class);
+
     private boolean _autoFlush = false;
     private boolean _throwUnchecked=true;
 
@@ -105,7 +108,7 @@ public class UncheckedPrintWriter extends PrintWriter
         setError();
         if (_throwUnchecked)
             throw new RuntimeIOException(th);
-        Log.debug(th);
+        LOG.debug(th);
     }
 
     /* ------------------------------------------------------------ */

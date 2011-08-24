@@ -26,9 +26,12 @@ import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.bio.StreamEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpParser implements Parser
 {
+    private static final Logger LOG = Log.getLogger(HttpParser.class);
+
     // States
     public static final int STATE_START=-14;
     public static final int STATE_FIELD0=-13;
@@ -488,7 +491,7 @@ public class HttpParser implements Parser
                                                 }
                                                 catch(NumberFormatException e)
                                                 {
-                                                    Log.ignore(e);
+                                                    LOG.ignore(e);
                                                     throw new HttpException(HttpStatus.BAD_REQUEST_400);
                                                 }
                                                 if (_contentLength <= 0)
@@ -930,7 +933,7 @@ public class HttpParser implements Parser
             }
             catch(IOException e)
             {
-                Log.debug(e);
+                LOG.debug(e);
                 throw (e instanceof EofException) ? e:new EofException(e);
             }
         }

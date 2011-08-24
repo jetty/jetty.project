@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Channel End Point.
@@ -34,6 +35,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ChannelEndPoint implements EndPoint
 {
+    private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
+
     protected final ByteChannel _channel;
     protected final ByteBuffer[] _gather2=new ByteBuffer[2];
     protected final Socket _socket;
@@ -188,12 +191,12 @@ public class ChannelEndPoint implements EndPoint
                 }
                 catch (IOException xx)
                 {
-                    Log.ignore(xx);
+                    LOG.ignore(xx);
                 }
                 
                 if (len>0)
                     throw x;
-                Log.ignore(x);
+                LOG.ignore(x);
                 len=-1;
             }
         }

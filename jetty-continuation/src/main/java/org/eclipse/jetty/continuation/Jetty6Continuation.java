@@ -8,8 +8,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 
 import org.mortbay.log.Log;
-
-
+import org.mortbay.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -19,6 +18,8 @@ import org.mortbay.log.Log;
  */
 public class Jetty6Continuation implements ContinuationFilter.FilteredContinuation
 {
+    private static final Logger LOG = Log.getLogger(Jetty6Continuation.class.getName());
+
     // Exception reused for all continuations
     // Turn on debug in ContinuationFilter to see real stack trace.
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
@@ -40,7 +41,7 @@ public class Jetty6Continuation implements ContinuationFilter.FilteredContinuati
     {
         if (!ContinuationFilter._initialized)
         {
-            Log.warn("!ContinuationFilter installed");
+            LOG.warn("!ContinuationFilter installed",null,null);
             throw new IllegalStateException("!ContinuationFilter installed");
         }
         _request=request;

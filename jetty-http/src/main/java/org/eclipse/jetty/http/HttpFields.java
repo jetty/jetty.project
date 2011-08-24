@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -55,7 +56,9 @@ import org.eclipse.jetty.util.log.Log;
  * 
  */
 public class HttpFields
-{    
+{
+    private static final Logger LOG = Log.getLogger(HttpFields.class);
+    
     /* ------------------------------------------------------------ */
     public static final String __COOKIE_DELIM="\"\\\n\r\t\f\b%+ ;=";
     public static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
@@ -242,7 +245,7 @@ public class HttpFields
                 }
                 catch (java.lang.Exception e)
                 {
-                    // Log.ignore(e);
+                    // LOG.ignore(e);
                 }
             }
             
@@ -259,7 +262,7 @@ public class HttpFields
                     }
                     catch (java.lang.Exception e)
                     {
-                        // Log.ignore(e);
+                        // LOG.ignore(e);
                     }
                 }
             }    
@@ -1058,7 +1061,7 @@ public class HttpFields
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             return e.toString();
         }
     }

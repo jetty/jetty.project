@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -34,6 +35,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractGenerator implements Generator
 {
+    private static final Logger LOG = Log.getLogger(AbstractGenerator.class);
+
     // states
     public final static int STATE_HEADER = 0;
     public final static int STATE_CONTENT = 2;
@@ -410,8 +413,8 @@ public abstract class AbstractGenerator implements Generator
 
         if (_contentLength >= 0 && _contentLength != _contentWritten && !_head)
         {
-            if (Log.isDebugEnabled())
-                Log.debug("ContentLength written=="+_contentWritten+" != contentLength=="+_contentLength);
+            if (LOG.isDebugEnabled())
+                LOG.debug("ContentLength written=="+_contentWritten+" != contentLength=="+_contentLength);
             _persistent = false;
         }
     }

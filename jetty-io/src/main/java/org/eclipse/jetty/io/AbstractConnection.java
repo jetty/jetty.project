@@ -3,10 +3,13 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 public abstract class AbstractConnection implements Connection
 {
+    private static final Logger LOG = Log.getLogger(AbstractConnection.class);
+
     private final long _timeStamp;
     protected final EndPoint _endp;
 
@@ -40,7 +43,7 @@ public abstract class AbstractConnection implements Connection
         }
         catch(IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
 
             try
             {
@@ -48,7 +51,7 @@ public abstract class AbstractConnection implements Connection
             }
             catch(IOException e2)
             {
-                Log.ignore(e2);
+                LOG.ignore(e2);
                 
             }
         }

@@ -20,6 +20,7 @@ import java.net.Socket;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  *
@@ -28,6 +29,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SocketEndPoint extends StreamEndPoint
 {
+    private static final Logger LOG = Log.getLogger(SocketEndPoint.class);
+
     final Socket _socket;
     final InetSocketAddress _local;
     final InetSocketAddress _remote;
@@ -230,7 +233,7 @@ public class SocketEndPoint extends StreamEndPoint
         }
         catch(IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
             _socket.close();
         }
     }

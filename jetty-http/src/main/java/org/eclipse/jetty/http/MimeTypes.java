@@ -25,6 +25,7 @@ import org.eclipse.jetty.io.BufferCache;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -33,6 +34,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class MimeTypes
 {
+    private static final Logger LOG = Log.getLogger(MimeTypes.class);
+
     public final static String
       FORM_ENCODED="application/x-www-form-urlencoded",
       MESSAGE_HTTP="message/http",
@@ -132,8 +135,8 @@ public class MimeTypes
         }
         catch(MissingResourceException e)
         {
-            Log.warn(e.toString());
-            Log.debug(e);
+            LOG.warn(e.toString());
+            LOG.debug(e);
         }
 
         try
@@ -148,8 +151,8 @@ public class MimeTypes
         }
         catch(MissingResourceException e)
         {
-            Log.warn(e.toString());
-            Log.debug(e);
+            LOG.warn(e.toString());
+            LOG.debug(e);
         }
 
         
