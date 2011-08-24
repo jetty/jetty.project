@@ -19,6 +19,7 @@ import java.util.Map;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -31,6 +32,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JSONEnumConvertor implements JSON.Convertor
 {
+    private static final Logger LOG = Log.getLogger(JSONEnumConvertor.class);
     private boolean _fromJSON;
     private Method _valueOf;
     {
@@ -66,7 +68,7 @@ public class JSONEnumConvertor implements JSON.Convertor
         }
         catch(Exception e)
         {
-            Log.warn(e);  
+            LOG.warn(e);  
         }
         return null;
     }

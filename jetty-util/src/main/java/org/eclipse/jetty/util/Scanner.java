@@ -31,6 +31,7 @@ import java.util.TimerTask;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -42,6 +43,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Scanner extends AbstractLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(Scanner.class);
     private static int __scannerId=0;
     private int _scanInterval;
     private int _scanCount = 0;
@@ -315,6 +317,7 @@ public class Scanner extends AbstractLifeCycle
     /**
      * Start the scanning action.
      */
+    @Override
     public synchronized void doStart()
     {
         if (_running)
@@ -370,6 +373,7 @@ public class Scanner extends AbstractLifeCycle
     /**
      * Stop the scanning.
      */
+    @Override
     public synchronized void doStop()
     {
         if (_running)
@@ -405,11 +409,11 @@ public class Scanner extends AbstractLifeCycle
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
             catch (Error e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
         }
     }
@@ -435,7 +439,7 @@ public class Scanner extends AbstractLifeCycle
                 }
                 catch (IOException e)
                 {
-                    Log.warn("Error scanning files.", e);
+                    LOG.warn("Error scanning files.", e);
                 }
         }
     }
@@ -501,8 +505,8 @@ public class Scanner extends AbstractLifeCycle
             }
         }
         
-        if (Log.isDebugEnabled())
-            Log.debug("scanned "+_scanDirs+": "+_notifications);
+        if (LOG.isDebugEnabled())
+            LOG.debug("scanned "+_scanDirs+": "+_notifications);
                 
         // Process notifications
         // Only process notifications that are for stable files (ie same in old and current scan).
@@ -575,14 +579,13 @@ public class Scanner extends AbstractLifeCycle
         }
         catch (IOException e)
         {
-            Log.warn("Error scanning watched files", e);
+            LOG.warn("Error scanning watched files", e);
         }
     }
 
     private void warn(Object listener,String filename,Throwable th)
     {
-        Log.warn(th);
-        Log.warn(listener+" failed on '"+filename);
+        LOG.warn(listener+" failed on '"+filename, th);
     }
 
     /**
@@ -703,8 +706,7 @@ public class Scanner extends AbstractLifeCycle
             }
             catch (Exception e)
             {
-                Log.warn(e);
-                Log.warn(listener + " failed on scan start for cycle " + cycle);
+                LOG.warn(listener + " failed on scan start for cycle " + cycle, e);
             }
         }
     }
@@ -725,8 +727,7 @@ public class Scanner extends AbstractLifeCycle
             }
             catch (Exception e)
             {
-                Log.warn(e);
-                Log.warn(listener + " failed on scan end for cycle " + cycle);
+                LOG.warn(listener + " failed on scan end for cycle " + cycle, e);
             }
         }
     }

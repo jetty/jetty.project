@@ -17,6 +17,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 // ====================================================================
 /** Fast String Utilities.
@@ -30,6 +31,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class StringUtil
 {
+    private static final Logger LOG = Log.getLogger(StringUtil.class);
+    
     public static final String ALL_INTERFACES="0.0.0.0";
     public static final String CRLF="\015\012";
     public static final String __LINE_SEPARATOR=
@@ -372,7 +375,7 @@ public class StringUtil
         }
         catch(Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             return s.getBytes();
         }
     }
@@ -385,7 +388,7 @@ public class StringUtil
         }
         catch(Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             return s.getBytes();
         }
     }

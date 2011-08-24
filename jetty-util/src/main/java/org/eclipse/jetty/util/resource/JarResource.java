@@ -26,11 +26,13 @@ import java.util.jar.Manifest;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
 public class JarResource extends URLResource
 {
+    private static final Logger LOG = Log.getLogger(JarResource.class);
     protected JarURLConnection _jarConnection;
     
     /* -------------------------------------------------------- */
@@ -65,7 +67,7 @@ public class JarResource extends URLResource
         }
         catch(IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
             _jarConnection=null;
         }
         
@@ -128,7 +130,7 @@ public class JarResource extends URLResource
         if (!exists())
             return;
         
-        if(Log.isDebugEnabled())Log.debug("Extract "+this+" to "+directory);
+        if(LOG.isDebugEnabled())LOG.debug("Extract "+this+" to "+directory);
         
         String urlString = this.getURL().toExternalForm().trim();
         int endOfJarUrl = urlString.indexOf("!/");
@@ -141,7 +143,7 @@ public class JarResource extends URLResource
         String subEntryName = (endOfJarUrl+2 < urlString.length() ? urlString.substring(endOfJarUrl + 2) : null);
         boolean subEntryIsDir = (subEntryName != null && subEntryName.endsWith("/")?true:false);
       
-        if (Log.isDebugEnabled()) Log.debug("Extracting entry = "+subEntryName+" from jar "+jarFileURL);
+        if (LOG.isDebugEnabled()) LOG.debug("Extracting entry = "+subEntryName+" from jar "+jarFileURL);
         
         InputStream is = jarFileURL.openConnection().getInputStream();
         JarInputStream jin = new JarInputStream(is);
@@ -192,7 +194,7 @@ public class JarResource extends URLResource
             
             if (!shouldExtract)
             {
-                if (Log.isDebugEnabled()) Log.debug("Skipping entry: "+entryName);
+                if (LOG.isDebugEnabled()) LOG.debug("Skipping entry: "+entryName);
                 continue;
             }
                 
@@ -200,7 +202,7 @@ public class JarResource extends URLResource
             dotCheck = URIUtil.canonicalPath(dotCheck);
             if (dotCheck == null)
             {
-                if (Log.isDebugEnabled()) Log.debug("Invalid entry: "+entryName);
+                if (LOG.isDebugEnabled()) LOG.debug("Invalid entry: "+entryName);
                 continue;
             }
 

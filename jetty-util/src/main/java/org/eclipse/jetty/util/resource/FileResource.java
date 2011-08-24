@@ -28,6 +28,7 @@ import java.security.Permission;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -42,6 +43,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class FileResource extends URLResource
 {
+    private static final Logger LOG = Log.getLogger(FileResource.class);
     private static boolean __checkAliases = true;
 
     /* ------------------------------------------------------------ */
@@ -80,7 +82,7 @@ public class FileResource extends URLResource
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
             try
             {
                 // Assume that File.toURL produced unencoded chars. So try
@@ -94,7 +96,7 @@ public class FileResource extends URLResource
             }
             catch (Exception e2)
             {
-                Log.ignore(e2);
+                LOG.ignore(e2);
 
                 // Still can't get the file.  Doh! try good old hack!
                 checkConnection();
@@ -187,15 +189,15 @@ public class FileResource extends URLResource
                 
                 _aliasChecked=true;
                 
-                if (_alias!=null && Log.isDebugEnabled())
+                if (_alias!=null && LOG.isDebugEnabled())
                 {
-                    Log.debug("ALIAS abs="+abs);
-                    Log.debug("ALIAS can="+can);
+                    LOG.debug("ALIAS abs="+abs);
+                    LOG.debug("ALIAS can="+can);
                 }
             }
             catch(Exception e)
             {
-                Log.warn(Log.EXCEPTION,e);
+                LOG.warn(Log.EXCEPTION,e);
                 return getURL();
             }                
         }

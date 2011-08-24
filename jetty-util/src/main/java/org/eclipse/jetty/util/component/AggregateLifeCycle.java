@@ -9,6 +9,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * An AggregateLifeCycle is an AbstractLifeCycle with a collection of dependent beans.
@@ -18,6 +19,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable, Dumpable
 {
+    private static final Logger LOG = Log.getLogger(AggregateLifeCycle.class);
     private final Queue<Object> _dependentBeans=new ConcurrentLinkedQueue<Object>();
 
     public void destroy()
@@ -139,7 +141,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
             }
         }
         if (count>1)
-            Log.debug("getBean({}) 1 of {}",clazz.getName(),count);
+            LOG.debug("getBean({}) 1 of {}",clazz.getName(),count);
         
         return t;
     }
@@ -173,7 +175,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         }
         catch (IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
     
@@ -193,7 +195,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         }
         catch (IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         return b.toString();
     }    

@@ -8,10 +8,12 @@ import java.util.List;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class FileDestroyable implements Destroyable
 {
+    private static final Logger LOG = Log.getLogger(FileDestroyable.class);
     final List<File> _files = new ArrayList<File>();
 
     public FileDestroyable()
@@ -59,7 +61,7 @@ public class FileDestroyable implements Destroyable
         {
             if (file.exists())
             {
-                Log.debug("Destroy {}",file);
+                LOG.debug("Destroy {}",file);
                 IO.delete(file);
             }
         }

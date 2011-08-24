@@ -33,10 +33,13 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
 public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPool, Executor, Dumpable
 {
+    private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
+    
     private final AtomicInteger _threadsStarted = new AtomicInteger();
     private final AtomicInteger _threadsIdle = new AtomicInteger();
     private final AtomicLong _lastShrink = new AtomicLong();
@@ -134,16 +137,16 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         int size=_threads.size();
         if (size>0)
         {
-            Log.warn(size+" threads could not be stopped");
+            LOG.warn(size+" threads could not be stopped");
             
-            if (Log.isDebugEnabled())
+            if (LOG.isDebugEnabled())
             {
                 for (Thread unstopped : _threads)
                 {
-                    Log.debug("Couldn't stop "+unstopped);
+                    LOG.debug("Couldn't stop "+unstopped);
                     for (StackTraceElement element : unstopped.getStackTrace())
                     {
-                        Log.debug(" at "+element);
+                        LOG.debug(" at "+element);
                     }
                 }
             }
@@ -567,11 +570,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             }
             catch(InterruptedException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             catch(Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
             finally
             {
@@ -588,7 +591,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
      * @return true if the thread was found and stopped.
      * @deprecated Use {@link #interruptThread(long)} in preference
      */
-    @SuppressWarnings("deprecation")
+    @Deprecated
     public boolean stopThread(long id)
     {
         for (Thread thread: _threads)

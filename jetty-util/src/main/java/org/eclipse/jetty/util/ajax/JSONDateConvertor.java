@@ -23,6 +23,7 @@ import java.util.TimeZone;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -33,6 +34,7 @@ import org.eclipse.jetty.util.log.Log;
 */
 public class JSONDateConvertor implements JSON.Convertor
 {
+    private static final Logger LOG = Log.getLogger(JSONDateConvertor.class);
     private boolean _fromJSON;
     DateCache _dateCache;
     SimpleDateFormat _format;
@@ -78,7 +80,7 @@ public class JSONDateConvertor implements JSON.Convertor
         }
         catch(Exception e)
         {
-            Log.warn(e);  
+            LOG.warn(e);  
         }
         return null;
     }
@@ -96,5 +98,4 @@ public class JSONDateConvertor implements JSON.Convertor
             out.add(date);
         }
     }
-
 }

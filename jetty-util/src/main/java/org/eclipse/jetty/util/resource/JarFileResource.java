@@ -23,10 +23,12 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 class JarFileResource extends JarResource
 {
+    private static final Logger LOG = Log.getLogger(JarFileResource.class);
     private JarFile _jarFile;
     private File _file;
     private String[] _list;
@@ -119,7 +121,7 @@ class JarFileResource extends JarResource
             
             String file_url=_urlString.substring(4,_urlString.length()-2);
             try{return newResource(file_url).exists();}
-            catch(Exception e) {Log.ignore(e); return false;}
+            catch(Exception e) {LOG.ignore(e); return false;}
         }
         
         boolean check=checkConnection();
@@ -149,7 +151,7 @@ class JarFileResource extends JarResource
                 }
                 catch(Exception e)
                 {
-                       Log.ignore(e);
+                       LOG.ignore(e);
                 }
             }
 
@@ -195,7 +197,7 @@ class JarFileResource extends JarResource
                     }
                     catch(MalformedURLException ex)
                     {
-                        Log.warn(ex);
+                        LOG.warn(ex);
                     }
                 }
             }
@@ -252,7 +254,7 @@ class JarFileResource extends JarResource
                 }
                 catch(Exception e)
                 {
-                     Log.ignore(e);
+                     LOG.ignore(e);
                 }
             }
             

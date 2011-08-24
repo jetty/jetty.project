@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -38,6 +39,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class Resource implements ResourceFactory
 {
+    private static final Logger LOG = Log.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
     volatile Object _associate;
     
@@ -103,7 +105,7 @@ public abstract class Resource implements ResourceFactory
             }
             catch(Exception e)
             {
-                Log.debug(Log.EXCEPTION,e);
+                LOG.debug(Log.EXCEPTION,e);
                 return new BadResource(url,e.toString());
             }
         }
@@ -169,13 +171,13 @@ public abstract class Resource implements ResourceFactory
                 }
                 catch(Exception e2)
                 {
-                    Log.debug(Log.EXCEPTION,e2);
+                    LOG.debug(Log.EXCEPTION,e2);
                     throw e;
                 }
             }
             else
             {
-                Log.warn("Bad Resource: "+resource);
+                LOG.warn("Bad Resource: "+resource);
                 throw e;
             }
         }
@@ -443,7 +445,7 @@ public abstract class Resource implements ResourceFactory
         }
         catch(Exception e)
         {
-            Log.debug(e);
+            LOG.debug(e);
             return null;
         }
     }

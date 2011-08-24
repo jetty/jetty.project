@@ -26,6 +26,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /* ======================================================================== */
@@ -35,6 +36,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class IO 
 {
+    private static final Logger LOG = Log.getLogger(IO.class);
+    
     /* ------------------------------------------------------------------- */
     public final static String
         CRLF      = "\015\012";
@@ -53,7 +56,7 @@ public class IO
         static
         {
             try{__pool.start();}
-            catch(Exception e){Log.warn(e); System.exit(1);}
+            catch(Exception e){LOG.warn(e); System.exit(1);}
         }
     }
 
@@ -94,7 +97,7 @@ public class IO
             }
             catch(IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
                 try{
                     if (out!=null)
                         out.close();
@@ -103,7 +106,7 @@ public class IO
                 }
                 catch(IOException e2)
                 {
-                    Log.ignore(e2);
+                    LOG.ignore(e2);
                 }
             }
         }
@@ -122,7 +125,7 @@ public class IO
         }
         catch(Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
     
@@ -149,7 +152,7 @@ public class IO
         }
         catch(Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
     
@@ -364,7 +367,7 @@ public class IO
         }
         catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
     }
 
@@ -381,7 +384,7 @@ public class IO
                 reader.close();
         } catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
     }
 
@@ -398,7 +401,7 @@ public class IO
                 writer.close();
         } catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
     }
     
@@ -426,7 +429,7 @@ public class IO
         }
         catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
     }
 
