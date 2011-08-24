@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * FORM Authenticator.
@@ -61,6 +62,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class FormAuthenticator extends LoginAuthenticator
 {
+    private static final Logger LOG = Log.getLogger(FormAuthenticator.class);
+
     public final static String __FORM_LOGIN_PAGE="org.eclipse.jetty.security.form_login_page";
     public final static String __FORM_ERROR_PAGE="org.eclipse.jetty.security.form_error_page";
     public final static String __FORM_DISPATCH="org.eclipse.jetty.security.dispatch";
@@ -120,7 +123,7 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         if (!path.startsWith("/"))
         {
-            Log.warn("form-login-page must start with /");
+            LOG.warn("form-login-page must start with /");
             path = "/" + path;
         }
         _formLoginPage = path;
@@ -141,7 +144,7 @@ public class FormAuthenticator extends LoginAuthenticator
         {
             if (!path.startsWith("/"))
             {
-                Log.warn("form-error-page must start with /");
+                LOG.warn("form-error-page must start with /");
                 path = "/" + path;
             }
             _formErrorPage = path;
@@ -205,8 +208,8 @@ public class FormAuthenticator extends LoginAuthenticator
                 }
                 
                 // not authenticated
-                if (Log.isDebugEnabled()) 
-                    Log.debug("Form authentication FAILED for " + StringUtil.printable(username));
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("Form authentication FAILED for " + StringUtil.printable(username));
                 if (_formErrorPage == null)
                 {
                     if (response != null) 

@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* --------------------------------------------------------------------- */
@@ -39,6 +40,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Holder<T> extends AbstractLifeCycle implements Dumpable
 {
+    private static final Logger LOG = Log.getLogger(Holder.class);
+
     protected transient Class<? extends T> _class;
     protected final Map<String,String> _initParams=new HashMap<String,String>(3);
     protected String _className;
@@ -79,11 +82,11 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             try
             {
                 _class=Loader.loadClass(Holder.class, _className);
-                if(Log.isDebugEnabled())Log.debug("Holding {}",_class);
+                if(LOG.isDebugEnabled())LOG.debug("Holding {}",_class);
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
                 throw new UnavailableException(e.getMessage(), -1);
             }
         }
@@ -304,8 +307,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
 
         public void setDescription(String description)
         {
-            if (Log.isDebugEnabled())
-                Log.debug(this+" is "+description);
+            if (LOG.isDebugEnabled())
+                LOG.debug(this+" is "+description);
         }
 
         public String getClassName()

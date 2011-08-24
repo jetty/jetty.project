@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------------------------- */
@@ -49,6 +50,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SocketConnector extends AbstractConnector
 {
+    private static final Logger LOG = Log.getLogger(SocketConnector.class);
+
     protected ServerSocket _serverSocket;
     protected final Set<EndPoint> _connections;
     protected volatile int _localPort=-1;
@@ -199,7 +202,7 @@ public class SocketConnector extends AbstractConnector
         {
             if (getThreadPool()==null || !getThreadPool().dispatch(this))
             {
-                Log.warn("dispatch failed for {}",_connection);
+                LOG.warn("dispatch failed for {}",_connection);
                 close();
             }
         }
@@ -244,21 +247,21 @@ public class SocketConnector extends AbstractConnector
             }
             catch (EofException e)
             {
-                Log.debug("EOF", e);
+                LOG.debug("EOF", e);
                 try{close();}
-                catch(IOException e2){Log.ignore(e2);}
+                catch(IOException e2){LOG.ignore(e2);}
             }
             catch (HttpException e)
             {
-                Log.debug("BAD", e);
+                LOG.debug("BAD", e);
                 try{close();}
-                catch(IOException e2){Log.ignore(e2);}
+                catch(IOException e2){LOG.ignore(e2);}
             }
             catch(Exception e)
             {
-                Log.warn("handle failed?",e);
+                LOG.warn("handle failed?",e);
                 try{close();}
-                catch(IOException e2){Log.ignore(e2);}
+                catch(IOException e2){LOG.ignore(e2);}
             }
             finally
             {
@@ -289,7 +292,7 @@ public class SocketConnector extends AbstractConnector
                 }
                 catch(IOException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
         }

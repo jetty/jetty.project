@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -50,6 +51,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class Server extends HandlerWrapper implements Attributes
 {
+    private static final Logger LOG = Log.getLogger(Server.class);
+
     private static final String __version;
     static
     {
@@ -246,7 +249,7 @@ public class Server extends HandlerWrapper implements Attributes
         if (getStopAtShutdown())
             ShutdownThread.register(this);
         
-        Log.info("jetty-"+__version);
+        LOG.info("jetty-"+__version);
         HttpGenerator.setServerVersion(__version);
         MultiException mex=new MultiException();
         
@@ -295,7 +298,7 @@ public class Server extends HandlerWrapper implements Attributes
             {
                 for (int i=_connectors.length;i-->0;)
                 {
-                    Log.info("Graceful shutdown {}",_connectors[i]);
+                    LOG.info("Graceful shutdown {}",_connectors[i]);
                     try{_connectors[i].close();}catch(Throwable e){mex.add(e);}
                 }
             }
@@ -304,7 +307,7 @@ public class Server extends HandlerWrapper implements Attributes
             for (int c=0;c<contexts.length;c++)
             {
                 Graceful context=(Graceful)contexts[c];
-                Log.info("Graceful shutdown {}",context);
+                LOG.info("Graceful shutdown {}",context);
                 context.setShutdown(true);
             }
             Thread.sleep(_graceful);
@@ -336,11 +339,11 @@ public class Server extends HandlerWrapper implements Attributes
         final Request request=connection.getRequest();
         final Response response=connection.getResponse();
         
-        if (Log.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
-            Log.debug("REQUEST "+target+" on "+connection);
+            LOG.debug("REQUEST "+target+" on "+connection);
             handle(target, request, request, response);
-            Log.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
+            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
         }
         else
             handle(target, request, request, response);
@@ -381,11 +384,11 @@ public class Server extends HandlerWrapper implements Attributes
         final HttpServletRequest request=(HttpServletRequest)async.getRequest();
         final HttpServletResponse response=(HttpServletResponse)async.getResponse();
 
-        if (Log.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
-            Log.debug("REQUEST "+target+" on "+connection);
+            LOG.debug("REQUEST "+target+" on "+connection);
             handle(target, baseRequest, request, response);
-            Log.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
+            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
         }
         else
             handle(target, baseRequest, request, response);

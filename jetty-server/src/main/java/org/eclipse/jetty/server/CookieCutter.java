@@ -17,6 +17,7 @@ import javax.servlet.http.Cookie;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -31,6 +32,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class CookieCutter
 {
+    private static final Logger LOG = Log.getLogger(CookieCutter.class);
+
 
     private Cookie[] _cookies;
     private Cookie[] _lastCookies;
@@ -309,8 +312,8 @@ public class CookieCutter
                     }
                     catch (Exception e)
                     {
-                        Log.warn(e.toString());
-                        Log.debug(e);
+                        LOG.warn(e.toString());
+                        LOG.debug(e);
                     }
 
                     name = null;

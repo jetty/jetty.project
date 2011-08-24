@@ -35,6 +35,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** GZIP Filter
@@ -61,6 +62,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class GzipFilter extends UserAgentFilter
 {
+    private static final Logger LOG = Log.getLogger(GzipFilter.class);
+
     protected Set<String> _mimeTypes;
     protected int _bufferSize=8192;
     protected int _minGzipSize=256;
@@ -156,7 +159,7 @@ public class GzipFilter extends UserAgentFilter
                             }
                             catch(IOException e)
                             {
-                                Log.warn(e);
+                                LOG.warn(e);
                             }
                         }
 

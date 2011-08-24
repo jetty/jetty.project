@@ -30,12 +30,15 @@ import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Factory to create WebSocket connections
  */
 public class WebSocketFactory
 {
+    private static final Logger LOG = Log.getLogger(WebSocketFactory.class);
+
     public interface Acceptor
     {
         /* ------------------------------------------------------------ */
@@ -182,7 +185,7 @@ public class WebSocketFactory
                 connection = new WebSocketConnectionD10(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
-                Log.warn("Unsupported Websocket version: "+draft);
+                LOG.warn("Unsupported Websocket version: "+draft);
                 throw new HttpException(400, "Unsupported draft specification: " + draft);
         }
 
@@ -278,11 +281,11 @@ public class WebSocketFactory
 
             if (extension.init(parameters))
             {
-                Log.debug("add {} {}",extName,parameters);
+                LOG.debug("add {} {}",extName,parameters);
                 extensions.add(extension);
             }
         }
-        Log.debug("extensions={}",extensions);
+        LOG.debug("extensions={}",extensions);
         return extensions;
     }
 
@@ -296,7 +299,7 @@ public class WebSocketFactory
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         
         return null;

@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -47,6 +48,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DefaultHandler extends AbstractHandler
 {
+    private static final Logger LOG = Log.getLogger(DefaultHandler.class);
+
     final long _faviconModified=(System.currentTimeMillis()/1000)*1000;
     byte[] _favicon;
     boolean _serveIcon=true;
@@ -62,7 +65,7 @@ public class DefaultHandler extends AbstractHandler
         }
         catch(Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
     

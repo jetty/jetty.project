@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IPAddressMap;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -93,6 +94,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class IPAccessHandler extends HandlerWrapper
 {
+    private static final Logger LOG = Log.getLogger(IPAccessHandler.class);
+
     IPAddressMap<PathMap> _white = new IPAddressMap<PathMap>();
     IPAddressMap<PathMap> _black = new IPAddressMap<PathMap>();
 
@@ -238,7 +241,7 @@ public class IPAccessHandler extends HandlerWrapper
                 pathMap.put(path,path);
             
             if (deprecated)
-                Log.debug(toString() +" - deprecated specification syntax: "+entry);
+                LOG.debug(toString() +" - deprecated specification syntax: "+entry);
         }
     }
 
@@ -326,7 +329,7 @@ public class IPAccessHandler extends HandlerWrapper
     {
         super.doStart();
         
-        if (Log.isDebugEnabled())
+        if (LOG.isDebugEnabled())
         {
             System.err.println(dump());
         }

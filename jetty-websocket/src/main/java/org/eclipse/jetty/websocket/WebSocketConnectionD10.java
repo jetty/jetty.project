@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket.OnBinaryMessage;
 import org.eclipse.jetty.websocket.WebSocket.OnControl;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
@@ -41,6 +42,8 @@ import org.eclipse.jetty.websocket.WebSocketGeneratorD10.MaskGen;
 
 public class WebSocketConnectionD10 extends AbstractConnection implements WebSocketConnection
 {
+    private static final Logger LOG = Log.getLogger(WebSocketConnectionD10.class);
+
     final static byte OP_CONTINUATION = 0x00;
     final static byte OP_TEXT = 0x01;
     final static byte OP_BINARY = 0x02;
@@ -243,7 +246,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             }
             catch(IOException e2)
             {
-                Log.ignore(e2);
+                LOG.ignore(e2);
             }
             throw e;
         }
@@ -303,7 +306,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closeIn(int code,String message)
     {
-        Log.debug("ClosedIn {} {}",this,message);
+        LOG.debug("ClosedIn {} {}",this,message);
         
         final boolean closedOut;
         final boolean closed;
@@ -335,7 +338,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             }
             catch(IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
     }
@@ -343,7 +346,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closeOut(int code,String message)
     {
-        Log.debug("ClosedOut {} {}",this,message);
+        LOG.debug("ClosedOut {} {}",this,message);
         
         final boolean close;
         final boolean closed;
@@ -384,7 +387,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             }
             catch(IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
     }
@@ -679,7 +682,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                     }
                     case WebSocketConnectionD10.OP_PING:
                     {
-                        Log.debug("PING {}",this);
+                        LOG.debug("PING {}",this);
                         if (!_closedOut)
                             _connection.sendControl(WebSocketConnectionD10.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
                         break;
@@ -687,7 +690,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
 
                     case WebSocketConnectionD10.OP_PONG:
                     {
-                        Log.debug("PONG {}",this);
+                        LOG.debug("PONG {}",this);
                         break;
                     }
 
@@ -760,7 +763,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             }
             catch(Throwable th)
             {
-                Log.warn(th);
+                LOG.warn(th);
             }
         }
 
@@ -789,7 +792,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         public void close(int code,String message)
         {
             if (code!=CLOSE_NORMAL)
-                Log.warn("Close: "+code+" "+message);
+                LOG.warn("Close: "+code+" "+message);
             _connection.close(code,message);
         }
 

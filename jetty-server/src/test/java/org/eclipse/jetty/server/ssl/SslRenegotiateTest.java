@@ -30,10 +30,13 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Test;
 
 public class SslRenegotiateTest
 {
+    private static final Logger LOG = Log.getLogger(SslRenegotiateTest.class);
+
     private static final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager()
     {
         public java.security.cert.X509Certificate[] getAcceptedIssuers()
@@ -168,7 +171,7 @@ public class SslRenegotiateTest
                 if (!(e instanceof SSLProtocolException))
                 {
                     if (reneg)
-                        Log.warn(e);
+                        LOG.warn(e);
                     assertFalse(reneg);
                 }
             }

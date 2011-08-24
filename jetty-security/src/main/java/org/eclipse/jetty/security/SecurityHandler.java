@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Abstract SecurityHandler.
@@ -53,6 +54,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
+    private static final Logger LOG = Log.getLogger(SecurityHandler.class);
+
     /* ------------------------------------------------------------ */
     private boolean _checkWelcomeFiles = false;
     private Authenticator _authenticator;
@@ -326,7 +329,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         {
             if (_realmName!=null)
             {
-                Log.warn("No ServerAuthentication for "+this);
+                LOG.warn("No ServerAuthentication for "+this);
                 throw new IllegalStateException("No ServerAuthentication");
             }
         }
@@ -532,7 +535,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /* ------------------------------------------------------------ */
     public void logout(Authentication.User user)
     {
-        Log.debug("logout {}",user);
+        LOG.debug("logout {}",user);
         LoginService login_service=getLoginService();
         if (login_service!=null)
         {

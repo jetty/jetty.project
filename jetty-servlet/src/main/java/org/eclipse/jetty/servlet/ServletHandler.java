@@ -61,6 +61,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* --------------------------------------------------------------------- */
 /** Servlet HttpHandler.
@@ -76,6 +77,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ServletHandler extends ScopedHandler
 {
+    private static final Logger LOG = Log.getLogger(ServletHandler.class);
+
     /* ------------------------------------------------------------ */
     public static final String __DEFAULT_SERVLET="default";
         
@@ -187,7 +190,7 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i=_filters.length; i-->0;)
             {
-                try { _filters[i].stop(); }catch(Exception e){Log.warn(Log.EXCEPTION,e);}
+                try { _filters[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
             }
         }
         
@@ -196,7 +199,7 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i=_servlets.length; i-->0;)
             {
-                try { _servlets[i].stop(); }catch(Exception e){Log.warn(Log.EXCEPTION,e);}
+                try { _servlets[i].stop(); }catch(Exception e){LOG.warn(Log.EXCEPTION,e);}
             }
         }
 
@@ -283,7 +286,7 @@ public class ServletHandler extends ScopedHandler
         }
         catch(Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return null;
     }
@@ -386,8 +389,8 @@ public class ServletHandler extends ScopedHandler
             servlet_holder=(ServletHolder)_servletNameMap.get(target);
         }
 
-        if (Log.isDebugEnabled())
-            Log.debug("servlet {} -> {}",baseRequest.getContextPath()+"|"+baseRequest.getServletPath()+"|"+baseRequest.getPathInfo(),servlet_holder);
+        if (LOG.isDebugEnabled())
+            LOG.debug("servlet {} -> {}",baseRequest.getContextPath()+"|"+baseRequest.getServletPath()+"|"+baseRequest.getPathInfo(),servlet_holder);
 
         try
         {
@@ -452,7 +455,7 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        Log.debug("chain=",chain);
+        LOG.debug("chain=",chain);
         
         try
         {
@@ -506,18 +509,18 @@ public class ServletHandler extends ScopedHandler
             Throwable th=e;
             if (th instanceof UnavailableException)
             {
-                Log.debug(th); 
+                LOG.debug(th); 
             }
             else if (th instanceof ServletException)
             {
-                Log.debug(th);
+                LOG.debug(th);
                 Throwable cause=((ServletException)th).getRootCause();
                 if (cause!=null)
                     th=cause;
             }
             else if (th instanceof RuntimeIOException)
             {
-                Log.debug(th);
+                LOG.debug(th);
                 Throwable cause=(IOException)((RuntimeIOException)th).getCause();
                 if (cause!=null)
                     th=cause;
@@ -531,18 +534,18 @@ public class ServletHandler extends ScopedHandler
             else if (th instanceof EofException)
                 throw (EofException)th;
 
-            else if (Log.isDebugEnabled())
+            else if (LOG.isDebugEnabled())
             {
-                Log.warn(request.getRequestURI(), th); 
-                Log.debug(request.toString()); 
+                LOG.warn(request.getRequestURI(), th); 
+                LOG.debug(request.toString()); 
             }
             else if (th instanceof IOException || th instanceof UnavailableException)
             {
-                Log.debug(request.getRequestURI(),th);
+                LOG.debug(request.getRequestURI(),th);
             }
             else
             {
-                Log.warn(request.getRequestURI(),th);
+                LOG.warn(request.getRequestURI(),th);
             }
 
             if (!response.isCommitted())
@@ -561,14 +564,14 @@ public class ServletHandler extends ScopedHandler
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,th.getMessage());
             }
             else
-                Log.debug("Response already committed for handling "+th);
+                LOG.debug("Response already committed for handling "+th);
         }
         catch(Error e)
         {   
             if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
                 throw e;
-            Log.warn("Error for "+request.getRequestURI(),e);
-            if(Log.isDebugEnabled())Log.debug(request.toString());
+            LOG.warn("Error for "+request.getRequestURI(),e);
+            if(LOG.isDebugEnabled())LOG.debug(request.toString());
 
             // TODO httpResponse.getHttpConnection().forceClose();
             if (!response.isCommitted())
@@ -578,7 +581,7 @@ public class ServletHandler extends ScopedHandler
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,e.getMessage());
             }
             else
-                Log.debug("Response already committed for handling ",e);
+                LOG.debug("Response already committed for handling ",e);
         }
     }
 
@@ -766,7 +769,7 @@ public class ServletHandler extends ScopedHandler
                 }
                 catch(Throwable e)
                 {
-                    Log.debug(Log.EXCEPTION,e);
+                    LOG.debug(Log.EXCEPTION,e);
                     mx.add(e);
                 }
             } 
@@ -1200,13 +1203,13 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        if (Log.isDebugEnabled()) 
+        if (LOG.isDebugEnabled()) 
         {
-            Log.debug("filterNameMap="+_filterNameMap);
-            Log.debug("pathFilters="+_filterPathMappings);
-            Log.debug("servletFilterMap="+_filterNameMappings);
-            Log.debug("servletPathMap="+_servletPathMap);
-            Log.debug("servletNameMap="+_servletNameMap);
+            LOG.debug("filterNameMap="+_filterNameMap);
+            LOG.debug("pathFilters="+_filterPathMappings);
+            LOG.debug("servletFilterMap="+_filterNameMappings);
+            LOG.debug("servletPathMap="+_servletPathMap);
+            LOG.debug("servletNameMap="+_servletNameMap);
         }
         
         try
@@ -1225,7 +1228,7 @@ public class ServletHandler extends ScopedHandler
                   HttpServletResponse response)
         throws IOException
     {
-        if(Log.isDebugEnabled())Log.debug("Not Found "+request.getRequestURI());
+        if(LOG.isDebugEnabled())LOG.debug("Not Found "+request.getRequestURI());
         response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
     
@@ -1316,8 +1319,8 @@ public class ServletHandler extends ScopedHandler
             // pass to next filter
             if (_filterHolder!=null)
             {
-                if (Log.isDebugEnabled())
-                    Log.debug("call filter " + _filterHolder);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("call filter " + _filterHolder);
                 Filter filter= _filterHolder.getFilter();
                 if (_filterHolder.isAsyncSupported())
                     filter.doFilter(request, response, _next);
@@ -1346,8 +1349,8 @@ public class ServletHandler extends ScopedHandler
             // Call servlet
             if (_servletHolder != null)
             {
-                if (Log.isDebugEnabled())
-                    Log.debug("call servlet " + _servletHolder);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("call servlet " + _servletHolder);
                 final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
                 _servletHolder.handle(baseRequest,request, response);
             }
@@ -1386,13 +1389,13 @@ public class ServletHandler extends ScopedHandler
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
-            if (Log.isDebugEnabled()) Log.debug("doFilter " + _filter);
+            if (LOG.isDebugEnabled()) LOG.debug("doFilter " + _filter);
 
             // pass to next filter
             if (_filter < LazyList.size(_chain))
             {
                 FilterHolder holder= (FilterHolder)LazyList.get(_chain, _filter++);
-                if (Log.isDebugEnabled()) Log.debug("call filter " + holder);
+                if (LOG.isDebugEnabled()) LOG.debug("call filter " + holder);
                 Filter filter= holder.getFilter();
                 
                 if (holder.isAsyncSupported() || !_baseRequest.isAsyncSupported())
@@ -1418,7 +1421,7 @@ public class ServletHandler extends ScopedHandler
             // Call servlet
             if (_servletHolder != null)
             {
-                if (Log.isDebugEnabled()) Log.debug("call servlet " + _servletHolder);
+                if (LOG.isDebugEnabled()) LOG.debug("call servlet " + _servletHolder);
                 _servletHolder.handle(_baseRequest,request, response);
             }
             else // Not found

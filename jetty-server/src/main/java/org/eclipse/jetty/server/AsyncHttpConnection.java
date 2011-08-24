@@ -8,9 +8,12 @@ import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class AsyncHttpConnection extends HttpConnection
 {
+    private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
+
     public AsyncHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(connector,endpoint,server);
@@ -33,7 +36,7 @@ public class AsyncHttpConnection extends HttpConnection
                 progress=false;
                 try
                 {
-                    Log.debug("async request",_request);
+                    LOG.debug("async request",_request);
                     
                     // Handle resumed request
                     if (_request._async.isAsync() && !_request._async.isComplete())
@@ -53,11 +56,11 @@ public class AsyncHttpConnection extends HttpConnection
                 }
                 catch (HttpException e)
                 {
-                    if (Log.isDebugEnabled())
+                    if (LOG.isDebugEnabled())
                     {
-                        Log.debug("uri="+_uri);
-                        Log.debug("fields="+_requestFields);
-                        Log.debug(e);
+                        LOG.debug("uri="+_uri);
+                        LOG.debug("fields="+_requestFields);
+                        LOG.debug(e);
                     }
                     _generator.sendError(e.getStatus(), e.getReason(), null, true);
                     _parser.reset();
@@ -68,7 +71,7 @@ public class AsyncHttpConnection extends HttpConnection
                     // Do we need to complete a half close?
                     if (_endp.isInputShutdown() && (_parser.isIdle() || _parser.isComplete()))
                     {
-                        Log.debug("complete half close {}",this);
+                        LOG.debug("complete half close {}",this);
                         more_in_buffer=false;
                         _endp.close();
                         reset(true);
@@ -99,7 +102,7 @@ public class AsyncHttpConnection extends HttpConnection
                     // else Are we suspended?
                     else if (_request.isAsyncStarted())
                     {
-                        Log.debug("suspended {}",this);
+                        LOG.debug("suspended {}",this);
                         more_in_buffer=false;
                         progress=false;
                     }

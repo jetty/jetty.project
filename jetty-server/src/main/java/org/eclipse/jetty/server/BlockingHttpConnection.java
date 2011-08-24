@@ -10,9 +10,12 @@ import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class BlockingHttpConnection extends HttpConnection
 {
+    private static final Logger LOG = Log.getLogger(BlockingHttpConnection.class);
+
     private volatile boolean _handling;
     
     public BlockingHttpConnection(Connector connector, EndPoint endpoint, Server server)
@@ -66,11 +69,11 @@ public class BlockingHttpConnection extends HttpConnection
                 }
                 catch (HttpException e)
                 {
-                    if (Log.isDebugEnabled())
+                    if (LOG.isDebugEnabled())
                     {
-                        Log.debug("uri="+_uri);
-                        Log.debug("fields="+_requestFields);
-                        Log.debug(e);
+                        LOG.debug("uri="+_uri);
+                        LOG.debug("fields="+_requestFields);
+                        LOG.debug(e);
                     }
                     _generator.sendError(e.getStatus(), e.getReason(), null, true);
 

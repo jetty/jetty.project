@@ -33,10 +33,13 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
 
 public class WebSocketConnectionD00 extends AbstractConnection implements WebSocketConnection, WebSocket.FrameConnection
 {
+    private static final Logger LOG = Log.getLogger(WebSocketConnectionD00.class);
+
     public final static byte LENGTH_FRAME=(byte)0x80;
     public final static byte SENTINEL_FRAME=(byte)0x00;
 
@@ -171,14 +174,14 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
         catch(IOException e)
         {
-            Log.debug(e);
+            LOG.debug(e);
             try
             {
                 _endp.close();
             }
             catch(IOException e2)
             {
-                Log.ignore(e2);
+                LOG.ignore(e2);
             }
             throw e;
         }
@@ -294,7 +297,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
         catch(IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
     }
 
@@ -462,7 +465,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             }
             catch(Throwable th)
             {
-                Log.warn(th);
+                LOG.warn(th);
             }
         }
         

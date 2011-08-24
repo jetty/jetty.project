@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -131,6 +132,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  */
 public class DefaultServlet extends HttpServlet implements ResourceFactory
 {
+    private static final Logger LOG = Log.getLogger(DefaultServlet.class);
+
     private static final long serialVersionUID = 4930458713846881193L;
     private ServletContext _servletContext;
     private ContextHandler _contextHandler;
@@ -205,7 +208,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             try{_resourceBase=_contextHandler.newResource(rb);}
             catch (Exception e)
             {
-                Log.warn(Log.EXCEPTION,e);
+                LOG.warn(Log.EXCEPTION,e);
                 throw new UnavailableException(e.toString());
             }
         }
@@ -218,7 +221,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 _stylesheet = Resource.newResource(css);
                 if(!_stylesheet.exists())
                 {
-                    Log.warn("!" + css);
+                    LOG.warn("!" + css);
                     _stylesheet = null;
                 }
             }
@@ -229,8 +232,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }	
         catch(Exception e)
         {
-            Log.warn(e.toString());
-            Log.debug(e);
+            LOG.warn(e.toString());
+            LOG.debug(e);
         }
 
         String t=getInitParameter("cacheControl");
@@ -244,12 +247,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         if (resourceCache!=null)
         {
             if (max_cache_size!=-1 || max_cached_file_size!= -2 || max_cached_files!=-2)
-                Log.debug("ignoring resource cache configuration, using resourceCache attribute");
+                LOG.debug("ignoring resource cache configuration, using resourceCache attribute");
             if (_relativeResourceBase!=null || _resourceBase!=null)
                 throw new UnavailableException("resourceCache specified with resource bases");
             _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);
 
-            Log.debug("Cache {}={}",resourceCache,_cache);
+            LOG.debug("Cache {}={}",resourceCache,_cache);
         }
 
         try
@@ -268,7 +271,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         catch (Exception e)
         {
-            Log.warn(Log.EXCEPTION,e);
+            LOG.warn(Log.EXCEPTION,e);
             throw new UnavailableException(e.toString());
         }
 
@@ -277,7 +280,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (h.getServletInstance()==this)
                 _defaultHolder=h;
 
-        if (Log.isDebugEnabled()) Log.debug("resource base = "+_resourceBase);
+        if (LOG.isDebugEnabled()) LOG.debug("resource base = "+_resourceBase);
     }
 
     /**
@@ -363,12 +366,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 r = _contextHandler.newResource(u);
             }
 
-            if (Log.isDebugEnabled())
-                Log.debug("Resource "+pathInContext+"="+r);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Resource "+pathInContext+"="+r);
         }
         catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
 
         if((r==null || !r.exists()) && pathInContext.endsWith("/jetty-dir.css"))
@@ -461,8 +464,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
             }
 
-            if (Log.isDebugEnabled())
-                Log.debug("uri="+request.getRequestURI()+" resource="+resource+(content!=null?" content":""));
+            if (LOG.isDebugEnabled())
+                LOG.debug("uri="+request.getRequestURI()+" resource="+resource+(content!=null?" content":""));
             
             // Handle resource
             if (resource==null || !resource.exists())
@@ -527,7 +530,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 // else look for a welcome file
                 else if (null!=(welcome=getWelcomeFile(pathInContext)))
                 {
-                    Log.debug("welcome={}",welcome);
+                    LOG.debug("welcome={}",welcome);
                     if (_redirectWelcome)
                     {
                         // Redirect to the index
@@ -564,7 +567,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         catch(IllegalArgumentException e)
         {
-            Log.warn(Log.EXCEPTION,e);
+            LOG.warn(Log.EXCEPTION,e);
             if(!response.isCommitted())
                 response.sendError(500, e.getMessage());
         }

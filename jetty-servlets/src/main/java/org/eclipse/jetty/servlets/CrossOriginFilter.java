@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>Implementation of the
@@ -73,6 +74,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class CrossOriginFilter implements Filter
 {
+    private static final Logger LOG = Log.getLogger(CrossOriginFilter.class);
+
     // Request headers
     private static final String ORIGIN_HEADER = "Origin";
     private static final String ACCESS_CONTROL_REQUEST_METHOD_HEADER = "Access-Control-Request-Method";
@@ -138,14 +141,14 @@ public class CrossOriginFilter implements Filter
         }
         catch (NumberFormatException x)
         {
-            Log.info("Cross-origin filter, could not parse '{}' parameter as integer: {}", PREFLIGHT_MAX_AGE_PARAM, preflightMaxAgeConfig);
+            LOG.info("Cross-origin filter, could not parse '{}' parameter as integer: {}", PREFLIGHT_MAX_AGE_PARAM, preflightMaxAgeConfig);
         }
 
         String allowedCredentialsConfig = config.getInitParameter(ALLOWED_CREDENTIALS_PARAM);
         if (allowedCredentialsConfig == null) allowedCredentialsConfig = "false";
         allowCredentials = Boolean.parseBoolean(allowedCredentialsConfig);
 
-        Log.debug("Cross-origin filter configuration: " +
+        LOG.debug("Cross-origin filter configuration: " +
                   ALLOWED_ORIGINS_PARAM + " = " + allowedOriginsConfig + ", " +
                   ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
                   ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
@@ -168,18 +171,18 @@ public class CrossOriginFilter implements Filter
             {
                 if (isSimpleRequest(request))
                 {
-                    Log.debug("Cross-origin request to {} is a simple cross-origin request", request.getRequestURI());
+                    LOG.debug("Cross-origin request to {} is a simple cross-origin request", request.getRequestURI());
                     handleSimpleResponse(request, response, origin);
                 }
                 else
                 {
-                    Log.debug("Cross-origin request to {} is a preflight cross-origin request", request.getRequestURI());
+                    LOG.debug("Cross-origin request to {} is a preflight cross-origin request", request.getRequestURI());
                     handlePreflightResponse(request, response, origin);
                 }
             }
             else
             {
-                Log.debug("Cross-origin request to " + request.getRequestURI() + " with origin " + origin + " does not match allowed origins " + allowedOrigins);
+                LOG.debug("Cross-origin request to " + request.getRequestURI() + " with origin " + origin + " does not match allowed origins " + allowedOrigins);
             }
         }
 
@@ -252,20 +255,20 @@ public class CrossOriginFilter implements Filter
     private boolean isMethodAllowed(HttpServletRequest request)
     {
         String accessControlRequestMethod = request.getHeader(ACCESS_CONTROL_REQUEST_METHOD_HEADER);
-        Log.debug("{} is {}", ACCESS_CONTROL_REQUEST_METHOD_HEADER, accessControlRequestMethod);
+        LOG.debug("{} is {}", ACCESS_CONTROL_REQUEST_METHOD_HEADER, accessControlRequestMethod);
         boolean result = false;
         if (accessControlRequestMethod != null)
         {
             result = allowedMethods.contains(accessControlRequestMethod);
         }
-        Log.debug("Method {} is" + (result ? "" : " not") + " among allowed methods {}", accessControlRequestMethod, allowedMethods);
+        LOG.debug("Method {} is" + (result ? "" : " not") + " among allowed methods {}", accessControlRequestMethod, allowedMethods);
         return result;
     }
 
     private boolean areHeadersAllowed(HttpServletRequest request)
     {
         String accessControlRequestHeaders = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
-        Log.debug("{} is {}", ACCESS_CONTROL_REQUEST_HEADERS_HEADER, accessControlRequestHeaders);
+        LOG.debug("{} is {}", ACCESS_CONTROL_REQUEST_HEADERS_HEADER, accessControlRequestHeaders);
         boolean result = true;
         if (accessControlRequestHeaders != null)
         {
@@ -288,7 +291,7 @@ public class CrossOriginFilter implements Filter
                 }
             }
         }
-        Log.debug("Headers [{}] are" + (result ? "" : " not") + " among allowed headers {}", accessControlRequestHeaders, allowedHeaders);
+        LOG.debug("Headers [{}] are" + (result ? "" : " not") + " among allowed headers {}", accessControlRequestHeaders, allowedHeaders);
         return result;
     }
 

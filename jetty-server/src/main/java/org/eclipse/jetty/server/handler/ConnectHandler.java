@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
@@ -41,6 +42,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class ConnectHandler extends HandlerWrapper
 {
+    private static final Logger LOG = Log.getLogger(ConnectHandler.class);
+
     private final Logger _logger = Log.getLogger(getClass().getName());
     private final SelectorManager _selectorManager = new Manager();
     private volatile int _connectTimeout = 5000;
@@ -232,7 +235,7 @@ public class ConnectHandler extends HandlerWrapper
 
         if (!validateDestination(host))
         {
-            Log.info("ProxyHandler: Forbidden destination " + host);
+            LOG.info("ProxyHandler: Forbidden destination " + host);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             baseRequest.setHandled(true);
             return;
@@ -356,7 +359,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch (IOException xx)
             {
-                Log.ignore(xx);
+                LOG.ignore(xx);
             }
             throw x;
         }
@@ -679,7 +682,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch(Exception e)
             {
-                Log.debug(e);
+                LOG.debug(e);
                 close();
             }
         }
@@ -841,7 +844,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch(Exception e)
             {
-                Log.debug(e);
+                LOG.debug(e);
                 close();
             }
         }

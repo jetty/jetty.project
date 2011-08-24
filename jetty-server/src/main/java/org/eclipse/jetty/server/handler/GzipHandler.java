@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -53,6 +54,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class GzipHandler extends HandlerWrapper
 {
+    private static final Logger LOG = Log.getLogger(GzipHandler.class);
+
     protected Set<String> _mimeTypes;
     protected Set<String> _excluded;
     protected int _bufferSize = 8192;
@@ -242,7 +245,7 @@ public class GzipHandler extends HandlerWrapper
                                 }
                                 catch(IOException e)
                                 {
-                                    Log.warn(e);
+                                    LOG.warn(e);
                                 }
                             }
 

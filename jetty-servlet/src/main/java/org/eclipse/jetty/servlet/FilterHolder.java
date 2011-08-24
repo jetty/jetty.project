@@ -27,13 +27,16 @@ import javax.servlet.ServletException;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* --------------------------------------------------------------------- */
 /** 
  * 
  */
 public class FilterHolder extends Holder<Filter>
-{    
+{
+    private static final Logger LOG = Log.getLogger(FilterHolder.class);
+    
     /* ------------------------------------------------------------ */
     private transient Filter _filter;
     private transient Config _config;
@@ -112,7 +115,7 @@ public class FilterHolder extends Holder<Filter>
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
         }
         if (!_extInstance)

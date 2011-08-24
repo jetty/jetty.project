@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -38,6 +39,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class RequestLogHandler extends HandlerWrapper
 {
+    private static final Logger LOG = Log.getLogger(RequestLogHandler.class);
+
     private RequestLog _requestLog;
     
     /* ------------------------------------------------------------ */
@@ -79,7 +82,7 @@ public class RequestLogHandler extends HandlerWrapper
         }
         catch (Exception e)
         {
-            Log.warn (e);
+            LOG.warn (e);
         }
         
         if (getServer()!=null)

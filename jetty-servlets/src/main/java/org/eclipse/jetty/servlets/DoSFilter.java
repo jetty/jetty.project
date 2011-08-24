@@ -39,6 +39,7 @@ import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /**
@@ -112,6 +113,8 @@ import org.eclipse.jetty.util.thread.Timeout;
 
 public class DoSFilter implements Filter
 {
+    private static final Logger LOG = Log.getLogger(DoSFilter.class);
+
     final static String __TRACKER = "DoSFilter.Tracker";
     final static String __THROTTLED = "DoSFilter.Throttled";
 
@@ -276,13 +279,13 @@ public class DoSFilter implements Filter
                         }
                         catch (InterruptedException e)
                         {
-                            Log.ignore(e);
+                            LOG.ignore(e);
                         }
                     }
                 }
                 finally
                 {
-                    Log.info("DoSFilter timer exited");
+                    LOG.info("DoSFilter timer exited");
                 }
             }
         });
@@ -321,7 +324,7 @@ public class DoSFilter implements Filter
             }
 
             // We are over the limit.
-            Log.warn("DOS ALERT: ip="+srequest.getRemoteAddr()+",session="+srequest.getRequestedSessionId()+",user="+srequest.getUserPrincipal());
+            LOG.warn("DOS ALERT: ip="+srequest.getRemoteAddr()+",session="+srequest.getRequestedSessionId()+",user="+srequest.getUserPrincipal());
 
             // So either reject it, delay it or throttle it
             switch((int)_delayMs)
@@ -491,7 +494,7 @@ public class DoSFilter implements Filter
         }
         catch (IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
 
         // interrupt the handling thread
@@ -636,7 +639,7 @@ public class DoSFilter implements Filter
         while (tokenizer.hasMoreTokens())
             _whitelist.add(tokenizer.nextToken().trim());
 
-        Log.info("Whitelisted IP addresses: {}", _whitelist.toString());
+        LOG.info("Whitelisted IP addresses: {}", _whitelist.toString());
     }
     
     /* ------------------------------------------------------------ */

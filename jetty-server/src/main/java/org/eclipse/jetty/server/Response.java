@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /** Response.
  * <p>
@@ -50,6 +51,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Response implements HttpServletResponse
 {
+    private static final Logger LOG = Log.getLogger(Response.class);
+
     public static final int
         NONE=0,
         STREAM=1,
@@ -268,7 +271,7 @@ public class Response implements HttpServletResponse
     		return;
 
         if (isCommitted())
-            Log.warn("Committed before "+code+" "+message);
+            LOG.warn("Committed before "+code+" "+message);
 
         resetBuffer();
         _characterEncoding=null;

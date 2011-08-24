@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
@@ -34,6 +35,8 @@ import org.ietf.jgss.Oid;
 
 public class SpnegoLoginService extends AbstractLifeCycle implements LoginService
 {
+    private static final Logger LOG = Log.getLogger(SpnegoLoginService.class);
+
     protected IdentityService _identityService;// = new LdapIdentityService();
     protected String _name;
     private String _config;
@@ -97,7 +100,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         
         _targetName = properties.getProperty("targetName");
         
-        Log.debug("\n\nTarget Name\n\n" + _targetName);
+        LOG.debug("\n\nTarget Name\n\n" + _targetName);
         
         super.doStart();
     }
@@ -121,7 +124,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
 
             if (gContext == null)
             {
-                Log.debug("SpnegoUserRealm: failed to establish GSSContext");
+                LOG.debug("SpnegoUserRealm: failed to establish GSSContext");
             }
             else
             {
@@ -134,10 +137,10 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
                     String clientName = gContext.getSrcName().toString();
                     String role = clientName.substring(clientName.indexOf('@') + 1);
                     
-                    Log.debug("SpnegoUserRealm: established a security context");
-                    Log.debug("Client Principal is: " + gContext.getSrcName());
-                    Log.debug("Server Principal is: " + gContext.getTargName());
-                    Log.debug("Client Default Role: " + role);
+                    LOG.debug("SpnegoUserRealm: established a security context");
+                    LOG.debug("Client Principal is: " + gContext.getSrcName());
+                    LOG.debug("Server Principal is: " + gContext.getTargName());
+                    LOG.debug("Client Default Role: " + role);
 
                     SpnegoUserPrincipal user = new SpnegoUserPrincipal(clientName,authToken);
 
@@ -151,7 +154,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         }
         catch (GSSException gsse)
         {
-            Log.warn(gsse);
+            LOG.warn(gsse);
         }
 
         return null;

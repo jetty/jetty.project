@@ -18,10 +18,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.BeforeClass;
 
 public class DoSFilterTest extends AbstractDoSFilterTest
 {
+    private static final Logger LOG = Log.getLogger(DoSFilterTest.class);
+
     @BeforeClass
     public static void setUp() throws Exception
     {
@@ -38,7 +41,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
         }
     }

@@ -65,6 +65,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -81,6 +82,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
 {
+    private static final Logger LOG = Log.getLogger(ContextHandler.class);
+
     private static final ThreadLocal<Context> __context = new ThreadLocal<Context>();
 
     /**
@@ -369,7 +372,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
             catch (IOException e)
             {
-                Log.debug(e);
+                LOG.debug(e);
             }
         }
         if (classpath.length() == 0)
@@ -641,7 +644,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
         }
 
-        Log.info("started {}",this);
+        LOG.info("started {}",this);
     }
 
     /* ------------------------------------------------------------ */
@@ -692,7 +695,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         finally
         {
-            Log.info("stopped {}",this);
+            LOG.info("stopped {}",this);
             __context.set(old_context);
             // reset the classloader
             if (_classLoader != null)
@@ -790,7 +793,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Log.debug("scope {} @ {}",baseRequest.getContextPath() + "|" + baseRequest.getServletPath() + "|" + baseRequest.getPathInfo(),this);
+        LOG.debug("scope {} @ {}",baseRequest.getContextPath() + "|" + baseRequest.getServletPath() + "|" + baseRequest.getPathInfo(),this);
 
         Context old_context = null;
         String old_context_path = null;
@@ -861,8 +864,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 baseRequest.setPathInfo(pathInfo);
             }
 
-            if (Log.isDebugEnabled())
-                Log.debug("context={} @ {}",baseRequest.getContextPath() + "|" + baseRequest.getServletPath() + "|" + baseRequest.getPathInfo(),this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("context={} @ {}",baseRequest.getContextPath() + "|" + baseRequest.getServletPath() + "|" + baseRequest.getPathInfo(),this);
 
             // start manual inline of nextScope(target,baseRequest,request,response);
             if (never())
@@ -941,7 +944,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         catch (HttpException e)
         {
-            Log.debug(e);
+            LOG.debug(e);
             baseRequest.setHandled(true);
             response.sendError(e.getStatus(),e.getReason());
         }
@@ -1163,8 +1166,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         catch (Exception e)
         {
-            Log.warn(e.toString());
-            Log.debug(e);
+            LOG.warn(e.toString());
+            LOG.debug(e);
             throw new IllegalArgumentException(resourceBase);
         }
     }
@@ -1374,11 +1377,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             if (!_aliases && resource.getAlias() != null)
             {
                 if (resource.exists())
-                    Log.warn("Aliased resource: " + resource + "~=" + resource.getAlias());
+                    LOG.warn("Aliased resource: " + resource + "~=" + resource.getAlias());
                 else if (path.endsWith("/") && resource.getAlias().toString().endsWith(path))
                     return resource;
-                else if (Log.isDebugEnabled())
-                    Log.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
+                else if (LOG.isDebugEnabled())
+                    LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
                 return null;
             }
 
@@ -1386,7 +1389,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
 
         return null;
@@ -1443,7 +1446,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return Collections.emptySet();
     }
@@ -1640,7 +1643,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
             catch (Exception e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             return null;
         }
@@ -1670,7 +1673,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
             catch (Exception e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
 
             return null;
@@ -1700,7 +1703,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
             catch (Exception e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
                 return null;
             }
         }

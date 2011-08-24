@@ -34,9 +34,12 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.UserIdentity.Scope;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SessionAuthentication implements Authentication.User, Serializable, HttpSessionActivationListener, HttpSessionBindingListener
 {
+    private static final Logger LOG = Log.getLogger(SessionAuthentication.class);
+
     private static final long serialVersionUID = -4643200685888258706L;
 
     
@@ -86,7 +89,7 @@ public class SessionAuthentication implements Authentication.User, Serializable,
             throw new IllegalStateException("!LoginService");
         
         _userIdentity=login_service.login(_name,_credentials);
-        Log.debug("Deserialized and relogged in {}",this);
+        LOG.debug("Deserialized and relogged in {}",this);
     }
     
     public void logout()

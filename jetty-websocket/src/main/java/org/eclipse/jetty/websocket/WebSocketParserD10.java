@@ -19,6 +19,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -28,7 +29,9 @@ import org.eclipse.jetty.util.log.Log;
  *
  */
 public class WebSocketParserD10 implements WebSocketParser
-{    
+{
+    private static final Logger LOG = Log.getLogger(WebSocketParserD10.class);
+    
     public enum State { 
         
         START(0), OPCODE(1), LENGTH_7(1), LENGTH_16(2), LENGTH_63(8), MASK(4), PAYLOAD(0), DATA(0), SKIP(1);
@@ -177,7 +180,7 @@ public class WebSocketParserD10 implements WebSocketParser
                 }
                 catch(IOException e)
                 {
-                    Log.debug(e);
+                    LOG.debug(e);
                     return (total_filled+events)>0?(total_filled+events):-1;
                 }
             }
@@ -205,7 +208,7 @@ public class WebSocketParserD10 implements WebSocketParser
                         if (WebSocketConnectionD10.isControlFrame(_opcode)&&!WebSocketConnectionD10.isLastFrame(_flags))
                         {
                             events++;
-                            Log.warn("Fragmented Control from "+_endp);
+                            LOG.warn("Fragmented Control from "+_endp);
                             _handler.close(WebSocketConnectionD10.CLOSE_PROTOCOL,"Fragmented control");
                             _skip=true;
                         }

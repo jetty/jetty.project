@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
@@ -43,6 +44,8 @@ import org.junit.Test;
  */
 public class HttpConnectionTest
 {
+    private static final Logger LOG = Log.getLogger(HttpConnectionTest.class);
+
     private Server server;
     private LocalConnector connector;
 
@@ -333,7 +336,7 @@ public class HttpConnectionTest
         Logger logger=null;
         try
         {
-            if (!Log.isDebugEnabled())
+            if (!LOG.isDebugEnabled())
             {
                 logger=Log.getLog();
                 Log.setLog(null);
@@ -456,8 +459,8 @@ public class HttpConnectionTest
                 }
                 catch(Exception e)
                 {
-                    Log.debug(e);
-                    Log.info("correctly ignored "+e);
+                    LOG.debug(e);
+                    LOG.info("correctly ignored "+e);
                 }
             }
         });

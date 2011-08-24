@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Dump request handler.
@@ -44,6 +45,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DumpHandler extends AbstractHandler
 {
+    private static final Logger LOG = Log.getLogger(DumpHandler.class);
+
     String label="Dump HttpHandler";
     
     public DumpHandler()
@@ -227,7 +230,7 @@ public class DumpHandler extends AbstractHandler
         }
         catch(Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
     }
 }

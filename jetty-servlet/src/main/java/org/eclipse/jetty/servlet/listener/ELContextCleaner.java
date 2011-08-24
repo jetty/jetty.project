@@ -24,6 +24,7 @@ import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * ELContextCleaner
@@ -36,6 +37,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ELContextCleaner implements ServletContextListener
 {
+    private static final Logger LOG = Log.getLogger(ELContextCleaner.class);
+
 
     public void contextInitialized(ServletContextEvent sce)
     {
@@ -54,7 +57,7 @@ public class ELContextCleaner implements ServletContextListener
             //Get rid of references
             purgeEntries(field);
             
-            Log.info("javax.el.BeanELResolver purged");
+            LOG.info("javax.el.BeanELResolver purged");
         }
         
         catch (ClassNotFoundException e)
@@ -63,19 +66,19 @@ public class ELContextCleaner implements ServletContextListener
         }
         catch (SecurityException e)
         {
-            Log.warn("Cannot purge classes from javax.el.BeanELResolver", e);
+            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
         }
         catch (IllegalArgumentException e)
         {
-            Log.warn("Cannot purge classes from javax.el.BeanELResolver", e);
+            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
         }
         catch (IllegalAccessException e)
         {
-            Log.warn("Cannot purge classes from javax.el.BeanELResolver", e);
+            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
         }
         catch (NoSuchFieldException e)
         {
-            Log.warn("Cannot purge classes from javax.el.BeanELResolver", e);
+            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
         }
        
     }
@@ -107,14 +110,14 @@ public class ELContextCleaner implements ServletContextListener
         while (itor.hasNext()) 
         {
             Class clazz = itor.next();
-            Log.info("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
+            LOG.info("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
                 itor.remove();  
-                Log.info("removed");
+                LOG.info("removed");
             }
             else
-                Log.info("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
+                LOG.info("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
         }
     }
 }

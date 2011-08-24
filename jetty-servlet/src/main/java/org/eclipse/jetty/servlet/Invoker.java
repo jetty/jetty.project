@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**  Dynamic Servlet Invoker.  
@@ -60,6 +61,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Invoker extends HttpServlet
 {
+    private static final Logger LOG = Log.getLogger(Invoker.class);
+
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
@@ -137,7 +140,7 @@ public class Invoker extends HttpServlet
         {
             // Found a named servlet (from a user's web.xml file) so
             // now we add a mapping for it
-            Log.debug("Adding servlet mapping for named servlet:"+servlet+":"+URIUtil.addPaths(servlet_path,servlet)+"/*");
+            LOG.debug("Adding servlet mapping for named servlet:"+servlet+":"+URIUtil.addPaths(servlet_path,servlet)+"/*");
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet);
             mapping.setPathSpec(URIUtil.addPaths(servlet_path,servlet)+"/*");
@@ -171,7 +174,7 @@ public class Invoker extends HttpServlet
                 else
                 {
                     // Make a holder
-                    Log.debug("Making new servlet="+servlet+" with path="+path+"/*");
+                    LOG.debug("Making new servlet="+servlet+" with path="+path+"/*");
                     holder=_servletHandler.addServletWithMapping(servlet, path+"/*");
                     
                     if (_parameters!=null)
@@ -180,7 +183,7 @@ public class Invoker extends HttpServlet
                     try {holder.start();}
                     catch (Exception e)
                     {
-                        Log.debug(e);
+                        LOG.debug(e);
                         throw new UnavailableException(e.toString());
                     }
                     
@@ -198,10 +201,10 @@ public class Invoker extends HttpServlet
                             } 
                             catch (Exception e) 
                             {
-                                Log.ignore(e);
+                                LOG.ignore(e);
                             }
                             
-                            Log.warn("Dynamic servlet "+s+
+                            LOG.warn("Dynamic servlet "+s+
                                          " not loaded from context "+
                                          request.getContextPath());
                             throw new UnavailableException("Not in context");
@@ -209,7 +212,7 @@ public class Invoker extends HttpServlet
                     }
 
                     if (_verbose)
-                        Log.debug("Dynamic load '"+servlet+"' at "+path);
+                        LOG.debug("Dynamic load '"+servlet+"' at "+path);
                 }
             }
         }
@@ -223,7 +226,7 @@ public class Invoker extends HttpServlet
         }
         else
         {
-            Log.info("Can't find holder for servlet: "+servlet);
+            LOG.info("Can't find holder for servlet: "+servlet);
             response.sendError(404);
         }
             

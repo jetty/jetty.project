@@ -35,6 +35,7 @@ import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -43,6 +44,8 @@ import org.junit.Test;
 
 public class StressTest
 {
+    private static final Logger LOG = Log.getLogger(StressTest.class);
+
     private static QueuedThreadPool _threads;
     private static Server _server;
     private static SelectChannelConnector _connector;
@@ -228,7 +231,7 @@ public class StressTest
                 else
                     same=0;
                 last=status;
-                Log.info(_server.getThreadPool().toString()+" "+status);
+                LOG.info(_server.getThreadPool().toString()+" "+status);
                 if ((finished+errors)== threadCount)
                     break;
             }

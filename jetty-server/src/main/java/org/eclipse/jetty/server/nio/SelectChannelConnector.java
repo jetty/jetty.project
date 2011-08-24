@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------------------------- */
@@ -65,6 +66,8 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public class SelectChannelConnector extends AbstractNIOConnector
 {
+    private static final Logger LOG = Log.getLogger(SelectChannelConnector.class);
+
     protected ServerSocketChannel _acceptChannel;
     private int _lowResourcesConnections;
     private int _lowResourcesMaxIdleTime;
@@ -263,11 +266,11 @@ public class SelectChannelConnector extends AbstractNIOConnector
                             }
                             catch(IOException e)
                             {
-                                Log.ignore(e);
+                                LOG.ignore(e);
                             }
                             catch(Exception e)
                             {
-                                Log.warn(e);
+                                LOG.warn(e);
                             }
                         }
                     }
@@ -297,7 +300,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 }
                 catch (Exception e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
             }
         }

@@ -14,9 +14,12 @@ import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SslCertificates
 {
+    private static final Logger LOG = Log.getLogger(SslCertificates.class);
+
     /**
      * The name of the SSLSession attribute that will contain any cached information.
      */
@@ -49,7 +52,7 @@ public class SslCertificates
         }
         catch (Exception e)
         {
-            Log.warn(Log.EXCEPTION,e);
+            LOG.warn(Log.EXCEPTION,e);
             return null;
         }
     }
@@ -118,7 +121,7 @@ public class SslCertificates
         }
         catch (Exception e)
         {
-            Log.warn(Log.EXCEPTION,e);
+            LOG.warn(Log.EXCEPTION,e);
         }
     }
 

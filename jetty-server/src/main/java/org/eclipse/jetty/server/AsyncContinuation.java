@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
@@ -36,6 +37,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class AsyncContinuation implements AsyncContext, Continuation
 {
+    private static final Logger LOG = Log.getLogger(AsyncContinuation.class);
+
     private final static long DEFAULT_TIMEOUT=30000L;
     
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
@@ -402,7 +405,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 }
                 catch(Exception e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
             }
         }
@@ -490,7 +493,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 }
                 catch(Exception e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
             }
         }
@@ -560,7 +563,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                         }
                         catch (InterruptedException e)
                         {
-                            Log.ignore(e);
+                            LOG.ignore(e);
                         }
                         wait=_expireAt-System.currentTimeMillis();
                     }
@@ -835,7 +838,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         if (isSuspended())
         {
-            if (Log.isDebugEnabled())
+            if (LOG.isDebugEnabled())
                 throw new ContinuationThrowable();
             else
                 throw __exception;

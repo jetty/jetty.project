@@ -28,6 +28,7 @@ import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** ContextHandlerCollection.
@@ -42,7 +43,9 @@ import org.eclipse.jetty.util.log.Log;
  * @org.apache.xbean.XBean element="contexts"
  */
 public class ContextHandlerCollection extends HandlerCollection
-{ 
+{
+    private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
+ 
     private volatile PathMap _contextMap;
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
     
@@ -281,7 +284,7 @@ public class ContextHandlerCollection extends HandlerCollection
         }
         catch (Exception e)
         {
-            Log.debug(e);
+            LOG.debug(e);
             throw new Error(e);
         }
     }

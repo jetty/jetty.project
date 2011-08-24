@@ -19,6 +19,7 @@ import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Byte range inclusive of end points.
@@ -43,6 +44,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class InclusiveByteRange 
 {
+    private static final Logger LOG = Log.getLogger(InclusiveByteRange.class);
+
     long first = 0;
     long last  = 0;    
 
@@ -97,7 +100,7 @@ public class InclusiveByteRange
                         {
                             if ("bytes".equals(t))
                                 continue;
-                            Log.warn("Bad range format: {}",t);
+                            LOG.warn("Bad range format: {}",t);
                             continue headers;
                         }
                         else if (d == 0)
@@ -106,7 +109,7 @@ public class InclusiveByteRange
                                 last = Long.parseLong(t.substring(d + 1).trim());
                             else
                             {
-                                Log.warn("Bad range format: {}",t);
+                                LOG.warn("Bad range format: {}",t);
                                 continue;
                             }
                         }
@@ -132,16 +135,16 @@ public class InclusiveByteRange
                     }
                     catch (NumberFormatException e)
                     {
-                        Log.warn("Bad range format: {}",t);
-                        Log.ignore(e);
+                        LOG.warn("Bad range format: {}",t);
+                        LOG.ignore(e);
                         continue;
                     }
                 }
             }
             catch(Exception e)
             {
-                Log.warn("Bad range format: {}",t);
-                Log.ignore(e);
+                LOG.warn("Bad range format: {}",t);
+                LOG.ignore(e);
             }    
         }
         return LazyList.getList(satRanges,true);
