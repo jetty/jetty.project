@@ -327,6 +327,18 @@ public class Log
             return;
         __log.warn(EXCEPTION, th);
     }
+    
+    /**
+     * Obtain a named Logger based on the fully qualified class name.
+     * 
+     * @param clazz
+     *            the class to base the Logger name off of
+     * @return the Logger with the given name
+     */
+    public static Logger getLogger(Class<?> clazz)
+    {
+        return getLogger(clazz.getName());
+    }
 
     /**
      * Obtain a named Logger or the default Logger if null is passed.
