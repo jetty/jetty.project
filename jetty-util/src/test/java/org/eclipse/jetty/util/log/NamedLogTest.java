@@ -1,6 +1,7 @@
 package org.eclipse.jetty.util.log;
 
 import static org.hamcrest.Matchers.*;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
@@ -14,18 +15,19 @@ public class NamedLogTest
     private PrintStream orig;
     private ByteArrayOutputStream logstream;
     private PrintStream perr;
+    private Logger origLogger;
 
     @Before
     public void setUp()
     {
+        origLogger = Log.getRootLogger();
+        
         orig = System.err;
         logstream = new ByteArrayOutputStream();
         perr = new PrintStream(logstream);
         System.setErr(perr);
 
         StdErrLog logger = new StdErrLog();
-        logger.setDebugEnabled(true);
-        logger.setHideStacks(false);
         Log.setLog(logger);
     }
 
@@ -34,6 +36,8 @@ public class NamedLogTest
     {
         System.out.println(logstream.toString());
         System.setErr(orig);
+        
+        Log.setLog(origLogger);
     }
 
     @Test
@@ -42,6 +46,10 @@ public class NamedLogTest
         Red red = new Red();
         Green green = new Green();
         Blue blue = new Blue();
+        
+        setLoggerOptions(Red.class);
+        setLoggerOptions(Green.class);
+        setLoggerOptions(Blue.class);
 
         red.generateLogs();
         green.generateLogs();
@@ -52,5 +60,15 @@ public class NamedLogTest
         Assert.assertThat(rawlog,containsString(Red.class.getName()));
         Assert.assertThat(rawlog,containsString(Green.class.getName()));
         Assert.assertThat(rawlog,containsString(Blue.class.getName()));
+    }
+
+    private void setLoggerOptions(Class<?> clazz)
+    {
+        Logger logger = Log.getLogger(clazz);
+        logger.setDebugEnabled(true);
+        
+        if(logger instanceof StdErrLog) {
+            ((StdErrLog)logger).setPrintLongNames(true);
+        }
     }
 }

@@ -32,7 +32,11 @@ import org.eclipse.jetty.util.DateCache;
  * source method/file of a log is logged. For named debuggers, the system 
  * property name+".SOURCE" is checked. If it is not not set, then 
  * "org.eclipse.jetty.util.log.SOURCE" is used as the default.
- * 
+ * <p>
+ * If the system property "org.eclipse.jetty.util.log.LONG" is set, then the
+ * full, unabbreviated name of the logger is used for logging. 
+ * For named debuggers, the system property name+".LONG" is checked. 
+ * If it is not not set, then "org.eclipse.jetty.util.log.LONG" is used as the default.
  */
 public class StdErrLog implements Logger
 {
@@ -44,6 +48,8 @@ public class StdErrLog implements Logger
     private final static boolean __source = Boolean.parseBoolean(
             System.getProperty("org.eclipse.jetty.util.log.SOURCE",
                     System.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE", "false")));
+    private final static boolean __long = Boolean.parseBoolean(
+            System.getProperty("org.eclipse.jetty.util.log.stderr.LONG", "false"));
 
     private final static ConcurrentMap<String,StdErrLog> __loggers = new ConcurrentHashMap<String, StdErrLog>();
     
@@ -61,7 +67,12 @@ public class StdErrLog implements Logger
 
     private boolean _debug = __debug;
     private boolean _source = __source;
-    private final String _name;
+    // Print the long form names, otherwise use abbreviated
+    private boolean _printLongNames = __long;
+    // The full log name, as provided by the system.
+    private final String _name; 
+    // The abbreviated log name (used by default, unless _long is specified)
+    private final String _abbrevname;
     private boolean _hideStacks = false;
 
     public StdErrLog()
@@ -72,6 +83,7 @@ public class StdErrLog implements Logger
     public StdErrLog(String name)
     {
         this._name = name == null ? "" : name;
+        this._abbrevname = condensePackageString(this._name);
 
         try
         {
@@ -91,10 +103,51 @@ public class StdErrLog implements Logger
             _source = __source;
         }
     }
+    
+    /**
+     * Condenses a classname by stripping down the package name to just the first character of each package name
+     * segment.
+     * <p>
+     * 
+     * <pre>
+     * Examples:
+     * "org.eclipse.jetty.test.FooTest"           = "oejt.FooTest"
+     * "org.eclipse.jetty.server.logging.LogTest" = "orjsl.LogTest"
+     * </pre>
+     * 
+     * @param classname
+     *            the fully qualified class name
+     * @return the condensed name
+     */
+    protected static String condensePackageString(String classname)
+    {
+        String parts[] = classname.split("\\.");
+        StringBuilder dense = new StringBuilder();
+        for (int i = 0; i < (parts.length - 1); i++)
+        {
+            dense.append(parts[i].charAt(0));
+        }
+        if (dense.length() > 0)
+        {
+            dense.append('.');
+        }
+        dense.append(parts[parts.length - 1]);
+        return dense.toString();
+    }
 
     public String getName()
     {
         return _name;
+    }
+    
+    public void setPrintLongNames(boolean printLongNames)
+    {
+        this._printLongNames = printLongNames;
+    }
+
+    public boolean isPrintLongNames()
+    {
+        return this._printLongNames;
     }
 
     public boolean isHideStacks()
@@ -223,7 +276,13 @@ public class StdErrLog implements Logger
             buffer.append(".0");
         else
             buffer.append(".00");
-        buffer.append(ms).append(tag).append(_name).append(':');
+        buffer.append(ms).append(tag);
+        if(_printLongNames) {
+            buffer.append(_name);
+        } else {
+            buffer.append(_abbrevname);
+        }
+        buffer.append(':');
         if (_source)
         {
             Throwable source = new Throwable();
@@ -234,10 +293,11 @@ public class StdErrLog implements Logger
                 String clazz = frame.getClassName();
                 if (clazz.equals(StdErrLog.class.getName())|| clazz.equals(Log.class.getName()))
                     continue;
-                if (clazz.startsWith("org.eclipse.jetty."))
-                    buffer.append("o.e.j.").append(clazz,18,clazz.length());
-                else
+                if (!_printLongNames && clazz.startsWith("org.eclipse.jetty.")) {
+                    buffer.append(condensePackageString(clazz));
+                } else {
                     buffer.append(clazz);
+                }
                 buffer.append('#').append(frame.getMethodName());
                 if (frame.getFileName()!=null)
                     buffer.append('(').append(frame.getFileName()).append(':').append(frame.getLineNumber()).append(')');
@@ -328,6 +388,10 @@ public class StdErrLog implements Logger
         if (logger==null)
         {
             StdErrLog sel=new StdErrLog(fullname);
+            // Preserve configuration for new loggers configuration
+            sel.setPrintLongNames(_printLongNames);
+            sel.setDebugEnabled(_debug);
+            sel.setSource(_source);
             logger=__loggers.putIfAbsent(fullname,sel);
             if (logger==null)
                 logger=sel;

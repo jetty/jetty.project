@@ -22,7 +22,7 @@ public class StdErrLogTest extends TestCase
 {
     public void testNullValues()
     {
-        StdErrLog log = new StdErrLog();
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setDebugEnabled(true);
         log.setHideStacks(true);
 

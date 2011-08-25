@@ -119,10 +119,20 @@ public class Log
         initialized();
         return __log;
     }
+    
+    /**
+     * Get the root logger.
+     * @return the root logger
+     */
+    public static Logger getRootLogger() {
+        initialized();
+        return __log;
+    }
 
     /**
      * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
      */
+    @Deprecated
     static boolean isIgnored()
     {
         return __ignored;
