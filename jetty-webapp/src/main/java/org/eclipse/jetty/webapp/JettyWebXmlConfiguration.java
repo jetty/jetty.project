@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.io.InputStream;
 import java.util.Map;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -77,12 +79,28 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 {
                     context.setServerClasses(null);
                     if(Log.isDebugEnabled())
+                    {
                         Log.debug("Configure: "+jetty);
+                    }
+                    
                     XmlConfiguration jetty_config = (XmlConfiguration)context.getAttribute(XML_CONFIGURATION);
+                    
                     if (jetty_config==null)
-                        jetty_config=new XmlConfiguration(jetty.getURL());
+                    {
+                        String jettyXml = IO.toString(jetty.getURL().openStream());
+                        
+                        if ( jettyXml.contains("org.mortbay.") )
+                        {
+                            Log.warn("Detected jetty 6 configuration, attempting to automatically convert");
+                            jettyXml = convertFromJetty6(jettyXml);
+                        }
+                        
+                        jetty_config=new XmlConfiguration(jettyXml);
+                    }
                     else
+                    {
                         context.removeAttribute(XML_CONFIGURATION);
+                    }
                     setupXmlConfiguration(context,jetty_config, web_inf);
                     jetty_config.configure(context);
                 }
@@ -114,6 +132,23 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     {
     	Map<String,String> props = jetty_config.getProperties();
     	props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
+    }
+    
+    /*
+     * convert specific o.m.jetty paths to o.e.jetty paths 
+     */
+    private String convertFromJetty6(String jettyXml)
+    {
+        // XMLConfiguration(String) will tack on <?xml directives, so make sure we pare this down to just
+        // the Configure
+        if ( !jettyXml.startsWith("<Configure"))
+        {
+            jettyXml = jettyXml.substring(jettyXml.indexOf("<Configure"));
+        }
+        
+        jettyXml = jettyXml.replace("org.mortbay.jetty.webapp.WebAppContext","org.eclipse.jetty.webapp.WebAppContext");
+        
+        return jettyXml;
     }
     
 }
