@@ -302,6 +302,7 @@ public class HttpExchange
                     {
                         case STATUS_START:
                         case STATUS_EXCEPTED:
+                        case STATUS_WAITING_FOR_RESPONSE:
                             set=_status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_CANCELLING:
@@ -344,7 +345,7 @@ public class HttpExchange
             }
 
             if (!set)
-                throw new IllegalStateException(oldStatus + " => " + newStatus);
+                throw new IllegalStateException(toState(oldStatus) + " => " + toState(newStatus));
         }
         catch (IOException x)
         {
@@ -726,11 +727,10 @@ public class HttpExchange
         return result;
     }
 
-    @Override
-    public String toString()
+    public static String toState(int s)
     {
         String state;
-        switch(getStatus())
+        switch(s)
         {
             case STATUS_START: state="START"; break;
             case STATUS_WAITING_FOR_CONNECTION: state="CONNECTING"; break;
@@ -746,6 +746,13 @@ public class HttpExchange
             case STATUS_CANCELLED: state="CANCELLED"; break;
             default: state="UNKNOWN";
         }
+        return state;
+    }
+    
+    @Override
+    public String toString()
+    {
+        String state=toState(getStatus());
         long now=System.currentTimeMillis();
         long forMs = now -_lastStateChange;
         String s= String.format("%s@%x=%s//%s%s#%s(%dms)",getClass().getSimpleName(),hashCode(),_method,_address,_uri,state,forMs);
