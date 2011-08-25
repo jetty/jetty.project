@@ -113,6 +113,7 @@ public class WebSocketParserD11Test
         assertEquals(0xf,_handler._flags);
         assertEquals(0xf,_handler._opcode);
         assertTrue(_parser.isBufferEmpty());
+        _parser.returnBuffer();
         assertTrue(_parser.getBuffer()==null);
     }
     
@@ -132,6 +133,7 @@ public class WebSocketParserD11Test
         assertEquals(0x8,_handler._flags);
         assertEquals(0x1,_handler._opcode);
         assertTrue(_parser.isBufferEmpty());
+        _parser.returnBuffer();
         assertTrue(_parser.getBuffer()==null);
     }
     
@@ -152,6 +154,7 @@ public class WebSocketParserD11Test
         assertEquals(string,_handler._data.get(0));
         assertEquals(0x8,_handler._flags);
         assertEquals(0x1,_handler._opcode);
+        _parser.returnBuffer();
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
     }
@@ -179,6 +182,7 @@ public class WebSocketParserD11Test
         assertEquals(string,_handler._data.get(0));
         assertEquals(0x8,_handler._flags);
         assertEquals(0x1,_handler._opcode);
+        _parser.returnBuffer();
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
     }
@@ -188,7 +192,7 @@ public class WebSocketParserD11Test
     {
         WebSocketBuffers buffers = new WebSocketBuffers(0x20000);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        WebSocketParser parser=new WebSocketParserD11(buffers, endPoint,_handler,false);
+        WebSocketParserD11 parser=new WebSocketParserD11(buffers, endPoint,_handler,false);
         ByteArrayBuffer in = new ByteArrayBuffer(0x20000);
         endPoint.setIn(in);
         
@@ -213,6 +217,7 @@ public class WebSocketParserD11Test
         in.put(bytes);
 
         int progress =parser.parseNext();
+        parser.returnBuffer();
 
         assertEquals(bytes.length+11,progress);
         assertEquals(string,_handler._data.get(0));
@@ -240,6 +245,7 @@ public class WebSocketParserD11Test
         assertFalse(_parser.getBuffer()==null);
 
         progress =_parser.parseNext();
+        _parser.returnBuffer();
 
         assertEquals(1,progress);
         assertEquals("Hello World",_handler._data.get(0));

@@ -121,7 +121,6 @@ public class WebSocketParserD11 implements WebSocketParser
     {
         if (_buffer==null)
             _buffer=_buffers.getBuffer();
-
         int total_filled=0;
         int events=0;
 
@@ -331,12 +330,6 @@ public class WebSocketParserD11 implements WebSocketParser
                     _state=State.START;
                 }
 
-                if (_buffer.length()==0)
-                {
-                    _buffers.returnBuffer(_buffer);
-                    _buffer=null;
-                }
-
                 return total_filled+events;
             }
         }
@@ -349,9 +342,27 @@ public class WebSocketParserD11 implements WebSocketParser
         {
             if (_buffer==null)
                 _buffer=_buffers.getBuffer();
+            
             _buffer.put(buffer);
             buffer.clear();
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void returnBuffer()
+    {
+        if (_buffer!=null && _buffer.length()==0)
+        {
+            _buffers.returnBuffer(_buffer);
+            _buffer=null;
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        Buffer buffer=_buffer;
+        return WebSocketParserD11.class.getSimpleName()+"@"+ Integer.toHexString(hashCode())+"|"+_state+"|"+(buffer==null?"<>":buffer.toDetailString());
     }
 
 }

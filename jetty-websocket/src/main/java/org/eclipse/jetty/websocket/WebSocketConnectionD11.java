@@ -250,9 +250,10 @@ public class WebSocketConnectionD11 extends AbstractConnection implements WebSoc
         finally
         {
             current.setContextClassLoader(oldcontext);
+            _parser.returnBuffer();
+            _generator.returnBuffer();
             if (_endp.isOpen())
             {
-                _generator.idle();
                 _idle.access(_endp);
                 if (_closedIn && _closedOut && _outbound.isBufferEmpty())
                     _endp.close();
@@ -261,7 +262,6 @@ public class WebSocketConnectionD11 extends AbstractConnection implements WebSoc
                 else
                     checkWriteable();
             }
-           
         }
         return this;
     }

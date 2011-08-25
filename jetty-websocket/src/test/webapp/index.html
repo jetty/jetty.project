@@ -2,7 +2,9 @@
 <html><head>
     <title>WebSocket Chat</title>
     <script type='text/javascript'>
-    
+
+      if (!window.WebSocket && window.MozWebSocket)
+    	  window.WebSocket=window.MozWebSocket;
       if (!window.WebSocket)
         alert("WebSocket not supported by this browser");
     

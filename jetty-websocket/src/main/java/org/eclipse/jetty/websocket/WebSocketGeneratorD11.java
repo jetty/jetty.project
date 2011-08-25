@@ -107,6 +107,11 @@ public class WebSocketGeneratorD11 implements WebSocketGenerator
         _maskGen=maskGen;
     }
 
+    public synchronized Buffer getBuffer()
+    {
+        return _buffer;
+    }
+    
     public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
     {
         // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
@@ -273,7 +278,7 @@ public class WebSocketGeneratorD11 implements WebSocketGenerator
         return _buffer==null || _buffer.length()==0;
     }
 
-    public synchronized void idle()
+    public synchronized void returnBuffer()
     {
         if (_buffer!=null && _buffer.length()==0)
         {
