@@ -110,7 +110,7 @@ public class WebSocketClientTest
         }
         
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NOCLOSE,close.get());
+        Assert.assertEquals(WebSocketConnectionD12.CLOSE_NOCLOSE,close.get());
         Assert.assertTrue(error instanceof ConnectException);
         
     }
@@ -151,7 +151,7 @@ public class WebSocketClientTest
         }
         
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NOCLOSE,close.get());
+        Assert.assertEquals(WebSocketConnectionD12.CLOSE_NOCLOSE,close.get());
         Assert.assertTrue(error instanceof TimeoutException);
         
     }
@@ -191,7 +191,7 @@ public class WebSocketClientTest
         }
         
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NOCLOSE,close.get());
+        Assert.assertEquals(WebSocketConnectionD12.CLOSE_NOCLOSE,close.get());
         Assert.assertTrue(error instanceof TimeoutException);
         
     }
@@ -233,7 +233,7 @@ public class WebSocketClientTest
         }
         
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD10.CLOSE_PROTOCOL,close.get());
+        Assert.assertEquals(WebSocketConnectionD12.CLOSE_PROTOCOL,close.get());
         Assert.assertTrue(error instanceof IOException);
         Assert.assertTrue(error.getMessage().indexOf("404 NOT FOUND")>0);
       
@@ -277,7 +277,7 @@ public class WebSocketClientTest
             error=e.getCause();
         }
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD10.CLOSE_PROTOCOL,close.get());
+        Assert.assertEquals(WebSocketConnectionD12.CLOSE_PROTOCOL,close.get());
         Assert.assertTrue(error instanceof IOException);
         Assert.assertTrue(error.getMessage().indexOf("Bad Sec-WebSocket-Accept")>=0);
     }
@@ -316,7 +316,7 @@ public class WebSocketClientTest
         socket.close();
         _latch.await(10,TimeUnit.SECONDS);
 
-        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NOCLOSE,close.get());
+        Assert.assertEquals(WebSocketConnectionD12.CLOSE_NOCLOSE,close.get());
         
     }
 
@@ -355,7 +355,7 @@ public class WebSocketClientTest
         long start=System.currentTimeMillis();
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
-        Assert.assertEquals(WebSocketConnectionD10.CLOSE_NORMAL,close.get());
+        Assert.assertEquals(WebSocketConnectionD12.CLOSE_NORMAL,close.get());
     }
     
 
@@ -482,7 +482,7 @@ public class WebSocketClientTest
         }
         connection.getOutputStream().write((
                 "HTTP/1.1 101 Upgrade\r\n" +
-                "Sec-WebSocket-Accept: "+ WebSocketConnectionD10.hashKey(key) +"\r\n" +
+                "Sec-WebSocket-Accept: "+ WebSocketConnectionD12.hashKey(key) +"\r\n" +
                 "\r\n").getBytes());
     }
 }

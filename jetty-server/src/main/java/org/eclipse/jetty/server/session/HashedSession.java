@@ -16,7 +16,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-class HashedSession extends AbstractSession
+public class HashedSession extends AbstractSession
 {
     private static final Logger LOG = Log.getLogger(HashedSession.class);
 

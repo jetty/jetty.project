@@ -73,7 +73,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         super(endp);
-
+        
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
@@ -574,14 +574,24 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         @Override
         public void startResponse(Buffer version, int status, Buffer reason) throws IOException
         {
-            
             HttpExchange exchange = _exchange;
             if (exchange!=null)
             {
-                // handle special case for CONNECT 200 responses
-                if (status==HttpStatus.OK_200 && HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
-                    _parser.setHeadResponse(true);
-                
+                switch(status)
+                {
+                    case HttpStatus.CONTINUE_100:
+                    case HttpStatus.PROCESSING_102:
+                        // TODO check if appropriate expect was sent in the request.
+                        exchange.setEventListener(new NonFinalResponseListener(exchange));
+                        break;
+
+                    case HttpStatus.OK_200:
+                        // handle special case for CONNECT 200 responses
+                        if (HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
+                            _parser.setHeadResponse(true);
+                        break;
+                }
+
                 _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
                 _status=status;
                 exchange.getEventListener().onResponseStatus(version,status,reason);
@@ -737,8 +747,10 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         }
     }
     
+    /* ------------------------------------------------------------ */
     private class ConnectionIdleTask extends Timeout.Task
     {
+        /* ------------------------------------------------------------ */
         @Override
         public void expired()
         {
@@ -747,6 +759,89 @@ public class HttpConnection extends AbstractConnection implements Dumpable
             {
                 _destination.returnIdleConnection(HttpConnection.this);
             }
+        }
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    private class NonFinalResponseListener implements HttpEventListener
+    {
+        final HttpExchange _exchange;
+        final HttpEventListener _next;
+        
+        /* ------------------------------------------------------------ */
+        public NonFinalResponseListener(HttpExchange exchange)
+        {
+            _exchange=exchange;
+            _next=exchange.getEventListener();
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onRequestCommitted() throws IOException
+        {
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onRequestComplete() throws IOException
+        {
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+        {
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onResponseHeader(Buffer name, Buffer value) throws IOException
+        {
+            _next.onResponseHeader(name,value);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onResponseHeaderComplete() throws IOException
+        {
+            _next.onResponseHeaderComplete();
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onResponseContent(Buffer content) throws IOException
+        {
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onResponseComplete() throws IOException
+        {
+            _exchange.setEventListener(_next);
+            _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
+            _parser.reset();            
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onConnectionFailed(Throwable ex)
+        {
+            _exchange.setEventListener(_next);
+            _next.onConnectionFailed(ex);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onException(Throwable ex)
+        {
+            _exchange.setEventListener(_next);
+            _next.onException(ex);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onExpire()
+        {
+            _exchange.setEventListener(_next);
+            _next.onExpire();
+        }
+
+        /* ------------------------------------------------------------ */
+        public void onRetry()
+        {
+            _exchange.setEventListener(_next);
+            _next.onRetry();
         }
     }
 }

@@ -20,11 +20,11 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketParserD10Test
+public class WebSocketParserD12Test
 {
     private MaskedByteArrayBuffer _in;
     private Handler _handler;
-    private WebSocketParserD10 _parser;
+    private WebSocketParserD12 _parser;
     private byte[] _mask = new byte[] {(byte)0x00,(byte)0xF0,(byte)0x0F,(byte)0xFF};
     private int _m;
 
@@ -87,7 +87,7 @@ public class WebSocketParserD10Test
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         endPoint.setNonBlocking(true);
         _handler = new Handler();
-        _parser=new WebSocketParserD10(buffers, endPoint,_handler,true);
+        _parser=new WebSocketParserD12(buffers, endPoint,_handler,true);
         _parser.setFakeFragments(false);
         _in = new MaskedByteArrayBuffer();
         
@@ -113,6 +113,7 @@ public class WebSocketParserD10Test
         assertEquals(0xf,_handler._flags);
         assertEquals(0xf,_handler._opcode);
         assertTrue(_parser.isBufferEmpty());
+        _parser.returnBuffer();
         assertTrue(_parser.getBuffer()==null);
     }
     
@@ -132,6 +133,7 @@ public class WebSocketParserD10Test
         assertEquals(0x8,_handler._flags);
         assertEquals(0x1,_handler._opcode);
         assertTrue(_parser.isBufferEmpty());
+        _parser.returnBuffer();
         assertTrue(_parser.getBuffer()==null);
     }
     
@@ -152,6 +154,7 @@ public class WebSocketParserD10Test
         assertEquals(string,_handler._data.get(0));
         assertEquals(0x8,_handler._flags);
         assertEquals(0x1,_handler._opcode);
+        _parser.returnBuffer();
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
     }
@@ -179,6 +182,7 @@ public class WebSocketParserD10Test
         assertEquals(string,_handler._data.get(0));
         assertEquals(0x8,_handler._flags);
         assertEquals(0x1,_handler._opcode);
+        _parser.returnBuffer();
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
     }
@@ -188,7 +192,7 @@ public class WebSocketParserD10Test
     {
         WebSocketBuffers buffers = new WebSocketBuffers(0x20000);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        WebSocketParser parser=new WebSocketParserD10(buffers, endPoint,_handler,false);
+        WebSocketParserD12 parser=new WebSocketParserD12(buffers, endPoint,_handler,false);
         ByteArrayBuffer in = new ByteArrayBuffer(0x20000);
         endPoint.setIn(in);
         
@@ -213,6 +217,7 @@ public class WebSocketParserD10Test
         in.put(bytes);
 
         int progress =parser.parseNext();
+        parser.returnBuffer();
 
         assertEquals(bytes.length+11,progress);
         assertEquals(string,_handler._data.get(0));
@@ -240,6 +245,7 @@ public class WebSocketParserD10Test
         assertFalse(_parser.getBuffer()==null);
 
         progress =_parser.parseNext();
+        _parser.returnBuffer();
 
         assertEquals(1,progress);
         assertEquals("Hello World",_handler._data.get(0));
@@ -263,7 +269,7 @@ public class WebSocketParserD10Test
 
         assertTrue(progress>0);
        
-        assertEquals(WebSocketConnectionD10.CLOSE_LARGE,_handler._code);
+        assertEquals(WebSocketConnectionD12.CLOSE_LARGE,_handler._code);
         for (int i=0;i<2048;i++)
             _in.put((byte)'a');
         progress =_parser.parseNext();
@@ -307,7 +313,7 @@ public class WebSocketParserD10Test
         assertTrue(progress>0);
 
         assertEquals(2,_handler._frames);
-        assertEquals(WebSocketConnectionD10.OP_CONTINUATION,_handler._opcode);
+        assertEquals(WebSocketConnectionD12.OP_CONTINUATION,_handler._opcode);
     }
 
     private class Handler implements WebSocketParser.FrameHandler

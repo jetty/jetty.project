@@ -33,7 +33,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketMessageD10Test
+public class WebSocketMessageD12Test
 {
     private static Server _server;
     private static Connector _connector;
@@ -74,7 +74,7 @@ public class WebSocketMessageD10Test
     @Test
     public void testHash()
     {
-        assertEquals("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",WebSocketConnectionD10.hashKey("dGhlIHNhbXBsZSBub25jZQ=="));
+        assertEquals("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",WebSocketConnectionD12.hashKey("dGhlIHNhbXBsZSBub25jZQ=="));
     }
     
     @Test
@@ -115,7 +115,7 @@ public class WebSocketMessageD10Test
         String data=message.toString();
         _serverWebSocket.connection.sendMessage(data);
 
-        assertEquals(WebSocketConnectionD10.OP_TEXT,input.read());
+        assertEquals(WebSocketConnectionD12.OP_TEXT,input.read());
         assertEquals(0x7e,input.read());
         assertEquals(0x1f,input.read());
         assertEquals(0xf6,input.read());
@@ -321,7 +321,7 @@ public class WebSocketMessageD10Test
         output.write(buf,0,l+3);
         output.flush();
         
-        assertEquals(0x40+WebSocketConnectionD10.OP_TEXT,input.read());
+        assertEquals(0x40+WebSocketConnectionD12.OP_TEXT,input.read());
         assertEquals(0x20+3,input.read());
         assertEquals(0x7e,input.read());
         assertEquals(0x02,input.read());
@@ -489,7 +489,7 @@ public class WebSocketMessageD10Test
             output.write(bytes[i]^0xff);
         output.flush();
 
-        assertEquals(0x80|WebSocketConnectionD10.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
         assertEquals(30,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
         assertEquals(1004,code);
@@ -540,7 +540,7 @@ public class WebSocketMessageD10Test
         
         
         
-        assertEquals(0x80|WebSocketConnectionD10.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
         assertEquals(30,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
         assertEquals(1004,code);
@@ -576,7 +576,7 @@ public class WebSocketMessageD10Test
         assertNotNull(_serverWebSocket.connection);
         _serverWebSocket.getConnection().setMaxBinaryMessageSize(1024);
         
-        output.write(WebSocketConnectionD10.OP_BINARY);
+        output.write(WebSocketConnectionD12.OP_BINARY);
         output.write(0x8a);
         output.write(0xff);
         output.write(0xff);
@@ -597,7 +597,7 @@ public class WebSocketMessageD10Test
             output.write(bytes[i]^0xff);
         output.flush();
         
-        assertEquals(0x80+WebSocketConnectionD10.OP_BINARY,input.read());
+        assertEquals(0x80+WebSocketConnectionD12.OP_BINARY,input.read());
         assertEquals(20,input.read());
         lookFor("01234567890123456789",input);
     }
@@ -654,7 +654,7 @@ public class WebSocketMessageD10Test
         output.flush();
 
         
-        assertEquals(0x80|WebSocketConnectionD10.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
         assertEquals(19,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
         assertEquals(1004,code);
@@ -703,7 +703,7 @@ public class WebSocketMessageD10Test
             output.write(bytes[i]^0xff);
         output.flush();
         
-        assertEquals(0x80|WebSocketConnectionD10.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
         assertEquals(19,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
         assertEquals(1004,code);
@@ -829,14 +829,14 @@ public class WebSocketMessageD10Test
         final AtomicReference<String> received = new AtomicReference<String>();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
         
-        WebSocketGeneratorD10 gen = new WebSocketGeneratorD10(new WebSocketBuffers(8096),endp,null);
+        WebSocketGeneratorD12 gen = new WebSocketGeneratorD12(new WebSocketBuffers(8096),endp,null);
         
         byte[] data = message.getBytes(StringUtil.__UTF8);
         gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length);
         
         endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
                 
-        WebSocketParserD10 parser = new WebSocketParserD10(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
+        WebSocketParserD12 parser = new WebSocketParserD12(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
         {
             public void onFrame(byte flags, byte opcode, Buffer buffer)
             {
@@ -861,15 +861,15 @@ public class WebSocketMessageD10Test
         final AtomicReference<String> received = new AtomicReference<String>();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
 
-        WebSocketGeneratorD10.MaskGen maskGen = new WebSocketGeneratorD10.RandomMaskGen();
+        WebSocketGeneratorD12.MaskGen maskGen = new WebSocketGeneratorD12.RandomMaskGen();
         
-        WebSocketGeneratorD10 gen = new WebSocketGeneratorD10(new WebSocketBuffers(8096),endp,maskGen);
+        WebSocketGeneratorD12 gen = new WebSocketGeneratorD12(new WebSocketBuffers(8096),endp,maskGen);
         byte[] data = message.getBytes(StringUtil.__UTF8);
         gen.addFrame((byte)0x8,(byte)0x1,data,0,data.length);
         
         endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
                 
-        WebSocketParserD10 parser = new WebSocketParserD10(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
+        WebSocketParserD12 parser = new WebSocketParserD12(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
         {
             public void onFrame(byte flags, byte opcode, Buffer buffer)
             {
@@ -992,9 +992,9 @@ public class WebSocketMessageD10Test
             {
                 switch(opcode)
                 {
-                    case WebSocketConnectionD10.OP_CLOSE:
-                    case WebSocketConnectionD10.OP_PING:
-                    case WebSocketConnectionD10.OP_PONG:
+                    case WebSocketConnectionD12.OP_CLOSE:
+                    case WebSocketConnectionD12.OP_PING:
+                    case WebSocketConnectionD12.OP_PONG:
                         break;
                         
                     default:
