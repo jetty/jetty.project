@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.websocket.WebSocketGeneratorD12.MaskGen;
 
 
 /* ------------------------------------------------------------ */
@@ -88,6 +89,7 @@ public class WebSocketClient extends AggregateLifeCycle
     private int _maxIdleTime=-1;
     
     private WebSocketBuffers _buffers;
+    private boolean _nullMask;
     
 
     /* ------------------------------------------------------------ */
@@ -234,6 +236,24 @@ public class WebSocketClient extends AggregateLifeCycle
     }
     
     
+    /* ------------------------------------------------------------ */
+    /** 
+     * @return True if a null mask is used. 
+     */
+    public boolean isNullMask()
+    {
+        return _nullMask;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param maskGen
+     */
+    public void setNullMaskGen(boolean nullMask)
+    {
+        _nullMask=nullMask;
+    }
+
     /* ------------------------------------------------------------ */
     /** Open a WebSocket connection.
      * Open a websocket connection to the URI and block until the connection is accepted or there is an error.
@@ -531,7 +551,8 @@ public class WebSocketClient extends AggregateLifeCycle
                 else 
                 {
                     Buffer header=_parser.getHeaderBuffer();
-                    WebSocketConnectionD12 connection = new WebSocketConnectionD12(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10, new WebSocketGeneratorD12.RandomMaskGen());
+                    MaskGen maskGen=_nullMask?new WebSocketGeneratorD12.FixedMaskGen():new WebSocketGeneratorD12.RandomMaskGen();
+                    WebSocketConnectionD12 connection = new WebSocketConnectionD12(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10,maskGen);
 
                     if (header.hasContent())
                         connection.fillBuffersFrom(header);
