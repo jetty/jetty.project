@@ -551,7 +551,7 @@ public class WebSocketClient extends AggregateLifeCycle
                 else
                 {
                     Buffer header=_parser.getHeaderBuffer();
-                    MaskGen maskGen=_maskingEnabled?new WebSocketGeneratorD12.RandomMaskGen():new WebSocketGeneratorD12.FixedMaskGen();
+                    MaskGen maskGen=_maskingEnabled?new WebSocketGeneratorD12.RandomMaskGen():new WebSocketGeneratorD12.NullMaskGen();
                     WebSocketConnectionD12 connection = new WebSocketConnectionD12(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10,maskGen);
 
                     if (header.hasContent())
