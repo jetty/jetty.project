@@ -3,6 +3,7 @@ target/
 .project
 .settings
 */src/main/java/META-INF/
+.pmd
 *.log
 *.swp
 *.diff
