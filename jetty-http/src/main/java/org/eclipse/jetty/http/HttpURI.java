@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -95,6 +96,11 @@ public class HttpURI
     public HttpURI(byte[] raw,int offset, int length)
     {
         parse2(raw,offset,length);
+    }
+    
+    public HttpURI(URI uri)
+    {
+        parse(uri.toASCIIString());
     }
 
     public void parse(String raw)
