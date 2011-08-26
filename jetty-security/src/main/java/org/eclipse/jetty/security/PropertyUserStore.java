@@ -201,15 +201,17 @@ public class PropertyUserStore extends AbstractLifeCycle
 
             _scanner.addListener(new BulkListener()
             {
-                public void filesChanged(List filenames) throws Exception
+                public void filesChanged(List<String> filenames) throws Exception
                 {
                     if (filenames == null)
                         return;
                     if (filenames.isEmpty())
                         return;
-                    if (filenames.size() == 1 && filenames.get(0).equals(getConfigResource().getFile().getAbsolutePath()))
+                    if (filenames.size() == 1)
                     {
-                        loadUsers();
+                        Resource r = Resource.newResource(filenames.get(0));
+                        if (r.getFile().equals(_configResource.getFile()))
+                            loadUsers();
                     }
                 }
 
