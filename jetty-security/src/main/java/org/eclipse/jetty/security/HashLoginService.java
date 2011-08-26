@@ -36,22 +36,18 @@ import org.eclipse.jetty.util.resource.Resource;
 /**
  * Properties User Realm.
  * 
- * An implementation of UserRealm that stores users and roles in-memory in
- * HashMaps.
+ * An implementation of UserRealm that stores users and roles in-memory in HashMaps.
  * <P>
- * Typically these maps are populated by calling the load() method or passing a
- * properties resource to the constructor. The format of the properties file is:
+ * Typically these maps are populated by calling the load() method or passing a properties resource to the constructor. The format of the properties file is:
  * 
  * <PRE>
  *  username: password [,rolename ...]
  * </PRE>
  * 
- * Passwords may be clear text, obfuscated or checksummed. The class
- * com.eclipse.Util.Password should be used to generate obfuscated passwords or
- * password checksums.
+ * Passwords may be clear text, obfuscated or checksummed. The class com.eclipse.Util.Password should be used to generate obfuscated passwords or password
+ * checksums.
  * 
- * If DIGEST Authentication is used, the password must be in a recoverable
- * format, either plain text or OBF:.
+ * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
  */
 public class HashLoginService extends MappedLoginService
 {
@@ -72,14 +68,14 @@ public class HashLoginService extends MappedLoginService
     {
         setName(name);
     }
-    
+
     /* ------------------------------------------------------------ */
     public HashLoginService(String name, String config)
     {
         setName(name);
         setConfig(config);
     }
-    
+
     /* ------------------------------------------------------------ */
     public String getConfig()
     {
@@ -89,7 +85,7 @@ public class HashLoginService extends MappedLoginService
     /* ------------------------------------------------------------ */
     public void getConfig(String config)
     {
-        _config=config;
+        _config = config;
     }
 
     /* ------------------------------------------------------------ */
@@ -100,11 +96,10 @@ public class HashLoginService extends MappedLoginService
 
     /* ------------------------------------------------------------ */
     /**
-     * Load realm users from properties file. The property file maps usernames
-     * to password specs followed by an optional comma separated list of role
-     * names.
+     * Load realm users from properties file. The property file maps usernames to password specs followed by an optional comma separated list of role names.
      * 
-     * @param config Filename or url of user properties file.
+     * @param config
+     *            Filename or url of user properties file.
      */
     public void setConfig(String config)
     {
@@ -129,30 +124,31 @@ public class HashLoginService extends MappedLoginService
     {
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void loadUsers() throws IOException
     {
-        if (_config==null)
+        if (_config == null)
             return;
         _configResource = Resource.newResource(_config);
         
         if (LOG.isDebugEnabled()) LOG.debug("Load " + this + " from " + _config);
+
         Properties properties = new Properties();
         properties.load(_configResource.getInputStream());
         Set<String> known = new HashSet<String>();
 
         for (Map.Entry<Object, Object> entry : properties.entrySet())
         {
-            String username = ((String) entry.getKey()).trim();
-            String credentials = ((String) entry.getValue()).trim();
+            String username = ((String)entry.getKey()).trim();
+            String credentials = ((String)entry.getValue()).trim();
             String roles = null;
             int c = credentials.indexOf(',');
             if (c > 0)
             {
                 roles = credentials.substring(c + 1).trim();
-                credentials = credentials.substring(0, c).trim();
+                credentials = credentials.substring(0,c).trim();
             }
 
             if (username != null && username.length() > 0 && credentials != null && credentials.length() > 0)
@@ -164,16 +160,15 @@ public class HashLoginService extends MappedLoginService
                 putUser(username,Credential.getCredential(credentials),roleArray);
             }
         }
-        
+
         Iterator<String> users = _users.keySet().iterator();
-        while(users.hasNext())
+        while (users.hasNext())
         {
-            String user=users.next();
+            String user = users.next();
             if (!known.contains(user))
                 users.remove();
         }
     }
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -182,7 +177,7 @@ public class HashLoginService extends MappedLoginService
     protected void doStart() throws Exception
     {
         super.doStart();
-        
+
         if (getRefreshInterval() > 0)
         {
             _scanner = new Scanner();
@@ -194,10 +189,11 @@ public class HashLoginService extends MappedLoginService
             {
                 public boolean accept(File dir, String name)
                 {
-                    File f = new File(dir, name);
+                    File f = new File(dir,name);
                     try
                     {
-                        if (f.compareTo(_configResource.getFile()) == 0) return true;
+                        if (f.compareTo(_configResource.getFile()) == 0)
+                            return true;
                     }
                     catch (IOException e)
                     {
@@ -212,8 +208,10 @@ public class HashLoginService extends MappedLoginService
             {
                 public void filesChanged(List<String> filenames) throws Exception
                 {
-                    if (filenames == null) return;
-                    if (filenames.isEmpty()) return;
+                    if (filenames == null)
+                        return;
+                    if (filenames.isEmpty())
+                        return;
                     if (filenames.size() == 1)
                     {
                         Resource r = Resource.newResource(filenames.get(0));
@@ -241,9 +239,9 @@ public class HashLoginService extends MappedLoginService
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_scanner != null) _scanner.stop();
+        if (_scanner != null)
+            _scanner.stop();
         _scanner = null;
     }
-
 
 }
