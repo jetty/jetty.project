@@ -84,7 +84,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/");
+        exchange.setRequestURI("/");
 
         getHttpClient().send(exchange);
         // Cancelling here is wrong and makes the test fail spuriously
@@ -122,7 +122,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/");
+        exchange.setRequestURI("/");
 
         getHttpClient().send(exchange);
         // Cancelling here is wrong and makes the test fail spuriously
@@ -152,7 +152,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/");
+        exchange.setRequestURI("/");
 
         getHttpClient().send(exchange);
 
@@ -177,7 +177,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/");
+        exchange.setRequestURI("/");
 
         getHttpClient().send(exchange);
 
@@ -202,7 +202,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/");
+        exchange.setRequestURI("/");
 
         getHttpClient().send(exchange);
 
@@ -227,7 +227,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/");
+        exchange.setRequestURI("/");
 
         getHttpClient().send(exchange);
 
@@ -252,7 +252,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/");
+        exchange.setRequestURI("/");
 
         getHttpClient().send(exchange);
 
@@ -277,7 +277,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/?action=body");
+        exchange.setRequestURI("/?action=body");
 
         getHttpClient().send(exchange);
 
@@ -302,7 +302,7 @@ public abstract class AbstractHttpExchangeCancelTest
             }
         };
         exchange.setAddress(newAddress());
-        exchange.setURI("/");
+        exchange.setRequestURI("/");
 
         getHttpClient().send(exchange);
 
@@ -322,7 +322,7 @@ public abstract class AbstractHttpExchangeCancelTest
             ((StdErrLog)Log.getLog()).setHideStacks(!Log.isDebugEnabled());
             TestHttpExchange exchange = new TestHttpExchange();
             exchange.setAddress(newAddress());
-            exchange.setURI("/?action=throw");
+            exchange.setRequestURI("/?action=throw");
 
             getHttpClient().send(exchange);
 
@@ -349,7 +349,7 @@ public abstract class AbstractHttpExchangeCancelTest
 
         TestHttpExchange exchange = new TestHttpExchange();
         exchange.setAddress(newAddress());
-        exchange.setURI("/?action=wait5000");
+        exchange.setRequestURI("/?action=wait5000");
 
         long start = System.currentTimeMillis();
         httpClient.send(exchange);

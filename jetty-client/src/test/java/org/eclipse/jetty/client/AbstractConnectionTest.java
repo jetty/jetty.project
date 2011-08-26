@@ -53,7 +53,7 @@ public abstract class AbstractConnectionTest
             CountDownLatch latch = new CountDownLatch(1);
             HttpExchange exchange = new ConnectionExchange(latch);
             exchange.setAddress(new Address("localhost", port));
-            exchange.setURI("/");
+            exchange.setRequestURI("/");
             httpClient.send(exchange);
 
             Socket remote = serverSocket.accept();
@@ -109,7 +109,7 @@ public abstract class AbstractConnectionTest
             CountDownLatch latch = new CountDownLatch(1);
             HttpExchange exchange = new ConnectionExchange(latch);
             exchange.setAddress(new Address("localhost", port));
-            exchange.setURI("/");
+            exchange.setRequestURI("/");
             httpClient.send(exchange);
 
             boolean passed = latch.await(4000, TimeUnit.MILLISECONDS);
@@ -158,7 +158,7 @@ public abstract class AbstractConnectionTest
                     }
                 };
                 exchange.setAddress(new Address("localhost", port));
-                exchange.setURI("/");
+                exchange.setRequestURI("/");
                 exchanges[i] = exchange;
             }
 
@@ -189,7 +189,7 @@ public abstract class AbstractConnectionTest
             HttpExchange exchange = new ConnectionExchange(latch);
             // Using a IP address has a different behavior than using a host name
             exchange.setAddress(new Address("127.0.0.1", 1));
-            exchange.setURI("/");
+            exchange.setRequestURI("/");
             httpClient.send(exchange);
 
             boolean passed = latch.await(connectTimeout * 2L, TimeUnit.MILLISECONDS);
@@ -218,7 +218,7 @@ public abstract class AbstractConnectionTest
         {
             HttpExchange exchange = new ConnectionExchange();
             exchange.setAddress(new Address("localhost", port));
-            exchange.setURI("/");
+            exchange.setRequestURI("/");
             HttpDestination dest = httpClient.getDestination(new Address("localhost", port),false);
 
             httpClient.send(exchange);
@@ -236,7 +236,7 @@ public abstract class AbstractConnectionTest
 
             exchange = new ConnectionExchange();
             exchange.setAddress(new Address("localhost", port));
-            exchange.setURI("/");
+            exchange.setRequestURI("/");
 
             httpClient.send(exchange);
             s.getInputStream().read(buf);
