@@ -20,7 +20,7 @@ public class WebSocketGeneratorD12Test
     byte[] _mask = new byte[4];
     int _m;
     
-    public WebSocketGeneratorD12.MaskGen _maskGen = new WebSocketGeneratorD12.FixedMaskGen(
+    public MaskGen _maskGen = new FixedMaskGen(
             new byte[]{(byte)0x00,(byte)0x00,(byte)0x0f,(byte)0xff});
 
     @Before
