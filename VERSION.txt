@@ -1,4 +1,5 @@
 jetty-7.5.0-SNAPSHOT
+ + 353624 HttpURI accepts java.net.URI object in constructor
  + 354080 ServletContextHandler allows to replace any subordinate handler when restarted
 
 jetty-7.5.0.RC1 - 19 August 2011
