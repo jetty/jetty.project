@@ -1,12 +1,10 @@
 package org.eclipse.jetty.websocket;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ProtocolException;
 import java.net.URI;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Map;
@@ -19,24 +17,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.SimpleBuffers;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager;
-import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.websocket.WebSocketGeneratorD12.MaskGen;
 
 
 /* ------------------------------------------------------------ */
@@ -44,8 +26,9 @@ import org.eclipse.jetty.websocket.WebSocketGeneratorD12.MaskGen;
  * <p>This WebSocket Client class can create multiple websocket connections to multiple destinations.
  * It uses the same {@link WebSocket} endpoint API as the server.
  * Simple usage is as follows: <pre>
- *   WebSocketClient client = new WebSocketClient();
- *   client.setMaxIdleTime(500);
+ *   WebSocketClientFactory factory = new WebSocketClientFactory();
+ *   factory.start();
+ *   WebSocketClient client = factory.newClient();
  *   client.start();
  *
  *   WebSocket.Connection connection =  client.open(new URI("ws://127.0.0.1:8080/"),new WebSocket.OnTextMessage()
@@ -69,84 +52,38 @@ import org.eclipse.jetty.websocket.WebSocketGeneratorD12.MaskGen;
  *   connection.sendMessage("Hello World");
  * </pre>
  */
-public class WebSocketClient extends AggregateLifeCycle
+public class WebSocketClient
 {
     private final static Logger __log = org.eclipse.jetty.util.log.Log.getLogger(WebSocketClient.class.getName());
-    private final static Random __random = new Random();
-    private final static ByteArrayBuffer __ACCEPT = new ByteArrayBuffer.CaseInsensitive("Sec-WebSocket-Accept");
 
-    private final WebSocketClient _root;
-    private final WebSocketClient _parent;
-    private final ThreadPool _threadPool;
-    private final WebSocketClientSelector _selector;
-
+    private final WebSocketClientFactory _factory;
     private final Map<String,String> _cookies=new ConcurrentHashMap<String, String>();
     private final List<String> _extensions=new CopyOnWriteArrayList<String>();
-
-    private int _bufferSize=64*1024;
     private String _origin;
     private String _protocol;
     private int _maxIdleTime=-1;
-
-    private WebSocketBuffers _buffers;
-    private boolean _maskingEnabled = true;
+    private MaskGen _maskGen;
 
 
     /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client with default configuration.
+    /** Create a WebSocket Client with private factory.
+     * <p>Creates a WebSocketClient from a private WebSocketClientFactory.  This can be wasteful of resources if many clients are created.
      */
-    public WebSocketClient()
+    public WebSocketClient() throws Exception
     {
-        this(new QueuedThreadPool());
+        _factory=new WebSocketClientFactory();
+        _factory.start();
+        _maskGen=_factory.getMaskGen();
     }
 
     /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client with shared threadpool.
+    /** Create a WebSocket Client with shared factory.
      * @param threadpool
      */
-    public WebSocketClient(ThreadPool threadpool)
+    public WebSocketClient(WebSocketClientFactory factory)
     {
-        _root=this;
-        _parent=null;
-        _threadPool=threadpool;
-        _selector=new WebSocketClientSelector();
-        addBean(_selector);
-        addBean(_threadPool);
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client from another.
-     * <p>If multiple clients are required so that connections created may have different
-     * configurations, then it is more efficient to create a client based on another, so
-     * that the thread pool and IO infrastructure may be shared.
-     */
-    public WebSocketClient(WebSocketClient parent)
-    {
-        _root=parent._root;
-        _parent=parent;
-        _threadPool=parent._threadPool;
-        _selector=parent._selector;
-        _parent.addBean(this);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Get the selectorManager. Used to configure the manager.
-     * @return The {@link SelectorManager} instance.
-     */
-    public SelectorManager getSelectorManager()
-    {
-        return _selector;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the ThreadPool.
-     * <p>Used to set/query the thread pool configuration.
-     * @return The {@link ThreadPool}
-     */
-    public ThreadPool getThreadPool()
-    {
-        return _threadPool;
+        _factory=factory;
+        _maskGen=_factory.getMaskGen();
     }
 
     /* ------------------------------------------------------------ */
@@ -165,26 +102,6 @@ public class WebSocketClient extends AggregateLifeCycle
     public void setMaxIdleTime(int maxIdleTime)
     {
         _maxIdleTime=maxIdleTime;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the WebSocket Buffer size for connections opened by this client.
-     * @return the buffer size in bytes.
-     */
-    public int getBufferSize()
-    {
-        return _bufferSize;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the WebSocket Buffer size for connections opened by this client.
-     * @param bufferSize the buffer size in bytes.
-     */
-    public void setBufferSize(int bufferSize)
-    {
-        if (isRunning())
-            throw new IllegalStateException(getState());
-        _bufferSize = bufferSize;
     }
 
     /* ------------------------------------------------------------ */
@@ -235,23 +152,16 @@ public class WebSocketClient extends AggregateLifeCycle
         return _extensions;
     }
 
-
     /* ------------------------------------------------------------ */
-    /**
-     * @return whether masking is enabled.
-     */
-    public boolean isMaskingEnabled()
+    public MaskGen getMaskGen()
     {
-        return _maskingEnabled;
+        return _maskGen;
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param maskingEnabled whether to enable masking
-     */
-    public void setMaskingEnabled(boolean maskingEnabled)
+    public void setMaskGen(MaskGen maskGen)
     {
-        _maskingEnabled=maskingEnabled;
+        _maskGen = maskGen;
     }
 
     /* ------------------------------------------------------------ */
@@ -297,8 +207,8 @@ public class WebSocketClient extends AggregateLifeCycle
      */
     public Future<WebSocket.Connection> open(URI uri, WebSocket websocket) throws IOException
     {
-        if (!isStarted())
-            throw new IllegalStateException("!started");
+        if (!_factory.isStarted())
+            throw new IllegalStateException("Factory !started");
         String scheme=uri.getScheme();
         if (!("ws".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme)))
             throw new IllegalArgumentException("Bad WebSocket scheme '"+scheme+"'");
@@ -309,293 +219,32 @@ public class WebSocketClient extends AggregateLifeCycle
         channel.socket().setTcpNoDelay(true);
         int maxIdleTime = getMaxIdleTime();
         if (maxIdleTime<0)
-            maxIdleTime=(int)_selector.getMaxIdleTime();
+            maxIdleTime=(int)_factory.getSelectorManager().getMaxIdleTime();
         if (maxIdleTime>0)
             channel.socket().setSoTimeout(maxIdleTime);
 
         InetSocketAddress address=new InetSocketAddress(uri.getHost(),uri.getPort());
 
-        final WebSocketFuture holder=new WebSocketFuture(websocket,uri,_protocol,maxIdleTime,_cookies,_extensions,channel);
+        final WebSocketFuture holder=new WebSocketFuture(websocket,uri,_protocol,_origin,_maskGen,maxIdleTime,_cookies,_extensions,channel);
 
         channel.configureBlocking(false);
         channel.connect(address);
-        _selector.register( channel, holder);
+        _factory.getSelectorManager().register( channel, holder);
 
         return holder;
-    }
-
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (_parent!=null && !_parent.isRunning())
-            throw new IllegalStateException("parent:"+getState());
-
-        _buffers = new WebSocketBuffers(_bufferSize);
-
-        super.doStart();
-
-        // Start a selector and timer if this is the root client
-        if (_parent==null)
-        {
-            for (int i=0;i<_selector.getSelectSets();i++)
-            {
-                final int id=i;
-                _threadPool.dispatch(new Runnable()
-                {
-                    public void run()
-                    {
-                        while(isRunning())
-                        {
-                            try
-                            {
-                                _selector.doSelect(id);
-                            }
-                            catch (IOException e)
-                            {
-                                __log.warn(e);
-                            }
-                        }
-                    }
-                });
-            }
-        }
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /** WebSocket Client Selector Manager
-     */
-    class WebSocketClientSelector extends SelectorManager
-    {
-        @Override
-        public boolean dispatch(Runnable task)
-        {
-            return _threadPool.dispatch(task);
-        }
-
-        @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, final SelectionKey sKey) throws IOException
-        {
-            return new SelectChannelEndPoint(channel,selectSet,sKey);
-        }
-
-        @Override
-        protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
-        {
-            WebSocketFuture holder = (WebSocketFuture) endpoint.getSelectionKey().attachment();
-            return new HandshakeConnection(endpoint,holder);
-        }
-
-        @Override
-        protected void endPointOpened(SelectChannelEndPoint endpoint)
-        {
-            // TODO expose on outer class
-        }
-
-        @Override
-        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
-        {
-            throw new IllegalStateException();
-        }
-
-        @Override
-        protected void endPointClosed(SelectChannelEndPoint endpoint)
-        {
-            endpoint.getConnection().closed();
-        }
-
-        @Override
-        protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
-        {
-            if (!(attachment instanceof WebSocketFuture))
-                super.connectionFailed(channel,ex,attachment);
-            else
-            {
-                __log.debug(ex);
-                WebSocketFuture holder = (WebSocketFuture)attachment;
-
-                holder.handshakeFailed(ex);
-            }
-        }
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /** Handshake Connection.
-     * Handles the connection until the handshake succeeds or fails.
-     */
-    class HandshakeConnection extends AbstractConnection
-    {
-        private final SelectChannelEndPoint _endp;
-        private final WebSocketFuture _holder;
-        private final String _key;
-        private final HttpParser _parser;
-        private String _accept;
-        private String _error;
-
-
-        public HandshakeConnection(SelectChannelEndPoint endpoint, WebSocketFuture holder)
-        {
-            super(endpoint,System.currentTimeMillis());
-            _endp=endpoint;
-            _holder=holder;
-
-            byte[] bytes=new byte[16];
-            __random.nextBytes(bytes);
-            _key=new String(B64Code.encode(bytes));
-
-            Buffers buffers = new SimpleBuffers(_buffers.getBuffer(),null);
-            _parser=new HttpParser(buffers,_endp,
-
-            new HttpParser.EventHandler()
-            {
-                @Override
-                public void startResponse(Buffer version, int status, Buffer reason) throws IOException
-                {
-                    if (status!=101)
-                    {
-                        _error="Bad response status "+status+" "+reason;
-                        _endp.close();
-                    }
-                }
-
-                @Override
-                public void parsedHeader(Buffer name, Buffer value) throws IOException
-                {
-                    if (__ACCEPT.equals(name))
-                        _accept=value.toString();
-                }
-
-                @Override
-                public void startRequest(Buffer method, Buffer url, Buffer version) throws IOException
-                {
-                    if (_error==null)
-                        _error="Bad response: "+method+" "+url+" "+version;
-                    _endp.close();
-                }
-
-                @Override
-                public void content(Buffer ref) throws IOException
-                {
-                    if (_error==null)
-                        _error="Bad response. "+ref.length()+"B of content?";
-                    _endp.close();
-                }
-            });
-
-            String path=_holder.getURI().getPath();
-            if (path==null || path.length()==0)
-                path="/";
-
-            String request=
-                "GET "+path+" HTTP/1.1\r\n"+
-                "Host: "+holder.getURI().getHost()+":"+_holder.getURI().getPort()+"\r\n"+
-                "Upgrade: websocket\r\n"+
-                "Connection: Upgrade\r\n"+
-                "Sec-WebSocket-Key: "+_key+"\r\n"+
-                (_origin==null?"":"Origin: "+_origin+"\r\n")+
-                "Sec-WebSocket-Version: "+WebSocketConnectionD12.VERSION+"\r\n";
-
-            if (holder.getProtocol()!=null)
-                request+="Sec-WebSocket-Protocol: "+holder.getProtocol()+"\r\n";
-
-            if (holder.getCookies()!=null && holder.getCookies().size()>0)
-            {
-                for (String cookie : holder.getCookies().keySet())
-                    request+="Cookie: "+QuotedStringTokenizer.quoteIfNeeded(cookie,HttpFields.__COOKIE_DELIM)+
-                    "="+
-                    QuotedStringTokenizer.quoteIfNeeded(holder.getCookies().get(cookie),HttpFields.__COOKIE_DELIM)+
-                    "\r\n";
-            }
-
-            request+="\r\n";
-
-            // TODO extensions
-
-            try
-            {
-                Buffer handshake = new ByteArrayBuffer(request,false);
-                int len=handshake.length();
-                if (len!=_endp.flush(handshake))
-                    throw new IOException("incomplete");
-            }
-            catch(IOException e)
-            {
-                holder.handshakeFailed(e);
-            }
-
-        }
-
-        public Connection handle() throws IOException
-        {
-            while (_endp.isOpen() && !_parser.isComplete())
-            {
-                switch (_parser.parseAvailable())
-                {
-                    case -1:
-                        _holder.handshakeFailed(new IOException("Incomplete handshake response"));
-                        return this;
-                    case 0:
-                        return this;
-                    default:
-                        break;
-                }
-            }
-            if (_error==null)
-            {
-                if (_accept==null)
-                    _error="No Sec-WebSocket-Accept";
-                else if (!WebSocketConnectionD12.hashKey(_key).equals(_accept))
-                    _error="Bad Sec-WebSocket-Accept";
-                else
-                {
-                    Buffer header=_parser.getHeaderBuffer();
-                    MaskGen maskGen=_maskingEnabled?new WebSocketGeneratorD12.RandomMaskGen():new WebSocketGeneratorD12.NullMaskGen();
-                    WebSocketConnectionD12 connection = new WebSocketConnectionD12(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10,maskGen);
-
-                    if (header.hasContent())
-                        connection.fillBuffersFrom(header);
-                    _buffers.returnBuffer(header);
-
-                    _holder.onConnection(connection);
-
-                    return connection;
-                }
-            }
-
-            _endp.close();
-            return this;
-        }
-
-        public boolean isIdle()
-        {
-            return false;
-        }
-
-        public boolean isSuspended()
-        {
-            return false;
-        }
-
-        public void closed()
-        {
-            if (_error!=null)
-                _holder.handshakeFailed(new ProtocolException(_error));
-            else
-                _holder.handshakeFailed(new EOFException());
-        }
     }
 
 
     /* ------------------------------------------------------------ */
     /** The Future Websocket Connection.
      */
-    class WebSocketFuture implements Future<WebSocket.Connection>
+    static class WebSocketFuture implements Future<WebSocket.Connection>
     {
         final WebSocket _websocket;;
         final URI _uri;
         final String _protocol;
+        final String _origin;
+        final MaskGen _maskGen;
         final int _maxIdleTime;
         final Map<String,String> _cookies;
         final List<String> _extensions;
@@ -605,11 +254,13 @@ public class WebSocketClient extends AggregateLifeCycle
         WebSocketConnection _connection;
         Throwable _exception;
 
-        public WebSocketFuture(WebSocket websocket, URI uri, String protocol, int maxIdleTime, Map<String,String> cookies,List<String> extensions, ByteChannel channel)
+        private WebSocketFuture(WebSocket websocket, URI uri, String protocol, String origin, MaskGen maskGen, int maxIdleTime, Map<String,String> cookies,List<String> extensions, ByteChannel channel)
         {
             _websocket=websocket;
             _uri=uri;
             _protocol=protocol;
+            _origin=origin;
+            _maskGen=maskGen;
             _maxIdleTime=maxIdleTime;
             _cookies=cookies;
             _extensions=extensions;
@@ -695,6 +346,16 @@ public class WebSocketClient extends AggregateLifeCycle
             return _maxIdleTime;
         }
 
+        public String getOrigin()
+        {
+            return _origin;
+        }
+
+        public MaskGen getMaskGen()
+        {
+            return _maskGen;
+        }
+        
         public String toString()
         {
             return "[" + _uri + ","+_websocket+"]@"+hashCode();
@@ -804,6 +465,6 @@ public class WebSocketClient extends AggregateLifeCycle
                 __log.debug(e);
             }
         }
-    }
 
+    }
 }

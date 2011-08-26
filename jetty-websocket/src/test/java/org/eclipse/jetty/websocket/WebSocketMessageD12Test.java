@@ -861,7 +861,7 @@ public class WebSocketMessageD12Test
         final AtomicReference<String> received = new AtomicReference<String>();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
 
-        WebSocketGeneratorD12.MaskGen maskGen = new WebSocketGeneratorD12.RandomMaskGen();
+        MaskGen maskGen = new RandomMaskGen();
         
         WebSocketGeneratorD12 gen = new WebSocketGeneratorD12(new WebSocketBuffers(8096),endp,maskGen);
         byte[] data = message.getBytes(StringUtil.__UTF8);

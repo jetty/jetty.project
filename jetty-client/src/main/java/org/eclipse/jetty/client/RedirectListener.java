@@ -112,7 +112,7 @@ public class RedirectListener extends HttpEventListenerWrapper
                 if (_location.indexOf("://")>0)
                     _exchange.setURL(_location);
                 else
-                    _exchange.setURI(_location);
+                    _exchange.setRequestURI(_location);
 
                 // destination may have changed
                 HttpDestination destination=_destination.getHttpClient().getDestination(_exchange.getAddress(),HttpSchemes.HTTPS.equals(String.valueOf(_exchange.getScheme())));

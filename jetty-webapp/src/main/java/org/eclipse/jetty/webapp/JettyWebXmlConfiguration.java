@@ -79,15 +79,29 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 try
                 {
                     context.setServerClasses(null);
-                    if(LOG.isDebugEnabled())
+                    if(LOG.isDebugEnabled()) {
                         LOG.debug("Configure: "+jetty);
+                    }
+                    
                     XmlConfiguration jetty_config = (XmlConfiguration)context.getAttribute(XML_CONFIGURATION);
+                    
                     if (jetty_config==null)
+                    {
                         jetty_config=new XmlConfiguration(jetty.getURL());
+                    }
                     else
+                    {
                         context.removeAttribute(XML_CONFIGURATION);
+                    }
                     setupXmlConfiguration(context,jetty_config, web_inf);
-                    jetty_config.configure(context);
+                    try
+                    {
+                        jetty_config.configure(context);
+                    }
+                    catch (ClassNotFoundException e)
+                    {
+                        LOG.warn("Unable to process jetty-web.xml", e);
+                    }
                 }
                 finally
                 {
@@ -118,5 +132,4 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     	Map<String,String> props = jetty_config.getProperties();
     	props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
     }
-    
 }

@@ -678,7 +678,7 @@ public class HttpDestination implements Dumpable
             setMethod(HttpMethods.CONNECT);
             setVersion(exchange.getVersion());
             String serverHostAndPort = serverAddress.toString();
-            setURI(serverHostAndPort);
+            setRequestURI(serverHostAndPort);
             addRequestHeader(HttpHeaders.HOST, serverHostAndPort);
             addRequestHeader(HttpHeaders.PROXY_CONNECTION, "keep-alive");
             addRequestHeader(HttpHeaders.USER_AGENT, "Jetty-Client");

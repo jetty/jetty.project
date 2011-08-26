@@ -256,7 +256,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         propfindExchange.setScheme( _exchange.getScheme() );
         propfindExchange.setEventListener( new SecurityListener( _destination, propfindExchange ) );
         propfindExchange.setConfigureListeners( false );
-        propfindExchange.setURI( uri );
+        propfindExchange.setRequestURI( uri );
 
         _destination.send( propfindExchange );
 
@@ -281,7 +281,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         mkcolExchange.setScheme( _exchange.getScheme() );
         mkcolExchange.setEventListener( new SecurityListener( _destination, mkcolExchange ) );
         mkcolExchange.setConfigureListeners( false );
-        mkcolExchange.setURI( uri );
+        mkcolExchange.setRequestURI( uri );
 
         _destination.send( mkcolExchange );
 
@@ -307,7 +307,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         supportedExchange.setScheme( _exchange.getScheme() );
         supportedExchange.setEventListener( new SecurityListener( _destination, supportedExchange ) );
         supportedExchange.setConfigureListeners( false );
-        supportedExchange.setURI( _exchange.getURI() );
+        supportedExchange.setRequestURI( _exchange.getURI() );
 
         _destination.send( supportedExchange );
 

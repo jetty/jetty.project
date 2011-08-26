@@ -27,28 +27,32 @@ import org.junit.Test;
 
 public class WebSocketClientTest
 {
+    private WebSocketClientFactory _factory = new WebSocketClientFactory();
     private ServerSocket _server;
     private int _serverPort;
     
     @Before
-    public void startServer() throws IOException {
+    public void startServer() throws Exception 
+    {
         _server = new ServerSocket();
         _server.bind(null);
         _serverPort = _server.getLocalPort();
+        _factory.start();
     }
     
     @After
-    public void stopServer() throws IOException {
+    public void stopServer() throws Exception 
+    {
         if(_server != null) {
             _server.close();
         }
+        _factory.stop();
     }
     
     @Test
     public void testBadURL() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
+        WebSocketClient client = new WebSocketClient(_factory);
 
         boolean bad=false;
         final AtomicBoolean open = new AtomicBoolean();
@@ -79,8 +83,7 @@ public class WebSocketClientTest
     @Test
     public void testAsyncConnectionRefused() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
+        WebSocketClient client = new WebSocketClient(_factory);
 
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
@@ -120,8 +123,7 @@ public class WebSocketClientTest
     @Test
     public void testConnectionNotAccepted() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
+        WebSocketClient client = new WebSocketClient(_factory);
 
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
@@ -159,8 +161,7 @@ public class WebSocketClientTest
     @Test
     public void testConnectionTimeout() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
+        WebSocketClient client = new WebSocketClient(_factory);
 
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
@@ -200,8 +201,7 @@ public class WebSocketClientTest
     @Test
     public void testBadHandshake() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
+        WebSocketClient client = new WebSocketClient(_factory);
 
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
@@ -242,8 +242,7 @@ public class WebSocketClientTest
     @Test
     public void testBadUpgrade() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
+        WebSocketClient client = new WebSocketClient(_factory);
 
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
@@ -285,8 +284,7 @@ public class WebSocketClientTest
     @Test
     public void testUpgradeThenTCPClose() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
-        client.start();
+        WebSocketClient client = new WebSocketClient(_factory);
 
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
@@ -323,9 +321,8 @@ public class WebSocketClientTest
     @Test
     public void testIdle() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
+        WebSocketClient client = new WebSocketClient(_factory);
         client.setMaxIdleTime(500);
-        client.start();
 
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
@@ -362,9 +359,8 @@ public class WebSocketClientTest
     @Test
     public void testNotIdle() throws Exception
     {
-        WebSocketClient client = new WebSocketClient();
+        WebSocketClient client = new WebSocketClient(_factory);
         client.setMaxIdleTime(500);
-        client.start();
 
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();

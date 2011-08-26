@@ -167,7 +167,7 @@ public class WebSocketLoadD12Test
             this.iterations = iterations;
             
             _endp=new SocketEndPoint(socket);
-            _generator = new WebSocketGeneratorD12(new WebSocketBuffers(32*1024),_endp,new WebSocketGeneratorD12.FixedMaskGen());
+            _generator = new WebSocketGeneratorD12(new WebSocketBuffers(32*1024),_endp,new FixedMaskGen());
             _parser = new WebSocketParserD12(new WebSocketBuffers(32*1024),_endp,_handler,false);
             
         }

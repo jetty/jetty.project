@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class TestClient implements WebSocket.OnFrame
 {
-    private static WebSocketClient __client = new WebSocketClient();
+    private static WebSocketClientFactory __clientFactory = new WebSocketClientFactory();
     private static boolean _verbose=false;
 
     private static final Random __random = new Random();
@@ -119,7 +119,7 @@ public class TestClient implements WebSocket.OnFrame
 
     private void open() throws Exception
     {
-        WebSocketClient client = new WebSocketClient(__client);
+        WebSocketClient client = new WebSocketClient(__clientFactory);
         client.setProtocol(_protocol);
         client.setMaxIdleTime(_timeout);
         client.open(new URI("ws://"+_host+":"+_port+"/"),this).get(10,TimeUnit.SECONDS);
@@ -179,7 +179,7 @@ public class TestClient implements WebSocket.OnFrame
     
     public static void main(String[] args) throws Exception
     {
-        __client.start();
+        __clientFactory.start();
 
         String host="localhost";
         int port=8080;
@@ -277,7 +277,7 @@ public class TestClient implements WebSocket.OnFrame
                     "time "+duration+"ms "+ (1000L*__messagesReceived.get()/duration)+" req/s");
             System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",__minDuration.get()/1000000.0,__messagesReceived.get()==0?0.0:(__totalTime.get()/__messagesReceived.get()/1000000.0),__maxDuration.get()/1000000.0);
             
-            __client.stop();
+            __clientFactory.stop();
         }
 
     }

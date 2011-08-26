@@ -38,7 +38,6 @@ import org.eclipse.jetty.websocket.WebSocket.OnBinaryMessage;
 import org.eclipse.jetty.websocket.WebSocket.OnControl;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
 import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
-import org.eclipse.jetty.websocket.WebSocketGeneratorD12.MaskGen;
 
 public class WebSocketConnectionD12 extends AbstractConnection implements WebSocketConnection
 {

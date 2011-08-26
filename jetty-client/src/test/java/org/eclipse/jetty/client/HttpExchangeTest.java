@@ -16,12 +16,15 @@ package org.eclipse.jetty.client;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,8 +35,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.security.ProxyAuthorization;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
@@ -61,7 +66,7 @@ public class HttpExchangeTest
     private static final Logger LOG = Log.getLogger(HttpExchangeTest.class);
 
     protected int _maxConnectionsPerAddress = 2;
-    protected String _scheme = "http://";
+    protected String _scheme = "http";
     protected Server _server;
     protected int _port;
     protected HttpClient _httpClient;
@@ -236,7 +241,7 @@ public class HttpExchangeTest
                 }
             };
 
-            httpExchange[n].setURL(_scheme+"localhost:"+_port+"/"+n);
+            httpExchange[n].setURL(_scheme+"://localhost:"+_port+"/"+n);
             httpExchange[n].addRequestHeader("arbitrary","value");
             if (close)
                 httpExchange[n].setRequestHeader("Connection","close");
@@ -264,8 +269,7 @@ public class HttpExchangeTest
         for (int i=0;i<20;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
-            //httpExchange.setURL(_scheme+"localhost:"+_port+"/");
-            httpExchange.setURL(_scheme+"localhost:"+_port);
+            httpExchange.setURI(new URI(_scheme, null, "localhost", _port, null, null, null));
             httpExchange.setMethod(HttpMethods.POST);
             httpExchange.setRequestContent(new ByteArrayBuffer("<hello />"));
             _httpClient.send(httpExchange);
@@ -284,7 +288,7 @@ public class HttpExchangeTest
         for (int i=0;i<10;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
-            httpExchange.setURL(_scheme+"localhost:"+_port+"/?i="+i);
+            httpExchange.setURI(new URI(_scheme, null, "localhost", _port, "/", "i="+i, null));
             httpExchange.setMethod(HttpMethods.GET);
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
@@ -304,7 +308,7 @@ public class HttpExchangeTest
         for (int i=0;i<10;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
-            httpExchange.setURL(_scheme+"localhost:"+_port+"/?i="+i);
+            httpExchange.setURL(_scheme+"://localhost:"+_port+"/?i="+i);
             httpExchange.setMethod(HttpMethods.GET);
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
@@ -351,7 +355,7 @@ public class HttpExchangeTest
                 throwable.set(x);
             }
         };
-        httpExchange.setURL(_scheme+"localhost:"+_port+"/");
+        httpExchange.setURL(_scheme+"://localhost:"+_port+"/");
         httpExchange.setMethod("SLEEP");
         _httpClient.send(httpExchange);
         new Thread()
@@ -390,7 +394,7 @@ public class HttpExchangeTest
             niobuf.put(bytes);
         }
         
-        httpExchange.setURL(_scheme+"localhost:"+_port+"/");
+        httpExchange.setURL(_scheme+"://localhost:"+_port+"/");
         httpExchange.setMethod(HttpMethods.POST);
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(babuf);
@@ -403,7 +407,7 @@ public class HttpExchangeTest
         assertEquals(babuf.length(),result.length());
 
         httpExchange.reset();
-        httpExchange.setURL(_scheme+"localhost:"+_port+"/");
+        httpExchange.setURL(_scheme+"://localhost:"+_port+"/");
         httpExchange.setMethod(HttpMethods.POST);
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(niobuf);
@@ -422,8 +426,7 @@ public class HttpExchangeTest
         {
             
         };
-        //httpExchange.setURL(_scheme+"localhost:"+_port+"/");
-        httpExchange.setURL(_scheme+"localhost:"+_port);
+        httpExchange.setURL(_scheme+"://localhost:"+_port);
         httpExchange.setMethod(HttpMethods.POST);
 
         final String data="012345678901234567890123456789012345678901234567890123456789";
@@ -481,7 +484,7 @@ public class HttpExchangeTest
     @Test
     public void testProxy() throws Exception
     {
-        if (_scheme.equals("https://"))
+        if (_scheme.equals("https"))
             return;
         try
         {
@@ -491,7 +494,7 @@ public class HttpExchangeTest
             ContentExchange httpExchange=new ContentExchange();
             httpExchange.setAddress(new Address("jetty.eclipse.org",8080));
             httpExchange.setMethod(HttpMethods.GET);
-            httpExchange.setURI("/jetty-6");
+            httpExchange.setRequestURI("/jetty-6");
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
             //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
@@ -512,14 +515,14 @@ public class HttpExchangeTest
     @Test
     public void testReserveConnections () throws Exception
     {
-       final HttpDestination destination = _httpClient.getDestination (new Address("localhost", _port), _scheme.equalsIgnoreCase("https://"));
+       final HttpDestination destination = _httpClient.getDestination (new Address("localhost", _port), _scheme.equalsIgnoreCase("https"));
        final org.eclipse.jetty.client.HttpConnection[] connections = new org.eclipse.jetty.client.HttpConnection[_maxConnectionsPerAddress];
        for (int i=0; i < _maxConnectionsPerAddress; i++)
        {
            connections[i] = destination.reserveConnection(200);
            assertNotNull(connections[i]);
            HttpExchange ex = new ContentExchange();
-           ex.setURL(_scheme+"localhost:"+_port+"/?i="+i);
+           ex.setURL(_scheme+"://localhost:"+_port+"/?i="+i);
            ex.setMethod(HttpMethods.GET);
            connections[i].send(ex);
        }
@@ -535,6 +538,35 @@ public class HttpExchangeTest
        //reserving one should now work
        c = destination.reserveConnection(500);
        assertNotNull(c);
+    }
+    
+    @Test
+    public void testOptionsWithExchange() throws Exception
+    {
+        ContentExchange httpExchange = new ContentExchange(true);
+        httpExchange.setURL(_scheme+"://localhost:"+_port);
+        httpExchange.setRequestURI("*");
+        httpExchange.setMethod(HttpMethods.OPTIONS);
+        httpExchange.setRequestHeader("Connection","close");
+        _httpClient.send(httpExchange);
+        
+        int state = httpExchange.waitForDone();
+        assertEquals(HttpExchange.STATUS_COMPLETED, state);
+        assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
+        
+        HttpFields headers = httpExchange.getResponseFields();
+        assertTrue("Response contains Allow header", headers.containsKey("Allow"));
+        
+        String allow = headers.getStringField("Allow");
+        String expectedMethods[] =
+        { "GET", "HEAD", "POST", "PUT", "DELETE", "MOVE", "OPTIONS", "TRACE" };
+        for (String expectedMethod : expectedMethods)
+        {
+            assertThat(allow,containsString(expectedMethod));
+        }
+
+        assertTrue("Response contains Content-Length header", headers.containsKey("Content-Length"));
+        assertEquals("Content-Length header value", 0, headers.getLongField("Content-Length"));
     }
 
     /* ------------------------------------------------------------ */
@@ -602,6 +634,14 @@ public class HttpExchangeTest
                                 response.getOutputStream().flush();
                         }
                         response.getOutputStream().println("</hello>");
+                    }
+                    else if (request.getMethod().equalsIgnoreCase("OPTIONS"))
+                    {
+                        if ("*".equals(target))
+                        {
+                            response.setContentLength(0);
+                            response.setHeader("Allow","GET,HEAD,POST,PUT,DELETE,MOVE,OPTIONS,TRACE");
+                        }
                     }
                     else if (request.getMethod().equalsIgnoreCase("SLEEP"))
                     {
