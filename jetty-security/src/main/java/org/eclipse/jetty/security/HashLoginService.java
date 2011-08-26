@@ -13,21 +13,12 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 
 import org.eclipse.jetty.http.security.Credential;
+import org.eclipse.jetty.security.PropertyUserStore.UserListener;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.Scanner.BulkListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -49,10 +40,11 @@ import org.eclipse.jetty.util.resource.Resource;
  * 
  * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
  */
-public class HashLoginService extends MappedLoginService
+public class HashLoginService extends MappedLoginService implements UserListener
 {
     private static final Logger LOG = Log.getLogger(HashLoginService.class);
 
+    private PropertyUserStore _propertyUserStore;
     private String _config;
     private Resource _configResource;
     private Scanner _scanner;
@@ -129,45 +121,7 @@ public class HashLoginService extends MappedLoginService
     @Override
     public void loadUsers() throws IOException
     {
-        if (_config == null)
-            return;
-        _configResource = Resource.newResource(_config);
-        
-        if (LOG.isDebugEnabled()) LOG.debug("Load " + this + " from " + _config);
-
-        Properties properties = new Properties();
-        properties.load(_configResource.getInputStream());
-        Set<String> known = new HashSet<String>();
-
-        for (Map.Entry<Object, Object> entry : properties.entrySet())
-        {
-            String username = ((String)entry.getKey()).trim();
-            String credentials = ((String)entry.getValue()).trim();
-            String roles = null;
-            int c = credentials.indexOf(',');
-            if (c > 0)
-            {
-                roles = credentials.substring(c + 1).trim();
-                credentials = credentials.substring(0,c).trim();
-            }
-
-            if (username != null && username.length() > 0 && credentials != null && credentials.length() > 0)
-            {
-                String[] roleArray = IdentityService.NO_ROLES;
-                if (roles != null && roles.length() > 0)
-                    roleArray = roles.split(",");
-                known.add(username);
-                putUser(username,Credential.getCredential(credentials),roleArray);
-            }
-        }
-
-        Iterator<String> users = _users.keySet().iterator();
-        while (users.hasNext())
-        {
-            String user = users.next();
-            if (!known.contains(user))
-                users.remove();
-        }
+        // TODO: Consider refactoring MappedLoginService to not have to override with unused methods
     }
 
     /* ------------------------------------------------------------ */
@@ -177,58 +131,15 @@ public class HashLoginService extends MappedLoginService
     protected void doStart() throws Exception
     {
         super.doStart();
-
-        if (getRefreshInterval() > 0)
+        if (_propertyUserStore == null)
         {
-            _scanner = new Scanner();
-            _scanner.setScanInterval(getRefreshInterval());
-            List<File> dirList = new ArrayList<File>(1);
-            dirList.add(_configResource.getFile());
-            _scanner.setScanDirs(dirList);
-            _scanner.setFilenameFilter(new FilenameFilter()
-            {
-                public boolean accept(File dir, String name)
-                {
-                    File f = new File(dir,name);
-                    try
-                    {
-                        if (f.compareTo(_configResource.getFile()) == 0)
-                            return true;
-                    }
-                    catch (IOException e)
-                    {
-                        return false;
-                    }
-
-                    return false;
-                }
-
-            });
-            _scanner.addListener(new BulkListener()
-            {
-                public void filesChanged(List<String> filenames) throws Exception
-                {
-                    if (filenames == null)
-                        return;
-                    if (filenames.isEmpty())
-                        return;
-                    if (filenames.size() == 1)
-                    {
-                        Resource r = Resource.newResource(filenames.get(0));
-                        if (r.getFile().equals(_configResource.getFile()))
-                            loadUsers();
-                    }
-                }
-
-                public String toString()
-                {
-                    return "HashLoginService$Scanner";
-                }
-
-            });
-            _scanner.setReportExistingFilesOnStartup(false);
-            _scanner.setRecursive(false);
-            _scanner.start();
+            if(Log.isDebugEnabled())
+                Log.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " refreshInterval: " + _refreshInterval);
+            _propertyUserStore = new PropertyUserStore();
+            _propertyUserStore.setRefreshInterval(_refreshInterval);
+            _propertyUserStore.setConfig(_config);
+            _propertyUserStore.registerUserListener(this);
+            _propertyUserStore.start();
         }
     }
 
@@ -243,5 +154,20 @@ public class HashLoginService extends MappedLoginService
             _scanner.stop();
         _scanner = null;
     }
+    
+    /* ------------------------------------------------------------ */
+    public void update(String userName, Credential credential, String[] roleArray)
+    {
+        if (Log.isDebugEnabled())
+            Log.debug("update: " + userName + " Roles: " + roleArray.length);
+        putUser(userName,credential,roleArray);
+    }
 
+    /* ------------------------------------------------------------ */
+    public void remove(String userName)
+    {
+        if (Log.isDebugEnabled())
+            Log.debug("remove: " + userName);
+        removeUser(userName);
+    }
 }
