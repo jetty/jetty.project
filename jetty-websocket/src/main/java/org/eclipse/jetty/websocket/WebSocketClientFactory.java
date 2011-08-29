@@ -2,22 +2,10 @@ package org.eclipse.jetty.websocket;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.ProtocolException;
-import java.net.URI;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpParser;
@@ -39,9 +27,11 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 
 
 /* ------------------------------------------------------------ */
-/** WebSocket Client Factory.
- * The WebSocketClientFactory contains the common mechanisms for multiple WebSocketClient instances (eg threadpool, NIO selector).
- * WebSocketClients with different configurations should share the same factory to avoid wasted resources.
+/**
+ * <p>WebSocketClientFactory contains the common components needed by multiple {@link WebSocketClient} instances
+ * (for example, a {@link ThreadPool}, a {@link SelectorManager NIO selector}, etc).</p>
+ * <p>WebSocketClients with different configurations should share the same factory to avoid to waste resources.</p>
+ *
  * @see WebSocketClient
  */
 public class WebSocketClientFactory extends AggregateLifeCycle
@@ -52,20 +42,22 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     private final ThreadPool _threadPool;
     private final WebSocketClientSelector _selector;
-
     private MaskGen _maskGen;
     private WebSocketBuffers _buffers;
 
     /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client with default configuration.
+    /**
+     * <p>Creates a WebSocketClientFactory with the default configuration.</p>
      */
     public WebSocketClientFactory()
     {
-        this(new QueuedThreadPool(),new RandomMaskGen(),16*1024);
+        this(new QueuedThreadPool());
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client with ThreadPool .
+    /**
+     * <p>Creates a WebSocketClientFactory with the given ThreadPool and the default configuration.</p>
+     * @param threadPool the ThreadPool instance to use
      */
     public WebSocketClientFactory(ThreadPool threadPool)
     {
@@ -73,12 +65,15 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     }
 
     /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client with shared threadpool.
-     * @param threadpool
+    /**
+     * <p>Creates a WebSocketClientFactory with the specified configuration.</p>
+     * @param threadPool the ThreadPool instance to use
+     * @param maskGen the mask generator to use
+     * @param bufferSize the read buffer size
      */
-    public WebSocketClientFactory(ThreadPool threadpool,MaskGen maskGen,int bufferSize)
+    public WebSocketClientFactory(ThreadPool threadPool,MaskGen maskGen,int bufferSize)
     {
-        _threadPool=threadpool;
+        _threadPool=threadPool;
         _selector=new WebSocketClientSelector();
         _buffers=new WebSocketBuffers(bufferSize);
         _maskGen=maskGen;
@@ -98,7 +93,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     /* ------------------------------------------------------------ */
     /** Get the ThreadPool.
-     * <p>Used to set/query the thread pool configuration.
+     * Used to set/query the thread pool configuration.
      * @return The {@link ThreadPool}
      */
     public ThreadPool getThreadPool()
@@ -107,39 +102,60 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return the shared mask generator, or null if no shared mask generator is used
+     * @see {@link WebSocketClient#getMaskGen()}
+     */
     public MaskGen getMaskGen()
     {
         return _maskGen;
     }
-    
+
     /* ------------------------------------------------------------ */
+    /**
+     * @param maskGen the shared mask generator, or null if no shared mask generator is used
+     * @see {@link WebSocketClient#setMaskGen(MaskGen)}
+     */
     public void setMaskGen(MaskGen maskGen)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
         _maskGen=maskGen;
     }
-    
+
     /* ------------------------------------------------------------ */
+    /**
+     * @param bufferSize the read buffer size
+     * @see #getBufferSize()
+     */
     public void setBufferSize(int bufferSize)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
         _buffers=new WebSocketBuffers(bufferSize);
     }
-    
+
     /* ------------------------------------------------------------ */
+    /**
+     * @return the read buffer size
+     */
     public int getBufferSize()
     {
         return _buffers.getBufferSize();
     }
-    
+
     /* ------------------------------------------------------------ */
+    /**
+     * <p>Creates and returns a new instance of a {@link WebSocketClient}, configured with this
+     * WebSocketClientFactory instance.</p>
+     *
+     * @return a new {@link WebSocketClient} instance
+     */
     public WebSocketClient newWebSocketClient()
     {
         return new WebSocketClient(this);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
@@ -303,7 +319,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 path="/";
 
             String origin = future.getOrigin();
-            
+
             String request=
                 "GET "+path+" HTTP/1.1\r\n"+
                 "Host: "+future.getURI().getHost()+":"+_holder.getURI().getPort()+"\r\n"+
@@ -402,8 +418,4 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 _holder.handshakeFailed(new EOFException());
         }
     }
-
-
-
-
 }

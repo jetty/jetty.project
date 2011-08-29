@@ -301,7 +301,7 @@ public class WebSocketClient
     /* ------------------------------------------------------------ */
     /** The Future Websocket Connection.
      */
-    private static class WebSocketFuture implements Future<WebSocket.Connection>
+    static class WebSocketFuture implements Future<WebSocket.Connection>
     {
         final WebSocket _websocket;
         final URI _uri;
