@@ -310,7 +310,10 @@ public class XmlConfiguration
             // Check the class of the object
             Class<?> oClass = (Class<?>)nodeClass(_config);
             if (oClass != null && !oClass.isInstance(obj))
-                throw new IllegalArgumentException("Object is not of type " + oClass);
+            {
+                String loaders = (oClass.getClassLoader()==obj.getClass().getClassLoader())?"":"Object Class and type Class are from different loaders.";
+                throw new IllegalArgumentException("Object of class '"+obj.getClass().getCanonicalName()+"' is not of type '" + oClass.getCanonicalName()+"'. "+loaders);
+            }
             configure(obj,_config,0);
             return obj;
         }
