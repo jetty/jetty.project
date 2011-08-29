@@ -4,6 +4,7 @@ jetty-7.5.0-SNAPSHOT
  + 353623 Added new methods to HttpExchange
  + 353624 HttpURI accepts java.net.URI object in constructor
  + 354080 ServletContextHandler allows to replace any subordinate handler when restarted
+ + 356128 Moved integration tests from jetty-monitor to test-integration module
 
 jetty-7.5.0.RC1 - 19 August 2011
  + 276670 SLF4J loggers show correct location information

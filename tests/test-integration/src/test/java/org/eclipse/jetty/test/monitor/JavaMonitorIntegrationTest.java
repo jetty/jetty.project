@@ -11,23 +11,22 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.monitor;
+package org.eclipse.jetty.test.monitor;
 
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import javax.management.MBeanServerConnection;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.monitor.JMXMonitor;
-import org.eclipse.jetty.toolchain.jmx.JmxServiceConnection;
 import org.eclipse.jetty.toolchain.test.JettyDistro;
+import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -43,16 +42,18 @@ import org.junit.Test;
 /* ------------------------------------------------------------ */
 /**
  */
-public class JmxServiceTest
+public class JavaMonitorIntegrationTest
 {
-    private static final Logger LOG = Log.getLogger(JmxServiceTest.class);
+    private static final Logger LOG = Log.getLogger(JavaMonitorIntegrationTest.class);
 
     private static JettyDistro jetty;
-
+    
     @BeforeClass
     public static void initJetty() throws Exception
     {
-        jetty = new JettyDistro(JmxServiceTest.class);
+        PropertyFlag.assume("JAVAMONITOR");        
+
+        jetty = new JettyDistro(JavaMonitorIntegrationTest.class);
 
         jetty.delete("contexts/javadoc.xml");
         
@@ -71,24 +72,25 @@ public class JmxServiceTest
             jetty.stop();
         }
     }
-    
+
     @Before
     public void setUp()
         throws Exception
     {
-        Resource configRes = Resource.newClassPathResource("/org/eclipse/jetty/monitor/jetty-monitor-service.xml");
+        Resource configRes = Resource.newClassPathResource("/org/eclipse/jetty/monitor/java-monitor-integration.xml");
         XmlConfiguration xmlConfig = new XmlConfiguration(configRes.getURL());
         xmlConfig.configure();
     }
-    
+
     @Test
-    public void testThreadPoolMXBean()
+    public void testIntegration()
         throws Exception
-    {        
+    {
         final int threadCount = 100;
-        final long requestCount = 100;
-        final String requestUrl = jetty.getBaseUri().resolve("d.txt").toASCIIString();
+        final long requestCount = 500;
+        final String requestUrl =  jetty.getBaseUri().resolve("d.txt").toASCIIString();
         final CountDownLatch gate = new CountDownLatch(threadCount);
+        
         ThreadPool worker = new ExecutorThreadPool(threadCount,threadCount,60,TimeUnit.SECONDS);
         for (int idx=0; idx < threadCount; idx++)
         {
@@ -99,7 +101,7 @@ public class JmxServiceTest
                             gate.countDown();
                         }
                     });
-            Thread.sleep(100);
+            Thread.sleep(500);
          }
         gate.await();
         assertTrue(true);
@@ -120,6 +122,7 @@ public class JmxServiceTest
         
         if (client != null)
         {
+            Random rnd = new Random();
             for (long cnt=0; cnt < count; cnt++)
             {
                 try
@@ -136,9 +139,9 @@ public class JmxServiceTest
                     if (responseStatus == HttpStatus.OK_200)
                     {
                         content = getExchange.getResponseContent();
-                    }
+                    }           
                     
-                    Thread.sleep(100);
+                    Thread.sleep(200);
                 }
                 catch (InterruptedException ex)
                 {

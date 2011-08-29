@@ -27,9 +27,6 @@
   <description>Performance monitoring artifact for jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmx</bundle-symbolic-name>
-    <test-wars-dir>${project.build.directory}/test-wars</test-wars-dir>
-    <test-libs-dir>${project.build.directory}/test-libs</test-libs-dir>
-    <test-dist-dir>${project.build.directory}/test-dist</test-dist-dir>
   </properties>
   <build>
     <plugins>

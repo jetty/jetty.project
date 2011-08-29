@@ -26,6 +26,11 @@
   <artifactId>test-integration</artifactId>
   <packaging>jar</packaging>
   <name>Jetty Tests :: Integrations</name>
+  <properties>
+    <test-wars-dir>${project.build.directory}/test-wars</test-wars-dir>
+    <test-libs-dir>${project.build.directory}/test-libs</test-libs-dir>
+    <test-dist-dir>${project.build.directory}/test-dist</test-dist-dir>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -46,6 +51,34 @@
               <overwriteReleases>true</overwriteReleases>
               <stripVersion>true</stripVersion>
               <outputDirectory>${project.build.directory}/webapps</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-jetty-distro</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-distribution</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                  <overWrite>true</overWrite>
+                </artifactItem>
+              </artifactItems>
+              <outputAbsoluteArtifactFilename>true</outputAbsoluteArtifactFilename>
+              <outputDirectory>${test-dist-dir}</outputDirectory>
+              <overWriteSnapshots>true</overWriteSnapshots>
+              <overWriteIfNewer>true</overWriteIfNewer>
             </configuration>
           </execution>
         </executions>
@@ -71,6 +104,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-monitor</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
