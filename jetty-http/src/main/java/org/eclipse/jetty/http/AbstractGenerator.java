@@ -114,7 +114,7 @@ public abstract class AbstractGenerator implements Generator
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
         _date = null;
 
-        // always return the buffer
+        // always return the body buffer
         if (_buffer!=null)
             _buffers.returnBuffer(_buffer);
         _buffer=null;
@@ -132,6 +132,22 @@ public abstract class AbstractGenerator implements Generator
         _method=null;
     }
 
+    /* ------------------------------------------------------------------------------- */
+    public void returnBuffers()
+    {     
+        if (_buffer!=null && _buffer.length()==0)
+        {
+            _buffers.returnBuffer(_buffer);
+            _buffer=null;
+        }
+
+        if (_header!=null && _header.length()==0)
+        {
+            _buffers.returnBuffer(_header);
+            _header=null;
+        }         
+    }
+    
     /* ------------------------------------------------------------------------------- */
     public void resetBuffer()
     {                   
