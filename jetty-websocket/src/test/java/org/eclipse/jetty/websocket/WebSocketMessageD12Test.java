@@ -492,7 +492,7 @@ public class WebSocketMessageD12Test
         assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
         assertEquals(30,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(1004,code);
+        assertEquals(WebSocketConnectionD12.CLOSE_BADDATA,code);
         lookFor("Text message size > 15 chars",input);
     }
 
@@ -543,7 +543,7 @@ public class WebSocketMessageD12Test
         assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
         assertEquals(30,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(1004,code);
+        assertEquals(WebSocketConnectionD12.CLOSE_BADDATA,code);
         lookFor("Text message size > 15 chars",input);
     }
 
@@ -657,7 +657,7 @@ public class WebSocketMessageD12Test
         assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
         assertEquals(19,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(1004,code);
+        assertEquals(WebSocketConnectionD12.CLOSE_BADDATA,code);
         lookFor("Message size > 15",input);
     }
 
@@ -706,7 +706,7 @@ public class WebSocketMessageD12Test
         assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
         assertEquals(19,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(1004,code);
+        assertEquals(WebSocketConnectionD12.CLOSE_BADDATA,code);
         lookFor("Message size > 15",input);
     }
 

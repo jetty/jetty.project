@@ -119,6 +119,8 @@ public class AsyncHttpConnection extends HttpConnection
             // Are we write blocked
             if (_generator.isCommitted() && !_generator.isComplete())
                 ((AsyncEndPoint)_endp).scheduleWrite();
+            else
+                _generator.returnBuffers();
         }
         return connection;
     }

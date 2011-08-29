@@ -67,7 +67,9 @@ public class WebSocketClient
 
     /* ------------------------------------------------------------ */
     /** Create a WebSocket Client with private factory.
-     * <p>Creates a WebSocketClient from a private WebSocketClientFactory.  This can be wasteful of resources if many clients are created.
+     * <p>Creates a WebSocketClient from a private WebSocketClientFactory.  
+     * This can be wasteful of resources if many clients are created.
+     * @deprecated Use {@link WebSocketClientFactory}
      */
     public WebSocketClient() throws Exception
     {
@@ -85,7 +87,16 @@ public class WebSocketClient
         _factory=factory;
         _maskGen=_factory.getMaskGen();
     }
-
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The factory this client was created with.
+     */
+    public WebSocketClientFactory getFactory()
+    {
+        return _factory;
+    }
+    
     /* ------------------------------------------------------------ */
     /** Get the maxIdleTime for connections opened by this client.
      * @return The maxIdleTime in ms, or -1 if the default from {@link #getSelectorManager()} is used.

@@ -52,8 +52,9 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     private final ThreadPool _threadPool;
     private final WebSocketClientSelector _selector;
-    private final WebSocketBuffers _buffers;
-    private final MaskGen _maskGen;
+
+    private MaskGen _maskGen;
+    private WebSocketBuffers _buffers;
 
     /* ------------------------------------------------------------ */
     /** Create a WebSocket Client with default configuration.
@@ -112,6 +113,28 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     }
     
     /* ------------------------------------------------------------ */
+    public void setMaskGen(MaskGen maskGen)
+    {
+        if (isRunning())
+            throw new IllegalStateException(getState());
+        _maskGen=maskGen;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setBufferSize(int bufferSize)
+    {
+        if (isRunning())
+            throw new IllegalStateException(getState());
+        _buffers=new WebSocketBuffers(bufferSize);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public int getBufferSize()
+    {
+        return _buffers.getBufferSize();
+    }
+    
+    /* ------------------------------------------------------------ */
     public WebSocketClient newWebSocketClient()
     {
         return new WebSocketClient(this);
@@ -147,6 +170,12 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         }
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+    }
 
     /* ------------------------------------------------------------ */
     /** WebSocket Client Selector Manager

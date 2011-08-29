@@ -58,7 +58,6 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
     final static int CLOSE_SHUTDOWN=1001;
     final static int CLOSE_PROTOCOL=1002;
     final static int CLOSE_BADDATA=1003;
-    final static int CLOSE_LARGE=1004;
     final static int CLOSE_NOCODE=1005;
     final static int CLOSE_NOCLOSE=1006;
     final static int CLOSE_NOTUTF8=1007;
@@ -772,7 +771,7 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
             int max = _connection.getMaxBinaryMessageSize();
             if (max>0 && (bufferLen+length)>max)
             {
-                _connection.close(WebSocketConnectionD12.CLOSE_LARGE,"Message size > "+_connection.getMaxBinaryMessageSize());
+                _connection.close(WebSocketConnectionD12.CLOSE_BADDATA,"Message size > "+_connection.getMaxBinaryMessageSize());
                 _opcode=-1;
                 if (_aggregate!=null)
                     _aggregate.clear();
@@ -783,7 +782,7 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
         
         private void textMessageTooLarge()
         {
-            _connection.close(WebSocketConnectionD12.CLOSE_LARGE,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
+            _connection.close(WebSocketConnectionD12.CLOSE_BADDATA,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
 
             _opcode=-1;
             _utf8.reset();
