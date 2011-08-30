@@ -102,22 +102,18 @@
               <goal>parse-version</goal>
             </goals>
           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-version-maven-plugin</artifactId>
+        <executions>
           <execution>
-            <id>attach-version-classifier</id>
-            <phase>package</phase>
+            <id>attach-version</id>
+            <phase>process-resources</phase>
             <goals>
-              <goal>attach-artifact</goal>
+              <goal>attach-version-text</goal>
             </goals>
-            <configuration>
-              <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-              <artifacts>
-                <artifact>
-                  <file>VERSION.txt</file>
-                  <type>txt</type>
-                  <classifier>version</classifier>
-                </artifact>
-              </artifacts>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -190,7 +186,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.2</version>
+          <version>1.0.3</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
