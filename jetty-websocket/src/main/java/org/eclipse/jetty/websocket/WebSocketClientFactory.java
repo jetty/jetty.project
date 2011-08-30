@@ -2,22 +2,10 @@ package org.eclipse.jetty.websocket;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.ProtocolException;
-import java.net.URI;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpParser;
@@ -33,15 +21,19 @@ import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 
 /* ------------------------------------------------------------ */
-/** WebSocket Client Factory.
- * The WebSocketClientFactory contains the common mechanisms for multiple WebSocketClient instances (eg threadpool, NIO selector).
- * WebSocketClients with different configurations should share the same factory to avoid wasted resources.
+/**
+ * <p>WebSocketClientFactory contains the common components needed by multiple {@link WebSocketClient} instances
+ * (for example, a {@link ThreadPool}, a {@link SelectorManager NIO selector}, etc).</p>
+ * <p>WebSocketClients with different configurations should share the same factory to avoid to waste resources.</p>
+ * <p>If a ThreadPool or MaskGen is passed in the constructor, then it is not added with {@link AggregateLifeCycle#addBean(Object)},
+ * so it's lifecycle must be controlled externally.  
  * @see WebSocketClient
  */
 public class WebSocketClientFactory extends AggregateLifeCycle
@@ -52,37 +44,58 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     private final ThreadPool _threadPool;
     private final WebSocketClientSelector _selector;
-    private final WebSocketBuffers _buffers;
-    private final MaskGen _maskGen;
+    private MaskGen _maskGen;
+    private WebSocketBuffers _buffers;
 
     /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client with default configuration.
+    /**
+     * <p>Creates a WebSocketClientFactory with the default configuration.</p>
      */
     public WebSocketClientFactory()
     {
-        this(new QueuedThreadPool(),new RandomMaskGen(),16*1024);
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client with ThreadPool .
-     */
-    public WebSocketClientFactory(ThreadPool threadPool)
-    {
-        this(threadPool,new RandomMaskGen(),16*1024);
+        _threadPool=new QueuedThreadPool();
+        addBean(_threadPool);
+        _buffers=new WebSocketBuffers(8*1024);
+        addBean(_buffers);
+        _maskGen=new RandomMaskGen();
+        addBean(_maskGen);
+        _selector=new WebSocketClientSelector();
+        addBean(_selector);
     }
 
     /* ------------------------------------------------------------ */
-    /** Create a WebSocket Client with shared threadpool.
-     * @param threadpool
+    /**
+     * <p>Creates a WebSocketClientFactory with the given ThreadPool and the default configuration.</p>
+     * @param threadPool the ThreadPool instance to use
      */
-    public WebSocketClientFactory(ThreadPool threadpool,MaskGen maskGen,int bufferSize)
+    public WebSocketClientFactory(ThreadPool threadPool)
     {
-        _threadPool=threadpool;
+        _threadPool=threadPool;
+        addBean(threadPool);
+        _buffers=new WebSocketBuffers(8*1024);
+        addBean(_buffers);
+        _maskGen=new RandomMaskGen();
+        addBean(_maskGen);
         _selector=new WebSocketClientSelector();
-        _buffers=new WebSocketBuffers(bufferSize);
-        _maskGen=maskGen;
         addBean(_selector);
-        addBean(_threadPool);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * <p>Creates a WebSocketClientFactory with the specified configuration.</p>
+     * @param threadPool the ThreadPool instance to use
+     * @param maskGen the mask generator to use
+     * @param bufferSize the read buffer size
+     */
+    public WebSocketClientFactory(ThreadPool threadPool,MaskGen maskGen,int bufferSize)
+    {
+        _threadPool=threadPool;
+        addBean(threadPool);
+        _buffers=new WebSocketBuffers(bufferSize);
+        addBean(_buffers);
+        _maskGen=maskGen;
+        _selector=new WebSocketClientSelector();
+        addBean(_selector);
     }
 
     /* ------------------------------------------------------------ */
@@ -97,7 +110,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
     /* ------------------------------------------------------------ */
     /** Get the ThreadPool.
-     * <p>Used to set/query the thread pool configuration.
+     * Used to set/query the thread pool configuration.
      * @return The {@link ThreadPool}
      */
     public ThreadPool getThreadPool()
@@ -106,47 +119,79 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return the shared mask generator, or null if no shared mask generator is used
+     * @see {@link WebSocketClient#getMaskGen()}
+     */
     public MaskGen getMaskGen()
     {
         return _maskGen;
     }
-    
+
     /* ------------------------------------------------------------ */
+    /**
+     * @param maskGen the shared mask generator, or null if no shared mask generator is used
+     * @see {@link WebSocketClient#setMaskGen(MaskGen)}
+     */
+    public void setMaskGen(MaskGen maskGen)
+    {
+        if (isRunning())
+            throw new IllegalStateException(getState());
+        if (removeBean(_maskGen))
+            addBean(maskGen);
+        _maskGen=maskGen;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param bufferSize the read buffer size
+     * @see #getBufferSize()
+     */
+    public void setBufferSize(int bufferSize)
+    {
+        if (isRunning())
+            throw new IllegalStateException(getState());
+        removeBean(_buffers);
+        _buffers=new WebSocketBuffers(bufferSize);
+        addBean(_buffers);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return the read buffer size
+     */
+    public int getBufferSize()
+    {
+        return _buffers.getBufferSize();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * <p>Creates and returns a new instance of a {@link WebSocketClient}, configured with this
+     * WebSocketClientFactory instance.</p>
+     *
+     * @return a new {@link WebSocketClient} instance
+     */
     public WebSocketClient newWebSocketClient()
     {
         return new WebSocketClient(this);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
         super.doStart();
-
-        // Start a selector threads
-        for (int i=0;i<_selector.getSelectSets();i++)
-        {
-            final int id=i;
-            _threadPool.dispatch(new Runnable()
-            {
-                public void run()
-                {
-                    while(isRunning())
-                    {
-                        try
-                        {
-                            _selector.doSelect(id);
-                        }
-                        catch (IOException e)
-                        {
-                            __log.warn(e);
-                        }
-                    }
-                }
-            });
-        }
+        if (getThreadPool() instanceof LifeCycle && !((LifeCycle)getThreadPool()).isStarted())
+            ((LifeCycle)getThreadPool()).start();
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+    }
 
     /* ------------------------------------------------------------ */
     /** WebSocket Client Selector Manager
@@ -274,7 +319,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 path="/";
 
             String origin = future.getOrigin();
-            
+
             String request=
                 "GET "+path+" HTTP/1.1\r\n"+
                 "Host: "+future.getURI().getHost()+":"+_holder.getURI().getPort()+"\r\n"+
@@ -373,8 +418,4 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 _holder.handshakeFailed(new EOFException());
         }
     }
-
-
-
-
 }

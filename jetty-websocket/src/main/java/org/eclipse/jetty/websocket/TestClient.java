@@ -197,7 +197,7 @@ public class TestClient implements WebSocket.OnFrame
             if ("-p".equals(a)||"--port".equals(a))
                 port=Integer.parseInt(args[++i]);
             else if ("-h".equals(a)||"--host".equals(a))
-                port=Integer.parseInt(args[++i]);
+                host=args[++i];
             else if ("-c".equals(a)||"--count".equals(a))
                 count=Integer.parseInt(args[++i]);
             else if ("-s".equals(a)||"--size".equals(a))

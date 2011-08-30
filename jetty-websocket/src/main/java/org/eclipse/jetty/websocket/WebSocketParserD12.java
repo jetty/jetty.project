@@ -249,7 +249,7 @@ public class WebSocketParserD12 implements WebSocketParser
                             if (_length>_buffer.capacity() && !_fakeFragments)
                             {
                                 events++;
-                                _handler.close(WebSocketConnectionD12.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionD12.CLOSE_BADDATA,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -268,7 +268,7 @@ public class WebSocketParserD12 implements WebSocketParser
                             if (_length>=_buffer.capacity())
                             {
                                 events++;
-                                _handler.close(WebSocketConnectionD12.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionD12.CLOSE_BADDATA,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 

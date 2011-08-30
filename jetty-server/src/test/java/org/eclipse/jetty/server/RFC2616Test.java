@@ -385,7 +385,6 @@ public class RFC2616Test
         String response;
         int offset=0;
         // Expect 100 not sent
-        ((StdErrLog)Log.getLog()).setHideStacks(true);
         offset=0;
 
         response=connector.getResponses("GET /R1?error=401 HTTP/1.1\n"+
@@ -397,8 +396,6 @@ public class RFC2616Test
         checkNotContained(response,offset,"HTTP/1.1 100","8.2.3 expect 100");
         offset=checkContains(response,offset,"HTTP/1.1 401 ","8.2.3 expect 100")+1;
         offset=checkContains(response,offset,"Connection: close","8.2.3 expect 100")+1;
-
-        ((StdErrLog)Log.getLog()).setHideStacks(false);
     }
 
     @Test

@@ -269,7 +269,7 @@ public class WebSocketParserD12Test
 
         assertTrue(progress>0);
        
-        assertEquals(WebSocketConnectionD12.CLOSE_LARGE,_handler._code);
+        assertEquals(WebSocketConnectionD12.CLOSE_BADDATA,_handler._code);
         for (int i=0;i<2048;i++)
             _in.put((byte)'a');
         progress =_parser.parseNext();

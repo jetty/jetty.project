@@ -32,11 +32,13 @@ public class LifeCycleListenerTest
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
         lifecycle.addLifeCycleListener(listener);
-        ((StdErrLog)Log.getLog()).setHideStacks(true);
+
+
         lifecycle.setCause(cause);
-        
+
         try
         {
+            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             lifecycle.start();
             assertTrue(false);
         }
@@ -45,10 +47,14 @@ public class LifeCycleListenerTest
             assertEquals(cause,e);
             assertEquals(cause,listener.getCause());
         }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(false);
+        }
         lifecycle.setCause(null);
         ((StdErrLog)Log.getLog()).setHideStacks(false);
-        
-        
+
+
         lifecycle.start();
 
         // check that the starting event has been thrown
@@ -62,6 +68,7 @@ public class LifeCycleListenerTest
 
         // check that the lifecycle's state is started
         assertTrue("The lifecycle state is not started",lifecycle.isStarted());
+        
     }
 
     @Test
@@ -77,12 +84,11 @@ public class LifeCycleListenerTest
         // stop() will return without doing anything
 
         lifecycle.start();
-
-        ((StdErrLog)Log.getLog()).setHideStacks(true);
         lifecycle.setCause(cause);
         
         try
         {
+            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             lifecycle.stop();
             assertTrue(false);
         }
@@ -91,10 +97,12 @@ public class LifeCycleListenerTest
             assertEquals(cause,e);
             assertEquals(cause,listener.getCause());
         }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(false);
+        }
 
-        
         lifecycle.setCause(null);
-        ((StdErrLog)Log.getLog()).setHideStacks(false);
         
         lifecycle.stop();
 
@@ -117,22 +125,15 @@ public class LifeCycleListenerTest
     public void testRemoveLifecycleListener ()
     throws Exception
     {
-      
-        
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
         lifecycle.addLifeCycleListener(listener);
 
         lifecycle.start();
-        ((StdErrLog)Log.getLog()).setHideStacks(true);
         assertTrue("The starting event didn't occur",listener.starting);
         lifecycle.removeLifeCycleListener(listener);
         lifecycle.stop();
         assertFalse("The stopping event occurred", listener.stopping);
-        
-        
-        
-        
     }
     private class TestLifeCycle extends AbstractLifeCycle
     {

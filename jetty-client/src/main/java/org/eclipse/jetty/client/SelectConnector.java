@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
-class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector, Runnable
+class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
 {
     private static final Logger LOG = Log.getLogger(SelectConnector.class);
 
@@ -65,7 +65,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     {
         super.doStart();
 
-        _selectorManager.start();
 
         final boolean direct=_httpClient.getUseDirectBuffers();
 
@@ -76,7 +75,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
                 direct?Type.DIRECT:Type.INDIRECT,1024);
 
-        _httpClient._threadPool.dispatch(this);
+        _selectorManager.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -116,25 +115,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         catch(IOException ex)
         {
             destination.onConnectionFailed(ex);
-        }
-
-    }
-
-    /* ------------------------------------------------------------ */
-    public void run()
-    {
-        while (_httpClient.isRunning())
-        {
-            try
-            {
-                _selectorManager.doSelect(0);
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e.toString());
-                LOG.debug(e);
-                Thread.yield();
-            }
         }
     }
 

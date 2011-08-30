@@ -11,37 +11,29 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.monitor;
+package org.eclipse.jetty.test.monitor;
 
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import javax.management.MBeanServerConnection;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.monitor.JMXMonitor;
-import org.eclipse.jetty.monitor.jmx.ConsoleNotifier;
-import org.eclipse.jetty.monitor.jmx.EventNotifier;
-import org.eclipse.jetty.monitor.jmx.EventState;
-import org.eclipse.jetty.monitor.jmx.EventTrigger;
-import org.eclipse.jetty.monitor.jmx.MonitorAction;
-import org.eclipse.jetty.monitor.triggers.GreaterThanAttrEventTrigger;
-import org.eclipse.jetty.monitor.triggers.LessThanOrEqualToAttrEventTrigger;
-import org.eclipse.jetty.monitor.triggers.OrEventTrigger;
-import org.eclipse.jetty.toolchain.jmx.JmxServiceConnection;
 import org.eclipse.jetty.toolchain.test.JettyDistro;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,16 +41,16 @@ import org.junit.Test;
 /* ------------------------------------------------------------ */
 /**
  */
-public class ProgramConfigTest
+public class XmlConfigTest
 {
-    private static final Logger LOG = Log.getLogger(ProgramConfigTest.class);
+    private static final Logger LOG = Log.getLogger(XmlConfigTest.class);
 
     private static JettyDistro jetty;
     
     @BeforeClass
     public static void initJetty() throws Exception
     {
-        jetty = new JettyDistro(ProgramConfigTest.class);
+        jetty = new JettyDistro(XmlConfigTest.class);
 
         jetty.delete("contexts/javadoc.xml");
         
@@ -78,31 +70,19 @@ public class ProgramConfigTest
         }
     }
 
+    @Before
+    public void setUp()
+        throws Exception
+    {
+        Resource configRes = Resource.newClassPathResource("/org/eclipse/jetty/monitor/jetty-monitor-test.xml");
+        XmlConfiguration xmlConfig = new XmlConfiguration(configRes.getURL());
+        xmlConfig.configure();
+    }
+
     @Test
     public void testThreadPoolMXBean()
         throws Exception
     {
-        int testRangeLow  = 4;
-        int testRangeHigh = 7;
-                
-        LessThanOrEqualToAttrEventTrigger<Integer> trigger1 =
-            new LessThanOrEqualToAttrEventTrigger<Integer>("org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0", "idleThreads",
-                                                testRangeLow);
-        GreaterThanAttrEventTrigger<Integer> trigger2 =
-            new GreaterThanAttrEventTrigger<Integer>("org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0", "idleThreads",
-                                                testRangeHigh);
-        OrEventTrigger trigger = new OrEventTrigger(trigger1, trigger2);
-        EventNotifier notifier = new ConsoleNotifier("%s");
-        final AtomicLong counter = new AtomicLong();
-        MonitorAction action = new MonitorAction(trigger, notifier, 500) {
-                @Override
-                public void execute(EventTrigger trigger, EventState<?> state, long timestamp)
-                {
-                    System.out.println(counter.incrementAndGet());
-                }
-            };
-        JMXMonitor.addMonitorActions(action);
-
         final int threadCount = 100;
         final long requestCount = 100;
         final String requestUrl = jetty.getBaseUri().resolve("d.txt").toASCIIString();
@@ -120,10 +100,9 @@ public class ProgramConfigTest
             Thread.sleep(100);
          }
         gate.await();
-        JMXMonitor.removeMonitorActions(action);
         assertTrue(true);
     }
-
+     
     protected static void runTest(String requestUrl, long count)
     {
         HttpClient client = new HttpClient();
@@ -136,9 +115,10 @@ public class ProgramConfigTest
         {
             LOG.debug(ex);
         }
-
+        
         if (client != null)
         {
+            Random rnd = new Random();
             for (long cnt=0; cnt < count; cnt++)
             {
                 try
@@ -146,17 +126,17 @@ public class ProgramConfigTest
                     ContentExchange getExchange = new ContentExchange();
                     getExchange.setURL(requestUrl);
                     getExchange.setMethod(HttpMethods.GET);
-
+                    
                     client.send(getExchange);
-                    getExchange.waitForDone();
-
+                    int state = getExchange.waitForDone();
+                    
                     String content = "";
                     int responseStatus = getExchange.getResponseStatus();
                     if (responseStatus == HttpStatus.OK_200)
                     {
                         content = getExchange.getResponseContent();
-                    }
-
+                    }           
+                    
                     Thread.sleep(100);
                 }
                 catch (InterruptedException ex)
