@@ -168,9 +168,9 @@ public class TimeoutExchangeTest
     @Test
     public void testExchangeTimeoutExpiring() throws Exception
     {
-        startClient(1000);
+        startClient(500);
 
-        long serverSleep = 200;
+        long serverSleep = 300;
         long exchangeTimeout = 100;
 
         CustomContentExchange httpExchange = new CustomContentExchange();
