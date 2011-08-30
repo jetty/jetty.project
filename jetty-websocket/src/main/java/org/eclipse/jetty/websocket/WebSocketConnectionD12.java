@@ -134,7 +134,6 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
         
         _context=Thread.currentThread().getContextClassLoader();
         
-        // TODO - can we use the endpoint idle mechanism?
         if (endpoint instanceof AsyncEndPoint)
             ((AsyncEndPoint)endpoint).cancelIdle();
         
