@@ -3,10 +3,12 @@ package org.eclipse.jetty.util.component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -20,7 +22,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(AggregateLifeCycle.class);
-    private final Queue<Object> _dependentBeans=new ConcurrentLinkedQueue<Object>();
+    private final List<Object> _dependentBeans=new CopyOnWriteArrayList<Object>();
 
     public void destroy()
     {
@@ -49,7 +51,9 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     protected void doStop() throws Exception
     {
         super.doStop();
-        for (Object o:_dependentBeans)
+        List<Object> reverse = new ArrayList<Object>(_dependentBeans);
+        Collections.reverse(reverse);
+        for (Object o:reverse)
         {
             if (o instanceof LifeCycle)
                 ((LifeCycle)o).stop();

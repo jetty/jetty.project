@@ -31,7 +31,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * <p>WebSocketClientFactory contains the common components needed by multiple {@link WebSocketClient} instances
  * (for example, a {@link ThreadPool}, a {@link SelectorManager NIO selector}, etc).</p>
  * <p>WebSocketClients with different configurations should share the same factory to avoid to waste resources.</p>
- *
+ * <p>If a ThreadPool or MaskGen is passed in the constructor, then it is not added with {@link AggregateLifeCycle#addBean(Object)},
+ * so it's lifecycle must be controlled externally.  
  * @see WebSocketClient
  */
 public class WebSocketClientFactory extends AggregateLifeCycle
@@ -51,7 +52,14 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      */
     public WebSocketClientFactory()
     {
-        this(new QueuedThreadPool());
+        _threadPool=new QueuedThreadPool();
+        addBean(_threadPool);
+        _buffers=new WebSocketBuffers(8*1024);
+        addBean(_buffers);
+        _maskGen=new RandomMaskGen();
+        addBean(_maskGen);
+        _selector=new WebSocketClientSelector();
+        addBean(_selector);
     }
 
     /* ------------------------------------------------------------ */
@@ -61,7 +69,14 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      */
     public WebSocketClientFactory(ThreadPool threadPool)
     {
-        this(threadPool,new RandomMaskGen(),16*1024);
+        _threadPool=threadPool;
+        addBean(threadPool);
+        _buffers=new WebSocketBuffers(8*1024);
+        addBean(_buffers);
+        _maskGen=new RandomMaskGen();
+        addBean(_maskGen);
+        _selector=new WebSocketClientSelector();
+        addBean(_selector);
     }
 
     /* ------------------------------------------------------------ */
@@ -74,11 +89,12 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     public WebSocketClientFactory(ThreadPool threadPool,MaskGen maskGen,int bufferSize)
     {
         _threadPool=threadPool;
-        _selector=new WebSocketClientSelector();
+        addBean(threadPool);
         _buffers=new WebSocketBuffers(bufferSize);
+        addBean(_buffers);
         _maskGen=maskGen;
+        _selector=new WebSocketClientSelector();
         addBean(_selector);
-        addBean(_threadPool);
     }
 
     /* ------------------------------------------------------------ */
@@ -120,6 +136,8 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     {
         if (isRunning())
             throw new IllegalStateException(getState());
+        if (removeBean(_maskGen))
+            addBean(maskGen);
         _maskGen=maskGen;
     }
 
@@ -132,7 +150,9 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     {
         if (isRunning())
             throw new IllegalStateException(getState());
+        removeBean(_buffers);
         _buffers=new WebSocketBuffers(bufferSize);
+        addBean(_buffers);
     }
 
     /* ------------------------------------------------------------ */
@@ -161,29 +181,6 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     protected void doStart() throws Exception
     {
         super.doStart();
-
-        // Start a selector threads
-        for (int i=0;i<_selector.getSelectSets();i++)
-        {
-            final int id=i;
-            _threadPool.dispatch(new Runnable()
-            {
-                public void run()
-                {
-                    while(isRunning())
-                    {
-                        try
-                        {
-                            _selector.doSelect(id);
-                        }
-                        catch (IOException e)
-                        {
-                            __log.warn(e);
-                        }
-                    }
-                }
-            });
-        }
     }
 
     /* ------------------------------------------------------------ */

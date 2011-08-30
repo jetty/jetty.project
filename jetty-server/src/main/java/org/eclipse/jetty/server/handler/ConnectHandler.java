@@ -153,23 +153,6 @@ public class ConnectHandler extends HandlerWrapper
             ((LifeCycle)_threadPool).start();
 
         _selectorManager.start();
-        _threadPool.dispatch(new Runnable()
-        {
-            public void run()
-            {
-                while (isRunning())
-                {
-                    try
-                    {
-                        _selectorManager.doSelect(0);
-                    }
-                    catch (IOException x)
-                    {
-                        _logger.warn("Unexpected exception", x);
-                    }
-                }
-            }
-        });
     }
 
     @Override

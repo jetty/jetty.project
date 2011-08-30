@@ -139,14 +139,14 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         {
             LOG.warn(size+" threads could not be stopped");
             
-            if (LOG.isDebugEnabled())
+            if (size==1 || LOG.isDebugEnabled())
             {
                 for (Thread unstopped : _threads)
                 {
-                    LOG.debug("Couldn't stop "+unstopped);
+                    LOG.info("Couldn't stop "+unstopped);
                     for (StackTraceElement element : unstopped.getStackTrace())
                     {
-                        LOG.debug(" at "+element);
+                        LOG.info(" at "+element);
                     }
                 }
             }
@@ -507,9 +507,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     @Override
     public String toString()
     {
-        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+(_jobs==null?-1:_jobs.size())+"}";
+        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+(_jobs==null?-1:_jobs.size())+"}#"+getState();
     }
-   
+
+    /* ------------------------------------------------------------ */
     private Runnable idleJobPoll() throws InterruptedException
     {
         return _jobs.poll(_maxIdleTimeMs,TimeUnit.MILLISECONDS);

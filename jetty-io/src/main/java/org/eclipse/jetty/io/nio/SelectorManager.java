@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
-    public static final Logger __log=Log.getLogger("org.eclipse.jetty.io.nio");
+    public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
     
     // TODO Tune these by approx system speed.
     private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",0).intValue();
@@ -71,6 +71,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private int _selectSets=1;
     private volatile int _set;
     private boolean _deferringInterestedOps0=true;
+    private int _selectorPriorityDelta=0;
     
     /* ------------------------------------------------------------ */
     /**
@@ -180,6 +181,25 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     /* ------------------------------------------------------------ */
     /**
+     * @return delta The value to add to the selector thread priority.
+     */
+    public int getSelectorPriorityDelta()
+    {
+        return _selectorPriorityDelta;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the selector thread priorty delta.
+     * @param delta The value to add to the selector thread priority.
+     */
+    public void setSelectorPriorityDelta(int delta)
+    {
+        _selectorPriorityDelta=delta;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @return the lowResourcesConnections
      */
     public long getLowResourcesConnections()
@@ -218,17 +238,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         _lowResourcesMaxIdleTime=(int)lowResourcesMaxIdleTime;
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * @param acceptorID
-     * @throws IOException
-     */
-    public void doSelect(int acceptorID) throws IOException
-    {
-        SelectSet[] sets= _selectSet;
-        if (sets!=null && sets.length>acceptorID && sets[acceptorID]!=null)
-            sets[acceptorID].doSelect();
-    }
 
     /* ------------------------------------------------------------------------------- */
     public abstract boolean dispatch(Runnable task);
@@ -245,6 +254,53 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             _selectSet[i]= new SelectSet(i);
 
         super.doStart();
+        
+        // start a thread to Select
+        for (int i=0;i<getSelectSets();i++)
+        {
+            final int id=i;
+            dispatch(new Runnable()
+            {
+                public void run()
+                {
+                    SelectSet set=_selectSet[id];
+                    String name=Thread.currentThread().getName();
+                    int priority=Thread.currentThread().getPriority();
+                    try
+                    {
+                        Thread.currentThread().setName(name+" Selector"+id);
+                        if (getSelectorPriorityDelta()!=0)
+                            Thread.currentThread().setPriority(Thread.currentThread().getPriority()+getSelectorPriorityDelta());
+                        while (isRunning())
+                        {
+                            try
+                            {
+                                set.doSelect();
+                            }
+                            catch(ThreadDeath e)
+                            {
+                                throw e;
+                            }
+                            catch(IOException e)
+                            {
+                                LOG.ignore(e);
+                            }
+                            catch(Exception e)
+                            {
+                                LOG.warn(e);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        Thread.currentThread().setName(name);
+                        if (getSelectorPriorityDelta()!=0)
+                            Thread.currentThread().setPriority(priority);
+                    }
+                }
+
+            });
+        }
     }
 
 
@@ -297,8 +353,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     /* ------------------------------------------------------------------------------- */
     protected void connectionFailed(SocketChannel channel,Throwable ex,Object attachment)
     {
-        __log.warn(ex+","+channel+","+attachment);
-        __log.debug(ex);
+        LOG.warn(ex+","+channel+","+attachment);
+        LOG.debug(ex);
     }
     
     /* ------------------------------------------------------------ */
@@ -449,7 +505,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     }
                     catch (CancelledKeyException e)
                     {
-                        __log.ignore(e);
+                        LOG.ignore(e);
                     }
                     catch (Throwable e)
                     {
@@ -457,9 +513,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             throw (ThreadDeath)e;
                         
                         if (isRunning())
-                            __log.warn(e);
+                            LOG.warn(e);
                         else
-                            __log.debug(e);
+                            LOG.debug(e);
 
                         try
                         {
@@ -467,7 +523,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                         catch(IOException e2)
                         {
-                            __log.debug(e2);
+                            LOG.debug(e2);
                         }
                     }
                 }
@@ -491,7 +547,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                         catch(InterruptedException e)
                         {
-                            __log.ignore(e);
+                            LOG.ignore(e);
                         }
                         now=System.currentTimeMillis();
                     }
@@ -585,14 +641,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     }
                     catch (CancelledKeyException e)
                     {
-                        __log.ignore(e);
+                        LOG.ignore(e);
                     }
                     catch (Exception e)
                     {
                         if (isRunning())
-                            __log.warn(e);
+                            LOG.warn(e);
                         else
-                            __log.ignore(e);
+                            LOG.ignore(e);
 
                         try
                         {
@@ -601,7 +657,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                         catch(IOException e2)
                         {
-                            __log.debug(e2);
+                            LOG.debug(e2);
                         }
                         
                         if (key != null && !(key.channel() instanceof ServerSocketChannel) && key.isValid())
@@ -646,13 +702,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             catch (ClosedSelectorException e)
             {
                 if (isRunning())
-                    __log.warn(e);
+                    LOG.warn(e);
                 else
-                    __log.ignore(e);
+                    LOG.ignore(e);
             }
             catch (CancelledKeyException e)
             {
-                __log.ignore(e);
+                LOG.ignore(e);
             }
             finally
             {
@@ -687,16 +743,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             if (now>_log)
             {
                 if (_paused>0)  
-                    __log.debug(this+" Busy selector - injecting delay "+_paused+" times");
+                    LOG.debug(this+" Busy selector - injecting delay "+_paused+" times");
 
                 if (_jvmFix2>0)
-                    __log.debug(this+" JVM BUG(s) - injecting delay"+_jvmFix2+" times");
+                    LOG.debug(this+" JVM BUG(s) - injecting delay"+_jvmFix2+" times");
 
                 if (_jvmFix1>0)
-                    __log.debug(this+" JVM BUG(s) - recreating selector "+_jvmFix1+" times, cancelled keys "+_jvmFix0+" times");
+                    LOG.debug(this+" JVM BUG(s) - recreating selector "+_jvmFix1+" times, cancelled keys "+_jvmFix0+" times");
 
-                else if(__log.isDebugEnabled() && _jvmFix0>0)
-                    __log.debug(this+" JVM BUG(s) - cancelled keys "+_jvmFix0+" times");
+                else if(LOG.isDebugEnabled() && _jvmFix0>0)
+                    LOG.debug(this+" JVM BUG(s) - cancelled keys "+_jvmFix0+" times");
                 _paused=0;
                 _jvmFix2=0;
                 _jvmFix1=0;
@@ -720,7 +776,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     }
                     catch(InterruptedException e)
                     {
-                        __log.ignore(e);
+                        LOG.ignore(e);
                     }
                 }
                 else if (_jvmBug==__JVMBUG_THRESHHOLD)
@@ -754,7 +810,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     if (++_busyKeyCount>__BUSY_KEY && !(busy.channel() instanceof ServerSocketChannel))
                     {
                         final SelectChannelEndPoint endpoint = (SelectChannelEndPoint)busy.attachment();
-                        __log.warn("Busy Key "+busy.channel()+" "+endpoint);
+                        LOG.warn("Busy Key "+busy.channel()+" "+endpoint);
                         busy.cancel();
                         if (endpoint!=null)
                         {
@@ -768,7 +824,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                     }
                                     catch (IOException e)
                                     {
-                                        __log.ignore(e);
+                                        LOG.ignore(e);
                                     }
                                 }
                             });
@@ -907,7 +963,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
             catch(Exception e)
             {
-                __log.ignore(e);
+                LOG.ignore(e);
             }
 
             // close endpoints and selector
@@ -927,7 +983,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                         catch(IOException e)
                         {
-                            __log.ignore(e);
+                            LOG.ignore(e);
                         }
                     }
                 }
@@ -941,7 +997,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
                 catch (IOException e)
                 {
-                    __log.ignore(e);
+                    LOG.ignore(e);
                 } 
                 _selector=null;
             }
@@ -992,7 +1048,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
             catch(InterruptedException e)
             {
-                __log.ignore(e);
+                LOG.ignore(e);
             }
             AggregateLifeCycle.dump(out,indent,dump);
         }
