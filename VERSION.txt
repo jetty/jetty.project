@@ -1,11 +1,23 @@
-jetty-7.5.0-SNAPSHOT
+jetty-7.5.0.RC2 - 30 August 2011
+ + 293739 Hide stacks in named log testing. Various other minor log cleanups in
+   output.
  + 352188 TestClient correctly processes --host option in jetty-websocket
+ + 352222 Moved JmxMonitor functionality from Codehaus
  + 353014 TimeoutExchangeTest run time reduced
+ + 353073 deprecated non factory method for websocket clients
+ + 353192 Better warning for classes of wrong type
  + 353623 Added new methods to HttpExchange
  + 353624 HttpURI accepts java.net.URI object in constructor
- + 354080 ServletContextHandler allows to replace any subordinate handler when restarted
+ + 354080 ServletContextHandler allows to replace any subordinate handler when
+   restarted
+ + 355478 set public to HashedSession, looks like honest mistake and not by
+   design to be this way
+ + 355854 remove automatic conversion in favor of issuing a warning for
+   jetty-web.xml that can't be processed
  + 356128 Moved integration tests from jetty-monitor to test-integration module
  + 356137 Upgrade to jsp implementation version 2.1.3-b10
+ + 356144 added SelectorManager.setSelectorPriorityDelta(int)
+ + JETTY-1410 handle 1xx in similar fashion to 401s and 302s
 
 jetty-7.5.0.RC1 - 19 August 2011
  + 276670 SLF4J loggers show correct location information
@@ -13,7 +25,8 @@ jetty-7.5.0.RC1 - 19 August 2011
  + 355103 Make allowCredentials default to true in CrossOriginFilter
  + 355162 Allow creating an empty resource collection
  + JETTY-1410 HTTP client handles CONTINUE 100 response correctly
- + JETTY-1414 HashLoginService doesn't refresh realm if specified config filename is not an absolute platform specific value
+ + JETTY-1414 HashLoginService doesn't refresh realm if specified config
+   filename is not an absolute platform specific value
 
 jetty-7.5.0.RC0 - 15 August 2011
  + 298502 Handle 200 Connect responses with no content-length
@@ -1837,7 +1850,7 @@ jetty-6.1.6rc0 - 03 October 2007
  + Ensure session is completed only when leaving context.
  + Update terracotta to 2.4.1 and exclude ssl classes
  + Update jasper2.1 to tag SJSAS-9_1-B58C-FCS-22_Aug_2007
- + Removal of unneeded dependencies from management, maven-plugin, naming & 
+ + Removal of unneeded dependencies from management, maven-plugin, naming &
    plus poms
  + Adding setUsername,setGroupname to setuid and mavenizing native build
  + UTF-8 for bayeux client
@@ -2400,7 +2413,7 @@ jetty-6.0.0rc4 - 05 September 2006
 
 jetty-6.0.0rc3 - 01 September 2006
  + pulled 6.0.0 branch
- + JETTY-103 
+ + JETTY-103
  + Move MailSessionReference to org.mortbay.naming.factories
  + Less verbose handling of BadResources from bad URLs
  + Avoid double error handling of Bad requests
@@ -2428,9 +2441,9 @@ jetty-6.0.0rc1 - 16 August 2006
    JNDI
  + Added TransformingWebAppClassLoader for spring 2.0 byte code modification
    support
- + JETTY-90 
+ + JETTY-90
  + Fixed FD leak for bad TCP acks. JETTY-63
- + JETTY-87 
+ + JETTY-87
  + Change path mapping so that a path spec of /foo/* does not match /foo.bar :
    JETTY-88
  + add <requestLog> config param to jetty plugin
@@ -2438,7 +2451,7 @@ jetty-6.0.0rc1 - 16 August 2006
    better handling of null/default values)
  + parse jsp-property-group in web.xml for additional JSP servlet mappings
  + protected setContentType from being set during include
- + JETTY-91 
+ + JETTY-91
  + added modules/spring with XmlBeanFactory configuration
  + removed support for lowResources from SelectChannelConnector
  + added start of cometd implementation (JSON only)
@@ -4996,7 +5009,7 @@ jetty-2.1.B1 - 13 February 1999
  + Improved handling of File.separator in FileHandler.
  + Implemented RequestDispatcher (NOT Tested!).
  + Implemented getResource and getResourceAsStream (NOT Tested!).
- + Replace package com.mortbay.Util.Gateway with class 
+ + Replace package com.mortbay.Util.Gateway with class
    com.mortbay.Util.InetGateway
 
 jetty-2.1.B0 - 30 January 1999
