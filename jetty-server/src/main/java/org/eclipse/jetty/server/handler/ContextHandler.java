@@ -676,7 +676,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             // Context listeners
             if (_contextListeners != null)
             {
-                new Throwable().printStackTrace();
                 ServletContextEvent event = new ServletContextEvent(_scontext);
                 for (int i = LazyList.size(_contextListeners); i-- > 0;)
                 {
