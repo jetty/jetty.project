@@ -263,14 +263,19 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 public void run()
                 {
-                    SelectSet set=_selectSet[id];
                     String name=Thread.currentThread().getName();
                     int priority=Thread.currentThread().getPriority();
                     try
                     {
+                        SelectSet[] sets=_selectSet;
+                        if (sets==null)
+                            return;
+                        SelectSet set=sets[id];
+                        
                         Thread.currentThread().setName(name+" Selector"+id);
                         if (getSelectorPriorityDelta()!=0)
                             Thread.currentThread().setPriority(Thread.currentThread().getPriority()+getSelectorPriorityDelta());
+                        LOG.debug("Starting {} on {}",Thread.currentThread(),this);
                         while (isRunning())
                         {
                             try
@@ -293,6 +298,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     }
                     finally
                     {
+                        LOG.debug("Stopped {} on {}",Thread.currentThread(),this);
                         Thread.currentThread().setName(name);
                         if (getSelectorPriorityDelta()!=0)
                             Thread.currentThread().setPriority(priority);

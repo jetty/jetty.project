@@ -309,7 +309,12 @@ public class StdErrLog implements Logger
 
     private void format(StringBuilder builder, String msg, Object... args)
     {
-        msg = String.valueOf(msg); // Avoids NPE
+        if (msg==null)
+        {
+            msg="";
+            for (Object o : args)
+                msg+="{} ";
+        }
         String braces = "{}";
         int start = 0;
         for (Object arg : args)
@@ -412,5 +417,9 @@ public class StdErrLog implements Logger
         {
             warn(Log.IGNORED, ignored);
         }
+	else
+	{
+	    debug("Ignored {}",ignored.toString());
+	}
     }
 }

@@ -155,7 +155,7 @@ public class HttpConnectionTest
     {
         try
         {
-            ((StdErrLog)Log.getLog()).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
 
             String response;
             
@@ -186,7 +186,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLog()).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
         }
     }
 
@@ -336,11 +336,7 @@ public class HttpConnectionTest
         Logger logger=null;
         try
         {
-            if (!LOG.isDebugEnabled())
-            {
-                logger=Log.getLog();
-                Log.setLog(null);
-            }
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");
             offset = checkContains(response,offset,"Connection: close");
@@ -348,8 +344,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            if (logger!=null)
-                Log.setLog(logger);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
         }
     }
 

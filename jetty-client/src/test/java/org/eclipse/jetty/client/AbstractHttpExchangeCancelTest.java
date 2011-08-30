@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -322,7 +323,7 @@ public abstract class AbstractHttpExchangeCancelTest
     {
         try
         {
-            ((StdErrLog)Log.getLog()).setHideStacks(!LOG.isDebugEnabled());
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             TestHttpExchange exchange = new TestHttpExchange();
             exchange.setAddress(newAddress());
             exchange.setRequestURI("/?action=throw");
@@ -337,7 +338,7 @@ public abstract class AbstractHttpExchangeCancelTest
         }
         finally
         {
-            ((StdErrLog)Log.getLog()).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
         }
     }
 

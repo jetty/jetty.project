@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.Loader;
 public class Log
 {
     public final static String EXCEPTION= "EXCEPTION ";
-    public final static String IGNORED= "IGNORED";
+    public final static String IGNORED= "IGNORED ";
 
     public static String __logClass;
     public static boolean __ignored;
@@ -233,10 +233,7 @@ public class Log
     {
         if (!initialized())
             return;
-        if (__ignored)
-        {
-            __log.warn(IGNORED, thrown);
-        }
+        __log.ignore(thrown);
     }
 
     /**
