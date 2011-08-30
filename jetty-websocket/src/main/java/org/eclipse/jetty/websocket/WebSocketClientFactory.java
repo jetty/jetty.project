@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -181,6 +182,8 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     protected void doStart() throws Exception
     {
         super.doStart();
+        if (getThreadPool() instanceof LifeCycle && !((LifeCycle)getThreadPool()).isStarted())
+            ((LifeCycle)getThreadPool()).start();
     }
 
     /* ------------------------------------------------------------ */
