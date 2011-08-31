@@ -112,6 +112,8 @@ public interface WebSocket
         void disconnect();
         boolean isOpen();
 
+        void setMaxIdleTime(int ms);
+        
         /**
          * @param size size<0 No aggregation of frames to messages, >=0 max size of text frame aggregation buffer in characters
          */

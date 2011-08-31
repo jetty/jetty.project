@@ -547,7 +547,7 @@ public class HttpExchangeTest
         httpExchange.setURL(_scheme+"://localhost:"+_port);
         httpExchange.setRequestURI("*");
         httpExchange.setMethod(HttpMethods.OPTIONS);
-        httpExchange.setRequestHeader("Connection","close");
+    //    httpExchange.setRequestHeader("Connection","close");
         _httpClient.send(httpExchange);
         
         int state = httpExchange.waitForDone();

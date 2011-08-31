@@ -9,4 +9,6 @@ target/
 *.diff
 *.patch
 *.iml
-.idea
+*.ipr
+*.iws
+.idea/
