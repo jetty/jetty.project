@@ -1,4 +1,5 @@
-jetty-7.5.0-SNAPSHOT
+jetty-7.5.0.v20113108 31 August 2011
+ + 353073 better warnings
 
 jetty-7.5.0.RC2 - 30 August 2011
  + 293739 Hide stacks in named log testing. Various other minor log cleanups in
