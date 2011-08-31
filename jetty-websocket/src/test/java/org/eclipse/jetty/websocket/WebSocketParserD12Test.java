@@ -307,13 +307,20 @@ public class WebSocketParserD12Test
         _in.putUnmasked((byte)(2048&0xff));
         _in.sendMask();
         for (int i=0;i<2048;i++)
-            _in.put((byte)'a');
+            _in.put((byte)('a'+i%26));
         
         int progress =_parser.parseNext();
         assertTrue(progress>0);
 
         assertEquals(2,_handler._frames);
         assertEquals(WebSocketConnectionD12.OP_CONTINUATION,_handler._opcode);
+        assertEquals(1,_handler._data.size());
+        String mesg=_handler._data.remove(0);
+
+        assertEquals(2048,mesg.length());
+
+        for (int i=0;i<2048;i++)
+            assertEquals(('a'+i%26),mesg.charAt(i));
     }
 
     private class Handler implements WebSocketParser.FrameHandler
