@@ -633,7 +633,59 @@ public class WebSocketMessageD12Test
         assertEquals(0x8A,input.read());
         assertEquals(0x00,input.read());
     }
-    
+
+    @Test
+    public void testMaxTextSizeFalseFrag() throws Exception
+    {
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: other\r\n" +
+                 "Sec-WebSocket-Version: 7\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        socket.setSoTimeout(1000);
+        InputStream input = socket.getInputStream();
+        
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
+        
+        __serverWebSocket.getConnection().setMaxTextMessageSize(10*1024);
+        __serverWebSocket.getConnection().setFakeFragments(true);
+        
+        output.write(0x81);
+        output.write(0x80|0x7E);
+        output.write((byte)((16*1024)>>8));
+        output.write((byte)((16*1024)&0xff));
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x00);
+
+        for (int i=0;i<(16*1024);i++)
+            output.write('X');
+        output.flush();
+        
+
+        assertEquals(0x80|WebSocketConnectionD12.OP_CLOSE,input.read());
+        assertEquals(33,input.read());
+        int code=(0xff&input.read())*0x100+(0xff&input.read());
+        assertEquals(WebSocketConnectionD12.CLOSE_BADDATA,code);
+        lookFor("Text message size > 10240 chars",input);
+    }
+
     @Test
     public void testMaxTextSize() throws Exception
     {
