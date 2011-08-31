@@ -9,14 +9,17 @@ import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
@@ -427,8 +430,218 @@ public class WebSocketClientTest
         Assert.assertEquals(1111,close.get());
         
     }
+
+
+    @Test
+    public void testBlockSending() throws Exception
+    {
+        WebSocketClient client = new WebSocketClient(_factory);
+        client.setMaxIdleTime(10000);
+
+        final AtomicBoolean open = new AtomicBoolean();
+        final AtomicInteger close = new AtomicInteger();
+        final CountDownLatch _latch = new CountDownLatch(1);
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket.OnTextMessage()
+        {
+            public void onOpen(Connection connection)
+            {
+                open.set(true);
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+                close.set(closeCode);
+                _latch.countDown();
+            }
+            
+            public void onMessage(String data)
+            {
+            }
+        });
+        
+        final Socket socket = _server.accept();
+        accept(socket);
+
+        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        Assert.assertNotNull(connection);
+        Assert.assertTrue(open.get());
+        Assert.assertEquals(0,close.get());
+
+        final int messages=20000;
+        final AtomicLong totalB=new AtomicLong();
+        
+        Thread consumer = new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep(2000);
+                    byte[] recv = new byte[32*1024];
+
+                    int len=0;
+                    while (len>=0)
+                    {
+                        totalB.addAndGet(len);
+                        len=socket.getInputStream().read(recv,0,recv.length);
+                        Thread.sleep(10);
+                    }
+                }
+                catch(InterruptedException e)
+                {
+                    return;
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        };
+        consumer.start();
+        
+        // Send lots of messages client to server
+        long max=0;
+        long start=System.currentTimeMillis();
+        String mesg="This is a test message to send";
+        for (int i=0;i<messages;i++)
+        {
+            connection.sendMessage("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+            if (i%100==0)
+            {
+                long now=System.currentTimeMillis();
+                long duration=now-start;
+                start=now;
+                if (duration>max)
+                    max=duration;
+            }
+        }
+        
+        // wait for consumer to complete
+        while (totalB.get()<messages*(mesg.length()+6L))
+            Thread.sleep(10);
+        Assert.assertTrue(max>1000); // writing was blocked
+        Assert.assertEquals(messages*(mesg.length()+6L),totalB.get());
+
+        consumer.interrupt();
+    }
     
-    
+
+    @Test
+    public void testBlockReceiving() throws Exception
+    {
+        WebSocketClient client = new WebSocketClient(_factory);
+        client.setMaxIdleTime(60000);
+
+        final AtomicBoolean open = new AtomicBoolean();
+        final AtomicInteger close = new AtomicInteger();
+        final CountDownLatch _latch = new CountDownLatch(1);
+        final Exchanger<String> exchanger = new Exchanger<String>();
+        Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket.OnTextMessage()
+        {
+            public void onOpen(Connection connection)
+            {
+                open.set(true);
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+                //System.err.println("CLOSE "+closeCode+" "+message);
+                close.set(closeCode);
+                _latch.countDown();
+            }
+            
+            public void onMessage(String data)
+            {
+                try
+                {
+                    exchanger.exchange(data);
+                }
+                catch (InterruptedException e)
+                {
+                    // e.printStackTrace();
+                }
+            }
+        });
+        
+        Socket socket = _server.accept();
+        socket.setSoTimeout(60000);
+        accept(socket);
+
+        WebSocket.Connection connection = future.get(250,TimeUnit.MILLISECONDS);
+        Assert.assertNotNull(connection);
+        Assert.assertTrue(open.get());
+        Assert.assertEquals(0,close.get());
+        
+        // define some messages to send server to client
+        byte[] send = new byte[] { (byte)0x81, (byte) 0x05, 
+                (byte)'H', (byte)'e', (byte)'l', (byte)'l',(byte)'o'  };
+        final int messages=100000;
+        final AtomicInteger m = new AtomicInteger();
+        
+        
+        // Set up a consumer of received messages that waits a while before consuming
+        Thread consumer = new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep(2000);
+                    while(m.get()<messages)
+                    {
+                       String msg =exchanger.exchange(null);
+                       if ("Hello".equals(msg))
+                           m.incrementAndGet();
+                       else
+                           throw new IllegalStateException("exchanged "+msg);
+                    }
+                }
+                catch(InterruptedException e)
+                {
+                    return;
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        };
+        consumer.start();
+        
+        
+        long max=0;
+        long start=System.currentTimeMillis();
+        for (int i=0;i<messages;i++)
+        {
+            socket.getOutputStream().write(send,0,send.length);
+            socket.getOutputStream().flush();
+            if (i%100==0)
+            {
+                long now=System.currentTimeMillis();
+                long duration=now-start;
+                start=now;
+                if (duration>max)
+                    max=duration;
+            }
+        }
+        
+        while(consumer.isAlive())
+            Thread.sleep(10);
+
+
+        Assert.assertTrue(max>1000); // writing was blocked
+        Assert.assertEquals(m.get(),messages);
+        
+        // Close with code
+        start=System.currentTimeMillis();
+        socket.getOutputStream().write(new byte[]{(byte)0x88, (byte) 0x02, (byte)4, (byte)87 },0,4);
+        socket.getOutputStream().flush();
+
+        _latch.await(10,TimeUnit.SECONDS);
+        Assert.assertTrue(System.currentTimeMillis()-start<5000);
+        Assert.assertEquals(1111,close.get());
+
+    }
 
     private void respondToClient(Socket connection, String serverResponse) throws IOException
     {

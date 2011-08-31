@@ -388,6 +388,19 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
 
         /* ------------------------------------------------------------ */
+        public void setMaxIdleTime(int ms) 
+        {
+            try
+            {
+                _endp.setMaxIdleTime(ms);
+            }
+            catch(IOException e)
+            {
+                LOG.warn(e);
+            }
+        }
+
+        /* ------------------------------------------------------------ */
         public void setMaxTextMessageSize(int size)
         {
             _maxTextMessage=size;

@@ -277,7 +277,7 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
     public void idleExpired()
     {
         long idle = System.currentTimeMillis()-((SelectChannelEndPoint)_endp).getIdleTimestamp();
-        closeOut(WebSocketConnectionD12.CLOSE_NORMAL,"Idle for "+idle+"ms > "+_endp.getMaxIdleTime());
+        closeOut(WebSocketConnectionD12.CLOSE_NORMAL,"Idle for "+idle+"ms > "+_endp.getMaxIdleTime()+"ms");
     }
 
     /* ------------------------------------------------------------ */
@@ -473,6 +473,19 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
                 return;
             _disconnecting=true;
             WebSocketConnectionD12.this.closeOut(code,message);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void setMaxIdleTime(int ms) 
+        {
+            try
+            {
+                _endp.setMaxIdleTime(ms);
+            }
+            catch(IOException e)
+            {
+                LOG.warn(e);
+            }
         }
 
         /* ------------------------------------------------------------ */

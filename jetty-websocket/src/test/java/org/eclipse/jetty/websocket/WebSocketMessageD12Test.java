@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -35,39 +36,45 @@ import org.junit.Test;
  */
 public class WebSocketMessageD12Test
 {
-    private static Server _server;
-    private static Connector _connector;
-    private static TestWebSocket _serverWebSocket;
+    private static Server __server;
+    private static Connector __connector;
+    private static TestWebSocket __serverWebSocket;
+    private static CountDownLatch __latch;
+    private static AtomicInteger __textCount = new AtomicInteger(0);
 
     @BeforeClass
     public static void startServer() throws Exception
     {
-        _server = new Server();
-        _connector = new SelectChannelConnector();
-        _server.addConnector(_connector);
+        __server = new Server();
+        __connector = new SelectChannelConnector();
+        __server.addConnector(__connector);
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
             public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
             {
-                _serverWebSocket = new TestWebSocket();
-                _serverWebSocket._onConnect=("onConnect".equals(protocol));
-                _serverWebSocket._echo=("echo".equals(protocol));
-                _serverWebSocket._aggregate=("aggregate".equals(protocol));
-                return _serverWebSocket;
+                __textCount.set(0);
+                __serverWebSocket = new TestWebSocket();
+                __serverWebSocket._onConnect=("onConnect".equals(protocol));
+                __serverWebSocket._echo=("echo".equals(protocol));
+                __serverWebSocket._aggregate=("aggregate".equals(protocol));
+                __serverWebSocket._latch=("latch".equals(protocol));
+                if (__serverWebSocket._latch)
+                    __latch=new CountDownLatch(1);
+                return __serverWebSocket;
             }
         };
         wsHandler.setBufferSize(8192);
         wsHandler.setMaxIdleTime(1000);
         wsHandler.setHandler(new DefaultHandler());
-        _server.setHandler(wsHandler);
-        _server.start();
+        __server.setHandler(wsHandler);
+        __server.start();
     }
 
     @AfterClass
     public static void stopServer() throws Exception
     {
-        _server.stop();
-        _server.join();
+        __server.stop();
+        __server.join();
     }
 
     
@@ -80,7 +87,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testServerSendBigStringMessage() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -104,8 +111,8 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
         // Server sends a big message
         StringBuilder message = new StringBuilder();
@@ -113,7 +120,7 @@ public class WebSocketMessageD12Test
         for (int i = 0; i < (0x2000) / text.length(); i++)
             message.append(text);
         String data=message.toString();
-        _serverWebSocket.connection.sendMessage(data);
+        __serverWebSocket.connection.sendMessage(data);
 
         assertEquals(WebSocketConnectionD12.OP_TEXT,input.read());
         assertEquals(0x7e,input.read());
@@ -128,7 +135,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testServerSendOnConnect() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -152,8 +159,8 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
         assertEquals(0x81,input.read());
         assertEquals(0x0f,input.read());
@@ -163,7 +170,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testIdentityExtension() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -194,8 +201,8 @@ public class WebSocketMessageD12Test
         lookFor("identity;",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
 
         assertEquals(0x81,input.read());
         assertEquals(0x0f,input.read());
@@ -206,7 +213,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testFragmentExtension() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -232,8 +239,8 @@ public class WebSocketMessageD12Test
         lookFor("fragment;",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
 
         assertEquals(0x01,input.read());
         assertEquals(0x04,input.read());
@@ -260,7 +267,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testDeflateFrameExtension() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -289,8 +296,8 @@ public class WebSocketMessageD12Test
         lookFor("fragment;",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
         
         // Server sends a big message
@@ -354,10 +361,11 @@ public class WebSocketMessageD12Test
         
 
     }
+    
     @Test
     public void testServerEcho() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -390,18 +398,116 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
         assertEquals(0x84,input.read());
         assertEquals(0x0f,input.read());
         lookFor("this is an echo",input);
     }
+    
+    @Test
+    public void testBlockedConsumer() throws Exception
+    {
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+
+        byte[] bytes="This is a long message of text that we will send again and again".getBytes(StringUtil.__ISO_8859_1);
+        byte[] mesg=new byte[bytes.length+6];
+        mesg[0]=(byte)(0x80+WebSocketConnectionD12.OP_TEXT);
+        mesg[1]=(byte)(0x80+bytes.length);
+        mesg[2]=(byte)0xff;
+        mesg[3]=(byte)0xff;
+        mesg[4]=(byte)0xff;
+        mesg[5]=(byte)0xff;
+        for (int i=0;i<bytes.length;i++)
+            mesg[6+i]=(byte)(bytes[i]^0xff);
+        
+        final int count = 100000;
+
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                        "Host: server.example.com\r\n"+
+                        "Upgrade: websocket\r\n"+
+                        "Connection: Upgrade\r\n"+
+                        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                        "Sec-WebSocket-Origin: http://example.com\r\n"+
+                        "Sec-WebSocket-Protocol: latch\r\n" +
+                        "Sec-WebSocket-Version: 7\r\n"+
+                "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(60000);
+
+        InputStream input = socket.getInputStream();
+
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
+        __serverWebSocket.connection.setMaxIdleTime(60000);
+
+        // Send and receive 1 message
+        output.write(mesg);
+        output.flush();
+        while(__textCount.get()==0)
+            Thread.sleep(10);
+
+        // unblock the latch in 4s
+        new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    Thread.sleep(4000);
+                    __latch.countDown();
+                    //System.err.println("latched");
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+        
+        // Send enough messages to fill receive buffer
+        long max=0;
+        long start=System.currentTimeMillis();
+        for (int i=0;i<count;i++)
+        {
+            output.write(mesg);
+            if (i%100==0)
+            {
+                // System.err.println(">>> "+i);
+                output.flush();
+                
+                long now=System.currentTimeMillis();
+                long duration=now-start;
+                start=now;
+                if (max<duration)
+                    max=duration;
+            }
+        }
+
+        Thread.sleep(50);
+        while(__textCount.get()<count+1)
+        {
+            System.err.println(__textCount.get()+"<"+(count+1));
+            Thread.sleep(10);
+        }
+        assertEquals(count+1,__textCount.get()); // all messages
+        assertTrue(max>2000); // was blocked
+    }
 
     @Test
     public void testServerPingPong() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         // Make sure the read times out if there are problems with the implementation
         OutputStream output = socket.getOutputStream();
         output.write(
@@ -430,8 +536,8 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
 
         socket.setSoTimeout(1000);
         assertEquals(0x8A,input.read());
@@ -441,7 +547,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testMaxTextSize() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -463,10 +569,10 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
-        _serverWebSocket.getConnection().setMaxTextMessageSize(15);
+        __serverWebSocket.getConnection().setMaxTextMessageSize(15);
         
         output.write(0x01);
         output.write(0x8a);
@@ -500,7 +606,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testMaxTextSize2() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -522,10 +628,10 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
-        _serverWebSocket.getConnection().setMaxTextMessageSize(15);
+        __serverWebSocket.getConnection().setMaxTextMessageSize(15);
         
         output.write(0x01);
         output.write(0x94);
@@ -550,7 +656,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testBinaryAggregate() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -572,9 +678,9 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
-        _serverWebSocket.getConnection().setMaxBinaryMessageSize(1024);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
+        __serverWebSocket.getConnection().setMaxBinaryMessageSize(1024);
         
         output.write(WebSocketConnectionD12.OP_BINARY);
         output.write(0x8a);
@@ -605,7 +711,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testMaxBinarySize() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -627,10 +733,10 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
-        _serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
+        __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
         
         output.write(0x02);
         output.write(0x8a);
@@ -665,7 +771,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testMaxBinarySize2() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -687,10 +793,10 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
-        _serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
+        __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
         
         output.write(0x02);
         output.write(0x94);
@@ -713,7 +819,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testIdle() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -737,15 +843,15 @@ public class WebSocketMessageD12Test
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
         skipTo("\r\n\r\n",input);
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
         assertEquals(0x81,input.read());
         assertEquals(0x0f,input.read());
         lookFor("sent on connect",input);
 
         assertEquals((byte)0x88,(byte)input.read());
-        assertEquals(17,input.read());
+        assertEquals(26,input.read());
         assertEquals(1000/0x100,input.read());
         assertEquals(1000%0x100,input.read());
         lookFor("Idle",input);
@@ -760,10 +866,10 @@ public class WebSocketMessageD12Test
         output.flush();
         
         
-        assertTrue(_serverWebSocket.awaitDisconnected(5000));
+        assertTrue(__serverWebSocket.awaitDisconnected(5000));
         try
         {
-            _serverWebSocket.connection.sendMessage("Don't send");
+            __serverWebSocket.connection.sendMessage("Don't send");
             assertTrue(false);
         }
         catch(IOException e)
@@ -775,7 +881,7 @@ public class WebSocketMessageD12Test
     @Test
     public void testClose() throws Exception
     {
-        Socket socket = new Socket("localhost", _connector.getLocalPort());
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
         output.write(
                 ("GET /chat HTTP/1.1\r\n"+
@@ -800,20 +906,20 @@ public class WebSocketMessageD12Test
         skipTo("\r\n\r\n",input);
 
 
-        assertTrue(_serverWebSocket.awaitConnected(1000));
-        assertNotNull(_serverWebSocket.connection);
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
         
         assertEquals(0x81,input.read());
         assertEquals(0x0f,input.read());
         lookFor("sent on connect",input);
         socket.close();
         
-        assertTrue(_serverWebSocket.awaitDisconnected(500));
+        assertTrue(__serverWebSocket.awaitDisconnected(500));
         
 
         try
         {
-            _serverWebSocket.connection.sendMessage("Don't send");
+            __serverWebSocket.connection.sendMessage("Don't send");
             assertTrue(false);
         }
         catch(IOException e)
@@ -938,6 +1044,7 @@ public class WebSocketMessageD12Test
 
     private static class TestWebSocket implements WebSocket.OnFrame, WebSocket.OnBinaryMessage, WebSocket.OnTextMessage
     {
+        protected boolean _latch;
         boolean _onConnect=false;
         boolean _echo=true;
         boolean _aggregate=false;
@@ -945,7 +1052,7 @@ public class WebSocketMessageD12Test
         private final CountDownLatch disconnected = new CountDownLatch(1);
         private volatile FrameConnection connection;
 
-        public Connection getConnection()
+        public FrameConnection getConnection()
         {
             return connection;
         }
@@ -987,7 +1094,7 @@ public class WebSocketMessageD12Test
         }
 
         public boolean onFrame(byte flags, byte opcode, byte[] data, int offset, int length)
-        {
+        {            
             if (_echo)
             {
                 switch(opcode)
@@ -1028,6 +1135,19 @@ public class WebSocketMessageD12Test
 
         public void onMessage(String data)
         {
+            __textCount.incrementAndGet();
+            if (_latch)
+            {
+                try
+                {
+                    __latch.await();
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            
             if (_aggregate)
             {
                 try
