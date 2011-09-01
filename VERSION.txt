@@ -1,4 +1,5 @@
-jetty-7.5.0.v20110901 01 September 2011
+jetty-7.5.0.v20110901 - 01 September 2011
+ + 356421 Upgraded websocket to draft 13 support
  + 353073 better warnings
 
 jetty-7.5.0.RC2 - 30 August 2011
