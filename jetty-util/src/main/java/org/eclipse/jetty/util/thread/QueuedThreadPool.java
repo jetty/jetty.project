@@ -600,6 +600,15 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
     /* ------------------------------------------------------------ */
     /**
+     * @return the job queue
+     */
+    protected BlockingQueue<Runnable> getQueue()
+    {
+        return _jobs;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * @param id The thread ID to stop.
      * @return true if the thread was found and stopped.
      * @deprecated Use {@link #interruptThread(long)} in preference
