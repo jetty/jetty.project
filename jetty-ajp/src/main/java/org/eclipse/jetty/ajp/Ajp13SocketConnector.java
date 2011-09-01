@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  *
@@ -29,6 +30,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Ajp13SocketConnector extends SocketConnector
 {
+    private static final Logger LOG = Log.getLogger(Ajp13SocketConnector.class);
+
     static String __secretWord = null;
     static boolean __allowShutdown = false;
     public Ajp13SocketConnector()
@@ -46,7 +49,7 @@ public class Ajp13SocketConnector extends SocketConnector
     protected void doStart() throws Exception
     {
         super.doStart();
-        Log.info("AJP13 is not a secure protocol. Please protect port {}",Integer.toString(getLocalPort()));
+        LOG.info("AJP13 is not a secure protocol. Please protect port {}",Integer.toString(getLocalPort()));
     }
 
 
@@ -90,34 +93,34 @@ public class Ajp13SocketConnector extends SocketConnector
     @Deprecated
     public void setHeaderBufferSize(int headerBufferSize)
     {
-        Log.debug(Log.IGNORED);
+        LOG.debug(Log.IGNORED);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void setRequestBufferSize(int requestBufferSize)
     {
-        Log.debug(Log.IGNORED);
+        LOG.debug(Log.IGNORED);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void setResponseBufferSize(int responseBufferSize)
     {
-        Log.debug(Log.IGNORED);
+        LOG.debug(Log.IGNORED);
     }
 
     /* ------------------------------------------------------------ */
     public void setAllowShutdown(boolean allowShutdown)
     {
-        Log.warn("AJP13: Shutdown Request is: " + allowShutdown);
+        LOG.warn("AJP13: Shutdown Request is: " + allowShutdown);
         __allowShutdown = allowShutdown;
     }
 
     /* ------------------------------------------------------------ */
     public void setSecretWord(String secretWord)
     {
-        Log.warn("AJP13: Shutdown Request secret word is : " + secretWord);
+        LOG.warn("AJP13: Shutdown Request secret word is : " + secretWord);
         __secretWord = secretWord;
     }
 

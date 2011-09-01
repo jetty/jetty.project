@@ -16,6 +16,7 @@ import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.Scanner.BulkListener;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -34,6 +35,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class PropertyUserStore extends AbstractLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(PropertyUserStore.class);
+
     private String _config;
     private Resource _configResource;
     private Scanner _scanner;
@@ -93,8 +96,8 @@ public class PropertyUserStore extends AbstractLifeCycle
         if (_config == null)
             return;
 
-        if (Log.isDebugEnabled())
-            Log.debug("Load " + this + " from " + _config);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Load " + this + " from " + _config);
         Properties properties = new Properties();
         if (getConfigResource().exists())
             properties.load(getConfigResource().getInputStream());

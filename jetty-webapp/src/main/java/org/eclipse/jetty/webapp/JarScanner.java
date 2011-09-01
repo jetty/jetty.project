@@ -23,6 +23,7 @@ import java.util.jar.JarInputStream;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -39,6 +40,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
 {
+    private static final Logger LOG = Log.getLogger(JarScanner.class);
+
 
     public abstract void processEntry (URI jarUri, JarEntry entry);
     
@@ -135,7 +138,7 @@ public abstract class JarScanner extends org.eclipse.jetty.util.PatternMatcher
     public void matched (URI uri)
     throws Exception
     {
-        Log.debug("Search of {}",uri);
+        LOG.debug("Search of {}",uri);
         if (uri.toString().toLowerCase().endsWith(".jar"))
         {
          

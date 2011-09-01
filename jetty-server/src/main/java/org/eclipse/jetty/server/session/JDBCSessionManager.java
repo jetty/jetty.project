@@ -40,6 +40,7 @@ import javax.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * JDBCSessionManager
@@ -66,7 +67,9 @@ import org.eclipse.jetty.util.log.Log;
  * field.
  */
 public class JDBCSessionManager extends AbstractSessionManager
-{  
+{
+    private static final Logger LOG = Log.getLogger(JDBCSessionManager.class);
+  
     protected  String __insertSession;  
     protected  String __deleteSession; 
     protected  String __selectSession;   
@@ -363,7 +366,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             }
             catch (Exception e)
             {
-                Log.warn("Problem persisting changed session data id="+getId(), e);
+                LOG.warn("Problem persisting changed session data id="+getId(), e);
             }
             finally
             {
@@ -374,7 +377,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         @Override
         protected void timeout() throws IllegalStateException
         {
-            if (Log.isDebugEnabled()) Log.debug("Timing out session id="+getClusterId());
+            if (LOG.isDebugEnabled()) LOG.debug("Timing out session id="+getClusterId());
             super.timeout();
         }
     }
@@ -498,15 +501,15 @@ public class JDBCSessionManager extends AbstractSessionManager
                 //sessions to the same node, changing only iff that node fails. 
                 SessionData data = null;
                 long now = System.currentTimeMillis();
-                if (Log.isDebugEnabled()) 
+                if (LOG.isDebugEnabled()) 
                 {
                     if (session==null)
-                        Log.debug("getSession("+idInCluster+"): not in session map,"+
+                        LOG.debug("getSession("+idInCluster+"): not in session map,"+
                                 " now="+now+
                                 " lastSaved="+(session==null?0:session._data._lastSaved)+
                                 " interval="+(_saveIntervalSec * 1000));
                     else
-                        Log.debug("getSession("+idInCluster+"): in session map, "+
+                        LOG.debug("getSession("+idInCluster+"): in session map, "+
                                 " now="+now+
                                 " lastSaved="+(session==null?0:session._data._lastSaved)+
                                 " interval="+(_saveIntervalSec * 1000)+
@@ -517,17 +520,17 @@ public class JDBCSessionManager extends AbstractSessionManager
                 
                 if (session==null || ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000)))
                 {       
-                    Log.debug("getSession("+idInCluster+"): no session in session map or stale session. Reloading session data from db.");
+                    LOG.debug("getSession("+idInCluster+"): no session in session map or stale session. Reloading session data from db.");
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else if ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000))
                 {
-                    Log.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
+                    LOG.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else
                 {
-                    Log.debug("getSession("+idInCluster+"): session in session map"); 
+                    LOG.debug("getSession("+idInCluster+"): session in session map"); 
                     data = session._data;
                 }
                 
@@ -538,7 +541,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                         //if the session has no expiry, or it is not already expired
                         if (data._expiryTime <= 0 || data._expiryTime > now)
                         {
-                            Log.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
+                            LOG.debug("getSession("+idInCluster+"): lastNode="+data.getLastNode()+" thisNode="+getSessionIdManager().getWorkerName());
                             data.setLastNode(getSessionIdManager().getWorkerName());
                             //session last used on a different node, or we don't have it in memory
                             session = new Session(now,data);
@@ -549,25 +552,25 @@ public class JDBCSessionManager extends AbstractSessionManager
                             updateSessionNode(data);
                         }
                         else
-                            if (Log.isDebugEnabled()) Log.debug("getSession("+idInCluster+"): Session has expired");
+                            if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): Session has expired");
                         
                     }
                     else
-                        if (Log.isDebugEnabled()) Log.debug("getSession("+idInCluster+"): Session not stale "+session._data);
+                        if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): Session not stale "+session._data);
                     //session in db shares same id, but is not for this context
                 }
                 else
                 {
                     //No session in db with matching id and context path.
                     session=null;
-                    if (Log.isDebugEnabled()) Log.debug("getSession("+idInCluster+"): No session in database matching id="+idInCluster);
+                    if (LOG.isDebugEnabled()) LOG.debug("getSession("+idInCluster+"): No session in database matching id="+idInCluster);
                 }
                 
                 return session;
             }
             catch (Exception e)
             {
-                Log.warn("Unable to load session from database", e);
+                LOG.warn("Unable to load session from database", e);
                 return null;
             }
         }
@@ -672,7 +675,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             }
             catch (Exception e)
             {
-                Log.warn("Problem deleting session id="+idInCluster, e);
+                LOG.warn("Problem deleting session id="+idInCluster, e);
             }
             return session!=null;
         }
@@ -705,7 +708,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         }
         catch (Exception e)
         {
-            Log.warn("Unable to store new session id="+session.getId() , e);
+            LOG.warn("Unable to store new session id="+session.getId() , e);
         }
     }
 
@@ -787,7 +790,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             while (itor.hasNext())
             {
                 String sessionId = (String)itor.next();
-                if (Log.isDebugEnabled()) Log.debug("Expiring session id "+sessionId);
+                if (LOG.isDebugEnabled()) LOG.debug("Expiring session id "+sessionId);
                 
                 Session session = (Session)_sessions.get(sessionId);
                 if (session != null)
@@ -797,7 +800,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                 }
                 else
                 {
-                    if (Log.isDebugEnabled()) Log.debug("Unrecognized session id="+sessionId);
+                    if (LOG.isDebugEnabled()) LOG.debug("Unrecognized session id="+sessionId);
                 }
             }
         }
@@ -806,7 +809,7 @@ public class JDBCSessionManager extends AbstractSessionManager
             if (t instanceof ThreadDeath)
                 throw ((ThreadDeath)t);
             else
-                Log.warn("Problem expiring sessions", t);
+                LOG.warn("Problem expiring sessions", t);
         }
         finally
         {
@@ -886,8 +889,8 @@ public class JDBCSessionManager extends AbstractSessionManager
                         data.setAttributeMap((Map<String,Object>)o);
                         ois.close();
 
-                        if (Log.isDebugEnabled())
-                            Log.debug("LOADED session "+data);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("LOADED session "+data);
                     }
                     _reference.set(data);
                 }
@@ -900,7 +903,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                     if (connection!=null)
                     {
                         try { connection.close();}
-                        catch(Exception e) { Log.warn(e); }
+                        catch(Exception e) { LOG.warn(e); }
                     }
                 }  
             }
@@ -964,8 +967,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             data.setLastSaved(now);
 
             
-            if (Log.isDebugEnabled())
-                Log.debug("Stored session "+data);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stored session "+data);
         }   
         finally
         {
@@ -1011,8 +1014,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.executeUpdate();
             
             data.setLastSaved(now);
-            if (Log.isDebugEnabled())
-                Log.debug("Updated session "+data);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated session "+data);
         }
         finally
         {
@@ -1042,8 +1045,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.setString(2, data.getRowId());
             statement.executeUpdate();
             statement.close();
-            if (Log.isDebugEnabled())
-                Log.debug("Updated last node for session id="+data.getId()+", lastNode = "+nodeId);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated last node for session id="+data.getId()+", lastNode = "+nodeId);
         }
         finally
         {
@@ -1077,8 +1080,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement.executeUpdate();
             data.setLastSaved(now);
             statement.close();
-            if (Log.isDebugEnabled())
-                Log.debug("Updated access time session id="+data.getId());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated access time session id="+data.getId());
         }
         finally
         {
@@ -1108,8 +1111,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             statement = connection.prepareStatement(__deleteSession);
             statement.setString(1, data.getRowId());
             statement.executeUpdate();
-            if (Log.isDebugEnabled())
-                Log.debug("Deleted Session "+data);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Deleted Session "+data);
         }
         finally
         {

@@ -15,8 +15,8 @@ package org.eclipse.jetty.util.component;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Basic implementation of the life cycle interface for components.
@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractLifeCycle implements LifeCycle
 {
+    private static final Logger LOG = Log.getLogger(AbstractLifeCycle.class);
     public static final String STOPPED="STOPPED";
     public static final String FAILED="FAILED";
     public static final String STARTING="STARTING";
@@ -163,14 +164,14 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private void setStarted()
     {
         _state = __STARTED;
-        Log.debug(STARTED+" {}",this);
+        LOG.debug(STARTED+" {}",this);
         for (Listener listener : _listeners)
             listener.lifeCycleStarted(this);
     }
 
     private void setStarting()
     {
-        Log.debug("starting {}",this);
+        LOG.debug("starting {}",this);
         _state = __STARTING;
         for (Listener listener : _listeners)
             listener.lifeCycleStarting(this);
@@ -178,7 +179,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStopping()
     {
-        Log.debug("stopping {}",this);
+        LOG.debug("stopping {}",this);
         _state = __STOPPING;
         for (Listener listener : _listeners)
             listener.lifeCycleStopping(this);
@@ -187,7 +188,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private void setStopped()
     {
         _state = __STOPPED;
-        Log.debug(STOPPED+" {}",this);
+        LOG.debug(STOPPED+" {}",this);
         for (Listener listener : _listeners)
             listener.lifeCycleStopped(this);
     }
@@ -195,8 +196,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private void setFailed(Throwable th)
     {
         _state = __FAILED;
-        Log.warn(FAILED+" " + this+": "+th);
-        Log.debug(th);
+        LOG.warn(FAILED+" " + this+": "+th,th);
         for (Listener listener : _listeners)
             listener.lifeCycleFailure(this,th);
     }
@@ -208,5 +208,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
         public void lifeCycleStarting(LifeCycle event) {}
         public void lifeCycleStopped(LifeCycle event) {}
         public void lifeCycleStopping(LifeCycle event) {}
+    }
+    
+    public String toString()
+    {
+        return super.toString()+"#"+getState();
     }
 }

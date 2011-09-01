@@ -18,6 +18,7 @@ import java.util.List;
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.Value;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -28,6 +29,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
+    private static final Logger LOG = Log.getLogger(WebFilterAnnotationHandler.class);
+
     public WebFilterAnnotationHandler (WebAppContext context)
     {
         super(context);
@@ -43,13 +46,13 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation,
                             List<Value> values)
     {
-        Log.warn ("@WebFilter not applicable for fields: "+className+"."+fieldName);
+        LOG.warn ("@WebFilter not applicable for fields: "+className+"."+fieldName);
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation,
                              List<Value> values)
     {
-        Log.warn ("@WebFilter not applicable for methods: "+className+"."+methodName+" "+signature);
+        LOG.warn ("@WebFilter not applicable for methods: "+className+"."+methodName+" "+signature);
     }
 
 }

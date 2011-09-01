@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -53,6 +54,8 @@ import org.eclipse.jetty.util.resource.Resource;
 
 public class JDBCLoginService extends MappedLoginService
 {
+    private static final Logger LOG = Log.getLogger(JDBCLoginService.class);
+
     private String _config;
     private String _jdbcDriver;
     private String _url;
@@ -134,7 +137,7 @@ public class JDBCLoginService extends MappedLoginService
             || _password == null
             || _cacheTime < 0)
         {
-            if (Log.isDebugEnabled()) Log.debug("UserRealm " + getName() + " has not been properly configured");
+            if (LOG.isDebugEnabled()) LOG.debug("UserRealm " + getName() + " has not been properly configured");
         }
         _cacheTime *= 1000;
         _lastHashPurge = 0;
@@ -189,11 +192,11 @@ public class JDBCLoginService extends MappedLoginService
         }
         catch (SQLException e)
         {
-            Log.warn("UserRealm " + getName() + " could not connect to database; will try later", e);
+            LOG.warn("UserRealm " + getName() + " could not connect to database; will try later", e);
         }
         catch (ClassNotFoundException e)
         {
-            Log.warn("UserRealm " + getName() + " could not connect to database; will try later", e);
+            LOG.warn("UserRealm " + getName() + " could not connect to database; will try later", e);
         }
     }
 
@@ -253,7 +256,7 @@ public class JDBCLoginService extends MappedLoginService
         }
         catch (SQLException e)
         {
-            Log.warn("UserRealm " + getName() + " could not load user information from database", e);
+            LOG.warn("UserRealm " + getName() + " could not load user information from database", e);
             closeConnection();
         }
         return null;
@@ -266,8 +269,8 @@ public class JDBCLoginService extends MappedLoginService
     {
         if (_con != null)
         {
-            if (Log.isDebugEnabled()) Log.debug("Closing db connection for JDBCUserRealm");
-            try { _con.close(); }catch (Exception e) {Log.ignore(e);}
+            if (LOG.isDebugEnabled()) LOG.debug("Closing db connection for JDBCUserRealm");
+            try { _con.close(); }catch (Exception e) {LOG.ignore(e);}
         }
         _con = null;
     }

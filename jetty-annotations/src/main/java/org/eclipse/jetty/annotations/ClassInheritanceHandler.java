@@ -18,6 +18,7 @@ import java.util.List;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassHandler;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * ClassInheritanceHandler
@@ -26,6 +27,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ClassInheritanceHandler implements ClassHandler
 {
+    private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
+
     
     MultiMap _inheritanceMap = new MultiMap();
     
@@ -47,7 +50,7 @@ public class ClassInheritanceHandler implements ClassHandler
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }  
     }
     

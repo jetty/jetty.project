@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ---------------------------------------------------- */
 /** JAASLoginService
@@ -46,6 +47,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JAASLoginService extends AbstractLifeCycle implements LoginService
 {
+    private static final Logger LOG = Log.getLogger(JAASLoginService.class);
+
     public static String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.plus.jaas.JAASRole";
     public static String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
 	
@@ -221,27 +224,27 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (LoginException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         catch (IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         catch (UnsupportedCallbackException e)
         {
-           Log.warn(e);
+           LOG.warn(e);
         }
         catch (InstantiationException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         catch (IllegalAccessException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         catch (ClassNotFoundException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         return null;
     }
@@ -272,7 +275,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (LoginException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
 

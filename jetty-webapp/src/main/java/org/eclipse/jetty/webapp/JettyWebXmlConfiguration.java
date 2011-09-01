@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -32,6 +33,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class JettyWebXmlConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(JettyWebXmlConfiguration.class);
+
     /** The value of this property points to the WEB-INF directory of
      * the web-app currently installed.
      * it is passed as a property to the jetty-web.xml file */
@@ -52,12 +55,12 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
         //cannot configure if the _context is already started
         if (context.isStarted())
         {
-            if (Log.isDebugEnabled()){Log.debug("Cannot configure webapp after it is started");}
+            if (LOG.isDebugEnabled()){LOG.debug("Cannot configure webapp after it is started");}
             return;
         }
         
-        if(Log.isDebugEnabled())
-            Log.debug("Configuring web-jetty.xml");
+        if(LOG.isDebugEnabled())
+            LOG.debug("Configuring web-jetty.xml");
         
         Resource web_inf = context.getWebInf();
         // handle any WEB-INF descriptors
@@ -77,15 +80,29 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 try
                 {
                     context.setServerClasses(null);
-                    if(Log.isDebugEnabled())
-                        Log.debug("Configure: "+jetty);
+                    if(LOG.isDebugEnabled()) {
+                        LOG.debug("Configure: "+jetty);
+                    }
+                    
                     XmlConfiguration jetty_config = (XmlConfiguration)context.getAttribute(XML_CONFIGURATION);
+                    
                     if (jetty_config==null)
+                    {
                         jetty_config=new XmlConfiguration(jetty.getURL());
+                    }
                     else
+                    {
                         context.removeAttribute(XML_CONFIGURATION);
+                    }
                     setupXmlConfiguration(context,jetty_config, web_inf);
-                    jetty_config.configure(context);
+                    try
+                    {
+                        jetty_config.configure(context);
+                    }
+                    catch (ClassNotFoundException e)
+                    {
+                        LOG.warn("Unable to process jetty-web.xml", e);
+                    }
                 }
                 finally
                 {
@@ -123,5 +140,4 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     	// TODO - should this be an id rather than a property?
     	props.put(PROPERTY_THIS_WEB_INF_URL, String.valueOf(web_inf.getURL()));
     }
-    
 }

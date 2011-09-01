@@ -10,11 +10,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 
 public class WebSocketChatServlet extends WebSocketServlet
 {
+    private static final Logger LOG = Log.getLogger(WebSocketChatServlet.class);
+
     private final Set<ChatWebSocket> _members = new CopyOnWriteArraySet<ChatWebSocket>();
     
     @Override
@@ -37,14 +40,14 @@ public class WebSocketChatServlet extends WebSocketServlet
 
         public void onOpen(Connection connection)
         {
-            // Log.info(this+" onConnect");
+            // LOG.info(this+" onConnect");
             _connection=connection;
             _members.add(this);
         }
         
         public void onMessage(byte frame, byte[] data,int offset, int length)
         {
-            // Log.info(this+" onMessage: "+TypeUtil.toHexString(data,offset,length));
+            // LOG.info(this+" onMessage: "+TypeUtil.toHexString(data,offset,length));
         }
 
         public void onMessage(String data)
@@ -53,7 +56,7 @@ public class WebSocketChatServlet extends WebSocketServlet
                 _connection.disconnect();
             else
             {
-                // Log.info(this+" onMessage: "+data);
+                // LOG.info(this+" onMessage: "+data);
                 for (ChatWebSocket member : _members)
                 {
                     try
@@ -62,7 +65,7 @@ public class WebSocketChatServlet extends WebSocketServlet
                     }
                     catch(IOException e)
                     {
-                        Log.warn(e);
+                        LOG.warn(e);
                     }
                 }
             }
@@ -70,7 +73,7 @@ public class WebSocketChatServlet extends WebSocketServlet
         
         public void onClose(int code, String message)
         {
-            // Log.info(this+" onDisconnect");
+            // LOG.info(this+" onDisconnect");
             _members.remove(this);
         }
 

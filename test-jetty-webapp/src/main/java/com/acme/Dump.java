@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -60,6 +61,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Dump extends HttpServlet
 {
+    private static final Logger LOG = Log.getLogger(Dump.class);
+
     boolean fixed;
     
     /* ------------------------------------------------------------ */
@@ -252,7 +255,7 @@ public class Dump extends HttpServlet
                         }
                         catch (IOException e)
                         {
-                            Log.ignore(e);
+                            LOG.ignore(e);
                         }
                     }
                     

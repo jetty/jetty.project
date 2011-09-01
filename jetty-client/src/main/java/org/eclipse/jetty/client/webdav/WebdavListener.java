@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * WebdavListener
@@ -35,6 +36,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class WebdavListener extends HttpEventListenerWrapper
 {
+    private static final Logger LOG = Log.getLogger(WebdavListener.class);
+
     private HttpDestination _destination;
     private HttpExchange _exchange;
     private boolean _requestComplete;
@@ -67,8 +70,8 @@ public class WebdavListener extends HttpEventListenerWrapper
             return;
         }
         
-        if (Log.isDebugEnabled())
-            Log.debug("WebdavListener:Response Status: " + status );
+        if (LOG.isDebugEnabled())
+            LOG.debug("WebdavListener:Response Status: " + status );
 
         // The dav spec says that CONFLICT should be returned when the parent collection doesn't exist but I am seeing
         // FORBIDDEN returned instead so running with that.
@@ -76,15 +79,15 @@ public class WebdavListener extends HttpEventListenerWrapper
         {
             if ( _webdavEnabled )
             {
-                if (Log.isDebugEnabled())
-                    Log.debug("WebdavListener:Response Status: dav enabled, taking a stab at resolving put issue" );
+                if (LOG.isDebugEnabled())
+                    LOG.debug("WebdavListener:Response Status: dav enabled, taking a stab at resolving put issue" );
                 setDelegatingResponses( false ); // stop delegating, we can try and fix this request
                 _needIntercept = true;
             }
             else
             {
-                if (Log.isDebugEnabled())
-                    Log.debug("WebdavListener:Response Status: Webdav Disabled" );
+                if (LOG.isDebugEnabled())
+                    LOG.debug("WebdavListener:Response Status: Webdav Disabled" );
                 setDelegatingResponses( true ); // just make sure we delegate
                 setDelegatingRequests( true );
                 _needIntercept = false;
@@ -130,14 +133,14 @@ public class WebdavListener extends HttpEventListenerWrapper
                 }
                 catch ( IOException ioe )
                 {
-                    Log.debug("WebdavListener:Complete:IOException: might not be dealing with dav server, delegate");
+                    LOG.debug("WebdavListener:Complete:IOException: might not be dealing with dav server, delegate");
                     super.onResponseComplete();
                 }
             }
             else
             {
-                if (Log.isDebugEnabled())
-                    Log.debug("WebdavListener:Not ready, calling super");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("WebdavListener:Not ready, calling super");
                 super.onResponseComplete();
             }
         }
@@ -178,14 +181,14 @@ public class WebdavListener extends HttpEventListenerWrapper
                 }
                 catch ( IOException ioe )
                 {
-                    Log.debug("WebdavListener:Complete:IOException: might not be dealing with dav server, delegate");
+                    LOG.debug("WebdavListener:Complete:IOException: might not be dealing with dav server, delegate");
                     super.onRequestComplete();
                 }
             }
             else
             {
-                if (Log.isDebugEnabled())
-                    Log.debug("WebdavListener:Not ready, calling super");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("WebdavListener:Not ready, calling super");
                 super.onRequestComplete();
             }
         }
@@ -253,7 +256,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         propfindExchange.setScheme( _exchange.getScheme() );
         propfindExchange.setEventListener( new SecurityListener( _destination, propfindExchange ) );
         propfindExchange.setConfigureListeners( false );
-        propfindExchange.setURI( uri );
+        propfindExchange.setRequestURI( uri );
 
         _destination.send( propfindExchange );
 
@@ -265,7 +268,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         }
         catch ( InterruptedException ie )
         {
-            Log.ignore( ie );                  
+            LOG.ignore( ie );                  
             return false;
         }
     }
@@ -278,7 +281,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         mkcolExchange.setScheme( _exchange.getScheme() );
         mkcolExchange.setEventListener( new SecurityListener( _destination, mkcolExchange ) );
         mkcolExchange.setConfigureListeners( false );
-        mkcolExchange.setURI( uri );
+        mkcolExchange.setRequestURI( uri );
 
         _destination.send( mkcolExchange );
 
@@ -290,7 +293,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         }
         catch ( InterruptedException ie )
         {
-            Log.ignore( ie );
+            LOG.ignore( ie );
             return false;
         }
     }
@@ -304,7 +307,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         supportedExchange.setScheme( _exchange.getScheme() );
         supportedExchange.setEventListener( new SecurityListener( _destination, supportedExchange ) );
         supportedExchange.setConfigureListeners( false );
-        supportedExchange.setURI( _exchange.getURI() );
+        supportedExchange.setRequestURI( _exchange.getURI() );
 
         _destination.send( supportedExchange );
 
@@ -315,7 +318,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         }
         catch (InterruptedException ie )
         {            
-            Log.ignore( ie );
+            LOG.ignore( ie );
             return false;
         }
 

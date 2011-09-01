@@ -33,10 +33,13 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
 
 public class WebSocketConnectionD00 extends AbstractConnection implements WebSocketConnection, WebSocket.FrameConnection
 {
+    private static final Logger LOG = Log.getLogger(WebSocketConnectionD00.class);
+
     public final static byte LENGTH_FRAME=(byte)0x80;
     public final static byte SENTINEL_FRAME=(byte)0x00;
 
@@ -171,14 +174,14 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
         catch(IOException e)
         {
-            Log.debug(e);
+            LOG.debug(e);
             try
             {
                 _endp.close();
             }
             catch(IOException e2)
             {
-                Log.ignore(e2);
+                LOG.ignore(e2);
             }
             throw e;
         }
@@ -294,7 +297,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
         catch(IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
     }
 
@@ -370,7 +373,10 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             uri+="?"+query;
         String host=request.getHeader("Host");
         
-        String origin=request.getHeader("Host");
+        String origin=request.getHeader("Sec-WebSocket-Origin");
+        if (origin==null)
+            origin=request.getHeader("Origin");
+        
         String key1 = request.getHeader("Sec-WebSocket-Key1");
         
         if (key1!=null)
@@ -380,7 +386,8 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
             response.setHeader("Upgrade","WebSocket");
             response.addHeader("Connection","Upgrade");
-            response.addHeader("Sec-WebSocket-Origin",origin);
+            if (origin!=null)
+                response.addHeader("Sec-WebSocket-Origin",origin);
             response.addHeader("Sec-WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
             if (subprotocol!=null)
                 response.addHeader("Sec-WebSocket-Protocol",subprotocol);
@@ -406,6 +413,18 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     {
     }
 
+    public void setMaxIdleTime(int ms) 
+    {
+        try
+        {
+            _endp.setMaxIdleTime(ms);
+        }
+        catch(IOException e)
+        {
+            LOG.warn(e);
+        }
+    }
+    
     public void setMaxBinaryMessageSize(int size)
     {
     }
@@ -458,7 +477,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             }
             catch(Throwable th)
             {
-                Log.warn(th);
+                LOG.warn(th);
             }
         }
         

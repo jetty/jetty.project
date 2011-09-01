@@ -30,6 +30,7 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletSecurityElement;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.security.RunAsToken;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -55,6 +57,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable
 {
+    private static final Logger LOG = Log.getLogger(ServletHolder.class);
+
     /* ---------------------------------------------------------------- */
     private int _initOrder;
     private boolean _initOnStartup=false;
@@ -274,7 +278,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             catch(Exception e)
             {
                 if (_servletHandler.isStartWithUnavailable())
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 else
                     throw e;
             }
@@ -297,7 +301,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
             finally
             {
@@ -381,7 +385,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
         catch(Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
 
         return isStarted()&& _unavailable==0;
@@ -416,7 +420,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             makeUnavailable((UnavailableException)e);
         else
         {
-            _servletHandler.getServletContext().log("unavailable",e);
+            ServletContext ctx = _servletHandler.getServletContext();
+            if (ctx==null)
+                LOG.info("unavailable",e);
+            else
+                ctx.log("unavailable",e);
             _unavailableEx=new UnavailableException(String.valueOf(e),-1)
             {
                 {
@@ -694,7 +702,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             synchronized(this)
             {
                 while(_stack.size()>0)
-                    try { (_stack.pop()).destroy(); } catch (Exception e) { Log.warn(e); }
+                    try { (_stack.pop()).destroy(); } catch (Exception e) { LOG.warn(e); }
             }
         }
 
@@ -782,7 +790,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         try
         {
-            return ((ServletContextHandler.Context)getServletHandler().getServletContext()).createServlet(getHeldClass());
+            ServletContext ctx = getServletHandler().getServletContext();
+            if (ctx==null)
+                return getHeldClass().newInstance();
+            return ((ServletContextHandler.Context)ctx).createServlet(getHeldClass());
         }
         catch (ServletException se)
         {

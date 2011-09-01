@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
@@ -44,6 +45,8 @@ import org.junit.Test;
 
 public class AsyncStressTest
 {
+    private static final Logger LOG = Log.getLogger(AsyncStressTest.class);
+
     protected Server _server = new Server();
     protected SuspendHandler _handler = new SuspendHandler();
     protected SelectChannelConnector _connector;
@@ -110,7 +113,7 @@ public class AsyncStressTest
             System.err.print('+');
         }
         System.err.println();
-        Log.info("Bound "+connections);
+        LOG.info("Bound "+connections);
 
         for (int l=0;l<loops;l++)
         {
@@ -139,7 +142,7 @@ public class AsyncStressTest
         }
 
         System.err.println();
-        Log.info("Sent "+(loops*__paths.length)+" requests");
+        LOG.info("Sent "+(loops*__paths.length)+" requests");
 
         String[] results=new String[connections];
         for (int i=0;i<connections;i++)
@@ -151,7 +154,7 @@ public class AsyncStressTest
         }
         System.err.println();
 
-        Log.info("Read "+connections+" connections");
+        LOG.info("Read "+connections+" connections");
 
         for (int i=0;i<connections;i++)
         {
@@ -246,7 +249,7 @@ public class AsyncStressTest
                                     System.err.println(uri+"=="+br.getUri());
                                     System.err.println(asyncContext+"=="+br.getAsyncContinuation());
 
-                                    Log.warn(e);
+                                    LOG.warn(e);
                                     System.exit(1);
                                 }
                             }

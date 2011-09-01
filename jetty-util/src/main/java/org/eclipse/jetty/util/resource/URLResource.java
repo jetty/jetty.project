@@ -23,12 +23,14 @@ import java.security.Permission;
 
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Abstract resource class.
  */
 public class URLResource extends Resource
 {
+    private static final Logger LOG = Log.getLogger(URLResource.class);
     protected URL _url;
     protected String _urlString;
     
@@ -62,7 +64,7 @@ public class URLResource extends Resource
             }
             catch(IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
         return _connection!=null;
@@ -76,7 +78,7 @@ public class URLResource extends Resource
     {
         if (_in!=null)
         {
-            try{_in.close();}catch(IOException e){Log.ignore(e);}
+            try{_in.close();}catch(IOException e){LOG.ignore(e);}
             _in=null;
         }
 
@@ -101,7 +103,7 @@ public class URLResource extends Resource
         }
         catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return _in!=null;
     }
@@ -173,7 +175,7 @@ public class URLResource extends Resource
 
         // Try the URL file arg
         try {return new File(_url.getFile());}
-        catch(Exception e) {Log.ignore(e);}
+        catch(Exception e) {LOG.ignore(e);}
 
         // Don't know the file
         return null;    

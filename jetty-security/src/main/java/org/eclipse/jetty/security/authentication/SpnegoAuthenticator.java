@@ -30,9 +30,12 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SpnegoAuthenticator extends LoginAuthenticator
-{    
+{
+    private static final Logger LOG = Log.getLogger(SpnegoAuthenticator.class);
+    
     public String getAuthMethod()
     {
         return Constraint.__SPNEGO_AUTH;
@@ -60,7 +63,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
                      return Authentication.UNAUTHENTICATED;
             	 }
             	 
-                Log.debug("SpengoAuthenticator: sending challenge");
+                LOG.debug("SpengoAuthenticator: sending challenge");
                 res.setHeader(HttpHeaders.WWW_AUTHENTICATE, HttpHeaders.NEGOTIATE);
                 res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                 return Authentication.SEND_CONTINUE;

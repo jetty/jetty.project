@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.eclipse.jetty.util.log.Log;
-/* ------------------------------------------------------------ */
+import org.eclipse.jetty.util.log.Logger;
 /**
  * Converts POJOs to JSON and vice versa.
  * The key difference:
@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JSONPojoConvertor implements JSON.Convertor
 {
+    private static final Logger LOG = Log.getLogger(JSONPojoConvertor.class);
     public static final Object[] GETTER_ARG = new Object[]{}, NULL_ARG = new Object[]{null};
     private static final Map<Class<?>, NumberType> __numberTypes = new HashMap<Class<?>, NumberType>();
     
@@ -204,7 +205,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                 catch(Exception e)
                 {
                     // TODO throw exception?
-                    Log.warn(_pojoClass.getName()+"#"+setter.getPropertyName()+" not set from "+
+                    LOG.warn(_pojoClass.getName()+"#"+setter.getPropertyName()+" not set from "+
                             (entry.getValue().getClass().getName())+"="+entry.getValue().toString());
                     log(e);
                 }
@@ -227,7 +228,7 @@ public class JSONPojoConvertor implements JSON.Convertor
             catch(Exception e)
             {
                 // TODO throw exception?
-                Log.warn("{} property '{}' excluded. (errors)", _pojoClass.getName(), 
+                LOG.warn("{} property '{}' excluded. (errors)", _pojoClass.getName(), 
                         entry.getKey());
                 log(e);
             }
@@ -237,7 +238,7 @@ public class JSONPojoConvertor implements JSON.Convertor
     /* ------------------------------------------------------------ */
     protected void log(Throwable t)
     {
-        Log.ignore(t);
+        LOG.ignore(t);
     }
 
     /* ------------------------------------------------------------ */
@@ -333,7 +334,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                     catch(Exception e)
                     {                        
                         // unusual array with multiple types
-                        Log.ignore(e);
+                        LOG.ignore(e);
                         _setter.invoke(obj, new Object[]{value});
                         return;
                     }                    
@@ -351,7 +352,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                     catch(Exception e)
                     {                        
                         // unusual array with multiple types
-                        Log.ignore(e);
+                        LOG.ignore(e);
                         _setter.invoke(obj, new Object[]{value});
                         return;
                     }

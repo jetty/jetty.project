@@ -19,6 +19,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -30,6 +31,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class WebSocketParserD00 implements WebSocketParser
 {
+    private static final Logger LOG = Log.getLogger(WebSocketParserD00.class);
+
     public static final int STATE_START=0;
     public static final int STATE_SENTINEL_DATA=1;
     public static final int STATE_LENGTH=2;
@@ -112,7 +115,7 @@ public class WebSocketParserD00 implements WebSocketParser
                 }
                 catch(IOException e)
                 {
-                    Log.debug(e);
+                    LOG.debug(e);
                     return total_filled>0?total_filled:-1;
                 }
             }

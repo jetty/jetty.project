@@ -34,6 +34,7 @@ import org.eclipse.jetty.security.MappedLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -46,6 +47,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DataSourceLoginService extends MappedLoginService
 {
+    private static final Logger LOG = Log.getLogger(DataSourceLoginService.class);
+
     private String _jndiName = "javax.sql.DataSource/default";
     private DataSource _datasource;
     private Server _server;
@@ -309,11 +312,11 @@ public class DataSourceLoginService extends MappedLoginService
         }
         catch (NamingException e)
         {
-            Log.warn("No datasource for "+_jndiName, e);
+            LOG.warn("No datasource for "+_jndiName, e);
         }
         catch (SQLException e)
         {
-            Log.warn("Problem loading user info for "+userName, e);
+            LOG.warn("Problem loading user info for "+userName, e);
         }
         finally
         {
@@ -325,7 +328,7 @@ public class DataSourceLoginService extends MappedLoginService
                 }
                 catch (SQLException x)
                 {
-                    Log.warn("Problem closing connection", x);
+                    LOG.warn("Problem closing connection", x);
                 }
                 finally
                 {
@@ -418,7 +421,7 @@ public class DataSourceLoginService extends MappedLoginService
                     connection.createStatement().executeUpdate("create table "+_userTableName+ "("+_userTableKey+" integer,"+
                             _userTableUserField+" varchar(100) not null unique,"+
                             _userTablePasswordField+" varchar(20) not null, primary key("+_userTableKey+"))");
-                    if (Log.isDebugEnabled()) Log.debug("Created table "+_userTableName);
+                    if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userTableName);
                 }
                 
                 result.close();
@@ -435,7 +438,7 @@ public class DataSourceLoginService extends MappedLoginService
                     String str = "create table "+_roleTableName+" ("+_roleTableKey+" integer, "+
                     _roleTableRoleField+" varchar(100) not null unique, primary key("+_roleTableKey+"))";
                     connection.createStatement().executeUpdate(str);
-                    if (Log.isDebugEnabled()) Log.debug("Created table "+_roleTableName);
+                    if (LOG.isDebugEnabled()) LOG.debug("Created table "+_roleTableName);
                 }
                 
                 result.close();
@@ -456,7 +459,7 @@ public class DataSourceLoginService extends MappedLoginService
                             _userRoleTableRoleKey+" integer, "+
                             "primary key ("+_userRoleTableUserKey+", "+_userRoleTableRoleKey+"))");                   
                     connection.createStatement().executeUpdate("create index indx_user_role on "+_userRoleTableName+"("+_userRoleTableUserKey+")");
-                    if (Log.isDebugEnabled()) Log.debug("Created table "+_userRoleTableName +" and index");
+                    if (LOG.isDebugEnabled()) LOG.debug("Created table "+_userRoleTableName +" and index");
                 }
                 
                 result.close();   
@@ -473,7 +476,7 @@ public class DataSourceLoginService extends MappedLoginService
                     }
                     catch (SQLException e)
                     {
-                        if (Log.isDebugEnabled()) Log.debug("Prepare tables", e);
+                        if (LOG.isDebugEnabled()) LOG.debug("Prepare tables", e);
                     }
                     finally
                     {
@@ -482,9 +485,9 @@ public class DataSourceLoginService extends MappedLoginService
                 }
             }
         }
-        else if (Log.isDebugEnabled())
+        else if (LOG.isDebugEnabled())
         {
-            Log.debug("createTables false");
+            LOG.debug("createTables false");
         }
     }
     

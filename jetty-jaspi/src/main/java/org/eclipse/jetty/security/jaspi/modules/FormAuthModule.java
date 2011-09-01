@@ -40,6 +40,7 @@ import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * @deprecated use *ServerAuthentication
@@ -47,6 +48,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class FormAuthModule extends BaseAuthModule
 {
+    private static final Logger LOG = Log.getLogger(FormAuthModule.class);
+
     /* ------------------------------------------------------------ */
     public final static String __J_URI = "org.eclipse.jetty.util.URI";
 
@@ -110,7 +113,7 @@ public class FormAuthModule extends BaseAuthModule
     {
         if (!path.startsWith("/"))
         {
-            Log.warn("form-login-page must start with /");
+            LOG.warn("form-login-page must start with /");
             path = "/" + path;
         }
         _formLoginPage = path;
@@ -130,7 +133,7 @@ public class FormAuthModule extends BaseAuthModule
         {
             if (!path.startsWith("/"))
             {
-                Log.warn("form-error-page must start with /");
+                LOG.warn("form-error-page must start with /");
                 path = "/" + path;
             }
             _formErrorPage = path;
@@ -177,7 +180,7 @@ public class FormAuthModule extends BaseAuthModule
                     return AuthStatus.SEND_CONTINUE;
                 }
                 // not authenticated
-                if (Log.isDebugEnabled()) Log.debug("Form authentication FAILED for " + StringUtil.printable(username));
+                if (LOG.isDebugEnabled()) LOG.debug("Form authentication FAILED for " + StringUtil.printable(username));
                 if (_formErrorPage == null)
                 {
                     if (response != null) response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -250,7 +253,7 @@ public class FormAuthModule extends BaseAuthModule
                 // // If this credential is still authenticated
                 // if (form_cred._userPrincipal!=null)
                 // {
-                // if(Log.isDebugEnabled())Log.debug("FORM Authenticated for
+                // if(LOG.isDebugEnabled())LOG.debug("FORM Authenticated for
                 // "+form_cred._userPrincipal.getName());
                 // request.setAuthType(Constraint.__FORM_AUTH);
                 // //jaspi
@@ -273,7 +276,7 @@ public class FormAuthModule extends BaseAuthModule
                 // form_cred._jUserName=form_cred._userPrincipal.getName();
                 // if (cred!=null)
                 // form_cred._jPassword=cred.toString();
-                // if(Log.isDebugEnabled())Log.debug("SSO for
+                // if(LOG.isDebugEnabled())LOG.debug("SSO for
                 // "+form_cred._userPrincipal);
                 //
                 // request.setAuthType(Constraint.__FORM_AUTH);
@@ -404,7 +407,7 @@ public class FormAuthModule extends BaseAuthModule
 
         public void valueUnbound(HttpSessionBindingEvent event)
         {
-            if (Log.isDebugEnabled()) Log.debug("Logout " + _jUserName);
+            if (LOG.isDebugEnabled()) LOG.debug("Logout " + _jUserName);
 
             // TODO jaspi call cleanSubject()
             // if (_realm instanceof SSORealm)

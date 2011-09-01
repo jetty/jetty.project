@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * The Deployment Manager.
@@ -54,6 +55,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DeploymentManager extends AggregateLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(DeploymentManager.class);
+
     /**
      * Represents a single tracked app within the deployment manager.
      */
@@ -123,7 +126,7 @@ public class DeploymentManager extends AggregateLifeCycle
      */
     public void addApp(App app)
     {
-        Log.info("Deployable added: " + app.getOriginId());
+        LOG.info("Deployable added: " + app.getOriginId());
         AppEntry entry = new AppEntry();
         entry.app = app;
         entry.setLifeCycleNode(_lifecycle.getNodeByName("undeployed"));
@@ -205,7 +208,7 @@ public class DeploymentManager extends AggregateLifeCycle
     {
         if (_useStandardBindings)
         {
-            Log.debug("DeploymentManager using standard bindings");
+            LOG.debug("DeploymentManager using standard bindings");
             addLifeCycleBinding(new StandardDeployer());
             addLifeCycleBinding(new StandardStarter());
             addLifeCycleBinding(new StandardStopper());
@@ -232,7 +235,7 @@ public class DeploymentManager extends AggregateLifeCycle
             }
             catch (Exception e)
             {
-                Log.warn("Unable to start AppProvider",e);
+                LOG.warn("Unable to start AppProvider",e);
             }
         }
         super.doStop();
@@ -389,7 +392,7 @@ public class DeploymentManager extends AggregateLifeCycle
                 if (! AppLifeCycle.UNDEPLOYED.equals(entry.lifecyleNode.getName()))
                     requestAppGoal(entry.app,AppLifeCycle.UNDEPLOYED);
                 it.remove();
-                Log.info("Deployable removed: " + entry.app);
+                LOG.info("Deployable removed: " + entry.app);
             }
         }
     }
@@ -408,7 +411,7 @@ public class DeploymentManager extends AggregateLifeCycle
         }
         catch (Exception e)
         {
-            Log.warn("Unable to stop Provider",e);
+            LOG.warn("Unable to stop Provider",e);
         }
     }
 
@@ -478,7 +481,7 @@ public class DeploymentManager extends AggregateLifeCycle
                 while (it.hasNext())
                 {
                     Node node = it.next();
-                    Log.debug("Executing Node: " + node);
+                    LOG.debug("Executing Node: " + node);
                     _lifecycle.runBindings(node,appentry.app,this);
                     appentry.setLifeCycleNode(node);
                 }
@@ -486,7 +489,7 @@ public class DeploymentManager extends AggregateLifeCycle
         }
         catch (Throwable t)
         {
-            Log.warn("Unable to reach node goal: " + nodeName,t);
+            LOG.warn("Unable to reach node goal: " + nodeName,t);
         }
     }
 
@@ -544,13 +547,13 @@ public class DeploymentManager extends AggregateLifeCycle
         }
         catch (Exception e)
         {
-            Log.warn("Unable to start AppProvider",e);
+            LOG.warn("Unable to start AppProvider",e);
         }
     }
 
     public void undeployAll()
     {
-        Log.info("Undeploy All");
+        LOG.info("Undeploy All");
         for (AppEntry appentry : _apps)
         {
             requestAppGoal(appentry,"undeployed");

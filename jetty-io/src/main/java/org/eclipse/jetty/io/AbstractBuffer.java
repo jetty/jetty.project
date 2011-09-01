@@ -19,6 +19,7 @@ import java.io.OutputStream;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * 
@@ -26,6 +27,10 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractBuffer implements Buffer
 {
+    private static final Logger LOG = Log.getLogger(AbstractBuffer.class);
+
+    private final static boolean __boundsChecking = Boolean.getBoolean("org.eclipse.jetty.io.AbstractBuffer.boundsChecking");
+    
     protected final static String 
     __IMMUTABLE = "IMMUTABLE", 
     __READONLY = "READONLY",
@@ -629,7 +634,7 @@ public abstract class AbstractBuffer implements Buffer
         }
         catch(Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             return new String(asArray(), 0, length());
         }
     }

@@ -8,6 +8,7 @@ import javax.sql.DataSource;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Close a DataSource.
@@ -18,6 +19,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DataSourceCloser implements Destroyable
 {
+    private static final Logger LOG = Log.getLogger(DataSourceCloser.class);
+
     final DataSource _datasource;
     final String _shutdown;
     
@@ -43,7 +46,7 @@ public class DataSourceCloser implements Destroyable
         {
             if (_shutdown!=null)
             {
-                Log.info("Shutdown datasource {}",_datasource);
+                LOG.info("Shutdown datasource {}",_datasource);
                 Statement stmt = _datasource.getConnection().createStatement();
                 stmt.executeUpdate(_shutdown);
                 stmt.close();
@@ -51,18 +54,18 @@ public class DataSourceCloser implements Destroyable
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         
         try
         {
             Method close = _datasource.getClass().getMethod("close", new Class[]{});
-            Log.info("Close datasource {}",_datasource);
+            LOG.info("Close datasource {}",_datasource);
             close.invoke(_datasource, new Object[]{});
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
 }

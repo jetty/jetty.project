@@ -24,9 +24,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class AbstractHandlerMBean extends ObjectMBean
 {
+    private static final Logger LOG = Log.getLogger(AbstractHandlerMBean.class);
+
     /* ------------------------------------------------------------ */
     public AbstractHandlerMBean(Object managedObject)
     {
@@ -106,7 +109,7 @@ public class AbstractHandlerMBean extends ObjectMBean
             }
             catch(IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
                 name=context.getBaseResource().getName();
             }
         }

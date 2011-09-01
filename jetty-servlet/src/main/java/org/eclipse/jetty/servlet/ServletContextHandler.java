@@ -76,6 +76,7 @@ public class ServletContextHandler extends ContextHandler
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
+    protected HandlerWrapper _wrapper;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
     protected Object _restrictedContextListeners;
@@ -148,6 +149,7 @@ public class ServletContextHandler extends ContextHandler
     {
         super.doStop();
         _decorators.clear();
+        _wrapper.setHandler(null);
     }
 
     /* ------------------------------------------------------------ */
@@ -220,16 +222,16 @@ public class ServletContextHandler extends ContextHandler
         }
         
         // skip any wrapped handlers 
-        HandlerWrapper wrapper=this;
-        while (wrapper!=handler && wrapper.getHandler() instanceof HandlerWrapper)
-            wrapper=(HandlerWrapper)wrapper.getHandler();
+        _wrapper=this;
+        while (_wrapper!=handler && _wrapper.getHandler() instanceof HandlerWrapper)
+            _wrapper=(HandlerWrapper)_wrapper.getHandler();
         
         // if we are not already linked
-        if (wrapper!=handler)
+        if (_wrapper!=handler)
         {
-            if (wrapper.getHandler()!=null )
+            if (_wrapper.getHandler()!=null )
                 throw new IllegalStateException("!ScopedHandler");
-            wrapper.setHandler(handler);
+            _wrapper.setHandler(handler);
         }
         
     	super.startContext();
@@ -421,7 +423,7 @@ public class ServletContextHandler extends ContextHandler
     {
         if (isStarted())
             throw new IllegalStateException("STARTED");
-        
+
         _sessionHandler = sessionHandler;
     }
 
@@ -433,7 +435,7 @@ public class ServletContextHandler extends ContextHandler
     {
         if (isStarted())
             throw new IllegalStateException("STARTED");
-        
+
         _securityHandler = securityHandler;
     }
 
@@ -445,7 +447,7 @@ public class ServletContextHandler extends ContextHandler
     {
         if (isStarted())
             throw new IllegalStateException("STARTED");
-        
+
         _servletHandler = servletHandler;
     }
 

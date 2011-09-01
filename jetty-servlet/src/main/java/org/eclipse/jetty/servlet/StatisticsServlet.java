@@ -30,9 +30,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class StatisticsServlet extends HttpServlet
 {
+    private static final Logger LOG = Log.getLogger(StatisticsServlet.class);
+
     boolean _restrictToLocalhost = true; // defaults to true
     private StatisticsHandler _statsHandler;
     private MemoryMXBean _memoryBean;
@@ -52,7 +55,7 @@ public class StatisticsServlet extends HttpServlet
         }
         else
         {
-            Log.warn("Statistics Handler not installed!");
+            LOG.warn("Statistics Handler not installed!");
             return;
         }
         
@@ -75,7 +78,7 @@ public class StatisticsServlet extends HttpServlet
     {
         if (_statsHandler == null)
         {
-            Log.warn("Statistics Handler not installed!");
+            LOG.warn("Statistics Handler not installed!");
             resp.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             return;
         }

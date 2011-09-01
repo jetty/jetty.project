@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -52,6 +53,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public abstract class AbstractConnector extends HttpBuffers implements Connector, Dumpable
 {
+    private static final Logger LOG = Log.getLogger(AbstractConnector.class);
+
     private String _name;
 
     private Server _server;
@@ -272,7 +275,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     public void setAcceptors(int acceptors)
     {
         if (acceptors > 2 * Runtime.getRuntime().availableProcessors())
-            Log.warn("Acceptors should be <=2*availableProcessors: " + this);
+            LOG.warn("Acceptors should be <=2*availableProcessors: " + this);
         _acceptors = acceptors;
     }
 
@@ -311,10 +314,10 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
             for (int i = 0; i < _acceptorThread.length; i++)
                 _threadPool.dispatch(new Acceptor(i));
             if (_threadPool.isLowOnThreads())
-                Log.warn("insufficient threads configured for {}",this);
+                LOG.warn("insufficient threads configured for {}",this);
         }
 
-        Log.info("Started {}",this);
+        LOG.info("Started {}",this);
     }
 
     /* ------------------------------------------------------------ */
@@ -327,7 +330,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         }
         catch (IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
 
         if (_threadPool != _server.getThreadPool() && _threadPool instanceof LifeCycle)
@@ -375,7 +378,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
     }
 
@@ -449,7 +452,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                 }
                 catch (UnknownHostException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
 
@@ -631,7 +634,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     public void setForwarded(boolean check)
     {
         if (check)
-            Log.debug(this + " is forwarded");
+            LOG.debug(this + " is forwarded");
         _forwarded = check;
     }
 
@@ -831,16 +834,16 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                     }
                     catch (EofException e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
                     catch (IOException e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
                     catch (InterruptedException x)
                     {
                         // Connector has been stopped
-                        Log.ignore(x);
+                        LOG.ignore(x);
                     }
                     catch (ThreadDeath e)
                     {
@@ -848,7 +851,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                     }
                     catch (Throwable e)
                     {
-                        Log.warn(e);
+                        LOG.warn(e);
                     }
                 }
             }
@@ -998,7 +1001,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         if (on && _statsStartedAt.get() != -1)
             return;
 
-        Log.debug("Statistics on = " + on + " for " + this);
+        LOG.debug("Statistics on = " + on + " for " + this);
 
         statsReset();
         _statsStartedAt.set(on?System.currentTimeMillis():-1);

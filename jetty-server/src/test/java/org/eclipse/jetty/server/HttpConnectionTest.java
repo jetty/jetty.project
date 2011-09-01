@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
@@ -43,6 +44,8 @@ import org.junit.Test;
  */
 public class HttpConnectionTest
 {
+    private static final Logger LOG = Log.getLogger(HttpConnectionTest.class);
+
     private Server server;
     private LocalConnector connector;
 
@@ -152,7 +155,7 @@ public class HttpConnectionTest
     {
         try
         {
-            ((StdErrLog)Log.getLog()).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
 
             String response;
             
@@ -183,7 +186,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLog()).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
         }
     }
 
@@ -333,11 +336,7 @@ public class HttpConnectionTest
         Logger logger=null;
         try
         {
-            if (!Log.isDebugEnabled())
-            {
-                logger=Log.getLog();
-                Log.setLog(null);
-            }
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");
             offset = checkContains(response,offset,"Connection: close");
@@ -345,8 +344,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            if (logger!=null)
-                Log.setLog(logger);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
         }
     }
 
@@ -456,8 +454,8 @@ public class HttpConnectionTest
                 }
                 catch(Exception e)
                 {
-                    Log.debug(e);
-                    Log.info("correctly ignored "+e);
+                    LOG.debug(e);
+                    LOG.info("correctly ignored "+e);
                 }
             }
         });

@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Error Page Error Handler
@@ -40,6 +41,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ErrorPageErrorHandler extends ErrorHandler
 {
+    private static final Logger LOG = Log.getLogger(ErrorPageErrorHandler.class);
+
     public final static String ERROR_PAGE="org.eclipse.jetty.server.error_page";
 
     protected ServletContext _servletContext;
@@ -129,12 +132,12 @@ public class ErrorPageErrorHandler extends ErrorHandler
                         }
                         else
                         {
-                            Log.warn("No error page "+error_page);
+                            LOG.warn("No error page "+error_page);
                         }
                     }
                     catch (ServletException e)
                     {
-                        Log.warn(Log.EXCEPTION, e);
+                        LOG.warn(Log.EXCEPTION, e);
                         return;
                     }
                 }

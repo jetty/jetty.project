@@ -38,6 +38,7 @@ import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Convenience class to handle validation of certificates, aliases and keystores
@@ -51,6 +52,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class CertificateValidator
 {
+    private static final Logger LOG = Log.getLogger(CertificateValidator.class);
     private static AtomicLong __aliasCount = new AtomicLong();
     
     private KeyStore _trustStore;
@@ -129,7 +131,7 @@ public class CertificateValidator
             }
             catch (KeyStoreException kse)
             {
-                Log.debug(kse);
+                LOG.debug(kse);
                 throw new CertificateException("Unable to validate certificate" +
                         " for alias [" + keyAlias + "]: " + kse.getMessage(), kse);
             }
@@ -177,7 +179,7 @@ public class CertificateValidator
             }
             catch (KeyStoreException kse)
             {
-                Log.debug(kse);
+                LOG.debug(kse);
                 throw new CertificateException("Unable to validate certificate" +
                         (certAlias == null ? "":" for alias [" +certAlias + "]") + ": " + kse.getMessage(), kse);
             }
@@ -243,7 +245,7 @@ public class CertificateValidator
         }
         catch (GeneralSecurityException gse)
         {
-            Log.debug(gse);
+            LOG.debug(gse);
             throw new CertificateException("Unable to validate certificate: " + gse.getMessage(), gse);
         }
     }

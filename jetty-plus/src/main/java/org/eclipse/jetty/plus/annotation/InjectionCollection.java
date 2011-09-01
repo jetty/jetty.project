@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * InjectionCollection
@@ -28,7 +29,9 @@ import org.eclipse.jetty.util.log.Log;
  *
  */
 public class InjectionCollection
-{ 
+{
+    private static final Logger LOG = Log.getLogger(InjectionCollection.class);
+ 
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
 
     private HashMap<String, List<Injection>> _injectionMap = new HashMap<String, List<Injection>>();//map of classname to injections
@@ -39,8 +42,8 @@ public class InjectionCollection
         if ((injection==null) || injection.getTargetClass()==null) 
             return;
         
-        if (Log.isDebugEnabled())
-            Log.debug("Adding injection for class="+(injection.getTargetClass()+ " on a "+(injection.getTarget().getName())));
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding injection for class="+(injection.getTargetClass()+ " on a "+(injection.getTarget().getName())));
    
         
         List<Injection> injections = (List<Injection>)_injectionMap.get(injection.getTargetClass().getCanonicalName());

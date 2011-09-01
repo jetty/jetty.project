@@ -34,12 +34,15 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class HttpHeadersTest
 {
+    private static final Logger LOG = Log.getLogger(HttpHeadersTest.class);
+
     private static final String CONTENT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "
             + "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "
             + "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. "
@@ -133,7 +136,7 @@ public class HttpHeadersTest
                 protected void onException(Throwable x)
                 {
                     // suppress exception
-                    Log.ignore(x);
+                    LOG.ignore(x);
                 }
             };
             exchange.setURL(requestUrl);

@@ -17,6 +17,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * PreDestroyCallback
@@ -25,6 +26,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class PreDestroyCallback extends LifeCycleCallback
 {
+    private static final Logger LOG = Log.getLogger(PreDestroyCallback.class);
+
 
     /** 
      * Commons Annotations Specification section 2.6:
@@ -57,7 +60,7 @@ public class PreDestroyCallback extends LifeCycleCallback
         }
         catch (Exception e)
         {
-            Log.warn("Ignoring exception thrown on preDestroy call to "+getTargetClass()+"."+getTarget().getName(), e);
+            LOG.warn("Ignoring exception thrown on preDestroy call to "+getTargetClass()+"."+getTarget().getName(), e);
         }
     }
     

@@ -19,6 +19,7 @@ import java.security.MessageDigest;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -37,6 +38,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class Credential implements Serializable
 {
+    private static final Logger LOG = Log.getLogger(Credential.class);
+
     private static final long serialVersionUID = -7760551052768181572L;
 
     /* ------------------------------------------------------------ */
@@ -91,7 +94,7 @@ public abstract class Credential implements Serializable
             if (credentials instanceof char[])
                 credentials=new String((char[])credentials);
             if (!(credentials instanceof String) && !(credentials instanceof Password)) 
-                Log.warn("Can't check " + credentials.getClass() + " against CRYPT");
+                LOG.warn("Can't check " + credentials.getClass() + " against CRYPT");
 
             String passwd = credentials.toString();
             return _cooked.equals(UnixCrypt.crypt(passwd, _cooked));
@@ -172,13 +175,13 @@ public abstract class Credential implements Serializable
                 }
                 else
                 {
-                    Log.warn("Can't check " + credentials.getClass() + " against MD5");
+                    LOG.warn("Can't check " + credentials.getClass() + " against MD5");
                     return false;
                 }
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
                 return false;
             }
         }
@@ -199,7 +202,7 @@ public abstract class Credential implements Serializable
                         }
                         catch (Exception e)
                         {
-                            Log.warn(e);
+                            LOG.warn(e);
                             return null;
                         }
                     }
@@ -213,7 +216,7 @@ public abstract class Credential implements Serializable
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
                 return null;
             }
         }

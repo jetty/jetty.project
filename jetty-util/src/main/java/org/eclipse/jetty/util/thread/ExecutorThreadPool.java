@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** 
@@ -34,6 +35,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool, LifeCycle
 {
+    private static final Logger LOG = Log.getLogger(ExecutorThreadPool.class);
     private final ExecutorService _executor;
 
     /* ------------------------------------------------------------ */
@@ -105,7 +107,7 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         }
         catch(RejectedExecutionException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             return false;
         }
     }

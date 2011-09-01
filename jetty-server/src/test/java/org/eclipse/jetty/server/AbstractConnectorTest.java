@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -39,6 +40,8 @@ import static org.junit.Assert.assertTrue;
 
 public class AbstractConnectorTest
 {
+    private static final Logger LOG = Log.getLogger(AbstractConnectorTest.class);
+
     private static Server _server;
     private static AbstractConnector _connector;
     private static CyclicBarrier _connect;
@@ -76,7 +79,7 @@ public class AbstractConnectorTest
                  }
                 catch (Exception ex)
                 {
-                    Log.debug(ex);
+                    LOG.debug(ex);
                 }
                 finally
                 {

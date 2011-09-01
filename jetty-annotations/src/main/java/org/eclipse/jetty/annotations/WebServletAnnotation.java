@@ -24,6 +24,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.webapp.Origin;
  */
 public class WebServletAnnotation extends DiscoveredAnnotation
 {
+    private static final Logger LOG = Log.getLogger(WebServletAnnotation.class);
     
     public WebServletAnnotation (WebAppContext context, String className)
     {
@@ -52,14 +54,14 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         
         if (clazz == null)
         {
-            Log.warn(_className+" cannot be loaded");
+            LOG.warn(_className+" cannot be loaded");
             return;
         }
         
         //Servlet Spec 8.1.1
         if (!HttpServlet.class.isAssignableFrom(clazz))
         {
-            Log.warn(clazz.getName()+" is not assignable from javax.servlet.http.HttpServlet");
+            LOG.warn(clazz.getName()+" is not assignable from javax.servlet.http.HttpServlet");
             return;
         }
         
@@ -67,7 +69,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         
         if (annotation.urlPatterns().length > 0 && annotation.value().length > 0)
         {
-            Log.warn(clazz.getName()+ " defines both @WebServlet.value and @WebServlet.urlPatterns");
+            LOG.warn(clazz.getName()+ " defines both @WebServlet.value and @WebServlet.urlPatterns");
             return;
         }
         
@@ -77,7 +79,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         
         if (urlPatterns.length == 0)
         {
-            Log.warn(clazz.getName()+ " defines neither @WebServlet.value nor @WebServlet.urlPatterns");
+            LOG.warn(clazz.getName()+ " defines neither @WebServlet.value nor @WebServlet.urlPatterns");
             return;
         }
         

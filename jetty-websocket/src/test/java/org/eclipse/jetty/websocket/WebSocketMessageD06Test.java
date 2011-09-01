@@ -662,7 +662,7 @@ public class WebSocketMessageD06Test
         final AtomicReference<String> received = new AtomicReference<String>();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
 
-        WebSocketGeneratorD06.MaskGen maskGen = new WebSocketGeneratorD06.RandomMaskGen();
+        MaskGen maskGen = new RandomMaskGen();
         
         WebSocketGeneratorD06 gen = new WebSocketGeneratorD06(new WebSocketBuffers(8096),endp,maskGen);
         byte[] data = message.getBytes(StringUtil.__UTF8);

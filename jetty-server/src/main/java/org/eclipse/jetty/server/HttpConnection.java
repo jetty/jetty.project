@@ -54,6 +54,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.Timeout;
 
@@ -90,6 +91,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public abstract class HttpConnection  extends AbstractConnection
 {
+    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+
     private static final int UNKNOWN = -2;
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
@@ -399,7 +402,7 @@ public abstract class HttpConnection  extends AbstractConnection
         Throwable async_exception=null;
         try
         {
-            if (Log.isDebugEnabled())
+            if (LOG.isDebugEnabled())
             {
                 threadName=Thread.currentThread().getName();
                 Thread.currentThread().setName(threadName+" - "+_uri);
@@ -446,25 +449,25 @@ public abstract class HttpConnection  extends AbstractConnection
                 }
                 catch (ContinuationThrowable e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
                 catch (EofException e)
                 {
                     async_exception=e;
-                    Log.debug(e);
+                    LOG.debug(e);
                     _request.setHandled(true);
                     error=true;
                 }
                 catch (UncheckedIOException e)
                 {
                     async_exception=e;
-                    Log.debug(e);
+                    LOG.debug(e);
                     _request.setHandled(true);
                     error=true;
                 }
                 catch (HttpException e)
                 {
-                    Log.debug(e);
+                    LOG.debug(e);
                     _request.setHandled(true);
                     _response.sendError(e.getStatus(), e.getReason());
                     error=true;
@@ -477,7 +480,7 @@ public abstract class HttpConnection  extends AbstractConnection
                     async_exception=e;
                     
                     error=true;
-                    Log.warn(String.valueOf(_uri),e);
+                    LOG.warn(String.valueOf(_uri),e);
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
                 }
@@ -499,7 +502,7 @@ public abstract class HttpConnection  extends AbstractConnection
 
                 if (_expect100Continue)
                 {
-                    Log.debug("100 continues not sent");
+                    LOG.debug("100 continues not sent");
                     // We didn't send 100 continues, but the latest interpretation
                     // of the spec (see httpbis) is that the client will either
                     // send the body anyway, or close.  So we no longer need to
@@ -555,7 +558,7 @@ public abstract class HttpConnection  extends AbstractConnection
             }
             catch(RuntimeException e)
             {
-                Log.warn("header full: "+e);
+                LOG.warn("header full: "+e);
 
                 _response.reset();
                 _generator.reset(true);
@@ -586,8 +589,8 @@ public abstract class HttpConnection  extends AbstractConnection
             }
             catch(RuntimeException e)
             {
-                Log.warn("header full: "+e);
-                Log.debug(e);
+                LOG.warn("header full: "+e);
+                LOG.debug(e);
 
                 _response.reset();
                 _generator.reset(true);
@@ -659,7 +662,7 @@ public abstract class HttpConnection  extends AbstractConnection
     /* ------------------------------------------------------------ */
     public void closed()
     {
-        Log.debug("closed {}",this);
+        LOG.debug("closed {}",this);
     }
     
     /* ------------------------------------------------------------ */
@@ -738,7 +741,7 @@ public abstract class HttpConnection  extends AbstractConnection
             }
             catch (Exception e)
             {
-                Log.debug(e);
+                LOG.debug(e);
                 if (e instanceof HttpException)
                     throw (HttpException)e;
                 throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
@@ -951,7 +954,7 @@ public abstract class HttpConnection  extends AbstractConnection
         @Override
         public void startResponse(Buffer version, int status, Buffer reason)
         {
-            Log.debug("Bad request!: "+version+" "+status+" "+reason);
+            LOG.debug("Bad request!: "+version+" "+status+" "+reason);
         }
     }
 

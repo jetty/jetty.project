@@ -21,9 +21,12 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AbstractSessionIdManager extends AbstractLifeCycle implements SessionIdManager
 {
+    private static final Logger LOG = Log.getLogger(AbstractSessionIdManager.class);
+
     private final static String __NEW_SESSION_ID="org.eclipse.jetty.server.newSessionId";  
     
     protected Random _random;
@@ -164,7 +167,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             }
             catch (Exception e)
             {
-                Log.warn("Could not generate SecureRandom for session-id randomness",e);
+                LOG.warn("Could not generate SecureRandom for session-id randomness",e);
                 _random=new Random();
                 _weakRandom=true;
             }

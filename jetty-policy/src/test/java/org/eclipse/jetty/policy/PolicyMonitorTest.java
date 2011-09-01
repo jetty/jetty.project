@@ -82,6 +82,8 @@ public class PolicyMonitorTest
         File permFile =new File(MavenTestingUtils.getTargetDir(),
                 "test-classes/monitor-test-2/global-all-permission.policy");
         
+	// Wait so that time is definitely different
+        Thread.sleep(10);
         permFile.setLastModified(System.currentTimeMillis());
                         
         monitor.waitForScan();

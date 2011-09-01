@@ -40,7 +40,7 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     @Override
     public void setUp() throws Exception
     {
-        _scheme="https://";
+        _scheme="https";
         startServer();
         _httpClient=new HttpClient();
         _httpClient.setIdleTimeout(2000);

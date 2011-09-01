@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * This {@link RequestLog} implementation outputs logs in the pseudo-standard
@@ -46,6 +47,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
 {
+    private static final Logger LOG = Log.getLogger(NCSARequestLog.class);
+
     private String _filename;
     private boolean _extended;
     private boolean _append;
@@ -580,7 +583,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
         }
         catch (IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
 
     }
@@ -638,7 +641,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
         {
             _fileOut = new RolloverFileOutputStream(_filename,_append,_retainDays,TimeZone.getTimeZone(_logTimeZone),_filenameDateFormat,null);
             _closeOut = true;
-            Log.info("Opened " + getDatedFilename());
+            LOG.info("Opened " + getDatedFilename());
         }
         else
             _fileOut = System.err;
@@ -677,7 +680,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             }
             catch (IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             if (_out != null && _closeOut)
                 try
@@ -686,7 +689,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                 }
                 catch (IOException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
 
             _out = null;

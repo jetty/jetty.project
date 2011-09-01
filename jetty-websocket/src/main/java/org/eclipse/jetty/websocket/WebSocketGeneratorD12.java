@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
@@ -28,7 +27,7 @@ import org.eclipse.jetty.io.EofException;
  * threads will call the addMessage methods while other
  * threads are flushing the generator.
  */
-public class WebSocketGeneratorD10 implements WebSocketGenerator
+public class WebSocketGeneratorD12 implements WebSocketGenerator
 {
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
@@ -38,75 +37,25 @@ public class WebSocketGeneratorD10 implements WebSocketGenerator
     private boolean _opsent;
     private final MaskGen _maskGen;
 
-    public interface MaskGen
-    {
-        void genMask(byte[] mask);
-    }
-    
-    public static class NullMaskGen implements MaskGen
-    {
-        public void genMask(byte[] mask)
-        {
-            mask[0]=mask[1]=mask[2]=mask[3]=0;
-        }
-    }
-    
-    public static class FixedMaskGen implements MaskGen
-    {
-        final byte[] _mask;
-        public FixedMaskGen()
-        {
-            _mask=new byte[]{(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
-        }
-        
-        public FixedMaskGen(byte[] mask)
-        {
-            _mask=mask;
-        }
-        
-        public void genMask(byte[] mask)
-        {
-            mask[0]=_mask[0];
-            mask[1]=_mask[1];
-            mask[2]=_mask[2];
-            mask[3]=_mask[3];
-        }
-    }
-
-    public static class RandomMaskGen implements MaskGen
-    {
-        final Random _random;
-        public RandomMaskGen()
-        {
-            _random=new Random(); 
-        }
-        
-        public RandomMaskGen(Random random)
-        {
-            _random=random;
-        }
-        
-        public void genMask(byte[] mask)
-        {
-            _random.nextBytes(mask);
-        }
-    }
-
-    
-    public WebSocketGeneratorD10(WebSocketBuffers buffers, EndPoint endp)
+    public WebSocketGeneratorD12(WebSocketBuffers buffers, EndPoint endp)
     {
         _buffers=buffers;
         _endp=endp;
         _maskGen=null;
     }
     
-    public WebSocketGeneratorD10(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
+    public WebSocketGeneratorD12(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
     {
         _buffers=buffers;
         _endp=endp;
         _maskGen=maskGen;
     }
 
+    public synchronized Buffer getBuffer()
+    {
+        return _buffer;
+    }
+    
     public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
     {
         // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
@@ -116,14 +65,14 @@ public class WebSocketGeneratorD10 implements WebSocketGenerator
         if (_buffer==null)
             _buffer=mask?_buffers.getBuffer():_buffers.getDirectBuffer();
             
-        boolean last=WebSocketConnectionD10.isLastFrame(flags);
+        boolean last=WebSocketConnectionD12.isLastFrame(flags);
         byte orig=opcode;
         
         int space=mask?14:10;
         
         do
         {
-            opcode = _opsent?WebSocketConnectionD10.OP_CONTINUATION:opcode;
+            opcode = _opsent?WebSocketConnectionD12.OP_CONTINUATION:opcode;
             opcode=(byte)(((0xf&flags)<<4)+(0xf&opcode));
             _opsent=true;
             
@@ -273,7 +222,7 @@ public class WebSocketGeneratorD10 implements WebSocketGenerator
         return _buffer==null || _buffer.length()==0;
     }
 
-    public synchronized void idle()
+    public synchronized void returnBuffer()
     {
         if (_buffer!=null && _buffer.length()==0)
         {

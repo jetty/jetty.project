@@ -22,6 +22,7 @@ import javax.naming.NamingException;
 
 import org.eclipse.jetty.util.IntrospectionUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Injection
@@ -33,6 +34,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Injection
 {
+    private static final Logger LOG = Log.getLogger(Injection.class);
+
     private Class<?> _targetClass;
     private String _jndiName;
     private String _mappingName;
@@ -136,7 +139,7 @@ public class Injection
         String setter = "set"+target.substring(0,1).toUpperCase()+target.substring(1);
         try
         {
-            Log.debug("Looking for method for setter: "+setter+" with arg "+_resourceClass);
+            LOG.debug("Looking for method for setter: "+setter+" with arg "+_resourceClass);
             _target = IntrospectionUtil.findMethod(clazz, setter, new Class[] {_resourceClass}, true, false);
             _targetClass = clazz;
             _paramClass = _resourceClass;
@@ -205,7 +208,7 @@ public class Injection
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             throw new IllegalStateException("Inject failed for field "+field.getName());
         }
     }
@@ -226,7 +229,7 @@ public class Injection
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             throw new IllegalStateException("Inject failed for method "+method.getName());
         }
     }

@@ -27,9 +27,10 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Connection implementation of the Ajp13 protocol. <p/> XXX Refactor to remove
@@ -38,6 +39,8 @@ import org.eclipse.jetty.server.Server;
  */
 public class Ajp13Connection extends BlockingHttpConnection
 {
+    private static final Logger LOG = Log.getLogger(Ajp13Connection.class);
+
     public Ajp13Connection(Connector connector, EndPoint endPoint, Server server)
     {
         super(connector, endPoint, server,
@@ -124,8 +127,8 @@ public class Ajp13Connection extends BlockingHttpConnection
             } 
             catch (Exception e) 
             {
-                org.eclipse.jetty.util.log.Log.warn(e.toString());
-                org.eclipse.jetty.util.log.Log.ignore(e);
+                LOG.warn(e.toString());
+                LOG.ignore(e);
                 if (sslCert!=null)
                     _request.setAttribute("javax.servlet.request.X509Certificate", sslCert.toString());
             }

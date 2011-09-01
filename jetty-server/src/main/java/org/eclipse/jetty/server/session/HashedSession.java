@@ -14,9 +14,12 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
-class HashedSession extends AbstractSession
+public class HashedSession extends AbstractSession
 {
+    private static final Logger LOG = Log.getLogger(HashedSession.class);
+
     private final HashSessionManager _hashSessionManager;
 
     /** Whether the session has been saved because it has been deemed idle; 
@@ -83,8 +86,8 @@ class HashedSession extends AbstractSession
         // Only idle the session if not already idled and no previous save/idle has failed
         if (!isIdled() && !_saveFailed)
         {
-            if (Log.isDebugEnabled())
-                Log.debug("Saving {} {}",super.getId(),reactivate);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Saving {} {}",super.getId(),reactivate);
 
             File file = null;
             FileOutputStream fos = null;
@@ -108,7 +111,7 @@ class HashedSession extends AbstractSession
             {
                 saveFailed(); // We won't try again for this session
 
-                Log.warn("Problem saving session " + super.getId(), e);
+                LOG.warn("Problem saving session " + super.getId(), e);
 
                 if (fos != null)
                 {
@@ -160,9 +163,9 @@ class HashedSession extends AbstractSession
             access(System.currentTimeMillis());
 
             
-            if (Log.isDebugEnabled())
+            if (LOG.isDebugEnabled())
             {
-                Log.debug("Deidling " + super.getId());
+                LOG.debug("Deidling " + super.getId());
             }
 
             FileInputStream fis = null;
@@ -185,7 +188,7 @@ class HashedSession extends AbstractSession
             }
             catch (Exception e)
             {
-                Log.warn("Problem deidling session " + super.getId(), e);
+                LOG.warn("Problem deidling session " + super.getId(), e);
                 IO.close(fis);
                 invalidate();
             }

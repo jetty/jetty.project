@@ -30,19 +30,22 @@ import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Factory to create WebSocket connections
  */
 public class WebSocketFactory
 {
+    private static final Logger LOG = Log.getLogger(WebSocketFactory.class);
+
     public interface Acceptor
     {
         /* ------------------------------------------------------------ */
         /**
          * @param request
          * @param protocol
-         * @return
+         * @returns
          */
         WebSocket doWebSocketConnect(HttpServletRequest request, String protocol);
 
@@ -136,7 +139,6 @@ public class WebSocketFactory
      * @param request   The request to upgrade
      * @param response  The response to upgrade
      * @param websocket The websocket handler implementation to use
-     * @param origin    The origin of the websocket connection
      * @param protocol  The websocket protocol
      * @throws IOException in case of I/O errors
      */
@@ -179,11 +181,13 @@ public class WebSocketFactory
             case 8: 
             case 9: 
             case 10: 
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD10.OP_EXT_DATA, 16-WebSocketConnectionD10.OP_EXT_CTRL,3);
-                connection = new WebSocketConnectionD10(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+            case 11: 
+            case 12: 
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD12.OP_EXT_DATA, 16-WebSocketConnectionD12.OP_EXT_CTRL,3);
+                connection = new WebSocketConnectionD12(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
-                Log.warn("Unsupported Websocket version: "+draft);
+                LOG.warn("Unsupported Websocket version: "+draft);
                 throw new HttpException(400, "Unsupported draft specification: " + draft);
         }
 
@@ -217,9 +221,9 @@ public class WebSocketFactory
     {
         if ("websocket".equalsIgnoreCase(request.getHeader("Upgrade")))
         {
-            String origin = request.getHeader("Sec-WebSocket-Origin");
+            String origin = request.getHeader("Origin");
             if (origin==null)
-                origin = request.getHeader("Origin");
+                origin = request.getHeader("Sec-WebSocket-Origin");
             if (!_acceptor.checkOrigin(request,origin))
             {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -279,11 +283,11 @@ public class WebSocketFactory
 
             if (extension.init(parameters))
             {
-                Log.debug("add {} {}",extName,parameters);
+                LOG.debug("add {} {}",extName,parameters);
                 extensions.add(extension);
             }
         }
-        Log.debug("extensions={}",extensions);
+        LOG.debug("extensions={}",extensions);
         return extensions;
     }
 
@@ -297,7 +301,7 @@ public class WebSocketFactory
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         
         return null;

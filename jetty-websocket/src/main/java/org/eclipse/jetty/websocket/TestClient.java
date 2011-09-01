@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class TestClient implements WebSocket.OnFrame
 {
-    private static WebSocketClient __client = new WebSocketClient();
+    private static WebSocketClientFactory __clientFactory = new WebSocketClientFactory();
     private static boolean _verbose=false;
 
     private static final Random __random = new Random();
@@ -119,7 +119,7 @@ public class TestClient implements WebSocket.OnFrame
 
     private void open() throws Exception
     {
-        WebSocketClient client = new WebSocketClient(__client);
+        WebSocketClient client = new WebSocketClient(__clientFactory);
         client.setProtocol(_protocol);
         client.setMaxIdleTime(_timeout);
         client.open(new URI("ws://"+_host+":"+_port+"/"),this).get(10,TimeUnit.SECONDS);
@@ -138,7 +138,7 @@ public class TestClient implements WebSocket.OnFrame
         {                    
             __framesSent++;
             byte flags= (byte)(off+len==data.length?0x8:0);
-            byte op=(byte)(off==0?opcode:WebSocketConnectionD10.OP_CONTINUATION);
+            byte op=(byte)(off==0?opcode:WebSocketConnectionD12.OP_CONTINUATION);
 
             if (_verbose)                
                 System.err.printf("%s#addFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
@@ -179,7 +179,7 @@ public class TestClient implements WebSocket.OnFrame
     
     public static void main(String[] args) throws Exception
     {
-        __client.start();
+        __clientFactory.start();
 
         String host="localhost";
         int port=8080;
@@ -197,7 +197,7 @@ public class TestClient implements WebSocket.OnFrame
             if ("-p".equals(a)||"--port".equals(a))
                 port=Integer.parseInt(args[++i]);
             else if ("-h".equals(a)||"--host".equals(a))
-                port=Integer.parseInt(args[++i]);
+                host=args[++i];
             else if ("-c".equals(a)||"--count".equals(a))
                 count=Integer.parseInt(args[++i]);
             else if ("-s".equals(a)||"--size".equals(a))
@@ -240,11 +240,11 @@ public class TestClient implements WebSocket.OnFrame
             {
                 long next = System.currentTimeMillis()+delay;
                 
-                byte opcode=binary?WebSocketConnectionD10.OP_BINARY:WebSocketConnectionD10.OP_TEXT;
+                byte opcode=binary?WebSocketConnectionD12.OP_BINARY:WebSocketConnectionD12.OP_TEXT;
                 
                 byte data[]=null;
 
-                if (opcode==WebSocketConnectionD10.OP_TEXT)
+                if (opcode==WebSocketConnectionD12.OP_TEXT)
                 {
                     StringBuilder b = new StringBuilder();
                     while (b.length()<size)
@@ -258,7 +258,7 @@ public class TestClient implements WebSocket.OnFrame
                 }
 
                 for (int i=0;i<clients;i++)
-                    client[i].ping(opcode,data,opcode==WebSocketConnectionD10.OP_PING?-1:fragment);
+                    client[i].ping(opcode,data,opcode==WebSocketConnectionD12.OP_PING?-1:fragment);
                 
                 while(System.currentTimeMillis()<next)
                     Thread.sleep(10);
@@ -277,7 +277,7 @@ public class TestClient implements WebSocket.OnFrame
                     "time "+duration+"ms "+ (1000L*__messagesReceived.get()/duration)+" req/s");
             System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",__minDuration.get()/1000000.0,__messagesReceived.get()==0?0.0:(__totalTime.get()/__messagesReceived.get()/1000000.0),__maxDuration.get()/1000000.0);
             
-            __client.stop();
+            __clientFactory.stop();
         }
 
     }

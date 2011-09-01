@@ -9,9 +9,12 @@ import java.util.zip.Inflater;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class DeflateFrameExtension extends AbstractExtension
 {
+    private static final Logger LOG = Log.getLogger(DeflateFrameExtension.class);
+
     private int _minLength=8;
     private Deflater _deflater;
     private Inflater _inflater;
@@ -80,8 +83,8 @@ public class DeflateFrameExtension extends AbstractExtension
         }
         catch(DataFormatException e)
         {
-            Log.warn(e);
-            getConnection().close(WebSocketConnectionD10.CLOSE_PROTOCOL,e.toString());
+            LOG.warn(e);
+            getConnection().close(WebSocketConnectionD12.CLOSE_PROTOCOL,e.toString());
         }
     }
 

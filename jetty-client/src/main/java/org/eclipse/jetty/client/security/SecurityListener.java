@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /**
@@ -35,7 +36,9 @@ import org.eclipse.jetty.util.log.Log;
  * HttpExchange.
  */
 public class SecurityListener extends HttpEventListenerWrapper
-{	
+{
+    private static final Logger LOG = Log.getLogger(SecurityListener.class);
+	
     private HttpDestination _destination;
     private HttpExchange _exchange;
     private boolean _requestComplete;
@@ -105,7 +108,7 @@ public class SecurityListener extends HttpEventListenerWrapper
             }    
             else
             {
-                Log.debug("SecurityListener: missed scraping authentication details - " + token );
+                LOG.debug("SecurityListener: missed scraping authentication details - " + token );
             }
         }
         return authenticationDetails;
@@ -116,8 +119,8 @@ public class SecurityListener extends HttpEventListenerWrapper
     public void onResponseStatus( Buffer version, int status, Buffer reason )
         throws IOException
     {
-        if (Log.isDebugEnabled())
-            Log.debug("SecurityListener:Response Status: " + status );
+        if (LOG.isDebugEnabled())
+            LOG.debug("SecurityListener:Response Status: " + status );
 
         if ( status == HttpStatus.UNAUTHORIZED_401 && _attempts<_destination.getHttpClient().maxRetries()) 
         {
@@ -139,8 +142,8 @@ public class SecurityListener extends HttpEventListenerWrapper
     public void onResponseHeader( Buffer name, Buffer value )
         throws IOException
     {
-        if (Log.isDebugEnabled())
-            Log.debug( "SecurityListener:Header: " + name.toString() + " / " + value.toString() );
+        if (LOG.isDebugEnabled())
+            LOG.debug( "SecurityListener:Header: " + name.toString() + " / " + value.toString() );
         
         
         if (!isDelegatingResponses())
@@ -168,7 +171,7 @@ public class SecurityListener extends HttpEventListenerWrapper
                     
                     if ( realm == null )
                     {
-                        Log.warn( "Unknown Security Realm: " + details.get("realm") );
+                        LOG.warn( "Unknown Security Realm: " + details.get("realm") );
                     }
                     else if ("digest".equalsIgnoreCase(type))
                     {
@@ -196,8 +199,8 @@ public class SecurityListener extends HttpEventListenerWrapper
         {
             if (_requestComplete && _responseComplete)
             {
-               if (Log.isDebugEnabled())
-                   Log.debug("onRequestComplete, Both complete: Resending from onResponseComplete "+_exchange); 
+               if (LOG.isDebugEnabled())
+                   LOG.debug("onRequestComplete, Both complete: Resending from onResponseComplete "+_exchange); 
                 _responseComplete = false;
                 _requestComplete = false;
                 setDelegatingRequests(true);
@@ -206,15 +209,15 @@ public class SecurityListener extends HttpEventListenerWrapper
             } 
             else
             {
-                if (Log.isDebugEnabled())
-                    Log.debug("onRequestComplete, Response not yet complete onRequestComplete, calling super for "+_exchange);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onRequestComplete, Response not yet complete onRequestComplete, calling super for "+_exchange);
                 super.onRequestComplete(); 
             }
         }
         else
         {
-            if (Log.isDebugEnabled())
-                Log.debug("onRequestComplete, delegating to super with Request complete="+_requestComplete+", response complete="+_responseComplete+" "+_exchange);
+            if (LOG.isDebugEnabled())
+                LOG.debug("onRequestComplete, delegating to super with Request complete="+_requestComplete+", response complete="+_responseComplete+" "+_exchange);
             super.onRequestComplete();
         }
     }
@@ -228,8 +231,8 @@ public class SecurityListener extends HttpEventListenerWrapper
         {  
             if (_requestComplete && _responseComplete)
             {              
-                if (Log.isDebugEnabled())
-                    Log.debug("onResponseComplete, Both complete: Resending from onResponseComplete"+_exchange);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onResponseComplete, Both complete: Resending from onResponseComplete"+_exchange);
                 _responseComplete = false;
                 _requestComplete = false;
                 setDelegatingResponses(true);
@@ -239,15 +242,15 @@ public class SecurityListener extends HttpEventListenerWrapper
             }
             else
             {
-               if (Log.isDebugEnabled())
-                   Log.debug("onResponseComplete, Request not yet complete from onResponseComplete,  calling super "+_exchange);
+               if (LOG.isDebugEnabled())
+                   LOG.debug("onResponseComplete, Request not yet complete from onResponseComplete,  calling super "+_exchange);
                 super.onResponseComplete(); 
             }
         }
         else
         {
-            if (Log.isDebugEnabled())
-                Log.debug("OnResponseComplete, delegating to super with Request complete="+_requestComplete+", response complete="+_responseComplete+" "+_exchange);
+            if (LOG.isDebugEnabled())
+                LOG.debug("OnResponseComplete, delegating to super with Request complete="+_requestComplete+", response complete="+_responseComplete+" "+_exchange);
             super.onResponseComplete();  
         }
     }

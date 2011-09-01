@@ -30,6 +30,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -51,6 +52,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
+    private static final Logger LOG = Log.getLogger(ServletSecurityAnnotationHandler.class);
 
     private WebAppContext _context;
     
@@ -67,7 +69,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
     {
         if (!(_context.getSecurityHandler() instanceof ConstraintAware))
         {
-            Log.warn("SecurityHandler not ConstraintAware, skipping security annotation processing");
+            LOG.warn("SecurityHandler not ConstraintAware, skipping security annotation processing");
             return;
         }
         
@@ -83,7 +85,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      
        if (constraintsExist(servletMappings, constraintMappings))
        {
-           Log.warn("Constraints already defined for "+clazz.getName()+", skipping ServletSecurity annotation");
+           LOG.warn("Constraints already defined for "+clazz.getName()+", skipping ServletSecurity annotation");
            return;
        }
 

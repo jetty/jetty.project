@@ -33,29 +33,18 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TimeoutExchangeTest
 {
-    private HttpClient _httpClient;
-    private Server _server;
-    private int _port;
+    private static HttpClient _httpClient;
+    private static Server _server;
+    private static int _port;
 
-    @Before
-    public void setUp() throws Exception
-    {
-        startServer();
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        stopClient();
-        stopServer();
-    }
-
-    private void startServer() throws Exception
+    @BeforeClass
+    public static void startServer() throws Exception
     {
         _server = new Server();
         _server.setGracefulShutdown(500);
@@ -63,7 +52,8 @@ public class TimeoutExchangeTest
         _server.addConnector(_connector);
         Handler handler = new AbstractHandler()
         {
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+                    ServletException
             {
                 try
                 {
@@ -86,11 +76,22 @@ public class TimeoutExchangeTest
         _port = _connector.getLocalPort();
     }
 
-    private void stopServer() throws Exception
+    @AfterClass
+    public static void stopServer() throws Exception
     {
         _server.stop();
         _server.join();
         _server = null;
+    }
+
+    @After
+    public void stopClient() throws Exception
+    {
+        if (_httpClient != null)
+        {
+            _httpClient.stop();
+            _httpClient = null;
+        }
     }
 
     private void startClient(long clientTimeout) throws Exception
@@ -108,17 +109,11 @@ public class TimeoutExchangeTest
         _httpClient.start();
     }
 
-    private void stopClient() throws Exception
-    {
-        _httpClient.stop();
-//        Thread.sleep(500);
-    }
-
     @Test
     public void testDefaultTimeoutNotExpiring() throws Exception
     {
-        startClient(1000);
-        long serverSleep = 500;
+        startClient(300);
+        long serverSleep = 100;
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
@@ -135,8 +130,8 @@ public class TimeoutExchangeTest
     @Test
     public void testDefaultTimeoutExpiring() throws Exception
     {
-        startClient(500);
-        long serverSleep = 1000;
+        startClient(100);
+        long serverSleep = 200;
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
@@ -153,9 +148,9 @@ public class TimeoutExchangeTest
     @Test
     public void testExchangeTimeoutNotExpiring() throws Exception
     {
-        startClient(500);
-        long serverSleep = 1000;
-        long exchangeTimeout = 1500;
+        startClient(100);
+        long serverSleep = 200;
+        long exchangeTimeout = 300;
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
@@ -173,9 +168,10 @@ public class TimeoutExchangeTest
     @Test
     public void testExchangeTimeoutExpiring() throws Exception
     {
-        startClient(5000);
-        long serverSleep = 1000;
-        long exchangeTimeout = 500;
+        startClient(500);
+
+        long serverSleep = 300;
+        long exchangeTimeout = 100;
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
@@ -193,8 +189,8 @@ public class TimeoutExchangeTest
     @Test
     public void testDefaultTimeoutWithSmallerIdleTimeoutNotExpiring() throws Exception
     {
-        startClient(3000, 1000);
-        long serverSleep = 2000;
+        startClient(500,150);
+        long serverSleep = 300;
 
         // The idle timeout is shorter than the default timeout, but will be
         // temporarily increased on the endpoint in order for the exchange to complete.
@@ -214,9 +210,9 @@ public class TimeoutExchangeTest
     @Test
     public void testExchangeTimeoutWithSmallerIdleTimeoutNotExpiring() throws Exception
     {
-        startClient(4000, 3000);
-        long serverSleep = 1000;
-        long exchangeTimeout = 2000;
+        startClient(500,150);
+        long serverSleep = 150;
+        long exchangeTimeout = 300;
 
         // The idle timeout is shorter than the default timeout, but will be
         // temporarily increased on the endpoint in order for the exchange to complete.

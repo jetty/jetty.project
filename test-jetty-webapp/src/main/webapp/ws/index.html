@@ -2,7 +2,9 @@
 <html><head>
     <title>WebSocket Chat</title>
     <script type='text/javascript'>
-    
+
+      if (!window.WebSocket && window.MozWebSocket)
+        window.WebSocket=window.MozWebSocket;
       if (!window.WebSocket)
         alert("WebSocket not supported by this browser");
     
@@ -15,7 +17,7 @@
         join: function(name) {
           this._username=name;
           var location = document.location.toString().replace('http://','ws://').replace('https://','wss://');
-          this._ws=new WebSocket(location);
+          this._ws=new WebSocket(location,"chat");
           this._ws.onopen=this._onopen;
           this._ws.onmessage=this._onmessage;
           this._ws.onclose=this._onclose;

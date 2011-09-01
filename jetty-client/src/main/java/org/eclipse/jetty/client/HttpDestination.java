@@ -38,12 +38,15 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * @version $Revision: 879 $ $Date: 2009-09-11 16:13:28 +0200 (Fri, 11 Sep 2009) $
  */
 public class HttpDestination implements Dumpable
 {
+    private static final Logger LOG = Log.getLogger(HttpDestination.class);
+
     private final List<HttpExchange> _queue = new LinkedList<HttpExchange>();
     private final List<HttpConnection> _connections = new LinkedList<HttpConnection>();
     private final BlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
@@ -197,7 +200,7 @@ public class HttpDestination implements Dumpable
                 }
                 catch (InterruptedException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
             else
@@ -210,7 +213,7 @@ public class HttpDestination implements Dumpable
                 }
                 catch (InterruptedException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
         }
@@ -266,7 +269,7 @@ public class HttpDestination implements Dumpable
         }
         catch (Exception e)
         {
-            Log.debug(e);
+            LOG.debug(e);
             onConnectionFailed(e);
         }
     }
@@ -308,7 +311,7 @@ public class HttpDestination implements Dumpable
             }
             catch (InterruptedException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
     }
@@ -373,7 +376,7 @@ public class HttpDestination implements Dumpable
             }
             catch (InterruptedException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
     }
@@ -391,7 +394,7 @@ public class HttpDestination implements Dumpable
             }
             catch (IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
 
@@ -438,7 +441,7 @@ public class HttpDestination implements Dumpable
         }
         catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
 
         boolean startConnection = false;
@@ -675,7 +678,7 @@ public class HttpDestination implements Dumpable
             setMethod(HttpMethods.CONNECT);
             setVersion(exchange.getVersion());
             String serverHostAndPort = serverAddress.toString();
-            setURI(serverHostAndPort);
+            setRequestURI(serverHostAndPort);
             addRequestHeader(HttpHeaders.HOST, serverHostAndPort);
             addRequestHeader(HttpHeaders.PROXY_CONNECTION, "keep-alive");
             addRequestHeader(HttpHeaders.USER_AGENT, "Jetty-Client");

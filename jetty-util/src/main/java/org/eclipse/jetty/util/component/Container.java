@@ -18,6 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Container.
@@ -39,6 +40,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Container
 {
+    private static final Logger LOG = Log.getLogger(Container.class);
     private final CopyOnWriteArrayList<Container.Listener> _listeners=new CopyOnWriteArrayList<Container.Listener>();
     
     public void addEventListener(Container.Listener listener)
@@ -195,8 +197,8 @@ public class Container
      */
     private void add(Object parent, Object child, String relationship)
     {
-        if (Log.isDebugEnabled())
-            Log.debug("Container "+parent+" + "+child+" as "+relationship);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Container "+parent+" + "+child+" as "+relationship);
         if (_listeners!=null)
         {
             Relationship event=new Relationship(this,parent,child,relationship);
@@ -213,8 +215,8 @@ public class Container
      */
     private void remove(Object parent, Object child, String relationship)
     {
-        if (Log.isDebugEnabled())
-            Log.debug("Container "+parent+" - "+child+" as "+relationship);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Container "+parent+" - "+child+" as "+relationship);
         if (_listeners!=null)
         {
             Relationship event=new Relationship(this,parent,child,relationship);

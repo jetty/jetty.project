@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.omg.CORBA._PolicyStub;
 
@@ -87,6 +88,8 @@ import org.omg.CORBA._PolicyStub;
  */
 public class ProxyServlet implements Servlet
 {
+    private static final Logger LOG = Log.getLogger(ProxyServlet.class);
+
     protected Logger _log;
     protected HttpClient _client;
     protected String _hostHeader;
@@ -498,7 +501,7 @@ public class ProxyServlet implements Servlet
                     {
                         if (ex instanceof EofException)
                         {
-                            Log.ignore(ex);
+                            LOG.ignore(ex);
                             return;
                         }
                         handleOnException(ex,request,response);
@@ -733,8 +736,8 @@ public class ProxyServlet implements Servlet
      */
     protected void handleOnException(Throwable ex, HttpServletRequest request, HttpServletResponse response)
     {
-        Log.warn(ex.toString());
-        Log.debug(ex);
+        LOG.warn(ex.toString());
+        LOG.debug(ex);
         if (!response.isCommitted())
         {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

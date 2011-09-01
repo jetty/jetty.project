@@ -15,11 +15,14 @@ package org.eclipse.jetty.server;
 
 import org.eclipse.jetty.server.nio.BlockingChannelConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class BlockingChannelTimeoutTest extends ConnectorTimeoutTest
 {
+    private static final Logger LOG = Log.getLogger(BlockingChannelTimeoutTest.class);
+
    
     @BeforeClass
     public static void init() throws Exception
@@ -33,6 +36,6 @@ public class BlockingChannelTimeoutTest extends ConnectorTimeoutTest
     public void testMaxIdleWithWait() throws Exception
     {  
         // TODO
-        Log.warn("skipped BlockingChannelTimeoutTest#testMaxIdleWithWait");
+        LOG.warn("skipped BlockingChannelTimeoutTest#testMaxIdleWithWait");
     }
 }

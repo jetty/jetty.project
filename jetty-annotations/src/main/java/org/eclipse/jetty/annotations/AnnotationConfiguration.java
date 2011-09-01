@@ -27,6 +27,7 @@ import javax.servlet.annotation.HandlesTypes;
 import org.eclipse.jetty.annotations.AnnotationParser.DiscoverableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.webapp.WebDescriptor;
  */
 public class AnnotationConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";    
     
     public void preConfigure(final WebAppContext context) throws Exception
@@ -59,14 +61,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (metadataComplete)
         {
             //Never scan any jars or classes for annotations if metadata is complete
-            if (Log.isDebugEnabled()) Log.debug("Metadata-complete==true,  not processing annotations for context "+context);
+            if (LOG.isDebugEnabled()) LOG.debug("Metadata-complete==true,  not processing annotations for context "+context);
             return;
         }
         else 
         {
             //Only scan jars and classes if metadata is not complete and the web app is version 3.0, or
             //a 2.5 version webapp that has specifically asked to discover annotations
-            if (Log.isDebugEnabled()) Log.debug("parsing annotations");
+            if (LOG.isDebugEnabled()) LOG.debug("parsing annotations");
             
             AnnotationParser parser = createAnnotationParser();
             //Discoverable annotations - those that you have to look for without loading a class
@@ -79,7 +81,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             
             if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
             {
-                if (Log.isDebugEnabled()) Log.debug("Scanning all classses for annotations: webxmlVersion="+context.getServletContext().getEffectiveMajorVersion()+" configurationDiscovered="+context.isConfigurationDiscovered());
+                if (LOG.isDebugEnabled()) LOG.debug("Scanning all classses for annotations: webxmlVersion="+context.getServletContext().getEffectiveMajorVersion()+" configurationDiscovered="+context.isConfigurationDiscovered());
                 parseContainerPath(context, parser);
                 //email from Rajiv Mordani jsrs 315 7 April 2010
                 //    If there is a <others/> then the ordering should be 
@@ -149,16 +151,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
                             {
                                 if (c.isAnnotation())
                                 {
-                                    if (Log.isDebugEnabled()) Log.debug("Registering annotation handler for "+c.getName());
+                                    if (LOG.isDebugEnabled()) LOG.debug("Registering annotation handler for "+c.getName());
                                     parser.registerAnnotationHandler(c.getName(), new ContainerInitializerAnnotationHandler(initializer, c));
                                 }
                             }
                         }
                         else
-                            if (Log.isDebugEnabled()) Log.debug("No classes in HandlesTypes on initializer "+service.getClass());
+                            if (LOG.isDebugEnabled()) LOG.debug("No classes in HandlesTypes on initializer "+service.getClass());
                     }
                     else
-                        if (Log.isDebugEnabled()) Log.debug("No annotation on initializer "+service.getClass());
+                        if (LOG.isDebugEnabled()) LOG.debug("No annotation on initializer "+service.getClass());
                 }
             }
         }
@@ -208,7 +210,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     throws Exception
     {
         //if no pattern for the container path is defined, then by default scan NOTHING
-        Log.debug("Scanning container jars");
+        LOG.debug("Scanning container jars");
         
         //clear any previously discovered annotations
         clearAnnotationList(parser.getAnnotationHandlers());       
@@ -305,7 +307,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {
-        Log.debug("Scanning classes in WEB-INF/classes");
+        LOG.debug("Scanning classes in WEB-INF/classes");
         if (context.getWebInf() != null)
         {
             Resource classesDir = context.getWebInf().addPath("classes/");

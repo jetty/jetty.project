@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -41,6 +42,8 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 {
+    private static final Logger LOG = Log.getLogger(SslSelectChannelEndPoint.class);
+
     public static final Logger __log=Log.getLogger("org.eclipse.jetty.io.nio").getLogger("ssl");
     
     private static final ByteBuffer[] __NO_BUFFERS={};
@@ -247,7 +250,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         catch(SSLException e)
                         {
                             super.close();
-                            Log.ignore(e);
+                            LOG.ignore(e);
                         }
                         finally
                         {
@@ -299,7 +302,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         catch (Exception x)
         {
-            Log.debug(x);
+            LOG.debug(x);
             super.close();
         }
     }
@@ -440,7 +443,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                     {
                                         case BUFFER_OVERFLOW:
                                         case BUFFER_UNDERFLOW:
-                                            Log.warn("wrap {}",_result);
+                                            LOG.warn("wrap {}",_result);
                                         case CLOSED:
                                             _closing=true;
                                     }
@@ -595,7 +598,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                             {
                                 case BUFFER_OVERFLOW:
                                 case BUFFER_UNDERFLOW:
-                                    Log.warn("unwrap {}",_result);
+                                    LOG.warn("unwrap {}",_result);
                                 case CLOSED:
                                     _closing=true;
                             }
@@ -656,7 +659,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         if (_handshook && !_allowRenegotiate && _channel!=null && _channel.isOpen())
         {
-            Log.warn("SSL renegotiate denied: "+_channel);
+            LOG.warn("SSL renegotiate denied: "+_channel);
             super.close();
         }
     }
@@ -760,7 +763,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         catch(SSLException e)
         {
-            Log.warn(getRemoteAddr() + ":" + getRemotePort() + " " + e);
+            LOG.warn(getRemoteAddr() + ":" + getRemotePort() + " " + e);
             freeOutBuffer();
             super.close();
             throw e;
@@ -784,7 +787,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 // If we are closed, we will never get more, so EOF
                 // else return and we will be tried again
                 // later when more data arriving causes another dispatch.
-                if (Log.isDebugEnabled()) Log.debug("unwrap {}",_result);
+                if (LOG.isDebugEnabled()) LOG.debug("unwrap {}",_result);
                 if(!isOpen())
                 {
                     _inNIOBuffer.clear();
@@ -802,7 +805,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 // return true is some bytes somewhere were moved about.
                 return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
             default:
-                Log.warn("unwrap "+_result);
+                LOG.warn("unwrap "+_result);
                 throw new IOException(_result.toString());
         }
     }
@@ -854,7 +857,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     }
                     catch(SSLException e)
                     {
-                        Log.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
+                        LOG.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
                         super.close();
                         throw e;
                     }
@@ -891,7 +894,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         {
             case BUFFER_OVERFLOW:
             case BUFFER_UNDERFLOW:
-                Log.warn("unwrap {}",_result);
+                LOG.warn("unwrap {}",_result);
 
             case OK:
                 return _result.bytesConsumed();
@@ -900,7 +903,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 return _result.bytesConsumed()>0?_result.bytesConsumed():-1;
 
             default:
-                Log.warn("wrap "+_result);
+                LOG.warn("wrap "+_result);
             throw new IOException(_result.toString());
         }
     }
@@ -935,7 +938,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 }
                 catch(SSLException e)
                 {
-                    Log.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
+                    LOG.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
                     super.close();
                     throw e;
                 }
@@ -961,7 +964,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         {
             case BUFFER_OVERFLOW:
             case BUFFER_UNDERFLOW:
-                Log.warn("unwrap {}",_result);
+                LOG.warn("unwrap {}",_result);
 
             case OK:
                 return _result.bytesConsumed();
@@ -970,7 +973,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 return _result.bytesConsumed()>0?_result.bytesConsumed():-1;
 
             default:
-                Log.warn("wrap "+_result);
+                LOG.warn("wrap "+_result);
             throw new IOException(_result.toString());
         }
     }

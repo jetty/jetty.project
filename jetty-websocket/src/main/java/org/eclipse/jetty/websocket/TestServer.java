@@ -11,9 +11,12 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class TestServer extends Server
 {
+    private static final Logger LOG = Log.getLogger(TestServer.class);
+
     boolean _verbose;
 
     WebSocket _websocket;
@@ -358,7 +361,7 @@ public class TestServer extends Server
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
 

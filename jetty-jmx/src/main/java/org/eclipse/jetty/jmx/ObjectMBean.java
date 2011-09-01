@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.management.Attribute;
 import javax.management.AttributeList;
@@ -49,6 +51,7 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** ObjectMBean.
@@ -65,6 +68,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ObjectMBean implements DynamicMBean
 {
+    private static final Logger LOG = Log.getLogger(ObjectMBean.class);
+
     private static Class[] OBJ_ARG = new Class[]{Object.class};
 
     protected Object _managed;
@@ -115,8 +120,8 @@ public class ObjectMBean implements DynamicMBean
                 try
                 {
                     Class mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName,true);
-                    if (Log.isDebugEnabled())
-                        Log.debug("mbeanFor " + o + " mClass=" + mClass);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("mbeanFor " + o + " mClass=" + mClass);
 
                     try
                     {
@@ -125,7 +130,7 @@ public class ObjectMBean implements DynamicMBean
                     }
                     catch(Exception e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                         if (ModelMBean.class.isAssignableFrom(mClass))
                         {
                             mbean=mClass.newInstance();
@@ -133,30 +138,29 @@ public class ObjectMBean implements DynamicMBean
                         }
                     }
 
-                    if (Log.isDebugEnabled())
-                        Log.debug("mbeanFor " + o + " is " + mbean);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("mbeanFor " + o + " is " + mbean);
                     return mbean;
                 }
                 catch (ClassNotFoundException e)
                 {
-                    // The code below was modified to fix bug 332200.
-                    // The issue was caused by additional information
-                    // added to the message after the class name when
-                    // Jetty is running in Apache Felix.
-                    String klass = e.getMessage().split("[ ]", 2)[0];
-                    if (klass.endsWith("MBean"))
-                        Log.ignore(e);
+                    // The code below was modified to fix bugs 332200 and JETTY-1416 
+                    // The issue was caused by additional information added to the 
+                    // message after the class name when running in Apache Felix,
+                    // as well as before the class name when running in JBoss.
+                    if (e.getMessage().contains(mName))
+                        LOG.ignore(e);
                     else
-                        Log.warn(e);
+                        LOG.warn(e);
                 }
                 catch (Error e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                     mbean = null;
                 }
                 catch (Exception e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                     mbean = null;
                 }
 
@@ -165,7 +169,7 @@ public class ObjectMBean implements DynamicMBean
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return null;
     }
@@ -242,7 +246,7 @@ public class ObjectMBean implements DynamicMBean
 
                     try
                     {
-                        Log.debug(rName);
+                        LOG.debug(rName);
                         ResourceBundle bundle = Loader.getResourceBundle(o_class, rName,true,Locale.getDefault());
 
                         
@@ -284,7 +288,7 @@ public class ObjectMBean implements DynamicMBean
                     }
                     catch(MissingResourceException e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
                 }
 
@@ -298,7 +302,7 @@ public class ObjectMBean implements DynamicMBean
         }
         catch(RuntimeException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             throw e;
         }
         return _info;
@@ -351,12 +355,12 @@ public class ObjectMBean implements DynamicMBean
         }
         catch (IllegalAccessException e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            LOG.warn(Log.EXCEPTION, e);
             throw new AttributeNotFoundException(e.toString());
         }
         catch (InvocationTargetException e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            LOG.warn(Log.EXCEPTION, e);
             throw new ReflectionException(new Exception(e.getCause()));
         }
     }
@@ -373,7 +377,7 @@ public class ObjectMBean implements DynamicMBean
             }
             catch (Exception e)
             {
-                Log.warn(Log.EXCEPTION, e);
+                LOG.warn(Log.EXCEPTION, e);
             }
         }
         return results;
@@ -385,8 +389,8 @@ public class ObjectMBean implements DynamicMBean
         if (attr == null)
             return;
 
-        if (Log.isDebugEnabled())
-            Log.debug("setAttribute " + _managed + ":" +attr.getName() + "=" + attr.getValue());
+        if (LOG.isDebugEnabled())
+            LOG.debug("setAttribute " + _managed + ":" +attr.getName() + "=" + attr.getValue());
         Method setter = (Method) _setters.get(attr.getName());
         if (setter == null)
             throw new AttributeNotFoundException(attr.getName());
@@ -419,12 +423,12 @@ public class ObjectMBean implements DynamicMBean
         }
         catch (IllegalAccessException e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            LOG.warn(Log.EXCEPTION, e);
             throw new AttributeNotFoundException(e.toString());
         }
         catch (InvocationTargetException e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            LOG.warn(Log.EXCEPTION, e);
             throw new ReflectionException(new Exception(e.getCause()));
         }
     }
@@ -432,7 +436,7 @@ public class ObjectMBean implements DynamicMBean
     /* ------------------------------------------------------------ */
     public AttributeList setAttributes(AttributeList attrs)
     {
-        Log.debug("setAttributes");
+        LOG.debug("setAttributes");
 
         AttributeList results = new AttributeList(attrs.size());
         Iterator iter = attrs.iterator();
@@ -446,7 +450,7 @@ public class ObjectMBean implements DynamicMBean
             }
             catch (Exception e)
             {
-                Log.warn(Log.EXCEPTION, e);
+                LOG.warn(Log.EXCEPTION, e);
             }
         }
         return results;
@@ -455,8 +459,8 @@ public class ObjectMBean implements DynamicMBean
     /* ------------------------------------------------------------ */
     public Object invoke(String name, Object[] params, String[] signature) throws MBeanException, ReflectionException
     {
-        if (Log.isDebugEnabled())
-            Log.debug("invoke " + name);
+        if (LOG.isDebugEnabled())
+            LOG.debug("invoke " + name);
 
         String methodKey = name + "(";
         if (signature != null)
@@ -479,17 +483,17 @@ public class ObjectMBean implements DynamicMBean
         }
         catch (NoSuchMethodException e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            LOG.warn(Log.EXCEPTION, e);
             throw new ReflectionException(e);
         }
         catch (IllegalAccessException e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            LOG.warn(Log.EXCEPTION, e);
             throw new MBeanException(e);
         }
         catch (InvocationTargetException e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            LOG.warn(Log.EXCEPTION, e);
             throw new ReflectionException(new Exception(e.getCause()));
         }
         finally
@@ -560,8 +564,8 @@ public class ObjectMBean implements DynamicMBean
         String uName = name.substring(0, 1).toUpperCase() + name.substring(1);
         Class oClass = onMBean ? this.getClass() : _managed.getClass();
 
-        if (Log.isDebugEnabled())
-            Log.debug("defineAttribute "+name+" "+onMBean+":"+writable+":"+oClass+":"+description);
+        if (LOG.isDebugEnabled())
+            LOG.debug("defineAttribute "+name+" "+onMBean+":"+writable+":"+oClass+":"+description);
 
         Class type = null;
         Method getter = null;
@@ -577,13 +581,13 @@ public class ObjectMBean implements DynamicMBean
             {
                 if (getter != null)
                 {
-		    Log.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
+		    LOG.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
 		    continue;
 		}
                 getter = methods[m];
                 if (type != null && !type.equals(methods[m].getReturnType()))
                 {
-		    Log.warn("Type conflict for mbean attr " + name+ " in "+oClass);
+		    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
 		    continue;
 		}
                 type = methods[m].getReturnType();
@@ -594,13 +598,13 @@ public class ObjectMBean implements DynamicMBean
             {
                 if (getter != null)
                 {
-		    Log.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
+		    LOG.warn("Multiple mbean getters for attr " + name+ " in "+oClass);
 		    continue;
 		}
                 getter = methods[m];
                 if (type != null && !type.equals(methods[m].getReturnType()))
                 {
-		    Log.warn("Type conflict for mbean attr " + name+ " in "+oClass);
+		    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
 		    continue;
 		}
                 type = methods[m].getReturnType();
@@ -611,13 +615,13 @@ public class ObjectMBean implements DynamicMBean
             {
                 if (setter != null)
                 {
-		    Log.warn("Multiple setters for mbean attr " + name+ " in "+oClass);
+		    LOG.warn("Multiple setters for mbean attr " + name+ " in "+oClass);
 		    continue;
 		}
                 setter = methods[m];
                 if (type != null && !type.equals(methods[m].getParameterTypes()[0]))
                 {
-		    Log.warn("Type conflict for mbean attr " + name+ " in "+oClass);
+		    LOG.warn("Type conflict for mbean attr " + name+ " in "+oClass);
 		    continue;
 		}
                 type = methods[m].getParameterTypes()[0];
@@ -628,20 +632,20 @@ public class ObjectMBean implements DynamicMBean
         {
             if (type==null)
             {
-	        Log.warn("No mbean type for " + name+" on "+_managed.getClass());
+	        LOG.warn("No mbean type for " + name+" on "+_managed.getClass());
 		return null;
 	    }
                 
             if (type.isPrimitive() && !type.isArray())
             {
-	        Log.warn("Cannot convert mbean primative " + name);
+	        LOG.warn("Cannot convert mbean primative " + name);
 		return null;
 	    }
         }
 
         if (getter == null && setter == null)
         {
-	    Log.warn("No mbean getter or setters found for " + name+ " in "+oClass);
+	    LOG.warn("No mbean getter or setters found for " + name+ " in "+oClass);
 	    return null;
 	}
 
@@ -668,7 +672,7 @@ public class ObjectMBean implements DynamicMBean
         }
         catch (Exception e)
         {
-            Log.warn(name+": "+metaData, e);
+            LOG.warn(name+": "+metaData, e);
             throw new IllegalArgumentException(e.toString());
         }
     }
@@ -698,8 +702,8 @@ public class ObjectMBean implements DynamicMBean
         boolean onMBean= i==0 && ("MBean".equalsIgnoreCase(tokens[0])||"MMBean".equalsIgnoreCase(tokens[0]));
         boolean convert= i==0 && ("MObject".equalsIgnoreCase(tokens[0])||"MMBean".equalsIgnoreCase(tokens[0]));
 
-        if (Log.isDebugEnabled())
-            Log.debug("defineOperation "+signature+" "+onMBean+":"+impact_name+":"+description);
+        if (LOG.isDebugEnabled())
+            LOG.debug("defineOperation "+signature+" "+onMBean+":"+impact_name+":"+description);
 
         Class oClass = onMBean ? this.getClass() : _managed.getClass();
 
@@ -716,7 +720,7 @@ public class ObjectMBean implements DynamicMBean
             else if (impact_name.equals("ACTION_INFO"))
                 impact=MBeanOperationInfo.ACTION_INFO;
             else
-                Log.warn("Unknown impact '"+impact_name+"' for "+signature);
+                LOG.warn("Unknown impact '"+impact_name+"' for "+signature);
 
 
             // split the signature
@@ -745,8 +749,8 @@ public class ObjectMBean implements DynamicMBean
             {
                 String param_desc = bundle.getString(signature + "[" + i + "]");
                 parts=param_desc.split(" *: *",2);
-                if (Log.isDebugEnabled())
-                    Log.debug(parts[0]+": "+parts[1]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(parts[0]+": "+parts[1]);
                 pInfo[i] = new MBeanParameterInfo(parts[0].trim(), args[i], parts[1].trim());
             }
 
@@ -761,7 +765,7 @@ public class ObjectMBean implements DynamicMBean
         }
         catch (Exception e)
         {
-            Log.warn("Operation '"+signature+"'", e);
+            LOG.warn("Operation '"+signature+"'", e);
             throw new IllegalArgumentException(e.toString());
         }
 

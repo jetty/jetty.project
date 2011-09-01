@@ -26,6 +26,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -35,6 +36,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class PlusDecorator implements Decorator
 {
+    private static final Logger LOG = Log.getLogger(PlusDecorator.class);
+
     protected WebAppContext _context;
 
     public PlusDecorator (WebAppContext context)
@@ -154,7 +157,7 @@ public class PlusDecorator implements Decorator
             }
             catch (Exception e)
             {
-                Log.warn("Destroying instance of "+o.getClass(), e);
+                LOG.warn("Destroying instance of "+o.getClass(), e);
             }
         }
     }

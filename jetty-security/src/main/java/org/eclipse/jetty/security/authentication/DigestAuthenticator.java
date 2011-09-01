@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
@@ -46,6 +47,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DigestAuthenticator extends LoginAuthenticator
 {
+    private static final Logger LOG = Log.getLogger(DigestAuthenticator.class);
+
     protected long _maxNonceAge = 0;
     protected long _nonceSecret = this.hashCode() ^ System.currentTimeMillis();
     protected boolean _useStale = false;
@@ -93,7 +96,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             boolean stale = false;
             if (credentials != null)
             {
-                if (Log.isDebugEnabled()) Log.debug("Credentials: " + credentials);
+                if (LOG.isDebugEnabled()) LOG.debug("Credentials: " + credentials);
                 QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
                 final Digest digest = new Digest(request.getMethod());
                 String last = null;
@@ -206,7 +209,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
 
         for (int i = 0; i < hash.length; i++)
@@ -243,7 +246,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             }
 
             long age = request.getTimeStamp() - ts;
-            if (Log.isDebugEnabled()) Log.debug("age=" + age);
+            if (LOG.isDebugEnabled()) LOG.debug("age=" + age);
 
             byte[] hash = null;
             try
@@ -255,7 +258,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
 
             for (int i = 0; i < 16; i++)
@@ -267,7 +270,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return -1;
     }
@@ -352,7 +355,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             }
             catch (Exception e)
             {
-                Log.warn(e);
+                LOG.warn(e);
             }
 
             return false;

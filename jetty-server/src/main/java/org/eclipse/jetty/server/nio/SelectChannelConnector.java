@@ -35,6 +35,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------------------------- */
@@ -65,6 +67,8 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public class SelectChannelConnector extends AbstractNIOConnector
 {
+    private static final Logger LOG = Log.getLogger(SelectChannelConnector.class);
+
     protected ServerSocketChannel _acceptChannel;
     private int _lowResourcesConnections;
     private int _lowResourcesMaxIdleTime;
@@ -238,46 +242,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.start();
 
         super.doStart();
-
-        // start a thread to Select
-        for (int i=0;i<getAcceptors();i++)
-        {
-            final int id=i;
-            _manager.dispatch(new Runnable()
-            {
-                public void run()
-                {
-                    String name=Thread.currentThread().getName();
-                    try
-                    {
-                        Thread.currentThread().setName(name+" Selector"+id+" "+SelectChannelConnector.this);
-                        while (isRunning())
-                        {
-                            try
-                            {
-                                _manager.doSelect(id);
-                            }
-                            catch(ThreadDeath e)
-                            {
-                                throw e;
-                            }
-                            catch(IOException e)
-                            {
-                                Log.ignore(e);
-                            }
-                            catch(Exception e)
-                            {
-                                Log.warn(e);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        Thread.currentThread().setName(name);
-                    }
-                }
-            });
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -297,7 +261,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 }
                 catch (Exception e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
             }
         }
@@ -369,7 +333,10 @@ public class SelectChannelConnector extends AbstractNIOConnector
         @Override
         public boolean dispatch(Runnable task)
         {
-            return getThreadPool().dispatch(task);
+            ThreadPool pool=getThreadPool();
+            if (pool==null)
+                pool=getServer().getThreadPool();
+            return pool.dispatch(task);
         }
 
         @Override

@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * @deprecated use *ServerAuthentication
@@ -36,6 +37,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class BasicAuthModule extends BaseAuthModule
 {
+    private static final Logger LOG = Log.getLogger(BasicAuthModule.class);
+
 
     private String realmName;
 
@@ -73,7 +76,7 @@ public class BasicAuthModule extends BaseAuthModule
         {
             if (credentials != null)
             {
-                if (Log.isDebugEnabled()) Log.debug("Credentials: " + credentials);
+                if (LOG.isDebugEnabled()) LOG.debug("Credentials: " + credentials);
                 if (login(clientSubject, credentials, Constraint.__BASIC_AUTH, messageInfo)) { return AuthStatus.SUCCESS; }
 
             }

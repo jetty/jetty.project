@@ -26,11 +26,14 @@ import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectab
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
+    private static final Logger LOG = Log.getLogger(ResourceAnnotationHandler.class);
+
     protected WebAppContext _context;
    
 
@@ -84,7 +87,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
              }
              catch (NamingException e)
              {
-                 Log.warn(e);
+                 LOG.warn(e);
              }
          }
     }
@@ -97,14 +100,14 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             //JavaEE Spec 5.2.3: Field cannot be static
             if (Modifier.isStatic(field.getModifiers()))
             {
-                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+field.getName()+": cannot be static");
+                LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+field.getName()+": cannot be static");
                 return;
             }
 
             //JavaEE Spec 5.2.3: Field cannot be final
             if (Modifier.isFinal(field.getModifiers()))
             {
-                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+field.getName()+": cannot be final");
+                LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+field.getName()+": cannot be final");
                 return;
             }
 
@@ -165,7 +168,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     //Check there is a JNDI entry for this annotation 
                     if (bound)
                     { 
-                        Log.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
+                        LOG.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it if the binding succeeded
                         injection = new Injection();
                         injection.setTarget(clazz, field, type);
@@ -230,7 +233,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             //JavaEE Spec 5.2.3: Method cannot be static
             if (Modifier.isStatic(method.getModifiers()))
             {
-                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": cannot be static");
+                LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": cannot be static");
                 return;
             }
 
@@ -238,19 +241,19 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             // only 1 parameter
             if (!method.getName().startsWith("set"))
             {
-                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, does not start with 'set'");
+                LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, does not start with 'set'");
                 return;
             }
 
             if (method.getParameterTypes().length != 1)
             {
-                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not single argument to method");
+                LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not single argument to method");
                 return; 
             }
 
             if (Void.TYPE != method.getReturnType())
             {
-                Log.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not void");
+                LOG.warn("Skipping Resource annotation on "+clazz.getName()+"."+method.getName()+": invalid java bean, not void");
                 return; 
             }
 
@@ -320,7 +323,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
                     if (bound)
                     {
-                        Log.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
+                        LOG.debug("Bound "+(mappedName==null?name:mappedName) + " as "+ name);
                         //   Make the Injection for it
                         injection = new Injection();
                         injection.setTarget(clazz, method,paramType,resourceType);

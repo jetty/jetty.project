@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Closeable DoS Filter.
@@ -30,6 +31,8 @@ import org.eclipse.jetty.util.log.Log;
 
 public class CloseableDoSFilter extends DoSFilter
 {
+    private static final Logger LOG = Log.getLogger(CloseableDoSFilter.class);
+
     protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
     {
         try
@@ -39,7 +42,7 @@ public class CloseableDoSFilter extends DoSFilter
         }
         catch(IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
 }

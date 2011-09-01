@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** TestFilter.
@@ -41,6 +42,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class TestFilter implements Filter
 {
+    private static final Logger LOG = Log.getLogger(TestFilter.class);
+
     private boolean _remote;
     private ServletContext _context;
     private final Set<String> _allowed = new HashSet<String>();
@@ -56,7 +59,7 @@ public class TestFilter implements Filter
         _allowed.add("/favicon.ico");
         _allowed.add("/jetty_banner.gif");
         
-        Log.debug("TestFilter#remote="+_remote);
+        LOG.debug("TestFilter#remote="+_remote);
     }
 
     /* ------------------------------------------------------------ */

@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -52,6 +53,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class SslSocketConnector extends SocketConnector  implements SslConnector
 {
+    private static final Logger LOG = Log.getLogger(SslSocketConnector.class);
+
     private final SslContextFactory _sslContextFactory;
     private int _handshakeTimeout = 0; //0 means use maxIdleTime
 
@@ -648,8 +651,8 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                         {
                             if (!_sslContextFactory.isAllowRenegotiate())
                             {
-                                Log.warn("SSL renegotiate denied: "+ssl);
-                                try{ssl.close();}catch(IOException e){Log.warn(e);}
+                                LOG.warn("SSL renegotiate denied: "+ssl);
+                                try{ssl.close();}catch(IOException e){LOG.warn(e);}
                             }
                         }
                         else
@@ -665,15 +668,15 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
             }
             catch (SSLException e)
             {
-                Log.debug(e); 
+                LOG.debug(e); 
                 try{close();}
-                catch(IOException e2){Log.ignore(e2);}
+                catch(IOException e2){LOG.ignore(e2);}
             }
             catch (IOException e)
             {
-                Log.debug(e);
+                LOG.debug(e);
                 try{close();}
-                catch(IOException e2){Log.ignore(e2);}
+                catch(IOException e2){LOG.ignore(e2);}
             } 
         }
     }

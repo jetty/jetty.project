@@ -25,9 +25,12 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class NestedGenerator extends AbstractGenerator
 {
+    private static final Logger LOG = Log.getLogger(NestedGenerator.class);
+
     final HttpServletResponse _response;
     final String _nestedIn;
     
@@ -40,7 +43,7 @@ public class NestedGenerator extends AbstractGenerator
 
     public void addContent(Buffer content, boolean last) throws IOException
     {
-        // Log.debug("addContent {} {}",content.length(),last);
+        // LOG.debug("addContent {} {}",content.length(),last);
         if (_noContent)
         {
             content.clear();
@@ -52,7 +55,7 @@ public class NestedGenerator extends AbstractGenerator
 
         if (_last || _state == STATE_END)
         {
-            Log.debug("Ignoring extra content {}", content);
+            LOG.debug("Ignoring extra content {}", content);
             content.clear();
             return;
         }
@@ -107,7 +110,7 @@ public class NestedGenerator extends AbstractGenerator
 
     public boolean addContent(byte b) throws IOException
     {
-        // Log.debug("addContent 1");
+        // LOG.debug("addContent 1");
         if (_noContent)
             return false;
 
@@ -150,7 +153,7 @@ public class NestedGenerator extends AbstractGenerator
     {
         if (_buffer == null)
         {
-            // Log.debug("initContent");
+            // LOG.debug("initContent");
             _buffer = _buffers.getBuffer();
         }
     }
@@ -181,8 +184,8 @@ public class NestedGenerator extends AbstractGenerator
     @Override
     public void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException
     {
-        if (Log.isDebugEnabled())
-            Log.debug("completeHeader: {}",fields.toString().trim().replace("\r\n","|"));
+        if (LOG.isDebugEnabled())
+            LOG.debug("completeHeader: {}",fields.toString().trim().replace("\r\n","|"));
         if (_state != STATE_HEADER)
             return;
 
@@ -247,7 +250,7 @@ public class NestedGenerator extends AbstractGenerator
         
         int size=_buffer.length();
         int len = _buffer==null?0:_endp.flush(_buffer);
-        Log.debug("flushBuffer {} of {}",len,size);
+        LOG.debug("flushBuffer {} of {}",len,size);
         if (len>0)
             _buffer.skip(len);
 

@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -38,6 +39,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class MappedLoginService extends AbstractLifeCycle implements LoginService
 {
+    private static final Logger LOG = Log.getLogger(MappedLoginService.class);
+
     protected IdentityService _identityService=new DefaultIdentityService();
     protected String _name;
     protected final ConcurrentMap<String, UserIdentity> _users=new ConcurrentHashMap<String, UserIdentity>();
@@ -129,7 +132,7 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
     /* ------------------------------------------------------------ */
     public void logout(UserIdentity identity)
     {   
-        Log.debug("logout {}",identity);
+        LOG.debug("logout {}",identity);
     }
     
     /* ------------------------------------------------------------ */

@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -60,6 +61,8 @@ import org.xml.sax.SAXException;
  */
 public class XmlConfiguration
 {
+    private static final Logger LOG = Log.getLogger(XmlConfiguration.class);
+
     private static final Class<?>[] __primitives =
     { Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE };
 
@@ -81,7 +84,7 @@ public class XmlConfiguration
         }
         catch(Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         finally
         {
@@ -124,8 +127,8 @@ public class XmlConfiguration
         }
         catch (ClassNotFoundException e)
         {
-            Log.warn(e.toString());
-            Log.debug(e);
+            LOG.warn(e.toString());
+            LOG.debug(e);
         }
     }
 
@@ -209,7 +212,7 @@ public class XmlConfiguration
                 }
                 catch (Exception e)
                 {
-                    Log.warn(e);
+                    LOG.warn(e);
                 }
                 if (_processor!=null)
                     break;
@@ -307,7 +310,10 @@ public class XmlConfiguration
             // Check the class of the object
             Class<?> oClass = (Class<?>)nodeClass(_config);
             if (oClass != null && !oClass.isInstance(obj))
-                throw new IllegalArgumentException("Object is not of type " + oClass);
+            {
+                String loaders = (oClass.getClassLoader()==obj.getClass().getClassLoader())?"":"Object Class and type Class are from different loaders.";
+                throw new IllegalArgumentException("Object of class '"+obj.getClass().getCanonicalName()+"' is not of type '" + oClass.getCanonicalName()+"'. "+loaders);
+            }
             configure(obj,_config,0);
             return obj;
         }
@@ -386,7 +392,7 @@ public class XmlConfiguration
                 }
                 catch (Exception e)
                 {
-                    Log.warn("Config error at " + node,e.toString());
+                    LOG.warn("Config error at " + node,e.toString());
                     throw e;
                 }
             }
@@ -419,8 +425,8 @@ public class XmlConfiguration
             if (value != null)
                 vClass[0] = value.getClass();
 
-            if (Log.isDebugEnabled())
-                Log.debug("XML " + (obj != null?obj.toString():oClass.getName()) + "." + name + "(" + value + ")");
+            if (LOG.isDebugEnabled())
+                LOG.debug("XML " + (obj != null?obj.toString():oClass.getName()) + "." + name + "(" + value + ")");
 
             // Try for trivial match
             try
@@ -431,15 +437,15 @@ public class XmlConfiguration
             }
             catch (IllegalArgumentException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             catch (IllegalAccessException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             catch (NoSuchMethodException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
 
             // Try for native match
@@ -453,19 +459,19 @@ public class XmlConfiguration
             }
             catch (NoSuchFieldException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             catch (IllegalArgumentException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             catch (IllegalAccessException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             catch (NoSuchMethodException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
 
             // Try a field
@@ -480,7 +486,7 @@ public class XmlConfiguration
             }
             catch (NoSuchFieldException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
 
             // Search for a match by trying all the set methods
@@ -502,11 +508,11 @@ public class XmlConfiguration
                     }
                     catch (IllegalArgumentException e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
                     catch (IllegalAccessException e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
 
                     // Can we convert to a collection
@@ -524,11 +530,11 @@ public class XmlConfiguration
                         }
                         catch (IllegalArgumentException e)
                         {
-                            Log.ignore(e);
+                            LOG.ignore(e);
                         }
                         catch (IllegalAccessException e)
                         {
-                            Log.ignore(e);
+                            LOG.ignore(e);
                         }
                     }
                 }
@@ -558,15 +564,15 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
                 catch (IllegalAccessException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
                 catch (InstantiationException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
 
@@ -589,8 +595,8 @@ public class XmlConfiguration
             String name = node.getAttribute("name");
             Object value = value(obj,node);
             map.put(name,value);
-            if (Log.isDebugEnabled())
-                Log.debug("XML " + obj + ".put(" + name + "," + value + ")");
+            if (LOG.isDebugEnabled())
+                LOG.debug("XML " + obj + ".put(" + name + "," + value + ")");
         }
 
         /* ------------------------------------------------------------ */
@@ -609,8 +615,8 @@ public class XmlConfiguration
 
             String name = node.getAttribute("name");
             String id = node.getAttribute("id");
-            if (Log.isDebugEnabled())
-                Log.debug("XML get " + name);
+            if (LOG.isDebugEnabled())
+                LOG.debug("XML get " + name);
 
             try
             {
@@ -681,8 +687,8 @@ public class XmlConfiguration
             }
 
             String method = node.getAttribute("name");
-            if (Log.isDebugEnabled())
-                Log.debug("XML call " + method);
+            if (LOG.isDebugEnabled())
+                LOG.debug("XML call " + method);
 
             try
             {
@@ -735,8 +741,8 @@ public class XmlConfiguration
                 arg[j++] = value(obj,(XmlParser.Node)o);
             }
 
-            if (Log.isDebugEnabled())
-                Log.debug("XML new " + oClass);
+            if (LOG.isDebugEnabled())
+                LOG.debug("XML new " + oClass);
 
             // Lets just try all constructors for now
             Constructor[] constructors = oClass.getConstructors();
@@ -754,15 +760,15 @@ public class XmlConfiguration
                 }
                 catch (IllegalAccessException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
                 catch (InstantiationException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
                 catch (IllegalArgumentException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
                 if (called)
                 {
@@ -1086,7 +1092,7 @@ public class XmlConfiguration
                 return System.getProperty(name,defaultValue);
             }
 
-            Log.warn("Unknown value tag: " + node,new Throwable());
+            LOG.warn("Unknown value tag: " + node,new Throwable());
             return null;
         }
     }
@@ -1131,19 +1137,19 @@ public class XmlConfiguration
                     {
                         Class<?> config = XmlConfiguration.class.getClassLoader().loadClass("org.eclipse.jetty.start.Config");
                         properties = (Properties)config.getMethod("getProperties").invoke(null);
-                        Log.debug("org.eclipse.jetty.start.Config properties = {}",properties);
+                        LOG.debug("org.eclipse.jetty.start.Config properties = {}",properties);
                     }
                     catch (NoClassDefFoundError e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
                     catch (ClassNotFoundException e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
                     catch (Exception e)
                     {
-                        Log.warn(e);
+                        LOG.warn(e);
                     }
 
                     // If no start.config properties, use clean slate
@@ -1205,7 +1211,7 @@ public class XmlConfiguration
                 }
                 catch (Exception e)
                 {
-                    Log.debug(Log.EXCEPTION,e);
+                    LOG.debug(Log.EXCEPTION,e);
                     exception.set(e);
                 }
                 return null;

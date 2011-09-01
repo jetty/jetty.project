@@ -18,6 +18,7 @@ import java.nio.channels.Channel;
 import java.nio.channels.ServerSocketChannel;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * An implementation of the SelectChannelConnector which first tries to  
@@ -37,6 +38,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class InheritedChannelConnector extends SelectChannelConnector
 {
+    private static final Logger LOG = Log.getLogger(InheritedChannelConnector.class);
+
     /* ------------------------------------------------------------ */
     @Override
     public void open() throws IOException
@@ -49,14 +52,14 @@ public class InheritedChannelConnector extends SelectChannelConnector
                 if ( channel instanceof ServerSocketChannel )
                     _acceptChannel = (ServerSocketChannel)channel;
                 else
-                    Log.warn("Unable to use System.inheritedChannel() [" +channel+ "]. Trying a new ServerSocketChannel at " + getHost() + ":" + getPort());
+                    LOG.warn("Unable to use System.inheritedChannel() [" +channel+ "]. Trying a new ServerSocketChannel at " + getHost() + ":" + getPort());
                 
                 if ( _acceptChannel != null )
                     _acceptChannel.configureBlocking(false);
             }
             catch(NoSuchMethodError e)
             {
-                Log.warn("Need at least Java 5 to use socket inherited from xinetd/inetd.");
+                LOG.warn("Need at least Java 5 to use socket inherited from xinetd/inetd.");
             }
 
             if (_acceptChannel == null)

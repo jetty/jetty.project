@@ -30,12 +30,15 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * An HTTPS Socket Impl
  */
 public class HttpsSocketImpl implements HttpSocket
 {
+    private static final Logger LOG = Log.getLogger(HttpsSocketImpl.class);
+
     private SSLContext sslContext;
     private SSLSocketFactory sslfactory;
 
@@ -66,7 +69,7 @@ public class HttpsSocketImpl implements HttpSocket
         {
             public boolean verify(String urlHostName, SSLSession session)
             {
-                Log.warn("Warning: URL Host: " + urlHostName + " vs." + session.getPeerHost());
+                LOG.warn("Warning: URL Host: " + urlHostName + " vs." + session.getPeerHost());
                 return true;
             }
         };

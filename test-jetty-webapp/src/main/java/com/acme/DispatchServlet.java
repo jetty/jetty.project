@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -36,6 +37,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class DispatchServlet extends HttpServlet
 {
+    private static final Logger LOG = Log.getLogger(DispatchServlet.class);
+
     /* ------------------------------------------------------------ */
     String pageType;
 
@@ -156,7 +159,7 @@ public class DispatchServlet extends HttpServlet
                 }
                 catch(IOException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
             else

@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -51,6 +52,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class ResourceHandler extends AbstractHandler
 {
+    private static final Logger LOG = Log.getLogger(ResourceHandler.class);
+
     ContextHandler _context;
     Resource _baseResource;
     Resource _defaultStylesheet;
@@ -180,8 +183,8 @@ public class ResourceHandler extends AbstractHandler
         }
         catch (Exception e)
         {
-            Log.warn(e.toString());
-            Log.debug(e);
+            LOG.warn(e.toString());
+            LOG.debug(e);
             throw new IllegalArgumentException(resourceBase);
         }
     }
@@ -206,8 +209,8 @@ public class ResourceHandler extends AbstractHandler
     	        }
     	        catch(IOException e)
     	        {
-    	            Log.warn(e.toString());
-    	            Log.debug(e);
+    	            LOG.warn(e.toString());
+    	            LOG.debug(e);
     	        }	 
     	    }
     	    return _defaultStylesheet;
@@ -225,14 +228,14 @@ public class ResourceHandler extends AbstractHandler
             _stylesheet = Resource.newResource(stylesheet);
             if(!_stylesheet.exists())
             {
-                Log.warn("unable to find custom stylesheet: " + stylesheet);
+                LOG.warn("unable to find custom stylesheet: " + stylesheet);
                 _stylesheet = null;
             }
         }
     	catch(Exception e)
     	{
-    		Log.warn(e.toString());
-            Log.debug(e);
+    		LOG.warn(e.toString());
+            LOG.debug(e);
             throw new IllegalArgumentException(stylesheet.toString());
     	}
     }
@@ -280,7 +283,7 @@ public class ResourceHandler extends AbstractHandler
         }
         catch(Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
 
         return null;
@@ -352,7 +355,7 @@ public class ResourceHandler extends AbstractHandler
             
         if (!_aliases && resource.getAlias()!=null)
         {
-            Log.info(resource+" aliased to "+resource.getAlias());
+            LOG.info(resource+" aliased to "+resource.getAlias());
             return;
         }
 

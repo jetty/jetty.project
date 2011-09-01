@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------------------------- */
@@ -49,6 +50,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class BlockingChannelConnector extends AbstractNIOConnector 
 {
+    private static final Logger LOG = Log.getLogger(BlockingChannelConnector.class);
+
     private transient ServerSocketChannel _acceptChannel;
     private final Set<BlockingChannelEndPoint> _endpoints = new ConcurrentHashSet<BlockingChannelEndPoint>();
     
@@ -93,11 +96,11 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                     }
                     catch(InterruptedException e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
                     catch(Exception e)
                     {
-                        Log.warn(e);
+                        LOG.warn(e);
                     }
                 }
             }
@@ -209,7 +212,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             }
             catch (IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
         
@@ -218,7 +221,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
         {
             if (!getThreadPool().dispatch(this))
             {
-                Log.warn("dispatch failed for  {}",_connection);
+                LOG.warn("dispatch failed for  {}",_connection);
                 BlockingChannelEndPoint.this.close();
             }
         }
@@ -293,21 +296,21 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             }
             catch (EofException e)
             {
-                Log.debug("EOF", e);
+                LOG.debug("EOF", e);
                 try{BlockingChannelEndPoint.this.close();}
-                catch(IOException e2){Log.ignore(e2);}
+                catch(IOException e2){LOG.ignore(e2);}
             }
             catch (HttpException e)
             {
-                Log.debug("BAD", e);
+                LOG.debug("BAD", e);
                 try{BlockingChannelEndPoint.this.close();}
-                catch(IOException e2){Log.ignore(e2);}
+                catch(IOException e2){LOG.ignore(e2);}
             }
             catch(Throwable e)
             {
-                Log.warn("handle failed",e);
+                LOG.warn("handle failed",e);
                 try{BlockingChannelEndPoint.this.close();}
-                catch(IOException e2){Log.ignore(e2);}
+                catch(IOException e2){LOG.ignore(e2);}
             }
             finally
             {
@@ -335,7 +338,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                 }
                 catch(IOException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
         }

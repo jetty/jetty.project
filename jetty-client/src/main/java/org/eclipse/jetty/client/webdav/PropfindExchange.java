@@ -19,10 +19,13 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 public class PropfindExchange extends HttpExchange
 {
+    private static final Logger LOG = Log.getLogger(PropfindExchange.class);
+
     boolean _propertyExists = false;
 
     /* ------------------------------------------------------------ */
@@ -31,12 +34,12 @@ public class PropfindExchange extends HttpExchange
     {
         if ( status == HttpStatus.OK_200 )
         {
-            Log.debug( "PropfindExchange:Status: Exists" );
+            LOG.debug( "PropfindExchange:Status: Exists" );
             _propertyExists = true;
         }
         else
         {
-            Log.debug( "PropfindExchange:Status: Not Exists" );
+            LOG.debug( "PropfindExchange:Status: Not Exists" );
         }
 
         super.onResponseStatus(version, status, reason);

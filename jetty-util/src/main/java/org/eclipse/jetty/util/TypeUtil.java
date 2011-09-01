@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -38,6 +39,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class TypeUtil
 {
+    private static final Logger LOG = Log.getLogger(TypeUtil.class);
     public static int CR = '\015';
     public static int LF = '\012';
 
@@ -510,7 +512,7 @@ public class TypeUtil
         }
         catch(Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return null;
     }
@@ -537,11 +539,11 @@ public class TypeUtil
             }
             catch (IllegalAccessException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             catch (IllegalArgumentException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
 

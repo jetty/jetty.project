@@ -25,6 +25,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -35,6 +36,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class HttpGenerator extends AbstractGenerator
 {
+    private static final Logger LOG = Log.getLogger(HttpGenerator.class);
+
     // Build cache of response lines for status
     private static class Status
     {
@@ -154,7 +157,7 @@ public class HttpGenerator extends AbstractGenerator
 
         if (_last || _state==STATE_END)
         {
-            Log.debug("Ignoring extra content {}",content);
+            LOG.debug("Ignoring extra content {}",content);
             content.clear();
             return;
         }
@@ -239,7 +242,7 @@ public class HttpGenerator extends AbstractGenerator
 
         if (_last || _state==STATE_END)
         {
-            Log.debug("Ignoring extra content {}",Byte.valueOf(b));
+            LOG.debug("Ignoring extra content {}",Byte.valueOf(b));
             return false;
         }
 
@@ -345,7 +348,7 @@ public class HttpGenerator extends AbstractGenerator
         }
         catch(InterruptedException e)
         {
-            Log.debug(e);
+            LOG.debug(e);
             throw new InterruptedIOException(e.toString());
         }
     }
@@ -912,7 +915,7 @@ public class HttpGenerator extends AbstractGenerator
         }
         catch (IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
             throw (e instanceof EofException) ? e:new EofException(e);
         }
     }

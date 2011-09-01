@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.security.SecurityListener;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /**
@@ -37,8 +39,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * This object encapsulates:
  * <ul>
- * <li>The HTTP server address, see {@link #setAddress(Address)} or {@link #setURL(String)})
- * <li>The HTTP request method, URI and HTTP version (see {@link #setMethod(String)}, {@link #setURI(String)}, and {@link #setVersion(int)}
+ * <li>The HTTP server address, see {@link #setAddress(Address)}, or {@link #setURI(URI)}, or {@link #setURL(String)})
+ * <li>The HTTP request method, URI and HTTP version (see {@link #setMethod(String)}, {@link #setRequestURI(String)}, and {@link #setVersion(int)})
  * <li>The request headers (see {@link #addRequestHeader(String, String)} or {@link #setRequestHeader(String, String)})
  * <li>The request content (see {@link #setRequestContent(Buffer)} or {@link #setRequestContentSource(InputStream)})
  * <li>The status of the exchange (see {@link #getStatus()})
@@ -66,6 +68,8 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class HttpExchange
 {
+    private static final Logger LOG = Log.getLogger(HttpExchange.class);
+
     public static final int STATUS_START = 0;
     public static final int STATUS_WAITING_FOR_CONNECTION = 1;
     public static final int STATUS_WAITING_FOR_COMMIT = 2;
@@ -302,6 +306,7 @@ public class HttpExchange
                     {
                         case STATUS_START:
                         case STATUS_EXCEPTED:
+                        case STATUS_WAITING_FOR_RESPONSE:
                             set=_status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_CANCELLING:
@@ -344,11 +349,11 @@ public class HttpExchange
             }
 
             if (!set)
-                throw new IllegalStateException(oldStatus + " => " + newStatus);
+                throw new IllegalStateException(toState(oldStatus) + " => " + toState(newStatus));
         }
         catch (IOException x)
         {
-            Log.warn(x);
+            LOG.warn(x);
         }
     }
 
@@ -390,33 +395,11 @@ public class HttpExchange
     }
 
     /**
-     * @param url Including protocol, host and port
+     * @param url an absolute URL (for example 'http://localhost/foo/bar?a=1') 
      */
     public void setURL(String url)
     {
-        HttpURI uri = new HttpURI(url);
-        String scheme = uri.getScheme();
-        if (scheme != null)
-        {
-            if (HttpSchemes.HTTP.equalsIgnoreCase(scheme))
-                setScheme(HttpSchemes.HTTP_BUFFER);
-            else if (HttpSchemes.HTTPS.equalsIgnoreCase(scheme))
-                setScheme(HttpSchemes.HTTPS_BUFFER);
-            else
-                setScheme(new ByteArrayBuffer(scheme));
-        }
-
-        int port = uri.getPort();
-        if (port <= 0)
-            port = "https".equalsIgnoreCase(scheme)?443:80;
-
-        setAddress(new Address(uri.getHost(),port));
-
-        String completePath = uri.getCompletePath();
-        if (completePath == null)
-            completePath = "/";
-
-        setURI(completePath);
+        setURI(URI.create(url));
     }
 
     /**
@@ -454,6 +437,22 @@ public class HttpExchange
     public void setScheme(Buffer scheme)
     {
         _scheme = scheme;
+    }
+    
+    /**
+     * @param scheme the scheme of the URL (for example 'http')
+     */
+    public void setScheme(String scheme)
+    {
+        if (scheme != null)
+        {
+            if (HttpSchemes.HTTP.equalsIgnoreCase(scheme))
+                setScheme(HttpSchemes.HTTP_BUFFER);
+            else if (HttpSchemes.HTTPS.equalsIgnoreCase(scheme))
+                setScheme(HttpSchemes.HTTPS_BUFFER);
+            else
+                setScheme(new ByteArrayBuffer(scheme));
+        }
     }
 
     /**
@@ -510,19 +509,80 @@ public class HttpExchange
     }
 
     /**
-     * @return the path of the URL
+     * @return request URI
+     * @see #getRequestURI()
+     * @deprecated
      */
+    @Deprecated
     public String getURI()
+    {
+        return getRequestURI();
+    }
+
+    /**
+     * @return request URI
+     */
+    public String getRequestURI()
     {
         return _uri;
     }
 
     /**
-     * @param uri the path of the URL (for example '/foo/bar?a=1')
+     * Set the request URI 
+     *
+     * @param uri new request URI
+     * @see #setRequestURI(String)
+     * @deprecated
      */
+    @Deprecated
     public void setURI(String uri)
     {
+        setRequestURI(uri);
+    }
+
+    /**
+     * Set the request URI 
+     *
+     * Per RFC 2616 sec5, Request-URI = "*" | absoluteURI | abs_path | authority<br/>
+     * where:<br/><br/>
+     * "*"         - request applies to server itself<br/>
+     * absoluteURI - required for proxy requests, e.g. http://localhost:8080/context<br/>
+     *               (this form is generated automatically by HttpClient)<br/>
+     * abs_path    - used for most methods, e.g. /context<br/>
+     * authority   - used for CONNECT method only, e.g. localhost:8080<br/>
+     * <br/>
+     * For complete definition of URI components, see RFC 2396 sec3.<br/>
+     * 
+     * @param uri new request URI
+     */
+    public void setRequestURI(String uri)
+    {
         _uri = uri;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param uri an absolute URI (for example 'http://localhost/foo/bar?a=1') 
+     */
+    public void setURI(URI uri)
+    {
+        if (!uri.isAbsolute())
+            throw new IllegalArgumentException("!Absolute URI: "+uri);
+            
+        if (uri.isOpaque())
+            throw new IllegalArgumentException("Opaque URI: "+uri);
+
+        String scheme = uri.getScheme();
+        int port = uri.getPort();
+        if (port <= 0)
+            port = "https".equalsIgnoreCase(scheme)?443:80;
+
+        setScheme(scheme);
+        setAddress(new Address(uri.getHost(),port));
+
+        HttpURI httpUri = new HttpURI(uri);
+        String completePath = httpUri.getCompletePath();
+        setRequestURI(completePath==null ? "/" : completePath);
     }
 
     /**
@@ -693,7 +753,7 @@ public class HttpExchange
             }
             catch (IOException x)
             {
-                Log.debug(x);
+                LOG.debug(x);
             }
             finally
             {
@@ -726,11 +786,10 @@ public class HttpExchange
         return result;
     }
 
-    @Override
-    public String toString()
+    public static String toState(int s)
     {
         String state;
-        switch(getStatus())
+        switch(s)
         {
             case STATUS_START: state="START"; break;
             case STATUS_WAITING_FOR_CONNECTION: state="CONNECTING"; break;
@@ -746,6 +805,13 @@ public class HttpExchange
             case STATUS_CANCELLED: state="CANCELLED"; break;
             default: state="UNKNOWN";
         }
+        return state;
+    }
+    
+    @Override
+    public String toString()
+    {
+        String state=toState(getStatus());
         long now=System.currentTimeMillis();
         long forMs = now -_lastStateChange;
         String s= String.format("%s@%x=%s//%s%s#%s(%dms)",getClass().getSimpleName(),hashCode(),_method,_address,_uri,state,forMs);
@@ -838,7 +904,7 @@ public class HttpExchange
      */
     protected void onConnectionFailed(Throwable x)
     {
-        Log.warn("CONNECTION FAILED " + this,x);
+        LOG.warn("CONNECTION FAILED " + this,x);
     }
 
     /**
@@ -848,7 +914,7 @@ public class HttpExchange
      */
     protected void onException(Throwable x)
     {
-        Log.warn("EXCEPTION " + this,x);
+        LOG.warn("EXCEPTION " + this,x);
     }
 
     /**
@@ -857,7 +923,7 @@ public class HttpExchange
      */
     protected void onExpire()
     {
-        Log.warn("EXPIRED " + this);
+        LOG.warn("EXPIRED " + this);
     }
 
     /**
@@ -1042,7 +1108,7 @@ public class HttpExchange
             }
             catch (IOException e)
             {
-                Log.debug(e);
+                LOG.debug(e);
             }
         }
     }

@@ -16,12 +16,15 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
 public class WebInfConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
+
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
     public static final String CONTAINER_JAR_PATTERN = "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern";
     public static final String WEBINF_JAR_PATTERN = "org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern";
@@ -122,7 +125,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         //cannot configure if the context is already started
         if (context.isStarted())
         {
-            if (Log.isDebugEnabled()){Log.debug("Cannot configure webapp "+context+" after it is started");}
+            if (LOG.isDebugEnabled()){LOG.debug("Cannot configure webapp "+context+" after it is started");}
             return;
         }
 
@@ -282,7 +285,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         catch(Exception e)
         {
             tmpDir=null;
-            Log.ignore(e);
+            LOG.ignore(e);
         }
 
         //Third ... Something went wrong trying to make the tmp directory, just make
@@ -301,7 +304,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
             catch(IOException e)
             {
-                Log.warn("tmpdir",e); System.exit(1);
+                LOG.warn("tmpdir",e); System.exit(1);
             }
         }
     }
@@ -343,7 +346,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             {
                 if (!IO.delete(tmpDir))
                 {
-                    if(Log.isDebugEnabled())Log.debug("Failed to delete temp dir "+tmpDir);
+                    if(LOG.isDebugEnabled())LOG.debug("Failed to delete temp dir "+tmpDir);
                 }
             
                 //If we can't delete the existing tmp dir, create a new one
@@ -353,7 +356,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     tmpDir=File.createTempFile(temp+"_","");
                     if (tmpDir.exists())
                         IO.delete(tmpDir);
-                    Log.warn("Can't reuse "+old+", using "+tmpDir);
+                    LOG.warn("Can't reuse "+old+", using "+tmpDir);
                 } 
             }
             
@@ -370,8 +373,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                     sentinel.mkdir();
             }
 
-            if(Log.isDebugEnabled())
-                Log.debug("Set temp dir "+tmpDir);
+            if(LOG.isDebugEnabled())
+                LOG.debug("Set temp dir "+tmpDir);
             context.setTempDirectory(tmpDir);
         }
     }
@@ -393,12 +396,12 @@ public class WebInfConfiguration extends AbstractConfiguration
             // Accept aliases for WAR files
             if (web_app.getAlias() != null)
             {
-                Log.debug(web_app + " anti-aliased to " + web_app.getAlias());
+                LOG.debug(web_app + " anti-aliased to " + web_app.getAlias());
                 web_app = context.newResource(web_app.getAlias());
             }
 
-            if (Log.isDebugEnabled())
-                Log.debug("Try webapp=" + web_app + ", exists=" + web_app.exists() + ", directory=" + web_app.isDirectory());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Try webapp=" + web_app + ", exists=" + web_app.exists() + ", directory=" + web_app.isDirectory());
 
             // Is the WAR usable directly?
             if (web_app.exists() && !web_app.isDirectory() && !web_app.toString().startsWith("jar:"))
@@ -439,7 +442,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (web_app.getFile()!=null && web_app.getFile().isDirectory())
                 {
                     // Copy directory
-                    Log.info("Copy " + web_app + " to " + extractedWebAppDir);
+                    LOG.info("Copy " + web_app + " to " + extractedWebAppDir);
                     web_app.copyTo(extractedWebAppDir);
                 }
                 else
@@ -448,7 +451,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     {
                         //it hasn't been extracted before so extract it
                         extractedWebAppDir.mkdir();
-                        Log.info("Extract " + web_app + " to " + extractedWebAppDir);
+                        LOG.info("Extract " + web_app + " to " + extractedWebAppDir);
                         Resource jar_web_app = JarResource.newJarResource(web_app);
                         jar_web_app.copyTo(extractedWebAppDir);
                     }
@@ -459,7 +462,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                         {
                             IO.delete(extractedWebAppDir);
                             extractedWebAppDir.mkdir();
-                            Log.info("Extract " + web_app + " to " + extractedWebAppDir);
+                            LOG.info("Extract " + web_app + " to " + extractedWebAppDir);
                             Resource jar_web_app = JarResource.newJarResource(web_app);
                             jar_web_app.copyTo(extractedWebAppDir);
                         }
@@ -471,14 +474,14 @@ public class WebInfConfiguration extends AbstractConfiguration
             // Now do we have something usable?
             if (!web_app.exists() || !web_app.isDirectory())
             {
-                Log.warn("Web application not found " + war);
+                LOG.warn("Web application not found " + war);
                 throw new java.io.FileNotFoundException(war);
             }
         
             context.setBaseResource(web_app);
             
-            if (Log.isDebugEnabled())
-                Log.debug("webapp=" + web_app);
+            if (LOG.isDebugEnabled())
+                LOG.debug("webapp=" + web_app);
         }
         
         
@@ -508,7 +511,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                         IO.delete(webInfLibDir);
                     webInfLibDir.mkdir();
 
-                    Log.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
+                    LOG.info("Copying WEB-INF/lib " + web_inf_lib + " to " + webInfLibDir);
                     web_inf_lib.copyTo(webInfLibDir);
                 }
 
@@ -519,7 +522,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                     if (webInfClassesDir.exists())
                         IO.delete(webInfClassesDir);
                     webInfClassesDir.mkdir();
-                    Log.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
+                    LOG.info("Copying WEB-INF/classes from "+web_inf_classes+" to "+webInfClassesDir.getAbsolutePath());
                     web_inf_classes.copyTo(webInfClassesDir);
                 }
 
@@ -527,8 +530,8 @@ public class WebInfConfiguration extends AbstractConfiguration
 
                 ResourceCollection rc = new ResourceCollection(web_inf,web_app);
 
-                if (Log.isDebugEnabled())
-                    Log.debug("context.resourcebase = "+rc);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("context.resourcebase = "+rc);
 
                 context.setBaseResource(rc);
             }   
@@ -635,7 +638,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         catch (Exception e)
         {
-            Log.warn("Can't generate resourceBase as part of webapp tmp dir name", e);
+            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name", e);
         }
             
         //Context name
@@ -700,7 +703,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 }
                 catch (Exception ex)
                 {
-                    Log.warn(Log.EXCEPTION,ex);
+                    LOG.warn(Log.EXCEPTION,ex);
                 }
             }
         }

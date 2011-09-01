@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,6 +61,8 @@ import org.junit.Test;
  */
 public class SslSecurityListenerTest
 {
+    private static final Logger LOG = Log.getLogger(SslSecurityListenerTest.class);
+
     protected  Server _server;
     protected int _port;
     protected HttpClient _httpClient;
@@ -120,7 +123,7 @@ public class SslSecurityListenerTest
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
         if (System.getProperty("java.vendor").toLowerCase().indexOf("ibm")>=0)
         {
-            Log.warn("Skipped SSL testSslGet on IBM JVM");
+            LOG.warn("Skipped SSL testSslGet on IBM JVM");
             return;
         }
         

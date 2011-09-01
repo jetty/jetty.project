@@ -20,6 +20,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -29,6 +30,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractHandler extends AggregateLifeCycle implements Handler
 {
+    private static final Logger LOG = Log.getLogger(AbstractHandler.class);
+
     private Server _server;
     
     /* ------------------------------------------------------------ */
@@ -46,7 +49,7 @@ public abstract class AbstractHandler extends AggregateLifeCycle implements Hand
     @Override
     protected void doStart() throws Exception
     {
-        Log.debug("starting {}",this);
+        LOG.debug("starting {}",this);
         super.doStart();
     }
 
@@ -57,7 +60,7 @@ public abstract class AbstractHandler extends AggregateLifeCycle implements Hand
     @Override
     protected void doStop() throws Exception
     {
-        Log.debug("stopping {}",this);
+        LOG.debug("stopping {}",this);
         super.doStop();
     }
 

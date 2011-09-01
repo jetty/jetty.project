@@ -29,6 +29,7 @@ import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -53,6 +54,8 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class TagLibConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(TagLibConfiguration.class);
+
     public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
     
     /**
@@ -115,7 +118,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                 }
                 
             } catch (Exception e) {
-                Log.warn(e);
+                LOG.warn(e);
             }
         }
 
@@ -211,7 +214,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                 try
                 {
                     tld = iter.next();
-                    if (Log.isDebugEnabled()) Log.debug("TLD="+tld);
+                    if (LOG.isDebugEnabled()) LOG.debug("TLD="+tld);
                    
                     TldDescriptor d = new TldDescriptor(tld);
                     d.parse();
@@ -219,7 +222,7 @@ public class TagLibConfiguration extends AbstractConfiguration
                 }
                 catch(Exception e)
                 {
-                    Log.warn("Unable to parse TLD: " + tld,e);
+                    LOG.warn("Unable to parse TLD: " + tld,e);
                 }
             }
             return descriptors;
@@ -287,7 +290,7 @@ public class TagLibConfiguration extends AbstractConfiguration
             }
             catch(Exception e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
             finally
             {
@@ -345,7 +348,7 @@ public class TagLibConfiguration extends AbstractConfiguration
 
             if (_root==null)
             {
-                Log.warn("No TLD root in {}",_xml);
+                LOG.warn("No TLD root in {}",_xml);
             }
         }
     }
@@ -375,7 +378,7 @@ public class TagLibConfiguration extends AbstractConfiguration
         public void visitListener (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
         {     
             String className=node.getString("listener-class",false,true);
-            if (Log.isDebugEnabled()) Log.debug("listener="+className);
+            if (LOG.isDebugEnabled()) LOG.debug("listener="+className);
 
             try
             {
@@ -385,13 +388,13 @@ public class TagLibConfiguration extends AbstractConfiguration
             }
             catch(Exception e)
             {
-                Log.warn("Could not instantiate listener "+className+": "+e);
-                Log.debug(e);
+                LOG.warn("Could not instantiate listener "+className+": "+e);
+                LOG.debug(e);
             }
             catch(Error e)
             {
-                Log.warn("Could not instantiate listener "+className+": "+e);
-                Log.debug(e);
+                LOG.warn("Could not instantiate listener "+className+": "+e);
+                LOG.debug(e);
             }
 
         }

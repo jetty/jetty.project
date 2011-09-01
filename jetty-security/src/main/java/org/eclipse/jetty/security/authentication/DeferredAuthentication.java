@@ -35,9 +35,12 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class DeferredAuthentication implements Authentication.Deferred
 {
+    private static final Logger LOG = Log.getLogger(DeferredAuthentication.class);
+
     protected final Authenticator _authenticator;
 
     private LoginService _loginService;
@@ -110,7 +113,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
         catch (ServerAuthException e)
         {
-            Log.debug(e);
+            LOG.debug(e);
         }
         return this;
     }
@@ -130,7 +133,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
         catch (ServerAuthException e)
         {
-            Log.debug(e);
+            LOG.debug(e);
         }
         return this;
     }

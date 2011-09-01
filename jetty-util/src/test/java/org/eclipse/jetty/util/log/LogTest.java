@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -77,28 +77,28 @@ public class LogTest
     @Test
     public void testStdErrLogFormat()
     {
-        StdErrLog log = new StdErrLog("test");
+        StdErrLog log = new StdErrLog(LogTest.class.getName());
 
         log.info("testing:{},{}","test","format");
-        logContains("INFO:test:testing:test,format");
+        logContains("INFO:oejul.LogTest:testing:test,format");
         
         log.info("testing:{}","test","format");
-        logContains("INFO:test:testing:test format");
+        logContains("INFO:oejul.LogTest:testing:test format");
         
         log.info("testing","test","format");
-        logContains("INFO:test:testing test format");
+        logContains("INFO:oejul.LogTest:testing test format");
        
         log.info("testing:{},{}","test",null);
-        logContains("INFO:test:testing:test,null");
+        logContains("INFO:oejul.LogTest:testing:test,null");
        
         log.info("testing {} {}",null,null);
-        logContains("INFO:test:testing null null");
+        logContains("INFO:oejul.LogTest:testing null null");
         
         log.info("testing:{}",null,null);
-        logContains("INFO:test:testing:null");
+        logContains("INFO:oejul.LogTest:testing:null");
         
         log.info("testing",null,null);
-        logContains("INFO:test:testing");
+        logContains("INFO:oejul.LogTest:testing");
     }
 
     @Test
@@ -125,6 +125,7 @@ public class LogTest
     public void testStdErrLogName()
     {
         StdErrLog log = new StdErrLog("test");
+        log.setPrintLongNames(true);
         Assert.assertEquals("test",log.getName());
         
         Logger next=log.getLogger("next");

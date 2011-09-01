@@ -32,6 +32,7 @@ import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -45,6 +46,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class EnvConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(EnvConfiguration.class);
+
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
     private URL jettyEnvXmlUrl;
 
@@ -70,8 +73,8 @@ public class EnvConfiguration extends AbstractConfiguration
     @Override
     public void configure (WebAppContext context) throws Exception
     {  
-        if (Log.isDebugEnabled())
-            Log.debug("Created java:comp/env for webapp "+context.getContextPath());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created java:comp/env for webapp "+context.getContextPath());
         
         //check to see if an explicit file has been set, if not,
         //look in WEB-INF/jetty-env.xml
@@ -158,7 +161,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         finally
         {
@@ -183,8 +186,8 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            Log.ignore(e);
-            Log.debug("No naming entries configured in environment for webapp "+context);
+            LOG.ignore(e);
+            LOG.debug("No naming entries configured in environment for webapp "+context);
         }
     }
     
@@ -198,7 +201,7 @@ public class EnvConfiguration extends AbstractConfiguration
     public void bindEnvEntries (WebAppContext context)
     throws NamingException
     {
-        Log.debug("Binding env entries from the jvm scope");
+        LOG.debug("Binding env entries from the jvm scope");
         InitialContext ic = new InitialContext();
         Context envCtx = (Context)ic.lookup("java:comp/env");
         Object scope = null;
@@ -212,7 +215,7 @@ public class EnvConfiguration extends AbstractConfiguration
             NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later          
         }
         
-        Log.debug("Binding env entries from the server scope");
+        LOG.debug("Binding env entries from the server scope");
         
         scope = context.getServer();
         list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
@@ -225,7 +228,7 @@ public class EnvConfiguration extends AbstractConfiguration
             NamingUtil.bind(envCtx, namingEntryName.toString(), ee);//also save the EnvEntry in the context so we can check it later          
         }
         
-        Log.debug("Binding env entries from the context scope");
+        LOG.debug("Binding env entries from the context scope");
         scope = context;
         list = NamingEntryUtil.lookupNamingEntries(scope, EnvEntry.class);
         itor = list.iterator();

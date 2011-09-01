@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.jar.JarEntry;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -34,6 +35,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class MetaInfConfiguration extends AbstractConfiguration
 {
+    private static final Logger LOG = Log.getLogger(MetaInfConfiguration.class);
+
     public static final String METAINF_TLDS = TagLibConfiguration.TLD_RESOURCES;
     public static final String METAINF_FRAGMENTS = FragmentConfiguration.FRAGMENT_RESOURCES;
     public static final String METAINF_RESOURCES = WebInfConfiguration.RESOURCE_URLS;
@@ -57,7 +60,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 }
                 catch (Exception e)
                 {
-                    Log.warn("Problem processing jar entry " + entry, e);
+                    LOG.warn("Problem processing jar entry " + entry, e);
                 }
             }
         };

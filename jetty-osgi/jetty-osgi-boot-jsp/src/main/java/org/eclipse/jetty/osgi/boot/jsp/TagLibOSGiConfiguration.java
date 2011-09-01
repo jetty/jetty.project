@@ -21,6 +21,7 @@ import java.util.LinkedHashSet;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.utils.internal.DefaultFileLocatorHelper;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.TagLibConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -45,6 +46,8 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class TagLibOSGiConfiguration extends TagLibConfiguration
 {
+    private static final Logger LOG = Log.getLogger(TagLibOSGiConfiguration.class);
+
 	private ServiceTracker packageAdminServiceTracker = null;
 	
 	/**
@@ -128,7 +131,7 @@ public class TagLibOSGiConfiguration extends TagLibConfiguration
 			}
 			if (!atLeastOneTldFound)
 			{
-				Log.warn("No '/META-INF/*.tld' resources were found "
+				LOG.warn("No '/META-INF/*.tld' resources were found "
     					+ " in the bundle '" + bs[0].getSymbolicName()
     					+ "' while registering the "
     					+ OSGiWebappConstants.REQUIRE_TLD_BUNDLE

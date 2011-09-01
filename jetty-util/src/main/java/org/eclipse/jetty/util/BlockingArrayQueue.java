@@ -50,12 +50,25 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     
     private volatile int _capacity;
     private Object[] _elements;
-    private int _head;
-    private int _tail;
     
     private final ReentrantLock _headLock = new ReentrantLock();
     private final Condition _notEmpty = _headLock.newCondition();
+    private int _head;
+
+    // spacers created to prevent false sharing between head and tail http://en.wikipedia.org/wiki/False_sharing
+    // TODO verify this has benefits
+    private long _space0;
+    private long _space1;
+    private long _space2;
+    private long _space3;
+    private long _space4;
+    private long _space5;
+    private long _space6;
+    private long _space7;
+    
     private final ReentrantLock _tailLock = new ReentrantLock();
+    private int _tail;
+    
 
     /* ------------------------------------------------------------ */
     /** Create a growing partially blocking Queue
@@ -674,5 +687,13 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
         {
             _tailLock.unlock();
         }
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    long sumOfSpace()
+    {
+        // this method exists to stop clever optimisers removing the spacers
+        return _space0++ +_space1++ +_space2++ +_space3++ +_space4++ +_space5++ +_space6++ +_space7++; 
     }
 }

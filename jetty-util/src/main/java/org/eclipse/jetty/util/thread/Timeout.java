@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.thread;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -27,6 +28,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class Timeout
 {
+    private static final Logger LOG = Log.getLogger(Timeout.class);
     private Object _lock;
     private long _duration;
     private volatile long _now=System.currentTimeMillis();
@@ -134,7 +136,7 @@ public class Timeout
             }
             catch(Throwable th)
             {
-                Log.warn(Log.EXCEPTION,th);
+                LOG.warn(Log.EXCEPTION,th);
             }
         }
     }

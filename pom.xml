@@ -18,11 +18,11 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <junit-version>4.8.1</junit-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <slf4j-version>1.5.11</slf4j-version>
+    <slf4j-version>1.6.1</slf4j-version>
     <servlet.spec.groupId>org.mortbay.jetty</servlet.spec.groupId>
     <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
     <servlet.spec.version>3.0.20100224</servlet.spec.version>
-    <build-support-version>1.0</build-support-version>
+    <build-support-version>1.1</build-support-version>
     <jetty.test.helper>1.6</jetty.test.helper>
     <jetty.test.policy>1.2</jetty.test.policy>
   </properties>
@@ -99,9 +99,22 @@
         <executions>
           <execution>
             <id>set-osgi-version</id>
-            <phase>validate</phase>
+            <phase>validate</phase> 
             <goals>
               <goal>parse-version</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-version-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-version</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>attach-version-text</goal>
             </goals>
           </execution>
         </executions>
@@ -143,10 +156,22 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>named-logging-enforcement</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <verbose>true</verbose>
+            </configuration>
+          </execution>
+        </executions>
         <configuration>
-          <targetJdk>1.5</targetJdk>
+          <targetJdk>1.6</targetJdk>
           <rulesets>
-            <ruleset>jetty/pmd_ruleset.xml</ruleset>
+            <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
         </configuration>
         <dependencies>
@@ -160,6 +185,11 @@
     </plugins>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.eclipse.jetty.toolchain</groupId>
+          <artifactId>jetty-version-maven-plugin</artifactId>
+          <version>1.0.3</version>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
@@ -322,6 +352,7 @@
     <module>jetty-overlay-deployer</module>
     <module>jetty-osgi</module>
     <module>jetty-nosql</module>
+    <module>jetty-distribution</module>
     <module>test-continuation</module>
     <module>test-continuation-jetty6</module>
     <module>test-jetty-servlet</module>
@@ -355,7 +386,7 @@
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-simple</artifactId>
+        <artifactId>log4j-over-slf4j</artifactId>
         <version>${slf4j-version}</version>
       </dependency>
       <dependency>
@@ -410,7 +441,6 @@
       </activation>
       <modules>
         <module>jetty-aggregate</module>
-        <module>jetty-distribution</module>
       </modules>
     </profile>
     <profile>
@@ -429,6 +459,32 @@
       <modules>
         <module>jetty-osgi</module>
       </modules>
+    </profile>
+    <profile>
+      <id>update-version</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-version-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>gen-versiontxt</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>gen-version-text</goal>
+                </goals>
+                <configuration>
+                  <refreshTags>true</refreshTags>
+                  <copyGenerated>true</copyGenerated>
+                  <attachArtifact>false</attachArtifact>
+                  <updateDate>true</updateDate>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>cobertura</id>

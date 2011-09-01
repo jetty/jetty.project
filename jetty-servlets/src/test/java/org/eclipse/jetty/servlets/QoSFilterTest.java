@@ -31,6 +31,7 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.testing.HttpTester;
 import org.eclipse.jetty.testing.ServletTester;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,6 +41,8 @@ import static org.junit.Assert.assertTrue;
 
 public class QoSFilterTest
 {
+    private static final Logger LOG = Log.getLogger(QoSFilterTest.class);
+
     private ServletTester _tester;
     private LocalConnector[] _connectors;
     private CountDownLatch _doneRequests;
@@ -177,8 +180,8 @@ public class QoSFilterTest
             }
             catch(Exception e)
             {
-                Log.warn(String.valueOf(url));
-                Log.debug(e);
+                LOG.warn(String.valueOf(url));
+                LOG.debug(e);
             }
         }
     }

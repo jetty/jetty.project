@@ -33,14 +33,16 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket.OnBinaryMessage;
 import org.eclipse.jetty.websocket.WebSocket.OnControl;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
 import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
-import org.eclipse.jetty.websocket.WebSocketGeneratorD10.MaskGen;
 
-public class WebSocketConnectionD10 extends AbstractConnection implements WebSocketConnection
+public class WebSocketConnectionD12 extends AbstractConnection implements WebSocketConnection
 {
+    private static final Logger LOG = Log.getLogger(WebSocketConnectionD12.class);
+
     final static byte OP_CONTINUATION = 0x00;
     final static byte OP_TEXT = 0x01;
     final static byte OP_BINARY = 0x02;
@@ -56,7 +58,6 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     final static int CLOSE_SHUTDOWN=1001;
     final static int CLOSE_PROTOCOL=1002;
     final static int CLOSE_BADDATA=1003;
-    final static int CLOSE_LARGE=1004;
     final static int CLOSE_NOCODE=1005;
     final static int CLOSE_NOCLOSE=1006;
     final static int CLOSE_NOTUTF8=1007;
@@ -78,9 +79,9 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     private final static byte[] MAGIC;
     private final IdleCheck _idle;
     private final List<Extension> _extensions;
-    private final WebSocketParserD10 _parser;
+    private final WebSocketParserD12 _parser;
     private final WebSocketParser.FrameHandler _inbound;
-    private final WebSocketGeneratorD10 _generator;
+    private final WebSocketGeneratorD12 _generator;
     private final WebSocketGenerator _outbound;
     private final WebSocket _webSocket;
     private final OnFrame _onFrame;
@@ -119,21 +120,20 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     
 
     /* ------------------------------------------------------------ */
-    public WebSocketConnectionD10(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions,int draft)
+    public WebSocketConnectionD12(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions,int draft)
         throws IOException
     {
         this(websocket,endpoint,buffers,timestamp,maxIdleTime,protocol,extensions,draft,null);
     }
     
     /* ------------------------------------------------------------ */
-    public WebSocketConnectionD10(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions,int draft, MaskGen maskgen)
+    public WebSocketConnectionD12(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions,int draft, MaskGen maskgen)
         throws IOException
     {
         super(endpoint,timestamp);
         
         _context=Thread.currentThread().getContextClassLoader();
         
-        // TODO - can we use the endpoint idle mechanism?
         if (endpoint instanceof AsyncEndPoint)
             ((AsyncEndPoint)endpoint).cancelIdle();
         
@@ -145,7 +145,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         _onTextMessage=_webSocket instanceof OnTextMessage ? (OnTextMessage)_webSocket : null;
         _onBinaryMessage=_webSocket instanceof OnBinaryMessage ? (OnBinaryMessage)_webSocket : null;
         _onControl=_webSocket instanceof OnControl ? (OnControl)_webSocket : null;
-        _generator = new WebSocketGeneratorD10(buffers, _endp,maskgen);
+        _generator = new WebSocketGeneratorD12(buffers, _endp,maskgen);
         
         _extensions=extensions;
         if (_extensions!=null)
@@ -164,7 +164,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         _outbound=(_extensions==null||_extensions.size()==0)?_generator:extensions.get(extensions.size()-1);
         _inbound=(_extensions==null||_extensions.size()==0)?_frameHandler:extensions.get(0);
         
-        _parser = new WebSocketParserD10(buffers, endpoint,_inbound,maskgen==null);
+        _parser = new WebSocketParserD12(buffers, endpoint,_inbound,maskgen==null);
         
         _protocol=protocol;
 
@@ -243,16 +243,17 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             }
             catch(IOException e2)
             {
-                Log.ignore(e2);
+                LOG.ignore(e2);
             }
             throw e;
         }
         finally
         {
             current.setContextClassLoader(oldcontext);
+            _parser.returnBuffer();
+            _generator.returnBuffer();
             if (_endp.isOpen())
             {
-                _generator.idle();
                 _idle.access(_endp);
                 if (_closedIn && _closedOut && _outbound.isBufferEmpty())
                     _endp.close();
@@ -261,7 +262,6 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                 else
                     checkWriteable();
             }
-           
         }
         return this;
     }
@@ -277,7 +277,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     public void idleExpired()
     {
         long idle = System.currentTimeMillis()-((SelectChannelEndPoint)_endp).getIdleTimestamp();
-        closeOut(WebSocketConnectionD10.CLOSE_NORMAL,"Idle for "+idle+"ms");
+        closeOut(WebSocketConnectionD12.CLOSE_NORMAL,"Idle for "+idle+"ms > "+_endp.getMaxIdleTime()+"ms");
     }
 
     /* ------------------------------------------------------------ */
@@ -294,16 +294,16 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         {
             closed=_closeCode==0;
             if (closed)
-                _closeCode=WebSocketConnectionD10.CLOSE_NOCLOSE;
+                _closeCode=WebSocketConnectionD12.CLOSE_NOCLOSE;
         }
         if (closed)
-            _webSocket.onClose(WebSocketConnectionD10.CLOSE_NOCLOSE,"closed");
+            _webSocket.onClose(WebSocketConnectionD12.CLOSE_NOCLOSE,"closed");
     }
 
     /* ------------------------------------------------------------ */
     public void closeIn(int code,String message)
     {
-        Log.debug("ClosedIn {} {}",this,message);
+        LOG.debug("ClosedIn {} {}",this,message);
         
         final boolean closedOut;
         final boolean closed;
@@ -335,7 +335,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             }
             catch(IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
     }
@@ -343,7 +343,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closeOut(int code,String message)
     {
-        Log.debug("ClosedOut {} {}",this,message);
+        LOG.debug("ClosedOut {} {}",this,message);
         
         final boolean close;
         final boolean closed;
@@ -373,18 +373,18 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                 else 
                 {
                     if (code<=0)
-                        code=WebSocketConnectionD10.CLOSE_NORMAL;
+                        code=WebSocketConnectionD12.CLOSE_NORMAL;
                     byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                     bytes[0]=(byte)(code/0x100);
                     bytes[1]=(byte)(code%0x100);
-                    _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD10.OP_CLOSE,bytes,0,bytes.length);
+                    _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD12.OP_CLOSE,bytes,0,bytes.length);
                 }
                 _outbound.flush();
 
             }
             catch(IOException e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
             }
         }
     }
@@ -410,8 +410,8 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     private class WSFrameConnection implements WebSocket.FrameConnection
     {
         volatile boolean _disconnecting;
-        int _maxTextMessage=WebSocketConnectionD10.this._maxTextMessageSize;
-        int _maxBinaryMessage=WebSocketConnectionD10.this._maxBinaryMessageSize;
+        int _maxTextMessage=WebSocketConnectionD12.this._maxTextMessageSize;
+        int _maxBinaryMessage=WebSocketConnectionD12.this._maxBinaryMessageSize;
 
         /* ------------------------------------------------------------ */
         public void sendMessage(String content) throws IOException
@@ -419,7 +419,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             if (_closedOut)
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             byte[] data = content.getBytes(StringUtil.__UTF8);
-            _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD10.OP_TEXT,data,0,data.length);
+            _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD12.OP_TEXT,data,0,data.length);
             checkWriteable();
             _idle.access(_endp);
         }
@@ -429,7 +429,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         {
             if (_closedOut)
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
-            _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD10.OP_BINARY,content,offset,length);
+            _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD12.OP_BINARY,content,offset,length);
             checkWriteable();
             _idle.access(_endp);
         }
@@ -472,7 +472,20 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             if (_disconnecting)
                 return;
             _disconnecting=true;
-            WebSocketConnectionD10.this.closeOut(code,message);
+            WebSocketConnectionD12.this.closeOut(code,message);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void setMaxIdleTime(int ms) 
+        {
+            try
+            {
+                _endp.setMaxIdleTime(ms);
+            }
+            catch(IOException e)
+            {
+                LOG.warn(e);
+            }
         }
 
         /* ------------------------------------------------------------ */
@@ -590,6 +603,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
@@ -609,7 +623,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         {
             boolean lastFrame = isLastFrame(flags); 
             
-            synchronized(WebSocketConnectionD10.this)
+            synchronized(WebSocketConnectionD12.this)
             {
                 // Ignore incoming after a close
                 if (_closedIn)
@@ -634,10 +648,10 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
 
                 switch(opcode)
                 {
-                    case WebSocketConnectionD10.OP_CONTINUATION:
+                    case WebSocketConnectionD12.OP_CONTINUATION:
                     {
                         // If text, append to the message buffer
-                        if (_onTextMessage!=null && _opcode==WebSocketConnectionD10.OP_TEXT)
+                        if (_onTextMessage!=null && _opcode==WebSocketConnectionD12.OP_TEXT)
                         {
                             if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
                             {
@@ -677,23 +691,23 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                         }
                         break;
                     }
-                    case WebSocketConnectionD10.OP_PING:
+                    case WebSocketConnectionD12.OP_PING:
                     {
-                        Log.debug("PING {}",this);
+                        LOG.debug("PING {}",this);
                         if (!_closedOut)
-                            _connection.sendControl(WebSocketConnectionD10.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
+                            _connection.sendControl(WebSocketConnectionD12.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
                         break;
                     }
 
-                    case WebSocketConnectionD10.OP_PONG:
+                    case WebSocketConnectionD12.OP_PONG:
                     {
-                        Log.debug("PONG {}",this);
+                        LOG.debug("PONG {}",this);
                         break;
                     }
 
-                    case WebSocketConnectionD10.OP_CLOSE:
+                    case WebSocketConnectionD12.OP_CLOSE:
                     {
-                        int code=WebSocketConnectionD10.CLOSE_NOCODE;
+                        int code=WebSocketConnectionD12.CLOSE_NOCODE;
                         String message=null;
                         if (buffer.length()>=2)
                         {
@@ -705,7 +719,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                         break;
                     }
 
-                    case WebSocketConnectionD10.OP_TEXT:
+                    case WebSocketConnectionD12.OP_TEXT:
                     {
                         if(_onTextMessage!=null)
                         {
@@ -725,7 +739,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
                                 }
                                 else
                                 {
-                                    _opcode=WebSocketConnectionD10.OP_TEXT;
+                                    _opcode=WebSocketConnectionD12.OP_TEXT;
                                 }
                             }
                             else
@@ -760,7 +774,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             }
             catch(Throwable th)
             {
-                Log.warn(th);
+                LOG.warn(th);
             }
         }
 
@@ -769,7 +783,8 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
             int max = _connection.getMaxBinaryMessageSize();
             if (max>0 && (bufferLen+length)>max)
             {
-                _connection.close(WebSocketConnectionD10.CLOSE_LARGE,"Message size > "+_connection.getMaxBinaryMessageSize());
+                LOG.warn("Binary message too large > {}B for {}",_connection.getMaxBinaryMessageSize(),_endp);
+                _connection.close(WebSocketConnectionD12.CLOSE_BADDATA,"Message size > "+_connection.getMaxBinaryMessageSize());
                 _opcode=-1;
                 if (_aggregate!=null)
                     _aggregate.clear();
@@ -780,7 +795,8 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         
         private void textMessageTooLarge()
         {
-            _connection.close(WebSocketConnectionD10.CLOSE_LARGE,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
+            LOG.warn("Text message too large > {} chars for {}",_connection.getMaxTextMessageSize(),_endp);
+            _connection.close(WebSocketConnectionD12.CLOSE_BADDATA,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
 
             _opcode=-1;
             _utf8.reset();
@@ -789,13 +805,14 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
         public void close(int code,String message)
         {
             if (code!=CLOSE_NORMAL)
-                Log.warn("Close: "+code+" "+message);
+                LOG.warn("Close: "+code+" "+message);
             _connection.close(code,message);
         }
 
+        @Override
         public String toString()
         {
-            return WebSocketConnectionD10.this.toString()+"FH";
+            return WebSocketConnectionD12.this.toString()+"FH";
         }
     }
 
@@ -847,6 +864,7 @@ public class WebSocketConnectionD10 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
          return "WS/D"+_draft+"-"+_endp;

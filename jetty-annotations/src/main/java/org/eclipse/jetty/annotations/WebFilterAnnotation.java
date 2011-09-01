@@ -25,6 +25,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.webapp.Origin;
  */
 public class WebFilterAnnotation extends DiscoveredAnnotation
 {
+    private static final Logger LOG = Log.getLogger(WebFilterAnnotation.class);
 
     /**
      * @param context
@@ -57,7 +59,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         Class clazz = getTargetClass();
         if (clazz == null)
         {
-            Log.warn(_className+" cannot be loaded");
+            LOG.warn(_className+" cannot be loaded");
             return;
         }
         
@@ -65,7 +67,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         //Servlet Spec 8.1.2
         if (!Filter.class.isAssignableFrom(clazz))
         {
-            Log.warn(clazz.getName()+" is not assignable from javax.servlet.Filter");
+            LOG.warn(clazz.getName()+" is not assignable from javax.servlet.Filter");
             return;
         }
         MetaData metaData = _context.getMetaData();
@@ -74,7 +76,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
 
         if (filterAnnotation.value().length > 0 && filterAnnotation.urlPatterns().length > 0)
         {
-            Log.warn(clazz.getName()+" defines both @WebFilter.value and @WebFilter.urlPatterns");
+            LOG.warn(clazz.getName()+" defines both @WebFilter.value and @WebFilter.urlPatterns");
             return;
         }
 

@@ -22,6 +22,7 @@ import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -43,6 +44,8 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
 {
+    private static final Logger LOG = Log.getLogger(GlobalWebappConfigBinding.class);
+
 
     private String _jettyXml;
 
@@ -73,14 +76,14 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
         {
             WebAppContext context = (WebAppContext)handler;
 
-            if (Log.isDebugEnabled())
+            if (LOG.isDebugEnabled())
             {
-                Log.debug("Binding: Configuring webapp context with global settings from: " + _jettyXml);
+                LOG.debug("Binding: Configuring webapp context with global settings from: " + _jettyXml);
             }
 
             if ( _jettyXml == null )
             {
-                Log.warn("Binding: global context binding is enabled but no jetty-web.xml file has been registered");
+                LOG.warn("Binding: global context binding is enabled but no jetty-web.xml file has been registered");
             }
             
             Resource globalContextSettings = Resource.newResource(_jettyXml);
@@ -93,7 +96,7 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
             }
             else
             {
-                Log.info("Binding: Unable to locate global webapp context settings: " + _jettyXml);
+                LOG.info("Binding: Unable to locate global webapp context settings: " + _jettyXml);
             }
         }
     }

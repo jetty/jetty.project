@@ -38,10 +38,13 @@ import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
-class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector, Runnable
+class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
 {
+    private static final Logger LOG = Log.getLogger(SelectConnector.class);
+
     private final HttpClient _httpClient;
     private final Manager _selectorManager=new Manager();
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
@@ -62,7 +65,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     {
         super.doStart();
 
-        _selectorManager.start();
 
         final boolean direct=_httpClient.getUseDirectBuffers();
 
@@ -73,7 +75,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 direct?Type.DIRECT:Type.INDIRECT,ssl_session.getApplicationBufferSize(),
                 direct?Type.DIRECT:Type.INDIRECT,1024);
 
-        _httpClient._threadPool.dispatch(this);
+        _selectorManager.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -113,25 +115,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         catch(IOException ex)
         {
             destination.onConnectionFailed(ex);
-        }
-
-    }
-
-    /* ------------------------------------------------------------ */
-    public void run()
-    {
-        while (_httpClient.isRunning())
-        {
-            try
-            {
-                _selectorManager.doSelect(0);
-            }
-            catch (Exception e)
-            {
-                Log.warn(e.toString());
-                Log.debug(e);
-                Thread.yield();
-            }
         }
     }
 
@@ -175,7 +158,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             Timeout.Task connectTimeout = _connectingChannels.remove(channel);
             if (connectTimeout != null)
                 connectTimeout.cancel();
-            Log.debug("Channels with connection pending: {}", _connectingChannels.size());
+            LOG.debug("Channels with connection pending: {}", _connectingChannels.size());
 
             // key should have destination at this point (will be replaced by endpoint after this call)
             HttpDestination dest=(HttpDestination)key.attachment();
@@ -261,7 +244,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
         {
             if (channel.isConnectionPending())
             {
-                Log.debug("Channel {} timed out while connecting, closing it", channel);
+                LOG.debug("Channel {} timed out while connecting, closing it", channel);
                 try
                 {
                     // This will unregister the channel from the selector
@@ -269,7 +252,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
                 }
                 catch (IOException x)
                 {
-                    Log.ignore(x);
+                    LOG.ignore(x);
                 }
                 destination.onConnectionFailed(new SocketTimeoutException());
             }

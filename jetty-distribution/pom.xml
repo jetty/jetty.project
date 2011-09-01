@@ -76,7 +76,7 @@
                   <url url="${jetty-orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
                   <url url="${jetty-orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
-                  <url url="${jetty-orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
+                  <url url="${jetty-orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar"/>
                   <url url="${jetty-orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
                   <url url="${jetty-orbit-url}/org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.transaction_${orbit-javax-transaction-version}.jar" />
@@ -127,7 +127,6 @@
                     <include name="org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />         
                   </fileset>
                 </copy>
-                <copy file="../VERSION.txt" todir="${assembly-directory}" />
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
             </configuration>
@@ -315,6 +314,16 @@
             </goals>
             <configuration>
               <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-project</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>version</classifier>
+                  <type>txt</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/</outputDirectory>
+                  <destFileName>VERSION.txt</destFileName>
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-util</artifactId>

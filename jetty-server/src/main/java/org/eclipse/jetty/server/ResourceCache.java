@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -43,6 +44,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  */
 public class ResourceCache
 {
+    private static final Logger LOG = Log.getLogger(ResourceCache.class);
+
     private final ConcurrentMap<String,Content> _cache;
     private final AtomicInteger _cachedSize;
     private final AtomicInteger _cachedFiles;
@@ -290,7 +293,7 @@ public class ResourceCache
             int len=(int)resource.length();
             if (len<0)
             {
-                Log.warn("invalid resource: "+String.valueOf(resource)+" "+len);
+                LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
                 return null;
             }
             Buffer buffer = new IndirectNIOBuffer(len);
@@ -301,7 +304,7 @@ public class ResourceCache
         }
         catch(IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             return null;
         }
     }
@@ -317,7 +320,7 @@ public class ResourceCache
             int len=(int)resource.length();
             if (len<0)
             {
-                Log.warn("invalid resource: "+String.valueOf(resource)+" "+len);
+                LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
                 return null;
             }
             Buffer buffer = new DirectNIOBuffer(len);
@@ -328,7 +331,7 @@ public class ResourceCache
         }
         catch(IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
             return null;
         }
     }
@@ -448,7 +451,7 @@ public class ResourceCache
                 Buffer buffer2=ResourceCache.this.getIndirectBuffer(_resource);
                 
                 if (buffer2==null)
-                    Log.warn("Could not load "+this);
+                    LOG.warn("Could not load "+this);
                 else if (_indirectBuffer.compareAndSet(null,buffer2))
                     buffer=buffer2;
                 else
@@ -469,7 +472,7 @@ public class ResourceCache
                 Buffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
 
                 if (buffer2==null)
-                    Log.warn("Could not load "+this);
+                    LOG.warn("Could not load "+this);
                 else if (_directBuffer.compareAndSet(null,buffer2))
                     buffer=buffer2;
                 else

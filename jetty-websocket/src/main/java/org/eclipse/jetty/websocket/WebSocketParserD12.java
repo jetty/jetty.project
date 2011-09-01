@@ -19,6 +19,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -27,8 +28,10 @@ import org.eclipse.jetty.util.log.Log;
  * Parser the WebSocket protocol.
  *
  */
-public class WebSocketParserD10 implements WebSocketParser
-{    
+public class WebSocketParserD12 implements WebSocketParser
+{
+    private static final Logger LOG = Log.getLogger(WebSocketParserD12.class);
+    
     public enum State { 
         
         START(0), OPCODE(1), LENGTH_7(1), LENGTH_16(2), LENGTH_63(8), MASK(4), PAYLOAD(0), DATA(0), SKIP(1);
@@ -70,7 +73,7 @@ public class WebSocketParserD10 implements WebSocketParser
      * @param endp
      * @param handler
      */
-    public WebSocketParserD10(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean shouldBeMasked)
+    public WebSocketParserD12(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean shouldBeMasked)
     {
         _buffers=buffers;
         _endp=endp;
@@ -121,7 +124,6 @@ public class WebSocketParserD10 implements WebSocketParser
     {
         if (_buffer==null)
             _buffer=_buffers.getBuffer();
-
         int total_filled=0;
         int events=0;
 
@@ -157,9 +159,9 @@ public class WebSocketParserD10 implements WebSocketParser
                         // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
                         events++;
                         _bytesNeeded-=data.length();
-                        _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionD10.FLAG_FIN)), _opcode, data);
+                        _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionD12.FLAG_FIN)), _opcode, data);
                         
-                        _opcode=WebSocketConnectionD10.OP_CONTINUATION;
+                        _opcode=WebSocketConnectionD12.OP_CONTINUATION;
                     }
                     
                     if (_buffer.space() == 0)
@@ -177,7 +179,7 @@ public class WebSocketParserD10 implements WebSocketParser
                 }
                 catch(IOException e)
                 {
-                    Log.debug(e);
+                    LOG.debug(e);
                     return (total_filled+events)>0?(total_filled+events):-1;
                 }
             }
@@ -202,11 +204,11 @@ public class WebSocketParserD10 implements WebSocketParser
                         _opcode=(byte)(b&0xf);
                         _flags=(byte)(0xf&(b>>4));
                         
-                        if (WebSocketConnectionD10.isControlFrame(_opcode)&&!WebSocketConnectionD10.isLastFrame(_flags))
+                        if (WebSocketConnectionD12.isControlFrame(_opcode)&&!WebSocketConnectionD12.isLastFrame(_flags))
                         {
                             events++;
-                            Log.warn("Fragmented Control from "+_endp);
-                            _handler.close(WebSocketConnectionD10.CLOSE_PROTOCOL,"Fragmented control");
+                            LOG.warn("Fragmented Control from "+_endp);
+                            _handler.close(WebSocketConnectionD12.CLOSE_PROTOCOL,"Fragmented control");
                             _skip=true;
                         }
 
@@ -247,7 +249,7 @@ public class WebSocketParserD10 implements WebSocketParser
                             if (_length>_buffer.capacity() && !_fakeFragments)
                             {
                                 events++;
-                                _handler.close(WebSocketConnectionD10.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionD12.CLOSE_BADDATA,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -266,7 +268,7 @@ public class WebSocketParserD10 implements WebSocketParser
                             if (_length>=_buffer.capacity())
                             {
                                 events++;
-                                _handler.close(WebSocketConnectionD10.CLOSE_LARGE,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionD12.CLOSE_BADDATA,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -309,7 +311,7 @@ public class WebSocketParserD10 implements WebSocketParser
                     _buffer.skip(_bytesNeeded);
                     _state=State.START;
                     events++;
-                    _handler.close(WebSocketConnectionD10.CLOSE_PROTOCOL,"bad mask");
+                    _handler.close(WebSocketConnectionD12.CLOSE_PROTOCOL,"bad mask");
                 }
                 else
                 {
@@ -331,12 +333,6 @@ public class WebSocketParserD10 implements WebSocketParser
                     _state=State.START;
                 }
 
-                if (_buffer.length()==0)
-                {
-                    _buffers.returnBuffer(_buffer);
-                    _buffer=null;
-                }
-
                 return total_filled+events;
             }
         }
@@ -349,9 +345,28 @@ public class WebSocketParserD10 implements WebSocketParser
         {
             if (_buffer==null)
                 _buffer=_buffers.getBuffer();
+            
             _buffer.put(buffer);
             buffer.clear();
         }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void returnBuffer()
+    {
+        if (_buffer!=null && _buffer.length()==0)
+        {
+            _buffers.returnBuffer(_buffer);
+            _buffer=null;
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        Buffer buffer=_buffer;
+        return WebSocketParserD12.class.getSimpleName()+"@"+ Integer.toHexString(hashCode())+"|"+_state+"|"+(buffer==null?"<>":buffer.toDetailString());
     }
 
 }

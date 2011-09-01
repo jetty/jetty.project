@@ -24,9 +24,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
 {
+    private static final Logger LOG = Log.getLogger(SocketConnector.class);
+
     /**
      *
      */
@@ -51,7 +54,7 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
         }
         else
         {
-            Log.debug("Using Regular Socket");
+            LOG.debug("Using Regular Socket");
             socket = SocketFactory.getDefault().createSocket();
         }
 
@@ -87,10 +90,10 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
                 catch (IOException e)
                 {
                     if (e instanceof InterruptedIOException)
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     else
                     {
-                        Log.debug(e);
+                        LOG.debug(e);
                         destination.onException(e);
                     }
                 }

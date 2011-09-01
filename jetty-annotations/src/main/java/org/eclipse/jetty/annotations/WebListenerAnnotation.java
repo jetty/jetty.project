@@ -21,6 +21,7 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.webapp.Origin;
  */
 public class WebListenerAnnotation extends DiscoveredAnnotation
 {
+    private static final Logger LOG = Log.getLogger(WebListenerAnnotation.class);
 
     /**
      * @param context
@@ -54,7 +56,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
         
         if (clazz == null)
         {
-            Log.warn(_className+" cannot be loaded");
+            LOG.warn(_className+" cannot be loaded");
             return;
         }
 
@@ -73,11 +75,11 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                     _context.addEventListener(listener);
             }
             else
-                Log.warn(clazz.getName()+" does not implement one of the servlet listener interfaces");
+                LOG.warn(clazz.getName()+" does not implement one of the servlet listener interfaces");
         }
         catch (Exception e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
 }

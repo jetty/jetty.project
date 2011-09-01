@@ -42,6 +42,8 @@ import java.util.Map;
  */
 public class UrlEncoded extends MultiMap
 {
+    // private static final Logger LOG = Log.getLogger(UrlEncoded.class);
+
     public static final String ENCODING = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset",StringUtil.__UTF8);
 
     /* ----------------------------------------------------------------- */
@@ -811,7 +813,7 @@ public class UrlEncoded extends MultiMap
         }
         catch(UnsupportedEncodingException e)
         {
-            // Log.warn(LogSupport.EXCEPTION,e);
+            // LOG.warn(LogSupport.EXCEPTION,e);
             bytes=string.getBytes();
         }
         
@@ -861,7 +863,7 @@ public class UrlEncoded extends MultiMap
         }
         catch(UnsupportedEncodingException e)
         {
-            // Log.warn(LogSupport.EXCEPTION,e);
+            // LOG.warn(LogSupport.EXCEPTION,e);
             return new String(encoded,0,n);
         }
     }

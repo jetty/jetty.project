@@ -139,36 +139,37 @@ public class ProxyFakeTunnelTest extends ProxyTunnellingTest
                                 }
                                 out.flush();
            
-                                System.err.println(toserver);
-                                final InputStream from = toserver.getInputStream();
-                                
-                                Thread copy = new Thread()
+                                if (toserver!=null)
                                 {
-                                    public void run()
+                                    final InputStream from = toserver.getInputStream();
+
+                                    Thread copy = new Thread()
                                     {
-                                        try
-                                        {
-                                            IO.copy(from,out);
-                                            out.close();
-                                        }
-                                        catch (IOException e)
-                                        {
-                                        }
-                                        finally
+                                        public void run()
                                         {
                                             try
                                             {
+                                                IO.copy(from,out);
                                                 out.close();
                                             }
                                             catch (IOException e)
                                             {
                                             }
+                                            finally
+                                            {
+                                                try
+                                                {
+                                                    out.close();
+                                                }
+                                                catch (IOException e)
+                                                {
+                                                }
+                                            }
                                         }
-                                    }
-                                };
-                                copy.setDaemon(true);
-                                copy.start();
-                                
+                                    };
+                                    copy.setDaemon(true);
+                                    copy.start();
+                                }
                                 
                             }
                             else

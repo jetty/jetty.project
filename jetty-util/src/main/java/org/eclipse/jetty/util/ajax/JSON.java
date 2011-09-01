@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * JSON Parser and Generator.
@@ -85,6 +86,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class JSON
 {
+    private static final Logger LOG = Log.getLogger(JSON.class);
     public final static JSON DEFAULT = new JSON();
 
     private Map<String, Convertor> _convertors = new ConcurrentHashMap<String, Convertor>();
@@ -1636,7 +1638,7 @@ public class JSON
          */
         public Literal(String json)
         {
-            if (Log.isDebugEnabled())
+            if (LOG.isDebugEnabled()) // TODO: Make this a configurable option on JSON instead!
                 parse(json);
             _json = json;
         }

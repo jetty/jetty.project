@@ -19,6 +19,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -28,7 +29,9 @@ import org.eclipse.jetty.util.log.Log;
  *
  */
 public class WebSocketParserD06 implements WebSocketParser
-{    
+{
+    private static final Logger LOG = Log.getLogger(WebSocketParserD06.class);
+    
     public enum State { 
         
         START(0), MASK(4), OPCODE(1), LENGTH_7(1), LENGTH_16(2), LENGTH_63(8), DATA(0), SKIP(1);
@@ -131,7 +134,7 @@ public class WebSocketParserD06 implements WebSocketParser
                 }
                 catch(IOException e)
                 {
-                    Log.debug(e);
+                    LOG.debug(e);
                     return (total_filled+events)>0?(total_filled+events):-1;
                 }
             }

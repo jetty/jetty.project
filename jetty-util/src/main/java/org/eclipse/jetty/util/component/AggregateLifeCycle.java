@@ -3,12 +3,15 @@ package org.eclipse.jetty.util.component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * An AggregateLifeCycle is an AbstractLifeCycle with a collection of dependent beans.
@@ -18,7 +21,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable, Dumpable
 {
-    private final Queue<Object> _dependentBeans=new ConcurrentLinkedQueue<Object>();
+    private static final Logger LOG = Log.getLogger(AggregateLifeCycle.class);
+    private final List<Object> _dependentBeans=new CopyOnWriteArrayList<Object>();
 
     public void destroy()
     {
@@ -47,7 +51,9 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     protected void doStop() throws Exception
     {
         super.doStop();
-        for (Object o:_dependentBeans)
+        List<Object> reverse = new ArrayList<Object>(_dependentBeans);
+        Collections.reverse(reverse);
+        for (Object o:reverse)
         {
             if (o instanceof LifeCycle)
                 ((LifeCycle)o).stop();
@@ -139,7 +145,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
             }
         }
         if (count>1)
-            Log.debug("getBean({}) 1 of {}",clazz.getName(),count);
+            LOG.debug("getBean({}) 1 of {}",clazz.getName(),count);
         
         return t;
     }
@@ -173,7 +179,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         }
         catch (IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
     }
     
@@ -193,7 +199,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         }
         catch (IOException e)
         {
-            Log.warn(e);
+            LOG.warn(e);
         }
         return b.toString();
     }    

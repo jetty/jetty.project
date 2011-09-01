@@ -31,6 +31,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
@@ -52,6 +53,8 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class XmlParser
 {
+    private static final Logger LOG = Log.getLogger(XmlParser.class);
+
     private Map<String,URL> _redirectMap = new HashMap<String,URL>();
     private SAXParser _parser;
     private Map<String,ContentHandler> _observerMap;
@@ -99,9 +102,9 @@ public class XmlParser
             catch (Exception e)
             {
                 if (validating)
-                    Log.warn("Schema validation may not be supported: ", e);
+                    LOG.warn("Schema validation may not be supported: ", e);
                 else
-                    Log.ignore(e);
+                    LOG.ignore(e);
             }
 
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/validation", validating);
@@ -114,12 +117,12 @@ public class XmlParser
             }
             catch (Exception e)
             {
-                Log.warn(e.getMessage());
+                LOG.warn(e.getMessage());
             }
         }
         catch (Exception e)
         {
-            Log.warn(Log.EXCEPTION, e);
+            LOG.warn(Log.EXCEPTION, e);
             throw new Error(e.toString());
         }
     }
@@ -191,8 +194,8 @@ public class XmlParser
         reader.setContentHandler(handler);
         reader.setErrorHandler(handler);
         reader.setEntityResolver(handler);
-        if (Log.isDebugEnabled())
-            Log.debug("parsing: sid=" + source.getSystemId() + ",pid=" + source.getPublicId());
+        if (LOG.isDebugEnabled())
+            LOG.debug("parsing: sid=" + source.getSystemId() + ",pid=" + source.getPublicId());
         _parser.parse(source, handler);
         if (handler._error != null)
             throw handler._error;
@@ -207,8 +210,8 @@ public class XmlParser
      */
     public synchronized Node parse(String url) throws IOException, SAXException
     {
-        if (Log.isDebugEnabled())
-            Log.debug("parse: " + url);
+        if (LOG.isDebugEnabled())
+            LOG.debug("parse: " + url);
         return parse(new InputSource(url));
     }
 
@@ -218,8 +221,8 @@ public class XmlParser
      */
     public synchronized Node parse(File file) throws IOException, SAXException
     {
-        if (Log.isDebugEnabled())
-            Log.debug("parse: " + file);
+        if (LOG.isDebugEnabled())
+            LOG.debug("parse: " + file);
         return parse(new InputSource(Resource.toURL(file).toString()));
     }
 
@@ -374,8 +377,8 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         public void warning(SAXParseException ex)
         {
-            Log.debug(Log.EXCEPTION, ex);
-            Log.warn("WARNING@" + getLocationString(ex) + " : " + ex.toString());
+            LOG.debug(Log.EXCEPTION, ex);
+            LOG.warn("WARNING@" + getLocationString(ex) + " : " + ex.toString());
         }
 
         /* ------------------------------------------------------------ */
@@ -384,16 +387,16 @@ public class XmlParser
             // Save error and continue to report other errors
             if (_error == null)
                 _error = ex;
-            Log.debug(Log.EXCEPTION, ex);
-            Log.warn("ERROR@" + getLocationString(ex) + " : " + ex.toString());
+            LOG.debug(Log.EXCEPTION, ex);
+            LOG.warn("ERROR@" + getLocationString(ex) + " : " + ex.toString());
         }
 
         /* ------------------------------------------------------------ */
         public void fatalError(SAXParseException ex) throws SAXException
         {
             _error = ex;
-            Log.debug(Log.EXCEPTION, ex);
-            Log.warn("FATAL@" + getLocationString(ex) + " : " + ex.toString());
+            LOG.debug(Log.EXCEPTION, ex);
+            LOG.warn("FATAL@" + getLocationString(ex) + " : " + ex.toString());
             throw ex;
         }
 
@@ -406,8 +409,8 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         public InputSource resolveEntity(String pid, String sid)
         {
-            if (Log.isDebugEnabled())
-                Log.debug("resolveEntity(" + pid + ", " + sid + ")");
+            if (LOG.isDebugEnabled())
+                LOG.debug("resolveEntity(" + pid + ", " + sid + ")");
             
             if (sid!=null && sid.endsWith(".dtd"))
                 _dtd=sid;
@@ -423,8 +426,8 @@ public class XmlParser
                 if (dtd.lastIndexOf('/') >= 0)
                     dtd = dtd.substring(dtd.lastIndexOf('/') + 1);
 
-                if (Log.isDebugEnabled())
-                    Log.debug("Can't exact match entity in redirect map, trying " + dtd);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Can't exact match entity in redirect map, trying " + dtd);
                 entity = (URL) _redirectMap.get(dtd);
             }
 
@@ -433,15 +436,15 @@ public class XmlParser
                 try
                 {
                     InputStream in = entity.openStream();
-                    if (Log.isDebugEnabled())
-                        Log.debug("Redirected entity " + sid + " --> " + entity);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Redirected entity " + sid + " --> " + entity);
                     InputSource is = new InputSource(in);
                     is.setSystemId(sid);
                     return is;
                 }
                 catch (IOException e)
                 {
-                    Log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
             return null;

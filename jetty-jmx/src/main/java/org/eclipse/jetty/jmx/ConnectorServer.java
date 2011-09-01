@@ -29,6 +29,7 @@ import javax.management.remote.JMXServiceURL;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
 
@@ -38,6 +39,8 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
  */
 public class ConnectorServer extends AbstractLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(ConnectorServer.class);
+
     JMXConnectorServer _connectorServer;
     Registry _registry;
     
@@ -101,7 +104,7 @@ public class ConnectorServer extends AbstractLifeCycle
         _connectorServer.start();
         ShutdownThread.register(0, this);       
         
-        Log.info("JMX Remote URL: {}", _connectorServer.getAddress().toString());
+        LOG.info("JMX Remote URL: {}", _connectorServer.getAddress().toString());
     }
     
     /* ------------------------------------------------------------ */
@@ -156,7 +159,7 @@ public class ConnectorServer extends AbstractLifeCycle
                 }
                 catch (Exception ex)
                 {
-                    Log.ignore(ex);
+                    LOG.ignore(ex);
                 }
             }
 
@@ -180,7 +183,7 @@ public class ConnectorServer extends AbstractLifeCycle
             }
             catch (Exception ex)
             {
-                Log.ignore(ex);
+                LOG.ignore(ex);
             }
         }
     }

@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -52,6 +53,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 @SuppressWarnings("unchecked")
 public class WebAppDeployer extends AbstractLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(WebAppDeployer.class);
+
     private HandlerCollection _contexts;
     private String _webAppDir;
     private String _defaultsDescriptor;
@@ -65,7 +68,7 @@ public class WebAppDeployer extends AbstractLifeCycle
     
     public WebAppDeployer()
     {
-        Log.warn("WebAppDeployer is deprecated. Use WebAppProvider");
+        LOG.warn("WebAppDeployer is deprecated. Use WebAppProvider");
     }
     
     public String[] getConfigurationClasses()
@@ -254,13 +257,13 @@ public class WebAppDeployer extends AbstractLifeCycle
 
                         if (path != null && path.equals(app.getFile().getCanonicalPath()))
                         {
-                            Log.debug("Already deployed:"+path);
+                            LOG.debug("Already deployed:"+path);
                             continue files;
                         }
                     }
                     catch (Exception e)
                     {
-                        Log.ignore(e);
+                        LOG.ignore(e);
                     }
 
                 }

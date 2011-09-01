@@ -73,6 +73,8 @@ public interface Generator
     void reset(boolean returnBuffers);
 
     void resetBuffer();
+    
+    void returnBuffers();
 
     void sendError(int code, String reason, String content, boolean close) throws IOException;
     

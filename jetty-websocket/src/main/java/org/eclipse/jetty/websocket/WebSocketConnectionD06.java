@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket.OnBinaryMessage;
 import org.eclipse.jetty.websocket.WebSocket.OnControl;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
@@ -40,6 +41,8 @@ import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 
 public class WebSocketConnectionD06 extends AbstractConnection implements WebSocketConnection
 {
+    private static final Logger LOG = Log.getLogger(WebSocketConnectionD06.class);
+
     final static byte OP_CONTINUATION = 0x00;
     final static byte OP_CLOSE = 0x01;
     final static byte OP_PING = 0x02;
@@ -191,7 +194,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             }
             catch(IOException e2)
             {
-                Log.ignore(e2);
+                LOG.ignore(e2);
             }
             throw e;
         }
@@ -240,7 +243,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public synchronized void closeIn(int code,String message)
     {
-        Log.debug("ClosedIn {} {}",this,message);
+        LOG.debug("ClosedIn {} {}",this,message);
         try
         {
             if (_closedOut)
@@ -250,7 +253,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
         catch(IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         finally
         {
@@ -261,7 +264,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public synchronized void closeOut(int code,String message)
     {
-        Log.debug("ClosedOut {} {}",this,message);
+        LOG.debug("ClosedOut {} {}",this,message);
         try
         {
             if (_closedIn || _closedOut)
@@ -280,7 +283,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
         catch(IOException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         finally
         {
@@ -382,6 +385,19 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                 return;
             _disconnecting=true;
             WebSocketConnectionD06.this.closeOut(code,message);
+        }
+
+        /* ------------------------------------------------------------ */
+        public void setMaxIdleTime(int ms) 
+        {
+            try
+            {
+                _endp.setMaxIdleTime(ms);
+            }
+            catch(IOException e)
+            {
+                LOG.warn(e);
+            }
         }
 
         /* ------------------------------------------------------------ */
@@ -594,7 +610,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                         }
                         case WebSocketConnectionD06.OP_PING:
                         {
-                            Log.debug("PING {}",this);
+                            LOG.debug("PING {}",this);
                             if (!_closedOut)
                                 _connection.sendControl(WebSocketConnectionD06.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
                             break;
@@ -602,7 +618,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
                         case WebSocketConnectionD06.OP_PONG:
                         {
-                            Log.debug("PONG {}",this);
+                            LOG.debug("PONG {}",this);
                             break;
                         }
 
@@ -687,7 +703,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                 }
                 catch(Throwable th)
                 {
-                    Log.warn(th);
+                    LOG.warn(th);
                 }
             }
         }

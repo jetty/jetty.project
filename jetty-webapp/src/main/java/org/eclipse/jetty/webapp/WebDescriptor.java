@@ -22,6 +22,7 @@ import javax.servlet.Servlet;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -33,7 +34,9 @@ import org.eclipse.jetty.xml.XmlParser;
  * A web descriptor (web.xml/web-defaults.xml/web-overrides.xml).
  */
 public class WebDescriptor extends Descriptor
-{ 
+{
+    private static final Logger LOG = Log.getLogger(WebDescriptor.class);
+ 
     protected static XmlParser _parserSingleton;
     protected MetaDataComplete _metaDataComplete;
     protected int _majorVersion = 3; //default to container version
@@ -86,7 +89,7 @@ public class WebDescriptor extends Descriptor
         }
         catch (Exception e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         finally
         {
@@ -195,7 +198,7 @@ public class WebDescriptor extends Descriptor
                 _metaDataComplete = Boolean.valueOf(s).booleanValue()?MetaDataComplete.True:MetaDataComplete.False;
         }
             
-        Log.debug(_xml.toString()+": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);     
+        LOG.debug(_xml.toString()+": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);     
     }
     
     public void processOrdering ()

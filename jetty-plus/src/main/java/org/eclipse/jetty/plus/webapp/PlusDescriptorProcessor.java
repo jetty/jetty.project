@@ -33,6 +33,7 @@ import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
@@ -48,6 +49,8 @@ import org.eclipse.jetty.xml.XmlParser;
 
 public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 {
+    private static final Logger LOG = Log.getLogger(PlusDescriptorProcessor.class);
+
     public PlusDescriptorProcessor ()
     {
         try
@@ -121,7 +124,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         //nor processing injection entries
         if (valueStr==null || valueStr.equals(""))
         {
-            Log.warn("No value for env-entry-name "+name);
+            LOG.warn("No value for env-entry-name "+name);
             return;
         }
         
@@ -537,12 +540,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         
         if (className==null || className.equals(""))
         {
-            Log.warn("No lifecycle-callback-class specified");
+            LOG.warn("No lifecycle-callback-class specified");
             return;
         }
         if (methodName==null || methodName.equals(""))
         {
-            Log.warn("No lifecycle-callback-method specified for class "+className);
+            LOG.warn("No lifecycle-callback-method specified for class "+className);
             return;
         }
        
@@ -565,7 +568,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    Log.warn("Couldn't load post-construct target class "+className);
+                    LOG.warn("Couldn't load post-construct target class "+className);
                 }
                 break;
             }
@@ -586,7 +589,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                     catch (ClassNotFoundException e)
                     {
-                        Log.warn("Couldn't load post-construct target class "+className);
+                        LOG.warn("Couldn't load post-construct target class "+className);
                     }
                 }
                 break;
@@ -603,7 +606,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    Log.warn("Couldn't load post-construct target class "+className);
+                    LOG.warn("Couldn't load post-construct target class "+className);
                 }
                 break;
             }
@@ -624,12 +627,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         String methodName = node.getString("lifecycle-callback-method", false, true);
         if (className==null || className.equals(""))
         {
-            Log.warn("No lifecycle-callback-class specified for pre-destroy");
+            LOG.warn("No lifecycle-callback-class specified for pre-destroy");
             return;
         }
         if (methodName==null || methodName.equals(""))
         {
-            Log.warn("No lifecycle-callback-method specified for pre-destroy class "+className);
+            LOG.warn("No lifecycle-callback-method specified for pre-destroy class "+className);
             return;
         } 
       
@@ -650,7 +653,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    Log.warn("Couldn't load pre-destory target class "+className);
+                    LOG.warn("Couldn't load pre-destory target class "+className);
                 }
                 break;
             }
@@ -671,7 +674,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                     catch (ClassNotFoundException e)
                     {
-                        Log.warn("Couldn't load pre-destory target class "+className);
+                        LOG.warn("Couldn't load pre-destory target class "+className);
                     } 
                 }
                 break;
@@ -688,7 +691,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    Log.warn("Couldn't load pre-destory target class "+className);
+                    LOG.warn("Couldn't load pre-destory target class "+className);
                 } 
                 break;
             }
@@ -715,12 +718,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             String targetName = injectionNode.getString("injection-target-name", false, true);
             if ((targetClassName==null) || targetClassName.equals(""))
             {
-                Log.warn("No classname found in injection-target");
+                LOG.warn("No classname found in injection-target");
                 continue;
             }
             if ((targetName==null) || targetName.equals(""))
             {
-                Log.warn("No field or method name in injection-target");
+                LOG.warn("No field or method name in injection-target");
                 continue;
             }
 
@@ -746,7 +749,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             catch (ClassNotFoundException e)
             {
-                Log.warn("Couldn't load injection target class "+targetClassName);
+                LOG.warn("Couldn't load injection target class "+targetClassName);
             }
         }
     }

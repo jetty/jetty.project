@@ -80,6 +80,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Jetty Request.
@@ -115,6 +116,8 @@ import org.eclipse.jetty.util.log.Log;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
+    private static final Logger LOG = Log.getLogger(Request.class);
+
     private static final String __ASYNC_FWD="org.eclipse.asyncfwd";
     private static final Collection __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE=0, _STREAM=1, __READER=2;
@@ -228,10 +231,10 @@ public class Request implements HttpServletRequest
                 }
                 catch (UnsupportedEncodingException e)
                 {
-                    if (Log.isDebugEnabled())
-                        Log.warn(e);
+                    if (LOG.isDebugEnabled())
+                        LOG.warn(e);
                     else
-                        Log.warn(e.toString());
+                        LOG.warn(e.toString());
                 }
             }
         }
@@ -273,10 +276,10 @@ public class Request implements HttpServletRequest
                     }
                     catch (IOException e)
                     {
-                        if (Log.isDebugEnabled())
-                            Log.warn(e);
+                        if (LOG.isDebugEnabled())
+                            LOG.warn(e);
                         else
-                            Log.warn(e.toString());
+                            LOG.warn(e.toString());
                     }
                 }
             }
@@ -1042,7 +1045,7 @@ public class Request implements HttpServletRequest
         }
         catch (java.net.UnknownHostException e)
         {
-            Log.ignore(e);
+            LOG.ignore(e);
         }
         return _serverName;
     }
@@ -1348,7 +1351,7 @@ public class Request implements HttpServletRequest
             }
             catch(Exception e)
             {
-                Log.ignore(e);
+                LOG.ignore(e);
                 _reader=null;
             }
         }

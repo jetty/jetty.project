@@ -19,6 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -30,6 +31,7 @@ import org.eclipse.jetty.util.log.Log;
  */
 public class ShutdownThread extends Thread
 {
+    private static final Logger LOG = Log.getLogger(ShutdownThread.class);
     private static final ShutdownThread _thread = new ShutdownThread();
 
     private boolean _hooked;
@@ -56,8 +58,8 @@ public class ShutdownThread extends Thread
         }
         catch(Exception e)
         {
-            Log.ignore(e);
-            Log.info("shutdown already commenced");
+            LOG.ignore(e);
+            LOG.info("shutdown already commenced");
         }
     }
     
@@ -71,8 +73,8 @@ public class ShutdownThread extends Thread
         }
         catch(Exception e)
         {
-            Log.ignore(e);
-            Log.info("shutdown already commenced");
+            LOG.ignore(e);
+            LOG.info("shutdown already commenced");
         }
     }
     
@@ -112,6 +114,7 @@ public class ShutdownThread extends Thread
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void run()
     {
         for (LifeCycle lifeCycle : _thread._lifeCycles)
@@ -119,11 +122,11 @@ public class ShutdownThread extends Thread
             try
             {
                 lifeCycle.stop();
-                Log.debug("Stopped " + lifeCycle);
+                LOG.debug("Stopped " + lifeCycle);
             }
             catch (Exception ex)
             {
-                Log.debug(ex);
+                LOG.debug(ex);
             }
         }
     }

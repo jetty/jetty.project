@@ -22,34 +22,37 @@ public class StdErrLogTest extends TestCase
 {
     public void testNullValues()
     {
-        StdErrLog log = new StdErrLog();
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setDebugEnabled(true);
         log.setHideStacks(true);
 
         try {
+            log.info("Testing info(msg,null,null) - {} {}","arg0","arg1");
             log.info("Testing info(msg,null,null) - {} {}",null,null);
             log.info("Testing info(msg,null,null) - {}",null,null);
             log.info("Testing info(msg,null,null)",null,null);
-            log.info(null,"- Testing","info(null,arg0,arg1)");
+            log.info(null,"Testing","info(null,arg0,arg1)");
             log.info(null,null,null);
 
+            log.debug("Testing debug(msg,null,null) - {} {}","arg0","arg1");
             log.debug("Testing debug(msg,null,null) - {} {}",null,null);
             log.debug("Testing debug(msg,null,null) - {}",null,null);
             log.debug("Testing debug(msg,null,null)",null,null);
-            log.debug(null,"- Testing","debug(null,arg0,arg1)");
+            log.debug(null,"Testing","debug(null,arg0,arg1)");
             log.debug(null,null,null);
 
             log.debug("Testing debug(msg,null)");
-            log.debug(null,new Throwable("IGNORE::Testing debug(null,thrw)").fillInStackTrace());
+            log.debug(null,new Throwable("Testing debug(null,thrw)").fillInStackTrace());
 
+            log.warn("Testing warn(msg,null,null) - {} {}","arg0","arg1");
             log.warn("Testing warn(msg,null,null) - {} {}",null,null);
             log.warn("Testing warn(msg,null,null) - {}",null,null);
             log.warn("Testing warn(msg,null,null)",null,null);
-            log.warn(null,"- Testing","warn(msg,arg0,arg1)");
+            log.warn(null,"Testing","warn(msg,arg0,arg1)");
             log.warn(null,null,null);
 
             log.warn("Testing warn(msg,null)");
-            log.warn(null,new Throwable("IGNORE::Testing warn(msg,thrw)").fillInStackTrace());
+            log.warn(null,new Throwable("Testing warn(msg,thrw)").fillInStackTrace());
         }
         catch (NullPointerException npe)
         {
@@ -57,5 +60,23 @@ public class StdErrLogTest extends TestCase
             npe.printStackTrace();
             assertTrue("NullPointerException in StdErrLog.", false);
         }
+    }
+    
+    public void testIgnores()
+    {
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        log.setHideStacks(true);
+    
+        Log.__ignored=false;
+        log.setDebugEnabled(false);
+        log.ignore(new Throwable("IGNORE ME"));
+
+        Log.__ignored=true;
+        log.setDebugEnabled(false);
+        log.ignore(new Throwable("Don't ignore me"));
+        
+        Log.__ignored=false;
+        log.setDebugEnabled(true);
+        log.ignore(new Throwable("Debug me"));
     }
 }

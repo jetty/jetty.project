@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -34,6 +35,8 @@ import org.eclipse.jetty.util.log.Log;
  */
 public abstract class AbstractGenerator implements Generator
 {
+    private static final Logger LOG = Log.getLogger(AbstractGenerator.class);
+
     // states
     public final static int STATE_HEADER = 0;
     public final static int STATE_CONTENT = 2;
@@ -111,7 +114,7 @@ public abstract class AbstractGenerator implements Generator
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
         _date = null;
 
-        // always return the buffer
+        // always return the body buffer
         if (_buffer!=null)
             _buffers.returnBuffer(_buffer);
         _buffer=null;
@@ -129,6 +132,22 @@ public abstract class AbstractGenerator implements Generator
         _method=null;
     }
 
+    /* ------------------------------------------------------------------------------- */
+    public void returnBuffers()
+    {     
+        if (_buffer!=null && _buffer.length()==0)
+        {
+            _buffers.returnBuffer(_buffer);
+            _buffer=null;
+        }
+
+        if (_header!=null && _header.length()==0)
+        {
+            _buffers.returnBuffer(_header);
+            _header=null;
+        }         
+    }
+    
     /* ------------------------------------------------------------------------------- */
     public void resetBuffer()
     {                   
@@ -410,8 +429,8 @@ public abstract class AbstractGenerator implements Generator
 
         if (_contentLength >= 0 && _contentLength != _contentWritten && !_head)
         {
-            if (Log.isDebugEnabled())
-                Log.debug("ContentLength written=="+_contentWritten+" != contentLength=="+_contentLength);
+            if (LOG.isDebugEnabled())
+                LOG.debug("ContentLength written=="+_contentWritten+" != contentLength=="+_contentLength);
             _persistent = false;
         }
     }
