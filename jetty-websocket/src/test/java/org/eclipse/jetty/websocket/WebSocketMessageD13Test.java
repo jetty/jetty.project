@@ -663,7 +663,7 @@ public class WebSocketMessageD13Test
         assertNotNull(__serverWebSocket.connection);
         
         __serverWebSocket.getConnection().setMaxTextMessageSize(10*1024);
-        __serverWebSocket.getConnection().setFakeFragments(true);
+        __serverWebSocket.getConnection().setAllowFrameFragmentation(true);
         
         output.write(0x81);
         output.write(0x80|0x7E);
