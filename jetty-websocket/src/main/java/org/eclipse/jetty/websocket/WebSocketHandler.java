@@ -24,70 +24,11 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 
 public abstract class WebSocketHandler extends HandlerWrapper implements WebSocketFactory.Acceptor
 {
-    private WebSocketFactory _webSocketFactory;
-    private int _bufferSize=64*1024;
-    private int _maxIdleTime=-1;
+    private final WebSocketFactory _webSocketFactory=new WebSocketFactory(this,32*1024);
     
-    /* ------------------------------------------------------------ */
-    /** Get the bufferSize.
-     * @return the bufferSize
-     */
-    public int getBufferSize()
+    public WebSocketFactory getWebSocketFactory()
     {
-        return _bufferSize;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the bufferSize.
-     * @param bufferSize the bufferSize to set
-     */
-    public void setBufferSize(int bufferSize)
-    {
-        _bufferSize = bufferSize;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Get the maxIdleTime.
-     * @return the maxIdleTime
-     */
-    public int getMaxIdleTime()
-    {
-        return (int)(_webSocketFactory==null?_maxIdleTime:_webSocketFactory.getMaxIdleTime());
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set the maxIdleTime.
-     * @param maxIdleTime the maxIdleTime to set
-     */
-    public void setMaxIdleTime(int maxIdleTime)
-    {
-        _maxIdleTime = maxIdleTime;
-        if (_webSocketFactory!=null)
-            _webSocketFactory.setMaxIdleTime(maxIdleTime);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
-     */
-    @Override
-    protected void doStart() throws Exception
-    {
-        _webSocketFactory=new WebSocketFactory(this,_bufferSize);
-        if (_maxIdleTime>=0)
-            _webSocketFactory.setMaxIdleTime(_maxIdleTime);
-        super.doStart();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        _webSocketFactory=null;
+        return _webSocketFactory;
     }
 
     /* ------------------------------------------------------------ */

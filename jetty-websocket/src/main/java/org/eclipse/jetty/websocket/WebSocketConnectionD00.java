@@ -434,6 +434,11 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         return -1;
     }
 
+    public int getMaxIdleTime()
+    {
+        return _endp.getMaxIdleTime();
+    }
+
     public int getMaxBinaryMessageSize()
     {
         return -1;
@@ -554,13 +559,10 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
     public void setFakeFragments(boolean fake)
     {
-        // TODO Auto-generated method stub
-        
     }
 
     public boolean isFakeFragments()
     {
-        // TODO Auto-generated method stub
         return false;
     }
 }

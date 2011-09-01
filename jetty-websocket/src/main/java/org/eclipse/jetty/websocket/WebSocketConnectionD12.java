@@ -95,10 +95,9 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
     private volatile String _closeMessage;
     private volatile boolean _closedIn;
     private volatile boolean _closedOut;
-    private int _maxTextMessageSize;
+    private int _maxTextMessageSize=-1;
     private int _maxBinaryMessageSize=-1;
     
-
     static
     {
         try
@@ -113,9 +112,6 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
     
     private final WebSocketParser.FrameHandler _frameHandler= new WSFrameHandler();
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private final WebSocket.FrameConnection _connection = new WSFrameConnection();
     
 
@@ -190,9 +186,6 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
                 {}
             };
         }
-        
-        _maxTextMessageSize=buffers.getBufferSize(); 
-        _maxBinaryMessageSize=-1;
     }
 
     /* ------------------------------------------------------------ */
@@ -410,8 +403,6 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
     private class WSFrameConnection implements WebSocket.FrameConnection
     {
         volatile boolean _disconnecting;
-        int _maxTextMessage=WebSocketConnectionD12.this._maxTextMessageSize;
-        int _maxBinaryMessage=WebSocketConnectionD12.this._maxBinaryMessageSize;
 
         /* ------------------------------------------------------------ */
         public void sendMessage(String content) throws IOException
@@ -491,25 +482,31 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
         /* ------------------------------------------------------------ */
         public void setMaxTextMessageSize(int size)
         {
-            _maxTextMessage=size;
+            _maxTextMessageSize=size;
         }
 
         /* ------------------------------------------------------------ */
         public void setMaxBinaryMessageSize(int size)
         {
-            _maxBinaryMessage=size;
+            _maxBinaryMessageSize=size;
         }
 
         /* ------------------------------------------------------------ */
+        public int getMaxIdleTime()
+        {
+            return _endp.getMaxIdleTime();
+        }
+        
+        /* ------------------------------------------------------------ */
         public int getMaxTextMessageSize()
         {
-            return _maxTextMessage;
+            return _maxTextMessageSize;
         }
 
         /* ------------------------------------------------------------ */
         public int getMaxBinaryMessageSize()
         {
-            return _maxBinaryMessage;
+            return _maxBinaryMessageSize;
         }
 
         /* ------------------------------------------------------------ */
@@ -728,7 +725,13 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
                                 // No size limit, so handle only final frames
                                 if (lastFrame)
                                     _onTextMessage.onMessage(buffer.toString(StringUtil.__UTF8));
+                                else
+                                {
+                                    LOG.warn("Frame discarded. Text aggregation disabed for {}",_endp);
+                                    _connection.close(WebSocketConnectionD12.CLOSE_BADDATA,"Text frame aggregation disabled");
+                                }
                             }
+                            // append bytes to message buffer (if they fit)
                             else if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
                             {
                                 if (lastFrame)
@@ -763,6 +766,11 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
                                 if (_aggregate==null)
                                     _aggregate=new ByteArrayBuffer(_connection.getMaxBinaryMessageSize());
                                 _aggregate.put(buffer);
+                            }
+                            else
+                            {
+                                LOG.warn("Frame discarded. Binary aggregation disabed for {}",_endp);
+                                _connection.close(WebSocketConnectionD12.CLOSE_BADDATA,"Binary frame aggregation disabled");
                             }
                         }
                     }      

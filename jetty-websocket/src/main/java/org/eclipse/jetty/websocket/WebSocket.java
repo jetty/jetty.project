@@ -112,6 +112,10 @@ public interface WebSocket
         void disconnect();
         boolean isOpen();
 
+        /* ------------------------------------------------------------ */
+        /**
+         * @param ms The time in ms that the connection can be idle before closing
+         */
         void setMaxIdleTime(int ms);
         
         /**
@@ -123,6 +127,12 @@ public interface WebSocket
          * @param size size<0 no aggregation of binary frames, >=0 size of binary frame aggregation buffer
          */
         void setMaxBinaryMessageSize(int size);
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @return The time in ms that the connection can be idle before closing
+         */
+        int getMaxIdleTime();
         
         /**
          * Size in characters of the maximum text message to be received
