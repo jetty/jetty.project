@@ -68,6 +68,8 @@ public class WebSocketFactory
     private final Acceptor _acceptor;
     private WebSocketBuffers _buffers;
     private int _maxIdleTime = 300000;
+    private int _maxTextMessageSize = 16*1024;
+    private int _maxBinaryMessageSize = -1;
 
     public WebSocketFactory(Acceptor acceptor)
     {
@@ -131,6 +133,42 @@ public class WebSocketFactory
     }
 
     /**
+     * @return The initial maximum text message size (in characters) for a connection
+     */
+    public int getMaxTextMessageSize()
+    {
+        return _maxTextMessageSize;
+    }
+
+    /**
+     * Set the initial maximum text message size for a connection. This can be changed by
+     * the application calling {@link WebSocket.Connection#setMaxTextMessageSize(int)}.
+     * @param maxTextMessageSize The default maximum text message size (in characters) for a connection
+     */
+    public void setMaxTextMessageSize(int maxTextMessageSize)
+    {
+        _maxTextMessageSize = maxTextMessageSize;
+    }
+
+    /**
+     * @return The initial maximum binary message size (in bytes)  for a connection
+     */
+    public int getMaxBinaryMessageSize()
+    {
+        return _maxBinaryMessageSize;
+    }
+
+    /**
+     * Set the initial maximum binary message size for a connection. This can be changed by
+     * the application calling {@link WebSocket.Connection#setMaxBinaryMessageSize(int)}.
+     * @param maxTextMessageSize The default maximum binary message size (in bytes) for a connection
+     */
+    public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
+    {
+        _maxBinaryMessageSize = maxBinaryMessageSize;
+    }
+
+    /**
      * Upgrade the request/response to a WebSocket Connection.
      * <p>This method will not normally return, but will instead throw a
      * UpgradeConnectionException, to exit HTTP handling and initiate
@@ -183,13 +221,21 @@ public class WebSocketFactory
             case 10: 
             case 11: 
             case 12: 
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD12.OP_EXT_DATA, 16-WebSocketConnectionD12.OP_EXT_CTRL,3);
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD12.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
                 connection = new WebSocketConnectionD12(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+                break;
+            case 13: 
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD13.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
+                connection = new WebSocketConnectionD13(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
                 LOG.warn("Unsupported Websocket version: "+draft);
                 throw new HttpException(400, "Unsupported draft specification: " + draft);
         }
+
+        // Set the defaults
+        connection.getConnection().setMaxBinaryMessageSize(_maxBinaryMessageSize);
+        connection.getConnection().setMaxTextMessageSize(_maxTextMessageSize);
 
         // Let the connection finish processing the handshake
         connection.handshake(request, response, protocol);

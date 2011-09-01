@@ -419,6 +419,12 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
 
         /* ------------------------------------------------------------ */
+        public int getMaxIdleTime()
+        {
+            return _endp.getMaxIdleTime();
+        }
+
+        /* ------------------------------------------------------------ */
         public int getMaxBinaryMessageSize()
         {
             return _maxBinaryMessage;

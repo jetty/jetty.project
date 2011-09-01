@@ -373,9 +373,9 @@ public class WebSocketClient
                 if (channel!=null)
                 {
                     if (ex instanceof ProtocolException)
-                        closeChannel(channel,WebSocketConnectionD12.CLOSE_PROTOCOL,ex.getMessage());
+                        closeChannel(channel,WebSocketConnectionD13.CLOSE_PROTOCOL,ex.getMessage());
                     else
-                        closeChannel(channel,WebSocketConnectionD12.CLOSE_NOCLOSE,ex.getMessage());
+                        closeChannel(channel,WebSocketConnectionD13.CLOSE_NO_CLOSE,ex.getMessage());
                 }
             }
             finally
@@ -440,7 +440,7 @@ public class WebSocketClient
 
                 if (channel!=null)
                 {
-                    closeChannel(channel,WebSocketConnectionD12.CLOSE_NOCLOSE,"cancelled");
+                    closeChannel(channel,WebSocketConnectionD13.CLOSE_NO_CLOSE,"cancelled");
                     return true;
                 }
                 return false;
@@ -500,7 +500,7 @@ public class WebSocketClient
             }
 
             if (channel!=null)
-                closeChannel(channel,WebSocketConnectionD12.CLOSE_NOCLOSE,"timeout");
+                closeChannel(channel,WebSocketConnectionD13.CLOSE_NO_CLOSE,"timeout");
             if (exception!=null)
                 throw new ExecutionException(exception);
             if (connection!=null)

@@ -327,7 +327,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 "Connection: Upgrade\r\n"+
                 "Sec-WebSocket-Key: "+_key+"\r\n"+
                 (origin==null?"":"Origin: "+origin+"\r\n")+
-                "Sec-WebSocket-Version: "+WebSocketConnectionD12.VERSION+"\r\n";
+                "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n";
 
             if (future.getProtocol()!=null)
                 request+="Sec-WebSocket-Protocol: "+future.getProtocol()+"\r\n";
@@ -378,13 +378,13 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             {
                 if (_accept==null)
                     _error="No Sec-WebSocket-Accept";
-                else if (!WebSocketConnectionD12.hashKey(_key).equals(_accept))
+                else if (!WebSocketConnectionD13.hashKey(_key).equals(_accept))
                     _error="Bad Sec-WebSocket-Accept";
                 else
                 {
                     Buffer header=_parser.getHeaderBuffer();
                     MaskGen maskGen=_holder.getMaskGen();
-                    WebSocketConnectionD12 connection = new WebSocketConnectionD12(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10,maskGen);
+                    WebSocketConnectionD13 connection = new WebSocketConnectionD13(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10,maskGen);
 
                     if (header.hasContent())
                         connection.fillBuffersFrom(header);
