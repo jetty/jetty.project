@@ -616,7 +616,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     private class WSFrameHandler implements WebSocketParser.FrameHandler
     {
-        private final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
+        private final Utf8StringBuilder _utf8 = new Utf8StringBuilder(512); // TODO configure initial capacity
         private ByteArrayBuffer _aggregate;
         private byte _opcode=-1;
 
