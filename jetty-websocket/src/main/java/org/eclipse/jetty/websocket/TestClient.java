@@ -138,7 +138,7 @@ public class TestClient implements WebSocket.OnFrame
         {                    
             __framesSent++;
             byte flags= (byte)(off+len==data.length?0x8:0);
-            byte op=(byte)(off==0?opcode:WebSocketConnectionD12.OP_CONTINUATION);
+            byte op=(byte)(off==0?opcode:WebSocketConnectionD13.OP_CONTINUATION);
 
             if (_verbose)                
                 System.err.printf("%s#addFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
@@ -240,11 +240,11 @@ public class TestClient implements WebSocket.OnFrame
             {
                 long next = System.currentTimeMillis()+delay;
                 
-                byte opcode=binary?WebSocketConnectionD12.OP_BINARY:WebSocketConnectionD12.OP_TEXT;
+                byte opcode=binary?WebSocketConnectionD13.OP_BINARY:WebSocketConnectionD13.OP_TEXT;
                 
                 byte data[]=null;
 
-                if (opcode==WebSocketConnectionD12.OP_TEXT)
+                if (opcode==WebSocketConnectionD13.OP_TEXT)
                 {
                     StringBuilder b = new StringBuilder();
                     while (b.length()<size)
@@ -258,7 +258,7 @@ public class TestClient implements WebSocket.OnFrame
                 }
 
                 for (int i=0;i<clients;i++)
-                    client[i].ping(opcode,data,opcode==WebSocketConnectionD12.OP_PING?-1:fragment);
+                    client[i].ping(opcode,data,opcode==WebSocketConnectionD13.OP_PING?-1:fragment);
                 
                 while(System.currentTimeMillis()<next)
                     Thread.sleep(10);
