@@ -592,13 +592,13 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         }
         
         /* ------------------------------------------------------------ */
-        public void setFakeFragments(boolean fake)
+        public void setAllowFrameFragmentation(boolean allowFragmentation)
         {
-            _parser.setFakeFragments(fake);
+            _parser.setFakeFragments(allowFragmentation);
         }
 
         /* ------------------------------------------------------------ */
-        public boolean isFakeFragments()
+        public boolean isAllowFrameFragmentation()
         {
             return _parser.isFakeFragments();
         }
@@ -731,7 +731,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                                     _onTextMessage.onMessage(buffer.toString(StringUtil.__UTF8));
                                 else
                                 {
-                                    LOG.warn("Frame discarded. Text aggregation disabed for {}",_endp);
+                                    LOG.warn("Frame discarded. Text aggregation disabled for {}",_endp);
                                     _connection.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"Text frame aggregation disabled");
                                 }
                             }

@@ -161,9 +161,9 @@ public interface WebSocket
         byte continuationOpcode();
         byte finMask();
         String getProtocol();
-        void setFakeFragments(boolean fake);
+        void setAllowFrameFragmentation(boolean allowFragmentation);
         
-        boolean isFakeFragments();
+        boolean isAllowFrameFragmentation();
         boolean isControl(byte opcode);
         boolean isText(byte opcode);
         boolean isBinary(byte opcode);

@@ -557,11 +557,11 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         return 0;
     }
 
-    public void setFakeFragments(boolean fake)
+    public void setAllowFrameFragmentation(boolean allowFragmentation)
     {
     }
 
-    public boolean isFakeFragments()
+    public boolean isAllowFrameFragmentation()
     {
         return false;
     }

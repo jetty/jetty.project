@@ -53,7 +53,6 @@ public class WebSocketClientTest
         _factory.stop();
     }
 
-    @Ignore
     @Test
     public void testMessageBiggerThanBufferSize() throws Exception
     {
@@ -73,7 +72,7 @@ public class WebSocketClientTest
 
             public void onMessage(String data)
             {
-                System.out.println("data = " + data);
+                // System.out.println("data = " + data);
                 dataLatch.countDown();
             }
 
