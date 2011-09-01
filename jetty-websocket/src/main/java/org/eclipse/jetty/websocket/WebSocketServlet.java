@@ -32,7 +32,13 @@ import javax.servlet.http.HttpServletResponse;
  * which is also the max frame byte size (default 8192).
  * <p>
  * The initParameter "maxIdleTime" can be used to set the time in ms
- * that a websocket may be idle before closing (default 300,000).
+ * that a websocket may be idle before closing.
+ * <p>
+ * The initParameter "maxTextMessagesSize" can be used to set the size in characters
+ * that a websocket may be accept before closing.
+ * <p>
+ * The initParameter "maxBinaryMessagesSize" can be used to set the size in bytes
+ * that a websocket may be accept before closing.
  * 
  */
 public abstract class WebSocketServlet extends HttpServlet implements WebSocketFactory.Acceptor
@@ -48,9 +54,18 @@ public abstract class WebSocketServlet extends HttpServlet implements WebSocketF
     {
         String bs=getInitParameter("bufferSize");
         _webSocketFactory = new WebSocketFactory(this,bs==null?8192:Integer.parseInt(bs));
-        String mit=getInitParameter("maxIdleTime");
-        if (mit!=null)
-            _webSocketFactory.setMaxIdleTime(Integer.parseInt(mit));
+        String max=getInitParameter("maxIdleTime");
+        if (max!=null)
+            _webSocketFactory.setMaxIdleTime(Integer.parseInt(max));
+        
+        max=getInitParameter("maxTextMessageSize");
+        if (max!=null)
+            _webSocketFactory.setMaxTextMessageSize(Integer.parseInt(max));
+        
+        max=getInitParameter("maxBinaryMessageSize");
+        if (max!=null)
+            _webSocketFactory.setMaxBinaryMessageSize(Integer.parseInt(max));
+        
     }
 
     /* ------------------------------------------------------------ */
