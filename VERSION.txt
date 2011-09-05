@@ -1,4 +1,5 @@
 jetty-7.5.1-SNAPSHOT
+ + 356695 websocket packages should be provided
 
 jetty-7.5.0.v20110901 - 01 September 2011
  + 356421 Upgraded websocket to draft 13 support
