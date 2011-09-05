@@ -112,7 +112,6 @@ public interface WebSocket
         void disconnect();
         boolean isOpen();
 
-        /* ------------------------------------------------------------ */
         /**
          * @param ms The time in ms that the connection can be idle before closing
          */
@@ -128,7 +127,6 @@ public interface WebSocket
          */
         void setMaxBinaryMessageSize(int size);
         
-        /* ------------------------------------------------------------ */
         /**
          * @return The time in ms that the connection can be idle before closing
          */
@@ -146,34 +144,117 @@ public interface WebSocket
          */
         int getMaxBinaryMessageSize();
     }
-    
+
     /**
      * Frame Level Connection
      * <p>The Connection interface at the level of sending/receiving frames rather than messages.
+     * Also contains methods to decode/generate flags and opcodes without using constants, so that 
+     * code can be written to work with multiple drafts of the protocol.
      *
      */
     public interface FrameConnection extends Connection
     {
-        boolean isMessageComplete(byte flags);
+        /** Close the connection with specific closeCode and message.
+         * @param closeCode
+         * @param message
+         */
         void close(int closeCode,String message);
-        byte binaryOpcode();
-        byte textOpcode();
-        byte continuationOpcode();
-        byte finMask();
-        String getProtocol();
-        void setFakeFragments(boolean fake);
         
-        boolean isFakeFragments();
+        /**
+         * @return The opcode of a binary message
+         */
+        byte binaryOpcode();
+        
+        /**
+         * @return The opcode of a text message
+         */
+        byte textOpcode();
+        
+        /**
+         * @return The opcode of a continuation frame
+         */
+        byte continuationOpcode();
+        
+        /**
+         * @return Mask for the FIN bit.
+         */
+        byte finMask();
+        
+        /** Set if frames larger than the frame buffer are handled with local fragmentations
+         * @param allowFragmentation
+         */
+        void setAllowFrameFragmentation(boolean allowFragmentation);
+
+        /**
+         * @param flags The flags bytes of a frame
+         * @return True of the flags indicate a final frame.
+         */
+        boolean isMessageComplete(byte flags);
+
+        /**
+         * @param opcode
+         * @return True if the opcode is for a control frame
+         */
         boolean isControl(byte opcode);
+
+        /**
+         * @param opcode
+         * @return True if the opcode is for a text frame
+         */
         boolean isText(byte opcode);
+
+        /**
+         * @param opcode
+         * @return True if the opcode is for a binary frame
+         */
         boolean isBinary(byte opcode);
+
+        /**
+         * @param opcode
+         * @return True if the opcode is for a continuation frame
+         */
         boolean isContinuation(byte opcode);
+
+        /**
+         * @param opcode 
+         * @return True if the opcode is a close control
+         */
         boolean isClose(byte opcode);
+
+        /**
+         * @param opcode
+         * @return True if the opcode is a ping control
+         */
         boolean isPing(byte opcode);
+
+        /**
+         * @param opcode
+         * @return True if the opcode is a pong control
+         */
         boolean isPong(byte opcode);
         
+        /**
+         * @return True if frames larger than the frame buffer are fragmented.
+         */
+        boolean isAllowFrameFragmentation();
+        
+        /** Send a control frame
+         * @param control
+         * @param data
+         * @param offset
+         * @param length
+         * @throws IOException
+         */
         void sendControl(byte control,byte[] data, int offset, int length) throws IOException;
+
+        /** Send an arbitrary frame
+         * @param flags
+         * @param opcode
+         * @param data
+         * @param offset
+         * @param length
+         * @throws IOException
+         */
         void sendFrame(byte flags,byte opcode,byte[] data, int offset, int length) throws IOException;
     }
-    
 }

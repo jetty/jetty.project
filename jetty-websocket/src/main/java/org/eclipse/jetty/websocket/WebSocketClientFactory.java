@@ -258,7 +258,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     class HandshakeConnection extends AbstractConnection
     {
         private final SelectChannelEndPoint _endp;
-        private final WebSocketClient.WebSocketFuture _holder;
+        private final WebSocketClient.WebSocketFuture _future;
         private final String _key;
         private final HttpParser _parser;
         private String _accept;
@@ -268,7 +268,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         {
             super(endpoint,System.currentTimeMillis());
             _endp=endpoint;
-            _holder=future;
+            _future=future;
 
             byte[] bytes=new byte[16];
             __random.nextBytes(bytes);
@@ -314,7 +314,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 }
             });
 
-            String path=_holder.getURI().getPath();
+            String path=_future.getURI().getPath();
             if (path==null || path.length()==0)
                 path="/";
 
@@ -322,7 +322,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
             String request=
                 "GET "+path+" HTTP/1.1\r\n"+
-                "Host: "+future.getURI().getHost()+":"+_holder.getURI().getPort()+"\r\n"+
+                "Host: "+future.getURI().getHost()+":"+_future.getURI().getPort()+"\r\n"+
                 "Upgrade: websocket\r\n"+
                 "Connection: Upgrade\r\n"+
                 "Sec-WebSocket-Key: "+_key+"\r\n"+
@@ -366,7 +366,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 switch (_parser.parseAvailable())
                 {
                     case -1:
-                        _holder.handshakeFailed(new IOException("Incomplete handshake response"));
+                        _future.handshakeFailed(new IOException("Incomplete handshake response"));
                         return this;
                     case 0:
                         return this;
@@ -383,14 +383,14 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 else
                 {
                     Buffer header=_parser.getHeaderBuffer();
-                    MaskGen maskGen=_holder.getMaskGen();
-                    WebSocketConnectionD13 connection = new WebSocketConnectionD13(_holder.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_holder.getMaxIdleTime(),_holder.getProtocol(),null,10,maskGen);
+                    MaskGen maskGen=_future.getMaskGen();
+                    WebSocketConnectionD13 connection = new WebSocketConnectionD13(_future.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_future.getMaxIdleTime(),_future.getProtocol(),null,10,maskGen);
 
                     if (header.hasContent())
                         connection.fillBuffersFrom(header);
                     _buffers.returnBuffer(header);
 
-                    _holder.onConnection(connection);
+                    _future.onConnection(connection);
 
                     return connection;
                 }
@@ -413,9 +413,9 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         public void closed()
         {
             if (_error!=null)
-                _holder.handshakeFailed(new ProtocolException(_error));
+                _future.handshakeFailed(new ProtocolException(_error));
             else
-                _holder.handshakeFailed(new EOFException());
+                _future.handshakeFailed(new EOFException());
         }
     }
 }

@@ -242,6 +242,7 @@ public abstract class ContinuationBase extends TestCase
         try
         {
             Socket socket = new Socket("localhost",port);
+            socket.setSoTimeout(10000);
             socket.getOutputStream().write(request.getBytes("UTF-8"));
 
             response = toString(socket.getInputStream());

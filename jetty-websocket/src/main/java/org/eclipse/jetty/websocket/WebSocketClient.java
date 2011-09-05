@@ -66,6 +66,8 @@ public class WebSocketClient
     private String _origin;
     private String _protocol;
     private int _maxIdleTime=-1;
+    private int _maxTextMessageSize=16*1024;
+    private int _maxBinaryMessageSize=-1;
     private MaskGen _maskGen;
     private SocketAddress _bindAddress;
 
@@ -229,6 +231,46 @@ public class WebSocketClient
 
     /* ------------------------------------------------------------ */
     /**
+     * @return The initial maximum text message size (in characters) for a connection
+     */
+    public int getMaxTextMessageSize()
+    {
+        return _maxTextMessageSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the initial maximum text message size for a connection. This can be changed by
+     * the application calling {@link WebSocket.Connection#setMaxTextMessageSize(int)}.
+     * @param maxTextMessageSize The default maximum text message size (in characters) for a connection
+     */
+    public void setMaxTextMessageSize(int maxTextMessageSize)
+    {
+        _maxTextMessageSize = maxTextMessageSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The initial maximum binary message size (in bytes)  for a connection
+     */
+    public int getMaxBinaryMessageSize()
+    {
+        return _maxBinaryMessageSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the initial maximum binary message size for a connection. This can be changed by
+     * the application calling {@link WebSocket.Connection#setMaxBinaryMessageSize(int)}.
+     * @param maxTextMessageSize The default maximum binary message size (in bytes) for a connection
+     */
+    public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
+    {
+        _maxBinaryMessageSize = maxBinaryMessageSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * <p>Opens a websocket connection to the URI and blocks until the connection is accepted or there is an error.</p>
      *
      * @param uri The URI to connect to.
@@ -285,11 +327,10 @@ public class WebSocketClient
         if (_bindAddress != null)
             channel.socket().bind(_bindAddress);
         channel.socket().setTcpNoDelay(true);
-        int maxIdleTime = getMaxIdleTime();
 
         InetSocketAddress address=new InetSocketAddress(uri.getHost(),uri.getPort());
 
-        final WebSocketFuture holder=new WebSocketFuture(websocket,uri,_protocol,_origin,_maskGen,maxIdleTime,_cookies,_extensions,channel);
+        final WebSocketFuture holder=new WebSocketFuture(websocket,uri,this,channel);
 
         channel.configureBlocking(false);
         channel.connect(address);
@@ -309,6 +350,8 @@ public class WebSocketClient
         final String _origin;
         final MaskGen _maskGen;
         final int _maxIdleTime;
+        final int _maxTextMessageSize;
+        final int _maxBinaryMessageSize;
         final Map<String,String> _cookies;
         final List<String> _extensions;
         final CountDownLatch _done = new CountDownLatch(1);
@@ -317,16 +360,18 @@ public class WebSocketClient
         WebSocketConnection _connection;
         Throwable _exception;
 
-        private WebSocketFuture(WebSocket websocket, URI uri, String protocol, String origin, MaskGen maskGen, int maxIdleTime, Map<String,String> cookies,List<String> extensions, ByteChannel channel)
+        private WebSocketFuture(WebSocket websocket, URI uri, WebSocketClient client, ByteChannel channel)
         {
             _websocket=websocket;
             _uri=uri;
-            _protocol=protocol;
-            _origin=origin;
-            _maskGen=maskGen;
-            _maxIdleTime=maxIdleTime;
-            _cookies=cookies;
-            _extensions=extensions;
+            _protocol=client._protocol;
+            _origin=client._origin;
+            _maskGen=client._maskGen;
+            _maxIdleTime=client._maxIdleTime;
+            _maxTextMessageSize=client._maxTextMessageSize;
+            _maxBinaryMessageSize=client._maxBinaryMessageSize;
+            _cookies=client._cookies;
+            _extensions=client._extensions;
             _channel=channel;
         }
 
@@ -334,6 +379,9 @@ public class WebSocketClient
         {
             try
             {
+                connection.getConnection().setMaxTextMessageSize(_maxTextMessageSize);
+                connection.getConnection().setMaxBinaryMessageSize(_maxBinaryMessageSize);
+                
                 synchronized (this)
                 {
                     if (_channel!=null)
