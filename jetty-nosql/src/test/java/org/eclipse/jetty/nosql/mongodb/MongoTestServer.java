@@ -52,7 +52,7 @@ public class MongoTestServer extends AbstractTestServer
         _saveAllAttributes = saveAllAttributes;
     }
 
-    public SessionIdManager newSessionIdManager()
+    public SessionIdManager newSessionIdManager(String config)
     {
         if ( _idManager != null )
         {
