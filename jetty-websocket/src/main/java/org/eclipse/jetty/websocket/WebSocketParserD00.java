@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.websocket;
@@ -51,8 +51,8 @@ public class WebSocketParserD00 implements WebSocketParser
      * @param buffers The buffers to use for parsing.  Only the {@link Buffers#getBuffer()} is used.
      * This should be a direct buffer if binary data is mostly used or an indirect buffer if utf-8 data
      * is mostly used.
-     * @param endp
-     * @param handler
+     * @param endp the endpoint
+     * @param handler the handler to notify when a parse event occurs
      */
     public WebSocketParserD00(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler)
     {
@@ -89,7 +89,6 @@ public class WebSocketParserD00 implements WebSocketParser
         int total_filled=0;
 
         // Loop until an datagram call back or can't fill anymore
-        boolean progress=true;
         while(true)
         {
             int length=_buffer.length();

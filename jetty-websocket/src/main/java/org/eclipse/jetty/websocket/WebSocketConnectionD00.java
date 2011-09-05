@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.websocket;
@@ -18,7 +18,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -31,7 +30,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
@@ -51,21 +49,21 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     String _key1;
     String _key2;
     ByteArrayBuffer _hixieBytes;
-    
+
     public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
         throws IOException
     {
         super(endpoint,timestamp);
         if (endpoint instanceof AsyncEndPoint)
             ((AsyncEndPoint)endpoint).cancelIdle();
-        
+
         _endp.setMaxIdleTime(maxIdleTime);
-        
+
         _websocket = websocket;
         _protocol=protocol;
 
         _generator = new WebSocketGeneratorD00(buffers, _endp);
-        _parser = new WebSocketParserD00(buffers, endpoint, new FrameHandlerD0(_websocket));
+        _parser = new WebSocketParserD00(buffers, endpoint, new FrameHandlerD00(_websocket));
 
         if (_endp instanceof SelectChannelEndPoint)
         {
@@ -112,8 +110,8 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         {
             // handle stupid hixie random bytes
             if (_hixieBytes!=null)
-            { 
-                
+            {
+
                 // take any available bytes from the parser buffer, which may have already been read
                 Buffer buffer=_parser.getBuffer();
                 if (buffer!=null && buffer.length()>0)
@@ -124,7 +122,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                     _hixieBytes.put(buffer.peek(buffer.getIndex(),l));
                     buffer.skip(l);
                 }
-                
+
                 // while we are not blocked
                 while(_endp.isOpen())
                 {
@@ -154,7 +152,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                 _websocket.onOpen(this);
                 return this;
             }
-            
+
             // handle the framing protocol
             boolean progress=true;
 
@@ -195,7 +193,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                     _endp.close();
                 else
                     checkWriteable();
-                
+
                 checkWriteable();
             }
         }
@@ -204,7 +202,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     private void doTheHixieHixieShake()
-    {          
+    {
         byte[] result=WebSocketConnectionD00.doTheHixieHixieShake(
                 WebSocketConnectionD00.hixieCrypt(_key1),
                 WebSocketConnectionD00.hixieCrypt(_key2),
@@ -334,12 +332,12 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     }
 
     public static byte[] doTheHixieHixieShake(long key1,long key2,byte[] key3)
-    {            
+    {
         try
         {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte [] fodder = new byte[16];
-            
+
             fodder[0]=(byte)(0xff&(key1>>24));
             fodder[1]=(byte)(0xff&(key1>>16));
             fodder[2]=(byte)(0xff&(key1>>8));
@@ -348,11 +346,9 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             fodder[5]=(byte)(0xff&(key2>>16));
             fodder[6]=(byte)(0xff&(key2>>8));
             fodder[7]=(byte)(0xff&key2);
-            for (int i=0;i<8;i++)
-                fodder[8+i]=key3[i];
+            System.arraycopy(key3, 0, fodder, 8, 8);
             md.update(fodder);
-            byte[] result=md.digest();
-            return result;
+            return md.digest();
         }
         catch (NoSuchAlgorithmException e)
         {
@@ -372,13 +368,13 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         if (query!=null && query.length()>0)
             uri+="?"+query;
         String host=request.getHeader("Host");
-        
+
         String origin=request.getHeader("Sec-WebSocket-Origin");
         if (origin==null)
             origin=request.getHeader("Origin");
-        
+
         String key1 = request.getHeader("Sec-WebSocket-Key1");
-        
+
         if (key1!=null)
         {
             String key2 = request.getHeader("Sec-WebSocket-Key2");
@@ -413,7 +409,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     {
     }
 
-    public void setMaxIdleTime(int ms) 
+    public void setMaxIdleTime(int ms)
     {
         try
         {
@@ -424,7 +420,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             LOG.warn(e);
         }
     }
-    
+
     public void setMaxBinaryMessageSize(int size)
     {
     }
@@ -448,23 +444,22 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     {
         return _protocol;
     }
-    
-    class FrameHandlerD0 implements WebSocketParser.FrameHandler
+
+    class FrameHandlerD00 implements WebSocketParser.FrameHandler
     {
         final WebSocket _websocket;
-        final Utf8StringBuilder _utf8 = new Utf8StringBuilder();
 
-        FrameHandlerD0(WebSocket websocket)
+        FrameHandlerD00(WebSocket websocket)
         {
             _websocket=websocket;
         }
-        
+
         public void onFrame(byte flags, byte opcode, Buffer buffer)
         {
             try
             {
                 byte[] array=buffer.array();
-                
+
                 if (opcode==0)
                 {
                     if (_websocket instanceof WebSocket.OnTextMessage)
@@ -485,10 +480,9 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                 LOG.warn(th);
             }
         }
-        
+
         public void close(int code,String message)
         {
-            close(code,message);
         }
     }
 

@@ -4,18 +4,16 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.Random;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
@@ -38,14 +36,14 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
     private int _m;
     private boolean _opsent;
     private final MaskGen _maskGen;
-    
+
     public WebSocketGeneratorD06(WebSocketBuffers buffers, EndPoint endp)
     {
         _buffers=buffers;
         _endp=endp;
         _maskGen=null;
     }
-    
+
     public WebSocketGeneratorD06(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
     {
         _buffers=buffers;
@@ -56,22 +54,22 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
     public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
     {
         // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
-        
+
         long blockFor=_endp.getMaxIdleTime();
-        
+
         if (_buffer==null)
             _buffer=(_maskGen!=null)?_buffers.getBuffer():_buffers.getDirectBuffer();
-            
+
         boolean last=WebSocketConnectionD06.isLastFrame(flags);
         opcode=(byte)(((0xf&flags)<<4)+0xf&opcode);
-        
+
         int space=(_maskGen!=null)?14:10;
-        
+
         do
         {
             opcode = _opsent?WebSocketConnectionD06.OP_CONTINUATION:opcode;
             _opsent=true;
-            
+
             int payload=length;
             if (payload+space>_buffer.capacity())
             {
@@ -85,7 +83,7 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
             // ensure there is space for header
             if (_buffer.space() <= space)
                 expelBuffer(blockFor);
-            
+
             // write mask
             if ((_maskGen!=null))
             {
@@ -100,10 +98,10 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
                 bufferPut(new byte[]{
                         opcode,
                         (byte)0x7f,
-                        (byte)((payload>>56)&0x7f),
-                        (byte)((payload>>48)&0xff), 
-                        (byte)((payload>>40)&0xff), 
-                        (byte)((payload>>32)&0xff),
+                        (byte)0,
+                        (byte)0,
+                        (byte)0,
+                        (byte)0,
                         (byte)((payload>>24)&0xff),
                         (byte)((payload>>16)&0xff),
                         (byte)((payload>>8)&0xff),
@@ -129,7 +127,7 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
             {
                 _buffer.compact();
                 int chunk = remaining < _buffer.space() ? remaining : _buffer.space();
-                
+
                 if ((_maskGen!=null))
                 {
                     for (int i=0;i<chunk;i++)
@@ -137,7 +135,7 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
                 }
                 else
                     _buffer.put(content, offset + (payload - remaining), chunk);
-                
+
                 remaining -= chunk;
                 if (_buffer.space() > 0)
                 {
@@ -169,7 +167,7 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
                 data[i]^=_mask[+_m++%4];
         _buffer.put(data);
     }
-    
+
     private synchronized void bufferPut(byte data) throws IOException
     {
         _buffer.put((byte)(data^_mask[+_m++%4]));
