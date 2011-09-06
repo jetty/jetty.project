@@ -21,6 +21,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
@@ -29,6 +30,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -367,11 +369,15 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         String query=request.getQueryString();
         if (query!=null && query.length()>0)
             uri+="?"+query;
+        uri=new HttpURI(uri).toString();
         String host=request.getHeader("Host");
 
         String origin=request.getHeader("Sec-WebSocket-Origin");
         if (origin==null)
             origin=request.getHeader("Origin");
+        if (origin!=null)
+            origin= QuotedStringTokenizer.quoteIfNeeded(origin, "\r\n");
+
 
         String key1 = request.getHeader("Sec-WebSocket-Key1");
 
@@ -445,7 +451,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         return _protocol;
     }
 
-    class FrameHandlerD00 implements WebSocketParser.FrameHandler
+    static class FrameHandlerD00 implements WebSocketParser.FrameHandler
     {
         final WebSocket _websocket;
 

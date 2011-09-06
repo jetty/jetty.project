@@ -320,34 +320,41 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
             String origin = future.getOrigin();
 
-            String request=
-                "GET "+path+" HTTP/1.1\r\n"+
-                "Host: "+future.getURI().getHost()+":"+_future.getURI().getPort()+"\r\n"+
-                "Upgrade: websocket\r\n"+
-                "Connection: Upgrade\r\n"+
-                "Sec-WebSocket-Key: "+_key+"\r\n"+
-                (origin==null?"":"Origin: "+origin+"\r\n")+
-                "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n";
+            StringBuilder request = new StringBuilder(512);
+            request
+                .append("GET ").append(path).append(" HTTP/1.1\r\n")
+                .append("Host: ").append(future.getURI().getHost()).append(":").append(_future.getURI().getPort()).append("\r\n")
+                .append("Upgrade: websocket\r\n")
+                .append("Connection: Upgrade\r\n")
+                .append("Sec-WebSocket-Key: ")
+                .append(_key).append("\r\n");
+            
+            if(origin!=null)
+                request.append("Origin: ").append(origin).append("\r\n");
+                
+            request.append("Sec-WebSocket-Version: ").append(WebSocketConnectionD13.VERSION).append("\r\n");
 
             if (future.getProtocol()!=null)
-                request+="Sec-WebSocket-Protocol: "+future.getProtocol()+"\r\n";
+                request.append("Sec-WebSocket-Protocol: ").append(future.getProtocol()).append("\r\n");
 
             if (future.getCookies()!=null && future.getCookies().size()>0)
             {
                 for (String cookie : future.getCookies().keySet())
-                    request+="Cookie: "+QuotedStringTokenizer.quoteIfNeeded(cookie,HttpFields.__COOKIE_DELIM)+
-                    "="+
-                    QuotedStringTokenizer.quoteIfNeeded(future.getCookies().get(cookie),HttpFields.__COOKIE_DELIM)+
-                    "\r\n";
+                    request
+                        .append("Cookie: ")
+                        .append(QuotedStringTokenizer.quoteIfNeeded(cookie,HttpFields.__COOKIE_DELIM))
+                        .append("=")
+                        .append(QuotedStringTokenizer.quoteIfNeeded(future.getCookies().get(cookie),HttpFields.__COOKIE_DELIM))
+                        .append("\r\n");
             }
 
-            request+="\r\n";
+            request.append("\r\n");
 
             // TODO extensions
 
             try
             {
-                Buffer handshake = new ByteArrayBuffer(request,false);
+                Buffer handshake = new ByteArrayBuffer(request.toString(),false);
                 int len=handshake.length();
                 if (len!=_endp.flush(handshake))
                     throw new IOException("incomplete");

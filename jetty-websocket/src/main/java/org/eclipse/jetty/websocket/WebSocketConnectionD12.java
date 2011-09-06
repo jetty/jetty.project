@@ -163,7 +163,6 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
 
         _protocol=protocol;
 
-        // TODO should these be AsyncEndPoint checks/calls?
         if (_endp instanceof SelectChannelEndPoint)
         {
             final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
@@ -761,7 +760,6 @@ public class WebSocketConnectionD12 extends AbstractConnection implements WebSoc
                             else if (_connection.getMaxBinaryMessageSize()>=0)
                             {
                                 _opcode=opcode;
-                                // TODO use a growing buffer rather than a fixed one.
                                 if (_aggregate==null)
                                     _aggregate=new ByteArrayBuffer(_connection.getMaxBinaryMessageSize());
                                 _aggregate.put(buffer);

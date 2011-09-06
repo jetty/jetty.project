@@ -11,6 +11,9 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * @TODO Implement proposed deflate frame draft
+ */
 public class DeflateFrameExtension extends AbstractExtension
 {
     private static final Logger LOG = Log.getLogger(DeflateFrameExtension.class);

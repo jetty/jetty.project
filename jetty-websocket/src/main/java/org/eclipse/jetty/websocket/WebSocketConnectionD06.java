@@ -84,8 +84,8 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     private final OnTextMessage _onTextMessage;
     private final OnControl _onControl;
     private final String _protocol;
-    private boolean _closedIn;
-    private boolean _closedOut;
+    private volatile boolean _closedIn;
+    private volatile boolean _closedOut;
     private int _maxTextMessageSize;
     private int _maxBinaryMessageSize=-1;
 
@@ -115,7 +115,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     {
         super(endpoint,timestamp);
 
-        // TODO - can we use the endpoint idle mechanism?
         if (endpoint instanceof AsyncEndPoint)
             ((AsyncEndPoint)endpoint).cancelIdle();
 
@@ -130,7 +129,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         _parser = new WebSocketParserD06(buffers, endpoint, _frameHandler,true);
         _protocol=protocol;
 
-        // TODO should these be AsyncEndPoint checks/calls?
         if (_endp instanceof SelectChannelEndPoint)
         {
             final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;

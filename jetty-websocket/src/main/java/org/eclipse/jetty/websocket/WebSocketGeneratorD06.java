@@ -210,8 +210,6 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
         {
             while (_buffer.space()==0)
             {
-                // TODO: in case the I/O system signals write ready, but when we attempt to write we cannot
-                // TODO: we should decrease the blockFor timeout instead of waiting again the whole timeout
                 boolean ready = _endp.blockWritable(blockFor);
                 if (!ready)
                     throw new IOException("Write timeout");
