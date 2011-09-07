@@ -20,7 +20,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -43,16 +42,19 @@ public class WebSocketFactory
     {
         /* ------------------------------------------------------------ */
         /**
-         * @param request
-         * @param protocol
-         * @returns
+         * <p>Factory method that applications needs to implement to return a
+         * {@link WebSocket} object.</p>
+         * @param request the incoming HTTP upgrade request
+         * @param protocol the websocket sub protocol
+         * @return a new {@link WebSocket} object that will handle websocket events.
          */
         WebSocket doWebSocketConnect(HttpServletRequest request, String protocol);
 
         /* ------------------------------------------------------------ */
-        /** Check the origin of an incoming WebSocket handshake request
-         * @param request
-         * @param origin
+        /**
+         * <p>Checks the origin of an incoming WebSocket handshake request.</p>
+         * @param request the incoming HTTP upgrade request
+         * @param origin the origin URI
          * @return boolean to indicate that the origin is acceptable.
          */
         boolean checkOrigin(HttpServletRequest request, String origin);
@@ -64,7 +66,7 @@ public class WebSocketFactory
         _extensionClasses.put("fragment",FragmentExtension.class);
         _extensionClasses.put("x-deflate-frame",DeflateFrameExtension.class);
     }
-    
+
     private final Acceptor _acceptor;
     private WebSocketBuffers _buffers;
     private int _maxIdleTime = 300000;
@@ -90,7 +92,7 @@ public class WebSocketFactory
     {
         return _extensionClasses;
     }
-    
+
     /**
      * Get the maxIdleTime.
      *
@@ -161,7 +163,7 @@ public class WebSocketFactory
     /**
      * Set the initial maximum binary message size for a connection. This can be changed by
      * the application calling {@link WebSocket.Connection#setMaxBinaryMessageSize(int)}.
-     * @param maxTextMessageSize The default maximum binary message size (in bytes) for a connection
+     * @param maxBinaryMessageSize The default maximum binary message size (in bytes) for a connection
      */
     public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
     {
@@ -201,7 +203,7 @@ public class WebSocketFactory
             while (tok.hasMoreTokens())
                 extensions_requested.add(tok.nextToken());
         }
-        
+
         final WebSocketConnection connection;
         final List<Extension> extensions;
         switch (draft)
@@ -215,16 +217,16 @@ public class WebSocketFactory
                 extensions=Collections.emptyList();
                 connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
-            case 7: 
-            case 8: 
-            case 9: 
-            case 10: 
-            case 11: 
-            case 12: 
+            case 7:
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+            case 12:
                 extensions= initExtensions(extensions_requested,8-WebSocketConnectionD12.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
                 connection = new WebSocketConnectionD12(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
-            case 13: 
+            case 13:
                 extensions= initExtensions(extensions_requested,8-WebSocketConnectionD13.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
                 connection = new WebSocketConnectionD13(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
@@ -275,7 +277,7 @@ public class WebSocketFactory
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return false;
             }
-            
+
             // Try each requested protocol
             WebSocket websocket = null;
             String protocol = request.getHeader("Sec-WebSocket-Protocol");
@@ -305,7 +307,7 @@ public class WebSocketFactory
 
         return false;
     }
-    
+
     public List<Extension> initExtensions(List<String> requested,int maxDataOpcodes,int maxControlOpcodes,int maxReservedBits)
     {
         List<Extension> extensions = new ArrayList<Extension>();
@@ -321,9 +323,9 @@ public class WebSocketFactory
                 String value=nv.hasMoreTokens()?nv.nextToken().trim():null;
                 parameters.put(name,value);
             }
-            
+
             Extension extension = newExtension(extName);
-            
+
             if (extension==null)
                 continue;
 
@@ -349,9 +351,9 @@ public class WebSocketFactory
         {
             LOG.warn(e);
         }
-        
+
         return null;
     }
-    
-    
+
+
 }

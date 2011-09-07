@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http.security;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /* ------------------------------------------------------------ */
 /**
@@ -209,7 +210,7 @@ public class Constraint implements Cloneable, Serializable
     {
         return "SC{" + _name
                + ","
-               + (_anyRole ? "*" : (_roles == null ? "-" : _roles.toString()))
+               + (_anyRole ? "*" : (_roles == null ? "-" : Arrays.asList(_roles).toString()))
                + ","
                + (_dataConstraint == DC_UNSET ? "DC_UNSET}" : (_dataConstraint == DC_NONE ? "NONE}" : (_dataConstraint == DC_INTEGRAL ? "INTEGRAL}" : "CONFIDENTIAL}")));
     }

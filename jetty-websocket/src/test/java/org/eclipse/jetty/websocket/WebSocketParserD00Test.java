@@ -130,13 +130,6 @@ public class WebSocketParserD00Test
     }
 
 
-    // TODO test:
-    // blocking,
-    // async
-    // full
-    // EOF
-    // errors
-
     private class Handler implements WebSocketParser.FrameHandler
     {
         public List<String> _data = new ArrayList<String>();

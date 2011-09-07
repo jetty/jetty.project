@@ -300,7 +300,12 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 }
             }
         }
-        catch (Exception x)
+        catch (ThreadDeath x)
+        {
+            super.close();
+            throw x;
+        }
+        catch (Throwable x)
         {
             LOG.debug(x);
             super.close();
@@ -444,8 +449,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                         case BUFFER_OVERFLOW:
                                         case BUFFER_UNDERFLOW:
                                             LOG.warn("wrap {}",_result);
+                                            _closing=true;
+                                            break;
                                         case CLOSED:
                                             _closing=true;
+                                            break;
                                     }
 
                                     _outNIOBuffer.setPutIndex(put+_result.bytesProduced());
@@ -500,7 +508,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
         int consumed=0;
-        int available=header.length();
+        int available=header==null?0:header.length();
         if (buffer!=null)
             available+=buffer.length();
 
@@ -599,8 +607,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                 case BUFFER_OVERFLOW:
                                 case BUFFER_UNDERFLOW:
                                     LOG.warn("unwrap {}",_result);
+                                    _closing=true;
+                                    break;
                                 case CLOSED:
                                     _closing=true;
+                                    break;
                             }
                             _outNIOBuffer.setPutIndex(put+_result.bytesProduced());
                         }
@@ -895,6 +906,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             case BUFFER_OVERFLOW:
             case BUFFER_UNDERFLOW:
                 LOG.warn("unwrap {}",_result);
+                _closing=true;
+                return _result.bytesConsumed()>0?_result.bytesConsumed():-1;
 
             case OK:
                 return _result.bytesConsumed();
@@ -965,6 +978,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             case BUFFER_OVERFLOW:
             case BUFFER_UNDERFLOW:
                 LOG.warn("unwrap {}",_result);
+                _closing=true;
+                return _result.bytesConsumed()>0?_result.bytesConsumed():-1;
 
             case OK:
                 return _result.bytesConsumed();

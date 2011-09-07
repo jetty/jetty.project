@@ -152,12 +152,22 @@ public class Password extends Credential
             {
                 case 1:
                     buf.append('0');
+                    buf.append('0');
+                    buf.append('0');
+                    buf.append(x);
+                    break;
                 case 2:
                     buf.append('0');
+                    buf.append('0');
+                    buf.append(x);
+                    break;
                 case 3:
                     buf.append('0');
+                    buf.append(x);
+                    break;
                 default:
                     buf.append(x);
+                    break;
             }
         }
         return buf.toString();

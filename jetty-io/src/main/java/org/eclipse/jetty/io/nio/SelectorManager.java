@@ -387,7 +387,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         
         private final ConcurrentLinkedQueue<Object> _changes = new ConcurrentLinkedQueue<Object>();
         
-        private Selector _selector;
+        private volatile Selector _selector;
         
         private volatile Thread _selecting;
         private int _jvmBug;
@@ -975,7 +975,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             // close endpoints and selector
             synchronized (this)
             {
-                for (SelectionKey key:_selector.keys())
+                Selector selector=_selector;
+                for (SelectionKey key:selector.keys())
                 {
                     if (key==null)
                         continue;
@@ -998,8 +999,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 _timeout.cancelAll();
                 try
                 {
-                    if (_selector != null)
-                        _selector.close();
+                    selector=_selector;
+                    if (selector != null)
+                        selector.close();
                 }
                 catch (IOException e)
                 {

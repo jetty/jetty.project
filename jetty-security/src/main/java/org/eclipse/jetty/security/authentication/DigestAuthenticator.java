@@ -115,6 +115,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                             break;
                         case ',':
                             name = null;
+                            break;
                         case ' ':
                             break;
 

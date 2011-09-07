@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.websocket;
@@ -43,7 +43,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
         _endp=endp;
         _maskGen=null;
     }
-    
+
     public WebSocketGeneratorD13(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
     {
         _buffers=buffers;
@@ -55,27 +55,26 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
     {
         return _buffer;
     }
-    
+
     public synchronized void addFrame(byte flags, byte opcode, byte[] content, int offset, int length) throws IOException
     {
         // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
-        
+
         boolean mask=_maskGen!=null;
-        
+
         if (_buffer==null)
             _buffer=mask?_buffers.getBuffer():_buffers.getDirectBuffer();
-            
+
         boolean last=WebSocketConnectionD13.isLastFrame(flags);
-        byte orig=opcode;
-        
+
         int space=mask?14:10;
-        
+
         do
         {
             opcode = _opsent?WebSocketConnectionD13.OP_CONTINUATION:opcode;
             opcode=(byte)(((0xf&flags)<<4)+(0xf&opcode));
             _opsent=true;
-            
+
             int payload=length;
             if (payload+space>_buffer.capacity())
             {
@@ -85,7 +84,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
             }
             else if (last)
                 opcode= (byte)(opcode|0x80); // Set the FIN bit
-      
+
             // ensure there is space for header
             if (_buffer.space() <= space)
             {
@@ -93,17 +92,17 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
                 if (_buffer.space() <= space)
                     flush();
             }
-            
+
             // write the opcode and length
             if (payload>0xffff)
             {
                 _buffer.put(new byte[]{
                         opcode,
                         mask?(byte)0xff:(byte)0x7f,
-                        (byte)((payload>>56)&0x7f),
-                        (byte)((payload>>48)&0xff), 
-                        (byte)((payload>>40)&0xff), 
-                        (byte)((payload>>32)&0xff),
+                        (byte)0,
+                        (byte)0,
+                        (byte)0,
+                        (byte)0,
                         (byte)((payload>>24)&0xff),
                         (byte)((payload>>16)&0xff),
                         (byte)((payload>>8)&0xff),
@@ -119,7 +118,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
             }
             else
             {
-                _buffer.put(new byte[]{ 
+                _buffer.put(new byte[]{
                         opcode,
                         (byte)(mask?(0x80|payload):payload)});
             }
@@ -132,14 +131,14 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
                 _buffer.put(_mask);
             }
 
-            
+
             // write payload
             int remaining = payload;
             while (remaining > 0)
             {
                 _buffer.compact();
                 int chunk = remaining < _buffer.space() ? remaining : _buffer.space();
-                
+
                 if (mask)
                 {
                     for (int i=0;i<chunk;i++)
@@ -147,7 +146,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
                 }
                 else
                     _buffer.put(content, offset + (payload - remaining), chunk);
-                
+
                 remaining -= chunk;
                 if (_buffer.space() > 0)
                 {
@@ -170,7 +169,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
         }
         while (length>0);
         _opsent=!last;
-        
+
         if (_buffer!=null && _buffer.length()==0)
         {
             _buffers.returnBuffer(_buffer);
@@ -194,7 +193,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
         if (_buffer==null)
             return 0;
         int result = flushBuffer();
-        
+
         if (!_endp.isBlocking())
         {
             long now = System.currentTimeMillis();

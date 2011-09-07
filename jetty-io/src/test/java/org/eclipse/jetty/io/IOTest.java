@@ -42,33 +42,4 @@ public class IOTest
                       out.toString(),
                       "The quick brown fox jumped over the lazy dog");
     }
-
-    @Test
-    public void testStringSpeed()
-    {
-        String s="012345678901234567890000000000000000000000000";
-        char[] ca = new char[s.length()];
-        int loops=1000000;
-
-        long start=System.currentTimeMillis();
-        long result=0;
-        for (int loop=0;loop<loops;loop++)
-        {
-            for (int c=s.length();c-->0;)
-                result+=s.charAt(c);
-        }
-        long end=System.currentTimeMillis();
-        System.err.println("charAt   "+(end-start)+" "+result);
-
-        start=System.currentTimeMillis();
-        result=0;
-        for (int loop=0;loop<loops;loop++)
-        {
-            s.getChars(0, s.length(), ca, 0);
-            for (int c=s.length();c-->0;)
-                result+=ca[c];
-        }
-        end=System.currentTimeMillis();
-        System.err.println("getChars "+(end-start)+" "+result);
-    }
 }

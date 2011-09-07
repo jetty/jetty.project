@@ -262,7 +262,7 @@ public class WebSocketClient
     /**
      * Set the initial maximum binary message size for a connection. This can be changed by
      * the application calling {@link WebSocket.Connection#setMaxBinaryMessageSize(int)}.
-     * @param maxTextMessageSize The default maximum binary message size (in bytes) for a connection
+     * @param maxBinaryMessageSize The default maximum binary message size (in bytes) for a connection
      */
     public void setMaxBinaryMessageSize(int maxBinaryMessageSize)
     {
@@ -381,20 +381,21 @@ public class WebSocketClient
             {
                 connection.getConnection().setMaxTextMessageSize(_maxTextMessageSize);
                 connection.getConnection().setMaxBinaryMessageSize(_maxBinaryMessageSize);
-                
+
+                WebSocketConnection con;
                 synchronized (this)
                 {
                     if (_channel!=null)
                         _connection=connection;
+                    con=_connection;
                 }
 
-                if (_connection!=null)
+                if (con!=null)
                 {
                     if (_websocket instanceof WebSocket.OnFrame)
-                        ((WebSocket.OnFrame)_websocket).onHandshake((WebSocket.FrameConnection)connection.getConnection());
+                        ((WebSocket.OnFrame)_websocket).onHandshake((WebSocket.FrameConnection)con.getConnection());
 
-                    _websocket.onOpen(connection.getConnection());
-
+                    _websocket.onOpen(con.getConnection());
                 }
             }
             finally
