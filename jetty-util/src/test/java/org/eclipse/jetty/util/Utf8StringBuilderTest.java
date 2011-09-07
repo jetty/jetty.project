@@ -33,7 +33,7 @@ public class Utf8StringBuilderTest
         assertEquals(source, buffer.toString());
         assertTrue(buffer.toString().endsWith("jetty")); 
     }
-    
+
     @Test
     public void testShort()
     throws Exception
@@ -50,7 +50,7 @@ public class Utf8StringBuilderTest
         }
         catch(IllegalStateException e)
         {
-            assertTrue(e.toString().indexOf("!utf8")>=0);
+            assertTrue(e.toString().indexOf("!UTF-8")>=0);
         }
     }
     
@@ -64,9 +64,17 @@ public class Utf8StringBuilderTest
         bytes[4]=(byte)0x00;
 
         Utf8StringBuilder buffer = new Utf8StringBuilder();
-        for (int i=0;i<bytes.length;i++)
-            buffer.append(bytes[i]);
-        assertEquals("abc?",buffer.toString());
+        try
+        {
+            for (int i = 0; i < bytes.length; i++)
+                buffer.append(bytes[i]);
+            assertTrue(false);
+        }
+        catch(IllegalStateException e)
+        {
+            assertTrue(e.toString().indexOf("!UTF-8")>=0);
+        }
+        assertEquals("abc?", buffer.toString());
     }
 
     

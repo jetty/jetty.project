@@ -3,12 +3,16 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.util.EventListener;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionActivationListener;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
@@ -30,6 +34,8 @@ public abstract class AbstractRemoveSessionTest
         AbstractTestServer server = createServer(0, 1, scavengePeriod);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
+        TestEventListener testListener = new TestEventListener();
+        context.getSessionHandler().addEventListener(testListener);
         server.start();
         int port = server.getPort();
         try
@@ -49,6 +55,8 @@ public abstract class AbstractRemoveSessionTest
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+                //ensure sessionCreated listener is called
+                assertTrue (testListener.isCreated());
 
                 //now delete the session
                 exchange = new ContentExchange(true);
@@ -58,6 +66,8 @@ public abstract class AbstractRemoveSessionTest
                 client.send(exchange);
                 exchange.waitForDone();
                 assertEquals(HttpServletResponse.SC_OK,exchange.getResponseStatus());
+                //ensure sessionDestroyed listener is called
+                assertTrue(testListener.isDestroyed());
                 
                 
                 // The session is not there anymore, but we present an old cookie
@@ -104,6 +114,34 @@ public abstract class AbstractRemoveSessionTest
                assertNull(s);
             }
         }
+    }
+    
+    public static class TestEventListener implements HttpSessionListener
+    {
+        boolean wasCreated;
+        boolean wasDestroyed;
+
+        public void sessionCreated(HttpSessionEvent se)
+        {
+            wasCreated = true;
+        }
+
+        public void sessionDestroyed(HttpSessionEvent se)
+        {
+           wasDestroyed = true;
+        }
+
+        public boolean isDestroyed()
+        {
+            return wasDestroyed;
+        }
+
+
+        public boolean isCreated()
+        {
+            return wasCreated;
+        }
+
     }
     
 }

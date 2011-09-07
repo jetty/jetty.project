@@ -1,6 +1,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.util.IllegalFormatCodePointException;
 
 public abstract class Utf8Appendable
 {
@@ -69,6 +70,7 @@ public abstract class Utf8Appendable
                 _appendable.append('?');
                 _more=0;
                 _bits=0;
+                throw new NotUtf8Exception();
             }
             else
                 _appendable.append((char)(0x7f&b));
@@ -81,6 +83,7 @@ public abstract class Utf8Appendable
                 _appendable.append('?');
                 _more=0;
                 _bits=0;
+                throw new NotUtf8Exception();
             }
             else
             { 
@@ -116,7 +119,7 @@ public abstract class Utf8Appendable
                 }
                 else
                 {
-                    throw new IllegalArgumentException("!utf8");
+                    throw new NotUtf8Exception();
                 }
             }
         }
@@ -127,7 +130,7 @@ public abstract class Utf8Appendable
                 _appendable.append('?');
                 _more=0;
                 _bits=0;
-                throw new IllegalArgumentException("!utf8");
+                throw new NotUtf8Exception();
             }
             else
             {
@@ -139,4 +142,12 @@ public abstract class Utf8Appendable
         }
     }
 
+
+    public static class NotUtf8Exception extends IllegalStateException
+    {
+        public NotUtf8Exception()
+        {
+            super("!UTF-8");
+        }
+    }
 }

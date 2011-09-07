@@ -1,8 +1,14 @@
+jetty-8.0.1-SNAPSHOT
+
 jetty-8.0.0.v20110901 - 01 September 2011
  + 352565 cookie httponly flag ignored
  + 353073 better warnings
  + 353285 ServletSecurity annotation ignored
  + 356421 Upgraded websocket to draft 13 support
+
+jetty-7.5.0.v20110901 - 01 September 2011
+ + 356421 Upgraded websocket to draft 13 support
+ + 353073 better warnings
 
 jetty-7.5.0.RC2 - 30 August 2011
  + 293739 Hide stacks in named log testing. Various other minor log cleanups in
@@ -72,6 +78,12 @@ jetty-7.5.0.RC0 - 15 August 2011
  + 354204 Charset encodings property file not used
  + 354397 RewriteRegexRule handles special characters in regex group
  + 354466 Typo in example config of jetty-plus.xml
+
+jetty-7.4.5.v20110725 - 25 July 2011
+ + 347484 / - > ${/} in some paths in grant codebases
+ + 352133 resolve some 1.5isms
+ + 352421 HttpURI paths beginning with '.'
+ + 352786 GzipFilter fails to pass parameters to GzipResponseWrapper
 
 jetty-7.4.4.v20110707 - 07 July 2011
  + 308851 Converted all jetty-client module tests to JUnit 4

@@ -909,6 +909,98 @@ public class WebSocketMessageD13Test
         lookFor("Message size > 15",input);
     }
 
+    @Test
+    public void testCloseCode() throws Exception
+    {
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: chat\r\n" +
+                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        socket.setSoTimeout(100000);
+        InputStream input = socket.getInputStream();
+
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
+
+        __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
+
+        output.write(0x88);
+        output.write(0x82);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x81);
+        output.write(0xFF);
+        output.flush();
+
+        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
+        assertEquals(2,input.read());
+        int code=(0xff&input.read())*0x100+(0xff&input.read());
+        assertEquals(0x81FF,code);
+    }
+
+    @Test
+    public void testNotUTF8() throws Exception
+    {
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                 "Host: server.example.com\r\n"+
+                 "Upgrade: websocket\r\n"+
+                 "Connection: Upgrade\r\n"+
+                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                 "Sec-WebSocket-Origin: http://example.com\r\n"+
+                 "Sec-WebSocket-Protocol: chat\r\n" +
+                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        socket.setSoTimeout(100000);
+        InputStream input = socket.getInputStream();
+
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
+
+        __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
+
+        output.write(0x81);
+        output.write(0x82);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0x00);
+        output.write(0xc3);
+        output.write(0x28);
+        output.flush();
+
+        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
+        assertEquals(15,input.read());
+        int code=(0xff&input.read())*0x100+(0xff&input.read());
+        assertEquals(WebSocketConnectionD13.CLOSE_NOT_UTF8,code);
+        lookFor("Invalid UTF-8",input);
+    }
 
     @Test
     public void testMaxBinarySize2() throws Exception

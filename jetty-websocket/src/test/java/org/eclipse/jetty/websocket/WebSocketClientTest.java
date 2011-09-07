@@ -80,7 +80,7 @@ public class WebSocketClientTest
             {
             }
         };
-        Future<WebSocket.Connection> future = client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"), websocket);
+        client.open(new URI("ws://127.0.0.1:" + _serverPort + "/"), websocket);
 
         Socket socket = _server.accept();
         accept(socket);

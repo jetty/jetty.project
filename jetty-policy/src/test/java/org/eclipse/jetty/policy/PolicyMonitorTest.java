@@ -45,7 +45,7 @@ public class PolicyMonitorTest
         {
             Thread.sleep(100);
         }
-        
+
         Assert.assertEquals(1,count.get());
         monitor.stop();
     }
@@ -73,17 +73,14 @@ public class PolicyMonitorTest
         monitor.setScanInterval(1);
         
         monitor.start();
-        
-        while (! monitor.isInitialized() )
-        {
-            Thread.sleep(100);
-        }
-        
+        monitor.waitForScan();
+        monitor.waitForScan();
+
         File permFile =new File(MavenTestingUtils.getTargetDir(),
                 "test-classes/monitor-test-2/global-all-permission.policy");
         
-	// Wait so that time is definitely different
-        Thread.sleep(10);
+	    // Wait so that time is definitely different
+        monitor.waitForScan();
         permFile.setLastModified(System.currentTimeMillis());
                         
         monitor.waitForScan();

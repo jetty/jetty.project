@@ -336,7 +336,9 @@ public class HttpFields
             {
                 if (__cache.size()>__cacheSize)
                     __cache.clear();
-                __cache.putIfAbsent(value,buffer);
+                Buffer b=__cache.putIfAbsent(value,buffer);
+                if (b!=null)
+                    buffer=b;
             }
             
             return buffer;

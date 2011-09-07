@@ -50,7 +50,7 @@ public class Utf8StringBufferTest
         }
         catch(IllegalStateException e)
         {
-            assertTrue(e.toString().indexOf("!utf8")>=0);
+            assertTrue(e.toString().indexOf("!UTF-8")>=0);
         }
     }
     
@@ -64,8 +64,16 @@ public class Utf8StringBufferTest
         bytes[4]=(byte)0x00;
 
         Utf8StringBuffer buffer = new Utf8StringBuffer();
-        for (int i=0;i<bytes.length;i++)
-            buffer.append(bytes[i]);
+        try
+        {
+            for (int i=0;i<bytes.length;i++)
+                buffer.append(bytes[i]);
+                assertTrue(false);
+        }
+        catch(IllegalStateException e)
+        {
+            assertTrue(e.toString().indexOf("!UTF-8")>=0);
+        }
         assertEquals("abc?",buffer.toString());
     }
     
