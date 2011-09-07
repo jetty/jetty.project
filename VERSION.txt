@@ -1,4 +1,8 @@
-jetty-8.0.0-SNAPSHOT
+jetty-8.0.0.v20110901 - 01 September 2011
+ + 352565 cookie httponly flag ignored
+ + 353073 better warnings
+ + 353285 ServletSecurity annotation ignored
+ + 356421 Upgraded websocket to draft 13 support
 
 jetty-7.5.0.RC2 - 30 August 2011
  + 293739 Hide stacks in named log testing. Various other minor log cleanups in
@@ -30,13 +34,13 @@ jetty-7.5.0.RC1 - 19 August 2011
  + JETTY-1414 HashLoginService doesn't refresh realm if specified config
    filename is not an absolute platform specific value
 
-jetty-8.0.0.RC0 August 16th 2011
+jetty-8.0.0.RC0 - 16 August 2011
  + Merge from jetty-7.4.3
  + Enable annotations by default
  + 352565 cookie httponly flag ignored
  + 353285 ServletSecurity annotation ignored
 
-jetty-8.0.0.M3 27 May 2011
+jetty-8.0.0.M3 - 27 May 2011
  + 324505 Implement API login
  + 335500 request.getParts() throws a NullPointerException
  + 343472 isUserInRole does not prevent subsequent login call.
@@ -219,17 +223,23 @@ jetty-7.4.0.RC0
  + Ensure generated fragment names are unique
  + Added extra session removal test
 
-jetty-8.0.0.M2 16 November 2010
+jetty-8.0.0.M2 - 16 November 2010
  + 320073 Reconsile configuration mechanism
  + 321068 JSF2 fails to initialize
- + 324493 Registration init parameter handling null check, setInitParameters additive
+ + 324493 Registration init parameter handling null check, setInitParameters
+   additive
  + 324505 Request.login method must throw ServletException if it cant login
- + 324872 allow disabling listener restriction from using *Registration interfaces
- + 327416 Change meaning of @HandlesTypes in line with latest interpretation by JSR315
- + 327489 Change meaning of @MultipartConfig to match servlet spec 3.0 maintenance release 3.0a
+ + 324872 allow disabling listener restriction from using *Registration
+   interfaces
+ + 327416 Change meaning of @HandlesTypes in line with latest interpretation by
+   JSR315
+ + 327489 Change meaning of @MultipartConfig to match servlet spec 3.0
+   maintenance release 3.0a
  + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
- + 330188 Reject web-fragment.xml with same <name> as another already loaded one
- + 330208 Support new wording on servlet-mapping and filter-mapping merging from servlet3.0a
+ + 330188 Reject web-fragment.xml with same <name> as another already loaded
+   one
+ + 330208 Support new wording on servlet-mapping and filter-mapping merging
+   from servlet3.0a
  + 330292 request.getParts() returns only one part when the name is the same
  + Update to jetty-7.2.1.v20101111
 
@@ -471,10 +481,12 @@ jetty-7.1.6.v20100715
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1251 Replace then close selector for JVM bugs
 
-jetty-8.0.0.M1 12 July 2010
+jetty-8.0.0.M1 - 12 July 2010
  + 306350 Ensure jars excluded by ordering are not scanned for annotations
- + JETTY-1224 Change jetty-8 merge rules for fragment descriptors and annotations
- + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in fragments
+ + JETTY-1224 Change jetty-8 merge rules for fragment descriptors and
+   annotations
+ + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in
+   fragments
  + Ensure empty <absolute-ordering> implies exclusion of all fragments
  + Ensure servlet-api jar class inheritance hierarchy is scanned
 
@@ -790,20 +802,18 @@ jetty-7.0.2.RC0
  + Added IPAccessHandler
  + Updated Servlet3Continuation to final 3.0.20100224
  + 305997 Coalesce buffers in ChannelEndPoint.flush()
- + 306028 Enable TCP_NODELAY by default in client connectors
+ + 306028 Enable TCP_NODELAY by default in client connectors <<<<<<< HEAD
 
-<<<<<<< HEAD
-
-jetty-8.0.0.M0 28 February 2010
+jetty-8.0.0.M0 - 28 February 2010
  + Updated servlet 3.0 spec 20100224
  + Merged 7.0.1.v20091116
  + Updated to cometd 1.0.1
- 
 
-jetty-7.0.1.v20091125 25 November 2009
-=======
 jetty-7.0.1.v20091125 - 25 November 2009
->>>>>>> origin/master
+ + =======
+
+jetty-7.0.1.v20091125 - 25 November 2009
+ + >>>>>>> origin/master
  + 274251 DefaultServlet supports exact match mode.
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289027 deobfuscate HttpClient SSL passwords
