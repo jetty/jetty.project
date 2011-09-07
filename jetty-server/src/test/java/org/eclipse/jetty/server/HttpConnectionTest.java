@@ -177,7 +177,7 @@ public class HttpConnectionTest
             response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
                     "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"pathInfo=/foo/bar?");
+            checkContains(response,0,"HTTP/1.1 400");
 
             response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
                     "Host: localhost\n"+

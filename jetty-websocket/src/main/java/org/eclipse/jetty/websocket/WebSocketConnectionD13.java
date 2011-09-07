@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -83,7 +84,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     private final IdleCheck _idle;
     private final List<Extension> _extensions;
     private final WebSocketParserD13 _parser;
-    private final WebSocketParser.FrameHandler _inbound;
     private final WebSocketGeneratorD13 _generator;
     private final WebSocketGenerator _outbound;
     private final WebSocket _webSocket;
@@ -112,8 +112,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             throw new RuntimeException(e);
         }
     }
-
-    private final WebSocketParser.FrameHandler _frameHandler= new WSFrameHandler();
 
     private final WebSocket.FrameConnection _connection = new WSFrameConnection();
 
@@ -147,6 +145,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         _generator = new WebSocketGeneratorD13(buffers, _endp,maskgen);
 
         _extensions=extensions;
+        WebSocketParser.FrameHandler frameHandler = new WSFrameHandler();
         if (_extensions!=null)
         {
             int e=0;
@@ -154,16 +153,16 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             {
                 extension.bind(
                         _connection,
-                        e==extensions.size()-1?_frameHandler:extensions.get(e+1),
+                        e==extensions.size()-1? frameHandler :extensions.get(e+1),
                         e==0?_generator:extensions.get(e-1));
                 e++;
             }
         }
 
         _outbound=(_extensions==null||_extensions.size()==0)?_generator:extensions.get(extensions.size()-1);
-        _inbound=(_extensions==null||_extensions.size()==0)?_frameHandler:extensions.get(0);
+        WebSocketParser.FrameHandler inbound = (_extensions == null || _extensions.size() == 0) ? frameHandler : extensions.get(0);
 
-        _parser = new WebSocketParserD13(buffers, endpoint,_inbound,maskgen==null);
+        _parser = new WebSocketParserD13(buffers, endpoint, inbound,maskgen==null);
 
         _protocol=protocol;
 
@@ -301,14 +300,14 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     {
         LOG.debug("ClosedIn {} {}",this,message);
 
-        final boolean closedOut;
-        final boolean closed;
+        final boolean close;
+        final boolean tell_app;
         synchronized (this)
         {
-            closedOut=_closedOut;
+            close=_closedOut;
             _closedIn=true;
-            closed=_closeCode==0;
-            if (closed)
+            tell_app=_closeCode==0;
+            if (tell_app)
             {
                 _closeCode=code;
                 _closeMessage=message;
@@ -317,14 +316,14 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
         try
         {
-            if (closed)
+            if (tell_app)
                 _webSocket.onClose(code,message);
         }
         finally
         {
             try
             {
-                if (closedOut)
+                if (close)
                     _endp.close();
                 else
                     closeOut(code,message);
@@ -342,13 +341,15 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         LOG.debug("ClosedOut {} {}",this,message);
 
         final boolean close;
-        final boolean closed;
+        final boolean tell_app;
+        final boolean send_close;
         synchronized (this)
         {
-            close=_closedIn || _closedOut;
+            close=_closedIn;
+            send_close=!_closedOut;
             _closedOut=true;
-            closed=_closeCode==0;
-            if (closed)
+            tell_app=_closeCode==0;
+            if (tell_app)
             {
                 _closeCode=code;
                 _closeMessage=message;
@@ -357,16 +358,14 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
         try
         {
-            if (closed)
+            if (tell_app)
                 _webSocket.onClose(code,message);
         }
         finally
         {
             try
             {
-                if (close)
-                    _endp.close();
-                else
+                if (send_close)
                 {
                     if (code<=0)
                         code=WebSocketConnectionD13.CLOSE_NORMAL;
@@ -374,8 +373,12 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                     bytes[0]=(byte)(code/0x100);
                     bytes[1]=(byte)(code%0x100);
                     _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD13.OP_CLOSE,bytes,0,bytes.length);
+                    _outbound.flush();
+                    if (close)
+                        _endp.shutdownOutput();
                 }
-                _outbound.flush();
+                else if (close)
+                    _endp.close();
 
             }
             catch(IOException e)
@@ -711,7 +714,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         String message=null;
                         if (buffer.length()>=2)
                         {
-                            code=buffer.array()[buffer.getIndex()]*0x100+buffer.array()[buffer.getIndex()+1];
+                            code=(0xff&buffer.array()[buffer.getIndex()])*0x100+(0xff&buffer.array()[buffer.getIndex()+1]);
                             if (buffer.length()>2)
                                 message=new String(buffer.array(),buffer.getIndex()+2,buffer.length()-2,StringUtil.__UTF8);
                         }
@@ -778,6 +781,12 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         }
                     }
                 }
+            }
+            catch(Utf8Appendable.NotUtf8Exception notUtf8)
+            {
+                LOG.warn("{} for {}",notUtf8,_endp);
+                LOG.debug(notUtf8);
+                _connection.close(WebSocketConnectionD13.CLOSE_NOT_UTF8,"Invalid UTF-8");
             }
             catch(ThreadDeath th)
             {
