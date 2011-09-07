@@ -35,8 +35,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class GzipResponseWrapper extends HttpServletResponseWrapper
 {
-    public static int DEFAULT_BUFFER_SIZE = 8192;
-    public static int DEFAULT_MIN_GZIP_SIZE = 256;
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
+    public static final int DEFAULT_MIN_GZIP_SIZE = 256;
     
     private HttpServletRequest _request;
     private Set<String> _mimeTypes;
