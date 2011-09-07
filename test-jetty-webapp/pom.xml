@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.5.2-SNAPSHOT</version>
+    <version>7.5.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
@@ -173,7 +173,7 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-websocket</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
+      <!--scope>provided</scope-->
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
