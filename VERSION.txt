@@ -62,6 +62,12 @@ jetty-7.5.0.RC0 - 15 August 2011
  + 354397 RewriteRegexRule handles special characters in regex group
  + 354466 Typo in example config of jetty-plus.xml
 
+jetty-7.4.5.v20110725 July 25th 2011
+ + 347484 / - > ${/} in some paths in grant codebases
+ + 352133 resolve some 1.5isms
+ + 352421 HttpURI paths beginning with '.'
+ + 352786 GzipFilter fails to pass parameters to GzipResponseWrapper
+
 jetty-7.4.4.v20110707 - 07 July 2011
  + 308851 Converted all jetty-client module tests to JUnit 4
  + 345268 JDBCSessionManager does not work with maxInactiveInterval = -1
