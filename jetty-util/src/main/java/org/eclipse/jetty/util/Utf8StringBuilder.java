@@ -59,7 +59,7 @@ public class Utf8StringBuilder extends Utf8Appendable
     public StringBuilder getStringBuilder()
     {
         if (_more!=0)
-            throw new IllegalStateException("!utf8");
+            throw new NotUtf8Exception();
         return _buffer;
     }
     
@@ -67,7 +67,7 @@ public class Utf8StringBuilder extends Utf8Appendable
     public String toString()
     {
         if (_more!=0)
-            throw new IllegalStateException("!utf8");
+            throw new NotUtf8Exception();
         return _buffer.toString();
     }
 }

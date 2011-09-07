@@ -60,7 +60,7 @@ public class Utf8StringBuffer extends Utf8Appendable
     public StringBuffer getStringBuffer()
     {
         if (_more!=0)
-            throw new IllegalStateException("!utf8");
+            throw new NotUtf8Exception();
         return _buffer;
     }
     
@@ -68,7 +68,7 @@ public class Utf8StringBuffer extends Utf8Appendable
     public String toString()
     {
         if (_more!=0)
-            throw new IllegalStateException("!utf8");
+            throw new NotUtf8Exception();
         return _buffer.toString();
     }
 }

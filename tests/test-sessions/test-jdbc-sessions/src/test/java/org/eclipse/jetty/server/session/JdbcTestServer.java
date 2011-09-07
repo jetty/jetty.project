@@ -22,22 +22,29 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 public class JdbcTestServer extends AbstractTestServer
 {
     public static final String DRIVER_CLASS = "org.apache.derby.jdbc.EmbeddedDriver";
-    public static final String CONNECTION_URL = "jdbc:derby:sessions;create=true";
+    public static final String DEFAULT_CONNECTION_URL = "jdbc:derby:sessions;create=true";
     public static final int SAVE_INTERVAL = 1;
+    
     
     static 
     {
         System.setProperty("derby.system.home", MavenTestingUtils.getTargetFile("test-derby").getAbsolutePath());
     }
+
     
     public JdbcTestServer(int port)
     {
         super(port);
     }
-
+    
+    public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod, String connectionUrl)
+    {
+        super(port, maxInactivePeriod, scavengePeriod, connectionUrl);
+    }
+    
     public JdbcTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
-        super(port, maxInactivePeriod, scavengePeriod);
+        super(port, maxInactivePeriod, scavengePeriod, DEFAULT_CONNECTION_URL);
     }
     
     public JdbcTestServer (int port, boolean optimize)
@@ -60,14 +67,14 @@ public class JdbcTestServer extends AbstractTestServer
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager()
      */
     @Override
-    public  SessionIdManager newSessionIdManager()
+    public  SessionIdManager newSessionIdManager(String config)
     {
         synchronized(JdbcTestServer.class)
         {
             JDBCSessionIdManager idManager = new JDBCSessionIdManager(_server);
             idManager.setScavengeInterval(_scavengePeriod);
             idManager.setWorkerName("w"+(__workers++));
-            idManager.setDriverInfo(DRIVER_CLASS, CONNECTION_URL);
+            idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:config));
             return idManager;
         }
     }

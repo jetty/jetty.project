@@ -704,7 +704,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             {
                 HttpSessionEvent event=new HttpSessionEvent(session);
                 for (HttpSessionListener listener : _sessionListeners)
-                    listener.sessionCreated(event);
+                    listener.sessionDestroyed(event);
             }
         }
     }
