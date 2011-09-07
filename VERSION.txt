@@ -1,6 +1,14 @@
-jetty-7.5.1-SNAPSHOT
+jetty-7.5.1.v20110907 - 07 September 2011
+ + 350634 Added Resource.newResource(File)
+ + 356190 fix monodb tests  for changed test api
+ + 356428 removed timed waits from test
+ + 356693 reduce visibility to webapp of websocket implementations
  + 356695 websocket packages should be provided
+ + 356726 Instead of the sessionDestroyed called sessionCreated after
+   invalidate session
  + 356749 WebSocket message length is computed wrongly when greater than 0xFFFF
+ + 356751 Add null protection to ServletContextHandler.doStop
+ + 356823 correctly decode close codes.  Send not utf-8 close code.
 
 jetty-7.5.0.v20110901 - 01 September 2011
  + 356421 Upgraded websocket to draft 13 support
@@ -62,7 +70,7 @@ jetty-7.5.0.RC0 - 15 August 2011
  + 354397 RewriteRegexRule handles special characters in regex group
  + 354466 Typo in example config of jetty-plus.xml
 
-jetty-7.4.5.v20110725 July 25th 2011
+jetty-7.4.5.v20110725 - 25 July 2011
  + 347484 / - > ${/} in some paths in grant codebases
  + 352133 resolve some 1.5isms
  + 352421 HttpURI paths beginning with '.'
