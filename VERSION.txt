@@ -1,3 +1,5 @@
+jetty-7.5.2-SNAPSHOT
+
 jetty-7.5.1.v20110907 - 07 September 2011
  + 350634 Added Resource.newResource(File)
  + 356190 fix monodb tests  for changed test api
