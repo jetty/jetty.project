@@ -52,7 +52,7 @@ import javax.sql.DataSource;
 //import org.eclipse.jetty.http.HttpHeaders;
 //import org.eclipse.jetty.util.StringUtil;
 //import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+//import org.eclipse.jetty.util.log.Logger;
 
 
 
@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Dump extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(Dump.class);
+    //private static final Logger LOG = Log.getLogger(Dump.class);
 
     boolean fixed;
     
