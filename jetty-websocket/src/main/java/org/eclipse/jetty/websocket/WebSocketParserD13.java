@@ -63,7 +63,7 @@ public class WebSocketParserD13 implements WebSocketParser
     private final byte[] _mask = new byte[4];
     private int _m;
     private boolean _skip;
-    private boolean _fakeFragments=true;
+    private boolean _fragmentFrames=true;
 
     /* ------------------------------------------------------------ */
     /**
@@ -89,7 +89,7 @@ public class WebSocketParserD13 implements WebSocketParser
      */
     public boolean isFakeFragments()
     {
-        return _fakeFragments;
+        return _fragmentFrames;
     }
 
     /* ------------------------------------------------------------ */
@@ -98,7 +98,7 @@ public class WebSocketParserD13 implements WebSocketParser
      */
     public void setFakeFragments(boolean fakeFragments)
     {
-        _fakeFragments = fakeFragments;
+        _fragmentFrames = fakeFragments;
     }
 
     /* ------------------------------------------------------------ */
@@ -143,7 +143,7 @@ public class WebSocketParserD13 implements WebSocketParser
                 if (_buffer.space() == 0)
                 {
                     // Can we send a fake frame?
-                    if (_fakeFragments && _state==State.DATA)
+                    if (_fragmentFrames && _state==State.DATA)
                     {
                         Buffer data =_buffer.get(4*(available/4));
                         _buffer.compact();
@@ -247,7 +247,7 @@ public class WebSocketParserD13 implements WebSocketParser
                         _length = _length*0x100 + (0xff&b);
                         if (--_bytesNeeded==0)
                         {
-                            if (_length>_buffer.capacity() && !_fakeFragments)
+                            if (_length>_buffer.capacity() && !_fragmentFrames)
                             {
                                 events++;
                                 _handler.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"frame size "+_length+">"+_buffer.capacity());
@@ -266,7 +266,7 @@ public class WebSocketParserD13 implements WebSocketParser
                         if (--_bytesNeeded==0)
                         {
                             _bytesNeeded=(int)_length;
-                            if (_length>=_buffer.capacity())
+                            if (_length>=_buffer.capacity() && !_fragmentFrames)
                             {
                                 events++;
                                 _handler.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"frame size "+_length+">"+_buffer.capacity());

@@ -28,7 +28,6 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
@@ -455,7 +454,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                                             _closing=true;
                                             break;
                                     }
-
                                     _outNIOBuffer.setPutIndex(put+_result.bytesProduced());
                                 }
                                 catch(SSLException e)

@@ -673,7 +673,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                         if (_opcode>=0 && _connection.getMaxBinaryMessageSize()>=0)
                         {
-                            if (checkBinaryMessageSize(_aggregate.length(),buffer.length()))
+                            if (_aggregate!=null && checkBinaryMessageSize(_aggregate.length(),buffer.length()))
                             {
                                 _aggregate.put(buffer);
 
