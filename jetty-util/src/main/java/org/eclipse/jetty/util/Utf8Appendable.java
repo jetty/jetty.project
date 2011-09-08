@@ -137,7 +137,11 @@ public abstract class Utf8Appendable
                 // 10xxxxxx
                 _bits=(_bits<<6)|(b&0x3f);
                 if (--_more==0)
+                {
+                    if (_bits>=0xD800 && _bits<=0xDFFF)
+                        throw new NotUtf8Exception();
                     _appendable.append(new String(Character.toChars(_bits)));
+                }
             }
         }
     }
