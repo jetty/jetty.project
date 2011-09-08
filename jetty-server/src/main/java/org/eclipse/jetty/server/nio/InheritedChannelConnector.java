@@ -55,7 +55,7 @@ public class InheritedChannelConnector extends SelectChannelConnector
                     LOG.warn("Unable to use System.inheritedChannel() [" +channel+ "]. Trying a new ServerSocketChannel at " + getHost() + ":" + getPort());
                 
                 if ( _acceptChannel != null )
-                    _acceptChannel.configureBlocking(false);
+                    _acceptChannel.configureBlocking(true);
             }
             catch(NoSuchMethodError e)
             {
