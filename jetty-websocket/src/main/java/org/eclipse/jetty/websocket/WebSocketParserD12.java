@@ -266,7 +266,7 @@ public class WebSocketParserD12 implements WebSocketParser
                         if (--_bytesNeeded==0)
                         {
                             _bytesNeeded=(int)_length;
-                            if (_length>=_buffer.capacity())
+                            if (_length>=_buffer.capacity() && !_fakeFragments)
                             {
                                 events++;
                                 _handler.close(WebSocketConnectionD12.CLOSE_BADDATA,"frame size "+_length+">"+_buffer.capacity());
