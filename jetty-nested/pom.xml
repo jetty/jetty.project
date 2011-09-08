@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.0.1-SNAPSHOT</version>
+    <version>8.0.1.v20110908</version>
   </parent>
   <artifactId>jetty-nested</artifactId>
   <name>Jetty :: Nested</name>
