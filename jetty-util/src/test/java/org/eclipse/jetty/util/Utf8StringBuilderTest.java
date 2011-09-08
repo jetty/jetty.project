@@ -22,6 +22,25 @@ import org.junit.Test;
 public class Utf8StringBuilderTest
 {
     @Test
+    public void testInvalid()
+        throws Exception
+    {
+        Utf8StringBuilder buffer = new Utf8StringBuilder();
+        buffer.append((byte)0xED);
+        buffer.append((byte)0xA0);
+        try
+        {
+            buffer.append((byte)0x80);
+            assertTrue(false);
+        }
+        catch(Utf8Appendable.NotUtf8Exception e)
+        {
+            assertTrue(true);
+        }
+        
+    }
+    
+    @Test
     public void testUtfStringBuilder()
         throws Exception
     {
@@ -33,7 +52,9 @@ public class Utf8StringBuilderTest
         assertEquals(source, buffer.toString());
         assertTrue(buffer.toString().endsWith("jetty")); 
     }
-
+    
+    
+    
     @Test
     public void testShort()
     throws Exception
