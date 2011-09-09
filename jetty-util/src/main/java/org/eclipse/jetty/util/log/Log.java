@@ -129,10 +129,6 @@ public class Log
         return __log;
     }
 
-    /**
-     * @deprecated anonymous logging is deprecated, use a named {@link Logger} obtained from {@link #getLogger(String)}
-     */
-    @Deprecated
     static boolean isIgnored()
     {
         return __ignored;
