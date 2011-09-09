@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>7.5.1-SNAPSHOT</version>
+    <version>7.5.2-SNAPSHOT</version>
   </parent>
   <artifactId>test-webapps-parent</artifactId>
   <name>Jetty Tests :: WebApps :: Parent</name>
