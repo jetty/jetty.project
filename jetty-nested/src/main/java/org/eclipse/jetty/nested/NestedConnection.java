@@ -88,7 +88,8 @@ public class NestedConnection extends HttpConnection
         {
             getServer().handle(this);
             completeResponse();
-            _generator.flushBuffer();
+            while (!_generator.isComplete() && _endp.isOpen())
+                _generator.flushBuffer();
             _endp.flush();
         }
         finally
