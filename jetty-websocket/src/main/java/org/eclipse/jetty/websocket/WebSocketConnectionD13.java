@@ -628,11 +628,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         public void onFrame(final byte flags, final byte opcode, final Buffer buffer)
         {
             boolean lastFrame = isLastFrame(flags);
-
-            System.err.println("flags "+flags);
-            System.err.println("opcode "+opcode);
-            System.err.println("buffer "+TypeUtil.toHexString(buffer.asArray()));
-            
             
             synchronized(WebSocketConnectionD13.this)
             {
