@@ -1,3 +1,17 @@
+package org.eclipse.jetty.annotations;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.webapp.WebAppContext;
+
 // ========================================================================
 // Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -11,37 +25,28 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-
-package org.eclipse.jetty.annotations;
-
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.WebAppContext;
-
 /**
- * ContainerInitializerConfiguration
+ * ServletContainerInitializerListener
  *
- * Apply the ServletContainerInitializers. 
+ *
  */
-public class ContainerInitializerConfiguration  extends AbstractConfiguration
+public class ServletContainerInitializerListener implements ServletContextListener
 {
-    public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
-
-    public void preConfigure(WebAppContext context) throws Exception
-    {  
+    WebAppContext _context = null;
+    
+    
+    public void setWebAppContext (WebAppContext context)
+    {
+        _context = context;
     }
 
-    public void configure(WebAppContext context) throws Exception
+    /** 
+     * @see javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
+     */
+    public void contextInitialized(ServletContextEvent sce)
     {
-        List<ContainerInitializer> initializers = (List<ContainerInitializer>)context.getAttribute(CONTAINER_INITIALIZERS);
-        MultiMap classMap = (MultiMap)context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
+        List<ContainerInitializer> initializers = (List<ContainerInitializer>)_context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+        MultiMap classMap = (MultiMap)_context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
         
         if (initializers != null)
         {
@@ -58,9 +63,12 @@ public class ContainerInitializerConfiguration  extends AbstractConfiguration
                         //add the class with the annotation
                         i.addApplicableTypeName(name);
                         //add the classes that inherit the annotation
-                        List<String> implementsOrExtends = (List<String>)classMap.getValues(name);
-                        if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
-                            addInheritedTypes(classMap, i, implementsOrExtends);
+                        if (classMap != null)
+                        {
+                            List<String> implementsOrExtends = (List<String>)classMap.getValues(name);
+                            if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
+                                addInheritedTypes(classMap, i, implementsOrExtends);
+                        }
                     }
                 }
 
@@ -75,29 +83,33 @@ public class ContainerInitializerConfiguration  extends AbstractConfiguration
                         {
                             //add the classes that implement or extend the class.
                             //TODO but not including the class itself?
-                            List<String> implementsOrExtends = (List<String>)classMap.getValues(c.getName());
-                            if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
-                                addInheritedTypes(classMap, i, implementsOrExtends);
+                            if (classMap != null)
+                            {
+                                List<String> implementsOrExtends = (List<String>)classMap.getValues(c.getName());
+                                if (implementsOrExtends != null && !implementsOrExtends.isEmpty())
+                                    addInheritedTypes(classMap, i, implementsOrExtends);
+                            }
                         }
                     }
                 }
+
                 //instantiate ServletContainerInitializers, call doStart
-                i.callStartup(context);
+                try
+                {
+                    i.callStartup(_context);
+                }
+                catch (Exception e)
+                {
+                    //OK, how do I throw an exception such that it really stops the startup sequence?
+                    e.printStackTrace();
+                }
             }
 
             //TODO Email from Jan Luehe 18 August: after all ServletContainerInitializers have been
             //called, need to check to see if there are any ServletRegistrations remaining
             //that are "preliminary" and fail the deployment if so.
-        }
-    }
-    
-    public void postConfigure(WebAppContext context) throws Exception
-    {
- 
-    }
-
-    public void deconfigure(WebAppContext context) throws Exception
-    {  
+        } 
+        
     }
 
     
@@ -114,5 +126,15 @@ public class ContainerInitializerConfiguration  extends AbstractConfiguration
                 addInheritedTypes (classMap, initializer, implementsOrExtends);
         }
     }
-   
+    
+    
+    /** 
+     * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
+     */
+    public void contextDestroyed(ServletContextEvent sce)
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
 }
