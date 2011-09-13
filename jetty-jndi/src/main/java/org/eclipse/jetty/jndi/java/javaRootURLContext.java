@@ -67,8 +67,7 @@ public class javaRootURLContext implements Context
         try
         {
             __javaNameParser = new javaNameParser();       
-            __nameRoot = new NamingContext();
-            __nameRoot.setNameParser(__javaNameParser);
+            __nameRoot = new NamingContext(null,null,null,__javaNameParser);
           
             StringRefAddr parserAddr = new StringRefAddr("parser", __javaNameParser.getClass().getName());
             
