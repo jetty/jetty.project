@@ -131,10 +131,13 @@ public class HashLoginService extends MappedLoginService implements UserListener
     protected void doStart() throws Exception
     {
         super.doStart();
+        
         if (_propertyUserStore == null)
         {
-            if(Log.isDebugEnabled())
-                Log.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " refreshInterval: " + _refreshInterval);
+            if(LOG.isDebugEnabled())
+            {
+                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " refreshInterval: " + _refreshInterval);
+            }
             _propertyUserStore = new PropertyUserStore();
             _propertyUserStore.setRefreshInterval(_refreshInterval);
             _propertyUserStore.setConfig(_config);
@@ -158,16 +161,16 @@ public class HashLoginService extends MappedLoginService implements UserListener
     /* ------------------------------------------------------------ */
     public void update(String userName, Credential credential, String[] roleArray)
     {
-        if (Log.isDebugEnabled())
-            Log.debug("update: " + userName + " Roles: " + roleArray.length);
+        if (LOG.isDebugEnabled())
+            LOG.debug("update: " + userName + " Roles: " + roleArray.length);
         putUser(userName,credential,roleArray);
     }
 
     /* ------------------------------------------------------------ */
     public void remove(String userName)
     {
-        if (Log.isDebugEnabled())
-            Log.debug("remove: " + userName);
+        if (LOG.isDebugEnabled())
+            LOG.debug("remove: " + userName);
         removeUser(userName);
     }
 }

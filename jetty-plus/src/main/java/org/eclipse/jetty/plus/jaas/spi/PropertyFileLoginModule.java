@@ -13,19 +13,18 @@
 
 package org.eclipse.jetty.plus.jaas.spi;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.ArrayList;
+import java.security.Principal;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
-import java.util.StringTokenizer;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
 import org.eclipse.jetty.http.security.Credential;
+import org.eclipse.jetty.security.PropertyUserStore;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -36,12 +35,14 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class PropertyFileLoginModule extends AbstractLoginModule
 {
+    public static final String DEFAULT_FILENAME = "realm.properties";
+
     private static final Logger LOG = Log.getLogger(PropertyFileLoginModule.class);
 
-    public static final String DEFAULT_FILENAME = "realm.properties";
-    public static final Map<String, Map<String, UserInfo>> fileMap = new HashMap<String, Map<String, UserInfo>>();
+    private static Map<String, PropertyUserStore> _propertyUserStores = new HashMap<String, PropertyUserStore>();
 
-    private String propertyFileName;
+    private int _refreshInterval = 0;
+    private String _filename = DEFAULT_FILENAME;
 
     /**
      * Read contents of the configured property file.
@@ -56,99 +57,61 @@ public class PropertyFileLoginModule extends AbstractLoginModule
     public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options)
     {
         super.initialize(subject,callbackHandler,sharedState,options);
-        loadProperties((String)options.get("file"));
+        setupPropertyUserStore(options);
     }
 
-    public void loadProperties(String filename)
+    private void setupPropertyUserStore(Map<String, ?> options)
     {
-        File propsFile;
+        if (_propertyUserStores.get(_filename) == null)
+        {
+            parseConfig(options);
 
-        if (filename == null)
-        {
-            propsFile = new File(System.getProperty("user.dir"),DEFAULT_FILENAME);
-            // look for a file called realm.properties in the current directory
-            // if that fails, look for a file called realm.properties in $jetty.home/etc
-            if (!propsFile.exists())
-                propsFile = new File(System.getProperty("jetty.home"),DEFAULT_FILENAME);
-        }
-        else
-        {
-            propsFile = new File(filename);
-        }
+            PropertyUserStore _propertyUserStore = new PropertyUserStore();
+            _propertyUserStore.setConfig(_filename);
+            _propertyUserStore.setRefreshInterval(_refreshInterval);
+            LOG.debug("setupPropertyUserStore: Starting new PropertyUserStore. PropertiesFile: " + _filename + " refreshInterval: " + _refreshInterval);
 
-        // give up, can't find a property file to load
-        if (!propsFile.exists())
-        {
-            LOG.warn("No property file found");
-            throw new IllegalStateException ("No property file specified in login module configuration file");
-        }
-
-        try
-        {
-            this.propertyFileName = propsFile.getCanonicalPath();
-            if (fileMap.get(propertyFileName) != null)
+            try
             {
-                if (Log.isDebugEnabled())
-                {
-                    Log.debug("Properties file " + propertyFileName + " already in cache, skipping load");
-                }
-                return;
+                _propertyUserStore.start();
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Exception while starting propertyUserStore: ",e);
             }
 
-            Map<String, UserInfo> userInfoMap = new HashMap<String, UserInfo>();
-            Properties props = new Properties();
-            props.load(new FileInputStream(propsFile));
-            Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
-            while (iter.hasNext())
-            {
-
-                Map.Entry<Object, Object> entry = iter.next();
-                String username = entry.getKey().toString().trim();
-                String credentials = entry.getValue().toString().trim();
-                String roles = null;
-                int c = credentials.indexOf(',');
-                if (c > 0)
-                {
-                    roles = credentials.substring(c + 1).trim();
-                    credentials = credentials.substring(0,c).trim();
-                }
-
-                if (username != null && username.length() > 0 && credentials != null && credentials.length() > 0)
-                {
-                    ArrayList<String> roleList = new ArrayList<String>();
-                    if (roles != null && roles.length() > 0)
-                    {
-                        StringTokenizer tok = new StringTokenizer(roles,", ");
-
-                        while (tok.hasMoreTokens())
-                            roleList.add(tok.nextToken());
-                    }
-
-                    userInfoMap.put(username,(new UserInfo(username,Credential.getCredential(credentials.toString()),roleList)));
-                }
-            }
-
-            fileMap.put(propertyFileName,userInfoMap);
+            _propertyUserStores.put(_filename,_propertyUserStore);
         }
-        catch (Exception e)
-        {
-            LOG.warn("Error loading properties from file", e);
-            throw new RuntimeException(e);
-        }
+    }
+
+    private void parseConfig(Map<String, ?> options)
+    {
+        _filename = (String)options.get("file") != null?(String)options.get("file"):DEFAULT_FILENAME;
+        String refreshIntervalString = (String)options.get("refreshInterval");
+        _refreshInterval = refreshIntervalString == null?_refreshInterval:Integer.parseInt(refreshIntervalString);
     }
 
     /**
      * Don't implement this as we want to pre-fetch all of the users.
      * 
-     * @param username
+     * @param userName
      * @throws Exception
      */
-    public UserInfo getUserInfo(String username) throws Exception
+    public UserInfo getUserInfo(String userName) throws Exception
     {
-        Map<?, ?> userInfoMap = (Map<?, ?>)fileMap.get(propertyFileName);
-        if (userInfoMap == null)
+        PropertyUserStore propertyUserStore = _propertyUserStores.get(_filename);
+        if (propertyUserStore == null)
+            throw new IllegalStateException("PropertyUserStore should never be null here!");
+        
+        UserIdentity userIdentity = propertyUserStore.getUserIdentity(userName);
+        if(userIdentity==null)
             return null;
-        return (UserInfo)userInfoMap.get(username);
+        
+        Set<Principal> principals = userIdentity.getSubject().getPrincipals();
+        String[] roles = principals.toArray(new String[principals.size()]);
+        Credential credential = (Credential)userIdentity.getSubject().getPrivateCredentials().iterator().next();
+        LOG.debug("Found: " + userName + " in PropertyUserStore");
+        return new UserInfo(userName, credential,Arrays.asList(roles));
     }
 
 }
