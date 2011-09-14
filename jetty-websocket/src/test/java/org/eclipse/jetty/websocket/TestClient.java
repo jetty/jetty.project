@@ -52,6 +52,8 @@ public class TestClient implements WebSocket.OnFrame
     
     public void onOpen(Connection connection)
     {
+        if (_verbose)
+            System.err.printf("%s#onHandshake %s %s\n",this.getClass().getSimpleName(),connection,connection.getClass().getSimpleName());
     }
 
     public void onClose(int closeCode, String message)
@@ -141,7 +143,7 @@ public class TestClient implements WebSocket.OnFrame
             byte op=(byte)(off==0?opcode:WebSocketConnectionD13.OP_CONTINUATION);
 
             if (_verbose)                
-                System.err.printf("%s#addFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
+                System.err.printf("%s#sendFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
 
             _connection.sendFrame(flags,op,data,off,len);
 
@@ -168,6 +170,7 @@ public class TestClient implements WebSocket.OnFrame
         System.err.println("  -p|--port PORT  (default 8080)");
         System.err.println("  -b|--binary");
         System.err.println("  -v|--verbose");
+        System.err.println("  -q|--quiet");
         System.err.println("  -c|--count n    (default 10)");
         System.err.println("  -s|--size n     (default 64)");
         System.err.println("  -f|--fragment n (default 4000) ");
@@ -226,6 +229,8 @@ public class TestClient implements WebSocket.OnFrame
         try
         {
             __start=System.currentTimeMillis();
+            protocol=protocol==null?"echo":protocol;
+            
             for (int i=0;i<clients;i++)
             {
                 client[i]=new TestClient(host,port,protocol==null?null:protocol,60000);
@@ -233,7 +238,7 @@ public class TestClient implements WebSocket.OnFrame
             }
 
             System.out.println("Jetty WebSocket PING "+host+":"+port+
-                    " ("+ new InetSocketAddress(host,port)+") "+clients+" clients");
+                    " ("+ new InetSocketAddress(host,port)+") "+clients+" clients "+protocol);
             
             
             for (int p=0;p<count;p++)
@@ -272,9 +277,11 @@ public class TestClient implements WebSocket.OnFrame
             
             long duration=System.currentTimeMillis()-__start;
             System.out.println("--- "+host+" websocket ping statistics using "+clients+" connection"+(clients>1?"s":"")+" ---");
-            System.out.println(__framesSent+" frames transmitted, "+__framesReceived+" received, "+
-                    __messagesSent+" messages transmitted, "+__messagesReceived+" received, "+
-                    "time "+duration+"ms "+ (1000L*__messagesReceived.get()/duration)+" req/s");
+            System.out.printf("%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n",
+                    __framesSent,__framesReceived.get(),
+                    __messagesSent,__messagesReceived.get(),
+                    duration,(1000L*__messagesReceived.get()/duration),
+                    1000.0D*__messagesReceived.get()*8*size/duration/1024/1024);
             System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n",__minDuration.get()/1000000.0,__messagesReceived.get()==0?0.0:(__totalTime.get()/__messagesReceived.get()/1000000.0),__maxDuration.get()/1000000.0);
             
             __clientFactory.stop();
