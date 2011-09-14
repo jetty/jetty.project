@@ -24,6 +24,7 @@ public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
     @BeforeClass
     public static void setUpOnce() throws Exception
     {
+        _scheme="https";
         _server = serverAndClientCreator.createServer();
         _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
         _port = _server.getConnectors()[0].getLocalPort();

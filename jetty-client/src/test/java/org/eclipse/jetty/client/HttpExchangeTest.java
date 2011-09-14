@@ -366,6 +366,7 @@ public class HttpExchangeTest
         System.err.println(throwable.get());
         assertTrue(throwable.get().toString().indexOf("close")>=0);
         assertEquals(HttpExchange.STATUS_EXCEPTED, status);
+        _httpClient.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -554,7 +555,7 @@ public class HttpExchangeTest
         assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
         
         HttpFields headers = httpExchange.getResponseFields();
-        assertTrue("Response contains Allow header", headers.containsKey("Allow"));
+        assertTrue("Response does not contain Allow header", headers.containsKey("Allow"));
         
         String allow = headers.getStringField("Allow");
         String expectedMethods[] =
