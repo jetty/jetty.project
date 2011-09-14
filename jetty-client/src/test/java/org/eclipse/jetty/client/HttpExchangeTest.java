@@ -544,7 +544,7 @@ public class HttpExchangeTest
     public void testOptionsWithExchange() throws Exception
     {
         ContentExchange httpExchange = new ContentExchange(true);
-        httpExchange.setURI(getBaseURI());
+        httpExchange.setURL(getBaseURI().toASCIIString());
         httpExchange.setRequestURI("*");
         httpExchange.setMethod(HttpMethods.OPTIONS);
     //    httpExchange.setRequestHeader("Connection","close");
@@ -555,8 +555,10 @@ public class HttpExchangeTest
         assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
         
         HttpFields headers = httpExchange.getResponseFields();
-        assertTrue("Response does not contain Allow header", headers.containsKey("Allow"));
+        HttpAsserts.assertContainsHeaderKey("Content-Length", headers);
+        assertEquals("Content-Length header value", 0, headers.getLongField("Content-Length"));
         
+        HttpAsserts.assertContainsHeaderKey("Allow",headers);
         String allow = headers.getStringField("Allow");
         String expectedMethods[] =
         { "GET", "HEAD", "POST", "PUT", "DELETE", "MOVE", "OPTIONS", "TRACE" };
@@ -564,9 +566,6 @@ public class HttpExchangeTest
         {
             assertThat(allow,containsString(expectedMethod));
         }
-
-        assertTrue("Response contains Content-Length header", headers.containsKey("Content-Length"));
-        assertEquals("Content-Length header value", 0, headers.getLongField("Content-Length"));
     }
 
     /* ------------------------------------------------------------ */
