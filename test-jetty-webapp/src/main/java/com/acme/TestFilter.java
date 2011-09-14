@@ -73,7 +73,7 @@ public class TestFilter implements Filter
         String to = request.getServerName();
         String path=((HttpServletRequest)request).getServletPath();
 
-        if (!_remote && !_allowed.contains(path) && (
+        if (!"/remote.html".equals(path) && !_remote && !_allowed.contains(path) && (
             !from.equals("localhost") && !from.startsWith("127.") && from.indexOf(":1")<0 ||
             !to.equals("localhost")&&!to.startsWith("127.0.0.") && to.indexOf(":1")<0))
         {
