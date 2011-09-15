@@ -572,7 +572,7 @@ public class HttpExchange
         if (uri.isOpaque())
             throw new IllegalArgumentException("Opaque URI: "+uri);
         
-        LOG.info("URI = {}", uri.toASCIIString());
+        LOG.debug("URI = {}", uri.toASCIIString());
 
         String scheme = uri.getScheme();
         int port = uri.getPort();
