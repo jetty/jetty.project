@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
@@ -627,7 +628,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         public void onFrame(final byte flags, final byte opcode, final Buffer buffer)
         {
             boolean lastFrame = isLastFrame(flags);
-
+            
             synchronized(WebSocketConnectionD13.this)
             {
                 // Ignore incoming after a close
@@ -827,19 +828,21 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         return;
                 }
             }
+            catch(ThreadDeath th)
+            {
+                throw th;
+            }
             catch(Utf8Appendable.NotUtf8Exception notUtf8)
             {
                 LOG.warn("{} for {}",notUtf8,_endp);
                 LOG.debug(notUtf8);
                 errorClose(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,"Invalid UTF-8");
             }
-            catch(ThreadDeath th)
+            catch(Throwable probablyNotUtf8)
             {
-                throw th;
-            }
-            catch(Throwable th)
-            {
-                LOG.warn(th);
+                LOG.warn("{} for {}",probablyNotUtf8,_endp);
+                LOG.debug(probablyNotUtf8);
+                errorClose(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,"Invalid Payload: "+probablyNotUtf8);
             }
         }
 

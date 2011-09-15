@@ -53,13 +53,13 @@ public class Utf8StringBuffer extends Utf8Appendable
     public void reset()
     {
         _buffer.setLength(0);
-        _more=0;
-        _bits=0;
+        _expectedContinuationBytes=0;
+        _codePoint=0;
     }
     
     public StringBuffer getStringBuffer()
     {
-        if (_more!=0)
+        if (_expectedContinuationBytes!=0)
             throw new NotUtf8Exception();
         return _buffer;
     }
@@ -67,7 +67,7 @@ public class Utf8StringBuffer extends Utf8Appendable
     @Override
     public String toString()
     {
-        if (_more!=0)
+        if (_expectedContinuationBytes!=0)
             throw new NotUtf8Exception();
         return _buffer.toString();
     }

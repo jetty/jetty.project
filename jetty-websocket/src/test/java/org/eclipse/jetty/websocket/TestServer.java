@@ -107,7 +107,7 @@ public class TestServer extends Server
         public void onOpen(Connection connection)
         {
             if (_verbose)
-                System.err.printf("%s#onOpen %s\n",this.getClass().getSimpleName(),connection);
+                System.err.printf("%s#onOpen %s %s\n",this.getClass().getSimpleName(),connection,connection.getProtocol());
         }
         
         public void onHandshake(FrameConnection connection)

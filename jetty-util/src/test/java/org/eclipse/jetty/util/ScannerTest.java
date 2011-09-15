@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.Scanner.Notification;
 import org.junit.AfterClass;
@@ -25,10 +27,8 @@ public class ScannerTest
     @BeforeClass
     public static void setUpBeforeClass() throws Exception
     {
-        _directory = File.createTempFile("scan","");
-        _directory.delete();
-        _directory.mkdir();
-        _directory.deleteOnExit();
+        _directory = MavenTestingUtils.getTargetTestingDir(ScannerTest.class.getSimpleName());
+        FS.ensureEmpty(_directory);
 
         _scanner = new Scanner();
         _scanner.addScanDir(_directory);
@@ -88,7 +88,7 @@ public class ScannerTest
     public void testAddedChangeRemove() throws Exception
     {
         // TODO needs to be further investigated
-        Assume.assumeTrue(!OS.IS_WINDOWS && !OS.IS_OSX);
+        Assume.assumeTrue(!OS.IS_WINDOWS);
 
         touch("a0");
 
@@ -96,7 +96,7 @@ public class ScannerTest
         _scanner.scan();
         _scanner.scan();
         Event event = _queue.poll();
-        Assert.assertTrue(event!=null);
+        Assert.assertNotNull("Event should not be null", event);
         Assert.assertEquals(_directory+"/a0",event._filename);
         Assert.assertEquals(Notification.ADDED,event._notification);
 
@@ -197,7 +197,7 @@ public class ScannerTest
     public void testSizeChange() throws Exception
     {
         // TODO needs to be further investigated
-        Assume.assumeTrue(!OS.IS_WINDOWS && !OS.IS_OSX);
+        Assume.assumeTrue(!OS.IS_WINDOWS);
 
         touch("tsc0");
         _scanner.scan();

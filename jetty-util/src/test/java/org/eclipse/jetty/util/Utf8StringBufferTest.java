@@ -48,9 +48,9 @@ public class Utf8StringBufferTest
             buffer.toString();
             assertTrue(false);
         }
-        catch(IllegalStateException e)
+        catch(Utf8Appendable.NotUtf8Exception e)
         {
-            assertTrue(e.toString().indexOf("!UTF-8")>=0);
+            assertTrue(true);
         }
     }
     
@@ -70,11 +70,11 @@ public class Utf8StringBufferTest
                 buffer.append(bytes[i]);
                 assertTrue(false);
         }
-        catch(IllegalStateException e)
+        catch(Utf8Appendable.NotUtf8Exception e)
         {
             assertTrue(e.toString().indexOf("!UTF-8")>=0);
         }
-        assertEquals("abc?",buffer.toString());
+        assertEquals("abc\ufffd",buffer.toString());
     }
     
     @Test 
