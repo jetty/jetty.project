@@ -14,9 +14,7 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -34,7 +32,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
@@ -45,8 +42,6 @@ import org.junit.Test;
  */
 public abstract class AbstractHttpExchangeCancelTest
 {
-    private static final Logger LOG = Log.getLogger(AbstractHttpExchangeCancelTest.class);
-
     private Server server;
     private Connector connector;
 

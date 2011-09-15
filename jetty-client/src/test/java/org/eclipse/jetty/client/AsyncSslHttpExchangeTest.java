@@ -13,19 +13,20 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.client.helperClasses.AsyncSslServerAndClientCreator;
+import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
+import org.junit.BeforeClass;
+
 public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
-    @Override
-    public void setUp() throws Exception
+    private static ServerAndClientCreator serverAndClientCreator = new AsyncSslServerAndClientCreator();
+    
+    @BeforeClass
+    public static void setUpOnce() throws Exception
     {
         _scheme="https";
-        startServer();
-        _httpClient=new HttpClient();
-        _httpClient.setIdleTimeout(2000);
-        _httpClient.setTimeout(2500);
-        _httpClient.setConnectTimeout(1000);
-        _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        _httpClient.setMaxConnectionsPerAddress(2);
-        _httpClient.start();
+        _server = serverAndClientCreator.createServer();
+        _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
+        _port = _server.getConnectors()[0].getLocalPort();
     }
 }

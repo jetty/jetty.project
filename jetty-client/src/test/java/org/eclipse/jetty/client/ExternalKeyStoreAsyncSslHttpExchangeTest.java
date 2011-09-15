@@ -13,28 +13,22 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.FileInputStream;
-
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.client.helperClasses.ExternalKeyStoreAsyncSslServerAndClientCreator;
+import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
-    @Override
-    public void setUp() throws Exception
+    private static ServerAndClientCreator serverAndClientCreator = new ExternalKeyStoreAsyncSslServerAndClientCreator();
+    
+    @BeforeClass
+    public static void setUpOnce() throws Exception
     {
-        _scheme = "https";
-        startServer();
-        _httpClient = new HttpClient();
-        _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        _httpClient.setMaxConnectionsPerAddress(2);
-
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-
-        _httpClient.setKeyStoreInputStream(new FileInputStream(keystore));
-        _httpClient.setKeyStorePassword("storepwd");
-        _httpClient.setKeyManagerPassword("keypwd");
-        _httpClient.start();
+        _scheme="https";
+        _server = serverAndClientCreator.createServer();
+        _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
+        _port = _server.getConnectors()[0].getLocalPort();
     }
 
     @Override
