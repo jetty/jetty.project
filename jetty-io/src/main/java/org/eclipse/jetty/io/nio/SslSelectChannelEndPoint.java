@@ -147,6 +147,16 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
     /* ------------------------------------------------------------ */
     /**
+     * @return True if the endpoint has produced/consumed bytes itself (non application data).
+     */
+    public boolean isProgressing()
+    {
+        SSLEngineResult result = _result;
+        return result!=null && (result.bytesConsumed()>0 || result.bytesProduced()>0);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @return True if SSL re-negotiation is allowed (default false)
      */
     public boolean isAllowRenegotiate()

@@ -90,6 +90,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
         scheduleIdle();
     }
+    
     /* ------------------------------------------------------------ */
     public SelectionKey getSelectionKey()
     {
@@ -260,6 +261,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _connection.idleExpired();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if the endpoint has produced/consumed bytes itself (non application data).
+     */
+    public boolean isProgressing()
+    {
+        return false;
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      */

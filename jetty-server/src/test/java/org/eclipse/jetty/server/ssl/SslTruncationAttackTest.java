@@ -234,8 +234,8 @@ public class SslTruncationAttackTest
         // Sleep for a while to detect eventual spin looping
         TimeUnit.SECONDS.sleep(1);
 
+        Assert.assertTrue("endpoint closed", endPointClosed.get());
         Assert.assertEquals("handle() invocations", 1, handleCount.get());
-        Assert.assertTrue("endpoint not closed", endPointClosed.get());
     }
 
 
