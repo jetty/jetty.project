@@ -252,6 +252,21 @@
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>unpack-javadoc</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <!-- Use already generated javadoc, don't bother regenerating again -->
+              <includeGroupIds>org.eclipse.jetty.aggregate</includeGroupIds>
+              <includeArtifactIds>jetty-all</includeArtifactIds>
+              <includeClassifier>javadoc</includeClassifier>
+              <excludeTransitive>true</excludeTransitive>
+              <outputDirectory>${assembly-directory}/javadoc</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -382,6 +397,13 @@
       <groupId>org.glassfish.web</groupId>
       <artifactId>jsp-impl</artifactId>
       <version>${central-jsp-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.aggregate</groupId>
+      <artifactId>jetty-all</artifactId>
+      <classifier>javadoc</classifier>
+      <type>jar</type>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>
