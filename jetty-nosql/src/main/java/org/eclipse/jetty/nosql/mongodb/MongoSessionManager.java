@@ -428,7 +428,6 @@ public class MongoSessionManager extends NoSqlSessionManager
                 return o;
         }
 
-        bout.reset();
         out.reset();
         out.writeUnshared(value);
         out.flush();

@@ -49,6 +49,44 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
 	
     private boolean deployedInPlace = false;
     private URL resourceBaseAsURL = null;
+    
+    protected static Boolean ASYNCH_START_IN_PROGRESS;
+    protected static Throwable ASYNCH_START_FAILURE = null;
+    
+    /**
+     * If the start is asynch we do it in a different thread and return immediately.
+     */
+    @Override
+    public synchronized void start() {
+    	if (ASYNCH_START_IN_PROGRESS == null && "true".equals(super.config.getInitParameter("asyncStart"))) {
+    		final ClassLoader webappCl = Thread.currentThread().getContextClassLoader();
+    		Thread th = new Thread() {
+    			public void run() {
+    				Thread.currentThread().setContextClassLoader(webappCl);
+    				System.out.println("Jetty-Nested: Starting equinox asynchroneously.");
+    				FrameworkLauncherExtended.this.start();
+    				System.out.println("Jetty-Nested: Finished starting equinox asynchroneously.");
+    			}
+    		};
+    		ASYNCH_START_IN_PROGRESS = true;
+    		try {
+    			th.start();
+    		} catch (Throwable t) {
+    			ASYNCH_START_FAILURE = t;
+    			if (t instanceof RuntimeException) {
+    				throw (RuntimeException)t;
+    			} else {
+    				throw new RuntimeException("Equinox failed to start", t);
+    			}
+    		} finally {
+    			ASYNCH_START_IN_PROGRESS = false;
+    		}
+    	} else {
+			System.out.println("Jetty-Nested: Starting equinox synchroneously.");
+    		super.start();
+			System.out.println("Jetty-Nested: Finished starting equinox synchroneously.");
+    	}
+    }
 
     /**
      * try to find the resource base for this webapp by looking for the launcher initialization file.
@@ -248,7 +286,10 @@ public class FrameworkLauncherExtended extends FrameworkLauncher
             String logback = System.getProperty("logback.configurationFile");
             if (logback == null)
             {
-            	File etcLogback = new File(jettyHome,"etc/logback.xml");
+            	File etcLogback = new File(jettyHome,"etc/logback-nested.xml");
+            	if (!etcLogback.exists()) {
+            		etcLogback = new File(jettyHome,"etc/logback.xml");
+            	}
             	if (etcLogback.exists())
             	{
             		System.setProperty("logback.configurationFile",etcLogback.getAbsolutePath());

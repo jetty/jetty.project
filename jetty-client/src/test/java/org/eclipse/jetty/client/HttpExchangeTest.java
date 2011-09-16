@@ -13,14 +13,9 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.junit.Assert.*;
+import static org.junit.matchers.JUnitMatchers.*;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,13 +25,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import org.eclipse.jetty.client.helperClasses.HttpServerAndClientCreator;
+import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
@@ -44,17 +36,11 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.Stress;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.junit.After;
-import org.junit.Before;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /* ------------------------------------------------------------ */
@@ -63,37 +49,42 @@ import org.junit.Test;
  */
 public class HttpExchangeTest
 {
-    private static final Logger LOG = Log.getLogger(HttpExchangeTest.class);
-
-    protected int _maxConnectionsPerAddress = 2;
-    protected String _scheme = "http";
-    protected Server _server;
-    protected int _port;
-    protected HttpClient _httpClient;
-    protected Connector _connector;
-    protected AtomicInteger _count = new AtomicInteger();
-
-    /* ------------------------------------------------------------ */
-    @Before
-    public void setUp() throws Exception
+    protected static int _maxConnectionsPerAddress = 2;
+    protected static String _scheme = "http";
+    protected static Server _server;
+    protected static int _port;
+    protected static HttpClient _httpClient;
+    protected static AtomicInteger _count = new AtomicInteger();
+    protected static ServerAndClientCreator serverAndClientCreator = new HttpServerAndClientCreator();
+    
+    protected static URI getBaseURI()
     {
-        startServer();
-        _httpClient=new HttpClient();
-        _httpClient.setIdleTimeout(3000);
-        _httpClient.setTimeout(3500);
-        _httpClient.setConnectTimeout(2000);
-        _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        _httpClient.setMaxConnectionsPerAddress(_maxConnectionsPerAddress);
-        _httpClient.start();
+        return URI.create(_scheme + "://localhost:" + _port + "/");
     }
 
     /* ------------------------------------------------------------ */
-    @After
-    public void tearDown() throws Exception
+    @BeforeClass
+    public static void setUpOnce() throws Exception
+    {
+        _scheme = "http";
+        _server = serverAndClientCreator.createServer();
+        _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
+        _port = _server.getConnectors()[0].getLocalPort();
+    }
+
+    /* ------------------------------------------------------------ */
+    @AfterClass
+    public static void tearDownOnce() throws Exception
     {
         _httpClient.stop();
-        Thread.sleep(500);
-        stopServer();
+        long startTime = System.currentTimeMillis();
+        while (!_httpClient.getState().equals(AbstractLifeCycle.STOPPED))
+        {
+            if (System.currentTimeMillis() - startTime > 1000)
+                break;
+            Thread.sleep(5);
+        }
+        _server.stop();
     }
 
     /* ------------------------------------------------------------ */
@@ -110,7 +101,7 @@ public class HttpExchangeTest
     {
         sender(1,false);
         sender(1,true);
-        
+
         if (Stress.isEnabled())
         {
             sender(100,false);
@@ -128,44 +119,44 @@ public class HttpExchangeTest
     /* ------------------------------------------------------------ */
     /**
      * Test sending data through the exchange.
-     *
+     * 
      * @throws IOException
      */
-    public void sender(final int nb,final boolean close) throws Exception
+    public void sender(final int nb, final boolean close) throws Exception
     {
         _count.set(0);
-        final CountDownLatch complete=new CountDownLatch(nb);
-        final CountDownLatch latch=new CountDownLatch(nb);
+        final CountDownLatch complete = new CountDownLatch(nb);
+        final CountDownLatch latch = new CountDownLatch(nb);
         HttpExchange[] httpExchange = new HttpExchange[nb];
-        long start=System.currentTimeMillis();
-        for (int i=0; i<nb; i++)
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < nb; i++)
         {
-            final int n=i;
+            final int n = i;
 
-            httpExchange[n]=new HttpExchange()
+            httpExchange[n] = new HttpExchange()
             {
-                String result="pending";
-                int len=0;
+                String result = "pending";
+                int len = 0;
 
                 /* ------------------------------------------------------------ */
                 @Override
                 protected void onRequestCommitted()
                 {
-                    result="committed";
+                    result = "committed";
                 }
 
                 /* ------------------------------------------------------------ */
                 @Override
                 protected void onRequestComplete() throws IOException
                 {
-                    result="sent";
+                    result = "sent";
                 }
 
                 @Override
                 /* ------------------------------------------------------------ */
                 protected void onResponseStatus(Buffer version, int status, Buffer reason)
                 {
-                    result="status";
+                    result = "status";
                 }
 
                 /* ------------------------------------------------------------ */
@@ -178,7 +169,7 @@ public class HttpExchangeTest
                 @Override
                 protected void onResponseHeaderComplete() throws IOException
                 {
-                    result="content";
+                    result = "content";
                     super.onResponseHeaderComplete();
                 }
 
@@ -186,19 +177,19 @@ public class HttpExchangeTest
                 @Override
                 protected void onResponseContent(Buffer content)
                 {
-                    len+=content.length();
+                    len += content.length();
                 }
 
                 /* ------------------------------------------------------------ */
                 @Override
                 protected void onResponseComplete()
                 {
-                    result="complete";
-                    if (len==2009)
+                    result = "complete";
+                    if (len == 2009)
                         latch.countDown();
                     else
                     {
-                        System.err.println(n+" ONLY "+len);
+                        System.err.println(n + " ONLY " + len);
                     }
                     complete.countDown();
                 }
@@ -208,8 +199,8 @@ public class HttpExchangeTest
                 protected void onConnectionFailed(Throwable ex)
                 {
                     complete.countDown();
-                    result="failed";
-                    System.err.println(n+" FAILED "+ex);
+                    result = "failed";
+                    System.err.println(n + " FAILED " + ex);
                     super.onConnectionFailed(ex);
                 }
 
@@ -218,8 +209,8 @@ public class HttpExchangeTest
                 protected void onException(Throwable ex)
                 {
                     complete.countDown();
-                    result="excepted";
-                    System.err.println(n+" EXCEPTED "+ex);
+                    result = "excepted";
+                    System.err.println(n + " EXCEPTED " + ex);
                     super.onException(ex);
                 }
 
@@ -228,8 +219,8 @@ public class HttpExchangeTest
                 protected void onExpire()
                 {
                     complete.countDown();
-                    result="expired";
-                    System.err.println(n+" EXPIRED "+len);
+                    result = "expired";
+                    System.err.println(n + " EXPIRED " + len);
                     super.onExpire();
                 }
 
@@ -241,7 +232,7 @@ public class HttpExchangeTest
                 }
             };
 
-            httpExchange[n].setURL(_scheme+"://localhost:"+_port+"/"+n);
+            httpExchange[n].setURI(getBaseURI().resolve("/" + n));
             httpExchange[n].addRequestHeader("arbitrary","value");
             if (close)
                 httpExchange[n].setRequestHeader("Connection","close");
@@ -269,7 +260,7 @@ public class HttpExchangeTest
         for (int i=0;i<20;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
-            httpExchange.setURI(new URI(_scheme, null, "localhost", _port, null, null, null));
+            httpExchange.setURI(getBaseURI());
             httpExchange.setMethod(HttpMethods.POST);
             httpExchange.setRequestContent(new ByteArrayBuffer("<hello />"));
             _httpClient.send(httpExchange);
@@ -288,12 +279,14 @@ public class HttpExchangeTest
         for (int i=0;i<10;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
-            httpExchange.setURI(new URI(_scheme, null, "localhost", _port, "/", "i="+i, null));
+            URI uri = getBaseURI().resolve("?i=" + i);
+            httpExchange.setURI(uri);
             httpExchange.setMethod(HttpMethods.GET);
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
             //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
             String result=httpExchange.getResponseContent();
+            assertNotNull("Should have received response content", result);
             assertEquals("i="+i,0,result.indexOf("<hello>"));
             assertEquals("i="+i,result.length()-10,result.indexOf("</hello>"));
             assertEquals(HttpExchange.STATUS_COMPLETED, status);
@@ -308,17 +301,16 @@ public class HttpExchangeTest
         for (int i=0;i<10;i++)
         {
             ContentExchange httpExchange=new ContentExchange();
-            httpExchange.setURL(_scheme+"://localhost:"+_port+"/?i="+i);
+            URI uri = getBaseURI().resolve("?i=" + i);
+            httpExchange.setURI(uri);
             httpExchange.setMethod(HttpMethods.GET);
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
             
             assertNotNull(httpExchange.getLocalAddress());
             
-            //System.out.println("Local Address: " + httpExchange.getLocalAddress());
-            
-            //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
             String result=httpExchange.getResponseContent();
+            assertNotNull("Should have received response content", result);
             assertEquals("i="+i,0,result.indexOf("<hello>"));
             assertEquals("i="+i,result.length()-10,result.indexOf("</hello>"));
             assertEquals(HttpExchange.STATUS_COMPLETED, status);
@@ -355,7 +347,7 @@ public class HttpExchangeTest
                 throwable.set(x);
             }
         };
-        httpExchange.setURL(_scheme+"://localhost:"+_port+"/");
+        httpExchange.setURI(getBaseURI());
         httpExchange.setMethod("SLEEP");
         _httpClient.send(httpExchange);
         new Thread()
@@ -374,6 +366,7 @@ public class HttpExchangeTest
         System.err.println(throwable.get());
         assertTrue(throwable.get().toString().indexOf("close")>=0);
         assertEquals(HttpExchange.STATUS_EXCEPTED, status);
+        _httpClient.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -394,7 +387,7 @@ public class HttpExchangeTest
             niobuf.put(bytes);
         }
         
-        httpExchange.setURL(_scheme+"://localhost:"+_port+"/");
+        httpExchange.setURI(getBaseURI());
         httpExchange.setMethod(HttpMethods.POST);
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(babuf);
@@ -407,7 +400,7 @@ public class HttpExchangeTest
         assertEquals(babuf.length(),result.length());
 
         httpExchange.reset();
-        httpExchange.setURL(_scheme+"://localhost:"+_port+"/");
+        httpExchange.setURI(getBaseURI());
         httpExchange.setMethod(HttpMethods.POST);
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(niobuf);
@@ -426,7 +419,7 @@ public class HttpExchangeTest
         {
             
         };
-        httpExchange.setURL(_scheme+"://localhost:"+_port);
+        httpExchange.setURI(getBaseURI());
         httpExchange.setMethod(HttpMethods.POST);
 
         final String data="012345678901234567890123456789012345678901234567890123456789";
@@ -447,7 +440,7 @@ public class HttpExchangeTest
             @Override
             public int read(byte[] b, int off, int len) throws IOException
             {
-                if (_index>=data.length())
+                if (_index >= data.length())
                     return -1;
 
                 try
@@ -458,28 +451,28 @@ public class HttpExchangeTest
                 {
                     e.printStackTrace();
                 }
-                
-                int l=0;
 
-                while (l<5 && _index<data.length() && l<len)
-                    b[off+l++]=(byte)data.charAt(_index++);
+                int l = 0;
+
+                while (l < 5 && _index < data.length() && l < len)
+                    b[off + l++] = (byte)data.charAt(_index++);
                 return l;
             }
 
         };
-        
+
         httpExchange.setRequestContentSource(content);
-        //httpExchange.setRequestContent(new ByteArrayBuffer(data));
+        // httpExchange.setRequestContent(new ByteArrayBuffer(data));
 
         _httpClient.send(httpExchange);
 
         int status = httpExchange.waitForDone();
-        //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
-        String result=httpExchange.getResponseContent();
-        assertEquals(HttpExchange.STATUS_COMPLETED, status);
+        // httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
+        String result = httpExchange.getResponseContent();
+        assertEquals(HttpExchange.STATUS_COMPLETED,status);
         assertEquals(data,result);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Test
     public void testProxy() throws Exception
@@ -499,6 +492,7 @@ public class HttpExchangeTest
             int status = httpExchange.waitForDone();
             //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
             String result=httpExchange.getResponseContent();
+            assertNotNull("Should have received response content", result);
             result=result.trim();
             assertEquals(HttpExchange.STATUS_COMPLETED, status);
             assertTrue(result.startsWith("Proxy request: http://jetty.eclipse.org:8080/jetty-6"));
@@ -515,36 +509,42 @@ public class HttpExchangeTest
     @Test
     public void testReserveConnections () throws Exception
     {
-       final HttpDestination destination = _httpClient.getDestination (new Address("localhost", _port), _scheme.equalsIgnoreCase("https"));
-       final org.eclipse.jetty.client.HttpConnection[] connections = new org.eclipse.jetty.client.HttpConnection[_maxConnectionsPerAddress];
-       for (int i=0; i < _maxConnectionsPerAddress; i++)
-       {
-           connections[i] = destination.reserveConnection(200);
-           assertNotNull(connections[i]);
-           HttpExchange ex = new ContentExchange();
-           ex.setURL(_scheme+"://localhost:"+_port+"/?i="+i);
-           ex.setMethod(HttpMethods.GET);
-           connections[i].send(ex);
-       }
+        _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
+        final HttpDestination destination = _httpClient.getDestination(new Address("localhost",_port),_scheme.equalsIgnoreCase("https"));
+        final org.eclipse.jetty.client.HttpConnection[] connections = new org.eclipse.jetty.client.HttpConnection[_maxConnectionsPerAddress];
+        for (int i = 0; i < _maxConnectionsPerAddress; i++)
+        {
+            connections[i] = destination.reserveConnection(200);
+            assertNotNull(connections[i]);
+            HttpExchange ex = new ContentExchange();
+            ex.setURI(getBaseURI().resolve("?i=" + i));
+            ex.setMethod(HttpMethods.GET);
+            connections[i].send(ex);
+        }
 
-       //try to get a connection, and only wait 500ms, as we have
-       //already reserved the max, should return null
-       Connection c = destination.reserveConnection(500);
-       assertNull(c);
+        // try to get a connection, and only wait 500ms, as we have
+        // already reserved the max, should return null
+        Connection c = destination.reserveConnection(500);
+        assertNull(c);
 
-       //unreserve first connection
-       destination.returnConnection(connections[0], false);
+        // unreserve first connection
+        destination.returnConnection(connections[0],false);
 
-       //reserving one should now work
-       c = destination.reserveConnection(500);
-       assertNotNull(c);
+        // reserving one should now work
+        c = destination.reserveConnection(500);
+        assertNotNull(c);
+        
+        // release connections
+        for (HttpConnection httpConnection : connections){
+            destination.returnConnection(httpConnection,false);
+        }
     }
     
     @Test
     public void testOptionsWithExchange() throws Exception
     {
         ContentExchange httpExchange = new ContentExchange(true);
-        httpExchange.setURL(_scheme+"://localhost:"+_port);
+        httpExchange.setURL(getBaseURI().toASCIIString());
         httpExchange.setRequestURI("*");
         httpExchange.setMethod(HttpMethods.OPTIONS);
     //    httpExchange.setRequestHeader("Connection","close");
@@ -555,8 +555,10 @@ public class HttpExchangeTest
         assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
         
         HttpFields headers = httpExchange.getResponseFields();
-        assertTrue("Response contains Allow header", headers.containsKey("Allow"));
+        HttpAsserts.assertContainsHeaderKey("Content-Length", headers);
+        assertEquals("Content-Length header value", 0, headers.getLongField("Content-Length"));
         
+        HttpAsserts.assertContainsHeaderKey("Allow",headers);
         String allow = headers.getStringField("Allow");
         String expectedMethods[] =
         { "GET", "HEAD", "POST", "PUT", "DELETE", "MOVE", "OPTIONS", "TRACE" };
@@ -564,9 +566,6 @@ public class HttpExchangeTest
         {
             assertThat(allow,containsString(expectedMethod));
         }
-
-        assertTrue("Response contains Content-Length header", headers.containsKey("Content-Length"));
-        assertEquals("Content-Length header value", 0, headers.getLongField("Content-Length"));
     }
 
     /* ------------------------------------------------------------ */
@@ -574,115 +573,20 @@ public class HttpExchangeTest
     {
         try
         {
-            byte[] buffer=new byte[1024];
+            byte[] buffer = new byte[1024];
             int len;
-            while ((len=in.read(buffer))>=0)
+            while ((len = in.read(buffer)) >= 0)
             {
                 out.write(buffer,0,len);
             }
         }
         catch (EofException e)
         {
-            System.err.println("HttpExchangeTest#copyStream: "+e);
+            System.err.println("HttpExchangeTest#copyStream: " + e);
         }
         catch (IOException e)
         {
             e.printStackTrace();
         }
     }
-
-    /* ------------------------------------------------------------ */
-    protected void newServer() throws Exception
-    {
-        _server=new Server();
-        _server.setGracefulShutdown(500);
-        _connector=new SelectChannelConnector();
-        
-        _connector.setMaxIdleTime(3000000);
-
-        _connector.setPort(0);
-        _server.setConnectors(new Connector[] { _connector });
-    }
-
-    /* ------------------------------------------------------------ */
-    protected void startServer() throws Exception
-    {
-        newServer();
-        _server.setHandler(new AbstractHandler()
-        {
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                int i=0;
-                try
-                {
-                    baseRequest.setHandled(true);
-                    response.setStatus(200);
-                    _count.incrementAndGet();
-
-                    if (request.getServerName().equals("jetty.eclipse.org"))
-                    {
-                        response.getOutputStream().println("Proxy request: "+request.getRequestURL());
-                        response.getOutputStream().println(request.getHeader(HttpHeaders.PROXY_AUTHORIZATION));
-                    }
-                    else if (request.getMethod().equalsIgnoreCase("GET"))
-                    {
-                        response.getOutputStream().println("<hello>");
-                        for (; i<100; i++)
-                        {
-                            response.getOutputStream().println("  <world>"+i+"</world");
-                            if (i%20==0)
-                                response.getOutputStream().flush();
-                        }
-                        response.getOutputStream().println("</hello>");
-                    }
-                    else if (request.getMethod().equalsIgnoreCase("OPTIONS"))
-                    {
-                        if ("*".equals(target))
-                        {
-                            response.setContentLength(0);
-                            response.setHeader("Allow","GET,HEAD,POST,PUT,DELETE,MOVE,OPTIONS,TRACE");
-                        }
-                    }
-                    else if (request.getMethod().equalsIgnoreCase("SLEEP"))
-                    {
-                        Thread.sleep(10000);
-                    }
-                    else
-                    {
-                        response.setContentType(request.getContentType());
-                        int size=request.getContentLength();
-                        ByteArrayOutputStream bout = new ByteArrayOutputStream(size>0?size:32768);
-                        IO.copy(request.getInputStream(),bout);
-                        response.getOutputStream().write(bout.toByteArray());
-                    }
-                }
-                catch(InterruptedException e)
-                {
-                    LOG.debug(e);
-                }
-                catch(IOException e)
-                {
-                    e.printStackTrace();
-                    throw e;
-                }
-                catch(Throwable e)
-                {
-                    e.printStackTrace();
-                    throw new ServletException(e);
-                }
-                finally
-                {
-                }
-            }
-        });
-        _server.start();
-        _port=_connector.getLocalPort();
-    }
-
-    /* ------------------------------------------------------------ */
-    private void stopServer() throws Exception
-    {
-        _server.stop();
-    }
-
 }
