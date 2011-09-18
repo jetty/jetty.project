@@ -327,7 +327,7 @@ public abstract class HttpConnection  extends AbstractConnection
         }
 
         if (_in == null)
-            _in = new HttpInput(((HttpParser)_parser),_connector.getMaxIdleTime());
+            _in = new HttpInput(HttpConnection.this);
         return _in;
     }
 
@@ -672,6 +672,16 @@ public abstract class HttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
+    public int getMaxIdleTime()
+    {
+        if (_endp.getMaxIdleTime()>0)
+            return _endp.getMaxIdleTime();
+        if (_connector.isLowResources())
+            return _connector.getLowResourceMaxIdleTime();
+        return _connector.getMaxIdleTime();
+    }
+
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class RequestHandler extends HttpParser.EventHandler
@@ -960,8 +970,7 @@ public abstract class HttpConnection  extends AbstractConnection
     {
         Output()
         {
-            super((AbstractGenerator)HttpConnection.this._generator,
-                  _connector.isLowResources()?_connector.getLowResourceMaxIdleTime():_connector.getMaxIdleTime());
+            super(HttpConnection.this);
         }
 
         /* ------------------------------------------------------------ */
