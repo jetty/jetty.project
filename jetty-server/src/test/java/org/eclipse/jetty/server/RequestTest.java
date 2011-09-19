@@ -24,11 +24,14 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import junit.framework.Assert;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
@@ -68,7 +71,46 @@ public class RequestTest
         _server.stop();
         _server.join();
     }
+    
+    @Test
+    public void testParamExtraction() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                Map map = null;
+                try
+                {
+                    //do the parse
+                    request.getParameterMap();
+                    Assert.fail("Expected parsing failure");
+                    return false;
+                }
+                catch (Exception e)
+                {
+                    //catch the error and check the param map is not null
+                    map = request.getParameterMap();
+                    assertFalse(map == null);
+                    assertTrue(map.isEmpty());
+                }
+               
+                return true;
+            }
+        };
+        
+        //Send a request with query string with illegal hex code to cause
+        //an exception parsing the params
+        String request="GET /?param=%ZZaaa HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: text/html;charset=utf8\n"+
+        "\n";
+        
+        String response = _connector.getResponses(request);
+    }
 
+    
+    
     @Test
     public void testContentTypeEncoding() throws Exception
     {
