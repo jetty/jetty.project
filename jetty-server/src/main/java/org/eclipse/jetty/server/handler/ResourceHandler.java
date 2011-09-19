@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  * This handle will serve static content and handle If-Modified-Since headers.
  * No caching is done.
- * Requests that cannot be handled are let pass (Eg no 404's)
+ * Requests for resources that do not exist are let pass (Eg no 404's).
  *
  *
  * @org.apache.xbean.XBean
@@ -205,7 +205,7 @@ public class ResourceHandler extends AbstractHandler
     	    {
     	        try
     	        {
-    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-default.css"));
+    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
     	        }
     	        catch(IOException e)
     	        {
@@ -326,7 +326,7 @@ public class ResourceHandler extends AbstractHandler
 
     /* ------------------------------------------------------------ */
     /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
+     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -344,7 +344,7 @@ public class ResourceHandler extends AbstractHandler
         Resource resource = getResource(request);
         if (resource==null || !resource.exists())
         {
-            if (target.endsWith("/jetty-stylesheet.css"))
+            if (target.endsWith("/jetty-dir.css"))
             {	
                 response.setContentType("text/css");
                 resource = getStylesheet();
@@ -359,7 +359,7 @@ public class ResourceHandler extends AbstractHandler
             return;
         }
 
-        // We are going to server something
+        // We are going to serve something
         baseRequest.setHandled(true);
 
         if (resource.isDirectory())
