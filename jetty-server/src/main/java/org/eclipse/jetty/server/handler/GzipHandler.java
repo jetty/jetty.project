@@ -159,7 +159,7 @@ public class GzipHandler extends HandlerWrapper
      * 
      * @return the buffer size
      */
-    public int setBufferSize()
+    public int getBufferSize()
     {
         return _bufferSize;
     }
