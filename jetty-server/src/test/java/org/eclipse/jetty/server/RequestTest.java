@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -93,6 +94,10 @@ public class RequestTest
                     map = request.getParameterMap();
                     assertFalse(map == null);
                     assertTrue(map.isEmpty());
+                    
+                    Enumeration names = request.getParameterNames();
+                    assertFalse(names.hasMoreElements());
+                    
                 }
                
                 return true;
