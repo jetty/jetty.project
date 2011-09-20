@@ -134,6 +134,12 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
 
     /* ------------------------------------------------------------ */
+    public SelectorManager getSelectorManager()
+    {
+        return _manager;
+    }
+    
+    /* ------------------------------------------------------------ */
     public Object getConnection()
     {
         return _acceptChannel;
