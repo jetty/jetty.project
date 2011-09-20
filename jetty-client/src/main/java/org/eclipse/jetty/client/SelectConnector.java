@@ -17,8 +17,10 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -104,7 +106,15 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             else
             {
                 channel.configureBlocking(false);
-                channel.connect(address.toSocketAddress());
+                try
+                {
+                    channel.connect(address.toSocketAddress());
+                }
+                catch (UnresolvedAddressException ex)
+                {
+                    channel.close();
+                    throw ex;
+                }
                 _selectorManager.register(channel,destination);
                 ConnectTimeout connectTimeout = new ConnectTimeout(channel,destination);
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
