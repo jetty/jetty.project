@@ -30,6 +30,7 @@ import javax.net.ssl.SSLSocket;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.bio.SocketConnector;
@@ -67,6 +68,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         this(new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH));
     }
 
+    /* ------------------------------------------------------------ */
     public SslSocketConnector(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
@@ -329,6 +331,26 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         return integralPort == 0 || integralPort == request.getServerPort();
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public void open() throws IOException
+    {
+        if (!_sslContextFactory.checkConfig())
+        {
+            throw new IllegalStateException("SSL context is not configured correctly.");
+        }
+
+        try
+        {
+            _sslContextFactory.start();
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeIOException(e);
+        }
+        super.open();
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * {@inheritDoc}
