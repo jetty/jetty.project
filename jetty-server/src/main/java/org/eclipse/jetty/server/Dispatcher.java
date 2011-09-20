@@ -222,6 +222,7 @@ public class Dispatcher implements RequestDispatcher
         if (!(response instanceof HttpServletResponse))
             response = new ServletResponseHttpWrapper(response);
         
+        final boolean old_handled=baseRequest.isHandled();
         final String old_uri=baseRequest.getRequestURI();
         final String old_context_path=baseRequest.getContextPath();
         final String old_servlet_path=baseRequest.getServletPath();
@@ -233,6 +234,7 @@ public class Dispatcher implements RequestDispatcher
         
         try
         {
+            baseRequest.setHandled(false);
             baseRequest.setDispatcherType(dispatch);
             
             if (_named!=null)
@@ -279,6 +281,8 @@ public class Dispatcher implements RequestDispatcher
                 
                 baseRequest.setRequestURI(_uri);
                 baseRequest.setContextPath(_contextHandler.getContextPath());
+                baseRequest.setServletPath(null);
+                baseRequest.setPathInfo(_uri);
                 baseRequest.setAttributes(attr);
                 
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
@@ -303,6 +307,7 @@ public class Dispatcher implements RequestDispatcher
         }
         finally
         {
+            baseRequest.setHandled(old_handled);
             baseRequest.setRequestURI(old_uri);
             baseRequest.setContextPath(old_context_path);
             baseRequest.setServletPath(old_servlet_path);

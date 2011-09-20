@@ -474,7 +474,6 @@ public class ServletHandler extends ScopedHandler
                     res = ((ServletResponseHttpWrapper)res).getResponse();
 
                 // Do the filter/handling thang
-                baseRequest.setHandled(true);
                 if (chain!=null)
                     chain.doFilter(req, res);
                 else 
@@ -582,6 +581,10 @@ public class ServletHandler extends ScopedHandler
             }
             else
                 LOG.debug("Response already committed for handling ",e);
+        }
+        finally
+        {
+            baseRequest.setHandled(true);
         }
     }
 

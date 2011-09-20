@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -292,10 +293,28 @@ public class ResourceHandler extends AbstractHandler
     /* ------------------------------------------------------------ */
     protected Resource getResource(HttpServletRequest request) throws MalformedURLException
     {
-        String path_info=request.getPathInfo();
-        if (path_info==null)
-            return null;
-        return getResource(path_info);
+        String servletPath;
+        String pathInfo;
+        Boolean included =request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI)!=null;
+        if (included!=null && included.booleanValue())
+        {
+            servletPath=(String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo=(String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+            if (servletPath==null)
+            {
+                servletPath=request.getServletPath();
+                pathInfo=request.getPathInfo();
+            }
+        }
+        else
+        {
+            included = Boolean.FALSE;
+            servletPath = request.getServletPath();
+            pathInfo = request.getPathInfo();
+        }
+        
+        String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
+        return getResource(pathInContext);
     }
 
 
