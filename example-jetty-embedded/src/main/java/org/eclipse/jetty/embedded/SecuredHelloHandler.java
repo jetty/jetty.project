@@ -23,7 +23,6 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Server;
 
 public class SecuredHelloHandler
@@ -52,7 +51,7 @@ public class SecuredHelloHandler
         knownRoles.add("admin");
         
         security.setConstraintMappings(Collections.singletonList(mapping), knownRoles);
-        security.setAuthenticator(new DigestAuthenticator());
+        security.setAuthenticator(new BasicAuthenticator());
         security.setLoginService(loginService);
         security.setStrict(false);
         

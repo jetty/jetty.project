@@ -275,7 +275,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     private static class Digest extends Credential
     {
         private static final long serialVersionUID = -2484639019549527724L;
-        String method = "";
+        final String method;
         String username = "";
         String realm = "";
         String nonce = "";
