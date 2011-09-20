@@ -182,6 +182,15 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
      */
     public ThreadPool getThreadPool()
     {
+        if (_threadPool==null)
+        {
+            QueuedThreadPool pool = new QueuedThreadPool();
+            pool.setMaxThreads(16);
+            pool.setDaemon(true);
+            pool.setName("HttpClient");
+            _threadPool = pool;
+        }
+            
         return _threadPool;
     }
 
@@ -420,13 +429,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
         _idleTimeoutQ.setNow();
 
         if (_threadPool == null)
-        {
-            QueuedThreadPool pool = new QueuedThreadPool();
-            pool.setMaxThreads(16);
-            pool.setDaemon(true);
-            pool.setName("HttpClient");
-            _threadPool = pool;
-        }
+            getThreadPool();
 
         if (_threadPool instanceof LifeCycle)
         {
