@@ -103,12 +103,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             }
             else
             {
-                channel.configureBlocking( false );
+                channel.configureBlocking(false);
                 channel.connect(address.toSocketAddress());
-                _selectorManager.register( channel, destination );
-                ConnectTimeout connectTimeout = new ConnectTimeout(channel, destination);
+                _selectorManager.register(channel,destination);
+                ConnectTimeout connectTimeout = new ConnectTimeout(channel,destination);
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
-                _connectingChannels.put(channel, connectTimeout);
+                _connectingChannels.put(channel,connectTimeout);
             }
 
         }
