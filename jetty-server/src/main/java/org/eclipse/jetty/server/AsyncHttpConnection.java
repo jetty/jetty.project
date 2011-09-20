@@ -139,6 +139,10 @@ public class AsyncHttpConnection extends HttpConnection
                 {
                     LOG.warn("Closing EndPoint making no progress: "+_total_no_progress+" "+_endp);
                     _endp.close();
+                    if (_endp instanceof SelectChannelEndPoint)
+                    {
+                        System.err.println(((SelectChannelEndPoint)_endp).getSelectManager().dump());
+                    }
                 }
             }
         }
