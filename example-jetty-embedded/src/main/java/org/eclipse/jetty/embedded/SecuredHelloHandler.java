@@ -23,13 +23,14 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Server;
 
 public class SecuredHelloHandler
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(0);
+        Server server = new Server(8080);
         
         LoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
         server.addBean(loginService); 
@@ -51,7 +52,7 @@ public class SecuredHelloHandler
         knownRoles.add("admin");
         
         security.setConstraintMappings(Collections.singletonList(mapping), knownRoles);
-        security.setAuthenticator(new BasicAuthenticator());
+        security.setAuthenticator(new DigestAuthenticator());
         security.setLoginService(loginService);
         security.setStrict(false);
         
