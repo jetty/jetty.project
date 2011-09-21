@@ -55,12 +55,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 {
     public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
 
-    // TODO Tune these by approx system speed.
-    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",0).intValue();
     private static final int __MONITOR_PERIOD=Integer.getInteger("org.eclipse.jetty.io.nio.MONITOR_PERIOD",1000).intValue();
-    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",25000).intValue();
+    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",3).intValue();
     private static final int __BUSY_PAUSE=Integer.getInteger("org.eclipse.jetty.io.nio.BUSY_PAUSE",50).intValue();
-    private static final int __BUSY_KEY=Integer.getInteger("org.eclipse.jetty.io.nio.BUSY_KEY",-1).intValue();
     private static final int __IDLE_TICK=Integer.getInteger("org.eclipse.jetty.io.nio.IDLE_TICK",400).intValue();
 
     private int _maxIdleTime;
@@ -389,18 +386,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private volatile Selector _selector;
 
         private volatile Thread _selecting;
-        private int _jvmBug;
-        private int _selects;
-        private long _monitorStart;
+        private int _busySelects;
         private long _monitorNext;
         private boolean _pausing;
-        private SelectionKey _busyKey;
-        private int _busyKeyCount;
-        private long _log;
-        private int _paused;
-        private int _jvmFix0;
-        private int _jvmFix1;
-        private int _jvmFix2;
+        private boolean _paused;
         private volatile long _idleTick;
         private ConcurrentMap<SelectChannelEndPoint,Object> _endPoints = new ConcurrentHashMap<SelectChannelEndPoint, Object>();
 
@@ -415,9 +404,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
             // create a selector;
             _selector = Selector.open();
-            _monitorStart=System.currentTimeMillis();
-            _monitorNext=_monitorStart+__MONITOR_PERIOD;
-            _log=_monitorStart+60000;
+            _monitorNext=System.currentTimeMillis()+__MONITOR_PERIOD;
         }
 
         /* ------------------------------------------------------------ */
@@ -539,7 +526,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
                 // Do and instant select to see if any connections can be handled.
                 int selected=selector.selectNow();
-                _selects++;
 
                 long now=System.currentTimeMillis();
 
@@ -573,12 +559,36 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     {
                         long before=now;
                         selected=selector.select(wait);
-                        _selects++;
                         now = System.currentTimeMillis();
                         _timeout.setNow(now);
 
-                        if (__JVMBUG_THRESHHOLD>0)
-                            checkJvmBugs(before, now, wait, selected);
+                        // If we are monitoring for busy selector
+                        // and this select did not wait more than 1ms
+                        if (__MONITOR_PERIOD>0 && now-before <=1)
+                        {
+                            // count this as a busy select and if there have been too many this monitor cycle
+                            if (++_busySelects>__MAX_SELECTS)
+                            {
+                                // Start injecting pauses
+                                _pausing=true;
+                                
+                                // if this is the first pause
+                                if (!_paused)
+                                {
+                                    // Log and dump some status
+                                    _paused=true;
+                                    LOG.warn("Selector {} is too busy, pausing!",this);
+                                    final SelectSet set = this;
+                                    SelectorManager.this.dispatch(
+                                    new Runnable(){
+                                        public void run()
+                                        {
+                                            System.err.println(set+":\n"+set.dump());
+                                        }
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -705,6 +715,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             }
                         }
                     });
+                    
+                }
+                
+                // Reset busy select monitor counts
+                if (__MONITOR_PERIOD>0 && now>_monitorNext)
+                {
+                    _busySelects=0;
+                    _pausing=false;
+                    _monitorNext=now+__MONITOR_PERIOD;
+                    
                 }
             }
             catch (ClosedSelectorException e)
@@ -724,126 +744,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
 
-        /* ------------------------------------------------------------ */
-        private void checkJvmBugs(long before, long now, long wait, int selected)
-            throws IOException
-        {
-            Selector selector = _selector;
-            if (selector==null)
-                return;
-
-            // Look for JVM bugs over a monitor period.
-            // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
-            // http://bugs.sun.com/view_bug.do?bug_id=6693490
-            if (now>_monitorNext)
-            {
-                _selects=(int)(_selects*__MONITOR_PERIOD/(now-_monitorStart));
-                _pausing=_selects>__MAX_SELECTS;
-                if (_pausing)
-                    _paused++;
-
-                _selects=0;
-                _jvmBug=0;
-                _monitorStart=now;
-                _monitorNext=now+__MONITOR_PERIOD;
-            }
-
-            if (now>_log)
-            {
-                if (_paused>0)
-                    LOG.debug(this+" Busy selector - injecting delay "+_paused+" times");
-
-                if (_jvmFix2>0)
-                    LOG.debug(this+" JVM BUG(s) - injecting delay"+_jvmFix2+" times");
-
-                if (_jvmFix1>0)
-                    LOG.debug(this+" JVM BUG(s) - recreating selector "+_jvmFix1+" times, cancelled keys "+_jvmFix0+" times");
-
-                else if(LOG.isDebugEnabled() && _jvmFix0>0)
-                    LOG.debug(this+" JVM BUG(s) - cancelled keys "+_jvmFix0+" times");
-                _paused=0;
-                _jvmFix2=0;
-                _jvmFix1=0;
-                _jvmFix0=0;
-                _log=now+60000;
-            }
-
-            // If we see signature of possible JVM bug, increment count.
-            if (selected==0 && wait>10 && (now-before)<(wait/2))
-            {
-                // Increment bug count and try a work around
-                _jvmBug++;
-                if (_jvmBug>(__JVMBUG_THRESHHOLD))
-                {
-                    try
-                    {
-                        if (_jvmBug==__JVMBUG_THRESHHOLD+1)
-                            _jvmFix2++;
-
-                        Thread.sleep(__BUSY_PAUSE); // pause to avoid busy loop
-                    }
-                    catch(InterruptedException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                }
-                else if (_jvmBug==__JVMBUG_THRESHHOLD)
-                {
-                    renewSelector();
-                }
-                else if (_jvmBug%32==31) // heuristic attempt to cancel key 31,63,95,... loops
-                {
-                    // Cancel keys with 0 interested ops
-                    int cancelled=0;
-                    for (SelectionKey k: selector.keys())
-                    {
-                        if (k.isValid()&&k.interestOps()==0)
-                        {
-                            k.cancel();
-                            cancelled++;
-                        }
-                    }
-                    if (cancelled>0)
-                        _jvmFix0++;
-
-                    return;
-                }
-            }
-            else if (__BUSY_KEY>0 && selected==1 && _selects>__MAX_SELECTS)
-            {
-                // Look for busy key
-                SelectionKey busy = selector.selectedKeys().iterator().next();
-                if (busy==_busyKey)
-                {
-                    if (++_busyKeyCount>__BUSY_KEY && !(busy.channel() instanceof ServerSocketChannel))
-                    {
-                        final SelectChannelEndPoint endpoint = (SelectChannelEndPoint)busy.attachment();
-                        LOG.warn("Busy Key "+busy.channel()+" "+endpoint);
-                        busy.cancel();
-                        if (endpoint!=null)
-                        {
-                            dispatch(new Runnable()
-                            {
-                                public void run()
-                                {
-                                    try
-                                    {
-                                        endpoint.close();
-                                    }
-                                    catch (IOException e)
-                                    {
-                                        LOG.ignore(e);
-                                    }
-                                }
-                            });
-                        }
-                    }
-                }
-                else
-                    _busyKeyCount=0;
-                _busyKey=busy;
-            }
-        }
 
         /* ------------------------------------------------------------ */
         private void renewSelector()
@@ -1044,7 +944,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            addChange(new Runnable(){
+            addChange(new ChangeTask(){
                 public void run()
                 {
                     dumpKeyState(dump);
