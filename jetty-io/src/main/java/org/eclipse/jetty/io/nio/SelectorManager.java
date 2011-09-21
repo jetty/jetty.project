@@ -48,15 +48,13 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * The Selector Manager manages and number of SelectSets to allow
  * NIO scheduling to scale to large numbers of connections.
  * <p>
- * This class works around a number of know JVM bugs. For details
- * see http://wiki.eclipse.org/Jetty/Feature/JVM_NIO_Bug
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
     public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
 
     private static final int __MONITOR_PERIOD=Integer.getInteger("org.eclipse.jetty.io.nio.MONITOR_PERIOD",1000).intValue();
-    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",3).intValue();
+    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",25000).intValue();
     private static final int __BUSY_PAUSE=Integer.getInteger("org.eclipse.jetty.io.nio.BUSY_PAUSE",50).intValue();
     private static final int __IDLE_TICK=Integer.getInteger("org.eclipse.jetty.io.nio.IDLE_TICK",400).intValue();
 
