@@ -14,7 +14,9 @@
 package org.eclipse.jetty.server.session;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,6 +48,34 @@ public class HashSessionIdManager extends AbstractSessionIdManager
         super(random);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Collection of String session IDs
+     */
+    public Collection<String> getSessions()
+    {
+        return Collections.unmodifiableCollection(_sessions.keySet());
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Collection of Sessions for the passed session ID
+     */
+    public Collection<HttpSession> getSession(String id)
+    {
+        ArrayList<HttpSession> sessions = new ArrayList<HttpSession>();
+        Set<WeakReference<HttpSession>> refs =_sessions.get(id);
+        if (refs!=null)
+        {
+            for (WeakReference<HttpSession> ref: refs)
+            {
+                HttpSession session = ref.get();
+                if (session!=null)
+                    sessions.add(session);
+            }
+        }
+        return sessions;
+    }
     /* ------------------------------------------------------------ */
     /** Get the session ID with any worker ID.
      * 
