@@ -430,7 +430,7 @@ public class Response implements HttpServletResponse
             if (!canonical.equals(path))
             {
                 buf = _connection.getRequest().getRootURL();
-                buf.append(canonical);
+                buf.append(URIUtil.encodePath(canonical));
                 if (uri.getQuery()!=null)
                 {
                     buf.append('?');
