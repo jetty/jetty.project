@@ -15,10 +15,13 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -103,12 +106,26 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             }
             else
             {
-                channel.configureBlocking( false );
-                channel.connect(address.toSocketAddress());
-                _selectorManager.register( channel, destination );
-                ConnectTimeout connectTimeout = new ConnectTimeout(channel, destination);
+                channel.configureBlocking(false);
+                try
+                {
+                    channel.connect(address.toSocketAddress());
+                }
+                catch (UnresolvedAddressException uae)
+                {
+                    channel.close();
+                    throw uae;
+                }
+                catch ( UnknownHostException uhe )
+                {
+                    channel.close();
+                    throw uhe;
+                }
+                
+                _selectorManager.register(channel,destination);
+                ConnectTimeout connectTimeout = new ConnectTimeout(channel,destination);
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
-                _connectingChannels.put(channel, connectTimeout);
+                _connectingChannels.put(channel,connectTimeout);
             }
 
         }
