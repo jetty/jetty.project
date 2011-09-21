@@ -1,4 +1,5 @@
 jetty-7.5.2-SNAPSHOT
+ + 358121 Implement new UTF8 Algorithm to UTF8Appendable.java
 
 jetty-7.5.1.v20110908 - 08 September 2011
  + 350634 Added Resource.newResource(File)
