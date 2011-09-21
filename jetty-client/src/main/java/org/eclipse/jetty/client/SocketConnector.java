@@ -97,6 +97,17 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
                         destination.onException(e);
                     }
                 }
+                finally
+                {
+                    try
+                    {
+                        destination.returnConnection(connection,true);
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.debug(e);
+                    }
+                }
             }
         });
 
