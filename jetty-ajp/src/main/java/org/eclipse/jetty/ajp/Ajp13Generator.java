@@ -793,9 +793,8 @@ public class Ajp13Generator extends AbstractGenerator
     /* ------------------------------------------------------------ */
     public void getBodyChunk() throws IOException
     {
-        _needMore = true;
-        _expectMore = true;
-        flushBuffer();
+        ByteArrayBuffer bf = new ByteArrayBuffer(AJP13_MORE_CONTENT);
+        _endp.flush(bf);
     }
 
     /* ------------------------------------------------------------ */
