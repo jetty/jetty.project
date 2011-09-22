@@ -68,7 +68,7 @@ public class GenericServerHandler extends AbstractHandler
         }
         catch (InterruptedException e)
         {
-            LOG.warn(e);
+            LOG.debug(e);
         }
         catch (IOException e)
         {

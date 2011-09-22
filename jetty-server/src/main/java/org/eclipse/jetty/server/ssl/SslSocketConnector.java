@@ -335,11 +335,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Override
     public void open() throws IOException
     {
-        if (!_sslContextFactory.checkConfig())
-        {
-            throw new IllegalStateException("SSL context is not configured correctly.");
-        }
-
+        _sslContextFactory.checkKeyStore();
         try
         {
             _sslContextFactory.start();
@@ -358,11 +354,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Override
     protected void doStart() throws Exception
     {
-        if (!_sslContextFactory.checkConfig())
-        {
-            throw new IllegalStateException("SSL context is not configured correctly.");
-        }
-
+        _sslContextFactory.checkKeyStore();
         _sslContextFactory.start();
         
         super.doStart();
@@ -394,22 +386,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Override
     protected ServerSocket newServerSocket(String host, int port,int backlog) throws IOException
     {
-        SSLServerSocketFactory factory = _sslContextFactory.getSslContext().getServerSocketFactory();
-
-        SSLServerSocket socket = 
-            (SSLServerSocket) (host==null ?
-                        factory.createServerSocket(port,backlog):
-                        factory.createServerSocket(port,backlog,InetAddress.getByName(host)));
-
-        if (_sslContextFactory.getWantClientAuth())
-            socket.setWantClientAuth(_sslContextFactory.getWantClientAuth());
-        if (_sslContextFactory.getNeedClientAuth())
-            socket.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
-
-        socket.setEnabledCipherSuites(_sslContextFactory.selectCipherSuites(
-                                            socket.getEnabledCipherSuites(),
-                                            socket.getSupportedCipherSuites()));
-        return socket;
+       return _sslContextFactory.newSslServerSocket(host,port,backlog);
     }
 
     /* ------------------------------------------------------------ */
