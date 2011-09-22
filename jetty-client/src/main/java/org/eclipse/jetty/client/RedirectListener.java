@@ -170,5 +170,28 @@ public class RedirectListener extends HttpEventListenerWrapper
 
         super.onRetry();
     }
-}
 
+    /**
+     * Delegate failed connection
+     */
+    @Override
+    public void onConnectionFailed( Throwable ex )
+    {
+        setDelegatingRequests(true);
+        setDelegatingResponses(true);
+
+        super.onConnectionFailed( ex );
+    }
+
+    /**
+     * Delegate onException
+     */
+    @Override
+    public void onException( Throwable ex )
+    {
+        setDelegatingRequests(true);
+        setDelegatingResponses(true);
+
+        super.onException( ex );
+    }
+}
