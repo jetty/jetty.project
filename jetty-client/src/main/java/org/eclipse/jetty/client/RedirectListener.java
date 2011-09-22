@@ -115,8 +115,9 @@ public class RedirectListener extends HttpEventListenerWrapper
                     _exchange.setRequestURI(_location);
 
                 // destination may have changed
-                HttpDestination destination=_destination.getHttpClient().getDestination(_exchange.getAddress(),HttpSchemes.HTTPS.equals(String.valueOf(_exchange.getScheme())));
-                
+                boolean isHttps = HttpSchemes.HTTPS.equals(String.valueOf(_exchange.getScheme()));
+                HttpDestination destination=_destination.getHttpClient().getDestination(_exchange.getAddress(),isHttps);
+
                 if (_destination==destination)
                     _destination.resend(_exchange);
                 else
@@ -129,6 +130,19 @@ public class RedirectListener extends HttpEventListenerWrapper
                     _exchange.getEventListener().onRetry();
                     _exchange.reset();
                     _exchange.setEventListener(listener);
+
+                    // Set the new Host header
+                    Address adr = _exchange.getAddress();
+                    int port = adr.getPort();
+                    StringBuilder hh = new StringBuilder( 64 );
+                    hh.append( adr.getHost() );
+                    if( !( ( port == 80 && !isHttps ) ||
+                           ( port == 443 && isHttps ) ) ) {
+                        hh.append( ':' );
+                        hh.append( port );
+                    }
+                    _exchange.setRequestHeader( HttpHeaders.HOST, hh.toString() );
+
                     destination.send(_exchange);
                 }
 
