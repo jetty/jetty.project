@@ -93,7 +93,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
     /** Excluded protocols. */
-    private final Set<String> _excludeProtocols = new HashSet<String>(Collections.singleton("SSLv2Hello"));
+    private final Set<String> _excludeProtocols = new HashSet<String>();
+    // private final Set<String> _excludeProtocols = new HashSet<String>(Collections.singleton("SSLv2Hello"));
     /** Included protocols. */
     private Set<String> _includeProtocols = null;
     
@@ -211,7 +212,7 @@ public class SslContextFactory extends AbstractLifeCycle
             if (_keyStoreInputStream == null && _keyStorePath == null &&
                     _trustStoreInputStream == null && _trustStorePath == null )
             {
-                LOG.info("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
+                LOG.debug("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
                 // Create a trust manager that does not validate certificate chains
                 TrustManager trustAllCerts = new X509TrustManager()
                 {
