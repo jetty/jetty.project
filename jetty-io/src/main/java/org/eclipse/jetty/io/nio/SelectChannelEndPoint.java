@@ -251,7 +251,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public void checkIdleTimestamp(long now)
     {
         long idleTimestamp=_idleTimestamp;
-        if (!getChannel().isOpen() || idleTimestamp!=0 && _maxIdleTime!=0 && now>(idleTimestamp+_maxIdleTime))
+        if (!getChannel().isOpen() || idleTimestamp!=0 && _maxIdleTime>0 && now>(idleTimestamp+_maxIdleTime))
             idleExpired();
     }
 

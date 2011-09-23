@@ -674,10 +674,10 @@ public abstract class HttpConnection  extends AbstractConnection
     /* ------------------------------------------------------------ */
     public int getMaxIdleTime()
     {
+        if (_connector.isLowResources() && _endp.getMaxIdleTime()==_connector.getMaxIdleTime())
+            return _connector.getLowResourceMaxIdleTime();
         if (_endp.getMaxIdleTime()>0)
             return _endp.getMaxIdleTime();
-        if (_connector.isLowResources())
-            return _connector.getLowResourceMaxIdleTime();
         return _connector.getMaxIdleTime();
     }
 
