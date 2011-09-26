@@ -30,22 +30,22 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ProxyRuleTest
 {
-    private ProxyRule _rule;
-    private RewriteHandler _handler;
-    private Server _proxyServer = new Server();
-    private Connector _proxyServerConnector = new SelectChannelConnector();
-    private Server _targetServer = new Server();
-    private Connector _targetServerConnector = new SelectChannelConnector();
-    private HttpClient httpClient = new HttpClient();
+    private static ProxyRule _rule;
+    private static RewriteHandler _handler;
+    private static Server _proxyServer = new Server();
+    private static Connector _proxyServerConnector = new SelectChannelConnector();
+    private static Server _targetServer = new Server();
+    private static Connector _targetServerConnector = new SelectChannelConnector();
+    private static HttpClient _httpClient = new HttpClient();
 
-    @Before
-    public void init() throws Exception
+    @BeforeClass
+    public static void setupOnce() throws Exception
     {
         _targetServer.addConnector(_targetServerConnector);
         _targetServer.setHandler(new AbstractHandler()
@@ -73,12 +73,15 @@ public class ProxyRuleTest
         _proxyServer.setHandler(_handler);
         _proxyServer.start();
 
-        httpClient.start();
+        _httpClient.start();
     }
 
-    @After
-    public void destroy()
+    @AfterClass
+    public static void destroy() throws Exception
     {
+        _httpClient.stop();
+        _proxyServer.stop();
+        _targetServer.stop();
         _rule = null;
     }
 
@@ -92,7 +95,7 @@ public class ProxyRuleTest
         String url = "http://localhost:" + _proxyServerConnector.getLocalPort() + "/foo?body=" + URLEncoder.encode(body,"UTF-8");
         exchange.setURL(url);
 
-        httpClient.send(exchange);
+        _httpClient.send(exchange);
         assertEquals(HttpExchange.STATUS_COMPLETED,exchange.waitForDone());
         assertEquals("uri: / some content",exchange.getResponseContent());
         assertEquals(201,exchange.getResponseStatus());
@@ -108,7 +111,7 @@ public class ProxyRuleTest
         String url = "http://localhost:" + _proxyServerConnector.getLocalPort() + "/foo/bar/foobar?body=" + URLEncoder.encode(body,"UTF-8");
         exchange.setURL(url);
 
-        httpClient.send(exchange);
+        _httpClient.send(exchange);
         assertEquals(HttpExchange.STATUS_COMPLETED,exchange.waitForDone());
         assertEquals("uri: /bar/foobar some content",exchange.getResponseContent());
         assertEquals(201,exchange.getResponseStatus());
@@ -123,7 +126,7 @@ public class ProxyRuleTest
         String url = "http://localhost:" + _proxyServerConnector.getLocalPort() + "/foobar?body=" + URLEncoder.encode(body,"UTF-8");
         exchange.setURL(url);
 
-        httpClient.send(exchange);
+        _httpClient.send(exchange);
         assertEquals(HttpExchange.STATUS_COMPLETED,exchange.waitForDone());
         assertEquals(404,exchange.getResponseStatus());
     }

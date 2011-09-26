@@ -18,12 +18,11 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-public class ProxyRule extends PatternRule implements Rule.ApplyURI
+public class ProxyRule extends PatternRule
 {
     private static final Logger _log = Log.getLogger(ProxyRule.class);
 
@@ -44,6 +43,7 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
         _DontProxyHeaders.add("upgrade");
     }
 
+    /* ------------------------------------------------------------ */
     public ProxyRule()
     {
         _handling = true;
@@ -51,6 +51,7 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
 
     }
 
+    /* ------------------------------------------------------------ */
     private void initializeClient() throws Exception
     {
         _client = new HttpClient();
@@ -65,11 +66,7 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
         return new HttpURI(_proxyTo + uri);
     }
 
-    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
-    {
-        System.out.println("applyURI called");
-    }
-
+    /* ------------------------------------------------------------ */
     @Override
     protected String apply(String target, HttpServletRequest request, final HttpServletResponse response) throws IOException
     {
@@ -229,6 +226,7 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
         return target;
     }
 
+    /* ------------------------------------------------------------ */
     private HttpURI createUrl(HttpServletRequest request, final int debug) throws MalformedURLException
     {
         String uri = request.getRequestURI();
@@ -244,6 +242,7 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
         return url;
     }
 
+    /* ------------------------------------------------------------ */
     private boolean createHeaders(final HttpServletRequest request, final int debug, HttpExchange exchange)
     {
         // check connection header
@@ -315,6 +314,7 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
         return hasContent;
     }
 
+    /* ------------------------------------------------------------ */
     public void setProxyTo(String proxyTo)
     {
         this._proxyTo = proxyTo;
