@@ -425,7 +425,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             while(len>=0)
             {
-                Thread.sleep(500);
+                Thread.sleep(100);
                 len=is.read(buf);
                 if (len>0)
                     total+=len;

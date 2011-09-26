@@ -133,7 +133,7 @@ public class SSLEngineTest
     @Test
     public void testBigResponse() throws Exception
     {
-        SSLContext ctx=SSLContext.getInstance("SSLv3");
+        SSLContext ctx=SSLContext.getInstance("TLS");
         ctx.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
 
         int port=connector.getLocalPort();
@@ -367,4 +367,5 @@ public class SSLEngineTest
             response.flushBuffer();
         }
     }
+    
 }

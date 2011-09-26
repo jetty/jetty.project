@@ -178,7 +178,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the threadPool
+     * @return the threadpool
      */
     public ThreadPool getThreadPool()
     {

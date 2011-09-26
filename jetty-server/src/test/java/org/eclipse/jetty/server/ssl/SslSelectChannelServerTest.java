@@ -60,14 +60,14 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
         keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
-        __sslContext = SSLContext.getInstance("SSL");
+        __sslContext = SSLContext.getInstance("TLS");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
         
 
         try
         {
             HttpsURLConnection.setDefaultHostnameVerifier(__hostnameverifier);
-            SSLContext sc = SSLContext.getInstance("SSL"); 
+            SSLContext sc = SSLContext.getInstance("TLS"); 
             sc.init(null, __trustAllCerts, new java.security.SecureRandom()); 
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }

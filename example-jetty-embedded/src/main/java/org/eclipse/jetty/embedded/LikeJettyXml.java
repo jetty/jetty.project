@@ -88,33 +88,13 @@ public class LikeJettyXml
                     "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
+        cf.setProtocol("TLSv1.1");
+        cf.addExcludeProtocols(new String[]{"TLSv1","SSLv3"});
         ssl_connector.setStatsOn(true);
         server.addConnector(ssl_connector);
         ssl_connector.open();
         
 
-        SslSocketConnector ssls_connector = new SslSocketConnector();
-        ssls_connector.setPort(8444);
-        cf = ssls_connector.getSslContextFactory();
-        cf.setKeyStore(jetty_home + "/etc/keystore");
-        cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        cf.setTrustStore(jetty_home + "/etc/keystore");
-        cf.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        cf.setExcludeCipherSuites(
-                new String[] {
-                    "SSL_RSA_WITH_DES_CBC_SHA",
-                    "SSL_DHE_RSA_WITH_DES_CBC_SHA",
-                    "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                    "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-                    "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                    "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                    "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
-                });
-        ssls_connector.setStatsOn(true);
-        server.addConnector(ssls_connector);
-        ssls_connector.open();
-        
         
         
         Ajp13SocketConnector ajp = new Ajp13SocketConnector();

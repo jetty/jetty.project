@@ -51,7 +51,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     private final HttpClient _httpClient;
     private final Manager _selectorManager=new Manager();
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
-    private SSLContext _sslContext;
     private Buffers _sslBuffers;
 
     /**
@@ -211,19 +210,16 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
         private synchronized SSLEngine newSslEngine(SocketChannel channel) throws IOException
         {
             SslContextFactory sslContextFactory = _httpClient.getSslContextFactory();
-            if (_sslContext == null)
-                _sslContext = sslContextFactory.getSslContext();
-
             SSLEngine sslEngine;
-            if (channel != null && sslContextFactory.isSessionCachingEnabled())
+            if (channel != null)
             {
                 String peerHost = channel.socket().getInetAddress().getHostAddress();
                 int peerPort = channel.socket().getPort();
-                sslEngine = _sslContext.createSSLEngine(peerHost, peerPort);
+                sslEngine = sslContextFactory.newSslEngine(peerHost, peerPort);
             }
             else
             {
-                sslEngine = _sslContext.createSSLEngine();
+                sslEngine = sslContextFactory.newSslEngine();
             }
             sslEngine.setUseClientMode(true);
             sslEngine.beginHandshake();
