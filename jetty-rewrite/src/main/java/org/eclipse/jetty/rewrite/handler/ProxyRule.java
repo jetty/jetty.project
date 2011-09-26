@@ -35,6 +35,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
+/**
+ * This rule allows the user to configure a particular rewrite rule that will proxy out
+ * to a configured location.  This rule uses the jetty http client.
+ */
 public class ProxyRule extends PatternRule
 {
     private static final Logger _log = Log.getLogger(ProxyRule.class);
@@ -42,6 +46,16 @@ public class ProxyRule extends PatternRule
     private HttpClient _client;
     private String _hostHeader;
     private String _proxyTo;
+    
+    private int _connectorType = 2;
+    private String _maxThreads;
+    private String _maxConnections;
+    private String _timeout;
+    private String _idleTimeout;
+    private String _requestHeaderSize;
+    private String _requestBufferSize;
+    private String _responseHeaderSize;
+    private String _responseBufferSize;
 
     private HashSet<String> _DontProxyHeaders = new HashSet<String>();
     {
@@ -67,8 +81,52 @@ public class ProxyRule extends PatternRule
     private void initializeClient() throws Exception
     {
         _client = new HttpClient();
-        _client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        _client.setThreadPool(new QueuedThreadPool());
+        _client.setConnectorType(_connectorType);
+        
+        if ( _maxThreads != null )
+        {
+            _client.setThreadPool(new QueuedThreadPool(Integer.parseInt(_maxThreads)));
+        }
+        else
+        {
+            _client.setThreadPool(new QueuedThreadPool());
+        }
+        
+        if ( _maxConnections != null )
+        {
+            _client.setMaxConnectionsPerAddress(Integer.parseInt(_maxConnections));
+        }
+        
+        if ( _timeout != null )
+        {
+            _client.setTimeout(Long.parseLong(_timeout));
+        }
+        
+        if ( _idleTimeout != null )
+        {
+            _client.setIdleTimeout(Long.parseLong(_idleTimeout));
+        }
+        
+        if ( _requestBufferSize != null )
+        {
+            _client.setRequestBufferSize(Integer.parseInt(_requestBufferSize));
+        }
+        
+        if ( _requestHeaderSize != null )
+        {
+            _client.setRequestHeaderSize(Integer.parseInt(_requestHeaderSize));
+        }
+        
+        if ( _responseBufferSize != null )
+        {
+            _client.setResponseBufferSize(Integer.parseInt(_responseBufferSize));
+        }
+        
+        if ( _responseHeaderSize != null )
+        {
+            _client.setResponseHeaderSize(Integer.parseInt(_responseHeaderSize));
+        }                 
+        
         _client.start();
     }
 
@@ -351,4 +409,71 @@ public class ProxyRule extends PatternRule
     {
         this._proxyTo = proxyTo;
     }
+    
+    /* ------------------------------------------------------------ */
+    public void setMaxThreads(String maxThreads)
+    {
+        this._maxThreads = maxThreads;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setMaxConnections(String maxConnections)
+    {
+        _maxConnections = maxConnections;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setTimeout(String timeout)
+    {
+        _timeout = timeout;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setIdleTimeout(String idleTimeout)
+    {
+        _idleTimeout = idleTimeout;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setRequestHeaderSize(String requestHeaderSize)
+    {
+        _requestHeaderSize = requestHeaderSize;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setRequestBufferSize(String requestBufferSize)
+    {
+        _requestBufferSize = requestBufferSize;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setResponseHeaderSize(String responseHeaderSize)
+    {
+        _responseHeaderSize = responseHeaderSize;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setResponseBufferSize(String responseBufferSize)
+    {
+        _responseBufferSize = responseBufferSize;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void addDontProxyHeaders(String dontProxyHeader)
+    {
+        _DontProxyHeaders.add(dontProxyHeader);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     *   CONNECTOR_SOCKET = 0;
+     *   CONNECTOR_SELECT_CHANNEL = 2; (default)
+     * 
+     * @param connectorType
+     */
+    public void setConnectorType( int connectorType )
+    {
+        _connectorType = connectorType;
+    }
+    
 }
