@@ -1,5 +1,18 @@
 package org.eclipse.jetty.rewrite.handler;
 
+//========================================================================
+//Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
+//------------------------------------------------------------------------
+//All rights reserved. This program and the accompanying materials
+//are made available under the terms of the Eclipse Public License v1.0
+//and Apache License v2.0 which accompanies this distribution.
+//The Eclipse Public License is available at
+//http://www.eclipse.org/legal/epl-v10.html
+//The Apache License v2.0 is available at
+//http://www.opensource.org/licenses/apache2.0.php
+//You may elect to redistribute this code under either of these licenses.
+//========================================================================
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -48,7 +61,6 @@ public class ProxyRule extends PatternRule
     {
         _handling = true;
         _terminating = true;
-
     }
 
     /* ------------------------------------------------------------ */
@@ -201,20 +213,25 @@ public class ProxyRule extends PatternRule
         exchange.setVersion(request.getProtocol());
 
         if (debug != 0)
+        {
             _log.debug(debug + " " + request.getMethod() + " " + url + " " + request.getProtocol());
-
+        }
+        
         boolean hasContent = createHeaders(request,debug,exchange);
 
         if (hasContent)
+        {
             exchange.setRequestContentSource(in);
-
+        }
+        
         /*
-         * we need to set the timeout on the continuation to take into account the timeout of the HttpClient and the HttpExchange
+         * we need to set the timeout on the exchange to take into account the timeout of the HttpClient and the HttpExchange
          */
         long ctimeout = (_client.getTimeout() > exchange.getTimeout())?_client.getTimeout():exchange.getTimeout();
         exchange.setTimeout(ctimeout);
 
         _client.send(exchange);
+        
         try
         {
             exchange.waitForDone();
@@ -230,15 +247,26 @@ public class ProxyRule extends PatternRule
     private HttpURI createUrl(HttpServletRequest request, final int debug) throws MalformedURLException
     {
         String uri = request.getRequestURI();
+        
         if (request.getQueryString() != null)
+        {
             uri += "?" + request.getQueryString();
+        }
+        
         uri = PathMap.pathInfo(_pattern,uri);
+        
         if(uri==null)
+        {
             uri = "/";
+        }
+        
         HttpURI url = proxyHttpURI(uri);
 
         if (debug != 0)
+        {
             _log.debug(debug + " proxy " + uri + "-->" + url);
+        }
+        
         return url;
     }
 
@@ -251,12 +279,16 @@ public class ProxyRule extends PatternRule
         {
             connectionHdr = connectionHdr.toLowerCase();
             if (connectionHdr.indexOf("keep-alive") < 0 && connectionHdr.indexOf("close") < 0)
+            {
                 connectionHdr = null;
+            }
         }
 
         // force host
         if (_hostHeader != null)
+        {
             exchange.setRequestHeader("Host",_hostHeader);
+        }
 
         // copy headers
         boolean xForwardedFor = false;
