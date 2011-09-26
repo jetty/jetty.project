@@ -15,6 +15,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Request;
@@ -92,14 +93,7 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
         final InputStream in = request.getInputStream();
         final OutputStream out = response.getOutputStream();
 
-        String uri = request.getRequestURI();
-        if (request.getQueryString() != null)
-            uri += "?" + request.getQueryString();
-
-        HttpURI url = proxyHttpURI(uri);
-
-        if (debug != 0)
-            _log.debug(debug + " proxy " + uri + "-->" + url);
+        HttpURI url = createUrl(request,debug);
 
         if (url == null)
         {
@@ -221,6 +215,7 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
          * we need to set the timeout on the continuation to take into account the timeout of the HttpClient and the HttpExchange
          */
         long ctimeout = (_client.getTimeout() > exchange.getTimeout())?_client.getTimeout():exchange.getTimeout();
+        exchange.setTimeout(ctimeout);
 
         _client.send(exchange);
         try
@@ -229,9 +224,24 @@ public class ProxyRule extends PatternRule implements Rule.ApplyURI
         }
         catch (InterruptedException e)
         {
-            _log.info(e);
+            _log.info("Exception while waiting for response on proxied request", e);
         }
         return target;
+    }
+
+    private HttpURI createUrl(HttpServletRequest request, final int debug) throws MalformedURLException
+    {
+        String uri = request.getRequestURI();
+        if (request.getQueryString() != null)
+            uri += "?" + request.getQueryString();
+        uri = PathMap.pathInfo(_pattern,uri);
+        if(uri==null)
+            uri = "/";
+        HttpURI url = proxyHttpURI(uri);
+
+        if (debug != 0)
+            _log.debug(debug + " proxy " + uri + "-->" + url);
+        return url;
     }
 
     private boolean createHeaders(final HttpServletRequest request, final int debug, HttpExchange exchange)

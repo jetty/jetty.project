@@ -41,7 +41,7 @@ public class ProxyRuleTest
     private Server _proxyServer = new Server();
     private Connector _proxyServerConnector = new SelectChannelConnector();
     private Server _targetServer = new Server();
-    private Connector _targetServerConnector= new SelectChannelConnector();
+    private Connector _targetServerConnector = new SelectChannelConnector();
     private HttpClient httpClient = new HttpClient();
 
     @Before
@@ -51,9 +51,11 @@ public class ProxyRuleTest
         _targetServer.setHandler(new AbstractHandler()
         {
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ServletException
+                    ServletException
             {
                 baseRequest.setHandled(true);
+                String responseString = "uri: " + request.getRequestURI() + " some content";
+                response.getOutputStream().write(responseString.getBytes());
                 response.setStatus(201);
             }
         });
@@ -92,13 +94,29 @@ public class ProxyRuleTest
 
         httpClient.send(exchange);
         assertEquals(HttpExchange.STATUS_COMPLETED,exchange.waitForDone());
+        assertEquals("uri: / some content",exchange.getResponseContent());
+        assertEquals(201,exchange.getResponseStatus());
+    }
+
+    @Test
+    public void testProxyWithDeeperPath() throws Exception
+    {
+
+        ContentExchange exchange = new ContentExchange(true);
+        exchange.setMethod(HttpMethods.GET);
+        String body = "BODY";
+        String url = "http://localhost:" + _proxyServerConnector.getLocalPort() + "/foo/bar/foobar?body=" + URLEncoder.encode(body,"UTF-8");
+        exchange.setURL(url);
+
+        httpClient.send(exchange);
+        assertEquals(HttpExchange.STATUS_COMPLETED,exchange.waitForDone());
+        assertEquals("uri: /bar/foobar some content",exchange.getResponseContent());
         assertEquals(201,exchange.getResponseStatus());
     }
 
     @Test
     public void testProxyNoMatch() throws Exception
     {
-
         ContentExchange exchange = new ContentExchange(true);
         exchange.setMethod(HttpMethods.GET);
         String body = "BODY";
