@@ -14,22 +14,23 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-public class ProxyRule extends Rule
+public class ProxyRule extends PatternRule implements Rule.ApplyURI
 {
     private static final Logger _log = Log.getLogger(ProxyRule.class);
 
-    protected HttpClient _client;
-    protected String _hostHeader;
+    private HttpClient _client;
+    private String _hostHeader;
+    private String _proxyTo;
 
-    protected HashSet<String> _DontProxyHeaders = new HashSet<String>();
+    private HashSet<String> _DontProxyHeaders = new HashSet<String>();
     {
         _DontProxyHeaders.add("proxy-connection");
         _DontProxyHeaders.add("connection");
@@ -58,13 +59,18 @@ public class ProxyRule extends Rule
     }
 
     /* ------------------------------------------------------------ */
-    protected HttpURI proxyHttpURI(String scheme, String serverName, int serverPort, String uri) throws MalformedURLException
+    private HttpURI proxyHttpURI(String uri) throws MalformedURLException
     {
-        return new HttpURI(scheme + "://" + serverName + ":" + serverPort + uri);
+        return new HttpURI(_proxyTo + uri);
+    }
+
+    public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
+    {
+        System.out.println("applyURI called");
     }
 
     @Override
-    public String matchAndApply(String target, HttpServletRequest req, HttpServletResponse res) throws IOException
+    protected String apply(String target, HttpServletRequest request, final HttpServletResponse response) throws IOException
     {
         synchronized (this)
         {
@@ -81,9 +87,6 @@ public class ProxyRule extends Rule
             }
         }
 
-        final HttpServletRequest request = (HttpServletRequest)req;
-        final HttpServletResponse response = (HttpServletResponse)res;
-
         final int debug = _log.isDebugEnabled()?request.hashCode():0;
 
         final InputStream in = request.getInputStream();
@@ -93,7 +96,7 @@ public class ProxyRule extends Rule
         if (request.getQueryString() != null)
             uri += "?" + request.getQueryString();
 
-        HttpURI url = proxyHttpURI(request.getScheme(),request.getServerName(),request.getServerPort(),uri);
+        HttpURI url = proxyHttpURI(uri);
 
         if (debug != 0)
             _log.debug(debug + " proxy " + uri + "-->" + url);
@@ -106,20 +109,24 @@ public class ProxyRule extends Rule
 
         HttpExchange exchange = new HttpExchange()
         {
+            @Override
             protected void onRequestCommitted() throws IOException
             {
             }
 
+            @Override
             protected void onRequestComplete() throws IOException
             {
             }
 
+            @Override
             protected void onResponseComplete() throws IOException
             {
                 if (debug != 0)
                     _log.debug(debug + " complete");
             }
 
+            @Override
             protected void onResponseContent(Buffer content) throws IOException
             {
                 if (debug != 0)
@@ -127,10 +134,13 @@ public class ProxyRule extends Rule
                 content.writeTo(out);
             }
 
+            @Override
             protected void onResponseHeaderComplete() throws IOException
             {
             }
 
+            @SuppressWarnings("deprecation")
+            @Override
             protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
             {
                 if (debug != 0)
@@ -142,6 +152,7 @@ public class ProxyRule extends Rule
                     response.setStatus(status);
             }
 
+            @Override
             protected void onResponseHeader(Buffer name, Buffer value) throws IOException
             {
                 String s = name.toString().toLowerCase();
@@ -156,6 +167,7 @@ public class ProxyRule extends Rule
                     _log.debug(debug + " " + name + "! " + value);
             }
 
+            @Override
             protected void onConnectionFailed(Throwable ex)
             {
                 _log.warn(ex.toString());
@@ -166,6 +178,7 @@ public class ProxyRule extends Rule
                 }
             }
 
+            @Override
             protected void onException(Throwable ex)
             {
                 if (ex instanceof EofException)
@@ -181,6 +194,7 @@ public class ProxyRule extends Rule
                 }
             }
 
+            @Override
             protected void onExpire()
             {
                 if (!response.isCommitted())
@@ -191,7 +205,6 @@ public class ProxyRule extends Rule
 
         };
 
-        exchange.setScheme(HttpSchemes.HTTPS.equals(request.getScheme())?HttpSchemes.HTTPS_BUFFER:HttpSchemes.HTTP_BUFFER);
         exchange.setMethod(request.getMethod());
         exchange.setURL(url.toString());
         exchange.setVersion(request.getProtocol());
@@ -199,6 +212,30 @@ public class ProxyRule extends Rule
         if (debug != 0)
             _log.debug(debug + " " + request.getMethod() + " " + url + " " + request.getProtocol());
 
+        boolean hasContent = createHeaders(request,debug,exchange);
+
+        if (hasContent)
+            exchange.setRequestContentSource(in);
+
+        /*
+         * we need to set the timeout on the continuation to take into account the timeout of the HttpClient and the HttpExchange
+         */
+        long ctimeout = (_client.getTimeout() > exchange.getTimeout())?_client.getTimeout():exchange.getTimeout();
+
+        _client.send(exchange);
+        try
+        {
+            exchange.waitForDone();
+        }
+        catch (InterruptedException e)
+        {
+            _log.info(e);
+        }
+        return target;
+    }
+
+    private boolean createHeaders(final HttpServletRequest request, final int debug, HttpExchange exchange)
+    {
         // check connection header
         String connectionHdr = request.getHeader("Connection");
         if (connectionHdr != null)
@@ -265,18 +302,11 @@ public class ProxyRule extends Rule
             exchange.addRequestHeader("X-Forwarded-Host",request.getServerName());
             exchange.addRequestHeader("X-Forwarded-Server",request.getLocalName());
         }
-
-        if (hasContent)
-            exchange.setRequestContentSource(in);
-
-        /*
-         * we need to set the timeout on the continuation to take into account the timeout of the HttpClient and the HttpExchange
-         */
-        long ctimeout = (_client.getTimeout() > exchange.getTimeout())?_client.getTimeout():exchange.getTimeout();
-
-        _client.send(exchange);
-
-        return target;
+        return hasContent;
     }
 
+    public void setProxyTo(String proxyTo)
+    {
+        this._proxyTo = proxyTo;
+    }
 }
