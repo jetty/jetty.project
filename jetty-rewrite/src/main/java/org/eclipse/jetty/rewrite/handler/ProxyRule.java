@@ -38,6 +38,14 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 /**
  * This rule allows the user to configure a particular rewrite rule that will proxy out
  * to a configured location.  This rule uses the jetty http client.
+ * 
+ * Rule rule = new ProxyRule();
+ * rule.setPattern("/foo/*");
+ * rule.setProxyTo("http://url.com");
+ * 
+ * see api for other configuration options which influence the configuration of the jetty 
+ * client instance
+ * 
  */
 public class ProxyRule extends PatternRule
 {
