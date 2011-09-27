@@ -592,11 +592,13 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 _closing=true;
                 // return true is some bytes somewhere were moved about.
                 return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
+                
             case OK:
                 // return true is some bytes somewhere were moved about.
                 return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
+                
             default:
-                LOG.warn("unwrap "+_result);
+                LOG.warn("unwrap default: "+_result);
                 throw new IOException(_result.toString());
         }
     }
@@ -662,11 +664,13 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         switch(_result.getStatus())
         {
-            case BUFFER_OVERFLOW:
             case BUFFER_UNDERFLOW:
-                LOG.warn("unwrap {}",_result);
-                _closing=true;
-                return _result.bytesConsumed()>0?_result.bytesConsumed():-1;
+                throw new IllegalStateException();
+                
+            case BUFFER_OVERFLOW:
+                LOG.debug("wrap {}",_result);
+                flush();
+                return 0;
 
             case OK:
                 return _result.bytesConsumed();
@@ -675,7 +679,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 return _result.bytesConsumed()>0?_result.bytesConsumed():-1;
 
             default:
-                LOG.warn("wrap "+_result);
+                LOG.warn("wrap default "+_result);
             throw new IOException(_result.toString());
         }
     }
