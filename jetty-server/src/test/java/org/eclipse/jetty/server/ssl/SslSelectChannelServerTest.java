@@ -23,6 +23,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * HttpServer Tester.
@@ -79,5 +80,20 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
         
     }
 
+    @Test
+    @Override
+    public void testBlockingWhileWritingResponseContent() throws Exception
+    {
+        super.testBlockingWhileWritingResponseContent();
+    }
+
+
+    @Test
+    @Override
+    public void testBigBlocks() throws Exception
+    {
+        super.testBigBlocks();
+    }
+    
     
 }

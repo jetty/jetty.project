@@ -512,7 +512,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
                         try
                         {
-                            ch.close();
+                            if (ch!=null)
+                                ch.close();
                         }
                         catch(IOException e2)
                         {

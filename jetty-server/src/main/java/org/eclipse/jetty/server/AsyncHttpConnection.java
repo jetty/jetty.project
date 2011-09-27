@@ -26,6 +26,7 @@ public class AsyncHttpConnection extends HttpConnection
 
     public Connection handle() throws IOException
     {
+        LOG.debug("handle {}",this);
         Connection connection = this;
         boolean some_progress=false; 
         boolean progress=true; 
@@ -42,7 +43,6 @@ public class AsyncHttpConnection extends HttpConnection
                 progress=false;
                 try
                 {
-                    LOG.debug("async request",_request);
                     
                     // Handle resumed request
                     if (_request._async.isAsync() && !_request._async.isComplete())
@@ -145,6 +145,7 @@ public class AsyncHttpConnection extends HttpConnection
                     }
                 }
             }
+            LOG.debug("unhandle {}",this);
         }
         return connection;
     }

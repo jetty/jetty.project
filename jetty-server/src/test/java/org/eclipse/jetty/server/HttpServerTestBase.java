@@ -490,17 +490,17 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new BigBlockHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
-        client.setSoTimeout(10000);
+        client.setSoTimeout(20000);
         try
         {
             OutputStream os=client.getOutputStream();
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
 
             os.write((
-                    "GET / HTTP/1.1\r\n"+
+                    "GET /r1 HTTP/1.1\r\n"+
                     "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
                     "\r\n"+
-                    "GET / HTTP/1.1\r\n"+
+                    "GET /r2 HTTP/1.1\r\n"+
                     "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
                     "connection: close\r\n"+
                     "\r\n"
@@ -583,6 +583,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+    // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
     protected static class BigBlockHandler extends AbstractHandler
     {
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -598,10 +599,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             long[] times=new long[10];
             for (int i=0;i<times.length;i++)
             {
+                System.err.println("\nBLOCK "+request.getRequestURI()+" "+i);
                 long start=System.currentTimeMillis();
                 out.write(buf);
                 long end=System.currentTimeMillis();
                 times[i]=end-start;
+                System.err.println("Block "+request.getRequestURI()+" "+i+" "+times[i]);
             }
             out.println();
             for (long t : times)
