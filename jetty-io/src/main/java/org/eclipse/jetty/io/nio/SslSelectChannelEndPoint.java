@@ -54,8 +54,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     private volatile NIOBuffer _inNIOBuffer;
     private volatile NIOBuffer _outNIOBuffer;
 
-    private final ByteBuffer[] _gather=new ByteBuffer[2];
-
     private boolean _closing=false;
     private SSLEngineResult _result;
 
@@ -209,16 +207,16 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    private int process(ByteBuffer inbuf, Buffer header, Buffer buffer) throws IOException
+    private int process(ByteBuffer inBBuf, Buffer outBuf) throws IOException
     {
         if (_debug)
-            LOG.debug("process {} {} {}",inbuf!=null,header!=null,buffer!=null);
+            LOG.debug("process {} {}",inBBuf!=null,outBuf!=null);
         
         // If there is no place to put incoming application data, 
-        if (inbuf==null)
+        if (inBBuf==null)
         {
             // use ZERO buffer
-            inbuf=__ZERO_BUFFER;
+            inBBuf=__ZERO_BUFFER;
         }
         
         int received=0;
@@ -261,20 +259,12 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         break;
                     
                     // Try wrapping some application data
-                    if (header!=null||buffer!=null)
+                    if (outBuf!=null)
                     {
                         int c=0;
-                        if (header!=null && header.hasContent())
+                        if (outBuf!=null && outBuf.hasContent())
                         {
-                            if (buffer!=null && buffer.hasContent())
-                                c=wrap(header,buffer);
-                            else
-                                c=wrap(header);
-                            progress=_result.bytesProduced()>0||_result.bytesConsumed()>0;
-                        }
-                        else if (buffer!=null && buffer.hasContent())
-                        {
-                            c=wrap(buffer);
+                            c=wrap(outBuf);
                             progress=_result.bytesProduced()>0||_result.bytesConsumed()>0;
                         }
                         
@@ -285,11 +275,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     }
 
                     // Try unwrapping some application data
-                    if (inbuf.remaining()>0 && _inNIOBuffer!=null && _inNIOBuffer.hasContent())
+                    if (inBBuf.remaining()>0 && _inNIOBuffer!=null && _inNIOBuffer.hasContent())
                     {
-                        int space=inbuf.remaining();
-                        progress|=unwrap(inbuf);
-                        received+=space-inbuf.remaining();
+                        int space=inBBuf.remaining();
+                        progress|=unwrap(inBBuf);
+                        received+=space-inBBuf.remaining();
                     }
                     break;
 
@@ -324,16 +314,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
                     // The SSL needs to send some handshake data to the other side
                     int c=0;
-                    if (header!=null && header.hasContent())
-                    {
-                        if (buffer!=null && buffer.hasContent())
-                            c=wrap(header,buffer);
-                        else
-                            c=wrap(header);
-                    }
-                    else if (buffer!=null && buffer.hasContent())
-                        c=wrap(buffer);
-                    else
+                    if (outBuf!=null && outBuf.hasContent())
+                        c=wrap(outBuf);
+                    else 
                         c=wrap(__EMPTY_BUFFER);
 
                     progress=_result.bytesProduced()>0||_result.bytesConsumed()>0;
@@ -341,7 +324,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         sent+=c;
                     else if (c<0 && sent==0)
                         sent=-1;
-
                     
                     break;
                 }
@@ -351,9 +333,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     checkRenegotiate();
                     
                     // Need more data to be unwrapped so try another call to unwrap
-                    progress|=unwrap(inbuf);
+                    progress|=unwrap(inBBuf);
                     if (_closing)
-                        inbuf.clear();
+                        inBBuf.clear();
                     
                     break;
                 }
@@ -378,7 +360,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         _closing=true;
         
         // Processing will call flush(), which will handle the closing state with a closeOutbound then shutdownOutput
-        process(null,null,null);
+        process(null,null);
     }
 
     /* ------------------------------------------------------------ */
@@ -409,10 +391,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 // the inBuffer.  If there is no data in the inBuffer, then
                 // super.fill is called to read encrypted bytes.
                 unwrap(bbuf);
-
-                int progress = process(bbuf,null,null);
-                
-                // TODO ???
+                process(bbuf,null);
             }
             finally
             {
@@ -434,7 +413,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     public int flush(Buffer buffer) throws IOException
     {
         LOG.debug("{} flush1",_session);
-        return process(null,buffer,null);
+        return process(null,buffer);
     }
 
 
@@ -445,7 +424,24 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
         LOG.debug("{} flush3",_session);
-        return process(null,header,buffer);
+        
+        int len=0;
+        int flushed=0;
+        if (header!=null && header.hasContent())
+        {
+            len=header.length();
+            flushed=flush(header);
+        }
+        if (flushed==len && buffer!=null && buffer.hasContent())
+        {
+            int f=flush(buffer);
+            if (f>=0)
+                flushed+=f;
+            else if (flushed==0)
+                flushed=-1;
+        }
+        
+        return flushed;
     }
 
     /* ------------------------------------------------------------ */
@@ -634,121 +630,28 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    private int wrap(final Buffer header, final Buffer buffer) throws IOException
-    {
-        _gather[0]=extractOutputBuffer(header);
-
-        synchronized(_gather[0])
-        {
-            _gather[0].position(header.getIndex());
-            _gather[0].limit(header.putIndex());
-
-            _gather[1]=extractOutputBuffer(buffer);
-
-            synchronized(_gather[1])
-            {
-                _gather[1].position(buffer.getIndex());
-                _gather[1].limit(buffer.putIndex());
-
-                needOutBuffer();
-                ByteBuffer out_buffer=_outNIOBuffer.getByteBuffer();
-                synchronized(out_buffer)
-                {
-                    int consumed=0;
-                    try
-                    {
-                        _outNIOBuffer.clear();
-                        out_buffer.position(0);
-                        out_buffer.limit(out_buffer.capacity());
-
-                        _result=null;
-                        _result=_engine.wrap(_gather,out_buffer);
-                        if (_debug) LOG.debug(_session+" wrap wrap "+_result);
-                        _outNIOBuffer.setGetIndex(0);
-                        _outNIOBuffer.setPutIndex(_result.bytesProduced());
-                        consumed=_result.bytesConsumed();
-                    }
-                    catch(SSLException e)
-                    {
-                        LOG.warn(getRemoteAddr()+":"+getRemotePort()+" "+e);
-                        super.close();
-                        throw e;
-                    }
-                    finally
-                    {
-                        out_buffer.position(0);
-
-                        if (consumed>0)
-                        {
-                            int len=consumed<header.length()?consumed:header.length();
-                            header.skip(len);
-                            consumed-=len;
-                            _gather[0].position(0);
-                            _gather[0].limit(_gather[0].capacity());
-                        }
-                        if (consumed>0)
-                        {
-                            int len=consumed<buffer.length()?consumed:buffer.length();
-                            buffer.skip(len);
-                            consumed-=len;
-                            _gather[1].position(0);
-                            _gather[1].limit(_gather[1].capacity());
-                        }
-                        assert consumed==0;
-
-                        freeOutBuffer();
-                    }
-                }
-            }
-        }
-
-
-        switch(_result.getStatus())
-        {
-            case BUFFER_OVERFLOW:
-            case BUFFER_UNDERFLOW:
-                LOG.warn("unwrap {}",_result);
-                _closing=true;
-                return _result.bytesConsumed()>0?_result.bytesConsumed():-1;
-
-            case OK:
-                return _result.bytesConsumed();
-            case CLOSED:
-                _closing=true;
-                return _result.bytesConsumed()>0?_result.bytesConsumed():-1;
-
-            default:
-                LOG.warn("wrap "+_result);
-            throw new IOException(_result.toString());
-        }
-    }
-
-    /* ------------------------------------------------------------ */
     private int wrap(final Buffer buffer) throws IOException
     {
-        _gather[0]=extractOutputBuffer(buffer);
-        synchronized(_gather[0])
+        ByteBuffer bbuf=extractOutputBuffer(buffer);
+        synchronized(bbuf)
         {
-            ByteBuffer bb;
-
-            _gather[0].position(buffer.getIndex());
-            _gather[0].limit(buffer.putIndex());
 
             int consumed=0;
             needOutBuffer();
+            _outNIOBuffer.compact();
             ByteBuffer out_buffer=_outNIOBuffer.getByteBuffer();
             synchronized(out_buffer)
             {
                 try
                 {
-                    _outNIOBuffer.clear();
-                    out_buffer.position(0);
-                    out_buffer.limit(out_buffer.capacity());
+                    bbuf.position(buffer.getIndex());
+                    bbuf.limit(buffer.putIndex());
+                    out_buffer.position(_outNIOBuffer.putIndex());
+                    
                     _result=null;
-                    _result=_engine.wrap(_gather[0],out_buffer);
+                    _result=_engine.wrap(bbuf,out_buffer);
                     if (_debug) LOG.debug(_session+" wrap "+_result);
-                    _outNIOBuffer.setGetIndex(0);
-                    _outNIOBuffer.setPutIndex(_result.bytesProduced());
+                    _outNIOBuffer.setPutIndex(out_buffer.position());
                     consumed=_result.bytesConsumed();
                 }
                 catch(SSLException e)
@@ -760,14 +663,14 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 finally
                 {
                     out_buffer.position(0);
+                    bbuf.position(0);
+                    bbuf.limit(bbuf.capacity());
 
                     if (consumed>0)
                     {
                         int len=consumed<buffer.length()?consumed:buffer.length();
                         buffer.skip(len);
                         consumed-=len;
-                        _gather[0].position(0);
-                        _gather[0].limit(_gather[0].capacity());
                     }
                     assert consumed==0;
 
