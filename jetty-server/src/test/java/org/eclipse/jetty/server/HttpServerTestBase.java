@@ -447,6 +447,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         long start=System.currentTimeMillis();
         Socket client=newSocket(HOST,_connector.getLocalPort());
+        int total=0;
         try
         {
             OutputStream os=client.getOutputStream();
@@ -461,7 +462,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             ).getBytes());
             os.flush();
 
-            int total=0;
             int len=0;
             byte[] buf=new byte[1024*32];
 
@@ -480,6 +480,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         finally
         {
+            System.err.println("Got "+total+" of "+(512*1024));
             client.close();
         }
     }
