@@ -206,6 +206,141 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
     }
 
+    private int process() throws IOException
+    {
+        ByteBuffer bbuf = null; // TODO ???
+        
+        int wraps=0;
+        
+        HandshakeStatus initialStatus = _engine.getHandshakeStatus();
+        loop: while (true)
+        {
+            // If we have encrypted data in output buffer
+            if (isBufferingOutput())
+            {
+                // we must flush it, as the other end might be
+                // waiting for that outgoing data before sending
+                // more incoming data
+                flush();
+
+                // If we were unable to flush all the data, then
+                // we should break the loop and wait for the call
+                // back to handle when the SelectSet detects that
+                // the channel is writable again.
+                if (isBufferingOutput())
+                {
+                    scheduleWrite();
+                    break loop;
+                }
+            }
+
+            // handle the current hand share status
+            switch(_engine.getHandshakeStatus())
+            {
+                case FINISHED:
+                case NOT_HANDSHAKING:
+                    // If we are closing, then unwrap must have CLOSED result,
+                    // so return -1 to signal upwards
+                    if (_closing)
+                        return -1;
+
+                    // otherwise we break loop with the data we have unwrapped.
+                    break loop;
+
+                case NEED_UNWRAP:
+                    checkRenegotiate();
+                    // Need more data to be unwrapped so try another call to unwrap
+                    if (!unwrap(bbuf) && _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP)
+                    {
+                        // If the unwrap call did not make any progress and we are still in
+                        // NEED_UNWRAP, then we should break the loop and wait for more data to
+                        // arrive.
+                        break loop;
+                    }
+                    // progress was made so continue the loop.
+                    break;
+
+                case NEED_TASK:
+                {
+                    // A task needs to be run, so run it!
+
+                    Runnable task;
+                    while ((task=_engine.getDelegatedTask())!=null)
+                    {
+                        task.run();
+                    }
+
+                    // Detect SUN JVM Bug!!!
+                    if(initialStatus==HandshakeStatus.NOT_HANDSHAKING &&
+                       _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP && wraps==0)
+                    {
+                        // This should be NEED_WRAP
+                        // The fix simply detects the signature of the bug and then close the connection (fail-fast) so that ff3 will delegate to using SSL instead of TLS.
+                        // This is a jvm bug on java1.6 where the SSLEngine expects more data from the initial handshake when the client(ff3-tls) already had given it.
+                        // See http://jira.codehaus.org/browse/JETTY-567 for more details
+                        if (_debug) __log.warn(_session+" JETTY-567");
+                        return -1;
+                    }
+                    break;
+                }
+
+                case NEED_WRAP:
+                {
+                    checkRenegotiate();
+                    // The SSL needs to send some handshake data to the other side,
+                    // so let fill become a flush for a little bit.
+                    wraps++;
+                    needOutBuffer();
+                    ByteBuffer out_buffer=_outNIOBuffer.getByteBuffer();
+                    synchronized(out_buffer)
+                    {
+                        try
+                        {
+                            // call wrap with empty application buffers, so it can
+                            // generate required handshake messages into _outNIOBuffer
+                            _outNIOBuffer.compact();
+                            int put=_outNIOBuffer.putIndex();
+                            out_buffer.position();
+                            _result=null;
+                            _result=_engine.wrap(__NO_BUFFERS,out_buffer);
+                            if (_debug) __log.debug(_session+" fill wrap "+_result);
+                            switch(_result.getStatus())
+                            {
+                                case BUFFER_OVERFLOW:
+                                case BUFFER_UNDERFLOW:
+                                    LOG.warn("wrap {}",_result);
+                                    _closing=true;
+                                    break;
+                                case CLOSED:
+                                    _closing=true;
+                                    break;
+                            }
+                            _outNIOBuffer.setPutIndex(put+_result.bytesProduced());
+                        }
+                        catch(SSLException e)
+                        {
+                            super.close();
+                            throw e;
+                        }
+                        finally
+                        {
+                            out_buffer.position(0);
+                        }
+                    }
+
+                    // flush the encrypted outNIOBuffer
+                    flush();
+                    freeOutBuffer();
+
+                    break;
+                }
+            }
+        }
+        
+        return -1; // TODO 
+    }
+    
+    
     /* ------------------------------------------------------------ */
     protected void sslClose() throws IOException
     {
@@ -650,24 +785,25 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     /* ------------------------------------------------------------ */
     @Override
     public void flush() throws IOException
-    {
-        if (_outNIOBuffer==null)
-            return;
-
-        int len=_outNIOBuffer.length();
+    {        
         if (isBufferingOutput())
         {
             int flushed=super.flush(_outNIOBuffer);
-            if (_debug) __log.debug(_session+" Flushed "+flushed+"/"+len);
-            if (isBufferingOutput())
+            if (_debug) 
+                __log.debug(_session+" Flushed "+flushed+" left="+_outNIOBuffer.length());
+        }
+        else if (_closing)
+        {
+            if (_engine.isOutboundDone())
             {
-                // Try again after yield.... cheaper than a reschedule.
-                Thread.yield();
-                flushed=super.flush(_outNIOBuffer);
-                if (_debug) __log.debug(_session+" flushed "+flushed+"/"+len);
+                if (_debug) 
+                    __log.debug(_session+" close");
+                super.close();
             }
-            else if (_closing && !_engine.isOutboundDone())
+            else
             {
+                if (_debug) 
+                    __log.debug(_session+" closeOutbound");
                 _engine.closeOutbound();
             }
         }

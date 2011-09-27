@@ -98,9 +98,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         SslSelectChannelEndPoint sslHttpChannelEndpoint=(SslSelectChannelEndPoint)endpoint;
         SSLEngine sslEngine=sslHttpChannelEndpoint.getSSLEngine();
         SSLSession sslSession=sslEngine.getSession();
-        
-        System.err.println(sslSession.getProtocol());
-        
+                
         SslCertificates.customize(sslSession,endpoint,request);
     }
 
