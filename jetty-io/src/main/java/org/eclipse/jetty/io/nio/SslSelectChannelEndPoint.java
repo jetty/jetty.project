@@ -194,16 +194,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     public void shutdownOutput() throws IOException
     {
         LOG.debug("{} shutdownOutput",_session);
-        try
-        {
-            // All SSL closes should be graceful, as it is more secure.
-            // So normal SSL close can be used here.
-            close();
-        }
-        finally
-        {
-            super.shutdownOutput();
-        }
+        // All SSL closes should be graceful, as it is more secure.
+        // So normal SSL close can be used here.
+        close();
     }
 
     /* ------------------------------------------------------------ */
