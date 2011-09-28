@@ -355,6 +355,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                         }
                     }
 
+                    /* TODO - is this needed ?
                     if (_generator.isComplete() && !_parser.isComplete())
                     {
                         if (!_endp.isOpen() || _endp.isInputShutdown())
@@ -364,6 +365,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                             close();
                         }
                     }
+                    */
 
                     if (complete || failed)
                     {
@@ -669,6 +671,9 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                 case HttpExchange.STATUS_EXCEPTED:
                 case HttpExchange.STATUS_EXPIRED:
                     break;
+                case HttpExchange.STATUS_PARSING_CONTENT:
+                    if (_endp.isInputShutdown() && _parser.isState(HttpParser.STATE_EOF_CONTENT))
+                        break;
                 default:
                     String exch= exchange.toString();
                     String reason = _endp.isOpen()?(_endp.isInputShutdown()?"half closed: ":"local close: "):"closed: ";

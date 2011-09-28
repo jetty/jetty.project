@@ -330,6 +330,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
 
         if (_debug) LOG.debug("{} received {} sent {}",_session,received,sent);
+        
+        freeInBuffer();
         return (received<0||sent<0)?-1:(received+sent);
     }
 
@@ -383,13 +385,15 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 buffer.setPutIndex(bbuf.position());
                 bbuf.position(0);
             }
-
-            // return the number of unencrypted bytes filled.
-            int filled=buffer.length()-size;
-            if (filled>0)
-                _handshook=true;
-            return filled;
         }
+        // return the number of unencrypted bytes filled.
+        int filled=buffer.length()-size;
+        if (filled>0)
+            _handshook=true;
+        else if (filled==0 && isInputShutdown())
+            return -1;
+        
+        return filled;
     }
 
     /* ------------------------------------------------------------ */
@@ -433,18 +437,30 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     public void flush() throws IOException
     {
         LOG.debug(_session+" flush");
+        if (!isOpen())
+            throw new EofException();
+        
         if (isBufferingOutput())
         {
             int flushed=super.flush(_outNIOBuffer);
             if (_debug)
                 LOG.debug(_session+" flushed "+flushed+" left="+_outNIOBuffer.length());
         }
-        else if (_engine.isOutboundDone() && !super.isOutputShutdown())
+        else if (_engine.isOutboundDone() && super.isOpen())
         {
             if (_debug)
                 LOG.debug(_session+" flush shutdownOutput");
-            super.shutdownOutput();
+            try
+            {
+                super.shutdownOutput();
+            }
+            catch(IOException e)
+            {
+                LOG.ignore(e);
+            }
         }
+
+        freeOutBuffer();
     }
 
     /* ------------------------------------------------------------ */
@@ -466,41 +482,21 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         needInBuffer();
         ByteBuffer in_buffer=_inNIOBuffer.getByteBuffer();
 
-        if (_inNIOBuffer.hasContent())
-            _inNIOBuffer.compact();
-        else
-            _inNIOBuffer.clear();
+        _inNIOBuffer.compact();
 
         int total_filled=0;
         boolean remoteClosed = false;
         // loop filling as much encrypted data as we can into the buffer
         while (_inNIOBuffer.space()>0 && super.isOpen())
         {
-            try
-            {
-                int filled=super.fill(_inNIOBuffer);
-                if (_debug) LOG.debug(_session+" filled "+filled);
-                if (filled < 0)
-                    remoteClosed = true;
-                // break the loop if no progress is made (we have read everything there is to read)
-                if (filled<=0)
-                    break;
-                total_filled+=filled;
-            }
-            catch(IOException e)
-            {
-                if (_inNIOBuffer.length()==0)
-                {
-                    freeInBuffer();
-                    if (_outNIOBuffer!=null)
-                    {
-                        _outNIOBuffer.clear();
-                        freeOutBuffer();
-                    }
-                    throw e;
-                }
+            int filled=super.fill(_inNIOBuffer);
+            if (_debug) LOG.debug(_session+" filled "+filled);
+            if (filled < 0)
+                remoteClosed = true;
+            // break the loop if no progress is made (we have read everything there is to read)
+            if (filled<=0)
                 break;
-            }
+            total_filled+=filled;
         }
 
         // If we have no progress and no data
@@ -520,9 +516,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     super.close();
                 }
             }
-
-            freeInBuffer();
-            freeOutBuffer();
 
             if (!isOpen())
                 throw new EofException();
@@ -548,7 +541,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         catch(SSLException e)
         {
             LOG.warn(getRemoteAddr() + ":" + getRemotePort() + " " + e);
-            freeOutBuffer();
             super.close();
             throw e;
         }
@@ -557,7 +549,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             // reset the buffer so it can be managed by the _inNIOBuffer again.
             in_buffer.position(0);
             in_buffer.limit(in_buffer.capacity());
-            freeInBuffer();
         }
 
         // handle the unwrap results
@@ -650,9 +641,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                         buffer.skip(len);
                         consumed-=len;
                     }
-                    assert consumed==0;
-
-                    freeOutBuffer();
                 }
             }
         }

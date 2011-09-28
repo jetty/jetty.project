@@ -569,20 +569,20 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 catch (EofException e)
                 {
                     __log.debug("EOF", e);
-                    try{close();}
+                    try{getChannel().close();}
                     catch(IOException e2){__log.ignore(e2);}
                 }
                 catch (IOException e)
                 {
                     __log.warn(e.toString());
                     __log.debug(e);
-                    try{close();}
+                    try{getChannel().close();}
                     catch(IOException e2){__log.ignore(e2);}
                 }
                 catch (Throwable e)
                 {
                     __log.warn("handle failed", e);
-                    try{close();}
+                    try{getChannel().close();}
                     catch(IOException e2){__log.ignore(e2);}
                 }
                 dispatched=!undispatch();

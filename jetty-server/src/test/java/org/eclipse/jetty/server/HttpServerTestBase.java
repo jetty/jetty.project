@@ -600,12 +600,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             long[] times=new long[10];
             for (int i=0;i<times.length;i++)
             {
-                System.err.println("\nBLOCK "+request.getRequestURI()+" "+i);
+                // System.err.println("\nBLOCK "+request.getRequestURI()+" "+i);
                 long start=System.currentTimeMillis();
                 out.write(buf);
                 long end=System.currentTimeMillis();
                 times[i]=end-start;
-                System.err.println("Block "+request.getRequestURI()+" "+i+" "+times[i]);
+                // System.err.println("Block "+request.getRequestURI()+" "+i+" "+times[i]);
             }
             out.println();
             for (long t : times)

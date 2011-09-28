@@ -268,7 +268,7 @@ public class HttpParser implements Parser
         {
             long filled=fill();
             
-            if (filled < 0) 
+            if (filled < 0 || _endp.isInputShutdown()) 
             {
                 if (_headResponse && _state>STATE_END)
                 {

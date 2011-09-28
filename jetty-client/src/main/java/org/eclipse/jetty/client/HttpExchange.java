@@ -107,8 +107,10 @@ public class HttpExchange
     private long _timeout = -1;
     private volatile Timeout.Task _timeoutTask;
     
-    private long _lastStateChange=-1;
+    private long _lastStateChange=System.currentTimeMillis();
     private long _sent=-1;
+    private int _lastState=-1;
+    private int _lastStatePeriod=-1;
 
     boolean _onRequestCompleteDone;
     boolean _onResponseCompleteDone;
@@ -188,7 +190,10 @@ public class HttpExchange
             boolean set = false;
             if (oldStatus!=newStatus)
             {
-                _lastStateChange=System.currentTimeMillis();
+                long now = System.currentTimeMillis();
+                _lastStatePeriod=(int)(now-_lastStateChange);
+                _lastState=oldStatus;
+                _lastStateChange=now;
                 if (newStatus==STATUS_SENDING_REQUEST)
                     _sent=_lastStateChange;
             }
@@ -816,8 +821,10 @@ public class HttpExchange
         String state=toState(getStatus());
         long now=System.currentTimeMillis();
         long forMs = now -_lastStateChange;
-        String s= String.format("%s@%x=%s//%s%s#%s(%dms)",getClass().getSimpleName(),hashCode(),_method,_address,_uri,state,forMs);
-        if (getStatus()>=STATUS_SENDING_REQUEST)
+        String s= _lastState>=0
+            ?String.format("%s@%x=%s//%s%s#%s(%dms)->%s(%dms)",getClass().getSimpleName(),hashCode(),_method,_address,_uri,toState(_lastState),_lastStatePeriod,state,forMs)
+            :String.format("%s@%x=%s//%s%s#%s(%dms)",getClass().getSimpleName(),hashCode(),_method,_address,_uri,state,forMs);
+        if (getStatus()>=STATUS_SENDING_REQUEST && _sent>0)
             s+="sent="+(now-_sent)+"ms";
         return s;
     }

@@ -129,6 +129,7 @@ public class HttpExchangeTest
         final CountDownLatch latch = new CountDownLatch(nb);
         HttpExchange[] httpExchange = new HttpExchange[nb];
         long start = System.currentTimeMillis();
+        final boolean verbose=false;
         for (int i = 0; i < nb; i++)
         {
             final int n = i;
@@ -142,6 +143,8 @@ public class HttpExchangeTest
                 @Override
                 protected void onRequestCommitted()
                 {
+                    if (verbose)
+                        System.err.println("[ ");
                     result = "committed";
                 }
 
@@ -149,6 +152,8 @@ public class HttpExchangeTest
                 @Override
                 protected void onRequestComplete() throws IOException
                 {
+                    if (verbose)
+                        System.err.println("[ ==");
                     result = "sent";
                 }
 
@@ -156,6 +161,8 @@ public class HttpExchangeTest
                 /* ------------------------------------------------------------ */
                 protected void onResponseStatus(Buffer version, int status, Buffer reason)
                 {
+                    if (verbose)
+                        System.err.println("] "+version+" "+status+" "+reason);
                     result = "status";
                 }
 
@@ -163,12 +170,16 @@ public class HttpExchangeTest
                 @Override
                 protected void onResponseHeader(Buffer name, Buffer value)
                 {
+                    if (verbose)
+                        System.err.println("] "+name+": "+value);
                 }
 
                 /* ------------------------------------------------------------ */
                 @Override
                 protected void onResponseHeaderComplete() throws IOException
                 {
+                    if (verbose)
+                        System.err.println("] -");
                     result = "content";
                     super.onResponseHeaderComplete();
                 }
@@ -178,18 +189,22 @@ public class HttpExchangeTest
                 protected void onResponseContent(Buffer content)
                 {
                     len += content.length();
+                    if (verbose)
+                        System.err.println("] "+content.length()+" -> "+len);
                 }
 
                 /* ------------------------------------------------------------ */
                 @Override
                 protected void onResponseComplete()
                 {
+                    if (verbose)
+                        System.err.println("] ==");
                     result = "complete";
                     if (len == 2009)
                         latch.countDown();
                     else
                     {
-                        System.err.println(n + " ONLY " + len);
+                        System.err.println(n + " ONLY " + len+ "/2009");
                     }
                     complete.countDown();
                 }
@@ -198,6 +213,8 @@ public class HttpExchangeTest
                 @Override
                 protected void onConnectionFailed(Throwable ex)
                 {
+                    if (verbose)
+                        System.err.println("] "+ex);
                     complete.countDown();
                     result = "failed";
                     System.err.println(n + " FAILED " + ex);
@@ -208,6 +225,8 @@ public class HttpExchangeTest
                 @Override
                 protected void onException(Throwable ex)
                 {
+                    if (verbose)
+                        System.err.println("] "+ex);
                     complete.countDown();
                     result = "excepted";
                     System.err.println(n + " EXCEPTED " + ex);
@@ -218,6 +237,8 @@ public class HttpExchangeTest
                 @Override
                 protected void onExpire()
                 {
+                    if (verbose)
+                        System.err.println("] expired");
                     complete.countDown();
                     result = "expired";
                     System.err.println(n + " EXPIRED " + len);
@@ -228,7 +249,7 @@ public class HttpExchangeTest
                 @Override
                 public String toString()
                 {
-                    return n+" "+result+" "+len;
+                    return n+"/"+result+"/"+len+"/"+super.toString();
                 }
             };
 
@@ -374,7 +395,50 @@ public class HttpExchangeTest
     public void testBigPostWithContentExchange() throws Exception
     {   
         int size =32;
-        ContentExchange httpExchange=new ContentExchange();
+        ContentExchange httpExchange=new ContentExchange()
+        {
+
+            @Override
+            protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+            {
+                System.err.println("] "+version+" "+status+" "+reason);
+                // TODO Auto-generated method stub
+                super.onResponseStatus(version,status,reason);
+            }
+
+            @Override
+            protected synchronized void onResponseHeader(Buffer name, Buffer value) throws IOException
+            {
+                System.err.println("] "+name+": "+value);
+                // TODO Auto-generated method stub
+                super.onResponseHeader(name,value);
+            }
+
+            @Override
+            protected synchronized void onResponseContent(Buffer content) throws IOException
+            {
+                System.err.println("] "+content.length());
+                // TODO Auto-generated method stub
+                super.onResponseContent(content);
+            }
+
+            @Override
+            protected void onRequestComplete() throws IOException
+            {
+                System.err.println("] ==");
+                // TODO Auto-generated method stub
+                super.onRequestComplete();
+            }
+
+            @Override
+            protected void onResponseHeaderComplete() throws IOException
+            {
+                System.err.println("] --");
+                // TODO Auto-generated method stub
+                super.onResponseHeaderComplete();
+            }
+            
+        };
 
         Buffer babuf = new ByteArrayBuffer(size*36*1024);
         Buffer niobuf = new DirectNIOBuffer(size*36*1024);
@@ -394,7 +458,6 @@ public class HttpExchangeTest
         
         _httpClient.send(httpExchange);
         int status = httpExchange.waitForDone();
-
         assertEquals(HttpExchange.STATUS_COMPLETED,status);
         String result=httpExchange.getResponseContent();
         assertEquals(babuf.length(),result.length());
@@ -406,9 +469,9 @@ public class HttpExchangeTest
         httpExchange.setRequestContent(niobuf);
         _httpClient.send(httpExchange);
         status = httpExchange.waitForDone();
+        assertEquals(HttpExchange.STATUS_COMPLETED, status);
         result=httpExchange.getResponseContent();
         assertEquals(niobuf.length(),result.length());
-        assertEquals(HttpExchange.STATUS_COMPLETED, status);
     }
 
     /* ------------------------------------------------------------ */

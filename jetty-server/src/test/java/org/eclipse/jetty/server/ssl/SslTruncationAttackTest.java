@@ -159,17 +159,6 @@ public class SslTruncationAttackTest
         Assert.assertTrue("endpoint not closed", endPointClosed.get());
     }
 
-    /**
-     * This test is currently failing because we are looping on SslSCEP.unwrap()
-     * to fill the buffer, so there is a case where we loop once, read some data
-     * loop again and read -1, but we can't close the connection yet as we have
-     * to notify the application (not sure that this is necessary... must assume
-     * the data is truncated, so it's not that safe to pass it to the application).
-     * This case needs to be revisited, and it also requires a review of the
-     * Connection:close case, especially on the client side.
-     * @throws Exception if the test fails
-     */
-    @Ignore
     @Test
     public void testTruncationAttackBeforeReading() throws Exception
     {
