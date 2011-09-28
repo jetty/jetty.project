@@ -938,28 +938,31 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
 
             Selector selector=_selector;
-            final ArrayList<Object> dump = new ArrayList<Object>(selector.keys().size()*2);
-            dump.add(where);
+            if (selector!=null)
+            {
+                final ArrayList<Object> dump = new ArrayList<Object>(selector.keys().size()*2);
+                dump.add(where);
 
-            final CountDownLatch latch = new CountDownLatch(1);
+                final CountDownLatch latch = new CountDownLatch(1);
 
-            addChange(new ChangeTask(){
-                public void run()
+                addChange(new ChangeTask(){
+                    public void run()
+                    {
+                        dumpKeyState(dump);
+                        latch.countDown();
+                    }
+                });
+
+                try
                 {
-                    dumpKeyState(dump);
-                    latch.countDown();
+                    latch.await(5,TimeUnit.SECONDS);
                 }
-            });
-
-            try
-            {
-                latch.await(5,TimeUnit.SECONDS);
+                catch(InterruptedException e)
+                {
+                    LOG.ignore(e);
+                }
+                AggregateLifeCycle.dump(out,indent,dump);
             }
-            catch(InterruptedException e)
-            {
-                LOG.ignore(e);
-            }
-            AggregateLifeCycle.dump(out,indent,dump);
         }
 
         /* ------------------------------------------------------------ */

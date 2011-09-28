@@ -56,8 +56,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     private boolean _closing=false;
     private SSLEngineResult _result;
 
-    private boolean _handshook=false;
-    private boolean _allowRenegotiate=false;
+    private volatile boolean _handshook=false;
+    private boolean _allowRenegotiate=true;
 
     private final boolean _debug = LOG.isDebugEnabled(); // snapshot debug status for optimizer
 
@@ -239,8 +239,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
                 case NOT_HANDSHAKING:
 
-                    _handshook=true;
-
                     // If closing, don't process application data
                     if (_closing)
                     {
@@ -388,9 +386,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         // return the number of unencrypted bytes filled.
         int filled=buffer.length()-size;
-        if (filled>0)
-            _handshook=true;
-        else if (filled==0 && isInputShutdown())
+        if (filled==0 && isInputShutdown())
             return -1;
         
         return filled;
@@ -533,6 +529,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
             // Do the unwrap
             _result=_engine.unwrap(in_buffer,buffer);
+            if (!_handshook && _result.getHandshakeStatus()==SSLEngineResult.HandshakeStatus.FINISHED)
+                _handshook=true;
             if (_debug) LOG.debug(_session+" unwrap "+_result);
 
             // skip the bytes consumed
@@ -620,6 +618,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     _result=null;
                     _result=_engine.wrap(bbuf,out_buffer);
                     if (_debug) LOG.debug(_session+" wrap "+_result);
+                    if (!_handshook && _result.getHandshakeStatus()==SSLEngineResult.HandshakeStatus.FINISHED)
+                        _handshook=true;
                     _outNIOBuffer.setPutIndex(out_buffer.position());
                     consumed=_result.bytesConsumed();
                 }
@@ -710,7 +710,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         final NIOBuffer i=_inNIOBuffer;
         final NIOBuffer o=_outNIOBuffer;
-        return "SSL"+super.toString()+","+_engine.getHandshakeStatus()+", in/out="+
+        return "SSL"+super.toString()+","+(_engine==null?"-":_engine.getHandshakeStatus())+", in/out="+
         (i==null?0:i.length())+"/"+(o==null?0:o.length())+
         " bi/o="+isBufferingInput()+"/"+isBufferingOutput()+
         " "+_result;

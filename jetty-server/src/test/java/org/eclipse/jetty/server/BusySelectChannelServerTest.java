@@ -52,7 +52,10 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                     {
                         int x=write++&0xff;
                         if (x<8)
+                        {
+                            clearWritable();
                             return 0;
+                        }
                         if (x<32)
                             return flush(header);
                         return super.flush(header,buffer,trailer);
@@ -67,7 +70,10 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                     {
                         int x=write++&0xff;
                         if (x<8)
+                        {
+                            clearWritable();
                             return 0;
+                        }
                         if (x<32)
                         {
                             View v = new View(buffer);
@@ -75,6 +81,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                             int l=super.flush(v);
                             if (l>0)
                                 buffer.skip(l);
+                            clearWritable();
                             return l;
                         }
                         return super.flush(buffer);
