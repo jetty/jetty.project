@@ -166,8 +166,8 @@ public class ChannelEndPoint implements EndPoint
         {
             final NIOBuffer nbuf = (NIOBuffer)buf;
             final ByteBuffer bbuf=nbuf.getByteBuffer();
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             try
             {
                 synchronized(bbuf)
@@ -176,14 +176,6 @@ public class ChannelEndPoint implements EndPoint
                     {
                         bbuf.position(buffer.putIndex());
                         len=_channel.read(bbuf);
-
-
-                        LOG.debug("{} {} {} read={}",
-                                this.getChannel().isOpen(),
-                                this.isInputShutdown(),
-                                this.isOutputShutdown(),
-                                this.getChannel().isOpen(),
-                                len);
                     }
                     finally
                     {
