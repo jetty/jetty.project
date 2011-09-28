@@ -208,6 +208,9 @@ public class HttpExchange
                         case STATUS_EXCEPTED:
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
+                        case STATUS_EXPIRED:
+                            set = setStatusExpired(newStatus,oldStatus);
+                            break;
                     }
                     break;
                 case STATUS_WAITING_FOR_CONNECTION:
@@ -219,8 +222,7 @@ public class HttpExchange
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_EXPIRED:
-                            if (set = _status.compareAndSet(oldStatus,newStatus))
-                                getEventListener().onExpire();
+                            set = setStatusExpired(newStatus,oldStatus);
                             break;
                     }
                     break;
@@ -233,8 +235,7 @@ public class HttpExchange
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_EXPIRED:
-                            if (set = _status.compareAndSet(oldStatus,newStatus))
-                                getEventListener().onExpire();
+                            set = setStatusExpired(newStatus,oldStatus);
                             break;
                     }
                     break;
@@ -250,8 +251,7 @@ public class HttpExchange
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_EXPIRED:
-                            if (set = _status.compareAndSet(oldStatus,newStatus))
-                                getEventListener().onExpire();
+                            set = setStatusExpired(newStatus,oldStatus);
                             break;
                     }
                     break;
@@ -264,8 +264,7 @@ public class HttpExchange
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_EXPIRED:
-                            if (set = _status.compareAndSet(oldStatus,newStatus))
-                                getEventListener().onExpire();
+                            set = setStatusExpired(newStatus,oldStatus);
                             break;
                     }
                     break;
@@ -281,8 +280,7 @@ public class HttpExchange
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_EXPIRED:
-                            if (set = _status.compareAndSet(oldStatus,newStatus))
-                                getEventListener().onExpire();
+                            set = setStatusExpired(newStatus,oldStatus);
                             break;
                     }
                     break;
@@ -298,8 +296,7 @@ public class HttpExchange
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
                         case STATUS_EXPIRED:
-                            if (set = _status.compareAndSet(oldStatus,newStatus))
-                                getEventListener().onExpire();
+                            set = setStatusExpired(newStatus,oldStatus);
                             break;
                     }
                     break;
@@ -357,6 +354,14 @@ public class HttpExchange
         {
             LOG.warn(x);
         }
+    }
+
+    private boolean setStatusExpired(int newStatus, int oldStatus)
+    {
+        boolean set;
+        if (set = _status.compareAndSet(oldStatus,newStatus))
+            getEventListener().onExpire();
+        return set;
     }
 
     public boolean isDone()
