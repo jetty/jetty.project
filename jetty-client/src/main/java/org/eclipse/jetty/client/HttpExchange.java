@@ -110,17 +110,10 @@ public class HttpExchange
     // a timeout for this exchange
     private long _timeout = -1;
     private volatile Timeout.Task _timeoutTask;
-<<<<<<< HEAD
-    
     private long _lastStateChange=System.currentTimeMillis();
     private long _sent=-1;
     private int _lastState=-1;
     private int _lastStatePeriod=-1;
-=======
-
-    private long _lastStateChange = -1;
-    private long _sent = -1;
->>>>>>> master
 
     boolean _onRequestCompleteDone;
     boolean _onResponseCompleteDone;
