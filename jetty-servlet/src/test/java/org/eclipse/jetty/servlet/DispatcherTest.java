@@ -204,7 +204,6 @@ public class DispatcherTest
     }
     
     @Test
-    @Ignore("failing")
     public void testIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
@@ -230,7 +229,6 @@ public class DispatcherTest
     }
     
     @Test
-    @Ignore("failing")
     public void testWrappedIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");

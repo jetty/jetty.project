@@ -293,28 +293,28 @@ public class ResourceHandler extends AbstractHandler
     /* ------------------------------------------------------------ */
     protected Resource getResource(HttpServletRequest request) throws MalformedURLException
     {
-        String servletPath;
         String pathInfo;
         Boolean included = request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI) != null;
         if (included != null && included.booleanValue())
         {
-            servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+            /*
+             On an include there is no servletPath, nor do we want to look for one
+             as the resource handler is outside of the servlet contexts so there is 
+             no special servlet handler that manages this value.
+             we expect a null in Dispatcher.INCLUDE_SERVLET_PATH
+            
+             String servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+             assert servletPath == null;
+            */
             pathInfo = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
-            if (servletPath == null)
-            {
-                servletPath = request.getServletPath();
-                pathInfo = request.getPathInfo();
-            }
         }
         else
         {
             included = Boolean.FALSE;
-            servletPath = request.getServletPath();
             pathInfo = request.getPathInfo();
         }
-
-        String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
-        return getResource(pathInContext);
+        
+        return getResource(pathInfo);
     }
 
 
