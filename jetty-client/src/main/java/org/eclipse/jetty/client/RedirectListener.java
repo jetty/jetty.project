@@ -110,38 +110,48 @@ public class RedirectListener extends HttpEventListenerWrapper
             if (_location != null)
             {
                 if (_location.indexOf("://")>0)
+                {
                     _exchange.setURL(_location);
+                }
                 else
+                {
                     _exchange.setRequestURI(_location);
+                }
 
                 // destination may have changed
                 boolean isHttps = HttpSchemes.HTTPS.equals(String.valueOf(_exchange.getScheme()));
                 HttpDestination destination=_destination.getHttpClient().getDestination(_exchange.getAddress(),isHttps);
 
                 if (_destination==destination)
+                {
                     _destination.resend(_exchange);
+                }
                 else
                 {
                     // unwrap to find ultimate listener.
                     HttpEventListener listener=this;
                     while(listener instanceof HttpEventListenerWrapper)
+                    {
                         listener=((HttpEventListenerWrapper)listener).getEventListener();
+                    }
+                    
                     //reset the listener
                     _exchange.getEventListener().onRetry();
                     _exchange.reset();
                     _exchange.setEventListener(listener);
 
                     // Set the new Host header
-                    Address adr = _exchange.getAddress();
-                    int port = adr.getPort();
-                    StringBuilder hh = new StringBuilder( 64 );
-                    hh.append( adr.getHost() );
-                    if( !( ( port == 80 && !isHttps ) ||
-                           ( port == 443 && isHttps ) ) ) {
-                        hh.append( ':' );
-                        hh.append( port );
+                    Address address = _exchange.getAddress();
+                    int port = address.getPort();
+                    StringBuilder hostHeader = new StringBuilder( 64 );
+                    hostHeader.append( address.getHost() );
+                    if( !( ( port == 80 && !isHttps ) || ( port == 443 && isHttps ) ) ) 
+                    {
+                        hostHeader.append( ':' );
+                        hostHeader.append( port );
                     }
-                    _exchange.setRequestHeader( HttpHeaders.HOST, hh.toString() );
+                    
+                    _exchange.setRequestHeader( HttpHeaders.HOST, hostHeader.toString() );
 
                     destination.send(_exchange);
                 }
