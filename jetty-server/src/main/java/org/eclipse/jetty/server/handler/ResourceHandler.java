@@ -295,15 +295,15 @@ public class ResourceHandler extends AbstractHandler
     {
         String servletPath;
         String pathInfo;
-        Boolean included =request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI)!=null;
-        if (included!=null && included.booleanValue())
+        Boolean included = request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI) != null;
+        if (included != null && included.booleanValue())
         {
-            servletPath=(String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
-            pathInfo=(String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
-            if (servletPath==null)
+            servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+            if (servletPath == null)
             {
-                servletPath=request.getServletPath();
-                pathInfo=request.getPathInfo();
+                servletPath = request.getServletPath();
+                pathInfo = request.getPathInfo();
             }
         }
         else
@@ -312,7 +312,7 @@ public class ResourceHandler extends AbstractHandler
             servletPath = request.getServletPath();
             pathInfo = request.getPathInfo();
         }
-        
+
         String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
         return getResource(pathInContext);
     }
@@ -353,14 +353,18 @@ public class ResourceHandler extends AbstractHandler
             return;
 
         boolean skipContentBody = false;
+
         if(!HttpMethods.GET.equals(request.getMethod()))
         {
             if(!HttpMethods.HEAD.equals(request.getMethod()))
+            {
                 return;
+            }
             skipContentBody = true;
         }
         
         Resource resource = getResource(request);
+        
         if (resource==null || !resource.exists())
         {
             if (target.endsWith("/jetty-dir.css"))
