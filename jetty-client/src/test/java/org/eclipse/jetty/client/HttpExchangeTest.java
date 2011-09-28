@@ -51,7 +51,7 @@ import org.junit.Test;
  */
 public class HttpExchangeTest
 {
-    final static boolean verbose=false;
+    final static boolean verbose=true;
     protected static int _maxConnectionsPerAddress = 2;
     protected static String _scheme = "http";
     protected static Server _server;
@@ -264,7 +264,11 @@ public class HttpExchangeTest
             _httpClient.send(httpExchange[n]);
         }
 
-        assertTrue(complete.await(45,TimeUnit.SECONDS));
+        Thread.sleep(2000);
+        System.err.println(_httpClient.dump());
+        
+        assertTrue(complete.await(10,TimeUnit.SECONDS));
+
 
         long elapsed=System.currentTimeMillis()-start;
         
