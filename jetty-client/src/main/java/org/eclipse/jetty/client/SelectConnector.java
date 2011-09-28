@@ -91,36 +91,23 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     public void startConnection( HttpDestination destination )
         throws IOException
     {
+        SocketChannel channel = null;
         try
         {
-            SocketChannel channel = SocketChannel.open();
+            channel = SocketChannel.open();
             Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
             channel.socket().setTcpNoDelay(true);
 
             if (_httpClient.isConnectBlocking())
             {
-                channel.socket().connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
-                channel.configureBlocking(false);
-                _selectorManager.register( channel, destination );
+                    channel.socket().connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
+                    channel.configureBlocking(false);
+                    _selectorManager.register( channel, destination );
             }
             else
             {
                 channel.configureBlocking(false);
-                try
-                {
-                    channel.connect(address.toSocketAddress());
-                }
-                catch (UnresolvedAddressException uae)
-                {
-                    channel.close();
-                    throw uae;
-                }
-                catch ( UnknownHostException uhe )
-                {
-                    channel.close();
-                    throw uhe;
-                }
-                
+                channel.connect(address.toSocketAddress());            
                 _selectorManager.register(channel,destination);
                 ConnectTimeout connectTimeout = new ConnectTimeout(channel,destination);
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
@@ -130,6 +117,8 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
         }
         catch(IOException ex)
         {
+            if (channel != null)
+                channel.close();
             destination.onConnectionFailed(ex);
         }
     }
