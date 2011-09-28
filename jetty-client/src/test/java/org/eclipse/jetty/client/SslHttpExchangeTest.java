@@ -21,6 +21,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,8 +33,8 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     protected static ServerAndClientCreator serverAndClientCreator = new SslServerAndClientCreator();
     
     /* ------------------------------------------------------------ */
-    @BeforeClass
-    public static void setUpOnce() throws Exception
+    @Before
+    public void setUpOnce() throws Exception
     {
         _scheme="https";
         _server = serverAndClientCreator.createServer();

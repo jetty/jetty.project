@@ -39,7 +39,9 @@ import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.Stress;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -64,8 +66,9 @@ public class HttpExchangeTest
     }
 
     /* ------------------------------------------------------------ */
-    @BeforeClass
-    public static void setUpOnce() throws Exception
+    // TODO work out why BeforeClass does not work here?
+    @Before
+    public void setUpOnce() throws Exception
     {
         _scheme = "http";
         _server = serverAndClientCreator.createServer();
@@ -74,8 +77,8 @@ public class HttpExchangeTest
     }
 
     /* ------------------------------------------------------------ */
-    @AfterClass
-    public static void tearDownOnce() throws Exception
+    @After
+    public void tearDownOnce() throws Exception
     {
         _httpClient.stop();
         long startTime = System.currentTimeMillis();
