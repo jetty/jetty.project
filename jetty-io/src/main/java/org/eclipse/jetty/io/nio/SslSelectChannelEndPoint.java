@@ -50,7 +50,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
     private final SSLEngine _engine;
     private final SSLSession _session;
-    private int _inCount;
     private volatile NIOBuffer _inNIOBuffer;
     private volatile NIOBuffer _outNIOBuffer;
 
@@ -90,14 +89,12 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         if (_debug) LOG.debug(_session+" channel="+channel);
     }
 
-    int _outCount;
 
     /* ------------------------------------------------------------ */
     private void needOutBuffer()
     {
         synchronized (this)
         {
-            _outCount++;
             if (_outNIOBuffer==null)
                 _outNIOBuffer=(NIOBuffer)_buffers.getBuffer(_session.getPacketBufferSize());
         }
@@ -108,11 +105,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         synchronized (this)
         {
-            if (--_outCount<=0 && _outNIOBuffer!=null && _outNIOBuffer.length()==0)
+            if (_outNIOBuffer!=null && _outNIOBuffer.length()==0)
             {
                 _buffers.returnBuffer(_outNIOBuffer);
                 _outNIOBuffer=null;
-                _outCount=0;
             }
         }
     }
@@ -122,7 +118,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         synchronized (this)
         {
-            _inCount++;
             if(_inNIOBuffer==null)
                 _inNIOBuffer=(NIOBuffer)_buffers.getBuffer(_session.getPacketBufferSize());
         }
@@ -133,11 +128,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         synchronized (this)
         {
-            if (--_inCount<=0 &&_inNIOBuffer!=null && _inNIOBuffer.length()==0)
+            if (_inNIOBuffer!=null && _inNIOBuffer.length()==0)
             {
                 _buffers.returnBuffer(_inNIOBuffer);
                 _inNIOBuffer=null;
-                _inCount=0;
             }
         }
     }
