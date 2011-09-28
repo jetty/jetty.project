@@ -143,6 +143,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     public boolean isProgressing()
     {
         SSLEngineResult result = _result;
+        _result=null;
         return result!=null && (result.bytesConsumed()>0 || result.bytesProduced()>0);
     }
 
