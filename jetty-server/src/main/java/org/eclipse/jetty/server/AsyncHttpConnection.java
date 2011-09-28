@@ -38,7 +38,7 @@ public class AsyncHttpConnection extends HttpConnection
 
             boolean more_in_buffer =false;
             
-            while (_endp.isOpen() && (more_in_buffer || progress))
+            while (_endp.isOpen() && (more_in_buffer || progress) && connection==this)
             {
                 progress=false;
                 try
@@ -94,7 +94,7 @@ public class AsyncHttpConnection extends HttpConnection
                             {
                                 _parser.reset();
                                 _generator.reset(true);
-                                return switched;
+                                connection=switched;
                             }
                         }
                         
