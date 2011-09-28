@@ -14,27 +14,39 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.GenericServlet;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -44,17 +56,27 @@ public class DispatcherTest
 {
     private Server _server;
     private LocalConnector _connector;
-    private ServletContextHandler _context;
-
+    private ContextHandlerCollection _contextCollection;
+    private ServletContextHandler _contextHandler;
+    private ResourceHandler _resourceHandler;
+    
     @Before
     public void init() throws Exception
     {
         _server = new Server();
         _server.setSendServerVersion(false);
         _connector = new LocalConnector();
-        _context = new ServletContextHandler();
-        _context.setContextPath("/context");
-        _server.setHandler(_context);
+        
+        _contextCollection = new ContextHandlerCollection();
+        _contextHandler = new ServletContextHandler();
+        _contextHandler.setContextPath("/context");
+        _contextCollection.addHandler(_contextHandler);
+        _resourceHandler = new ResourceHandler();
+        _resourceHandler.setResourceBase(MavenTestingUtils.getTestResourceDir("dispatchResourceTest").getAbsolutePath());
+        ContextHandler resourceContextHandler = new ContextHandler("/resource");
+        resourceContextHandler.setHandler(_resourceHandler);
+        _contextCollection.addHandler(resourceContextHandler);
+        _server.setHandler(_contextCollection);
         _server.addConnector( _connector );
 
         _server.start();
@@ -70,8 +92,8 @@ public class DispatcherTest
     @Test
     public void testForward() throws Exception
     {
-        _context.addServlet(ForwardServlet.class, "/ForwardServlet/*");
-        _context.addServlet(AssertForwardServlet.class, "/AssertForwardServlet/*");
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(AssertForwardServlet.class, "/AssertForwardServlet/*");
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
@@ -87,8 +109,8 @@ public class DispatcherTest
     @Test
     public void testInclude() throws Exception
     {
-        _context.addServlet(IncludeServlet.class, "/IncludeServlet/*");
-        _context.addServlet(AssertIncludeServlet.class, "/AssertIncludeServlet/*");
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(AssertIncludeServlet.class, "/AssertIncludeServlet/*");
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
@@ -103,9 +125,9 @@ public class DispatcherTest
     @Test
     public void testForwardThenInclude() throws Exception
     {
-        _context.addServlet(ForwardServlet.class, "/ForwardServlet/*");
-        _context.addServlet(IncludeServlet.class, "/IncludeServlet/*");
-        _context.addServlet(AssertForwardIncludeServlet.class, "/AssertForwardIncludeServlet/*");
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(AssertForwardIncludeServlet.class, "/AssertForwardIncludeServlet/*");
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
@@ -120,9 +142,9 @@ public class DispatcherTest
     @Test
     public void testIncludeThenForward() throws Exception
     {
-        _context.addServlet(IncludeServlet.class, "/IncludeServlet/*");
-        _context.addServlet(ForwardServlet.class, "/ForwardServlet/*");
-        _context.addServlet(AssertIncludeForwardServlet.class, "/AssertIncludeForwardServlet/*");
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(AssertIncludeForwardServlet.class, "/AssertIncludeForwardServlet/*");
 
 
         String expected=
@@ -140,8 +162,8 @@ public class DispatcherTest
     @Test
     public void testServletForward() throws Exception
     {
-        _context.addServlet(DispatchServletServlet.class, "/dispatch/*");
-        _context.addServlet(RogerThatServlet.class, "/roger/*");
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/*");
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
@@ -157,8 +179,8 @@ public class DispatcherTest
     @Test
     public void testServletInclude() throws Exception
     {
-        _context.addServlet(DispatchServletServlet.class, "/dispatch/*");
-        _context.addServlet(RogerThatServlet.class, "/roger/*");
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        _contextHandler.addServlet(RogerThatServlet.class, "/roger/*");
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
@@ -171,6 +193,61 @@ public class DispatcherTest
         assertEquals(expected, responses);
     }
 
+    @Test
+    public void testWorkingResourceHandler() throws Exception
+    {        
+        String responses = _connector.getResponses("GET /resource/content.txt HTTP/1.0\n" + "Host: localhost\n\n");
+        
+        assertTrue(responses.contains("content goes here")); // from inside the context.txt file
+    }
+    
+    @Test
+    @Ignore("currently fails")
+    public void testIncludeToResourceHandler() throws Exception
+    {
+        _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
+
+        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?type=include HTTP/1.0\n" + "Host: localhost\n\n");      
+        
+        // from inside the context.txt file
+        assertTrue(responses.contains("content goes here"));
+    }
+    
+    @Test
+    public void testForwardToResourceHandler() throws Exception
+    {
+        _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
+
+        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?type=forward HTTP/1.0\n" + "Host: localhost\n\n");      
+        
+        // from inside the context.txt file
+        assertTrue(responses.contains("content goes here"));
+    }
+    
+    @Test
+    @Ignore("currently fails")
+    public void testWrappedIncludeToResourceHandler() throws Exception
+    {
+        _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
+
+        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?type=include&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");      
+        
+        // from inside the context.txt file
+        assertTrue(responses.contains("content goes here"));
+    }
+    
+    @Test
+    @Ignore("currently fails")
+    public void testWrappedForwardToResourceHandler() throws Exception
+    {
+        _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
+
+        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?type=forward&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");      
+        
+        // from inside the context.txt file
+        assertTrue(responses.contains("content goes here"));
+    }
+    
     public static class ForwardServlet extends HttpServlet implements Servlet
     {
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -230,6 +307,48 @@ public class DispatcherTest
         }
     }
 
+    public static class DispatchToResourceServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
+        {
+            ServletContext targetContext = getServletConfig().getServletContext().getContext("/resource");        
+        
+            RequestDispatcher dispatcher = targetContext.getRequestDispatcher(req.getPathInfo());
+            
+            if ( "true".equals(req.getParameter("wrapped")))
+            {                
+                if (req.getParameter("type").equals("forward"))
+                {
+                    dispatcher.forward(new ServletRequestWrapper(req),new ServletResponseWrapper(res));
+                }
+                else if (req.getParameter("type").equals("include"))
+                {
+                    dispatcher.include(new ServletRequestWrapper(req),new ServletResponseWrapper(res));
+                }
+                else
+                {
+                    throw new ServletException("type of forward or include is required");
+                }
+            }
+            else
+            {
+                if (req.getParameter("type").equals("forward"))
+                {
+                    dispatcher.forward(req,res);
+                }
+                else if (req.getParameter("type").equals("include"))
+                {
+                    dispatcher.include(req,res);
+                }
+                else
+                {
+                    throw new ServletException("type of forward or include is required");
+                }
+            }
+        }
+    }
+    
     public static class AssertForwardServlet extends HttpServlet implements Servlet
     {
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
