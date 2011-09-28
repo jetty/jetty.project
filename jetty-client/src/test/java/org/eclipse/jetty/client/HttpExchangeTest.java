@@ -397,11 +397,14 @@ public class HttpExchangeTest
         int size =32;
         ContentExchange httpExchange=new ContentExchange()
         {
+            int total;
+            
             @Override
             protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
             {
                 if (verbose)
-                    super.onResponseStatus(version,status,reason);
+                    System.err.println("] "+version+" "+status+" "+reason);
+                super.onResponseStatus(version,status,reason);
             }
 
             @Override
@@ -416,7 +419,10 @@ public class HttpExchangeTest
             protected synchronized void onResponseContent(Buffer content) throws IOException
             {
                 if (verbose)
-                    System.err.println("] "+content.length());
+                {
+                    total+=content.length();
+                    System.err.println("] "+content.length()+" -> "+total);
+                }
                 super.onResponseContent(content);
             }
 
