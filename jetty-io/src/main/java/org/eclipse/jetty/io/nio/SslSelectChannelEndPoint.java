@@ -59,7 +59,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     private volatile boolean _handshook=false;
     private boolean _allowRenegotiate=true;
 
-    private final boolean _debug = LOG.isDebugEnabled(); // snapshot debug status for optimizer
+    private volatile boolean _debug = LOG.isDebugEnabled(); // snapshot debug status for optimizer
 
     /* ------------------------------------------------------------ */
     public SslSelectChannelEndPoint(Buffers buffers,SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, SSLEngine engine, int maxIdleTime)
@@ -355,6 +355,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     @Override
     public int fill(Buffer buffer) throws IOException
     {
+        _debug=LOG.isDebugEnabled();
         LOG.debug("{} fill",_session);
         // This end point only works on NIO buffer type (director
         // or indirect), so extract the NIO buffer that is wrapped
@@ -396,6 +397,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     @Override
     public int flush(Buffer buffer) throws IOException
     {
+        _debug=LOG.isDebugEnabled();
         LOG.debug("{} flush1",_session);
         return process(null,buffer);
     }
@@ -407,6 +409,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     @Override
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
+        _debug=LOG.isDebugEnabled();
         LOG.debug("{} flush3",_session);
         
         int len=0;
@@ -474,7 +477,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
      * @return true if progress is made
      */
     private boolean unwrap(ByteBuffer buffer) throws IOException
-    {
+    {        
         needInBuffer();
         ByteBuffer in_buffer=_inNIOBuffer.getByteBuffer();
 
@@ -482,6 +485,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
         int total_filled=0;
         boolean remoteClosed = false;
+        
+        LOG.debug("{} unwrap {} {}",_session,_inNIOBuffer.space()>0,super.isOpen());
+        
         // loop filling as much encrypted data as we can into the buffer
         while (_inNIOBuffer.space()>0 && super.isOpen())
         {
@@ -696,6 +702,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     /* ------------------------------------------------------------ */
+/*
     @Override
     public void scheduleWrite()
     {
@@ -703,7 +710,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         if (!HandshakeStatus.NEED_UNWRAP.equals(_engine.getHandshakeStatus()) || super.isBufferingOutput())
         super.scheduleWrite();
     }
-
+*/
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()

@@ -49,6 +49,7 @@ import org.junit.Test;
  */
 public class HttpExchangeTest
 {
+    final static boolean verbose=false;
     protected static int _maxConnectionsPerAddress = 2;
     protected static String _scheme = "http";
     protected static Server _server;
@@ -129,7 +130,6 @@ public class HttpExchangeTest
         final CountDownLatch latch = new CountDownLatch(nb);
         HttpExchange[] httpExchange = new HttpExchange[nb];
         long start = System.currentTimeMillis();
-        final boolean verbose=false;
         for (int i = 0; i < nb; i++)
         {
             final int n = i;
@@ -397,44 +397,42 @@ public class HttpExchangeTest
         int size =32;
         ContentExchange httpExchange=new ContentExchange()
         {
-
             @Override
             protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
             {
-                System.err.println("] "+version+" "+status+" "+reason);
-                // TODO Auto-generated method stub
-                super.onResponseStatus(version,status,reason);
+                if (verbose)
+                    super.onResponseStatus(version,status,reason);
             }
 
             @Override
             protected synchronized void onResponseHeader(Buffer name, Buffer value) throws IOException
             {
-                System.err.println("] "+name+": "+value);
-                // TODO Auto-generated method stub
+                if (verbose)
+                    System.err.println("] "+name+": "+value);
                 super.onResponseHeader(name,value);
             }
 
             @Override
             protected synchronized void onResponseContent(Buffer content) throws IOException
             {
-                System.err.println("] "+content.length());
-                // TODO Auto-generated method stub
+                if (verbose)
+                    System.err.println("] "+content.length());
                 super.onResponseContent(content);
             }
 
             @Override
             protected void onRequestComplete() throws IOException
             {
-                System.err.println("] ==");
-                // TODO Auto-generated method stub
+                if (verbose)
+                    System.err.println("] ==");
                 super.onRequestComplete();
             }
 
             @Override
             protected void onResponseHeaderComplete() throws IOException
             {
-                System.err.println("] --");
-                // TODO Auto-generated method stub
+                if (verbose)
+                    System.err.println("] --");
                 super.onResponseHeaderComplete();
             }
             

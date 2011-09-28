@@ -436,9 +436,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public void scheduleWrite()
     {
         if (_writable==true)
-        {
-            LOG.warn("Required scheduleWrite");
-        }
+            LOG.debug("Required scheduleWrite {}",this);
         
         _writable=false;
         updateKey();

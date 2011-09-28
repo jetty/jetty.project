@@ -109,9 +109,12 @@ public class ChannelEndPoint implements EndPoint
         if (_channel.isOpen() && _channel instanceof SocketChannel)
         {
             Socket socket= ((SocketChannel)_channel).socket();
-            if (!socket.isClosed()&&!socket.isInputShutdown())
+            if (!socket.isClosed())
             {
-                socket.shutdownInput();
+                if(socket.isOutputShutdown())
+                    socket.close();
+                else if (!socket.isInputShutdown())
+                    socket.shutdownInput();
             }
         }
     }
@@ -124,9 +127,12 @@ public class ChannelEndPoint implements EndPoint
         if (_channel.isOpen() && _channel instanceof SocketChannel)
         {
             Socket socket= ((SocketChannel)_channel).socket();
-            if (!socket.isClosed()&&!socket.isOutputShutdown())
+            if (!socket.isClosed())
             {
-                socket.shutdownOutput();
+                if (socket.isInputShutdown())
+                    socket.close();
+                else if (!socket.isOutputShutdown())
+                    socket.shutdownOutput();
             }
         }
     }
@@ -170,6 +176,14 @@ public class ChannelEndPoint implements EndPoint
                     {
                         bbuf.position(buffer.putIndex());
                         len=_channel.read(bbuf);
+
+
+                        LOG.debug("{} {} {} read={}",
+                                this.getChannel().isOpen(),
+                                this.isInputShutdown(),
+                                this.isOutputShutdown(),
+                                this.getChannel().isOpen(),
+                                len);
                     }
                     finally
                     {
@@ -178,13 +192,17 @@ public class ChannelEndPoint implements EndPoint
                     }
                 }
 
-                if (len<0 && isOpen() && !isInputShutdown())
+                if (len<0 && isOpen())
                 {
-                    shutdownInput();
+                    if (!isInputShutdown())
+                        shutdownInput();
+                    else if (isOutputShutdown())
+                        _channel.close();
                 }
             }
             catch (IOException x)
             {
+                LOG.debug(x);
                 try
                 {
                     close();
@@ -196,7 +214,6 @@ public class ChannelEndPoint implements EndPoint
                 
                 if (len>0)
                     throw x;
-                LOG.ignore(x);
                 len=-1;
             }
         }
@@ -255,6 +272,7 @@ public class ChannelEndPoint implements EndPoint
         {
             throw new IOException("Not Implemented");
         }
+        
         return len;
     }
 
