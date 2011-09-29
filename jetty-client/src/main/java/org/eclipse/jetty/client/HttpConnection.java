@@ -353,6 +353,20 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                                 complete = true;
                             }
                         }
+                        
+                        // if the endpoint is closed, but the parser incomplete
+                        if (!_endp.isOpen() && !(_parser.isComplete()||_parser.isIdle()))
+                        {
+                            // we wont be called again so let the parser see the close
+                            complete=true;
+                            _parser.parseAvailable();
+                            if (!(_parser.isComplete()||_parser.isIdle()))
+                            {
+                                LOG.warn("Incomplete {} {}",_parser,_endp);
+                                if (_exchange!=null)
+                                    _exchange.cancel();
+                            }
+                        }
                     }
 
                     /* TODO - is this needed ?
@@ -435,7 +449,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
             _parser.returnBuffers();
             
             // Do we have more stuff to write?
-            if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp instanceof AsyncEndPoint)
+            if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp.isOpen() && _endp instanceof AsyncEndPoint)
             {
                 // Assume we are write blocked!
                 ((AsyncEndPoint)_endp).scheduleWrite();

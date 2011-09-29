@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -246,6 +247,12 @@ public class SocketConnector extends AbstractConnector
                 }
             }
             catch (EofException e)
+            {
+                LOG.debug("EOF", e);
+                try{close();}
+                catch(IOException e2){LOG.ignore(e2);}
+            }
+            catch (SocketException e)
             {
                 LOG.debug("EOF", e);
                 try{close();}

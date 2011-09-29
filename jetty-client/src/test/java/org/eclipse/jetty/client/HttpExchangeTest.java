@@ -51,7 +51,7 @@ import org.junit.Test;
  */
 public class HttpExchangeTest
 {
-    final static boolean verbose=true;
+    final static boolean verbose=false;
     protected static int _maxConnectionsPerAddress = 2;
     protected static String _scheme = "http";
     protected static Server _server;
@@ -105,6 +105,8 @@ public class HttpExchangeTest
     {
         sender(1,false);
         sender(1,true);
+        sender(10,false);
+        sender(10,true);
 
         if (Stress.isEnabled())
         {
@@ -112,11 +114,6 @@ public class HttpExchangeTest
             sender(100,true);
             sender(10000,false);
             sender(10000,true);
-        }
-        else
-        {
-            sender(10,false);
-            sender(10,true);
         }
     }
 
@@ -130,7 +127,7 @@ public class HttpExchangeTest
     {
         _count.set(0);
         final CountDownLatch complete = new CountDownLatch(nb);
-        final CountDownLatch latch = new CountDownLatch(nb);
+        final AtomicInteger allcontent = new AtomicInteger(nb);
         HttpExchange[] httpExchange = new HttpExchange[nb];
         long start = System.currentTimeMillis();
         for (int i = 0; i < nb; i++)
@@ -201,14 +198,12 @@ public class HttpExchangeTest
                 protected void onResponseComplete()
                 {
                     if (verbose)
-                        System.err.println("] ==");
+                        System.err.println("] == "+len+" "+complete.getCount()+"/"+nb);
                     result = "complete";
                     if (len == 2009)
-                        latch.countDown();
+                        allcontent.decrementAndGet();
                     else
-                    {
                         System.err.println(n + " ONLY " + len+ "/2009");
-                    }
                     complete.countDown();
                 }
 
@@ -263,22 +258,13 @@ public class HttpExchangeTest
 
             _httpClient.send(httpExchange[n]);
         }
-
-        Thread.sleep(2000);
-        System.err.println(_httpClient.dump());
         
-        assertTrue(complete.await(10,TimeUnit.SECONDS));
-
-
-        long elapsed=System.currentTimeMillis()-start;
+        if (!complete.await(2,TimeUnit.SECONDS))
+            System.err.println(_httpClient.dump());
         
-        // make windows-friendly ... System.currentTimeMillis() on windows is dope!
-        /*
-        if(elapsed>0)
-            System.err.println(nb+"/"+_count+" c="+close+" rate="+(nb*1000/elapsed));
-            */
+        assertTrue(complete.await(20,TimeUnit.SECONDS));
         
-        assertEquals("nb="+nb+" close="+close,0,latch.getCount());
+        assertEquals("nb="+nb+" close="+close,0,allcontent.get());
     }
 
     /* ------------------------------------------------------------ */

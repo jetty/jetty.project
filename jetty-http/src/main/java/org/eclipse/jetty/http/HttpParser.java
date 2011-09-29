@@ -266,7 +266,17 @@ public class HttpParser implements Parser
         // Fill buffer if we can
         if (length == 0)
         {
-            long filled=fill();
+            long filled=-1;
+            IOException ex=null;
+            try 
+            { 
+                filled=fill();
+            }
+            catch(IOException e)
+            {
+                LOG.debug(this.toString(),e);
+                ex=e;
+            }
             
             if (filled < 0 || _endp.isInputShutdown()) 
             {
@@ -291,6 +301,8 @@ public class HttpParser implements Parser
                     return 1;
                 }
                 
+                if (ex!=null)
+                    throw ex;
                 return -1;
             }
             length=_buffer.length();
@@ -927,15 +939,7 @@ public class HttpParser implements Parser
             if (_buffer.space() == 0) 
                 throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL "+(_buffer==_body?"body":"head"));   
             
-            try
-            {
-                return _endp.fill(_buffer);
-            }
-            catch(IOException e)
-            {
-                LOG.debug(e);
-                throw (e instanceof EofException) ? e:new EofException(e);
-            }
+            return _endp.fill(_buffer);
         }
 
         return -1;

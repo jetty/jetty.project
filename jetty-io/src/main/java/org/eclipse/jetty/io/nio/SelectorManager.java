@@ -845,6 +845,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         /* ------------------------------------------------------------ */
         public void destroyEndPoint(SelectChannelEndPoint endp)
         {
+            LOG.debug("destroyEndPoint {}",endp);
             _endPoints.remove(endp);
             endPointClosed(endp);
         }
