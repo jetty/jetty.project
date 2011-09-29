@@ -15,12 +15,16 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.HttpRetryException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.GenericServlet;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
@@ -213,7 +217,6 @@ public class DispatcherTest
         // from inside the context.txt file
         Assert.assertNotNull(responses);
         
-        System.out.println(responses);
         assertTrue(responses.contains("content goes here"));
     }
     
@@ -250,6 +253,26 @@ public class DispatcherTest
         assertTrue(responses.contains("content goes here"));
     }
     
+    @Test
+    public void testForwardFilterToRogerServlet() throws Exception
+    {
+        _contextHandler.addServlet(RogerThatServlet.class, "/*");
+        _contextHandler.addServlet(ReserveEchoServlet.class,"/recho/*");
+        _contextHandler.addServlet(EchoServlet.class, "/echo/*");
+        _contextHandler.addFilter(ForwardFilter.class, "/*", FilterMapping.REQUEST);
+
+        String rogerResponse = _connector.getResponses("GET /context/ HTTP/1.0\n" + "Host: localhost\n\n");
+
+        String echoResponse = _connector.getResponses("GET /context/foo?echo=echoText HTTP/1.0\n" + "Host: localhost\n\n");
+        
+        String rechoResponse = _connector.getResponses("GET /context/?echo=echoText HTTP/1.0\n" + "Host: localhost\n\n");
+                    
+        assertTrue(rogerResponse.contains("Roger That!"));
+        assertTrue(echoResponse.contains("echoText"));
+        assertTrue(rechoResponse.contains("txeTohce"));
+    }
+    
+    
     public static class ForwardServlet extends HttpServlet implements Servlet
     {
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -265,6 +288,59 @@ public class DispatcherTest
             dispatcher.forward(request, response);
         }
     }
+    
+    /*
+     * Forward filter works with roger, echo and reverse echo servlets to test various 
+     * forwarding bits using filters.
+     * 
+     * when there is an echo parameter and the path info is / it forwards to the reverse echo
+     * anything else in the pathInfo and it sends straight to the echo servlet...otherwise its
+     * all roger servlet
+     */
+    public static class ForwardFilter implements Filter
+    {
+        ServletContext servletContext;
+        
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+            servletContext = filterConfig.getServletContext().getContext("/context");
+        }
+
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            
+            if ( servletContext == null || !(request instanceof HttpServletRequest) || !(response instanceof HttpServletResponse))
+            {
+                chain.doFilter(request,response);
+                return;
+            }
+            
+            HttpServletRequest req = (HttpServletRequest)request;
+            HttpServletResponse resp = (HttpServletResponse)response;
+             
+            if ( req.getParameter("echo") != null && "/".equals(req.getPathInfo()))
+            {
+                RequestDispatcher dispatcher = servletContext.getRequestDispatcher("/recho");
+                dispatcher.forward(request,response);
+            }
+            else if ( req.getParameter("echo") != null )
+            {
+                RequestDispatcher dispatcher = servletContext.getRequestDispatcher("/echo");
+                dispatcher.forward(request,response);
+            }
+            else
+            {
+                chain.doFilter(request,response);
+                return;
+            }
+        }
+
+        public void destroy()
+        {
+            
+        }       
+    }
+    
     
     public static class DispatchServletServlet extends HttpServlet implements Servlet
     {
@@ -309,6 +385,42 @@ public class DispatcherTest
         }
     }
 
+    public static class EchoServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            String echoText = req.getParameter("echo");
+            
+            if ( echoText == null )
+            {
+                throw new ServletException("echo is a required parameter");
+            }
+            else
+            {
+                res.getWriter().print(echoText);
+            }
+        }
+    }
+    
+    public static class ReserveEchoServlet extends GenericServlet
+    {
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+            String echoText = req.getParameter("echo");
+            
+            if ( echoText == null )
+            {
+                throw new ServletException("echo is a required parameter");
+            }
+            else
+            {
+                res.getWriter().print(new StringBuffer(echoText).reverse().toString());
+            }
+        }
+    }
+    
     public static class DispatchToResourceServlet extends HttpServlet implements Servlet
     {
         @Override
