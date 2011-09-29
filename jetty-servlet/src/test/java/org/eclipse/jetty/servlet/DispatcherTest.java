@@ -37,6 +37,8 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import junit.framework.Assert;
+
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -202,14 +204,16 @@ public class DispatcherTest
     }
     
     @Test
-    @Ignore("currently fails")
     public void testIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?type=include HTTP/1.0\n" + "Host: localhost\n\n");      
+        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?do=include HTTP/1.0\n" + "Host: localhost\n\n");      
         
         // from inside the context.txt file
+        Assert.assertNotNull(responses);
+        
+        System.out.println(responses);
         assertTrue(responses.contains("content goes here"));
     }
     
@@ -218,31 +222,29 @@ public class DispatcherTest
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?type=forward HTTP/1.0\n" + "Host: localhost\n\n");      
+        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?do=forward HTTP/1.0\n" + "Host: localhost\n\n");      
         
         // from inside the context.txt file
         assertTrue(responses.contains("content goes here"));
     }
     
     @Test
-    @Ignore("currently fails")
     public void testWrappedIncludeToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?type=include&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");      
+        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?do=include&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");      
         
         // from inside the context.txt file
         assertTrue(responses.contains("content goes here"));
     }
     
     @Test
-    @Ignore("currently fails")
     public void testWrappedForwardToResourceHandler() throws Exception
     {
         _contextHandler.addServlet(DispatchToResourceServlet.class, "/resourceServlet/*");
 
-        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?type=forward&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");      
+        String responses = _connector.getResponses("GET /context/resourceServlet/content.txt?do=forward&wrapped=true HTTP/1.0\n" + "Host: localhost\n\n");      
         
         // from inside the context.txt file
         assertTrue(responses.contains("content goes here"));
@@ -318,13 +320,13 @@ public class DispatcherTest
             
             if ( "true".equals(req.getParameter("wrapped")))
             {                
-                if (req.getParameter("type").equals("forward"))
+                if (req.getParameter("do").equals("forward"))
                 {
-                    dispatcher.forward(new ServletRequestWrapper(req),new ServletResponseWrapper(res));
+                    dispatcher.forward(new HttpServletRequestWrapper(req),new HttpServletResponseWrapper(res));
                 }
-                else if (req.getParameter("type").equals("include"))
+                else if (req.getParameter("do").equals("include"))
                 {
-                    dispatcher.include(new ServletRequestWrapper(req),new ServletResponseWrapper(res));
+                    dispatcher.include(new HttpServletRequestWrapper(req),new HttpServletResponseWrapper(res));
                 }
                 else
                 {
@@ -333,11 +335,11 @@ public class DispatcherTest
             }
             else
             {
-                if (req.getParameter("type").equals("forward"))
+                if (req.getParameter("do").equals("forward"))
                 {
                     dispatcher.forward(req,res);
                 }
-                else if (req.getParameter("type").equals("include"))
+                else if (req.getParameter("do").equals("include"))
                 {
                     dispatcher.include(req,res);
                 }
