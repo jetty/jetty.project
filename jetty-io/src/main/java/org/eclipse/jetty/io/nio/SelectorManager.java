@@ -946,7 +946,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
                 final CountDownLatch latch = new CountDownLatch(1);
 
-                addChange(new ChangeTask(){
+                addChange(new ChangeTask()
+                {
                     public void run()
                     {
                         dumpKeyState(dump);

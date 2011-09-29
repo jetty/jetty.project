@@ -264,7 +264,6 @@ public class ChannelEndPoint implements EndPoint
         {
             throw new IOException("Not Implemented");
         }
-        
         return len;
     }
 

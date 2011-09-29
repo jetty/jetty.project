@@ -388,7 +388,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         // return the number of unencrypted bytes filled.
         int filled=buffer.length()-size;
-        if (filled==0 && isInputShutdown())
+        if (filled==0 && (isInputShutdown() || !isOpen()))
             return -1;
         
         return filled;

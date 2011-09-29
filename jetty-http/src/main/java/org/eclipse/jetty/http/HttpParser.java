@@ -939,7 +939,15 @@ public class HttpParser implements Parser
             if (_buffer.space() == 0) 
                 throw new HttpException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413, "FULL "+(_buffer==_body?"body":"head"));   
             
-            return _endp.fill(_buffer);
+            try
+            {
+                return _endp.fill(_buffer);
+            }
+            catch(IOException e)
+            {
+                LOG.debug(e);
+                throw (e instanceof EofException) ? e:new EofException(e);
+            }
         }
 
         return -1;

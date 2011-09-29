@@ -539,8 +539,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
                 cancelIdle();
                 if (_open)
+                {
+                    _open=false;
                     _selectSet.destroyEndPoint(this);
-                _open=false;
+                }
                 _key = null;
             }
         }
