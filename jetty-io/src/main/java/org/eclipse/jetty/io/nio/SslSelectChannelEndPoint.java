@@ -199,8 +199,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         if (_debug)
             LOG.debug("{} process closing={} in={} out={}",_session,_closing,inBBuf!=null,outBuf==null?null:outBuf.toDetailString());
-        
-        // If there is no place to put incoming application data, 
+
+        // If there is no place to put incoming application data,
         if (inBBuf==null)
         {
             // use ZERO buffer
@@ -219,17 +219,15 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             progress=false;
 
             // flush output data
-            {
-                int len=_outNIOBuffer==null?0:_outNIOBuffer.length();
+            int len=_outNIOBuffer==null?0:_outNIOBuffer.length();
 
-                // we must flush it, as the other end might be
-                // waiting for that outgoing data before sending
-                // more incoming data
-                flush();
+            // we must flush it, as the other end might be
+            // waiting for that outgoing data before sending
+            // more incoming data
+            flush();
 
-                // If we have written some bytes, then progress has been made.
-                progress|=(_outNIOBuffer==null?0:_outNIOBuffer.length())<len;
-            }
+            // If we have written some bytes, then progress has been made.
+            progress|=(_outNIOBuffer==null?0:_outNIOBuffer.length())<len;
 
             // handle the current hand share status
             if (_debug) LOG.debug("status {} {}",_engine,_engine.getHandshakeStatus());
@@ -247,7 +245,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                             throw new IOException("Write while closing");
                         break;
                     }
-                    
+
                     // Try wrapping some application data
                     if (outBuf!=null && outBuf.hasContent())
                     {
@@ -302,7 +300,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     int c=0;
                     if (outBuf!=null && outBuf.hasContent())
                         c=wrap(outBuf);
-                    else 
+                    else
                         c=wrap(__EMPTY_BUFFER);
 
                     progress=_result.bytesProduced()>0||_result.bytesConsumed()>0;
@@ -329,7 +327,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
 
         if (_debug) LOG.debug("{} received {} sent {}",_session,received,sent);
-        
+
         freeInBuffer();
         return (received<0||sent<0)?-1:(received+sent);
     }
@@ -342,10 +340,18 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         if (_closing)
             return;
-        LOG.debug("{} close",_session);
+
         _closing=true;
-        _engine.closeOutbound();
-        process(null,null);
+        LOG.debug("{} close",_session);
+        try
+        {
+            _engine.closeOutbound();
+            process(null,null);
+        }
+        finally
+        {
+            super.close();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -390,7 +396,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         int filled=buffer.length()-size;
         if (filled==0 && (isInputShutdown() || !isOpen()))
             return -1;
-        
+
         return filled;
     }
 
@@ -412,7 +418,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         _debug=LOG.isDebugEnabled();
         LOG.debug("{} flush3",_session);
-        
+
         int len=0;
         int flushed=0;
         if (header!=null && header.hasContent())
@@ -428,7 +434,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             else if (flushed==0)
                 flushed=-1;
         }
-        
+
         return flushed;
     }
 
@@ -439,7 +445,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         LOG.debug(_session+" flush");
         if (!isOpen())
             throw new EofException();
-        
+
         if (isBufferingOutput())
         {
             int flushed=super.flush(_outNIOBuffer);
@@ -478,7 +484,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
      * @return true if progress is made
      */
     private boolean unwrap(ByteBuffer buffer) throws IOException
-    {        
+    {
         needInBuffer();
         ByteBuffer in_buffer=_inNIOBuffer.getByteBuffer();
 
@@ -486,9 +492,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
         int total_filled=0;
         boolean remoteClosed = false;
-        
+
         LOG.debug("{} unwrap {} {}",_session,_inNIOBuffer.space()>0,super.isOpen());
-        
+
         // loop filling as much encrypted data as we can into the buffer
         while (_inNIOBuffer.space()>0 && super.isOpen())
         {
@@ -582,11 +588,11 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 _closing=true;
                 // return true is some bytes somewhere were moved about.
                 return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
-                
+
             case OK:
                 // return true is some bytes somewhere were moved about.
                 return total_filled>0 ||_result.bytesConsumed()>0 || _result.bytesProduced()>0;
-                
+
             default:
                 LOG.warn("unwrap default: "+_result);
                 throw new IOException(_result.toString());
@@ -621,7 +627,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     bbuf.position(buffer.getIndex());
                     bbuf.limit(buffer.putIndex());
                     out_buffer.position(_outNIOBuffer.putIndex());
-                    
+
                     _result=null;
                     _result=_engine.wrap(bbuf,out_buffer);
                     if (_debug) LOG.debug(_session+" wrap "+_result);
@@ -655,7 +661,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         {
             case BUFFER_UNDERFLOW:
                 throw new IllegalStateException();
-                
+
             case BUFFER_OVERFLOW:
                 LOG.debug("wrap {}",_result);
                 flush();
@@ -712,7 +718,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         super.scheduleWrite();
     }
 */
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
