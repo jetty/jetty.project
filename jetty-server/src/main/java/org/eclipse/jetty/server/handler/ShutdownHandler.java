@@ -26,8 +26,10 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
- * A handler that shuts the server down on a valid request. Used to do "soft" restarts from Java. This handler is a contribution from Johannes Brodwall:
- * https://bugs.eclipse.org/bugs/show_bug.cgi?id=357687
+ * A handler that shuts the server down on a valid request. Used to do "soft" restarts from Java. If _exitJvm ist set to true a hard System.exit() call is being
+ * made.
+ *
+ * This handler is a contribution from Johannes Brodwall: https://bugs.eclipse.org/bugs/show_bug.cgi?id=357687
  *
  * Usage:
  *
@@ -44,11 +46,11 @@ public class ShutdownHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(ShutdownHandler.class);
 
-    private final String shutdownToken;
+    private final String _shutdownToken;
 
-    private final Server jettyServer;
+    private final Server _jettyServer;
 
-    private boolean exitJvm = false;
+    private boolean _exitJvm = false;
 
     /**
      * Creates a listener that lets the server be shut down remotely (but only from localhost).
@@ -60,8 +62,8 @@ public class ShutdownHandler extends AbstractHandler
      */
     public ShutdownHandler(Server server, String shutdownToken)
     {
-        this.jettyServer = server;
-        this.shutdownToken = shutdownToken;
+        this._jettyServer = server;
+        this._shutdownToken = shutdownToken;
     }
 
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -112,14 +114,19 @@ public class ShutdownHandler extends AbstractHandler
 
     private boolean hasCorrectSecurityToken(HttpServletRequest request)
     {
-        return shutdownToken.equals(request.getParameter("token"));
+        return _shutdownToken.equals(request.getParameter("token"));
     }
 
     void shutdownServer() throws Exception
     {
-        jettyServer.stop();
-        if (exitJvm)
+        _jettyServer.stop();
+        if (_exitJvm)
             System.exit(0);
+    }
+
+    public void setExitJvm(boolean exitJvm)
+    {
+        this._exitJvm = exitJvm;
     }
 
 }
