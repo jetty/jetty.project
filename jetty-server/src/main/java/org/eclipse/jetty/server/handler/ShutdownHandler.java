@@ -48,7 +48,7 @@ public class ShutdownHandler extends AbstractHandler
 
     private final String _shutdownToken;
 
-    private final Server _jettyServer;
+    private final Server _server;
 
     private boolean _exitJvm = false;
 
@@ -62,7 +62,7 @@ public class ShutdownHandler extends AbstractHandler
      */
     public ShutdownHandler(Server server, String shutdownToken)
     {
-        this._jettyServer = server;
+        this._server = server;
         this._shutdownToken = shutdownToken;
     }
 
@@ -92,6 +92,7 @@ public class ShutdownHandler extends AbstractHandler
         }
 
         LOG.info("Shutting down by request from " + getRemoteAddr(request));
+        
         try
         {
             shutdownServer();
@@ -117,11 +118,14 @@ public class ShutdownHandler extends AbstractHandler
         return _shutdownToken.equals(request.getParameter("token"));
     }
 
-    void shutdownServer() throws Exception
+    private void shutdownServer() throws Exception
     {
-        _jettyServer.stop();
+        _server.stop();
+        
         if (_exitJvm)
+        {
             System.exit(0);
+        }
     }
 
     public void setExitJvm(boolean exitJvm)
