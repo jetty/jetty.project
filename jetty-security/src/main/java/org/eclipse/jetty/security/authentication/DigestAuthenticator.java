@@ -191,7 +191,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                         + domain
                         + "\", nonce=\""
                         + newNonce((Request)request)
-                        + "\", algorithm=MD5, qop=\"auth\""
+                        + "\", algorithm=MD5, qop=\"auth\","
                         + " stale=" + stale);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
