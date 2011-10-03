@@ -601,7 +601,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         @Override
         public String toString()
         {
-            return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
+            return this.getClass().getSimpleName()+"D08@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
         }
     }
 
