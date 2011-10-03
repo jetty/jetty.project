@@ -90,12 +90,12 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
     public AuthStatus secureResponse(MessageInfo messageInfo, Subject serviceSubject) throws AuthException
     {
         // servlets do not need secured responses
-        return AuthStatus.SUCCESS;
+        return AuthStatus.SEND_SUCCESS;
     }
 
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
-        return AuthStatus.FAILURE;
+        return AuthStatus.SEND_FAILURE;
     }
 
     /**

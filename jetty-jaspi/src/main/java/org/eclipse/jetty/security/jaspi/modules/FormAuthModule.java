@@ -146,22 +146,25 @@ public class FormAuthModule extends BaseAuthModule
     @Override
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
+        System.err.println("FormAuthModule.validateRequest(info,subject,serviceSubject)");
         HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
         HttpSession session = request.getSession(isMandatory(messageInfo));
-        String uri = request.getPathInfo();
+        String uri = request.getRequestURI();
         // not mandatory and not authenticated
         if (session == null || isLoginOrErrorPage(uri)) return AuthStatus.SUCCESS;
 
+        System.err.println("FormAuthModule.validateRequest(info,subect,serviceSubject), uri="+uri);
         try
         {
             // Handle a request for authentication.
             // TODO perhaps j_securitycheck can be uri suffix?
-            if (uri.endsWith(__J_SECURITY_CHECK))
+            if (uri != null && isJSecurityCheck(uri))
             {
 
                 final String username = request.getParameter(__J_USERNAME);
                 final String password = request.getParameter(__J_PASSWORD);
+                System.err.println("Try login username="+username+" password="+password);
                 boolean success = tryLogin(messageInfo, clientSubject, response, session, username, new Password(password));
                 if (success)
                 {
@@ -199,6 +202,7 @@ public class FormAuthModule extends BaseAuthModule
 
             if (form_cred != null)
             {
+                System.err.println("Form cred: form.username="+form_cred._jUserName+" form.pwd="+new String(form_cred._jPassword));
                 boolean success = tryLogin(messageInfo, clientSubject, response, session, form_cred._jUserName, new Password(new String(form_cred._jPassword)));
                 if (success) { return AuthStatus.SUCCESS; }
                 // CallbackHandler loginCallbackHandler = new
@@ -300,6 +304,7 @@ public class FormAuthModule extends BaseAuthModule
                 return AuthStatus.SUCCESS;
 
             // redirect to login page
+            System.err.println("Redirecting to login page");
             if (request.getQueryString() != null) uri += "?" + request.getQueryString();
             session.setAttribute(__J_URI, request.getScheme() + "://"
                                           + request.getServerName()
@@ -319,6 +324,20 @@ public class FormAuthModule extends BaseAuthModule
             throw new AuthException(e.getMessage());
         }
 
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isJSecurityCheck(String uri)
+    {
+        int jsc = uri.indexOf(__J_SECURITY_CHECK);
+        
+        if (jsc<0)
+            return false;
+        int e=jsc+__J_SECURITY_CHECK.length();
+        if (e==uri.length())
+            return true;
+        char c = uri.charAt(e);
+        return c==';'||c=='#'||c=='/'||c=='?';
     }
 
     private boolean tryLogin(MessageInfo messageInfo, Subject clientSubject, 
