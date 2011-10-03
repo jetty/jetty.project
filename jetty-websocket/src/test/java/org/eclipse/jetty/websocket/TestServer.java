@@ -206,8 +206,8 @@ public class TestServer extends Server
                     {
                         while(!_latch.await(10,TimeUnit.SECONDS))
                         {
-                            byte[] data = { (byte)1, (byte) 2, (byte) 3 };
                             System.err.println("Ping "+connection);
+                            byte[] data = { (byte)1, (byte) 2, (byte) 3 };
                             connection.sendControl(WebSocketConnectionD13.OP_PING,data,0,data.length);
                         }
                     }
