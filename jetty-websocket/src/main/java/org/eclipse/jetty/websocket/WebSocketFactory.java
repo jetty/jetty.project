@@ -213,27 +213,27 @@ public class WebSocketFactory
                 extensions=Collections.emptyList();
                 connection = new WebSocketConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
-            case 6:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6: 
                 extensions=Collections.emptyList();
                 connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
             case 7:
             case 8:
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD12.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
-                connection = new WebSocketConnectionD12(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD08.OP_EXT_DATA, 16-WebSocketConnectionD08.OP_EXT_CTRL,3);
+                connection = new WebSocketConnectionD08(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             case 13:
-            case 14:
                 extensions= initExtensions(extensions_requested,8-WebSocketConnectionD13.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
                 connection = new WebSocketConnectionD13(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
                 LOG.warn("Unsupported Websocket version: "+draft);
-                response.setHeader("Sec-WebSocket-Version","0,6,12,13,14");
+                response.setHeader("Sec-WebSocket-Version","0,6,8,13");
                 throw new HttpException(400, "Unsupported draft specification: " + draft);
         }
 
