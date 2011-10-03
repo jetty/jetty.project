@@ -14,8 +14,10 @@
 package org.eclipse.jetty.plus.jaas.spi;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -108,10 +110,17 @@ public class PropertyFileLoginModule extends AbstractLoginModule
             return null;
         
         Set<Principal> principals = userIdentity.getSubject().getPrincipals();
-        String[] roles = principals.toArray(new String[principals.size()]);
+        
+        List<String> roles = new ArrayList<String>();
+        
+        for ( Principal principal : principals )
+        {
+            roles.add( principal.getName() );
+        }
+        
         Credential credential = (Credential)userIdentity.getSubject().getPrivateCredentials().iterator().next();
         LOG.debug("Found: " + userName + " in PropertyUserStore");
-        return new UserInfo(userName, credential,Arrays.asList(roles));
+        return new UserInfo(userName, credential, roles);
     }
 
 }
