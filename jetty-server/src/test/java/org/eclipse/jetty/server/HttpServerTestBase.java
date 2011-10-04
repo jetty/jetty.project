@@ -106,8 +106,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * Feed the server the entire request at once.
      */
     @Test
-    public void testRequest1_jetty() throws Exception
+    public void testRequest1() throws Exception
     {
+        System.err.println("testRequest1");
         configureServer(new HelloWorldHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -133,6 +134,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFragmentedChunk() throws Exception
     {
+        System.err.println("testFragmentedChunk");
         configureServer(new EchoHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -164,8 +166,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * Feed the server fragmentary headers and see how it copes with it.
      */
     @Test
-    public void testRequest1Fragments_jetty() throws Exception, InterruptedException
+    public void testRequest1Fragments() throws Exception, InterruptedException
     {
+        System.err.println("testRequest1Fragments");
         configureServer(new HelloWorldHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -197,8 +200,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testRequest2_jetty() throws Exception
+    public void testRequest2() throws Exception
     {
+        System.err.println("testRequest2");
         configureServer(new EchoHandler());
 
         byte[] bytes=REQUEST2.getBytes();
@@ -226,8 +230,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testRequest2Fragments_jetty() throws Exception
+    public void testRequest2Fragments() throws Exception
     {
+        System.err.println("testRequest2Fragments");
         configureServer(new EchoHandler());
 
         byte[] bytes=REQUEST2.getBytes();
@@ -270,8 +275,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testRequest2Iterate_jetty() throws Exception
+    public void testRequest2Iterate() throws Exception
     {
+        System.err.println("testRequest2Iterate");
         configureServer(new EchoHandler());
 
         byte[] bytes=REQUEST2.getBytes();
@@ -309,8 +315,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * After several iterations, I generated some known bad fragment points.
      */
     @Test
-    public void testRequest2KnownBad_jetty() throws Exception
+    public void testRequest2KnownBad() throws Exception
     {
+        System.err.println("testRequest2KnownBad");
         configureServer(new EchoHandler());
 
         byte[] bytes=REQUEST2.getBytes();
@@ -349,6 +356,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFlush() throws Exception
     {
+        System.err.println("testFlush");
         configureServer(new DataHandler());
 
         String[] encoding = {"NONE","UTF-8","ISO-8859-1","ISO-8859-2"};
@@ -385,6 +393,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockingWhileReadingRequestContent() throws Exception
     {
+        System.err.println("testBlockingWhileReadingRequestContent");
         configureServer(new DataHandler());
 
         long start=System.currentTimeMillis();
@@ -443,6 +452,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockingWhileWritingResponseContent() throws Exception
     {
+        System.err.println("testBlockingWhileWritingResponseContent");
         configureServer(new DataHandler());
 
         long start=System.currentTimeMillis();
@@ -488,6 +498,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBigBlocks() throws Exception
     {
+        System.err.println("testBigBlocks");
         configureServer(new BigBlockHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -621,6 +632,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testPipeline() throws Exception
     {
+        System.err.println("testPipeline");
         configureServer(new HelloWorldHandler());
 
         //for (int pipeline=1;pipeline<32;pipeline++)
@@ -677,6 +689,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRecycledWriters() throws Exception
     {
+        System.err.println("testRecycledWriters");
         configureServer(new EchoHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -765,6 +778,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testHead() throws Exception
     {
+        System.err.println("testHead");
         configureServer(new EchoHandler(false));
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -817,6 +831,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRecycledReaders() throws Exception
     {
+        System.err.println("testRecycledReaders");
         configureServer(new EchoHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -876,6 +891,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockedClient() throws Exception
     {
+        System.err.println("testBlockedClient");
         configureServer(new HelloWorldHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -911,6 +927,60 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         finally
         {
             client.close();
+        }
+    }
+    
+    @Test
+    public void testCommittedError() throws Exception
+    {
+        System.err.println("testCommittedError");
+        configureServer(new CommittedErrorHandler());
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+            InputStream is=client.getInputStream();
+
+            // Send a request
+            os.write((
+                    "GET / HTTP/1.1\r\n"+
+                    "Host: "+HOST+":"+_connector.getLocalPort()+"\r\n" +
+                    "Connection: close\r\n"+
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+            
+            client.setSoTimeout(2000);
+            String in = IO.toString(is);
+            System.err.println("in="+in);
+            
+            Thread.sleep(2000);
+
+        }
+        finally
+        {
+            System.err.println("closing");
+            client.close();
+            Thread.sleep(2000);
+            
+            System.err.println("FINALLY");
+            Thread.sleep(2000);
+        }
+    }
+
+    protected static class CommittedErrorHandler extends AbstractHandler
+    {
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            response.setHeader("test","value");
+            response.setStatus(200);
+            response.setContentType("text/plain");
+            response.getWriter().println("Now is the time for all good ment to come to the aid of the party");
+            response.getWriter().flush();
+            response.flushBuffer();
+            
+            throw new ServletException(new Exception("Ooops I broke it after commit"));
         }
     }
     
