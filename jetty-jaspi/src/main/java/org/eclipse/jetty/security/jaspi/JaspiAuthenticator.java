@@ -81,21 +81,27 @@ public class JaspiAuthenticator implements Authenticator
 
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {
-        System.err.println("JaspiAuthenticator.validateRequest, uri=" + ((javax.servlet.http.HttpServletRequest) request).getRequestURI()
-                           + "lazy="
+        System.err.println("\nJaspiAuthenticator.validateRequest, uri=" + ((javax.servlet.http.HttpServletRequest) request).getRequestURI()
+                           + " lazy="
                            + _allowLazyAuthentication
                            + " mandatory="
                            + mandatory);
-        new Throwable().printStackTrace();
-        
-
+  
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
         request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
         
+        //TODO janb - removed deferred authentication temporarily
        /* if (_allowLazyAuthentication && !mandatory)
             return _deferred;*/
 
-        return validateRequest(info);
+        Authentication a = validateRequest(info);
+        
+        //if its not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
+        if (_allowLazyAuthentication && !info.isAuthMandatory() && a == Authentication.UNAUTHENTICATED)
+            a =_deferred;
+        
+        System.err.println("JaspiAuthenticator.validateRequest returning "+a);
+        return a;
     }
 
     // most likely validatedUser is not needed here.
@@ -107,6 +113,7 @@ public class JaspiAuthenticator implements Authenticator
         if (info == null) throw new NullPointerException("MessageInfo from request missing: " + req);
         return secureResponse(info, validatedUser);
     }
+
 
     public Authentication validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
     {

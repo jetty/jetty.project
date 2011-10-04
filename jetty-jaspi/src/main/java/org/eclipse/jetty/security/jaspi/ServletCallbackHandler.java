@@ -90,8 +90,9 @@ public class ServletCallbackHandler implements CallbackHandler
 
                 if (user!=null)
                 {
+                    loginCallback.setUserPrincipal(user.getUserPrincipal());
+                    credentialValidationCallback.getSubject().getPrivateCredentials().add(loginCallback);
                     credentialValidationCallback.setResult(true);
-
                     credentialValidationCallback.getSubject().getPrincipals().addAll(user.getSubject().getPrincipals());
                     credentialValidationCallback.getSubject().getPrivateCredentials().add(user);
                 }
