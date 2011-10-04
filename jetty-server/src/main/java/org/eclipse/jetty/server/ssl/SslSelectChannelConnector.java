@@ -16,6 +16,8 @@ package org.eclipse.jetty.server.ssl;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -36,7 +38,6 @@ import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.util.log.Log;
 
 /* ------------------------------------------------------------ */
 /**
@@ -97,7 +98,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         SslSelectChannelEndPoint sslHttpChannelEndpoint=(SslSelectChannelEndPoint)endpoint;
         SSLEngine sslEngine=sslHttpChannelEndpoint.getSSLEngine();
         SSLSession sslSession=sslEngine.getSession();
-
+                
         SslCertificates.customize(sslSession,endpoint,request);
     }
 
@@ -565,33 +566,19 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     protected SSLEngine createSSLEngine(SocketChannel channel) throws IOException
     {
         SSLEngine engine;
-        if (channel != null && _sslContextFactory.isSessionCachingEnabled())
+        if (channel != null)
         {
             String peerHost = channel.socket().getInetAddress().getHostAddress();
             int peerPort = channel.socket().getPort();
-            engine = _sslContextFactory.getSslContext().createSSLEngine(peerHost, peerPort);
+            engine = _sslContextFactory.newSslEngine(peerHost, peerPort);
         }
         else
         {
-            engine = _sslContextFactory.getSslContext().createSSLEngine();
+            engine = _sslContextFactory.newSslEngine();
         }
-        customizeEngine(engine);
-        return engine;
-    }
-
-    /* ------------------------------------------------------------ */
-    private void customizeEngine(SSLEngine engine)
-    {
+        
         engine.setUseClientMode(false);
-
-        if (_sslContextFactory.getWantClientAuth())
-            engine.setWantClientAuth(_sslContextFactory.getWantClientAuth());
-        if (_sslContextFactory.getNeedClientAuth())
-            engine.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
-
-        engine.setEnabledCipherSuites(
-                _sslContextFactory.selectCipherSuites(engine.getEnabledCipherSuites(),
-                                                      engine.getSupportedCipherSuites()));
+        return engine;
     }
 
     /* ------------------------------------------------------------ */
@@ -601,22 +588,13 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected void doStart() throws Exception
     {
-        if (!_sslContextFactory.checkConfig())
-        {
-            throw new IllegalStateException("SSL context is not configured correctly.");
-        }
+        _sslContextFactory.checkKeyStore();
 
         _sslContextFactory.start();
 
-        SSLEngine sslEngine = _sslContextFactory.getSslContext().createSSLEngine();
+        SSLEngine sslEngine = _sslContextFactory.newSslEngine();
 
         sslEngine.setUseClientMode(false);
-        sslEngine.setWantClientAuth(_sslContextFactory.getWantClientAuth());
-        sslEngine.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
-
-        sslEngine.setEnabledCipherSuites(_sslContextFactory.selectCipherSuites(
-                                            sslEngine.getEnabledCipherSuites(),
-                                            sslEngine.getSupportedCipherSuites()));
 
         SSLSession sslSession = sslEngine.getSession();
 

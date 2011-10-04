@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
@@ -42,7 +43,8 @@ import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 public class WebSocketConnectionD13 extends AbstractConnection implements WebSocketConnection
 {
     private static final Logger LOG = Log.getLogger(WebSocketConnectionD13.class);
-    private static final boolean STRICT=true;
+    private static final boolean STRICT=Boolean.getBoolean("org.eclipse.jetty.websocket.STRICT");
+    private static final boolean BRUTAL=Boolean.getBoolean("org.eclipse.jetty.websocket.BRUTAL");
     
     final static byte OP_CONTINUATION = 0x00;
     final static byte OP_TEXT = 0x01;
@@ -62,7 +64,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     final static int CLOSE_UNDEFINED=1004;
     final static int CLOSE_NO_CODE=1005;
     final static int CLOSE_NO_CLOSE=1006;
-    final static int CLOSE_NOT_UTF8=1007;
+    final static int CLOSE_BAD_PAYLOAD=1007;
     final static int CLOSE_POLICY_VIOLATION=1008;
     final static int CLOSE_MESSAGE_TOO_LARGE=1009;
     final static int CLOSE_REQUIRED_EXTENSION=1010;
@@ -610,7 +612,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         @Override
         public String toString()
         {
-            return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
+            return this.getClass().getSimpleName()+"D13@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
         }
     }
 
@@ -626,7 +628,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         public void onFrame(final byte flags, final byte opcode, final Buffer buffer)
         {
             boolean lastFrame = isLastFrame(flags);
-
+            
             synchronized(WebSocketConnectionD13.this)
             {
                 // Ignore incoming after a close
@@ -641,19 +643,13 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                 {
                     if (isControlFrame(opcode) && buffer.length()>125)
                     {
-                        _connection.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large");
+                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large");
                         return;
                     }
 
                     if ((flags&0x7)!=0)
                     {
-                        _connection.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
-                        return;
-                    }
-
-                    if (_opcode!=-1 && opcode!=WebSocketConnectionD13.OP_CONTINUATION)
-                    {
-                        _connection.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad continuation"+Integer.toHexString(opcode));
+                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
                         return;
                     }
 
@@ -681,7 +677,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                     {
                         if (_opcode==-1)
                         {
-                            _connection.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad Continuation");
+                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad Continuation");
                             return;
                         }
                         
@@ -756,6 +752,12 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                     case WebSocketConnectionD13.OP_TEXT:
                     {
+                        if (STRICT && _opcode!=-1)
+                        {
+                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
+                            return;
+                        }
+                        
                         if(_onTextMessage!=null)
                         {
                             if (_connection.getMaxTextMessageSize()<=0)
@@ -766,7 +768,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                                 else
                                 {
                                     LOG.warn("Frame discarded. Text aggregation disabled for {}",_endp);
-                                    _connection.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"Text frame aggregation disabled");
+                                    errorClose(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"Text frame aggregation disabled");
                                 }
                             }
                             // append bytes to message buffer (if they fit)
@@ -788,9 +790,15 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         }
                         break;
                     }
-
+                        
                     case WebSocketConnectionD13.OP_BINARY:
                     {
+                        if (STRICT && _opcode!=-1)
+                        {
+                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
+                            return;
+                        }
+                        
                         if (_onBinaryMessage!=null && checkBinaryMessageSize(0,buffer.length()))
                         {
                             if (lastFrame)
@@ -808,36 +816,53 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                             else
                             {
                                 LOG.warn("Frame discarded. Binary aggregation disabed for {}",_endp);
-                                _connection.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"Binary frame aggregation disabled");
+                                errorClose(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"Binary frame aggregation disabled");
                             }
                         }
                         break;
                     }
-                    
+
                     default:
                         if (STRICT)
-                            _connection.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad opcode 0x"+Integer.toHexString(opcode));
+                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad opcode 0x"+Integer.toHexString(opcode));
                         return;
-                        
                 }
-            }
-            catch(Utf8Appendable.NotUtf8Exception notUtf8)
-            {
-                LOG.warn(notUtf8);
-                LOG.warn("{} for {}",notUtf8,_endp);
-                LOG.debug(notUtf8);
-                _connection.close(WebSocketConnectionD13.CLOSE_NOT_UTF8,"Invalid UTF-8");
             }
             catch(ThreadDeath th)
             {
                 throw th;
             }
-            catch(Throwable th)
+            catch(Utf8Appendable.NotUtf8Exception notUtf8)
             {
-                LOG.warn(th);
+                LOG.warn("{} for {}",notUtf8,_endp);
+                LOG.debug(notUtf8);
+                errorClose(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,"Invalid UTF-8");
+            }
+            catch(Throwable probablyNotUtf8)
+            {
+                LOG.warn("{} for {}",probablyNotUtf8,_endp);
+                LOG.debug(probablyNotUtf8);
+                errorClose(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,"Invalid Payload: "+probablyNotUtf8);
             }
         }
 
+        private void errorClose(int code, String message)
+        {
+            _connection.close(code,message);
+            if (BRUTAL)
+            {
+                try
+                {
+                    _endp.close();
+                }
+                catch (IOException e)
+                {
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
+                }
+            }
+        }
+        
         private boolean checkBinaryMessageSize(int bufferLen, int length)
         {
             int max = _connection.getMaxBinaryMessageSize();

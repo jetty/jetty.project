@@ -244,7 +244,7 @@
     <servlet-class>org.eclipse.jetty.servlets.ProxyServlet$Transparent</servlet-class>
     <async-support>true</async-support>
     <init-param>
-      <param-name>Prefix</param-name><param-value>/javadoc</param-value>
+      <param-name>Prefix</param-name><param-value>/javadoc-proxy</param-value>
     </init-param>
     <init-param>
       <param-name>ProxyTo</param-name><param-value>http://download.eclipse.org/jetty/stable-8/apidocs</param-value>
@@ -256,7 +256,7 @@
   </servlet>
   <servlet-mapping>
     <servlet-name>TransparentProxy</servlet-name>
-    <url-pattern>/javadoc/*</url-pattern>
+    <url-pattern>/javadoc-proxy/*</url-pattern>
   </servlet-mapping>
   
   <error-page>

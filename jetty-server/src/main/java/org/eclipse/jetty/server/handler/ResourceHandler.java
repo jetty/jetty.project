@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -45,7 +46,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  * This handle will serve static content and handle If-Modified-Since headers.
  * No caching is done.
- * Requests that cannot be handled are let pass (Eg no 404's)
+ * Requests for resources that do not exist are let pass (Eg no 404's).
  *
  *
  * @org.apache.xbean.XBean
@@ -205,7 +206,7 @@ public class ResourceHandler extends AbstractHandler
     	    {
     	        try
     	        {
-    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-default.css"));
+    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
     	        }
     	        catch(IOException e)
     	        {
@@ -292,10 +293,29 @@ public class ResourceHandler extends AbstractHandler
     /* ------------------------------------------------------------ */
     protected Resource getResource(HttpServletRequest request) throws MalformedURLException
     {
-        String path_info=request.getPathInfo();
-        if (path_info==null)
-            return null;
-        return getResource(path_info);
+        String servletPath;
+        String pathInfo;
+        Boolean included = request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI) != null;
+        if (included != null && included.booleanValue())
+        {
+            servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+ 
+            if (servletPath == null && pathInfo == null)
+            {
+                servletPath = request.getServletPath();
+                pathInfo = request.getPathInfo();
+            }
+        }
+        else
+        {
+            included = Boolean.FALSE;
+            servletPath = request.getServletPath();
+            pathInfo = request.getPathInfo();
+        }
+        
+        String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
+        return getResource(pathInContext);
     }
 
 
@@ -326,7 +346,7 @@ public class ResourceHandler extends AbstractHandler
 
     /* ------------------------------------------------------------ */
     /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
+     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -334,17 +354,21 @@ public class ResourceHandler extends AbstractHandler
             return;
 
         boolean skipContentBody = false;
+
         if(!HttpMethods.GET.equals(request.getMethod()))
         {
             if(!HttpMethods.HEAD.equals(request.getMethod()))
+            {
                 return;
+            }
             skipContentBody = true;
         }
         
         Resource resource = getResource(request);
+        
         if (resource==null || !resource.exists())
         {
-            if (target.endsWith("/jetty-stylesheet.css"))
+            if (target.endsWith("/jetty-dir.css"))
             {	
                 response.setContentType("text/css");
                 resource = getStylesheet();
@@ -359,7 +383,7 @@ public class ResourceHandler extends AbstractHandler
             return;
         }
 
-        // We are going to server something
+        // We are going to serve something
         baseRequest.setHandled(true);
 
         if (resource.isDirectory())

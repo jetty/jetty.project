@@ -29,7 +29,7 @@ public class SecuredHelloHandler
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(0);
+        Server server = new Server(8080);
         
         LoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
         server.addBean(loginService); 

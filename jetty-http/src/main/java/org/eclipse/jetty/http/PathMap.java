@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.URIUtil;
  * /foo/bar           - an exact path specification.
  * /foo/*             - a prefix path specification (must end '/*').
  * *.ext              - a suffix path specification.
- * /                  - the default path specification.       
+ * /                  - the default path specification.
  * </PRE>
  * Matching is performed in the following order <NL>
  * <LI>Exact match.
@@ -43,24 +43,24 @@ import org.eclipse.jetty.util.URIUtil;
  * <LI>default.
  * </NL>
  * Multiple path specifications can be mapped by providing a list of
- * specifications.  By default this class uses characters ":," as path
- * separators, unless configured differently by calling the static 
- * method @see PathMap#setPathSpecSeparators(String) 
+ * specifications. By default this class uses characters ":," as path
+ * separators, unless configured differently by calling the static
+ * method @see PathMap#setPathSpecSeparators(String)
  * <P>
  * Special characters within paths such as '?� and ';' are not treated specially
- * as it is assumed they would have been either encoded in the original URL or 
+ * as it is assumed they would have been either encoded in the original URL or
  * stripped from the path.
  * <P>
  * This class is not synchronized.  If concurrent modifications are
  * possible then it should be synchronized at a higher level.
  *
- * 
+ *
  */
 public class PathMap extends HashMap implements Externalizable
 {
     /* ------------------------------------------------------------ */
     private static String __pathSpecSeparators = ":,";
-    
+
     /* ------------------------------------------------------------ */
     /** Set the path spec separator.
      * Multiple path specification may be included in a single string
@@ -72,7 +72,7 @@ public class PathMap extends HashMap implements Externalizable
     {
         __pathSpecSeparators=s;
     }
-    
+
     /* --------------------------------------------------------------- */
     final StringMap _prefixMap=new StringMap();
     final StringMap _suffixMap=new StringMap();
@@ -83,7 +83,7 @@ public class PathMap extends HashMap implements Externalizable
     Entry _default=null;
     final Set _entrySet;
     boolean _nodefault=false;
-    
+
     /* --------------------------------------------------------------- */
     /** Construct empty PathMap.
      */
@@ -102,7 +102,7 @@ public class PathMap extends HashMap implements Externalizable
         _entrySet=entrySet();
         _nodefault=nodefault;
     }
-    
+
     /* --------------------------------------------------------------- */
     /** Construct empty PathMap.
      */
@@ -111,7 +111,7 @@ public class PathMap extends HashMap implements Externalizable
         super (capacity);
         _entrySet=entrySet();
     }
-    
+
     /* --------------------------------------------------------------- */
     /** Construct from dictionary PathMap.
      */
@@ -120,7 +120,7 @@ public class PathMap extends HashMap implements Externalizable
         putAll(m);
         _entrySet=entrySet();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void writeExternal(java.io.ObjectOutput out)
         throws java.io.IOException
@@ -128,7 +128,7 @@ public class PathMap extends HashMap implements Externalizable
         HashMap map = new HashMap(this);
         out.writeObject(map);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void readExternal(java.io.ObjectInput in)
         throws java.io.IOException, ClassNotFoundException
@@ -136,7 +136,7 @@ public class PathMap extends HashMap implements Externalizable
         HashMap map = (HashMap)in.readObject();
         this.putAll(map);
     }
-    
+
     /* --------------------------------------------------------------- */
     /** Add a single path match to the PathMap.
      * @param pathSpec The path specification, or comma separated list of
@@ -148,16 +148,16 @@ public class PathMap extends HashMap implements Externalizable
     {
         StringTokenizer tok = new StringTokenizer(pathSpec.toString(),__pathSpecSeparators);
         Object old =null;
-        
+
         while (tok.hasMoreTokens())
         {
             String spec=tok.nextToken();
-            
+
             if (!spec.startsWith("/") && !spec.startsWith("*."))
                 throw new IllegalArgumentException("PathSpec "+spec+". must start with '/' or '*.'");
-            
+
             old = super.put(spec,object);
-            
+
             // Make entry that was just created.
             Entry entry = new Entry(spec,object);
 
@@ -176,7 +176,7 @@ public class PathMap extends HashMap implements Externalizable
                 else if (spec.startsWith("*."))
                     _suffixMap.put(spec.substring(2),entry);
                 else if (spec.equals(URIUtil.SLASH))
-                {    
+                {
                     if (_nodefault)
                         _exactMap.put(spec,entry);
                     else
@@ -193,7 +193,7 @@ public class PathMap extends HashMap implements Externalizable
                 }
             }
         }
-            
+
         return old;
     }
 
@@ -209,8 +209,8 @@ public class PathMap extends HashMap implements Externalizable
             return entry.getValue();
         return null;
     }
-    
-    
+
+
     /* --------------------------------------------------------------- */
     /** Get the entry mapped by the best specification.
      * @param path the path.
@@ -222,14 +222,14 @@ public class PathMap extends HashMap implements Externalizable
 
         if (path==null)
             return null;
-        
-        int l=path.length();        
+
+        int l=path.length();
 
         // try exact match
         entry=_exactMap.getEntry(path,0,l);
         if (entry!=null)
             return (Entry) entry.getValue();
-        
+
         // prefix search
         int i=l;
         while((i=path.lastIndexOf('/',i-1))>=0)
@@ -238,11 +238,11 @@ public class PathMap extends HashMap implements Externalizable
             if (entry!=null)
                 return (Entry) entry.getValue();
         }
-        
+
         // Prefix Default
         if (_prefixDefault!=null)
             return _prefixDefault;
-        
+
         // Extension search
         i=0;
         while ((i=path.indexOf('.',i+1))>0)
@@ -250,12 +250,12 @@ public class PathMap extends HashMap implements Externalizable
             entry=_suffixMap.getEntry(path,i+1,l-i-1);
             if (entry!=null)
                 return (Entry) entry.getValue();
-        }        
-        
+        }
+
         // Default
         return _default;
     }
-    
+
     /* --------------------------------------------------------------- */
     /** Get all entries matched by the path.
      * Best match first.
@@ -263,20 +263,20 @@ public class PathMap extends HashMap implements Externalizable
      * @return LazyList of Map.Entry instances key=pathSpec
      */
     public Object getLazyMatches(String path)
-    {        
+    {
         Map.Entry entry;
         Object entries=null;
 
         if (path==null)
             return LazyList.getList(entries);
-        
+
         int l=path.length();
 
         // try exact match
         entry=_exactMap.getEntry(path,0,l);
         if (entry!=null)
             entries=LazyList.add(entries,entry.getValue());
-        
+
         // prefix search
         int i=l-1;
         while((i=path.lastIndexOf('/',i-1))>=0)
@@ -285,11 +285,11 @@ public class PathMap extends HashMap implements Externalizable
             if (entry!=null)
                 entries=LazyList.add(entries,entry.getValue());
         }
-        
+
         // Prefix Default
         if (_prefixDefault!=null)
             entries=LazyList.add(entries,_prefixDefault);
-        
+
         // Extension search
         i=0;
         while ((i=path.indexOf('.',i+1))>0)
@@ -305,13 +305,13 @@ public class PathMap extends HashMap implements Externalizable
             // Optimization for just the default
             if (entries==null)
                 return _defaultSingletonList;
-            
+
             entries=LazyList.add(entries,_default);
         }
-        
+
         return entries;
     }
-    
+
     /* --------------------------------------------------------------- */
     /** Get all entries matched by the path.
      * Best match first.
@@ -319,7 +319,7 @@ public class PathMap extends HashMap implements Externalizable
      * @return List of Map.Entry instances key=pathSpec
      */
     public List getMatches(String path)
-    {       
+    {
         return LazyList.getList(getLazyMatches(path));
     }
 
@@ -330,12 +330,12 @@ public class PathMap extends HashMap implements Externalizable
      * @return Whether the PathMap contains any entries that match this
      */
     public boolean containsMatch(String path)
-    {      
+    {
     	Entry match = getMatch(path);
     	return match!=null && !match.equals(_default);
     }
 
-    /* --------------------------------------------------------------- */  
+    /* --------------------------------------------------------------- */
     @Override
     public Object remove(Object pathSpec)
     {
@@ -362,7 +362,7 @@ public class PathMap extends HashMap implements Externalizable
         }
         return super.remove(pathSpec);
     }
-    
+
     /* --------------------------------------------------------------- */
     @Override
     public void clear()
@@ -374,7 +374,7 @@ public class PathMap extends HashMap implements Externalizable
         _defaultSingletonList=null;
         super.clear();
     }
-    
+
     /* --------------------------------------------------------------- */
     /**
      * @return true if match.
@@ -397,7 +397,7 @@ public class PathMap extends HashMap implements Externalizable
         {
             if (!noDefault && pathSpec.length()==1 || pathSpec.equals(path))
                 return true;
-            
+
             if(isPathWildcardMatch(pathSpec, path))
                 return true;
         }
@@ -419,24 +419,24 @@ public class PathMap extends HashMap implements Externalizable
         }
         return false;
     }
-    
-    
+
+
     /* --------------------------------------------------------------- */
     /** Return the portion of a path that matches a path spec.
      * @return null if no match at all.
      */
     public static String pathMatch(String pathSpec, String path)
-    {  
+    {
         char c = pathSpec.charAt(0);
-        
+
         if (c=='/')
         {
             if (pathSpec.length()==1)
                 return path;
-        
+
             if (pathSpec.equals(path))
                 return path;
-            
+
             if (isPathWildcardMatch(pathSpec, path))
                 return path.substring(0,pathSpec.length()-2);
         }
@@ -448,7 +448,7 @@ public class PathMap extends HashMap implements Externalizable
         }
         return null;
     }
-    
+
     /* --------------------------------------------------------------- */
     /** Return the portion of a path that is after a path spec.
      * @return The path info string
@@ -456,12 +456,12 @@ public class PathMap extends HashMap implements Externalizable
     public static String pathInfo(String pathSpec, String path)
     {
         char c = pathSpec.charAt(0);
-        
+
         if (c=='/')
         {
             if (pathSpec.length()==1)
                 return null;
-            
+
             boolean wildcard = isPathWildcardMatch(pathSpec, path);
 
             // handle the case where pathSpec uses a wildcard and path info is "/*"
@@ -474,7 +474,7 @@ public class PathMap extends HashMap implements Externalizable
                     return null;
                 return path.substring(pathSpec.length()-2);
             }
-        } 
+        }
         return null;
     }
 
@@ -484,7 +484,7 @@ public class PathMap extends HashMap implements Externalizable
      * @param base The base the path is relative to.
      * @param pathSpec The spec of the path segment to ignore.
      * @param path the additional path
-     * @return base plus path with pathspec removed 
+     * @return base plus path with pathspec removed
      */
     public static String relativePath(String base,
                                       String pathSpec,
@@ -508,7 +508,7 @@ public class PathMap extends HashMap implements Externalizable
                 path = base + URIUtil.SLASH + info;
         return path;
     }
- 
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -516,7 +516,7 @@ public class PathMap extends HashMap implements Externalizable
     {
         private final Object key;
         private final Object value;
-        private String mapped; 
+        private String mapped;
         private transient String string;
 
         Entry(Object key, Object value)
@@ -529,7 +529,7 @@ public class PathMap extends HashMap implements Externalizable
         {
             return key;
         }
-        
+
         public Object getValue()
         {
             return value;

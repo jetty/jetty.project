@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPoint, ConnectedEndPoint
 {
-    public static final Logger __log=Log.getLogger("org.eclipse.jetty.io.nio");
+    public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
     
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
@@ -54,7 +54,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private boolean _writeBlocked;
     private boolean _open;
     private volatile long _idleTimestamp;
-
+    
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
         throws IOException
@@ -90,6 +90,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
         scheduleIdle();
     }
+    
     /* ------------------------------------------------------------ */
     public SelectionKey getSelectionKey()
     {
@@ -205,7 +206,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 if(!dispatched)
                 {
                     _dispatched = false;
-                    __log.warn("Dispatched Failed! "+this+" to "+_manager);
+                    LOG.warn("Dispatched Failed! "+this+" to "+_manager);
                     updateKey();
                 }
             }
@@ -250,7 +251,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public void checkIdleTimestamp(long now)
     {
         long idleTimestamp=_idleTimestamp;
-        if (idleTimestamp!=0 && _maxIdleTime>0 && now>(idleTimestamp+_maxIdleTime))
+        if (!getChannel().isOpen() || idleTimestamp!=0 && _maxIdleTime>0 && now>(idleTimestamp+_maxIdleTime))
             idleExpired();
     }
 
@@ -260,6 +261,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _connection.idleExpired();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if the endpoint has produced/consumed bytes itself (non application data).
+     */
+    public boolean isProgressing()
+    {
+        return false;
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      */
@@ -340,7 +350,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     }
                     catch (InterruptedException e)
                     {
-                        __log.warn(e);
+                        LOG.warn(e);
                     }
                     finally
                     {
@@ -385,7 +395,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     }
                     catch (InterruptedException e)
                     {
-                        __log.warn(e);
+                        LOG.warn(e);
                     }
                     finally
                     {
@@ -398,7 +408,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             catch(Throwable e)
             {
                 // TODO remove this if it finds nothing
-                __log.warn(e);
+                LOG.warn(e);
                 if (e instanceof RuntimeException)
                     throw (RuntimeException)e;
                 if (e instanceof Error)
@@ -414,10 +424,20 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         return true;
     }
+
+    /* ------------------------------------------------------------ */
+    /* short cut for busyselectChannelServerTest */
+    public void clearWritable()
+    {
+        _writable=false;
+    }
     
     /* ------------------------------------------------------------ */
     public void scheduleWrite()
     {
+        if (_writable==true)
+            LOG.debug("Required scheduleWrite {}",this);
+        
         _writable=false;
         updateKey();
     }
@@ -445,7 +465,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 catch(Exception e)
                 {
                     _key=null;
-                    __log.ignore(e);
+                    LOG.ignore(e);
                 }
             }
 
@@ -483,7 +503,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                             }
                             catch (Exception e)
                             {
-                                __log.ignore(e);
+                                LOG.ignore(e);
                                 if (_key!=null && _key.isValid())
                                 {
                                     _key.cancel();
@@ -520,9 +540,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 cancelIdle();
                 if (_open)
                 {
+                    _open=false;
                     _selectSet.destroyEndPoint(this);
                 }
-                _open=false;
                 _key = null;
             }
         }
@@ -545,7 +565,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         final Connection next = _connection.handle();
                         if (next!=_connection)
                         {
-                            __log.debug("{} replaced {}",next,_connection);
+                            LOG.debug("{} replaced {}",next,_connection);
                             _connection=next;
                             continue;
                         }
@@ -554,26 +574,26 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 }
                 catch (ClosedChannelException e)
                 {
-                    __log.ignore(e);
+                    LOG.ignore(e);
                 }
                 catch (EofException e)
                 {
-                    __log.debug("EOF", e);
-                    try{close();}
-                    catch(IOException e2){__log.ignore(e2);}
+                    LOG.debug("EOF", e);
+                    try{getChannel().close();}
+                    catch(IOException e2){LOG.ignore(e2);}
                 }
                 catch (IOException e)
                 {
-                    __log.warn(e.toString());
-                    __log.debug(e);
-                    try{close();}
-                    catch(IOException e2){__log.ignore(e2);}
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
+                    try{getChannel().close();}
+                    catch(IOException e2){LOG.ignore(e2);}
                 }
                 catch (Throwable e)
                 {
-                    __log.warn("handle failed", e);
-                    try{close();}
-                    catch(IOException e2){__log.ignore(e2);}
+                    LOG.warn("handle failed", e);
+                    try{getChannel().close();}
+                    catch(IOException e2){LOG.ignore(e2);}
                 }
                 dispatched=!undispatch();
             }
@@ -585,7 +605,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 dispatched=!undispatch();
                 while (dispatched)
                 {
-                    __log.warn("SCEP.run() finally DISPATCHED");
+                    LOG.warn("SCEP.run() finally DISPATCHED");
                     dispatched=!undispatch();
                 }
             }
@@ -605,7 +625,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         catch (IOException e)
         {
-            __log.ignore(e);
+            LOG.ignore(e);
         }
         finally
         {
@@ -620,7 +640,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         synchronized(this)
         {
             return "SCEP@" + hashCode() + _channel+            
-            "[d=" + _dispatched + ",io=" + _interestOps+
+            "[o="+isOpen()+" d=" + _dispatched + ",io=" + _interestOps+
             ",w=" + _writable + ",rb=" + _readBlocked + ",wb=" + _writeBlocked + "]";
         }
     }

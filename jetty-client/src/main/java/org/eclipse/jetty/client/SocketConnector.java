@@ -45,18 +45,9 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
 
     public void startConnection(final HttpDestination destination) throws IOException
     {
-        Socket socket=null;
-
-        if ( destination.isSecure() )
-        {
-            SSLContext sslContext = _httpClient.getSSLContext();
-            socket = sslContext.getSocketFactory().createSocket();
-        }
-        else
-        {
-            LOG.debug("Using Regular Socket");
-            socket = SocketFactory.getDefault().createSocket();
-        }
+        Socket socket= destination.isSecure()
+            ?_httpClient.getSslContextFactory().newSslSocket()
+            :SocketFactory.getDefault().createSocket();
 
         socket.setSoTimeout(0);
         socket.setTcpNoDelay(true);
@@ -95,6 +86,17 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
                     {
                         LOG.debug(e);
                         destination.onException(e);
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        destination.returnConnection(connection,true);
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.debug(e);
                     }
                 }
             }

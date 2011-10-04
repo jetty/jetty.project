@@ -3,9 +3,8 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>18</version>
+    <version>19</version>
   </parent>
-  <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
   <version>8.0.2-SNAPSHOT</version>
   <name>Jetty :: Project</name>
@@ -188,7 +187,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.3</version>
+          <version>1.0.6</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -247,7 +246,6 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.3.2</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <xmlOutput>true</xmlOutput>
@@ -262,17 +260,19 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jxr-plugin</artifactId>
-          <version>2.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.8</version>
+          <configuration>
+            <docfilessubdirs>true</docfilessubdirs>
+            <detectLinks>true</detectLinks>
+            <detectJavaApiLink>true</detectJavaApiLink>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>2.5</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -283,12 +283,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jxr-plugin</artifactId>
-        <version>2.2</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>2.8</version>
         <configuration>
           <maxmemory>512m</maxmemory>
           <docfilessubdirs>true</docfilessubdirs>
@@ -299,7 +297,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
-        <version>2.5</version>
         <configuration>
           <targetJdk>1.5</targetJdk>
           <rulesets>
@@ -310,7 +307,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>2.3.2</version>
       </plugin>
     </plugins>
   </reporting>
@@ -413,6 +409,11 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${junit-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>1.8.5</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

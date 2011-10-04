@@ -22,7 +22,7 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <includes>META-INF/**,org/eclipse/**</includes>
+              <includes>META-INF/**,org/eclipse/**,org/apache/jasper/compiler/*</includes>
               <excludes>**/MANIFEST.MF,javax/**</excludes>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
@@ -72,6 +72,19 @@
                 </manifestEntries>
               </archive>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>javadoc-jar</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>

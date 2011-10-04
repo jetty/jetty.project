@@ -213,18 +213,19 @@ public class WebSocketFactory
                 extensions=Collections.emptyList();
                 connection = new WebSocketConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
-            case 6:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6: 
                 extensions=Collections.emptyList();
                 connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
             case 7:
             case 8:
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD12.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
-                connection = new WebSocketConnectionD12(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD08.OP_EXT_DATA, 16-WebSocketConnectionD08.OP_EXT_CTRL,3);
+                connection = new WebSocketConnectionD08(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             case 13:
                 extensions= initExtensions(extensions_requested,8-WebSocketConnectionD13.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
@@ -232,6 +233,7 @@ public class WebSocketFactory
                 break;
             default:
                 LOG.warn("Unsupported Websocket version: "+draft);
+                response.setHeader("Sec-WebSocket-Version","0,6,8,13");
                 throw new HttpException(400, "Unsupported draft specification: " + draft);
         }
 
@@ -251,6 +253,8 @@ public class WebSocketFactory
         request.setAttribute("org.eclipse.jetty.io.Connection", connection);
     }
 
+    /**
+     */
     protected String[] parseProtocols(String protocol)
     {
         if (protocol == null)
@@ -264,6 +268,8 @@ public class WebSocketFactory
         return protocols;
     }
 
+    /**
+     */
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response)
             throws IOException
     {
@@ -280,24 +286,34 @@ public class WebSocketFactory
 
             // Try each requested protocol
             WebSocket websocket = null;
-            String protocol = request.getHeader("Sec-WebSocket-Protocol");
-            if (protocol == null) // TODO remove once draft period is over
-                protocol = request.getHeader("WebSocket-Protocol");
-            for (String p : parseProtocols(protocol))
+            
+            Enumeration<String> protocols = request.getHeaders("Sec-WebSocket-Protocol");
+            String protocol=null;
+            while (protocol==null && protocols!=null && protocols.hasMoreElements())
             {
-                websocket = _acceptor.doWebSocketConnect(request, p);
-                if (websocket != null)
+                String candidate = protocols.nextElement();
+                for (String p : parseProtocols(candidate))
                 {
-                    protocol = p;
-                    break;
+                    websocket = _acceptor.doWebSocketConnect(request, p);
+                    if (websocket != null)
+                    {
+                        protocol = p;
+                        break;
+                    }
                 }
             }
 
             // Did we get a websocket?
             if (websocket == null)
             {
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                return false;
+                // Try with no protocol
+                websocket = _acceptor.doWebSocketConnect(request, null);
+                
+                if (websocket==null)
+                {
+                    response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    return false;
+                }
             }
 
             // Send the upgrade
@@ -308,6 +324,8 @@ public class WebSocketFactory
         return false;
     }
 
+    /**
+     */
     public List<Extension> initExtensions(List<String> requested,int maxDataOpcodes,int maxControlOpcodes,int maxReservedBits)
     {
         List<Extension> extensions = new ArrayList<Extension>();
@@ -339,6 +357,8 @@ public class WebSocketFactory
         return extensions;
     }
 
+    /**
+     */
     private Extension newExtension(String name)
     {
         try
@@ -354,6 +374,4 @@ public class WebSocketFactory
 
         return null;
     }
-
-
 }

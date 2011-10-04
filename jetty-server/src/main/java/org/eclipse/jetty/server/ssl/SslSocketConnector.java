@@ -30,6 +30,7 @@ import javax.net.ssl.SSLSocket;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.bio.SocketConnector;
@@ -67,6 +68,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         this(new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH));
     }
 
+    /* ------------------------------------------------------------ */
     public SslSocketConnector(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
@@ -330,17 +332,29 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     }
 
     /* ------------------------------------------------------------ */
+    @Override
+    public void open() throws IOException
+    {
+        _sslContextFactory.checkKeyStore();
+        try
+        {
+            _sslContextFactory.start();
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeIOException(e);
+        }
+        super.open();
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * {@inheritDoc}
      */
     @Override
     protected void doStart() throws Exception
     {
-        if (!_sslContextFactory.checkConfig())
-        {
-            throw new IllegalStateException("SSL context is not configured correctly.");
-        }
-
+        _sslContextFactory.checkKeyStore();
         _sslContextFactory.start();
         
         super.doStart();
@@ -372,22 +386,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Override
     protected ServerSocket newServerSocket(String host, int port,int backlog) throws IOException
     {
-        SSLServerSocketFactory factory = _sslContextFactory.getSslContext().getServerSocketFactory();
-
-        SSLServerSocket socket = 
-            (SSLServerSocket) (host==null ?
-                        factory.createServerSocket(port,backlog):
-                        factory.createServerSocket(port,backlog,InetAddress.getByName(host)));
-
-        if (_sslContextFactory.getWantClientAuth())
-            socket.setWantClientAuth(_sslContextFactory.getWantClientAuth());
-        if (_sslContextFactory.getNeedClientAuth())
-            socket.setNeedClientAuth(_sslContextFactory.getNeedClientAuth());
-
-        socket.setEnabledCipherSuites(_sslContextFactory.selectCipherSuites(
-                                            socket.getEnabledCipherSuites(),
-                                            socket.getSupportedCipherSuites()));
-        return socket;
+       return _sslContextFactory.newSslServerSocket(host,port,backlog);
     }
 
     /* ------------------------------------------------------------ */

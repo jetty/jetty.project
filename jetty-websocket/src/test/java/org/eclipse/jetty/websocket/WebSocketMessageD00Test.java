@@ -84,6 +84,7 @@ public class WebSocketMessageD00Test
         InputStream input = socket.getInputStream();
         BufferedReader reader = new BufferedReader(new InputStreamReader(input, "ISO-8859-1"));
         String responseLine = reader.readLine();
+        System.err.println(responseLine);
         assertTrue(responseLine.startsWith("HTTP/1.1 101 WebSocket Protocol Handshake"));
         // Read until we find an empty line, which signals the end of the http response
         String line;

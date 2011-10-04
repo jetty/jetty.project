@@ -266,9 +266,19 @@ public class HttpParser implements Parser
         // Fill buffer if we can
         if (length == 0)
         {
-            long filled=fill();
+            long filled=-1;
+            IOException ex=null;
+            try 
+            { 
+                filled=fill();
+            }
+            catch(IOException e)
+            {
+                LOG.debug(this.toString(),e);
+                ex=e;
+            }
             
-            if (filled < 0) 
+            if (filled < 0 || _endp.isInputShutdown()) 
             {
                 if (_headResponse && _state>STATE_END)
                 {
@@ -291,6 +301,8 @@ public class HttpParser implements Parser
                     return 1;
                 }
                 
+                if (ex!=null)
+                    throw ex;
                 return -1;
             }
             length=_buffer.length();

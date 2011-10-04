@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -56,6 +57,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     
     protected final HashSet<String> _sessionIds = new HashSet<String>();
     protected Server _server;
+    protected Driver _driver;
     protected String _driverClassName;
     protected String _connectionUrl;
     protected DataSource _datasource;
@@ -183,6 +185,19 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         _driverClassName=driverClassName;
         _connectionUrl=connectionUrl;
     }
+    
+    /**
+     * Configure jdbc connection information via a jdbc Driver
+     * 
+     * @param driverClass
+     * @param connectionUrl
+     */
+    public void setDriverInfo (Driver driverClass, String connectionUrl)
+    {
+        _driver=driverClass;
+        _connectionUrl=connectionUrl;
+    }
+    
     
     public String getDriverClassName()
     {
@@ -461,7 +476,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             InitialContext ic = new InitialContext();
             _datasource = (DataSource)ic.lookup(_jndiName);
         }
-        else if (_driverClassName!=null && _connectionUrl!=null)
+        else if ( _driver != null && _connectionUrl != null )
+        {
+            DriverManager.registerDriver(_driver);
+        }
+        else if (_driverClassName != null && _connectionUrl != null)
         {
             Class.forName(_driverClassName);
         }

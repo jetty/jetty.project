@@ -33,7 +33,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketLoadD12Test
+public class WebSocketLoadD08Test
 {
     private static Server _server;
     private static Connector _connector;
@@ -142,8 +142,8 @@ public class WebSocketLoadD12Test
         private final int iterations;
         private final CountDownLatch latch;
         private final SocketEndPoint _endp;
-        private final WebSocketGeneratorD12 _generator;
-        private final WebSocketParserD12 _parser;
+        private final WebSocketGeneratorD08 _generator;
+        private final WebSocketParserD08 _parser;
         private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
         {
             public void onFrame(byte flags, byte opcode, Buffer buffer)
@@ -167,8 +167,8 @@ public class WebSocketLoadD12Test
             this.iterations = iterations;
             
             _endp=new SocketEndPoint(socket);
-            _generator = new WebSocketGeneratorD12(new WebSocketBuffers(32*1024),_endp,new FixedMaskGen());
-            _parser = new WebSocketParserD12(new WebSocketBuffers(32*1024),_endp,_handler,false);
+            _generator = new WebSocketGeneratorD08(new WebSocketBuffers(32*1024),_endp,new FixedMaskGen());
+            _parser = new WebSocketParserD08(new WebSocketBuffers(32*1024),_endp,_handler,false);
             
         }
 
@@ -202,7 +202,7 @@ public class WebSocketLoadD12Test
                 for (int i = 0; i < iterations; ++i)
                 {
                     byte[] data = message.getBytes(StringUtil.__UTF8);
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD12.OP_TEXT,data,0,data.length);
+                    _generator.addFrame((byte)0x8,WebSocketConnectionD08.OP_TEXT,data,0,data.length);
                     _generator.flush();
                     
                     //System.err.println("-> "+message);
