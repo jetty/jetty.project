@@ -37,8 +37,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Test;
 
 /**
@@ -108,7 +111,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest1() throws Exception
     {
-        System.err.println("testRequest1");
         configureServer(new HelloWorldHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -134,7 +136,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFragmentedChunk() throws Exception
     {
-        System.err.println("testFragmentedChunk");
         configureServer(new EchoHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -168,7 +169,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest1Fragments() throws Exception, InterruptedException
     {
-        System.err.println("testRequest1Fragments");
         configureServer(new HelloWorldHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -202,7 +202,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest2() throws Exception
     {
-        System.err.println("testRequest2");
         configureServer(new EchoHandler());
 
         byte[] bytes=REQUEST2.getBytes();
@@ -232,7 +231,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest2Fragments() throws Exception
     {
-        System.err.println("testRequest2Fragments");
         configureServer(new EchoHandler());
 
         byte[] bytes=REQUEST2.getBytes();
@@ -277,7 +275,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest2Iterate() throws Exception
     {
-        System.err.println("testRequest2Iterate");
         configureServer(new EchoHandler());
 
         byte[] bytes=REQUEST2.getBytes();
@@ -317,7 +314,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest2KnownBad() throws Exception
     {
-        System.err.println("testRequest2KnownBad");
         configureServer(new EchoHandler());
 
         byte[] bytes=REQUEST2.getBytes();
@@ -356,7 +352,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFlush() throws Exception
     {
-        System.err.println("testFlush");
         configureServer(new DataHandler());
 
         String[] encoding = {"NONE","UTF-8","ISO-8859-1","ISO-8859-2"};
@@ -393,7 +388,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockingWhileReadingRequestContent() throws Exception
     {
-        System.err.println("testBlockingWhileReadingRequestContent");
         configureServer(new DataHandler());
 
         long start=System.currentTimeMillis();
@@ -452,7 +446,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockingWhileWritingResponseContent() throws Exception
     {
-        System.err.println("testBlockingWhileWritingResponseContent");
         configureServer(new DataHandler());
 
         long start=System.currentTimeMillis();
@@ -498,7 +491,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBigBlocks() throws Exception
     {
-        System.err.println("testBigBlocks");
         configureServer(new BigBlockHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -632,7 +624,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testPipeline() throws Exception
     {
-        System.err.println("testPipeline");
         configureServer(new HelloWorldHandler());
 
         //for (int pipeline=1;pipeline<32;pipeline++)
@@ -689,7 +680,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRecycledWriters() throws Exception
     {
-        System.err.println("testRecycledWriters");
         configureServer(new EchoHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -778,7 +768,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testHead() throws Exception
     {
-        System.err.println("testHead");
         configureServer(new EchoHandler(false));
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -831,7 +820,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRecycledReaders() throws Exception
     {
-        System.err.println("testRecycledReaders");
         configureServer(new EchoHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -891,7 +879,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockedClient() throws Exception
     {
-        System.err.println("testBlockedClient");
         configureServer(new HelloWorldHandler());
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
@@ -933,12 +920,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testCommittedError() throws Exception
     {
-        System.err.println("testCommittedError");
-        configureServer(new CommittedErrorHandler());
+        CommittedErrorHandler handler =new CommittedErrorHandler();
+        configureServer(handler);
 
         Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             OutputStream os=client.getOutputStream();
             InputStream is=client.getInputStream();
 
@@ -946,37 +934,45 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.write((
                     "GET / HTTP/1.1\r\n"+
                     "Host: "+HOST+":"+_connector.getLocalPort()+"\r\n" +
-                    "Connection: close\r\n"+
                     "\r\n"
             ).getBytes());
             os.flush();
             
             client.setSoTimeout(2000);
             String in = IO.toString(is);
-            System.err.println("in="+in);
-            
-            Thread.sleep(2000);
 
+            assertEquals(-1,is.read()); // Closed by error!
+            
+            assertTrue(in.indexOf("HTTP/1.1 200 OK")>=0);
+            assertTrue(in.indexOf("Transfer-Encoding: chunked")>0);
+            assertTrue(in.indexOf("Now is the time for all good men to come to the aid of the party")>0);
+            assertTrue(in.indexOf("\r\n0\r\n")==-1); // chunking is interrupted by error close
+
+            assertTrue(!handler._endp.isBlocking() ||  handler._endp.isOutputShutdown()); // oshut
+            client.close();
+            Thread.sleep(100); 
+            assertTrue(!handler._endp.isOpen());
         }
         finally
         {
-            System.err.println("closing");
-            client.close();
-            Thread.sleep(2000);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
             
-            System.err.println("FINALLY");
-            Thread.sleep(2000);
+            if (!client.isClosed())
+                client.close();
         }
     }
 
     protected static class CommittedErrorHandler extends AbstractHandler
     {
+        public EndPoint _endp;
+        
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            _endp=baseRequest.getConnection().getEndPoint();
             response.setHeader("test","value");
             response.setStatus(200);
             response.setContentType("text/plain");
-            response.getWriter().println("Now is the time for all good ment to come to the aid of the party");
+            response.getWriter().println("Now is the time for all good men to come to the aid of the party");
             response.getWriter().flush();
             response.flushBuffer();
             
