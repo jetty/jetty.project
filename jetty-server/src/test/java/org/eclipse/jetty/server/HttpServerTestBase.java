@@ -948,7 +948,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertTrue(in.indexOf("Now is the time for all good men to come to the aid of the party")>0);
             assertTrue(in.indexOf("\r\n0\r\n")==-1); // chunking is interrupted by error close
 
-            assertTrue(!handler._endp.isBlocking() ||  handler._endp.isOutputShutdown()); // oshut
             client.close();
             Thread.sleep(100); 
             assertTrue(!handler._endp.isOpen());
@@ -976,7 +975,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.getWriter().flush();
             response.flushBuffer();
             
-            throw new ServletException(new Exception("Ooops I broke it after commit"));
+            throw new ServletException(new Exception("exception after commit"));
         }
     }
     
