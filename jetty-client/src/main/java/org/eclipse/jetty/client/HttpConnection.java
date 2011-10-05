@@ -364,7 +364,10 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                             {
                                 LOG.warn("Incomplete {} {}",_parser,_endp);
                                 if (_exchange!=null)
-                                    _exchange.cancel();
+                                {
+                                    _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                                    _exchange.getEventListener().onException(new EOFException("Incomplete"));
+                                }
                             }
                         }
                     }

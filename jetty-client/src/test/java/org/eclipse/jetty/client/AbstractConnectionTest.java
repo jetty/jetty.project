@@ -93,7 +93,80 @@ public abstract class AbstractConnectionTest
             httpClient.stop();
         }
     }
+    
+    @Test
+    public void testServerClosedIncomplete() throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
 
+        HttpClient httpClient = newHttpClient();
+        httpClient.setMaxConnectionsPerAddress(1);
+        httpClient.start();
+        try
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            HttpExchange exchange = new ConnectionExchange(latch);
+            exchange.setAddress(new Address("localhost", port));
+            exchange.setRequestURI("/");
+            httpClient.send(exchange);
+
+            Socket remote = serverSocket.accept();
+            OutputStream output = remote.getOutputStream();
+            output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
+            output.write("Content-Length: 10\r\n".getBytes("UTF-8"));
+            output.write("\r\n".getBytes("UTF-8"));
+            output.flush();
+
+            remote.close();
+
+            assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
+            
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    // @Test
+    public void testServerHalfClosedIncomplete() throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
+
+        HttpClient httpClient = newHttpClient();
+        httpClient.setIdleTimeout(10000);
+        httpClient.setMaxConnectionsPerAddress(1);
+        httpClient.start();
+        try
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            HttpExchange exchange = new ConnectionExchange(latch);
+            exchange.setAddress(new Address("localhost", port));
+            exchange.setRequestURI("/");
+            httpClient.send(exchange);
+
+            Socket remote = serverSocket.accept();
+            OutputStream output = remote.getOutputStream();
+            output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
+            output.write("Content-Length: 10\r\n".getBytes("UTF-8"));
+            output.write("\r\n".getBytes("UTF-8"));
+            output.flush();
+
+            remote.shutdownOutput();
+
+            assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
+            
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+    
     @Test
     public void testConnectionFailed() throws Exception
     {

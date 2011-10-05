@@ -22,4 +22,12 @@ public class AsyncSelectConnectionTest extends AbstractConnectionTest
         httpClient.setConnectBlocking(false);
         return httpClient;
     }
+
+    @Override
+    public void testServerHalfClosedIncomplete() throws Exception
+    {
+        super.testServerHalfClosedIncomplete();
+    }
+
+    
 }
