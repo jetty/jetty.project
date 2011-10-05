@@ -14,9 +14,9 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -24,6 +24,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -37,7 +40,7 @@ public abstract class AbstractConnectionTest
         // httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
         return httpClient;
     }
-    
+
     @Test
     public void testServerClosedConnection() throws Exception
     {
@@ -57,6 +60,19 @@ public abstract class AbstractConnectionTest
             httpClient.send(exchange);
 
             Socket remote = serverSocket.accept();
+
+            // HttpClient.send() above is async, so if we write the response immediately
+            // there is a chance that it arrives before the request is being sent, so we
+            // read the request before sending the response to avoid the race
+            InputStream input = remote.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.length() == 0)
+                    break;
+            }
+
             OutputStream output = remote.getOutputStream();
             output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
             output.write("Content-Length: 0\r\n".getBytes("UTF-8"));
@@ -80,6 +96,15 @@ public abstract class AbstractConnectionTest
             httpClient.send(exchange);
 
             remote = serverSocket.accept();
+
+            input = remote.getInputStream();
+            reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.length() == 0)
+                    break;
+            }
+
             output = remote.getOutputStream();
             output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
             output.write("Content-Length: 0\r\n".getBytes("UTF-8"));
@@ -93,7 +118,7 @@ public abstract class AbstractConnectionTest
             httpClient.stop();
         }
     }
-    
+
     @Test
     public void testServerClosedIncomplete() throws Exception
     {
@@ -113,6 +138,19 @@ public abstract class AbstractConnectionTest
             httpClient.send(exchange);
 
             Socket remote = serverSocket.accept();
+
+            // HttpClient.send() above is async, so if we write the response immediately
+            // there is a chance that it arrives before the request is being sent, so we
+            // read the request before sending the response to avoid the race
+            InputStream input = remote.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.length() == 0)
+                    break;
+            }
+
             OutputStream output = remote.getOutputStream();
             output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
             output.write("Content-Length: 10\r\n".getBytes("UTF-8"));
@@ -122,7 +160,7 @@ public abstract class AbstractConnectionTest
             remote.close();
 
             assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
-            
+
         }
         finally
         {
@@ -130,7 +168,7 @@ public abstract class AbstractConnectionTest
         }
     }
 
-    // @Test
+    @Test
     public void testServerHalfClosedIncomplete() throws Exception
     {
         ServerSocket serverSocket = new ServerSocket();
@@ -150,6 +188,19 @@ public abstract class AbstractConnectionTest
             httpClient.send(exchange);
 
             Socket remote = serverSocket.accept();
+
+            // HttpClient.send() above is async, so if we write the response immediately
+            // there is a chance that it arrives before the request is being sent, so we
+            // read the request before sending the response to avoid the race
+            InputStream input = remote.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.length() == 0)
+                    break;
+            }
+
             OutputStream output = remote.getOutputStream();
             output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
             output.write("Content-Length: 10\r\n".getBytes("UTF-8"));
@@ -159,14 +210,14 @@ public abstract class AbstractConnectionTest
             remote.shutdownOutput();
 
             assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
-            
+
         }
         finally
         {
             httpClient.stop();
         }
     }
-    
+
     @Test
     public void testConnectionFailed() throws Exception
     {
