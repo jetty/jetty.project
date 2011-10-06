@@ -32,12 +32,4 @@ public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
         _port = _server.getConnectors()[0].getLocalPort();
     }
 
-    @Test
-    public void testPerf1() throws Exception
-    {
-        sender(10,true);
-    }
-
-
-    
 }

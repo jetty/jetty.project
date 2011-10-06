@@ -455,22 +455,22 @@ public abstract class HttpConnection  extends AbstractConnection
                 {
                     async_exception=e;
                     LOG.debug(e);
-                    _request.setHandled(true);
                     error=true;
+                    _request.setHandled(true);
                 }
                 catch (UncheckedIOException e)
                 {
                     async_exception=e;
                     LOG.debug(e);
-                    _request.setHandled(true);
                     error=true;
+                    _request.setHandled(true);
                 }
                 catch (HttpException e)
                 {
                     LOG.debug(e);
+                    error=true;
                     _request.setHandled(true);
                     _response.sendError(e.getStatus(), e.getReason());
-                    error=true;
                 }
                 catch (Throwable e)
                 {
@@ -478,9 +478,8 @@ public abstract class HttpConnection  extends AbstractConnection
                         throw (ThreadDeath)e;
 
                     async_exception=e;
-                    
-                    error=true;
                     LOG.warn(String.valueOf(_uri),e);
+                    error=true;
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
                 }
@@ -515,7 +514,12 @@ public abstract class HttpConnection  extends AbstractConnection
                 if(_endp.isOpen())
                 {
                     if (error)
+                    {
                         _endp.shutdownOutput();
+                        _generator.setPersistent(false);
+                        if (!_generator.isComplete())
+                            _response.complete();
+                    }
                     else
                     {
                         if (!_response.isCommitted() && !_request.isHandled())

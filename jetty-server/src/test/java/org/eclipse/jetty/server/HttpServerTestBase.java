@@ -37,8 +37,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Test;
 
 /**
@@ -106,7 +109,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * Feed the server the entire request at once.
      */
     @Test
-    public void testRequest1_jetty() throws Exception
+    public void testRequest1() throws Exception
     {
         configureServer(new HelloWorldHandler());
 
@@ -164,7 +167,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * Feed the server fragmentary headers and see how it copes with it.
      */
     @Test
-    public void testRequest1Fragments_jetty() throws Exception, InterruptedException
+    public void testRequest1Fragments() throws Exception, InterruptedException
     {
         configureServer(new HelloWorldHandler());
 
@@ -197,7 +200,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testRequest2_jetty() throws Exception
+    public void testRequest2() throws Exception
     {
         configureServer(new EchoHandler());
 
@@ -226,7 +229,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testRequest2Fragments_jetty() throws Exception
+    public void testRequest2Fragments() throws Exception
     {
         configureServer(new EchoHandler());
 
@@ -270,7 +273,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
-    public void testRequest2Iterate_jetty() throws Exception
+    public void testRequest2Iterate() throws Exception
     {
         configureServer(new EchoHandler());
 
@@ -309,7 +312,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * After several iterations, I generated some known bad fragment points.
      */
     @Test
-    public void testRequest2KnownBad_jetty() throws Exception
+    public void testRequest2KnownBad() throws Exception
     {
         configureServer(new EchoHandler());
 
@@ -911,6 +914,68 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         finally
         {
             client.close();
+        }
+    }
+    
+    @Test
+    public void testCommittedError() throws Exception
+    {
+        CommittedErrorHandler handler =new CommittedErrorHandler();
+        configureServer(handler);
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            OutputStream os=client.getOutputStream();
+            InputStream is=client.getInputStream();
+
+            // Send a request
+            os.write((
+                    "GET / HTTP/1.1\r\n"+
+                    "Host: "+HOST+":"+_connector.getLocalPort()+"\r\n" +
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+            
+            client.setSoTimeout(2000);
+            String in = IO.toString(is);
+
+            assertEquals(-1,is.read()); // Closed by error!
+            
+            assertTrue(in.indexOf("HTTP/1.1 200 OK")>=0);
+            assertTrue(in.indexOf("Transfer-Encoding: chunked")>0);
+            assertTrue(in.indexOf("Now is the time for all good men to come to the aid of the party")>0);
+            assertTrue(in.indexOf("\r\n0\r\n")==-1); // chunking is interrupted by error close
+
+            client.close();
+            Thread.sleep(100); 
+            assertTrue(!handler._endp.isOpen());
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            
+            if (!client.isClosed())
+                client.close();
+        }
+    }
+
+    protected static class CommittedErrorHandler extends AbstractHandler
+    {
+        public EndPoint _endp;
+        
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            _endp=baseRequest.getConnection().getEndPoint();
+            response.setHeader("test","value");
+            response.setStatus(200);
+            response.setContentType("text/plain");
+            response.getWriter().println("Now is the time for all good men to come to the aid of the party");
+            response.getWriter().flush();
+            response.flushBuffer();
+            
+            throw new ServletException(new Exception("exception after commit"));
         }
     }
     

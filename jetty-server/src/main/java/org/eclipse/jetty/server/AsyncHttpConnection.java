@@ -27,7 +27,6 @@ public class AsyncHttpConnection extends HttpConnection
 
     public Connection handle() throws IOException
     {
-        LOG.debug("handle {}",this);
         Connection connection = this;
         boolean some_progress=false; 
         boolean progress=true; 
@@ -60,6 +59,11 @@ public class AsyncHttpConnection extends HttpConnection
                     // Flush output from buffering endpoint
                     if (_endp.isBufferingOutput())
                         _endp.flush();
+                    
+                    // Special case close handling.
+                    // If we were dispatched and have made no progress, but io is shutdown, then close
+                    if (!progress && !some_progress && (_endp.isInputShutdown()||_endp.isOutputShutdown()))
+                       _endp.close();
                 }
                 catch (HttpException e)
                 {
@@ -123,13 +127,12 @@ public class AsyncHttpConnection extends HttpConnection
         {
             setCurrentConnection(null);
             _parser.returnBuffers();
+            _generator.returnBuffers();
 
-            // Are we write blocked
-            if (_generator.isCommitted() && !_generator.isComplete() && _endp.isOpen())
-                ((AsyncEndPoint)_endp).scheduleWrite();
-            else
-                _generator.returnBuffers();
-
+            // Check if we are write blocked
+            if (_generator.isCommitted() && !_generator.isComplete() && _endp.isOpen() && !_endp.isOutputShutdown())
+                ((AsyncEndPoint)_endp).scheduleWrite(); // TODO. This should not be required
+                
             if (!some_progress)
             {
                 _total_no_progress++;
@@ -137,11 +140,6 @@ public class AsyncHttpConnection extends HttpConnection
                 if (NO_PROGRESS_INFO>0 && _total_no_progress%NO_PROGRESS_INFO==0 && (NO_PROGRESS_CLOSE<=0 || _total_no_progress< NO_PROGRESS_CLOSE))
                 {
                     LOG.info("EndPoint making no progress: "+_total_no_progress+" "+_endp);
-                    
-                    LOG.setDebugEnabled(true);
-                    Log.getLogger("org.eclipse.jetty.io.nio").getLogger("ssl").setDebugEnabled(true);
-                    Log.getLogger(ChannelEndPoint.class).setDebugEnabled(true);
-                    
                 }
                 
                 if (NO_PROGRESS_CLOSE>0 && _total_no_progress>NO_PROGRESS_CLOSE)
@@ -154,7 +152,6 @@ public class AsyncHttpConnection extends HttpConnection
                     }
                 }
             }
-            LOG.debug("unhandle {}",this);
         }
         return connection;
     }
