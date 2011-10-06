@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.io.bio;
@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -34,13 +35,13 @@ public class SocketEndPoint extends StreamEndPoint
     final Socket _socket;
     final InetSocketAddress _local;
     final InetSocketAddress _remote;
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     public SocketEndPoint(Socket socket)
-    	throws IOException	
+    	throws IOException
     {
         super(socket.getInputStream(),socket.getOutputStream());
         _socket=socket;
@@ -48,13 +49,13 @@ public class SocketEndPoint extends StreamEndPoint
         _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
         super.setMaxIdleTime(_socket.getSoTimeout());
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     protected SocketEndPoint(Socket socket, int maxIdleTime)
-        throws IOException      
+        throws IOException
     {
         super(socket.getInputStream(),socket.getOutputStream());
         _socket=socket;
@@ -63,7 +64,7 @@ public class SocketEndPoint extends StreamEndPoint
         _socket.setSoTimeout(maxIdleTime>0?maxIdleTime:0);
         super.setMaxIdleTime(maxIdleTime);
     }
-    
+
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#isClosed()
@@ -73,19 +74,19 @@ public class SocketEndPoint extends StreamEndPoint
     {
         return super.isOpen() && _socket!=null && !_socket.isClosed();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public boolean isInputShutdown()
     {
-        return !super.isOpen() || _socket!=null && _socket.isInputShutdown();
+        return !isOpen() || super.isInputShutdown();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public boolean isOutputShutdown()
     {
-        return !super.isOpen() || _socket!=null && _socket.isOutputShutdown();
+        return !isOpen() || super.isOutputShutdown();
     }
 
     /* ------------------------------------------------------------ */
@@ -94,9 +95,13 @@ public class SocketEndPoint extends StreamEndPoint
      */
     @Override
     public void shutdownOutput() throws IOException
-    {    
-        if (!_socket.isClosed() && !_socket.isOutputShutdown())
-            _socket.shutdownOutput();
+    {
+        if (!isOutputShutdown())
+        {
+            super.shutdownOutput();
+            if (!(_socket instanceof SSLSocket))
+                _socket.shutdownOutput();
+        }
     }
 
 
@@ -106,11 +111,15 @@ public class SocketEndPoint extends StreamEndPoint
      */
     @Override
     public void shutdownInput() throws IOException
-    {    
-        if (!_socket.isClosed() && !_socket.isInputShutdown())
-            _socket.shutdownInput();
+    {
+        if (!isInputShutdown())
+        {
+            super.shutdownInput();
+            if (!(_socket instanceof SSLSocket))
+                _socket.shutdownInput();
+        }
     }
-    
+
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#close()
@@ -122,10 +131,10 @@ public class SocketEndPoint extends StreamEndPoint
         _in=null;
         _out=null;
     }
-    
+
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalAddr()
      */
     @Override
@@ -133,12 +142,12 @@ public class SocketEndPoint extends StreamEndPoint
     {
        if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
            return StringUtil.ALL_INTERFACES;
-        
+
         return _local.getAddress().getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalHost()
      */
     @Override
@@ -146,12 +155,12 @@ public class SocketEndPoint extends StreamEndPoint
     {
        if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
            return StringUtil.ALL_INTERFACES;
-        
+
         return _local.getAddress().getCanonicalHostName();
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalPort()
      */
     @Override
@@ -163,7 +172,7 @@ public class SocketEndPoint extends StreamEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemoteAddr()
      */
     @Override
@@ -176,7 +185,7 @@ public class SocketEndPoint extends StreamEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemoteHost()
      */
     @Override
@@ -188,7 +197,7 @@ public class SocketEndPoint extends StreamEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemotePort()
      */
     @Override
@@ -200,7 +209,7 @@ public class SocketEndPoint extends StreamEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getConnection()
      */
     @Override
@@ -237,5 +246,5 @@ public class SocketEndPoint extends StreamEndPoint
             _socket.close();
         }
     }
-    
+
 }
