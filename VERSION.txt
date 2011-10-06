@@ -22,6 +22,7 @@ jetty-7.5.2.v20111006 - 06 October 2011
  + 358164 Dispatch from servlet to handler
  + 358263 add method for osgi users to register a driver as Class.forName does
    not work for them
+ + 358649 StdErrLog system properties for package/class logging LEVEL.
  + 358674 Still allows sslv3 for now
  + 358687 Updated jsp does not scan for system tlds Fixed pattern.
  + 358784 JSP broken on Java 1.5
