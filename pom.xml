@@ -473,7 +473,7 @@
                 <id>gen-versiontxt</id>
                 <phase>generate-resources</phase>
                 <goals>
-                  <goal>gen-version-text</goal>
+                  <goal>update-version-text</goal>
                 </goals>
                 <configuration>
                   <refreshTags>true</refreshTags>
