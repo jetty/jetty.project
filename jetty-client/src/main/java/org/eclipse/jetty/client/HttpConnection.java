@@ -278,7 +278,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                         long filled = _parser.parseAvailable();
                         io += filled;
 
-                        if (_parser.isIdle() && _endp.isInputShutdown())
+                        if (_parser.isIdle() && (_endp.isInputShutdown() || !_endp.isOpen()))
                             throw new EOFException();
                     }
 
