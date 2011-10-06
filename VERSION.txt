@@ -1,10 +1,54 @@
-jetty-8.0.2-SNAPSHOT
-
-
-jetty-7.5.2-SNAPSHOT
- + 358121 Implement new UTF8 Algorithm to UTF8Appendable.java
- + 353839 ajp component error when upload file
- + JETTY-1378 new system property to for the use of the JDTCompiler when using the latest jsp-impl
+jetty-8.0.2.v20111006 - 06 October 2011
+ + 336443 add missing comma in DigestAuthenticator string
+ + 342161 ScannerTest fails intermittently on Mac OS X
+ + 346419 testing HttpClient FDs
+ + 353267 Request._parameters initialization bug
+ + 353509 jetty-client unit tests are running too long
+ + 353627 Basic Auth checks that Basic method has been send
+ + 356144 Allow SelectorManager thread priority to be set
+ + 356274 Start SSL socket factory in call to open()
+ + 357163 jetty 8 ought to proxy jetty8 javadocs
+ + 357178 websockets draft 14 support
+ + 357188 Send content buffer directly
+ + 357209 JSP tag listeners not called
+ + 357216 Logging via Log4J does not expand braces in format strings
+ + 357240 more half close refinements
+ + 357338 remove debug
+ + 357672 resolve issue with serializing pojos with mongodb session manager,
+   thanks to john simone for the discovery and fix
+ + 357959 Include javadoc in distribution
+ + 358027 NullPointerException in ResourceHandler with jetty-stylesheet.css
+ + 358035 idle time only active if > 0
+ + 358147 Add catch for UnknownHostException to fix leaky file descriptor in
+   client
+ + 358164 Dispatch from servlet to handler
+ + 358263 add method for osgi users to register a driver as Class.forName does
+   not work for them
+ + 358649 StdErrLog system properties for package/class logging LEVEL.
+ + 358674 Still allows sslv3 for now
+ + 358687 Updated jsp does not scan for system tlds Fixed pattern.
+ + 358784 JSP broken on Java 1.5
+ + 358925 bit more javadoc on usage
+ + 358959 File descriptor leak with UnresolvedAddressException
+ + 359309 adjust previous test for servletPath to include pathInfo
+ + 359673 updated websocket version handling
+ + 359675 Principal != String, fix for issue in property file login manager
+ + 360051 SocketConnectionTest.testServerClosedConnection is excluded.
+ + 360066 jsps referenced in web.xml <jsp-file> elements do not compile
+ + JETTY-1130 Access Sessions from HashSessionIdManager
+ + JETTY-1277 Fixed sendRedirect encoding of relative locations
+ + JETTY-1322 idle sweeper checks for closed endp
+ + JETTY-1377 extra logging for busy selector
+ + JETTY-1378 new sys property for the latest jsp-impl to force the use of the
+   JDTCompiler when running in OSGi.
+ + JETTY-1414 applied to PropertyUserStore
+ + JETTY-1415 Start/Stop Server and Client only once in test, code format
+ + JETTY-1420 Set Host header for new request in RedirectListener
+ + JETTY-1421 Implement RedirectListener.onException,onConnectionFailed
+ + JETTY-1423 force connection to be closed returned
+ + JETTY-1430 local JNDI contexts don't carry environment
+ + JETTY-1434 Add a jsp that exercises jstl.
+ + JETTY-1439 space in directory installation path causes classloader problem
 
 jetty-8.0.1.v20110908 - 08 September 2011
  + 350634 Added Resource.newResource(File)
@@ -35,7 +79,6 @@ jetty-8.0.0.v20110901 - 01 September 2011
  + 353073 better warnings
  + 353285 ServletSecurity annotation ignored
  + 356421 Upgraded websocket to draft 13 support
-
 
 jetty-7.5.0.v20110901 - 01 September 2011
  + 356421 Upgraded websocket to draft 13 support
