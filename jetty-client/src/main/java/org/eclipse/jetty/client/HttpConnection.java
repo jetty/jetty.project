@@ -360,10 +360,11 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                             // we wont be called again so let the parser see the close
                             complete=true;
                             _parser.parseAvailable();
+                            // TODO should not need this
                             if (!(_parser.isComplete()||_parser.isIdle()))
                             {
                                 LOG.warn("Incomplete {} {}",_parser,_endp);
-                                if (_exchange!=null)
+                                if (_exchange!=null && !_exchange.isDone())
                                 {
                                     _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
                                     _exchange.getEventListener().onException(new EOFException("Incomplete"));
@@ -372,17 +373,16 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                         }
                     }
 
-                    /* TODO - is this needed ?
-                    if (_generator.isComplete() && !_parser.isComplete())
+                    // TODO should not need this
+                    if (_endp.isInputShutdown() && !_parser.isComplete())
                     {
-                        if (!_endp.isOpen() || _endp.isInputShutdown())
+                        if (_exchange!=null && !_exchange.isDone())
                         {
-                            complete=true;
-                            close=true;
-                            close();
+                            _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                            _exchange.getEventListener().onException(new EOFException("Incomplete"));
                         }
+                        _endp.close();
                     }
-                    */
 
                     if (complete || failed)
                     {
