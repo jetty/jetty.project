@@ -386,16 +386,16 @@ public abstract class AbstractConnectionTest
         }
     }
 
-    private class ConnectionExchange extends HttpExchange
+    protected class ConnectionExchange extends HttpExchange
     {
         private final CountDownLatch latch;
 
-        private ConnectionExchange()
+        protected ConnectionExchange()
         {
             this.latch = null;
         }
 
-        private ConnectionExchange(CountDownLatch latch)
+        protected ConnectionExchange(CountDownLatch latch)
         {
             this.latch = latch;
         }
