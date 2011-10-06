@@ -271,11 +271,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
             }
 
-            // TODO is this too soon?
             /* Set the webapp's classpath for Jasper */
             context.setAttribute("org.apache.catalina.jsp_classpath", context.getClassPath());
+
             /* Set the system classpath for Jasper */
-            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context));        
+            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
         }
         
         //Set the servlet-class
@@ -321,6 +321,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             holder.setForcedPath(jsp_file);
             holder.setClassName(jspServletClass);
+            //set the system classpath explicitly for the holder that will represent the JspServlet instance
+            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
         }
 
         // handle load-on-startup 
