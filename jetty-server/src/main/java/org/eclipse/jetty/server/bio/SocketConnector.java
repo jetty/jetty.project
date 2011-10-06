@@ -82,7 +82,7 @@ public class SocketConnector extends AbstractConnector
         _localPort=_serverSocket.getLocalPort();
         if (_localPort<=0)
             throw new IllegalStateException("port not allocated for "+this);
-            
+
     }
 
     /* ------------------------------------------------------------ */
@@ -176,7 +176,6 @@ public class SocketConnector extends AbstractConnector
     /* ------------------------------------------------------------------------------- */
     protected class ConnectorEndPoint extends SocketEndPoint implements Runnable, ConnectedEndPoint
     {
-        boolean _dispatched=false;
         volatile Connection _connection;
         protected final Socket _socket;
 
@@ -284,7 +283,7 @@ public class SocketConnector extends AbstractConnector
                     if (!_socket.isClosed())
                     {
                         long timestamp=System.currentTimeMillis();
-                        int max_idle=getMaxIdleTime(); 
+                        int max_idle=getMaxIdleTime();
 
                         _socket.setSoTimeout(getMaxIdleTime());
                         int c=0;
