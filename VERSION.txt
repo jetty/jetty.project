@@ -1,4 +1,7 @@
 jetty-7.5.2-SNAPSHOT
+ + 358121 Implement new UTF8 Algorithm to UTF8Appendable.java
+ + 353839 ajp component error when upload file
+ + JETTY-1378 new system property to for the use of the JDTCompiler when using the latest jsp-impl
 
 jetty-7.5.1.v20110908 - 08 September 2011
  + 350634 Added Resource.newResource(File)

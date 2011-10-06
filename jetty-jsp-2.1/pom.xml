@@ -14,6 +14,54 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.glassfish.web</groupId>
+                  <artifactId>jsp-impl</artifactId>
+                  <version>2.1.3-b10</version>
+                  <type>jar</type>
+                  <classifier>sources</classifier>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>target/generated-sources</outputDirectory>
+                  <includes>**/JDTJavaCompiler.java</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.7</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>target/generated-sources</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
@@ -26,14 +74,12 @@
         </executions>
 	<configuration>
 	    <instructions>
-		<Import-Package>
-		    com.sun.org.apache.commons.logging;version="[2.1,3)";glassfish="split",
+                <Import-Package>
+		    org.apache.jasper;version="[2.1,3)";glassfish="split",
 		    *
-		</Import-Package>
-		<Export-Package>org.eclipse.jetty*;version="${parsedVersion.osgiVersion}"</Export-Package>
-        <Fragment-Host>org.apache.jasper.glassfish</Fragment-Host>
-		<!-- disable the uses directive: we don't want to fore eeryone that uses us to
-		have to depend on com.sun.org.apache.commons.logging provided by jasper-glassfish. -->
+                </Import-Package>
+                <Export-Package>org.apache.jasper*;version="${parsedVersion.osgiVersion}"</Export-Package>
+                <Fragment-Host>org.apache.jasper.glassfish</Fragment-Host>
 		<_nouses>true</_nouses>
 	    </instructions>
 	</configuration>
@@ -61,26 +107,22 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jsp-2.1-glassfish</artifactId>
-      <version>${javax-servlet-jsp-version}</version>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jsp-impl</artifactId>
+      <version>2.1.3-b10</version>
       <exclusions>
-        <exclusion>
-          <groupId>org.mortbay.jetty</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
       </exclusions>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jdt.core.compiler</groupId>
+      <artifactId>ecj</artifactId>
+      <version>3.7</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

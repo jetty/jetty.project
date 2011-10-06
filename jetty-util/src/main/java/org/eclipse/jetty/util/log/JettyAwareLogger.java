@@ -13,9 +13,15 @@
 package org.eclipse.jetty.util.log;
 
 import org.slf4j.Marker;
+import org.slf4j.helpers.FormattingTuple;
+import org.slf4j.helpers.MessageFormatter;
 
-
-/* ------------------------------------------------------------ */
+/**
+ * JettyAwareLogger is used to fix a FQCN bug that arises from how Jetty
+ * Log uses an indirect slf4j implementation.
+ * 
+ * https://bugs.eclipse.org/bugs/show_bug.cgi?id=276670
+ */
 class JettyAwareLogger implements org.slf4j.Logger 
 {
     private static final int DEBUG = org.slf4j.spi.LocationAwareLogger.DEBUG_INT;
@@ -24,6 +30,7 @@ class JettyAwareLogger implements org.slf4j.Logger
     private static final int TRACE = org.slf4j.spi.LocationAwareLogger.TRACE_INT;
     private static final int WARN  = org.slf4j.spi.LocationAwareLogger.WARN_INT;
     
+    private static final String FQCN = Slf4jLog.class.getName();
     private final org.slf4j.spi.LocationAwareLogger _logger;
     
     public JettyAwareLogger(org.slf4j.spi.LocationAwareLogger logger)
@@ -586,8 +593,19 @@ class JettyAwareLogger implements org.slf4j.Logger
         return _logger.toString();
     }
     
-    private void log(Marker marker, int level, String msg, Object[] objArray, Throwable t)
+    private void log(Marker marker, int level, String msg, Object[] argArray, Throwable t)
     {
-        _logger.log(marker,"org.eclipse.jetty.util.log.Log",level, msg, objArray,t);
+        if (argArray == null)
+        {
+            // Simple SLF4J Message (no args)
+            _logger.log(marker,FQCN,level,msg,null,t);
+        }
+        else
+        {
+            // Don't assume downstream handles argArray properly.
+            // Do it the SLF4J way here to eliminate that as a bug.
+            FormattingTuple ft = MessageFormatter.arrayFormat(msg,argArray);
+            _logger.log(marker,FQCN,level,ft.getMessage(),null,t);
+        }
     }
 }

@@ -15,10 +15,13 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -48,7 +51,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     private final HttpClient _httpClient;
     private final Manager _selectorManager=new Manager();
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
-    private SSLContext _sslContext;
     private Buffers _sslBuffers;
 
     /**
@@ -89,31 +91,34 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     public void startConnection( HttpDestination destination )
         throws IOException
     {
+        SocketChannel channel = null;
         try
         {
-            SocketChannel channel = SocketChannel.open();
+            channel = SocketChannel.open();
             Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
             channel.socket().setTcpNoDelay(true);
 
             if (_httpClient.isConnectBlocking())
             {
-                channel.socket().connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
-                channel.configureBlocking(false);
-                _selectorManager.register( channel, destination );
+                    channel.socket().connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
+                    channel.configureBlocking(false);
+                    _selectorManager.register( channel, destination );
             }
             else
             {
-                channel.configureBlocking( false );
-                channel.connect(address.toSocketAddress());
-                _selectorManager.register( channel, destination );
-                ConnectTimeout connectTimeout = new ConnectTimeout(channel, destination);
+                channel.configureBlocking(false);
+                channel.connect(address.toSocketAddress());            
+                _selectorManager.register(channel,destination);
+                ConnectTimeout connectTimeout = new ConnectTimeout(channel,destination);
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
-                _connectingChannels.put(channel, connectTimeout);
+                _connectingChannels.put(channel,connectTimeout);
             }
 
         }
         catch(IOException ex)
         {
+            if (channel != null)
+                channel.close();
             destination.onConnectionFailed(ex);
         }
     }
@@ -194,19 +199,16 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
         private synchronized SSLEngine newSslEngine(SocketChannel channel) throws IOException
         {
             SslContextFactory sslContextFactory = _httpClient.getSslContextFactory();
-            if (_sslContext == null)
-                _sslContext = sslContextFactory.getSslContext();
-
             SSLEngine sslEngine;
-            if (channel != null && sslContextFactory.isSessionCachingEnabled())
+            if (channel != null)
             {
                 String peerHost = channel.socket().getInetAddress().getHostAddress();
                 int peerPort = channel.socket().getPort();
-                sslEngine = _sslContext.createSSLEngine(peerHost, peerPort);
+                sslEngine = sslContextFactory.newSslEngine(peerHost, peerPort);
             }
             else
             {
-                sslEngine = _sslContext.createSSLEngine();
+                sslEngine = sslContextFactory.newSslEngine();
             }
             sslEngine.setUseClientMode(true);
             sslEngine.beginHandshake();

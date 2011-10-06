@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -87,9 +88,15 @@ public class LikeJettyXml
                     "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
+        cf.setProtocol("TLSv1.1");
+        cf.addExcludeProtocols(new String[]{"TLSv1","SSLv3"});
         ssl_connector.setStatsOn(true);
         server.addConnector(ssl_connector);
+        ssl_connector.open();
+        
 
+        
+        
         Ajp13SocketConnector ajp = new Ajp13SocketConnector();
         ajp.setPort(8009);
         server.addConnector(ajp);

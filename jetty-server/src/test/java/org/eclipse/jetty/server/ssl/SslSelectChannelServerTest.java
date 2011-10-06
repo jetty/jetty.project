@@ -23,6 +23,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * HttpServer Tester.
@@ -60,14 +61,14 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
         keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
-        __sslContext = SSLContext.getInstance("SSL");
+        __sslContext = SSLContext.getInstance("TLS");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
         
 
         try
         {
             HttpsURLConnection.setDefaultHostnameVerifier(__hostnameverifier);
-            SSLContext sc = SSLContext.getInstance("SSL"); 
+            SSLContext sc = SSLContext.getInstance("TLS"); 
             sc.init(null, __trustAllCerts, new java.security.SecureRandom()); 
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }
@@ -79,5 +80,20 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
         
     }
 
+    @Test
+    @Override
+    public void testBlockingWhileWritingResponseContent() throws Exception
+    {
+        super.testBlockingWhileWritingResponseContent();
+    }
+
+
+    @Test
+    @Override
+    public void testBigBlocks() throws Exception
+    {
+        super.testBigBlocks();
+    }
+    
     
 }

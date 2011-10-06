@@ -5,7 +5,6 @@
     <version>7.5.2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-webapp</artifactId>
   <name>Jetty :: Aggregate :: WebApp Server</name>
 
@@ -22,7 +21,7 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <includes>META-INF/**,org/eclipse/**</includes>
+              <includes>META-INF/**,org/eclipse/**,org/apache/jasper/compiler/**</includes>
               <excludes>**/MANIFEST.MF,javax/**</excludes>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>

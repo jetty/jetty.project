@@ -42,6 +42,8 @@ public class Slf4jLog implements Logger
         }
 
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger( name );
+        // Fix LocationAwareLogger use to indicate FQCN of this class - 
+        // https://bugs.eclipse.org/bugs/show_bug.cgi?id=276670
         if (logger instanceof org.slf4j.spi.LocationAwareLogger)
         {
             _logger = new JettyAwareLogger((org.slf4j.spi.LocationAwareLogger)logger);

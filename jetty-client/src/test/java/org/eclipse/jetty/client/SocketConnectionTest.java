@@ -13,6 +13,16 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
+
+import static org.junit.Assert.assertEquals;
+
 public class SocketConnectionTest extends AbstractConnectionTest
 {
     protected HttpClient newHttpClient()
@@ -21,10 +31,61 @@ public class SocketConnectionTest extends AbstractConnectionTest
         httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
         return httpClient;
     }
-    
+
     @Override
-    public void testServerClosedConnection()
+    public void testServerClosedConnection() throws Exception
     {
-        // TODO work out why this does not work
+        // Differently from the SelectConnector, the SocketConnector cannot detect server closes.
+        // Therefore, upon a second send, the exchange will fail.
+        // Applications needs to retry it explicitly.
+
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.bind(null);
+        int port=serverSocket.getLocalPort();
+
+        HttpClient httpClient = this.newHttpClient();
+        httpClient.setMaxConnectionsPerAddress(1);
+        httpClient.start();
+        try
+        {
+            CountDownLatch latch = new CountDownLatch(1);
+            HttpExchange exchange = new ConnectionExchange(latch);
+            exchange.setAddress(new Address("localhost", port));
+            exchange.setRequestURI("/");
+            httpClient.send(exchange);
+
+            Socket remote = serverSocket.accept();
+
+            // HttpClient.send() above is async, so if we write the response immediately
+            // there is a chance that it arrives before the request is being sent, so we
+            // read the request before sending the response to avoid the race
+            InputStream input = remote.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.length() == 0)
+                    break;
+            }
+
+            OutputStream output = remote.getOutputStream();
+            output.write("HTTP/1.1 200 OK\r\n".getBytes("UTF-8"));
+            output.write("Content-Length: 0\r\n".getBytes("UTF-8"));
+            output.write("\r\n".getBytes("UTF-8"));
+            output.flush();
+
+            assertEquals(HttpExchange.STATUS_COMPLETED, exchange.waitForDone());
+
+            remote.close();
+
+            exchange.reset();
+            httpClient.send(exchange);
+
+            assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
     }
 }

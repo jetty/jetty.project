@@ -31,7 +31,7 @@ public class NestedServer
         
         
         WebAppContext webapp = new WebAppContext();
-        webapp.setContextPath("/");
+        webapp.setContextPath("/jnest");
         webapp.setWar("src/main/webapp");
         webapp.setParentLoaderPriority(true);
         server.setHandler(webapp);

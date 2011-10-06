@@ -186,79 +186,36 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * Extract Paramters from query string and/or form _content.
+     * Extract Parameters from query string and/or form _content.
      */
     public void extractParameters()
     {
         if (_baseParameters == null) 
             _baseParameters = new MultiMap(16);
-        
+
         if (_paramsExtracted) 
         {
             if (_parameters==null)
                 _parameters=_baseParameters;
             return;
         }
-        
+
         _paramsExtracted = true;
 
-        // Handle query string
-        if (_uri!=null && _uri.hasQuery())
+        try
         {
-            if (_queryEncoding==null)
-                _uri.decodeQueryTo(_baseParameters);
-            else
+            // Handle query string
+            if (_uri!=null && _uri.hasQuery())
             {
-                try
-                {
-                    _uri.decodeQueryTo(_baseParameters,_queryEncoding);
-                }
-                catch (UnsupportedEncodingException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.warn(e);
-                    else
-                        LOG.warn(e.toString());
-                }
-            }
-        }
-
-        // handle any _content.
-        String encoding = getCharacterEncoding();
-        String content_type = getContentType();
-        if (content_type != null && content_type.length() > 0)
-        {
-            content_type = HttpFields.valueParameters(content_type, null);
-            
-            if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(content_type) && _inputState==__NONE &&
-                    (HttpMethods.POST.equals(getMethod()) || HttpMethods.PUT.equals(getMethod())))
-            {
-                int content_length = getContentLength();
-                if (content_length != 0)
+                if (_queryEncoding==null)
+                    _uri.decodeQueryTo(_baseParameters);
+                else
                 {
                     try
                     {
-                        int maxFormContentSize=-1;
-                        
-                        if (_context!=null)
-                            maxFormContentSize=_context.getContextHandler().getMaxFormContentSize();
-                        else
-                        {
-                            Integer size = (Integer)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                            if (size!=null)
-                                maxFormContentSize =size.intValue();
-                        }
-                        
-                        if (content_length>maxFormContentSize && maxFormContentSize > 0)
-                        {
-                            throw new IllegalStateException("Form too large"+content_length+">"+maxFormContentSize);
-                        }
-                        InputStream in = getInputStream();
-                       
-                        // Add form params to query params
-                        UrlEncoded.decodeTo(in, _baseParameters, encoding,content_length<0?maxFormContentSize:-1);
+                        _uri.decodeQueryTo(_baseParameters,_queryEncoding);
                     }
-                    catch (IOException e)
+                    catch (UnsupportedEncodingException e)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.warn(e);
@@ -267,23 +224,75 @@ public class Request implements HttpServletRequest
                     }
                 }
             }
-        }
-        
-        if (_parameters==null)
-            _parameters=_baseParameters;
-        else if (_parameters!=_baseParameters)
-        {
-            // Merge parameters (needed if parameters extracted after a forward).
-            Iterator iter = _baseParameters.entrySet().iterator();
-            while (iter.hasNext())
+
+            // handle any _content.
+            String encoding = getCharacterEncoding();
+            String content_type = getContentType();
+            if (content_type != null && content_type.length() > 0)
             {
-                Map.Entry entry = (Map.Entry)iter.next();
-                String name=(String)entry.getKey();
-                Object values=entry.getValue();
-                for (int i=0;i<LazyList.size(values);i++)
-                    _parameters.add(name, LazyList.get(values, i));
+                content_type = HttpFields.valueParameters(content_type, null);
+
+                if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(content_type) && _inputState==__NONE &&
+                        (HttpMethods.POST.equals(getMethod()) || HttpMethods.PUT.equals(getMethod())))
+                {
+                    int content_length = getContentLength();
+                    if (content_length != 0)
+                    {
+                        try
+                        {
+                            int maxFormContentSize=-1;
+
+                            if (_context!=null)
+                                maxFormContentSize=_context.getContextHandler().getMaxFormContentSize();
+                            else
+                            {
+                                Integer size = (Integer)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
+                                if (size!=null)
+                                    maxFormContentSize =size.intValue();
+                            }
+
+                            if (content_length>maxFormContentSize && maxFormContentSize > 0)
+                            {
+                                throw new IllegalStateException("Form too large"+content_length+">"+maxFormContentSize);
+                            }
+                            InputStream in = getInputStream();
+
+                            // Add form params to query params
+                            UrlEncoded.decodeTo(in, _baseParameters, encoding,content_length<0?maxFormContentSize:-1);
+                        }
+                        catch (IOException e)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.warn(e);
+                            else
+                                LOG.warn(e.toString());
+                        }
+                    }
+                }
             }
-        }   
+
+            if (_parameters==null)
+                _parameters=_baseParameters;
+            else if (_parameters!=_baseParameters)
+            {
+                // Merge parameters (needed if parameters extracted after a forward).
+                Iterator iter = _baseParameters.entrySet().iterator();
+                while (iter.hasNext())
+                {
+                    Map.Entry entry = (Map.Entry)iter.next();
+                    String name=(String)entry.getKey();
+                    Object values=entry.getValue();
+                    for (int i=0;i<LazyList.size(values);i++)
+                        _parameters.add(name, LazyList.get(values, i));
+                }
+            }   
+        }
+        finally
+        {
+            //ensure params always set (even if empty) after extraction
+            if (_parameters==null)
+                _parameters=_baseParameters;
+        }
     }
 
     /* ------------------------------------------------------------ */

@@ -327,7 +327,7 @@ public abstract class HttpConnection  extends AbstractConnection
         }
 
         if (_in == null)
-            _in = new HttpInput(((HttpParser)_parser),_connector.getMaxIdleTime());
+            _in = new HttpInput(HttpConnection.this);
         return _in;
     }
 
@@ -453,29 +453,29 @@ public abstract class HttpConnection  extends AbstractConnection
                 catch (EofException e)
                 {
                     LOG.debug(e);
-                    _request.setHandled(true);
                     error=true;
+                    _request.setHandled(true);
                 }
                 catch (RuntimeIOException e)
                 {
                     LOG.debug(e);
-                    _request.setHandled(true);
                     error=true;
+                    _request.setHandled(true);
                 }
                 catch (HttpException e)
                 {
                     LOG.debug(e);
+                    error=true;
                     _request.setHandled(true);
                     _response.sendError(e.getStatus(), e.getReason());
-                    error=true;
                 }
                 catch (Throwable e)
                 {
                     if (e instanceof ThreadDeath)
                         throw (ThreadDeath)e;
 
-                    error=true;
                     LOG.warn(String.valueOf(_uri),e);
+                    error=true;
                     _request.setHandled(true);
                     _generator.sendError(info==null?400:500, null, null, true);
                 }
@@ -509,7 +509,12 @@ public abstract class HttpConnection  extends AbstractConnection
                 if(_endp.isOpen())
                 {
                     if (error)
+                    {
                         _endp.shutdownOutput();
+                        _generator.setPersistent(false);
+                        if (!_generator.isComplete())
+                            _response.complete();
+                    }
                     else
                     {
                         if (!_response.isCommitted() && !_request.isHandled())
@@ -669,6 +674,16 @@ public abstract class HttpConnection  extends AbstractConnection
     public boolean isExpecting102Processing()
     {
         return _expect102Processing;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getMaxIdleTime()
+    {
+        if (_connector.isLowResources() && _endp.getMaxIdleTime()==_connector.getMaxIdleTime())
+            return _connector.getLowResourceMaxIdleTime();
+        if (_endp.getMaxIdleTime()>0)
+            return _endp.getMaxIdleTime();
+        return _connector.getMaxIdleTime();
     }
 
     /* ------------------------------------------------------------ */
@@ -960,8 +975,7 @@ public abstract class HttpConnection  extends AbstractConnection
     {
         Output()
         {
-            super((AbstractGenerator)HttpConnection.this._generator,
-                  _connector.isLowResources()?_connector.getLowResourceMaxIdleTime():_connector.getMaxIdleTime());
+            super(HttpConnection.this);
         }
 
         /* ------------------------------------------------------------ */

@@ -3,7 +3,7 @@
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
     <!--version>7.5.0.v20110901</version-->
-    <version>7.5.1-SNAPSHOT</version>
+    <version>7.5.2-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -12,6 +12,7 @@
   <name>Jetty :: OSGi :: Servletbridge</name>
   <description>Jetty OSGi Servletbridge webapp</description>
   <packaging>war</packaging>
+  <properties><eclipse.pde>false</eclipse.pde></properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.equinox</groupId>
@@ -38,4 +39,15 @@
      <url>http://intalio.org/public/maven2</url>
    </repository>
   </repositories>
+  
+  <build>
+    <plugins><plugin>
+     <groupId>org.apache.maven.plugins</groupId>
+     <artifactId>maven-eclipse-plugin</artifactId>
+     <configuration>
+       <pde>false</pde>
+     </configuration>
+   </plugin></plugins>
+ </build>
+  
 </project>

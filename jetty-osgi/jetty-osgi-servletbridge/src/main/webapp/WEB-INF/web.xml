@@ -5,13 +5,19 @@
 	    <servlet-name>proxy</servlet-name>
 	    <display-name>Transparent Proxy Servlet and Equinox Framework Controller</display-name>
 	    <description>Transparent Proxy Servlet and Equinox Framework Controller</description>
-	    <servlet-class>org.eclipse.equinox.servletbridge.BridgeServlet</servlet-class>
+	    <servlet-class>org.eclipse.jetty.osgi.servletbridge.BridgeServletExtended</servlet-class>
 	    <!-- Point to a folder where an equinox installation exists.
-	    When this parameter is defined, that equinox installation is launched in place.
-        The parameter can also be passed as a system property. -->
+	         When this parameter is defined, that equinox installation is launched in place.
+             The parameter can also be passed as a system property. -->
 	    <init-param>
 	        <param-name>osgi.install.area</param-name>
             <param-value>/WEB-INF/eclipse</param-value>
+	    </init-param>
+	    <!-- Start equinox in a different thread and display a simple
+	         a simple status message until it is started. -->
+	    <init-param>
+	        <param-name>asyncStart</param-name>
+	        <param-value>true</param-value>
 	    </init-param>
 		<init-param>
 			<param-name>commandline</param-name>

@@ -312,7 +312,7 @@ public class WebSocketParserD13 implements WebSocketParser
                     _buffer.skip(_bytesNeeded);
                     _state=State.START;
                     events++;
-                    _handler.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"bad mask");
+                    _handler.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Not masked");
                 }
                 else
                 {

@@ -25,10 +25,12 @@ public class SelectChannelServerTest extends HttpServerTestBase
     {
         startServer(new SelectChannelConnector());
     }
-    
+
     @Override
-    public void testBigBlocks() throws Exception
+    public void testCommittedError() throws Exception
     {
-        super.testBigBlocks();
+        super.testCommittedError();
     }
+    
+    
 }
