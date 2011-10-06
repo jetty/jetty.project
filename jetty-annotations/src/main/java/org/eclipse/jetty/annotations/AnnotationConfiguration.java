@@ -18,9 +18,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Set;
 
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.annotation.HandlesTypes;
 
 
@@ -47,6 +49,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
     public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";    
+    public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
+    
     
     public void preConfigure(final WebAppContext context) throws Exception
     {
@@ -58,44 +62,45 @@ public class AnnotationConfiguration extends AbstractConfiguration
        boolean metadataComplete = context.getMetaData().isMetaDataComplete();
        context.addDecorator(new AnnotationDecorator(context));   
       
-        if (metadataComplete)
-        {
-            //Never scan any jars or classes for annotations if metadata is complete
-            if (LOG.isDebugEnabled()) LOG.debug("Metadata-complete==true,  not processing annotations for context "+context);
-            return;
-        }
-        else 
-        {
-            //Only scan jars and classes if metadata is not complete and the web app is version 3.0, or
-            //a 2.5 version webapp that has specifically asked to discover annotations
-            if (LOG.isDebugEnabled()) LOG.debug("parsing annotations");
-            
-            AnnotationParser parser = createAnnotationParser();
-            //Discoverable annotations - those that you have to look for without loading a class
-            parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
-            parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
-            parser.registerAnnotationHandler("javax.servlet.annotation.WebListener", new WebListenerAnnotationHandler(context));
-            ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
-            parser.registerClassHandler(classHandler);
-            registerServletContainerInitializerAnnotationHandlers(context, parser);
-            
-            if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
-            {
-                if (LOG.isDebugEnabled()) LOG.debug("Scanning all classses for annotations: webxmlVersion="+context.getServletContext().getEffectiveMajorVersion()+" configurationDiscovered="+context.isConfigurationDiscovered());
-                parseContainerPath(context, parser);
-                //email from Rajiv Mordani jsrs 315 7 April 2010
-                //    If there is a <others/> then the ordering should be 
-                //          WEB-INF/classes the order of the declared elements + others.
-                //    In case there is no others then it is 
-                //          WEB-INF/classes + order of the elements.
-                parseWebInfClasses(context, parser);
-                parseWebInfLib (context, parser);
-            } 
-            
-            //save the type inheritance map created by the parser for later reference
-            context.setAttribute(CLASS_INHERITANCE_MAP, classHandler.getMap());
-        }    
+       
+       //Even if metadata is complete, we still need to scan for ServletContainerInitializers - if there are any
+       AnnotationParser parser = null;
+       if (!metadataComplete)
+       {
+           //If metadata isn't complete, if this is a servlet 3 webapp or isConfigDiscovered is true, we need to search for annotations
+           if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
+           {
+               parser = createAnnotationParser();
+               parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", new WebServletAnnotationHandler(context));
+               parser.registerAnnotationHandler("javax.servlet.annotation.WebFilter", new WebFilterAnnotationHandler(context));
+               parser.registerAnnotationHandler("javax.servlet.annotation.WebListener", new WebListenerAnnotationHandler(context));
+           }
+       }
+       else
+           if (LOG.isDebugEnabled()) LOG.debug("Metadata-complete==true,  not processing discoverable servlet annotations for context "+context);
+       
+       
+       
+       //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
+       //classes so we can call their onStartup() methods correctly
+       List<ServletContainerInitializer> nonExcludedInitializers = getNonExcludedInitializers(context);
+       parser = registerServletContainerInitializerAnnotationHandlers(context, parser, nonExcludedInitializers);
+       
+       if (parser != null)
+       {           
+           if (LOG.isDebugEnabled()) LOG.debug("Scanning all classses for annotations: webxmlVersion="+context.getServletContext().getEffectiveMajorVersion()+" configurationDiscovered="+context.isConfigurationDiscovered());
+           parseContainerPath(context, parser);
+           //email from Rajiv Mordani jsrs 315 7 April 2010
+           //    If there is a <others/> then the ordering should be 
+           //          WEB-INF/classes the order of the declared elements + others.
+           //    In case there is no others then it is 
+           //          WEB-INF/classes + order of the elements.
+           parseWebInfClasses(context, parser);
+           parseWebInfLib (context, parser);
+       }
     }
+    
+    
     
     /**
      * @return a new AnnotationParser. This method can be overridden to use a different impleemntation of
@@ -112,10 +117,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
         context.addDecorator(new AnnotationDecorator(context));   
     }
     
+    
 
-    public void registerServletContainerInitializerAnnotationHandlers (WebAppContext context, AnnotationParser parser)
+
+    public AnnotationParser registerServletContainerInitializerAnnotationHandlers (WebAppContext context, AnnotationParser parser, List<ServletContainerInitializer> scis)
     throws Exception
     {     
+        
         //TODO verify my interpretation of the spec. That is, that metadata-complete has nothing
         //to do with finding the ServletContainerInitializers, classes designated to be of interest to them,
         //or even calling them on startup. 
@@ -125,46 +133,73 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //that will record the classes that have that annotation.
         //If it is NOT an annotation, then we will interrogate the type hierarchy discovered during
         //parsing later on to find the applicable classes.
-        ArrayList<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
-        context.setAttribute(ContainerInitializerConfiguration.CONTAINER_INITIALIZERS, initializers);
         
-        //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
-        ServiceLoader<ServletContainerInitializer> loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class, context.getClassLoader());
-       
-        if (loadedInitializers != null)
+        if (scis == null || scis.isEmpty())
+            return parser; // nothing to do
+
+        ServletContainerInitializerListener listener = new ServletContainerInitializerListener();
+        listener.setWebAppContext(context);
+        context.addEventListener(listener);
+  
+        //may need to add a listener
+        
+        ArrayList<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
+        context.setAttribute(CONTAINER_INITIALIZERS, initializers);
+
+        for (ServletContainerInitializer service : scis)
         {
-            for (ServletContainerInitializer service : loadedInitializers)
+            HandlesTypes annotation = service.getClass().getAnnotation(HandlesTypes.class);
+            ContainerInitializer initializer = new ContainerInitializer();
+            initializer.setTarget(service);
+            initializers.add(initializer);
+            if (annotation != null)
             {
-                if (!isFromExcludedJar(context, service))
-                { 
-                    HandlesTypes annotation = service.getClass().getAnnotation(HandlesTypes.class);
-                    ContainerInitializer initializer = new ContainerInitializer();
-                    initializer.setTarget(service);
-                    initializers.add(initializer);
-                    if (annotation != null)
+                //There is a HandlesTypes annotation on the on the ServletContainerInitializer
+                Class[] classes = annotation.value();
+                if (classes != null)
+                {
+                    initializer.setInterestedTypes(classes);
+                    
+                    //We need to create a parser if we haven't already
+                    if (parser == null)
+                        parser = createAnnotationParser();
+                    
+                    //If we haven't already done so, we need to register a handler that will
+                    //process the whole class hierarchy
+                    if (context.getAttribute(CLASS_INHERITANCE_MAP) == null)
                     {
-                        Class[] classes = annotation.value();
-                        if (classes != null)
-                        {
-                            initializer.setInterestedTypes(classes);
-                            for (Class c: classes)
-                            {
-                                if (c.isAnnotation())
-                                {
-                                    if (LOG.isDebugEnabled()) LOG.debug("Registering annotation handler for "+c.getName());
-                                    parser.registerAnnotationHandler(c.getName(), new ContainerInitializerAnnotationHandler(initializer, c));
-                                }
-                            }
-                        }
-                        else
-                            if (LOG.isDebugEnabled()) LOG.debug("No classes in HandlesTypes on initializer "+service.getClass());
+                        ClassInheritanceHandler classHandler = new ClassInheritanceHandler();
+                        context.setAttribute(CLASS_INHERITANCE_MAP, classHandler.getMap());
+                        parser.registerClassHandler(classHandler);
                     }
-                    else
-                        if (LOG.isDebugEnabled()) LOG.debug("No annotation on initializer "+service.getClass());
+                                     
+                    for (Class c: classes)
+                    {
+                        //The value of one of the HandlesTypes classes is actually an Annotation itself so
+                        //register a handler for it
+                        if (c.isAnnotation())
+                        {
+                            if (LOG.isDebugEnabled()) LOG.debug("Registering annotation handler for "+c.getName());
+                           
+                            parser.registerAnnotationHandler(c.getName(), new ContainerInitializerAnnotationHandler(initializer, c));
+                        }
+                    }
                 }
+                else
+                    if (LOG.isDebugEnabled()) LOG.debug("No classes in HandlesTypes on initializer "+service.getClass());
             }
+            else
+                if (LOG.isDebugEnabled()) LOG.debug("No annotation on initializer "+service.getClass());
         }
+        
+        //return the parser in case we lazily created it
+        return parser;
     }
+
+    
+    
+    
+    
     
     /**
      * Check to see if the ServletContainerIntializer loaded via the ServiceLoader came
@@ -206,6 +241,30 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return !found;
     }
    
+    
+    
+    public List<ServletContainerInitializer>  getNonExcludedInitializers (WebAppContext context)
+    throws Exception
+    {
+        List<ServletContainerInitializer> nonExcludedInitializers = new ArrayList<ServletContainerInitializer>();
+        
+        //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
+        ServiceLoader<ServletContainerInitializer> loadedInitializers = ServiceLoader.load(ServletContainerInitializer.class, context.getClassLoader());
+       
+        if (loadedInitializers != null)
+        {  
+            for (ServletContainerInitializer service : loadedInitializers)
+            {
+                if (!isFromExcludedJar(context, service))
+                    nonExcludedInitializers.add(service);
+            }
+        }
+        return nonExcludedInitializers;
+    }
+    
+    
+    
+    
     public void parseContainerPath (final WebAppContext context, final AnnotationParser parser)
     throws Exception
     {

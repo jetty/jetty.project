@@ -833,7 +833,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         String old_path_info = null;
         ClassLoader old_classloader = null;
         Thread current_thread = null;
-        String pathInfo = null;
+        String pathInfo = target;
 
         DispatcherType dispatch = baseRequest.getDispatcherType();
 

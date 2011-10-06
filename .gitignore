@@ -1,14 +1,33 @@
-target/
+# eclipse
 .classpath
 .project
 .settings
+
+# maven
+target/
 */src/main/java/META-INF/
-.pmd
+
+# common junk
 *.log
 *.swp
 *.diff
 *.patch
+
+# intellij
 *.iml
 *.ipr
 *.iws
 .idea/
+
+# Mac filesystem dust
+/.DS_Store
+
+# pmd
+.pmdruleset
+.pmd
+
+# netbeans
+/nbproject
+
+# vim
+.*.sw[a-p]

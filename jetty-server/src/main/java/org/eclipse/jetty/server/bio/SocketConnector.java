@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -81,7 +82,7 @@ public class SocketConnector extends AbstractConnector
         _localPort=_serverSocket.getLocalPort();
         if (_localPort<=0)
             throw new IllegalStateException("port not allocated for "+this);
-            
+
     }
 
     /* ------------------------------------------------------------ */
@@ -175,7 +176,6 @@ public class SocketConnector extends AbstractConnector
     /* ------------------------------------------------------------------------------- */
     protected class ConnectorEndPoint extends SocketEndPoint implements Runnable, ConnectedEndPoint
     {
-        boolean _dispatched=false;
         volatile Connection _connection;
         protected final Socket _socket;
 
@@ -251,6 +251,12 @@ public class SocketConnector extends AbstractConnector
                 try{close();}
                 catch(IOException e2){LOG.ignore(e2);}
             }
+            catch (SocketException e)
+            {
+                LOG.debug("EOF", e);
+                try{close();}
+                catch(IOException e2){LOG.ignore(e2);}
+            }
             catch (HttpException e)
             {
                 LOG.debug("BAD", e);
@@ -277,7 +283,7 @@ public class SocketConnector extends AbstractConnector
                     if (!_socket.isClosed())
                     {
                         long timestamp=System.currentTimeMillis();
-                        int max_idle=getMaxIdleTime(); 
+                        int max_idle=getMaxIdleTime();
 
                         _socket.setSoTimeout(getMaxIdleTime());
                         int c=0;

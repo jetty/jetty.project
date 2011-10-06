@@ -16,7 +16,6 @@
                <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
                <Item>org.eclipse.jetty.annotations.AnnotationConfiguration</Item>
                <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
-               <Item>org.eclipse.jetty.annotations.ContainerInitializerConfiguration</Item>
           </Array>
       </Arg>
     </Call>

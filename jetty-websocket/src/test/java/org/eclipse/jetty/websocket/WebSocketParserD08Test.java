@@ -20,11 +20,11 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketParserD12Test
+public class WebSocketParserD08Test
 {
     private MaskedByteArrayBuffer _in;
     private Handler _handler;
-    private WebSocketParserD12 _parser;
+    private WebSocketParserD08 _parser;
     private byte[] _mask = new byte[] {(byte)0x00,(byte)0xF0,(byte)0x0F,(byte)0xFF};
     private int _m;
 
@@ -87,7 +87,7 @@ public class WebSocketParserD12Test
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         endPoint.setNonBlocking(true);
         _handler = new Handler();
-        _parser=new WebSocketParserD12(buffers, endPoint,_handler,true);
+        _parser=new WebSocketParserD08(buffers, endPoint,_handler,true);
         _parser.setFakeFragments(false);
         _in = new MaskedByteArrayBuffer();
         
@@ -192,7 +192,7 @@ public class WebSocketParserD12Test
     {
         WebSocketBuffers buffers = new WebSocketBuffers(0x20000);
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        WebSocketParserD12 parser=new WebSocketParserD12(buffers, endPoint,_handler,false);
+        WebSocketParserD08 parser=new WebSocketParserD08(buffers, endPoint,_handler,false);
         ByteArrayBuffer in = new ByteArrayBuffer(0x20000);
         endPoint.setIn(in);
         
@@ -269,7 +269,7 @@ public class WebSocketParserD12Test
 
         assertTrue(progress>0);
        
-        assertEquals(WebSocketConnectionD12.CLOSE_BADDATA,_handler._code);
+        assertEquals(WebSocketConnectionD08.CLOSE_BADDATA,_handler._code);
         for (int i=0;i<2048;i++)
             _in.put((byte)'a');
         progress =_parser.parseNext();
@@ -313,7 +313,7 @@ public class WebSocketParserD12Test
         assertTrue(progress>0);
 
         assertEquals(2,_handler._frames);
-        assertEquals(WebSocketConnectionD12.OP_CONTINUATION,_handler._opcode);
+        assertEquals(WebSocketConnectionD08.OP_CONTINUATION,_handler._opcode);
         assertEquals(1,_handler._data.size());
         String mesg=_handler._data.remove(0);
 

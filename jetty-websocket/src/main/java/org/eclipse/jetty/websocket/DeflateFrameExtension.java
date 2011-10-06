@@ -87,7 +87,7 @@ public class DeflateFrameExtension extends AbstractExtension
         catch(DataFormatException e)
         {
             LOG.warn(e);
-            getConnection().close(WebSocketConnectionD13.CLOSE_PROTOCOL,e.toString());
+            getConnection().close(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,e.toString());
         }
     }
 

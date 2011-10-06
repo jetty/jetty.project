@@ -23,9 +23,12 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class LocalConnector extends AbstractConnector
 {
+    private static final Logger LOG = Log.getLogger(LocalConnector.class);
     private final BlockingQueue<Request> _requests = new LinkedBlockingQueue<Request>();
     
     public LocalConnector()
@@ -135,8 +138,14 @@ public class LocalConnector extends AbstractConnector
                         }
                     }
                 }
+                catch (IOException x)
+                {
+                    LOG.debug(x);
+                    leaveOpen = false;
+                }
                 catch (Exception x)
                 {
+                    LOG.warn(x);
                     leaveOpen = false;
                 }
                 finally

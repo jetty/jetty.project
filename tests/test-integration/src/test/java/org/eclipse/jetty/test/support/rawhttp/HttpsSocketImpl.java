@@ -25,6 +25,7 @@ import java.net.SocketAddress;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -78,7 +79,7 @@ public class HttpsSocketImpl implements HttpSocket
         try
         {
             // TODO real trust manager
-            this.sslContext = SSLContext.getInstance("SSL");
+            this.sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null,trustAllCerts,new java.security.SecureRandom());
         }
         catch (Exception e)
@@ -87,11 +88,13 @@ public class HttpsSocketImpl implements HttpSocket
         }
 
         sslfactory = sslContext.getSocketFactory();
+        
     }
 
     public Socket connect(InetAddress host, int port) throws IOException
     {
-        Socket sslsock = sslfactory.createSocket();
+        SSLSocket sslsock = (SSLSocket)sslfactory.createSocket();
+        sslsock.setEnabledProtocols(new String[] {"TLSv1"});
         SocketAddress address = new InetSocketAddress(host,port);
         sslsock.connect(address);
         return sslsock;

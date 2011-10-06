@@ -998,7 +998,7 @@ public class WebSocketMessageD13Test
         assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
         assertEquals(15,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(WebSocketConnectionD13.CLOSE_NOT_UTF8,code);
+        assertEquals(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,code);
         lookFor("Invalid UTF-8",input);
     }
 

@@ -76,9 +76,8 @@ public class BlockingHttpConnection extends HttpConnection
                         LOG.debug(e);
                     }
                     _generator.sendError(e.getStatus(), e.getReason(), null, true);
-
                     _parser.reset();
-                    _endp.close();
+                    _endp.shutdownOutput();
                 }
                 finally
                 {

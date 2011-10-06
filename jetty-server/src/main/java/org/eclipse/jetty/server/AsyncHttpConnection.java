@@ -7,12 +7,18 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.ChannelEndPoint;
+import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class AsyncHttpConnection extends HttpConnection
 {
+    private final static int NO_PROGRESS_INFO = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_INFO",100);
+    private final static int NO_PROGRESS_CLOSE = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_CLOSE",200);
+    
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
+    private int _total_no_progress;
 
     public AsyncHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
@@ -22,21 +28,21 @@ public class AsyncHttpConnection extends HttpConnection
     public Connection handle() throws IOException
     {
         Connection connection = this;
+        boolean some_progress=false; 
+        boolean progress=true; 
         
         // Loop while more in buffer
         try
         {
             setCurrentConnection(this);
 
-            boolean progress=true; 
             boolean more_in_buffer =false;
             
-            while (_endp.isOpen() && (more_in_buffer || progress))
+            while (_endp.isOpen() && (more_in_buffer || progress) && connection==this)
             {
                 progress=false;
                 try
                 {
-                    LOG.debug("async request",_request);
                     
                     // Handle resumed request
                     if (_request._async.isAsync() && !_request._async.isComplete())
@@ -53,6 +59,11 @@ public class AsyncHttpConnection extends HttpConnection
                     // Flush output from buffering endpoint
                     if (_endp.isBufferingOutput())
                         _endp.flush();
+                    
+                    // Special case close handling.
+                    // If we were dispatched and have made no progress, but io is shutdown, then close
+                    if (!progress && !some_progress && (_endp.isInputShutdown()||_endp.isOutputShutdown()))
+                       _endp.close();
                 }
                 catch (HttpException e)
                 {
@@ -88,7 +99,7 @@ public class AsyncHttpConnection extends HttpConnection
                             {
                                 _parser.reset();
                                 _generator.reset(true);
-                                return switched;
+                                connection=switched;
                             }
                         }
                         
@@ -98,7 +109,6 @@ public class AsyncHttpConnection extends HttpConnection
                         reset(false);
                         more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
                     }
-
                     // else Are we suspended?
                     else if (_request.isAsyncStarted())
                     {
@@ -108,6 +118,8 @@ public class AsyncHttpConnection extends HttpConnection
                     }
                     else
                         more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
+                    
+                    some_progress|=progress|((SelectChannelEndPoint)_endp).isProgressing();
                 }
             }
         }
@@ -115,12 +127,31 @@ public class AsyncHttpConnection extends HttpConnection
         {
             setCurrentConnection(null);
             _parser.returnBuffers();
+            _generator.returnBuffers();
 
-            // Are we write blocked
-            if (_generator.isCommitted() && !_generator.isComplete())
-                ((AsyncEndPoint)_endp).scheduleWrite();
-            else
-                _generator.returnBuffers();
+            // Check if we are write blocked
+            if (_generator.isCommitted() && !_generator.isComplete() && _endp.isOpen() && !_endp.isOutputShutdown())
+                ((AsyncEndPoint)_endp).scheduleWrite(); // TODO. This should not be required
+                
+            if (!some_progress)
+            {
+                _total_no_progress++;
+
+                if (NO_PROGRESS_INFO>0 && _total_no_progress%NO_PROGRESS_INFO==0 && (NO_PROGRESS_CLOSE<=0 || _total_no_progress< NO_PROGRESS_CLOSE))
+                {
+                    LOG.info("EndPoint making no progress: "+_total_no_progress+" "+_endp);
+                }
+                
+                if (NO_PROGRESS_CLOSE>0 && _total_no_progress>NO_PROGRESS_CLOSE)
+                {
+                    LOG.warn("Closing EndPoint making no progress: "+_total_no_progress+" "+_endp);
+                    _endp.close();
+                    if (_endp instanceof SelectChannelEndPoint)
+                    {
+                        System.err.println(((SelectChannelEndPoint)_endp).getSelectManager().dump());
+                    }
+                }
+            }
         }
         return connection;
     }

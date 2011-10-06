@@ -43,7 +43,7 @@ public class NestedGenerator extends AbstractGenerator
 
     public void addContent(Buffer content, boolean last) throws IOException
     {
-        // LOG.debug("addContent {} {}",content.length(),last);
+        LOG.debug("addContent {} {}",content.length(),last);
         if (_noContent)
         {
             content.clear();
@@ -70,7 +70,6 @@ public class NestedGenerator extends AbstractGenerator
         // Handle any unfinished business?
         if (_content != null && _content.length() > 0)
         {
-
             flushBuffer();
             if (_content != null && _content.length() > 0)
                 throw new IllegalStateException("FULL");
@@ -86,20 +85,22 @@ public class NestedGenerator extends AbstractGenerator
             content.clear();
             _content = null;
         }
-        else
+        else if (!last || _buffer!=null)
         {
             // Yes - so we better check we have a buffer
-            initContent();
+            initBuffer();
             // Copy _content to buffer;
             int len = 0;
             len = _buffer.put(_content);
 
-            // make sure there is space for a trailing null
+            // make sure there is space for a trailing null   (???)
             if (len > 0 && _buffer.space() == 0)
             {
                 len--;
                 _buffer.setPutIndex(_buffer.putIndex() - 1);
             }
+            
+            LOG.debug("copied {} to buffer",len);
 
             _content.skip(len);
 
@@ -139,7 +140,7 @@ public class NestedGenerator extends AbstractGenerator
             return false;
 
         // we better check we have a buffer
-        initContent();
+        initBuffer();
 
         // Copy _content to buffer;
 
@@ -149,7 +150,7 @@ public class NestedGenerator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
-    private void initContent() throws IOException
+    private void initBuffer() throws IOException
     {
         if (_buffer == null)
         {
@@ -176,7 +177,7 @@ public class NestedGenerator extends AbstractGenerator
     @Override
     public int prepareUncheckedAddContent() throws IOException
     {
-        initContent();
+        initBuffer();
         return _buffer.space();
     }
 
@@ -230,29 +231,70 @@ public class NestedGenerator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Complete the message.
+     *
+     * @throws IOException
+     */
+    @Override
+    public void complete() throws IOException
+    {
+        if (_state == STATE_END)
+            return;
+
+        super.complete();
+
+        if (_state < STATE_FLUSHING)
+            _state = STATE_FLUSHING;
+
+        flushBuffer();
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     public long flushBuffer() throws IOException
     {
         if (_state == STATE_HEADER)
             throw new IllegalStateException("State==HEADER");
         
-
-        if (_content != null && _content.length() < _buffer.space() && _state != STATE_FLUSHING)
-        {
-            initContent();
-            _buffer.put(_content);
-            _content.clear();
-            _content = null;
-        }
+        int len = 0;
         
         if (_buffer==null)
-            return 0;
+        {
+            
+            if (_content!=null && _content.length()>0)
+            {
+                // flush content directly
+                len = _endp.flush(_content);
+                if (len>0)
+                    _content.skip(len);
+            }
+        }
+        else
+        {
+            if (_buffer.length()==0 && _content!=null && _content.length()>0)
+            {
+                // Copy content to buffer
+                _content.skip(_buffer.put(_content));
+            }
+
+            int size=_buffer.length();
+            len =_endp.flush(_buffer);
+            LOG.debug("flushBuffer {} of {}",len,size);
+            if (len>0)
+                _buffer.skip(len);
+        }
         
-        int size=_buffer.length();
-        int len = _buffer==null?0:_endp.flush(_buffer);
-        LOG.debug("flushBuffer {} of {}",len,size);
-        if (len>0)
-            _buffer.skip(len);
+        if (_content!=null && _content.length()==0)
+            _content=null;
+        if (_buffer!=null && _buffer.length()==0 && _content==null)
+        {
+            _buffers.returnBuffer(_buffer);
+            _buffer=null;
+        }
+        
+        if (_state==STATE_FLUSHING && _buffer==null && _content==null)
+            _state=STATE_END;
 
         return len;
     }

@@ -47,6 +47,7 @@ public interface EndPoint
      * The buffer may chose to do a compact before filling.
      * @return an <code>int</code> value indicating the number of bytes 
      * filled or -1 if EOF is reached.
+     * @throws EofException If input is shutdown or the endpoint is closed.
      */
     int fill(Buffer buffer) throws IOException;
     
@@ -59,6 +60,7 @@ public interface EndPoint
      * 
      * @param buffer The buffer to flush. This buffers getIndex is updated.
      * @return  the number of bytes written
+     * @throws EofException If the endpoint is closed or output is shutdown.
      */
     int flush(Buffer buffer) throws IOException;
 
@@ -157,7 +159,7 @@ public interface EndPoint
     /* ------------------------------------------------------------ */
     /** Flush any buffered output.
      * May fail to write all data if endpoint is non-blocking
-     * @throws IOException 
+     * @throws EofException If the endpoint is closed or output is shutdown.
      */
     public void flush() throws IOException;
     

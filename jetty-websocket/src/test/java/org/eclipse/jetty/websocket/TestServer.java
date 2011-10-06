@@ -2,6 +2,8 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -12,6 +14,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.WebSocket.FrameConnection;
 
 public class TestServer extends Server
 {
@@ -42,7 +45,10 @@ public class TestServer extends Server
                 else if ("org.ietf.websocket.test-echo-broadcast".equals(protocol) || "echo-broadcast".equals(protocol))
                 {
                     _websocket = new TestEchoBroadcastWebSocket(); 
-
+                }
+                else if ("echo-broadcast-ping".equals(protocol))
+                {
+                    _websocket = new TestEchoBroadcastPingWebSocket();        
                 }
                 else if ("org.ietf.websocket.test-echo-assemble".equals(protocol) || "echo-assemble".equals(protocol))
                 {
@@ -107,7 +113,7 @@ public class TestServer extends Server
         public void onOpen(Connection connection)
         {
             if (_verbose)
-                System.err.printf("%s#onOpen %s\n",this.getClass().getSimpleName(),connection);
+                System.err.printf("%s#onOpen %s %s\n",this.getClass().getSimpleName(),connection,connection.getProtocol());
         }
         
         public void onHandshake(FrameConnection connection)
@@ -169,7 +175,8 @@ public class TestServer extends Server
             try
             {
                 if (!getConnection().isControl(opcode))
-                    getConnection().sendFrame(flags,opcode,data,offset,length);             }
+                    getConnection().sendFrame(flags,opcode,data,offset,length);             
+            }
             catch (IOException e)
             {
                 e.printStackTrace();
@@ -178,6 +185,61 @@ public class TestServer extends Server
             return false;
         }
     }
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    class TestEchoBroadcastPingWebSocket extends TestEchoBroadcastWebSocket 
+    {
+        Thread _keepAlive; // A dedicated thread is not a good way to do this
+        CountDownLatch _latch = new CountDownLatch(1);
+        
+        @Override
+        public void onHandshake(final FrameConnection connection)
+        {
+            super.onHandshake(connection);
+            _keepAlive=new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        while(!_latch.await(10,TimeUnit.SECONDS))
+                        {
+                            System.err.println("Ping "+connection);
+                            byte[] data = { (byte)1, (byte) 2, (byte) 3 };
+                            connection.sendControl(WebSocketConnectionD13.OP_PING,data,0,data.length);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            _keepAlive.start();
+        }
+
+
+        @Override
+        public boolean onControl(byte controlCode, byte[] data, int offset, int length)
+        {
+            if (controlCode==WebSocketConnectionD13.OP_PONG)
+                System.err.println("Pong "+getConnection());
+            return super.onControl(controlCode,data,offset,length);
+        }
+
+
+        @Override
+        public void onClose(int code, String message)
+        {
+            _latch.countDown();
+            super.onClose(code,message);
+        }
+        
+        
+    }
+    
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

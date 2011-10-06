@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +30,6 @@ import javax.naming.InitialContext;
 import javax.naming.LinkRef;
 import javax.naming.Name;
 import javax.naming.NameAlreadyBoundException;
-import javax.naming.NameClassPair;
 import javax.naming.NameNotFoundException;
 import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
@@ -53,17 +51,8 @@ import org.eclipse.jetty.util.log.Logger;
  * <p><h4>Notes</h4>
  * <p>All Names are expected to be Compound, not Composite.
  *
- * <p><h4>Usage</h4>
- * <pre>
+ * 
  */
-/*
-* </pre>
-*
-* @see
-*
-* 
-* @version 1.0
-*/
 public class NamingContext implements Context, Cloneable, Dumpable
 {
     private final static Logger __log=NamingUtil.__log;
@@ -102,123 +91,6 @@ public class NamingContext implements Context, Cloneable, Dumpable
     }
 
     /*------------------------------------------------*/    
-    /** NameEnumeration
-     * <p>Implementation of NamingEnumeration interface.
-     *
-     * <p><h4>Notes</h4>
-     * <p>Used for returning results of Context.list();
-     *
-     * <p><h4>Usage</h4>
-     * <pre>
-     */
-    /*
-     * </pre>
-     *
-     * @see
-     *
-     */
-    public class NameEnumeration implements NamingEnumeration<NameClassPair>
-    {
-        Iterator<Binding> _delegate;
-
-        public NameEnumeration (Iterator<Binding> e)
-        {
-            _delegate = e;
-        }
-
-        public void close()
-            throws NamingException
-        {
-        }
-
-        public boolean hasMore ()
-            throws NamingException
-        {
-            return _delegate.hasNext();
-        }
-
-        public NameClassPair next()
-            throws NamingException
-        {
-            Binding b = _delegate.next();
-            return new NameClassPair(b.getName(),b.getClassName(),true);
-        }
-
-        public boolean hasMoreElements()
-        {
-            return _delegate.hasNext();
-        }
-
-        public NameClassPair nextElement()
-        {
-            Binding b = _delegate.next();
-            return new NameClassPair(b.getName(),b.getClassName(),true);
-        }
-    }
-
-
-
-
-
-
-    /*------------------------------------------------*/    
-    /** BindingEnumeration
-     * <p>Implementation of NamingEnumeration
-     *
-     * <p><h4>Notes</h4>
-     * <p>Used to return results of Context.listBindings();
-     *
-     * <p><h4>Usage</h4>
-     * <pre>
-     */
-    /*
-     * </pre>
-     *
-     * @see
-     *
-     */
-    public class BindingEnumeration implements NamingEnumeration<Binding>
-    {       
-        Iterator<Binding> _delegate;
-
-        public BindingEnumeration (Iterator<Binding> e)
-        {
-            _delegate = e;
-        }
-
-        public void close()
-            throws NamingException
-        {
-        }
-
-        public boolean hasMore ()
-            throws NamingException
-        {
-            return _delegate.hasNext();
-        }
-
-        public Binding next()
-            throws NamingException
-        {
-            Binding b = (Binding)_delegate.next();
-            return new Binding (b.getName(), b.getClassName(), b.getObject(), true);
-        }
-
-        public boolean hasMoreElements()
-        {
-            return _delegate.hasNext();
-        }
-
-        public Binding nextElement()
-        {
-            Binding b = (Binding)_delegate.next();
-            return new Binding (b.getName(), b.getClassName(), b.getObject(),true);
-        }
-    }
-
-
-
-    /*------------------------------------------------*/    
     /**
      * Constructor
      *
@@ -240,26 +112,6 @@ public class NamingContext implements Context, Cloneable, Dumpable
     } 
 
 
-    /*------------------------------------------------*/
-    /**
-     * Creates a new <code>NamingContext</code> instance.
-     *
-     * @param env a <code>Hashtable</code> value
-     */
-    public NamingContext (Hashtable<String,Object> env)
-    {
-        if (env != null)
-            _env.putAll(env);
-    }
-
-    /*------------------------------------------------*/
-    /**
-     * Constructor
-     *
-     */
-    public NamingContext ()
-    {
-    }
 
 
     /*------------------------------------------------*/
@@ -312,8 +164,24 @@ public class NamingContext implements Context, Cloneable, Dumpable
         _parser = parser;
     }
 
+    
+    public void setEnv (Hashtable<String,Object> env)
+    {
+        _env.clear();
+        _env.putAll(env);
+    }
 
+    
+    public Map<String,Binding> getBindings ()
+    {
+        return _bindings;
+    }
 
+    public void setBindings(Map<String,Binding> bindings)
+    {
+        _bindings = bindings;
+    }
+    
     /*------------------------------------------------*/
     /**
      * Bind a name to an object
@@ -435,8 +303,6 @@ public class NamingContext implements Context, Cloneable, Dumpable
             ne.setRemainingName(name);
             throw ne;
         }
-           
-        
         
         Name cname = toCanonicalName (name);
 
@@ -521,7 +387,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
 
     /*------------------------------------------------*/
     /**
-     * Not supported
+     * 
      *
      * @param name name of subcontext to remove
      * @exception NamingException if an error occurs
@@ -536,7 +402,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
 
     /*------------------------------------------------*/
     /**
-     * Not supported
+     * 
      *
      * @param name name of subcontext to remove
      * @exception NamingException if an error occurs
@@ -1128,7 +994,6 @@ public class NamingContext implements Context, Cloneable, Dumpable
             
                 ctx = binding.getObject();
 
-
                 if (ctx instanceof Reference)
                 {  
                     //deference the object
@@ -1154,8 +1019,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
             }
             else
                 throw new NotContextException ("Object bound at "+firstComponent +" is not a Context");
-        }
-        
+        } 
     }
 
     /*------------------------------------------------*/
@@ -1182,11 +1046,11 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param newName a <code>Name</code> value
      * @exception NamingException if an error occurs
      */    public void rename(String oldName,
-                       String newName)
-        throws NamingException
-    {
-        throw new OperationNotSupportedException();
-    }
+                              String newName)
+     throws NamingException
+     {
+         throw new OperationNotSupportedException();
+     }
 
 
 
@@ -1247,9 +1111,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      */
     public void close ()
         throws NamingException
-    {
-        
-        
+    {  
     }
 
 
@@ -1362,7 +1224,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name a <code>Name</code> value
      * @param obj an <code>Object</code> value
      */
-    protected void addBinding (Name name, Object obj) throws NameAlreadyBoundException
+    public void addBinding (Name name, Object obj) throws NameAlreadyBoundException
     {
         String key = name.toString();
         Binding binding=new Binding (key, obj);
@@ -1394,7 +1256,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name a <code>Name</code> value
      * @return a <code>Binding</code> value
      */
-    protected Binding getBinding (Name name)
+    public Binding getBinding (Name name)
     {
         return (Binding) _bindings.get(name.toString());
     }
@@ -1407,13 +1269,13 @@ public class NamingContext implements Context, Cloneable, Dumpable
      * @param name as a String
      * @return null or the Binding
      */
-    protected Binding getBinding (String name)
+    public Binding getBinding (String name)
     {
         return (Binding) _bindings.get(name);
     }
 
     /*------------------------------------------------*/    
-    protected void removeBinding (Name name)
+    public void removeBinding (Name name)
     {
         String key = name.toString();
         if (__log.isDebugEnabled()) 
@@ -1455,7 +1317,7 @@ public class NamingContext implements Context, Cloneable, Dumpable
     }
     
     /* ------------------------------------------------------------ */
-    private boolean isLocked()
+    public boolean isLocked()
     {
        if ((_env.get(LOCK_PROPERTY) == null) && (_env.get(UNLOCK_PROPERTY) == null))
            return false;

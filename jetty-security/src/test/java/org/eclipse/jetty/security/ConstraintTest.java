@@ -201,13 +201,13 @@ public class ConstraintTest
         assertTrue(response.indexOf("WWW-Authenticate: basic realm=\"TestRealm\"") > 0);
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user:wrong") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user:wrong") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 401 Unauthorized"));
         assertTrue(response.indexOf("WWW-Authenticate: basic realm=\"TestRealm\"") > 0);
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
@@ -218,20 +218,20 @@ public class ConstraintTest
         assertTrue(response.indexOf("WWW-Authenticate: basic realm=\"TestRealm\"") > 0);
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("admin:wrong") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("admin:wrong") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 401 Unauthorized"));
         assertTrue(response.indexOf("WWW-Authenticate: basic realm=\"TestRealm\"") > 0);
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
                 "\r\n");
 
         assertTrue(response.startsWith("HTTP/1.1 403 "));
         assertTrue(response.indexOf("!role") > 0);
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("admin:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("admin:password") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
@@ -490,18 +490,18 @@ public class ConstraintTest
         assertTrue(response.indexOf("WWW-Authenticate: basic realm=\"TestRealm\"") > 0);
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user:wrong") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user:wrong") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 401 Unauthorized"));
         assertTrue(response.indexOf("WWW-Authenticate: basic realm=\"TestRealm\"") > 0);
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 403"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user2:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
@@ -512,20 +512,20 @@ public class ConstraintTest
         assertTrue(response.indexOf("WWW-Authenticate: basic realm=\"TestRealm\"") > 0);
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("admin:wrong") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("admin:wrong") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 401 Unauthorized"));
         assertTrue(response.indexOf("WWW-Authenticate: basic realm=\"TestRealm\"") > 0);
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user:password") + "\r\n" +
                 "\r\n");
 
         assertTrue(response.startsWith("HTTP/1.1 403 "));
         assertTrue(response.indexOf("!role") > 0);
 
         response = _connector.getResponses("GET /ctx/admin/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("admin:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("admin:password") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
@@ -776,7 +776,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user2:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 500 "));
 
@@ -789,7 +789,7 @@ public class ConstraintTest
         _server.start();
 
         response = _connector.getResponses("GET /ctx/auth/info HTTP/1.0\r\n" +
-                "Authorization: " + B64Code.encode("user2:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("user2:password") + "\r\n" +
                 "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
@@ -809,13 +809,13 @@ public class ConstraintTest
         assertTrue(response.indexOf("user=null") > 0);
 
         response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n"+
-                "Authorization: " + B64Code.encode("admin:wrong") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("admin:wrong") + "\r\n" +
             "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertTrue(response.indexOf("user=null") > 0);
 
         response = _connector.getResponses("GET /ctx/noauth/info HTTP/1.0\r\n"+
-                "Authorization: " + B64Code.encode("admin:password") + "\r\n" +
+                "Authorization: Basic " + B64Code.encode("admin:password") + "\r\n" +
             "\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertTrue(response.indexOf("user=admin") > 0);
