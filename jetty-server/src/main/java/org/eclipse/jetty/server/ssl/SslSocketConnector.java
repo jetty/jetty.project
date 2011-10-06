@@ -4,26 +4,23 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server.ssl;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
@@ -40,17 +37,17 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /**
  * SSL Socket Connector.
- * 
+ *
  * This specialization of SocketConnector is an abstract listener that can be used as the basis for a
  * specific JSSE listener.
- * 
- * The original of this class was heavily based on the work from Court Demas, which in turn is 
+ *
+ * The original of this class was heavily based on the work from Court Demas, which in turn is
  * based on the work from Forge Research. Since JSSE, this class has evolved significantly from
  * that early work.
- * 
+ *
  * @org.apache.xbean.XBean element="sslSocketConnector" description="Creates an ssl socket connector"
  *
- * 
+ *
  */
 public class SslSocketConnector extends SocketConnector  implements SslConnector
 {
@@ -87,7 +84,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /**
      * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
      * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
-     * does not have CVE-2009-3555 fixed, then re-negotiation should 
+     * does not have CVE-2009-3555 fixed, then re-negotiation should
      * not be allowed.
      * @param allowRenegotiate true if re-negotiation is allowed (default false)
      */
@@ -100,19 +97,19 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Override
     public void accept(int acceptorID)
         throws IOException, InterruptedException
-    {   
+    {
         Socket socket = _serverSocket.accept();
         configure(socket);
-        
+
         ConnectorEndPoint connection=new SslConnectorEndPoint(socket);
         connection.dispatch();
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void configure(Socket socket)
         throws IOException
-    {   
+    {
         super.configure(socket);
     }
 
@@ -131,8 +128,8 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * certificate in the chain is the one set by the client, the next is the one used to
      * authenticate the first, and so on. </li>
      * </ul>
-     * 
-     * @param endpoint The Socket the request arrived on. 
+     *
+     * @param endpoint The Socket the request arrived on.
      *        This should be a {@link SocketEndPoint} wrapping a {@link SSLSocket}.
      * @param request HttpRequest to be customised.
      */
@@ -142,7 +139,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     {
         super.customize(endpoint, request);
         request.setScheme(HttpSchemes.HTTPS);
-        
+
         SocketEndPoint socket_end_point = (SocketEndPoint)endpoint;
         SSLSocket sslSocket = (SSLSocket)socket_end_point.getTransport();
         SSLSession sslSession = sslSocket.getSession();
@@ -150,7 +147,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         SslCertificates.customize(sslSession,endpoint,request);
     }
 
-    /* ------------------------------------------------------------ */    
+    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#getExcludeCipherSuites()
      * @deprecated
@@ -159,7 +156,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     public String[] getExcludeCipherSuites() {
         return _sslContextFactory.getExcludeCipherSuites();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#getIncludeCipherSuites()
@@ -188,7 +185,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public String getKeystoreType() 
+    public String getKeystoreType()
     {
         return _sslContextFactory.getKeyStoreType();
     }
@@ -210,7 +207,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public String getProtocol() 
+    public String getProtocol()
     {
         return _sslContextFactory.getProtocol();
     }
@@ -231,7 +228,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public String getSecureRandomAlgorithm() 
+    public String getSecureRandomAlgorithm()
     {
         return _sslContextFactory.getSecureRandomAlgorithm();
     }
@@ -242,7 +239,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public String getSslKeyManagerFactoryAlgorithm() 
+    public String getSslKeyManagerFactoryAlgorithm()
     {
         return _sslContextFactory.getSslKeyManagerFactoryAlgorithm();
     }
@@ -253,7 +250,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public String getSslTrustManagerFactoryAlgorithm() 
+    public String getSslTrustManagerFactoryAlgorithm()
     {
         return _sslContextFactory.getTrustManagerFactoryAlgorithm();
     }
@@ -315,7 +312,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         final int confidentialPort = getConfidentialPort();
         return confidentialPort == 0 || confidentialPort == request.getServerPort();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * By default, we're integral, given we speak SSL. But, if we've been told about an integral
@@ -346,7 +343,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         }
         super.open();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * {@inheritDoc}
@@ -356,10 +353,10 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     {
         _sslContextFactory.checkKeyStore();
         _sslContextFactory.start();
-        
+
         super.doStart();
     }
-        
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.bio.SocketConnector#doStop()
@@ -371,14 +368,14 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
 
         super.doStop();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param host The host name that this server should listen on
-     * @param port the port that this server should listen on 
+     * @param port the port that this server should listen on
      * @param backlog See {@link ServerSocket#bind(java.net.SocketAddress, int)}
      * @return A new {@link ServerSocket socket object} bound to the supplied address with all other
-     * settings as per the current configuration of this connector. 
+     * settings as per the current configuration of this connector.
      * @see #setWantClientAuth(boolean)
      * @see #setNeedClientAuth(boolean)
      * @exception IOException
@@ -439,7 +436,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public void setKeystoreType(String keystoreType) 
+    public void setKeystoreType(String keystoreType)
     {
         _sslContextFactory.setKeyStoreType(keystoreType);
     }
@@ -447,7 +444,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /* ------------------------------------------------------------ */
     /**
      * Set the value of the needClientAuth property
-     * 
+     *
      * @param needClientAuth true iff we require client certificate authentication.
      * @deprecated
      */
@@ -456,7 +453,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     {
         _sslContextFactory.setNeedClientAuth(needClientAuth);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#setPassword(java.lang.String)
@@ -467,7 +464,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     {
         _sslContextFactory.setKeyStorePassword(password);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#setTrustPassword(java.lang.String)
@@ -485,7 +482,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public void setProtocol(String protocol) 
+    public void setProtocol(String protocol)
     {
         _sslContextFactory.setProtocol(protocol);
     }
@@ -506,7 +503,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public void setSecureRandomAlgorithm(String algorithm) 
+    public void setSecureRandomAlgorithm(String algorithm)
     {
         _sslContextFactory.setSecureRandomAlgorithm(algorithm);
     }
@@ -517,18 +514,18 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
      * @deprecated
      */
     @Deprecated
-    public void setSslKeyManagerFactoryAlgorithm(String algorithm) 
+    public void setSslKeyManagerFactoryAlgorithm(String algorithm)
     {
         _sslContextFactory.setSslKeyManagerFactoryAlgorithm(algorithm);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#setSslTrustManagerFactoryAlgorithm(java.lang.String)
      * @deprecated
      */
     @Deprecated
-    public void setSslTrustManagerFactoryAlgorithm(String algorithm) 
+    public void setSslTrustManagerFactoryAlgorithm(String algorithm)
     {
         _sslContextFactory.setTrustManagerFactoryAlgorithm(algorithm);
     }
@@ -543,7 +540,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     {
         _sslContextFactory.setTrustStore(truststore);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#setTruststoreType(java.lang.String)
@@ -554,7 +551,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     {
         _sslContextFactory.setTrustStoreType(truststoreType);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.ssl.SslConnector#setSslContext(javax.net.ssl.SSLContext)
@@ -579,9 +576,9 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the value of the _wantClientAuth property. This property is used 
+     * Set the value of the _wantClientAuth property. This property is used
      * internally when opening server sockets.
-     * 
+     *
      * @param wantClientAuth true if we want client certificate authentication.
      * @see SSLServerSocket#setWantClientAuth
      * @deprecated
@@ -602,7 +599,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     {
         _handshakeTimeout = msec;
     }
-    
+
 
     /* ------------------------------------------------------------ */
     public int getHandshakeTimeout ()
@@ -617,19 +614,19 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         {
             super(socket);
         }
-        
+
         @Override
         public void shutdownOutput() throws IOException
         {
             close();
         }
-        
+
         @Override
         public void shutdownInput() throws IOException
         {
             close();
         }
-        
+
         @Override
         public void run()
         {
@@ -637,7 +634,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
             {
                 int handshakeTimeout = getHandshakeTimeout();
                 int oldTimeout = _socket.getSoTimeout();
-                if (handshakeTimeout > 0)            
+                if (handshakeTimeout > 0)
                     _socket.setSoTimeout(handshakeTimeout);
 
                 final SSLSocket ssl=(SSLSocket)_socket;
@@ -667,7 +664,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
             }
             catch (SSLException e)
             {
-                LOG.debug(e); 
+                LOG.debug(e);
                 try{close();}
                 catch(IOException e2){LOG.ignore(e2);}
             }
@@ -676,14 +673,14 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
                 LOG.debug(e);
                 try{close();}
                 catch(IOException e2){LOG.ignore(e2);}
-            } 
+            }
         }
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Unsupported.
-     * 
+     *
      * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      * @deprecated
      */
@@ -696,7 +693,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     /* ------------------------------------------------------------ */
     /**
      * Unsupported.
-     * 
+     *
      * TODO: we should remove this as it is no longer an overridden method from SslConnector (like it was in the past)
      * @deprecated
      */
