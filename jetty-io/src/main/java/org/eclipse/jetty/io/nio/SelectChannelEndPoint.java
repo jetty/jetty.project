@@ -38,21 +38,42 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
+    private  SelectionKey _key;
     private final Runnable _handler = new Runnable()
         {
             public void run() { handle(); }
         };
 
+    /** The desired value for {@link SelectionKey#interestOps()} */
+    private int _interestOps;
+        
+    /**
+     * The connection instance is the handler for any IO activity on the endpoint.
+     * There is a different type of connection for HTTP, AJP, WebSocket and 
+     * ProxyConnect.   The connection may change for an SCEP as it is upgraded 
+     * from HTTP to proxy connect or websocket.
+     */
     private volatile Connection _connection;
+    
+    /** true if a thread has been dispatched to handle this endpoint */
     private boolean _dispatched = false;
+    
+    /** true if a non IO dispatch (eg async resume) is outstanding */
     private boolean _redispatched = false;
+    
+    /** true if the last write operation succeed and wrote all offered bytes */
     private volatile boolean _writable = true;
 
-    private  SelectionKey _key;
-    private int _interestOps;
+    
+    /** True if a thread has is blocked in {@link #blockReadable(long)} */
     private boolean _readBlocked;
+
+    /** True if a thread has is blocked in {@link #blockWritable(long)} */
     private boolean _writeBlocked;
+    
+    /** true if {@link SelectSet#destroyEndPoint(SelectChannelEndPoint)} has not been called */
     private boolean _open;
+    
     private volatile long _idleTimestamp;
     
     /* ------------------------------------------------------------ */
