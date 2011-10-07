@@ -304,7 +304,14 @@ public class StdErrLog implements Logger
     @Deprecated
     public void setDebugEnabled(boolean enabled)
     {
-        _level = LEVEL_DEBUG;
+        if (enabled)
+        {
+            _level = LEVEL_DEBUG;
+        }
+        else
+        {
+            _level = LEVEL_INFO;
+        }
     }
 
     public int getLevel()
