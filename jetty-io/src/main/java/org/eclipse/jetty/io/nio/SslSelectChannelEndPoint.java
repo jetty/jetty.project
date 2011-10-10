@@ -338,15 +338,16 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     @Override
     public void close() throws IOException
     {
-        if (_closing)
-            return;
-
-        _closing=true;
-        LOG.debug("{} close",_session);
+        // For safety we always force a close calling super
         try
         {
-            _engine.closeOutbound();
-            process(null,null);
+            if (!_closing)
+            {
+                _closing=true;
+                LOG.debug("{} close",_session);
+                _engine.closeOutbound();
+                process(null,null);
+            }
         }
         catch (IOException e)
         {
