@@ -31,3 +31,6 @@ target/
 
 # vim
 .*.sw[a-p]
+
+# kdiff merge
+*.orig

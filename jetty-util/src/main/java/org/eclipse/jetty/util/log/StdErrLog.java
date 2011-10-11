@@ -13,64 +13,74 @@
 
 package org.eclipse.jetty.util.log;
 
+import java.io.PrintStream;
 import java.security.AccessControlException;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.DateCache;
 
 /**
- * StdErr Logging. This implementation of the Logging facade sends all logs to
- * StdErr with minimal formatting.
+ * StdErr Logging. This implementation of the Logging facade sends all logs to StdErr with minimal formatting.
  * <p>
- * If the system property "org.eclipse.jetty.util.log.DEBUG" is set, then debug
- * logs are printed if stderr is being used. For named debuggers, the system 
- * property name+".DEBUG" is checked. If it is not not set, then 
- * "org.eclipse.jetty.util.log.DEBUG" is used as the default.
+ * If the system property "org.eclipse.jetty.LEVEL" is set to one of the following (ALL, DEBUG, INFO, WARN), then set
+ * the eclipse jetty root level logger level to that specified level. (Default level is INFO)
  * <p>
- * If the system property "org.eclipse.jetty.util.log.SOURCE" is set, then the
- * source method/file of a log is logged. For named debuggers, the system 
- * property name+".SOURCE" is checked. If it is not not set, then 
+ * If the system property "org.eclipse.jetty.util.log.SOURCE" is set, then the source method/file of a log is logged.
+ * For named debuggers, the system property name+".SOURCE" is checked. If it is not not set, then
  * "org.eclipse.jetty.util.log.SOURCE" is used as the default.
  * <p>
- * If the system property "org.eclipse.jetty.util.log.LONG" is set, then the
- * full, unabbreviated name of the logger is used for logging. 
- * For named debuggers, the system property name+".LONG" is checked. 
- * If it is not not set, then "org.eclipse.jetty.util.log.LONG" is used as the default.
+ * If the system property "org.eclipse.jetty.util.log.LONG" is set, then the full, unabbreviated name of the logger is
+ * used for logging. For named debuggers, the system property name+".LONG" is checked. If it is not not set, then
+ * "org.eclipse.jetty.util.log.LONG" is used as the default.
  */
 public class StdErrLog implements Logger
 {
     private static DateCache _dateCache;
 
-    private final static boolean __debug = Boolean.parseBoolean(
-            System.getProperty("org.eclipse.jetty.util.log.DEBUG",
-                    System.getProperty("org.eclipse.jetty.util.log.stderr.DEBUG", "false")));
-    private final static boolean __source = Boolean.parseBoolean(
-            System.getProperty("org.eclipse.jetty.util.log.SOURCE",
-                    System.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE", "false")));
-    private final static boolean __long = Boolean.parseBoolean(
-            System.getProperty("org.eclipse.jetty.util.log.stderr.LONG", "false"));
+    private final static boolean __source = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.SOURCE",
+            System.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
+    private final static boolean __long = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
 
-    private final static ConcurrentMap<String,StdErrLog> __loggers = new ConcurrentHashMap<String, StdErrLog>();
-    
+    private final static ConcurrentMap<String, StdErrLog> __loggers = new ConcurrentHashMap<String, StdErrLog>();
+
     static
     {
+        String deprecatedProperites[] =
+        { "DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG" };
+
+        // Toss a message to users about deprecated system properties
+        for (String deprecatedProp : deprecatedProperites)
+        {
+            if (System.getProperty(deprecatedProp) != null)
+            {
+                System.err.printf("System Property [%s] has been deprecated! (Use org.eclipse.jetty.LEVEL=DEBUG instead)%n",deprecatedProp);
+            }
+        }
+
         try
         {
             _dateCache = new DateCache("yyyy-MM-dd HH:mm:ss");
         }
         catch (Exception x)
         {
-            x.printStackTrace();
+            x.printStackTrace(System.err);
         }
     }
 
-    private boolean _debug = __debug;
+    public static final int LEVEL_ALL = 0;
+    public static final int LEVEL_DEBUG = 1;
+    public static final int LEVEL_INFO = 2;
+    public static final int LEVEL_WARN = 3;
+
+    private int _level = LEVEL_INFO;
+    private PrintStream _stderr = System.err;
     private boolean _source = __source;
     // Print the long form names, otherwise use abbreviated
     private boolean _printLongNames = __long;
     // The full log name, as provided by the system.
-    private final String _name; 
+    private final String _name;
     // The abbreviated log name (used by default, unless _long is specified)
     private final String _abbrevname;
     private boolean _hideStacks = false;
@@ -82,31 +92,81 @@ public class StdErrLog implements Logger
 
     public StdErrLog(String name)
     {
-        this._name = name == null ? "" : name;
+        this._name = name == null?"":name;
         this._abbrevname = condensePackageString(this._name);
+        this._level = getLoggingLevel(System.getProperties(),this._name);
 
         try
         {
-            _debug = Boolean.parseBoolean(System.getProperty(_name + ".DEBUG", Boolean.toString(_debug)));
-        }
-        catch (AccessControlException ace)
-        {
-            _debug = __debug;
-        }
-        
-        try
-        {
-            _source = Boolean.parseBoolean(System.getProperty(_name + ".SOURCE", Boolean.toString(_source)));
+            _source = Boolean.parseBoolean(System.getProperty(_name + ".SOURCE",Boolean.toString(_source)));
         }
         catch (AccessControlException ace)
         {
             _source = __source;
         }
     }
-    
+
+    /**
+     * Get the Logging Level for the provided log name. Using the FQCN first, then each package segment from longest to
+     * shortest.
+     * 
+     * @param props
+     *            the properties to check
+     * @param name
+     *            the name to get log for
+     * @return the logging level
+     */
+    public static int getLoggingLevel(Properties props, final String name)
+    {
+        // Calculate the level this named logger should operate under.
+        // Checking with FQCN first, then each package segment from longest to shortest.
+        String nameSegment = name;
+
+        while ((nameSegment != null) && (nameSegment.length() > 0))
+        {
+            String levelStr = props.getProperty(nameSegment + ".LEVEL");
+            // System.err.printf("[StdErrLog.CONFIG] Checking for property [%s.LEVEL] = %s%n",nameSegment,levelStr);
+            if (levelStr == null)
+            {
+                // Trim and try again.
+                int idx = nameSegment.lastIndexOf('.');
+                if (idx >= 0)
+                {
+                    nameSegment = nameSegment.substring(0,idx);
+                }
+                else
+                {
+                    nameSegment = null;
+                }
+            }
+            else
+            {
+                if ("ALL".equalsIgnoreCase(levelStr.trim()))
+                {
+                    return LEVEL_ALL;
+                }
+                else if ("DEBUG".equalsIgnoreCase(levelStr.trim()))
+                {
+                    return LEVEL_DEBUG;
+                }
+                else if ("INFO".equalsIgnoreCase(levelStr.trim()))
+                {
+                    return LEVEL_INFO;
+                }
+                else if ("WARN".equalsIgnoreCase(levelStr.trim()))
+                {
+                    return LEVEL_WARN;
+                }
+            }
+        }
+
+        // Default Logging Level
+        return LEVEL_INFO;
+    }
+
     /**
      * Condenses a classname by stripping down the package name to just the first character of each package name
-     * segment.
+     * segment.Configured
      * <p>
      * 
      * <pre>
@@ -139,7 +199,7 @@ public class StdErrLog implements Logger
     {
         return _name;
     }
-    
+
     public void setPrintLongNames(boolean printLongNames)
     {
         this._printLongNames = printLongNames;
@@ -161,7 +221,9 @@ public class StdErrLog implements Logger
     }
 
     /* ------------------------------------------------------------ */
-    /** Is the source of a log, logged
+    /**
+     * Is the source of a log, logged
+     * 
      * @return true if the class, method, file and line number of a log is logged.
      */
     public boolean isSource()
@@ -170,8 +232,11 @@ public class StdErrLog implements Logger
     }
 
     /* ------------------------------------------------------------ */
-    /** Set if a log source is logged.
-     * @param source true if the class, method, file and line number of a log is logged.
+    /**
+     * Set if a log source is logged.
+     * 
+     * @param source
+     *            true if the class, method, file and line number of a log is logged.
      */
     public void setSource(boolean source)
     {
@@ -180,90 +245,143 @@ public class StdErrLog implements Logger
 
     public void warn(String msg, Object... args)
     {
-        StringBuilder buffer = new StringBuilder(64);
-        format(buffer, ":WARN:", msg, args);
-        System.err.println(buffer);
+        if (_level <= LEVEL_WARN)
+        {
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":WARN:",msg,args);
+            _stderr.println(buffer);
+        }
     }
 
     public void warn(Throwable thrown)
     {
-        warn("", thrown);
+        warn("",thrown);
     }
 
     public void warn(String msg, Throwable thrown)
     {
-        StringBuilder buffer = new StringBuilder(64);
-        format(buffer, ":WARN:", msg, thrown);
-        System.err.println(buffer);
+        if (_level <= LEVEL_WARN)
+        {
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":WARN:",msg,thrown);
+            _stderr.println(buffer);
+        }
     }
 
     public void info(String msg, Object... args)
     {
-        StringBuilder buffer = new StringBuilder(64);
-        format(buffer, ":INFO:", msg, args);
-        System.err.println(buffer);
+        if (_level <= LEVEL_INFO)
+        {
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":INFO:",msg,args);
+            _stderr.println(buffer);
+        }
     }
 
     public void info(Throwable thrown)
     {
-        info("", thrown);
+        info("",thrown);
     }
 
     public void info(String msg, Throwable thrown)
     {
-        StringBuilder buffer = new StringBuilder(64);
-        format(buffer, ":INFO:", msg, thrown);
-        System.err.println(buffer);
+        if (_level <= LEVEL_INFO)
+        {
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":INFO:",msg,thrown);
+            _stderr.println(buffer);
+        }
     }
 
     public boolean isDebugEnabled()
     {
-        return _debug;
+        return (_level >= LEVEL_DEBUG);
     }
 
+    /**
+     * @deprecated use {@link #setLevel(int)} instead.
+     */
+    @Deprecated
     public void setDebugEnabled(boolean enabled)
     {
-        _debug = enabled;
+        if (enabled)
+        {
+            _level = LEVEL_DEBUG;
+        }
+        else
+        {
+            _level = LEVEL_INFO;
+        }
+    }
+
+    public int getLevel()
+    {
+        return _level;
+    }
+
+    /**
+     * Set the level for this logger.
+     * <p>
+     * Available values ({@link StdErrLog#LEVEL_ALL}, {@link StdErrLog#LEVEL_DEBUG}, {@link StdErrLog#LEVEL_INFO},
+     * {@link StdErrLog#LEVEL_WARN})
+     * 
+     * @param level
+     *            the level to set the logger to
+     */
+    public void setLevel(int level)
+    {
+        this._level = level;
+    }
+
+    public void setStdErrStream(PrintStream stream)
+    {
+        this._stderr = stream;
     }
 
     public void debug(String msg, Object... args)
     {
-        if (!_debug)
-            return;
-        StringBuilder buffer = new StringBuilder(64);
-        format(buffer, ":DBUG:", msg, args);
-        System.err.println(buffer);
+        if (_level <= LEVEL_DEBUG)
+        {
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":DBUG:",msg,args);
+            _stderr.println(buffer);
+        }
     }
 
     public void debug(Throwable thrown)
     {
-        debug("", thrown);
+        debug("",thrown);
     }
 
     public void debug(String msg, Throwable thrown)
     {
-        if (!_debug)
-            return;
-        StringBuilder buffer = new StringBuilder(64);
-        format(buffer, ":DBUG:", msg, thrown);
-        System.err.println(buffer);
+        if (_level <= LEVEL_DEBUG)
+        {
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":DBUG:",msg,thrown);
+            _stderr.println(buffer);
+        }
     }
 
     private void format(StringBuilder buffer, String level, String msg, Object... args)
     {
         String d = _dateCache.now();
         int ms = _dateCache.lastMs();
-        tag(buffer, d, ms, level);
-        format(buffer, msg, args);
+        tag(buffer,d,ms,level);
+        format(buffer,msg,args);
     }
 
     private void format(StringBuilder buffer, String level, String msg, Throwable thrown)
     {
-        format(buffer, level, msg);
+        format(buffer,level,msg);
         if (isHideStacks())
-            format(buffer, String.valueOf(thrown));
+        {
+            format(buffer,String.valueOf(thrown));
+        }
         else
-            format(buffer, thrown);
+        {
+            format(buffer,thrown);
+        }
     }
 
     private void tag(StringBuilder buffer, String d, int ms, String tag)
@@ -271,36 +389,52 @@ public class StdErrLog implements Logger
         buffer.setLength(0);
         buffer.append(d);
         if (ms > 99)
+        {
             buffer.append('.');
+        }
         else if (ms > 9)
+        {
             buffer.append(".0");
+        }
         else
+        {
             buffer.append(".00");
+        }
         buffer.append(ms).append(tag);
-        if(_printLongNames) {
+        if (_printLongNames)
+        {
             buffer.append(_name);
-        } else {
+        }
+        else
+        {
             buffer.append(_abbrevname);
         }
         buffer.append(':');
         if (_source)
         {
             Throwable source = new Throwable();
-            StackTraceElement[] frames =  source.getStackTrace();
-            for (int i=0;i<frames.length;i++)
+            StackTraceElement[] frames = source.getStackTrace();
+            for (int i = 0; i < frames.length; i++)
             {
                 final StackTraceElement frame = frames[i];
                 String clazz = frame.getClassName();
-                if (clazz.equals(StdErrLog.class.getName())|| clazz.equals(Log.class.getName()))
+                if (clazz.equals(StdErrLog.class.getName()) || clazz.equals(Log.class.getName()))
+                {
                     continue;
-                if (!_printLongNames && clazz.startsWith("org.eclipse.jetty.")) {
+                }
+                if (!_printLongNames && clazz.startsWith("org.eclipse.jetty."))
+                {
                     buffer.append(condensePackageString(clazz));
-                } else {
+                }
+                else
+                {
                     buffer.append(clazz);
                 }
                 buffer.append('#').append(frame.getMethodName());
-                if (frame.getFileName()!=null)
+                if (frame.getFileName() != null)
+                {
                     buffer.append('(').append(frame.getFileName()).append(':').append(frame.getLineNumber()).append(')');
+                }
                 buffer.append(':');
                 break;
             }
@@ -309,32 +443,34 @@ public class StdErrLog implements Logger
 
     private void format(StringBuilder builder, String msg, Object... args)
     {
-        if (msg==null)
+        if (msg == null)
         {
-            msg="";
-            for (Object o : args)
-                msg+="{} ";
+            msg = "";
+            for (int i = 0; i < args.length; i++)
+            {
+                msg += "{} ";
+            }
         }
         String braces = "{}";
         int start = 0;
         for (Object arg : args)
         {
-            int bracesIndex = msg.indexOf(braces, start);
+            int bracesIndex = msg.indexOf(braces,start);
             if (bracesIndex < 0)
             {
-                escape(builder, msg.substring(start));
+                escape(builder,msg.substring(start));
                 builder.append(" ");
                 builder.append(arg);
                 start = msg.length();
             }
             else
             {
-                escape(builder, msg.substring(start, bracesIndex));
+                escape(builder,msg.substring(start,bracesIndex));
                 builder.append(String.valueOf(arg));
                 start = bracesIndex + braces.length();
             }
         }
-        escape(builder, msg.substring(start));
+        escape(builder,msg.substring(start));
     }
 
     private void escape(StringBuilder builder, String string)
@@ -345,14 +481,22 @@ public class StdErrLog implements Logger
             if (Character.isISOControl(c))
             {
                 if (c == '\n')
+                {
                     builder.append('|');
+                }
                 else if (c == '\r')
+                {
                     builder.append('<');
+                }
                 else
+                {
                     builder.append('?');
+                }
             }
             else
+            {
                 builder.append(c);
+            }
         }
     }
 
@@ -365,16 +509,16 @@ public class StdErrLog implements Logger
         else
         {
             buffer.append('\n');
-            format(buffer, thrown.toString());
+            format(buffer,thrown.toString());
             StackTraceElement[] elements = thrown.getStackTrace();
             for (int i = 0; elements != null && i < elements.length; i++)
             {
                 buffer.append("\n\tat ");
-                format(buffer, elements[i].toString());
+                format(buffer,elements[i].toString());
             }
-            
+
             Throwable cause = thrown.getCause();
-            if (cause!=null && cause!=thrown)
+            if (cause != null && cause != thrown)
             {
                 buffer.append("\nCaused by: ");
                 format(buffer,cause);
@@ -384,42 +528,66 @@ public class StdErrLog implements Logger
 
     public Logger getLogger(String name)
     {
-        String fullname=_name == null || _name.length() == 0?name:_name + "." + name;
-        
+        String fullname = _name == null || _name.length() == 0?name:_name + "." + name;
+
         if ((name == null && this._name == null) || fullname.equals(_name))
-            return this;
-        
-        StdErrLog logger = __loggers.get(name);
-        if (logger==null)
         {
-            StdErrLog sel=new StdErrLog(fullname);
+            return this;
+        }
+
+        StdErrLog logger = __loggers.get(name);
+        if (logger == null)
+        {
+            StdErrLog sel = new StdErrLog(fullname);
             // Preserve configuration for new loggers configuration
             sel.setPrintLongNames(_printLongNames);
-            sel.setDebugEnabled(_debug);
+            sel.setLevel(_level);
             sel.setSource(_source);
-            logger=__loggers.putIfAbsent(fullname,sel);
-            if (logger==null)
-                logger=sel;
+            logger = __loggers.putIfAbsent(fullname,sel);
+            if (logger == null)
+            {
+                logger = sel;
+            }
         }
-        
+
         return logger;
     }
 
     @Override
     public String toString()
     {
-        return "StdErrLog:" + _name + ":DEBUG=" + _debug;
+        StringBuilder s = new StringBuilder();
+        s.append("StdErrLog:");
+        s.append(_name);
+        s.append(":LEVEL=");
+        switch (_level)
+        {
+            case LEVEL_ALL:
+                s.append("ALL");
+                break;
+            case LEVEL_DEBUG:
+                s.append("DEBUG");
+                break;
+            case LEVEL_INFO:
+                s.append("INFO");
+                break;
+            case LEVEL_WARN:
+                s.append("WARN");
+                break;
+            default:
+                s.append("?");
+                break;
+        }
+        return s.toString();
     }
 
     public void ignore(Throwable ignored)
     {
-        if (Log.isIgnored())
+        if (_level <= LEVEL_ALL)
         {
-            warn(Log.IGNORED, ignored);
+            StringBuilder buffer = new StringBuilder(64);
+            format(buffer,":IGNORED:","",ignored);
+            _stderr.println(buffer);
         }
-	else
-	{
-	    debug("Ignored {}",ignored.toString());
-	}
     }
 }
