@@ -1,4 +1,6 @@
-jetty-7.5.3-SNAPSHOT
+jetty-7.5.3v20111011 - 11 October 2011
+ + 348978 migrate jetty-http-spi
+ + 358649 StdErrLog system properties for package/class logging LEVEL.
 
 jetty-7.5.2.v20111006 - 06 October 2011
  + 336443 add missing comma in DigestAuthenticator string
