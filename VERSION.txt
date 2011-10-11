@@ -1,4 +1,6 @@
-jetty-8.0.3-SNAPSHOT
+jetty-8.0.3.v20111011 - 11 October 2011
+ + 348978 migrate jetty-http-spi
+ + 358649 StdErrLog system properties for package/class logging LEVEL.
 
 jetty-8.0.2.v20111006 - 06 October 2011
  + 336443 add missing comma in DigestAuthenticator string
@@ -102,8 +104,6 @@ jetty-7.5.2.v20111006 - 06 October 2011
  + JETTY-1430 local JNDI contexts don't carry environment
  + JETTY-1434 Add a jsp that exercises jstl.
  + JETTY-1439 space in directory installation path causes classloader problem
-
-
 
 jetty-8.0.1.v20110908 - 08 September 2011
  + 350634 Added Resource.newResource(File)
