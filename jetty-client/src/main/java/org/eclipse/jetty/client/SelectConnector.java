@@ -113,7 +113,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
                 _connectingChannels.put(channel,connectTimeout);
             }
-
+        }
+        catch (UnresolvedAddressException ex)
+        {
+            if (channel != null)
+                channel.close();
+            destination.onConnectionFailed(ex);
         }
         catch(IOException ex)
         {

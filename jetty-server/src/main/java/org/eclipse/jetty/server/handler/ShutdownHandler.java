@@ -34,13 +34,30 @@ import org.eclipse.jetty.util.log.Logger;
  * Usage:
  *
  * <pre>
- * Server server = new Server(8080);
- * HandlerList handlers = new HandlerList();
- * handlers.setHandlers(new Handler[]
- * { someOtherHandler, new ShutdownHandler(server,&quot;secret password&quot;) });
- * server.setHandler(handlers);
- * server.start();
- * </pre>
+    Server server = new Server(8080);
+    HandlerList handlers = new HandlerList();
+    handlers.setHandlers(new Handler[]
+    { someOtherHandler, new ShutdownHandler(server,&quot;secret password&quot;) });
+    server.setHandler(handlers);
+    server.start();
+   </pre>
+ * 
+   <pre>
+   public static void attemptShutdown(int port, String shutdownCookie) {
+        try {
+            URL url = new URL("http://localhost:" + port + "/shutdown?cookie=" + shutdownCookie);
+            HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.getResponseCode();
+            logger.info("Shutting down " + url + ": " + connection.getResponseMessage());
+        } catch (SocketException e) {
+            logger.debug("Not running");
+            // Okay - the server is not running
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+  </pre>
  */
 public class ShutdownHandler extends AbstractHandler
 {
