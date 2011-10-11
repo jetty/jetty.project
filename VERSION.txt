@@ -1,4 +1,6 @@
-jetty-7.5.3v20111011 - 11 October 2011
+jetty-7.5.4-SNAPSHOT
+
+jetty-7.5.3.v20111011 - 11 October 2011
  + 348978 migrate jetty-http-spi
  + 358649 StdErrLog system properties for package/class logging LEVEL.
 
