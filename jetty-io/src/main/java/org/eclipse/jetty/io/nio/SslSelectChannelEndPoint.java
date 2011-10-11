@@ -242,7 +242,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     if (_closing)
                     {
                         if (outBuf!=null && outBuf.hasContent())
-                            throw new IOException("Write while closing");
+                        {
+                            LOG.debug("Write while closing");
+                            outBuf.clear();
+                        }
                         break;
                     }
 
@@ -317,7 +320,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
                     // Need more data to be unwrapped so try another call to unwrap
                     progress|=unwrap(inBBuf);
-                    if (_closing)
+                    if (_closing && inBBuf.hasRemaining())
                         inBBuf.clear();
                     break;
                 }
@@ -643,7 +646,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                 catch(SSLException e)
                 {
                     LOG.warn(getRemoteAddr()+":"+getRemotePort()+" ",e);
-                    super.close();
+                    if (getChannel().isOpen())
+                        getChannel().close();
                     throw e;
                 }
                 finally
