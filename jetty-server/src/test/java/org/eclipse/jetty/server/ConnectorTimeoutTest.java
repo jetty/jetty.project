@@ -45,7 +45,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithRequest10() throws Exception
     {  
-        System.err.println("testMaxIdleWithRequest10");
         configureServer(new HelloWorldHandler());
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
@@ -77,7 +76,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithRequest11() throws Exception
     {  
-        System.err.println("testMaxIdleWithRequest11");
         configureServer(new EchoHandler());
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
@@ -112,7 +110,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleNoRequest() throws Exception
     {  
-        System.err.println("testMaxIdleNoRequest");
         configureServer(new EchoHandler());
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
@@ -141,7 +138,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithSlowRequest() throws Exception
     {  
-        System.err.println("testMaxIdleWithSlowRequest");
         configureServer(new EchoHandler());
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
@@ -182,7 +178,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithSlowResponse() throws Exception
     {  
-        System.err.println("testMaxIdleWithSlowResponse");
         configureServer(new SlowResponseHandler());
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
@@ -212,7 +207,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithWait() throws Exception
     {  
-        System.err.println("testMaxIdleWithWait");
         configureServer(new WaitHandler());
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);

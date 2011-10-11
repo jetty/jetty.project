@@ -73,7 +73,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
     HttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         super(endp);
-        
+
         _generator = new HttpGenerator(requestBuffers,endp);
         _parser = new HttpParser(responseBuffers,endp,new Handler());
     }
@@ -277,6 +277,9 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                     {
                         long filled = _parser.parseAvailable();
                         io += filled;
+
+                        if (_parser.isIdle() && (_endp.isInputShutdown() || !_endp.isOpen()))
+                            throw new EOFException();
                     }
 
                     if (io > 0)
@@ -353,33 +356,35 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                                 complete = true;
                             }
                         }
-                        
+
                         // if the endpoint is closed, but the parser incomplete
                         if (!_endp.isOpen() && !(_parser.isComplete()||_parser.isIdle()))
                         {
                             // we wont be called again so let the parser see the close
                             complete=true;
                             _parser.parseAvailable();
+                            // TODO should not need this
                             if (!(_parser.isComplete()||_parser.isIdle()))
                             {
                                 LOG.warn("Incomplete {} {}",_parser,_endp);
-                                if (_exchange!=null)
-                                    _exchange.cancel();
+                                if (_exchange!=null && !_exchange.isDone())
+                                {
+                                    _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                                    _exchange.getEventListener().onException(new EOFException("Incomplete"));
+                                }
                             }
                         }
                     }
 
-                    /* TODO - is this needed ?
-                    if (_generator.isComplete() && !_parser.isComplete())
+                    if (_endp.isInputShutdown() && !_parser.isComplete() && !_parser.isIdle())
                     {
-                        if (!_endp.isOpen() || _endp.isInputShutdown())
+                        if (_exchange!=null && !_exchange.isDone())
                         {
-                            complete=true;
-                            close=true;
-                            close();
+                            _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                            _exchange.getEventListener().onException(new EOFException("Incomplete"));
                         }
+                        _endp.close();
                     }
-                    */
 
                     if (complete || failed)
                     {
@@ -447,7 +452,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         finally
         {
             _parser.returnBuffers();
-            
+
             // Do we have more stuff to write?
             if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp.isOpen() && _endp instanceof AsyncEndPoint)
             {
@@ -565,6 +570,8 @@ public class HttpConnection extends AbstractConnection implements Dumpable
 
     private boolean shouldClose()
     {
+        if (_endp.isInputShutdown())
+            return true;
         if (_connectionHeader!=null)
         {
             if (HttpHeaderValues.CLOSE_BUFFER.equals(_connectionHeader))
@@ -743,7 +750,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.Dumpable#dump()
@@ -765,7 +772,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
             AggregateLifeCycle.dump(out,indent,Collections.singletonList(_endp));
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     private class ConnectionIdleTask extends Timeout.Task
     {
@@ -780,14 +787,14 @@ public class HttpConnection extends AbstractConnection implements Dumpable
             }
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     private class NonFinalResponseListener implements HttpEventListener
     {
         final HttpExchange _exchange;
         final HttpEventListener _next;
-        
+
         /* ------------------------------------------------------------ */
         public NonFinalResponseListener(HttpExchange exchange)
         {
@@ -832,7 +839,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
         {
             _exchange.setEventListener(_next);
             _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_RESPONSE);
-            _parser.reset();            
+            _parser.reset();
         }
 
         /* ------------------------------------------------------------ */

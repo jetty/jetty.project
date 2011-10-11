@@ -250,6 +250,17 @@
     <url-pattern>/javadoc-proxy/*</url-pattern>
   </servlet-mapping>
   
+
+
+  <servlet>
+     <servlet-name>foo.jsp</servlet-name>
+     <jsp-file>/jsp/foo/foo.jsp</jsp-file>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>foo.jsp</servlet-name>
+    <url-pattern>/jsp/foo/</url-pattern>
+  </servlet-mapping>
+
   <error-page>
     <error-code>404</error-code>
     <location>/error404.html</location>

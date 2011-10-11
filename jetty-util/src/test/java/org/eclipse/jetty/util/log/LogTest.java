@@ -101,12 +101,13 @@ public class LogTest
         logContains("INFO:oejul.LogTest:testing");
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testStdErrLogDebug()
     {
         StdErrLog log = new StdErrLog("xxx");
         
-        log.setDebugEnabled(true);
+        log.setLevel(StdErrLog.LEVEL_DEBUG);
         log.debug("testing {} {}","test","debug");
         logContains("DBUG:xxx:testing test debug");
         
@@ -116,9 +117,18 @@ public class LogTest
         log.warn("testing {} {}","test","warn");
         logContains("WARN:xxx:testing test warn");
         
-        log.setDebugEnabled(false);
+        log.setLevel(StdErrLog.LEVEL_INFO);
         log.debug("YOU SHOULD NOT SEE THIS!",null,null);
         logNotContains("YOU SHOULD NOT SEE THIS!");
+        
+        // Test for backward compat with old (now deprecated) method
+        log.setDebugEnabled(true);
+        log.debug("testing {} {}","test","debug-deprecated");
+        logContains("DBUG:xxx:testing test debug-deprecated");
+
+        log.setDebugEnabled(false);
+        log.debug("testing {} {}","test","debug-deprecated-false");
+        logNotContains("DBUG:xxx:testing test debug-depdeprecated-false");
     }
     
     @Test
@@ -134,7 +144,6 @@ public class LogTest
         
         next.info("testing {} {}","next","info");
         logContains(":test.next:testing next info");
-        
     }
     
     @Test
@@ -164,6 +173,5 @@ public class LogTest
         logContains("Message with ? escape");
         log.info(th.toString());
         logContains("Message with ? escape");
-        
     }
 }

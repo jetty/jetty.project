@@ -483,8 +483,13 @@ public abstract class AbstractGenerator implements Generator
     {
         if (close)
             _persistent=false;
-        if (!isCommitted())
+        if (isCommitted())
         {
+            LOG.debug("sendError on committed: {} {}",code,reason);
+        }
+        else
+        {
+            LOG.debug("sendError: {} {}",code,reason);
             setResponse(code, reason);
             if (content != null) 
             {
