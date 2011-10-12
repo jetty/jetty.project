@@ -35,7 +35,8 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * CGI Servlet.
  *
- * The cgi bin directory can be set with the "cgibinResourceBase" init parameter or it will default to the resource base of the context.
+ * The cgi bin directory can be set with the "cgibinResourceBase" init parameter or it will default to the resource base of the context. If the
+ * "cgibinResourceBaseIsRelative" init parameter is set the resource base is relative to the webapp. For example "WEB-INF/cgi" would work.
  *
  * The "commandPrefix" init parameter may be used to set a prefix to all commands passed to exec. This can be used on systems that need assistance to execute a
  * particular file type. For example on windows this can be set to "perl" so that perl scripts are executed.
@@ -57,6 +58,7 @@ public class CGI extends HttpServlet
     private String _cmdPrefix;
     private EnvList _env;
     private boolean _ignoreExitState;
+    private boolean _relative;
 
     /* ------------------------------------------------------------ */
     @Override
@@ -64,6 +66,7 @@ public class CGI extends HttpServlet
     {
         _env = new EnvList();
         _cmdPrefix = getInitParameter("commandPrefix");
+        _relative = Boolean.parseBoolean(getInitParameter("cgibinResourceBaseIsRelative"));
 
         String tmp = getInitParameter("cgibinResourceBase");
         if (tmp == null)
@@ -71,6 +74,10 @@ public class CGI extends HttpServlet
             tmp = getInitParameter("resourceBase");
             if (tmp == null)
                 tmp = getServletContext().getRealPath("/");
+        }
+        else if (_relative)
+        {
+            tmp = getServletContext().getRealPath(tmp);
         }
 
         if (tmp == null)
@@ -142,8 +149,7 @@ public class CGI extends HttpServlet
             return;
         }
 
-        String pathInContext = StringUtil.nonNull(req.getServletPath()) + StringUtil.nonNull(req.getPathInfo());
-
+        String pathInContext = (_relative?"":StringUtil.nonNull(req.getServletPath())) + StringUtil.nonNull(req.getPathInfo());
         if (LOG.isDebugEnabled())
         {
             LOG.debug("CGI: ContextPath : " + req.getContextPath());
