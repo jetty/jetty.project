@@ -30,6 +30,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-rewrite</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -42,6 +47,11 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-ajp</artifactId>
       <version>${project.version}</version>
+    </dependency>
+     <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
