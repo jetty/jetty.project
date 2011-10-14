@@ -89,10 +89,6 @@ public class JaspiAuthenticator implements Authenticator
   
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
         request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
-        
-        //TODO janb - removed deferred authentication temporarily
-       /* if (_allowLazyAuthentication && !mandatory)
-            return _deferred;*/
 
         Authentication a = validateRequest(info);
         

@@ -213,6 +213,9 @@ public class FormAuthModule extends BaseAuthModule
             if (form_cred != null)
             {
                 System.err.println("Form cred: form.username="+form_cred._jUserName+" form.pwd="+new String(form_cred._jPassword));
+                
+                //TODO: we would like the form auth module to be able to invoke the loginservice.validate() method to check the previously authed user
+                
                 boolean success = tryLogin(messageInfo, clientSubject, response, session, form_cred._jUserName, new Password(new String(form_cred._jPassword)));
                 if (success) { return AuthStatus.SUCCESS; }
             }
@@ -279,7 +282,7 @@ public class FormAuthModule extends BaseAuthModule
             if (!loginCallbacks.isEmpty())
             {
                 LoginCallbackImpl loginCallback = loginCallbacks.iterator().next();
-                FormCredential form_cred = new FormCredential(username, pwdChars, loginCallback.getUserPrincipal());
+                FormCredential form_cred = new FormCredential(username, pwdChars, loginCallback.getUserPrincipal(), loginCallback.getSubject());
 
                 session.setAttribute(__J_AUTHENTICATED, form_cred);
             }
@@ -312,12 +315,15 @@ public class FormAuthModule extends BaseAuthModule
         char[] _jPassword;
 
         transient Principal _userPrincipal;
+        
+        transient Subject _subject;
 
-        private FormCredential(String _jUserName, char[] _jPassword, Principal _userPrincipal)
+        private FormCredential(String _jUserName, char[] _jPassword, Principal _userPrincipal, Subject subject)
         {
             this._jUserName = _jUserName;
             this._jPassword = _jPassword;
             this._userPrincipal = _userPrincipal;
+            this._subject = subject;
         }
 
         public void valueBound(HttpSessionBindingEvent event)
