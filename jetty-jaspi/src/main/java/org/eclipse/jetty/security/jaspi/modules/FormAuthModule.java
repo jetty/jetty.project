@@ -160,7 +160,7 @@ public class FormAuthModule extends BaseAuthModule
         System.err.println("FormAuthModule.validateRequest(info,subject,serviceSubject) for uri="+uri+" mandatory="+mandatory+" isLoginOrError="+isLoginOrErrorPage(uri));
         
         // not mandatory or its the login or login error page don't authenticate
-        if (!mandatory || isLoginOrErrorPage(uri)) return AuthStatus.SUCCESS;
+        if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) return AuthStatus.SUCCESS;
 
         try
         {
@@ -297,6 +297,7 @@ public class FormAuthModule extends BaseAuthModule
 
     public boolean isLoginOrErrorPage(String pathInContext)
     {
+        System.err.println("ISLOGINORERRORPAGE? "+pathInContext+" error: "+_formErrorPath+" login:"+_formLoginPath);
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
 
