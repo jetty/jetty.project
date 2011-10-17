@@ -157,7 +157,7 @@ public class FormAuthModule extends BaseAuthModule
         mandatory |= isJSecurityCheck(uri);
         HttpSession session = request.getSession(mandatory);
        
-        System.err.println("FormAuthModule.validateRequest(info,subject,serviceSubject) for uri="+uri+" mandatory="+mandatory+" isLoginOrError="+isLoginOrErrorPage(uri));
+        System.err.println("FormAuthModule.validateRequest(info,subject,serviceSubject) for uri="+uri+" mandatory="+mandatory+" isLoginOrError="+isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())));
         
         // not mandatory or its the login or login error page don't authenticate
         if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) return AuthStatus.SUCCESS;

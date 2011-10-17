@@ -86,6 +86,7 @@ public class JaspiAuthenticator implements Authenticator
                            + _allowLazyAuthentication
                            + " mandatory="
                            + mandatory);
+        new Throwable().printStackTrace();
   
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
         request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
