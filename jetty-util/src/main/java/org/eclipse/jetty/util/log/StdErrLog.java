@@ -541,7 +541,7 @@ public class StdErrLog implements Logger
             StdErrLog sel = new StdErrLog(fullname);
             // Preserve configuration for new loggers configuration
             sel.setPrintLongNames(_printLongNames);
-            sel.setLevel(_level);
+            // Let Level come from configured Properties instead - sel.setLevel(_level);
             sel.setSource(_source);
             logger = __loggers.putIfAbsent(fullname,sel);
             if (logger == null)
