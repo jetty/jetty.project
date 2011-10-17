@@ -36,7 +36,9 @@ import javax.servlet.http.HttpSessionBindingListener;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.CrossContextPsuedoSession;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -207,9 +209,10 @@ public class FormAuthModule extends BaseAuthModule
                 // that occur?
                 return AuthStatus.SEND_FAILURE;
             }
+            
+            
             // Check if the session is already authenticated.
             FormCredential form_cred = (FormCredential) session.getAttribute(__J_AUTHENTICATED);
-
             if (form_cred != null)
             {
                 System.err.println("Form cred: form.username="+form_cred._jUserName+" form.pwd="+new String(form_cred._jPassword));
@@ -228,6 +231,13 @@ public class FormAuthModule extends BaseAuthModule
                     if (success) { return AuthStatus.SUCCESS; }
                 }
             }
+            
+           
+
+            // if we can't send challenge
+            if (DeferredAuthentication.isDeferred(response))
+                return AuthStatus.SUCCESS; 
+            
 
             // redirect to login page  
             StringBuffer buf = request.getRequestURL();

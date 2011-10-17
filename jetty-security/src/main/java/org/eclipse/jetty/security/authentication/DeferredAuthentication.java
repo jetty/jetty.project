@@ -167,7 +167,7 @@ public class DeferredAuthentication implements Authentication.Deferred
      * @param response
      * @return true if this response is from a deferred call to {@link #authenticate(ServletRequest)}
      */
-    public boolean isDeferred(HttpServletResponse response)
+    public static boolean isDeferred(HttpServletResponse response)
     {
         return response==__deferredResponse;
     }
@@ -175,7 +175,7 @@ public class DeferredAuthentication implements Authentication.Deferred
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    static HttpServletResponse __deferredResponse = new HttpServletResponse()
+    final static HttpServletResponse __deferredResponse = new HttpServletResponse()
     {
         public void addCookie(Cookie cookie)
         {
