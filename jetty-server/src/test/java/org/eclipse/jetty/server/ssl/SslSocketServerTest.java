@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.ssl;
 import java.io.FileInputStream;
 import java.net.Socket;
 import java.security.KeyStore;
-import java.util.Arrays;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;

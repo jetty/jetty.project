@@ -16,8 +16,6 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.client.helperClasses.AsyncSslServerAndClientCreator;
 import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {

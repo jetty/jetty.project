@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 
 public interface WebSocketConnection extends AsyncConnection

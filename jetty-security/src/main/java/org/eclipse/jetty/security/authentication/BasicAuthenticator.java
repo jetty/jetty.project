@@ -25,8 +25,8 @@ import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.Authentication.User;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 

@@ -6,7 +6,6 @@ import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.Parser;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;

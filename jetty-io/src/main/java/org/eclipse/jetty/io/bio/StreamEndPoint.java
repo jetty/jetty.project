@@ -21,7 +21,6 @@ import java.net.SocketTimeoutException;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 
 public class StreamEndPoint implements EndPoint
 {

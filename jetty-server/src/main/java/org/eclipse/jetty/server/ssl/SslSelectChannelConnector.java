@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.ssl;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -29,7 +28,6 @@ import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.BuffersFactory;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
@@ -37,7 +35,6 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.server.AsyncHttpConnection;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 

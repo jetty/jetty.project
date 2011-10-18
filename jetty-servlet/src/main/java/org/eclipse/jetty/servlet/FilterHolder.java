@@ -19,12 +19,12 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.eclipse.jetty.server.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
-import org.eclipse.jetty.servlet.api.FilterRegistration;
 import javax.servlet.ServletException;
 
+import org.eclipse.jetty.server.DispatcherType;
+import org.eclipse.jetty.servlet.api.FilterRegistration;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

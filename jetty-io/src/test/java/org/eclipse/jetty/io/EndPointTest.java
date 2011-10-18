@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
-import org.junit.Assert;
 import org.junit.Test;
 
 public abstract class EndPointTest<T extends EndPoint>

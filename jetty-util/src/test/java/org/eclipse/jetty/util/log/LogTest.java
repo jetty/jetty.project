@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

@@ -29,8 +29,6 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

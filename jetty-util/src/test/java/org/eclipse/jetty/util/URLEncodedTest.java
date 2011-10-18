@@ -19,7 +19,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 

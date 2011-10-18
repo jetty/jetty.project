@@ -22,7 +22,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
-import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.EncodedHttpURI;
 import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpBuffers;

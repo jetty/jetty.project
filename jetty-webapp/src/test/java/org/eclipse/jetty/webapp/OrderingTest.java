@@ -25,10 +25,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Ordering.AbsoluteOrdering;
 import org.eclipse.jetty.webapp.Ordering.RelativeOrdering;
+import org.junit.Test;
 
 /**
  * OrderingTest

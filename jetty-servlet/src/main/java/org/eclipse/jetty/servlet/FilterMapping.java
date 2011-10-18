@@ -14,17 +14,14 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.EnumSet;
 
-import org.eclipse.jetty.server.DispatcherType;
-
 import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
 
 
 public class FilterMapping implements Dumpable

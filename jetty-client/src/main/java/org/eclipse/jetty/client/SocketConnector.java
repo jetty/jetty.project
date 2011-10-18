@@ -17,7 +17,6 @@ import java.io.InterruptedIOException;
 import java.net.Socket;
 
 import javax.net.SocketFactory;
-import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

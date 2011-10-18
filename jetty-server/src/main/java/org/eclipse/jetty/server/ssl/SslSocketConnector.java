@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.ssl;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;

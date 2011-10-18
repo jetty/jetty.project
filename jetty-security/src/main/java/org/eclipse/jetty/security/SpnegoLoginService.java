@@ -15,7 +15,6 @@ package org.eclipse.jetty.security;
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
 
-import java.util.Collections;
 import java.util.Properties;
 
 import javax.security.auth.Subject;

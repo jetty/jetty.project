@@ -41,7 +41,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;

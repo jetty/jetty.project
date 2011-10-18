@@ -28,9 +28,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;

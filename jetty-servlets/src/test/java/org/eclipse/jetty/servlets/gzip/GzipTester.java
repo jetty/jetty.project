@@ -1,6 +1,10 @@
 package org.eclipse.jetty.servlets.gzip;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
