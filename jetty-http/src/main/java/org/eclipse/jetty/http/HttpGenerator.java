@@ -125,9 +125,15 @@ public class HttpGenerator extends AbstractGenerator
 
     /* ------------------------------------------------------------------------------- */
     @Override
-    public void reset(boolean returnBuffers)
+    public void reset()
     {
-        super.reset(returnBuffers);
+        super.reset();
+        if (_buffer!=null)
+            _buffer.clear();
+        if (_header!=null)
+            _header.clear();
+        if (_content!=null)
+            _content=null;
         _bypass = false;
         _needCRLF = false;
         _needEOC = false;
@@ -136,8 +142,6 @@ public class HttpGenerator extends AbstractGenerator
         _uri=null;
         _noContent=false;
     }
-
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -399,7 +403,7 @@ public class HttpGenerator extends AbstractGenerator
                     _contentLength = HttpTokens.NO_CONTENT;
                     _header.put(_method);
                     _header.put((byte)' ');
-                    _header.put(_uri.getBytes("utf-8")); // TODO WRONG!
+                    _header.put(_uri.getBytes("UTF-8")); // TODO check
                     _header.put(HttpTokens.CRLF);
                     _state = STATE_FLUSHING;
                     _noContent=true;
@@ -409,7 +413,7 @@ public class HttpGenerator extends AbstractGenerator
                 {
                     _header.put(_method);
                     _header.put((byte)' ');
-                    _header.put(_uri.getBytes("utf-8")); // TODO WRONG!
+                    _header.put(_uri.getBytes("UTF-8")); // TODO check
                     _header.put((byte)' ');
                     _header.put(_version==HttpVersions.HTTP_1_0_ORDINAL?HttpVersions.HTTP_1_0_BUFFER:HttpVersions.HTTP_1_1_BUFFER);
                     _header.put(HttpTokens.CRLF);
@@ -418,7 +422,6 @@ public class HttpGenerator extends AbstractGenerator
             else
             {
                 // Responses
-
                 if (_version == HttpVersions.HTTP_0_9_ORDINAL)
                 {
                     _persistent = false;
@@ -786,8 +789,6 @@ public class HttpGenerator extends AbstractGenerator
         }
     }
 
-
-
     /* ------------------------------------------------------------ */
     /**
      * Complete the message.
@@ -899,7 +900,7 @@ public class HttpGenerator extends AbstractGenerator
                         
                         if (_state==STATE_END && _persistent != null && !_persistent && _status!=100 && _method==null)
                         {
-                            _endp.shutdownOutput();
+                            _endp.shutdownOutput();                            
                         }
                     }
                     else
@@ -907,7 +908,7 @@ public class HttpGenerator extends AbstractGenerator
                         prepareBuffers();
                 }
             }            
-
+            
             if (len > 0)
                 total+=len;
 

@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
@@ -153,12 +154,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
         }
 
         @Override
-        protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+        protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
         {
             if (endpoint instanceof SslSelectChannelEndPoint)
-                return new HttpConnection(_sslBuffers,_sslBuffers,endpoint);
+                return new AsyncHttpConnection(_sslBuffers,_sslBuffers,endpoint);
 
-            return new HttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
+            return new AsyncHttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
         }
 
         @Override
@@ -195,7 +196,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
                 ep = new SelectChannelEndPoint(channel, selectSet, key, (int)_httpClient.getIdleTimeout());
             }
 
-            HttpConnection connection=(HttpConnection)ep.getConnection();
+            AbstractHttpConnection connection=(AbstractHttpConnection)ep.getConnection();
             connection.setDestination(dest);
             dest.onNewConnection(connection);
             return ep;

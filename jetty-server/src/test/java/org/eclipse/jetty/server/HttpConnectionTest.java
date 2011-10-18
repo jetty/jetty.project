@@ -430,8 +430,8 @@ public class HttpConnectionTest
     @Test
     public void testOversizedResponse() throws Exception
     {
-        String str = "thisisastringthatshouldreachover1kbytes";
-        for (int i=0;i<400;i++)
+        String str = "thisisastringthatshouldreachover1kbytes-";
+        for (int i=0;i<500;i++)
             str+="xxxxxxxxxxxx";
         final String longstr = str;
         

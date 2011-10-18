@@ -20,7 +20,7 @@ public interface AsyncEndPoint extends EndPoint
      * Dispatch the endpoint to a thread to attend to it.
      * 
      */
-    public void dispatch();
+    public void asyncDispatch();
     
     /**
      * @return true if this endpoint can accept a dispatch. False if the 

@@ -183,6 +183,26 @@ public class AsyncContinuation implements AsyncContext, Continuation
             }
         }
     }
+    
+    /* ------------------------------------------------------------ */
+    /* (non-Javadoc)
+     * @see javax.servlet.ServletRequest#isSuspended()
+     */
+    public boolean isSuspending()
+    {
+        synchronized(this)
+        {
+            switch(_state)
+            {
+                case __ASYNCSTARTED:
+                case __ASYNCWAIT:
+                    return true;
+                    
+                default:
+                    return false;   
+            }
+        }
+    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -539,7 +559,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
         EndPoint endp=_connection.getEndPoint();
         if (!endp.isBlocking())
         {
-            ((AsyncEndPoint)endp).dispatch();
+            ((AsyncEndPoint)endp).asyncDispatch();
         }
     }
 

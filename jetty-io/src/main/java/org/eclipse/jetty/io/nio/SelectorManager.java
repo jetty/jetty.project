@@ -337,7 +337,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected abstract void endPointUpgraded(ConnectedEndPoint endpoint,Connection oldConnection);
 
     /* ------------------------------------------------------------------------------- */
-    protected abstract Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint);
+    protected abstract AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint);
 
     /* ------------------------------------------------------------ */
     /**
@@ -584,6 +584,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                         {
                                             System.err.println(set+":\n"+set.dump());
                                         }
+                                        public String toString() {return "Dump-"+super.toString();}
                                     });
                                 }
                             }
@@ -713,6 +714,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                 endp.checkIdleTimestamp(idle_now);
                             }
                         }
+                        public String toString() {return "Idle-"+super.toString();}
                     });
                     
                 }
@@ -837,6 +839,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private SelectChannelEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
         {
             SelectChannelEndPoint endp = newEndPoint(channel,this,sKey);
+            LOG.debug("created {}",endp);
             endPointOpened(endp);
             _endPoints.put(endp,this);
             return endp;

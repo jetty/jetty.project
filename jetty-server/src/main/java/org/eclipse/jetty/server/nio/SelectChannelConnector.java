@@ -25,6 +25,7 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
@@ -287,7 +288,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected Connection newConnection(SocketChannel channel,final SelectChannelEndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel,final SelectChannelEndPoint endpoint)
     {
         return new SelectChannelHttpConnection(SelectChannelConnector.this,endpoint,getServer(),endpoint);
     }
@@ -365,7 +366,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         }
 
         @Override
-        protected Connection newConnection(SocketChannel channel,SelectChannelEndPoint endpoint)
+        protected AsyncConnection newConnection(SocketChannel channel,SelectChannelEndPoint endpoint)
         {
             return SelectChannelConnector.this.newConnection(channel,endpoint);
         }

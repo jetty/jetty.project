@@ -571,7 +571,7 @@ public class HttpExchangeTest
     {
         _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
         final HttpDestination destination = _httpClient.getDestination(new Address("localhost",_port),_scheme.equalsIgnoreCase("https"));
-        final org.eclipse.jetty.client.HttpConnection[] connections = new org.eclipse.jetty.client.HttpConnection[_maxConnectionsPerAddress];
+        final org.eclipse.jetty.client.AbstractHttpConnection[] connections = new org.eclipse.jetty.client.AbstractHttpConnection[_maxConnectionsPerAddress];
         for (int i = 0; i < _maxConnectionsPerAddress; i++)
         {
             connections[i] = destination.reserveConnection(200);
@@ -595,7 +595,7 @@ public class HttpExchangeTest
         assertNotNull(c);
         
         // release connections
-        for (HttpConnection httpConnection : connections){
+        for (AbstractHttpConnection httpConnection : connections){
             destination.returnConnection(httpConnection,false);
         }
     }

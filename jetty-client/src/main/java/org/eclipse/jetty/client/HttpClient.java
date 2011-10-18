@@ -52,11 +52,11 @@ import org.eclipse.jetty.util.thread.Timeout;
  * The an instance of {@link HttpExchange} is passed to the {@link #send(HttpExchange)} method
  * to send a request.  The exchange contains both the headers and content (source) of the request
  * plus the callbacks to handle responses.   A HttpClient can have many exchanges outstanding
- * and they may be queued on the {@link HttpDestination} waiting for a {@link HttpConnection},
- * queued in the {@link HttpConnection} waiting to be transmitted or pipelined on the actual
+ * and they may be queued on the {@link HttpDestination} waiting for a {@link AbstractHttpConnection},
+ * queued in the {@link AbstractHttpConnection} waiting to be transmitted or pipelined on the actual
  * TCP/IP connection waiting for a response.
  * <p/>
- * The {@link HttpDestination} class is an aggregation of {@link HttpConnection}s for the
+ * The {@link HttpDestination} class is an aggregation of {@link AbstractHttpConnection}s for the
  * same host, port and protocol.   A destination may limit the number of connections
  * open and they provide a pool of open connections that may be reused.   Connections may also
  * be allocated from a destination, so that multiple request sources are not multiplexed
@@ -526,7 +526,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the period in milliseconds a {@link HttpConnection} can be idle for before it is closed.
+     * @return the period in milliseconds a {@link AbstractHttpConnection} can be idle for before it is closed.
      */
     public long getIdleTimeout()
     {
@@ -535,7 +535,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
 
     /* ------------------------------------------------------------ */
     /**
-     * @param ms the period in milliseconds a {@link HttpConnection} can be idle for before it is closed.
+     * @param ms the period in milliseconds a {@link AbstractHttpConnection} can be idle for before it is closed.
      */
     public void setIdleTimeout(long ms)
     {

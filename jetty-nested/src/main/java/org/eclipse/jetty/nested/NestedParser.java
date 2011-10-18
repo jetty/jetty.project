@@ -38,9 +38,9 @@ public class NestedParser implements Parser
         return false;
     }
 
-    public int parseAvailable() throws IOException
+    public boolean parseAvailable() throws IOException
     {
-        return 0;
+        return false;
     }
 
     public boolean isMoreInBuffer() throws IOException
@@ -51,6 +51,15 @@ public class NestedParser implements Parser
     public boolean isIdle()
     {
         return false;
+    }
+
+    public boolean isPersistent()
+    {
+        return false;
+    }
+
+    public void setPersistent(boolean persistent)
+    {
     }
 
 }

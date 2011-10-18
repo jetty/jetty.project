@@ -492,7 +492,7 @@ public class ResponseTest
         endPoint.setOut(new ByteArrayBuffer(1024));
         endPoint.setGrowOutput(true);
         HttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
-        connection.getGenerator().reset(false);
+        connection.getGenerator().reset();
         HttpConnection.setCurrentConnection(connection);
         Response response = connection.getResponse();
         connection.getRequest().setRequestURI("/test");

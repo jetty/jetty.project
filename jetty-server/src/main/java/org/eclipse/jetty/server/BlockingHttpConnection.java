@@ -30,42 +30,43 @@ public class BlockingHttpConnection extends HttpConnection
     }
 
 
+    @Override
+    protected void handleRequest() throws IOException
+    {
+        super.handleRequest();
+    }
+
+
     public Connection handle() throws IOException
     {
         Connection connection = this;
 
-        // Loop while more in buffer
-        boolean more_in_buffer =true; // assume true until proven otherwise
-
+        boolean progress=true; 
         try
         {
             setCurrentConnection(this);
 
-            while (more_in_buffer && _endp.isOpen())
+            // do while the endpoint is open 
+            // AND the connection has not changed
+            while (_endp.isOpen() && connection==this)
             {
                 try
                 {
+                    progress=false;
                     // If we are not ended then parse available
-                    if (!_parser.isComplete())
-                        _parser.parseAvailable();
-
+                    if (!_parser.isComplete() && !_endp.isInputShutdown())
+                        progress |= _parser.parseAvailable();
+                    
                     // Do we have more generating to do?
                     // Loop here because some writes may take multiple steps and
                     // we need to flush them all before potentially blocking in the
                     // next loop.
-                    while (_generator.isCommitted() && !_generator.isComplete())
-                    {
-                        long written=_generator.flushBuffer();
-                        if (written<=0)
-                            break;
-                        if (_endp.isBufferingOutput())
-                            _endp.flush();
-                    }
-
+                    if (_generator.isCommitted() && !_generator.isComplete() && !_endp.isOutputShutdown())
+                        progress |= _generator.flushBuffer()>0;
+                    
                     // Flush buffers
                     if (_endp.isBufferingOutput())
                         _endp.flush();
-      
                 }
                 catch (HttpException e)
                 {
@@ -80,58 +81,37 @@ public class BlockingHttpConnection extends HttpConnection
                     _endp.shutdownOutput();
                 }
                 finally
-                {
-                    more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-                    
-                    // Is this request/response round complete?
+                {              
+                    //  Is this request/response round complete and are fully flushed?
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
+                        // Reset the parser/generator
+                        progress=true;
+                        reset();
+                        
                         // look for a switched connection instance?
-                        Connection switched=(_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
-                        ?(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection"):null;
-
-                        // have we switched?
-                        if (switched!=null)
+                        if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            _parser.reset();
-                            _generator.reset(true);
-                            connection=switched;
+                            Connection switched=(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
+                            if (switched!=null)
+                                connection=switched;
                         }
-                        else
+                        
+                        // TODO Is this required?
+                        if (!_generator.isPersistent() && !_endp.isOutputShutdown())
                         {
-                            // No switch, so cleanup and reset
-                            if (!_generator.isPersistent() || _endp.isInputShutdown())
-                            {
-                                _parser.reset();
-                                more_in_buffer=false;
-                                _endp.close();
-                            }
-
-                            if (more_in_buffer)
-                            {
-                                reset(false);
-                                more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-                            }
-                            else
-                                reset(true);
+                            System.err.println("Safety net oshut!!!");
+                            _endp.shutdownOutput();
                         }
-                    }
-                    else if (_parser.isIdle() && _endp.isInputShutdown())
-                    {
-                        more_in_buffer=false;
-                        _endp.close();
-                    }
-
-                    if (_request.isAsyncStarted())
-                        throw new IllegalStateException();
+                    }                    
                 }
             }
         }
         finally
         {
-            _parser.returnBuffers();
             setCurrentConnection(null);
-            _handling=false;
+            _parser.returnBuffers();
+            _generator.returnBuffers();
         }
         return connection;
     }

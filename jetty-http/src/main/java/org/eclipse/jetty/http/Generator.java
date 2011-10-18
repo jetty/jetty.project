@@ -70,7 +70,7 @@ public interface Generator
 
     boolean isPersistent();
 
-    void reset(boolean returnBuffers);
+    void reset();
 
     void resetBuffer();
     

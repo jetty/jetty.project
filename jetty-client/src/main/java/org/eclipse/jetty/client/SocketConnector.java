@@ -57,7 +57,7 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
 
         EndPoint endpoint=new SocketEndPoint(socket);
 
-        final HttpConnection connection=new HttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
+        final AbstractHttpConnection connection=new BlockingHttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
         connection.setDestination(destination);
         destination.onNewConnection(connection);
         _httpClient.getThreadPool().dispatch(new Runnable()

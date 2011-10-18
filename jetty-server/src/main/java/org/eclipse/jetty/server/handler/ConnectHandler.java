@@ -20,6 +20,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
@@ -423,13 +424,13 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey selectionKey) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey, channel.socket().getSoTimeout());
             endp.setMaxIdleTime(_writeTimeout);
             return endp;
         }
 
         @Override
-        protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+        protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
         {
             ProxyToServerConnection proxyToServer = (ProxyToServerConnection)endpoint.getSelectionKey().attachment();
             proxyToServer.setTimeStamp(System.currentTimeMillis());
@@ -461,7 +462,9 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
-    public class ProxyToServerConnection implements Connection
+    
+    
+    public class ProxyToServerConnection implements AsyncConnection
     {
         private final CountDownLatch _ready = new CountDownLatch(1);
         private final Buffer _buffer = new IndirectNIOBuffer(1024);
@@ -541,6 +544,11 @@ public class ConnectHandler extends HandlerWrapper
             }
         }
 
+        public void onInputShutdown() throws IOException
+        {
+            // TODO
+        }
+        
         private void writeData() throws IOException
         {
             // This method is called from handle() and closeServer()
@@ -671,7 +679,7 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
-    public class ClientToProxyConnection implements Connection
+    public class ClientToProxyConnection implements AsyncConnection
     {
         private final Buffer _buffer = new IndirectNIOBuffer(1024);
         private final ConcurrentMap<String, Object> _context;
@@ -757,6 +765,11 @@ public class ConnectHandler extends HandlerWrapper
             {
                 _logger.debug("{}: end reading from client", this);
             }
+        }
+        
+        public void onInputShutdown() throws IOException
+        {
+            // TODO
         }
 
         public long getTimeStamp()

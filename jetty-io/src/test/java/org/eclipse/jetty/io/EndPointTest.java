@@ -1,62 +1,144 @@
 package org.eclipse.jetty.io;
 
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.concurrent.Exchanger;
-import java.util.concurrent.TimeUnit;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class EndPointTest
+public abstract class EndPointTest<T extends EndPoint>
 {
+    public static class Connection<T>
+    {
+        public T client;
+        public T server;
+    }
+    
+    protected abstract Connection<T> newConnection() throws Exception;
+   
+
     @Test
-    public void testSocketEndPoints() throws Exception
+    public void testClientServerExchange() throws Exception
     {
-        final ServerSocket server = new ServerSocket();
-        server.bind(null);
+        Connection<T> c = newConnection();
+        Buffer buffer = new IndirectNIOBuffer(4096);
         
-        final Exchanger<Socket> accepted = new Exchanger<Socket>();
-        new Thread(){
-            public void run()
-            {
-                try 
-                {
-                    accepted.exchange(server.accept());
-                }
-                catch(Exception e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
+        c.client.flush(new ByteArrayBuffer("request"));
+        int len = c.server.fill(buffer);
+        assertEquals(7,len);
+        assertEquals("request",buffer.toString());
+
+        assertTrue(c.client.isOpen());
+        assertFalse(c.client.isInputShutdown());
+        assertFalse(c.client.isOutputShutdown());
+        assertTrue(c.server.isOpen());
+        assertFalse(c.server.isInputShutdown());
+        assertFalse(c.server.isOutputShutdown());
         
-        Socket s0 = new Socket(server.getInetAddress(),server.getLocalPort());
-        Socket s1 = accepted.exchange(null,5,TimeUnit.SECONDS);
+        c.server.flush(new ByteArrayBuffer("response"));
+        c.server.shutdownOutput();
         
-        SocketEndPoint in = new SocketEndPoint(s0);
-        SocketEndPoint out = new SocketEndPoint(s1);
+        assertTrue(c.client.isOpen());
+        assertFalse(c.client.isInputShutdown());
+        assertFalse(c.client.isOutputShutdown());
+        assertTrue(c.server.isOpen());
+        assertFalse(c.server.isInputShutdown());
+        assertTrue(c.server.isOutputShutdown());
         
-        check(in,out);
+        buffer.clear();
+        len = c.client.fill(buffer);
+        assertEquals(8,len);
+        assertEquals("response",buffer.toString());
+
+        assertTrue(c.client.isOpen());
+        assertFalse(c.client.isInputShutdown());
+        assertFalse(c.client.isOutputShutdown());
+        assertTrue(c.server.isOpen());
+        assertFalse(c.server.isInputShutdown());
+        assertTrue(c.server.isOutputShutdown());
+        
+        buffer.clear();
+        len = c.client.fill(buffer);
+        assertEquals(-1,len);
+
+        assertTrue(c.client.isOpen());
+        assertTrue(c.client.isInputShutdown());
+        assertFalse(c.client.isOutputShutdown());
+        assertTrue(c.server.isOpen());
+        assertFalse(c.server.isInputShutdown());
+        assertTrue(c.server.isOutputShutdown());
+        
+        c.client.shutdownOutput();
+
+        assertFalse(c.client.isOpen());
+        assertTrue(c.client.isInputShutdown());
+        assertTrue(c.client.isOutputShutdown());
+        assertTrue(c.server.isOpen());
+        assertFalse(c.server.isInputShutdown());
+        assertTrue(c.server.isOutputShutdown());
+        
+        buffer.clear();
+        len = c.server.fill(buffer);
+        assertEquals(-1,len);
+
+        assertFalse(c.client.isOpen());
+        assertTrue(c.client.isInputShutdown());
+        assertTrue(c.client.isOutputShutdown());
+        assertFalse(c.server.isOpen());
+        assertTrue(c.server.isInputShutdown());
+        assertTrue(c.server.isOutputShutdown());
+        
     }
     
-    
-    private void check(EndPoint in, EndPoint out) throws Exception
+
+
+    @Test
+    public void testClientClose() throws Exception
     {
-        String data="Now is the time for all good men to come to the aid of the party";
-        Buffer send = new ByteArrayBuffer(data);
-        Buffer receive = new IndirectNIOBuffer(4096);
+        Connection<T> c = newConnection();
+        Buffer buffer = new IndirectNIOBuffer(4096);
         
-        int lo=out.flush(send);
-        int li=in.fill(receive);
+        c.client.flush(new ByteArrayBuffer("request"));
+        int len = c.server.fill(buffer);
+        assertEquals(7,len);
+        assertEquals("request",buffer.toString());
+
+        assertTrue(c.client.isOpen());
+        assertFalse(c.client.isInputShutdown());
+        assertFalse(c.client.isOutputShutdown());
+        assertTrue(c.server.isOpen());
+        assertFalse(c.server.isInputShutdown());
+        assertFalse(c.server.isOutputShutdown());        
         
-        Assert.assertEquals(data.length(),lo);
-        Assert.assertEquals(data.length(),li);
-        Assert.assertEquals(data,receive.toString());
+        c.client.close();
+
+        assertFalse(c.client.isOpen());
+        assertTrue(c.client.isInputShutdown());
+        assertTrue(c.client.isOutputShutdown());
+        assertTrue(c.server.isOpen());
+        assertFalse(c.server.isInputShutdown());
+        assertFalse(c.server.isOutputShutdown());  
         
-        in.close();
-        out.close();
-    }
+        len = c.server.fill(buffer);
+        assertEquals(-1,len);
+
+        assertFalse(c.client.isOpen());
+        assertTrue(c.client.isInputShutdown());
+        assertTrue(c.client.isOutputShutdown());
+        assertTrue(c.server.isOpen());
+        assertTrue(c.server.isInputShutdown());
+        assertFalse(c.server.isOutputShutdown());  
+        
+        c.server.shutdownOutput();
+
+        assertFalse(c.client.isOpen());
+        assertTrue(c.client.isInputShutdown());
+        assertTrue(c.client.isOutputShutdown());
+        assertFalse(c.server.isOpen());
+        assertTrue(c.server.isInputShutdown());
+        assertTrue(c.server.isOutputShutdown());  
+    }   
+    
 }

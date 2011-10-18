@@ -378,18 +378,16 @@ public abstract class HttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    public void reset(boolean returnBuffers)
+    public void reset()
     {
         _parser.reset(); 
-        if (returnBuffers)
-            _parser.returnBuffers();
+        _parser.returnBuffers(); // TODO maybe only on unhandle
         _requestFields.clear();
         _request.recycle();
-
-        _generator.reset(returnBuffers); // TODO maybe only release when low on resources
+        _generator.reset(); 
+        _generator.returnBuffers();// TODO maybe only on unhandle
         _responseFields.clear();
         _response.recycle();
-
         _uri.clear();
     }
 
@@ -560,7 +558,7 @@ public abstract class HttpConnection  extends AbstractConnection
                 LOG.warn("header full: "+e);
 
                 _response.reset();
-                _generator.reset(true);
+                _generator.reset();
                 _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
                 _generator.completeHeader(_responseFields,Generator.LAST);
                 _generator.complete();
@@ -592,7 +590,7 @@ public abstract class HttpConnection  extends AbstractConnection
                 LOG.debug(e);
 
                 _response.reset();
-                _generator.reset(true);
+                _generator.reset();
                 _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
                 _generator.completeHeader(_responseFields,Generator.LAST);
                 _generator.complete();
@@ -725,7 +723,8 @@ public abstract class HttpConnection  extends AbstractConnection
 
                   case HttpMethods.HEAD_ORDINAL:
                       _head=true;
-                      // fall through
+                      _uri.parse(uri.array(), uri.getIndex(), uri.length());
+                      break;
 
                   default:
                       _uri.parse(uri.array(), uri.getIndex(), uri.length());
@@ -817,46 +816,6 @@ public abstract class HttpConnection  extends AbstractConnection
                     value = MimeTypes.CACHE.lookup(value);
                     _charset=MimeTypes.getCharsetFromContentType(value);
                     break;
-
-                case HttpHeaders.CONNECTION_ORDINAL:
-                    //looks rather clumsy, but the idea is to optimize for a single valued header
-                    switch(HttpHeaderValues.CACHE.getOrdinal(value))
-                    {
-                        case -1:
-                        {
-                            String[] values = value.toString().split(",");
-                            for  (int i=0;values!=null && i<values.length;i++)
-                            {
-                                CachedBuffer cb = HttpHeaderValues.CACHE.get(values[i].trim());
-
-                                if (cb!=null)
-                                {
-                                    switch(cb.getOrdinal())
-                                    {
-                                        case HttpHeaderValues.CLOSE_ORDINAL:
-                                            _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
-                                            _generator.setPersistent(false);
-                                            break;
-
-                                        case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
-                                            if (_version==HttpVersions.HTTP_1_0_ORDINAL)
-                                                _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                        case HttpHeaderValues.CLOSE_ORDINAL:
-                            _responseFields.put(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
-                            _generator.setPersistent(false);
-                            break;
-
-                        case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
-                            if (_version==HttpVersions.HTTP_1_0_ORDINAL)
-                                _responseFields.put(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
-                            break;
-                    }
             }
 
             _requestFields.add(name, value);
@@ -878,14 +837,23 @@ public abstract class HttpConnection  extends AbstractConnection
                     break;
                 case HttpVersions.HTTP_1_0_ORDINAL:
                     _generator.setHead(_head);
-
+                    if (_parser.isPersistent())
+                    {
+                        _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
+                        _generator.setPersistent(true);
+                    }
                     if (_server.getSendDateHeader())
                         _generator.setDate(_request.getTimeStampBuffer());
-
                     break;
+                    
                 case HttpVersions.HTTP_1_1_ORDINAL:
                     _generator.setHead(_head);
 
+                    if (!_parser.isPersistent())
+                    {
+                        _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
+                        _generator.setPersistent(false);
+                    }
                     if (_server.getSendDateHeader())
                         _generator.setDate(_request.getTimeStampBuffer());
 
@@ -965,6 +933,7 @@ public abstract class HttpConnection  extends AbstractConnection
         {
             LOG.debug("Bad request!: "+version+" "+status+" "+reason);
         }
+        
     }
 
 

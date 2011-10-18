@@ -9,8 +9,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 
-public interface WebSocketConnection extends Connection
+public interface WebSocketConnection extends AsyncConnection
 {
     void fillBuffersFrom(Buffer buffer);
     

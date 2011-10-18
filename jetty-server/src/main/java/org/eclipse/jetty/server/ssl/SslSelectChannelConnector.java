@@ -32,9 +32,11 @@ import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
+import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -549,9 +551,9 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------------------------- */
     @Override
-    protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
     {
-        HttpConnection connection=(HttpConnection)super.newConnection(channel,endpoint);
+        AsyncHttpConnection connection=(AsyncHttpConnection)super.newConnection(channel,endpoint);
         ((HttpParser)connection.getParser()).setForceContentBuffer(true);
         return connection;
     }

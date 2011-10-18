@@ -138,7 +138,7 @@ public class HttpGeneratorClientTest
                         String t="v="+v+",r="+r+",chunks="+chunks+",c="+c+",tr="+tr[r];
                         // System.err.println(t);
 
-                        hb.reset(true);
+                        hb.reset();
                         endp.reset();
                         fields.clear();
 

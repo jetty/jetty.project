@@ -53,13 +53,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
      * ProxyConnect.   The connection may change for an SCEP as it is upgraded 
      * from HTTP to proxy connect or websocket.
      */
-    private volatile Connection _connection;
+    private volatile AsyncConnection _connection;
     
     /** true if a thread has been dispatched to handle this endpoint */
     private boolean _dispatched = false;
     
     /** true if a non IO dispatch (eg async resume) is outstanding */
-    private boolean _redispatched = false;
+    private boolean _asyncDispatch = false;
     
     /** true if the last write operation succeed and wrote all offered bytes */
     private volatile boolean _writable = true;
@@ -76,6 +76,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     
     private volatile long _idleTimestamp;
     
+    private boolean _ishut;
+    
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
         throws IOException
@@ -85,31 +87,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _manager = selectSet.getManager();
         _selectSet = selectSet;
         _dispatched = false;
-        _redispatched = false;
+        _asyncDispatch = false;
         _open=true;
         _key = key;
 
         _connection = _manager.newConnection(channel,this);
 
         scheduleIdle();
-    }
-
-    /* ------------------------------------------------------------ */
-    public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key)
-        throws IOException
-    {
-        super(channel);
-
-        _manager = selectSet.getManager();
-        _selectSet = selectSet;
-        _dispatched = false;
-        _redispatched = false;
-        _open=true;
-        _key = key;
-
-        _connection = _manager.newConnection(channel,this);
-
-        scheduleIdle();
+        
     }
     
     /* ------------------------------------------------------------ */
@@ -136,8 +121,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     public void setConnection(Connection connection)
     {
+        // TODO Only needed for local connection
         Connection old=_connection;
-        _connection=connection;
+        _connection=(AsyncConnection)connection;
         _manager.endPointUpgraded(this,old);
     }
 
@@ -212,13 +198,25 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
+    public void asyncDispatch()
+    {
+        synchronized(this)
+        {
+            if (_dispatched)
+                _asyncDispatch=true;
+            else
+                dispatch();
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
     public void dispatch()
     {
         synchronized(this)
         {
             if (_dispatched)
             {
-                _redispatched=true;
+                throw new IllegalStateException("dispatched");
             }
             else
             {
@@ -245,9 +243,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized (this)
         {
-            if (_redispatched)
+            if (_asyncDispatch)
             {
-                _redispatched=false;
+                _asyncDispatch=false;
                 return false;
             }
             _dispatched = false;
@@ -357,12 +355,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized (this)
         {
+            if (isInputShutdown())
+                throw new EofException();
+            
             long now=_selectSet.getNow();
             long end=now+timeoutMs;
             try
             {
                 _readBlocked=true;
-                while (isOpen() && _readBlocked)
+                while (!isInputShutdown() && _readBlocked)
                 {
                     try
                     {
@@ -399,7 +400,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized (this)
         {
-            if (!isOpen() || isOutputShutdown())
+            if (isOutputShutdown())
                 throw new EofException();
             
             long now=_selectSet.getNow();
@@ -407,7 +408,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             try
             {
                 _writeBlocked=true;
-                while (isOpen() && _writeBlocked && !isOutputShutdown())
+                while (_writeBlocked && !isOutputShutdown())
                 {
                     try
                     {
@@ -425,16 +426,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     if (_writeBlocked && timeoutMs>0 && now>=end)
                         return false;
                 }
-            }
-            catch(Throwable e)
-            {
-                // TODO remove this if it finds nothing
-                LOG.warn(e);
-                if (e instanceof RuntimeException)
-                    throw (RuntimeException)e;
-                if (e instanceof Error)
-                    throw (Error)e;
-                throw new RuntimeException(e);
             }
             finally
             {
@@ -471,9 +462,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
      */
     private void updateKey()
     {
+        int current_ops=-1;
         synchronized (this)
         {
-            int ops=-1;
             if (getChannel().isOpen())
             {
                 _interestOps =
@@ -481,7 +472,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 |   ((!_socket.isOutputShutdown()&& (!_writable   || _writeBlocked)) ? SelectionKey.OP_WRITE : 0);
                 try
                 {
-                    ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
+                    current_ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
                 }
                 catch(Exception e)
                 {
@@ -489,12 +480,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     LOG.ignore(e);
                 }
             }
-
-            if(_interestOps == ops && getChannel().isOpen())
-                return;
         }
-        _selectSet.addChange(this);
-        _selectSet.wakeup();
+
+        if(_interestOps != current_ops)
+        {
+            _selectSet.addChange(this);
+            _selectSet.wakeup();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -583,11 +575,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 {
                     while(true)
                     {
-                        final Connection next = _connection.handle();
+                        final AsyncConnection next = (AsyncConnection)_connection.handle();
                         if (next!=_connection)
                         {
                             LOG.debug("{} replaced {}",next,_connection);
                             _connection=next;
+                            _manager.endPointUpgraded(this,_connection);
                             continue;
                         }
                         break;
@@ -600,23 +593,47 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 catch (EofException e)
                 {
                     LOG.debug("EOF", e);
-                    try{getChannel().close();}
+                    try{close();}
                     catch(IOException e2){LOG.ignore(e2);}
                 }
                 catch (IOException e)
                 {
                     LOG.warn(e.toString());
                     LOG.debug(e);
-                    try{getChannel().close();}
+                    try{close();}
                     catch(IOException e2){LOG.ignore(e2);}
                 }
                 catch (Throwable e)
                 {
                     LOG.warn("handle failed", e);
-                    try{getChannel().close();}
+                    try{close();}
                     catch(IOException e2){LOG.ignore(e2);}
                 }
-                dispatched=!undispatch();
+                finally
+                {
+                    dispatched=!undispatch();
+                                        
+                    if (!_ishut && isInputShutdown() && isOpen())
+                    {
+                        _ishut=true;
+                        try
+                        {
+                            _connection.onInputShutdown();
+                        }
+                        catch(Throwable x)
+                        {
+                            if (x instanceof ThreadDeath)
+                                throw (ThreadDeath)x;
+                            LOG.warn("onInputShutdown failed", x);
+                            try{close();}
+                            catch(IOException e2){LOG.ignore(e2);}
+                        }
+                        finally
+                        {
+                            updateKey();
+                        }
+                    }
+                }
             }
         }
         finally

@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * <p>
  * Typically the HttpExchange is passed to the {@link HttpClient#send(HttpExchange)} method, which in turn selects a {@link HttpDestination} and calls its
- * {@link HttpDestination#send(HttpExchange)}, which then creates or selects a {@link HttpConnection} and calls its {@link HttpConnection#send(HttpExchange)}. A
+ * {@link HttpDestination#send(HttpExchange)}, which then creates or selects a {@link AbstractHttpConnection} and calls its {@link AbstractHttpConnection#send(HttpExchange)}. A
  * developer may wish to directly call send on the destination or connection if they wish to bypass some handling provided (eg Cookie handling in the
  * HttpDestination).
  * </p>
@@ -103,7 +103,7 @@ public class HttpExchange
     // controls if the exchange will have listeners autoconfigured by the destination
     private boolean _configureListeners = true;
     private HttpEventListener _listener = new Listener();
-    private volatile HttpConnection _connection;
+    private volatile AbstractHttpConnection _connection;
 
     private Address _localAddress = null;
 
@@ -125,7 +125,7 @@ public class HttpExchange
             setStatus(HttpExchange.STATUS_EXPIRED);
 
         destination.exchangeExpired(this);
-        HttpConnection connection = _connection;
+        AbstractHttpConnection connection = _connection;
         if (connection != null)
             connection.exchangeExpired(this);
     }
@@ -778,7 +778,7 @@ public class HttpExchange
 
     private void abort()
     {
-        HttpConnection httpConnection = _connection;
+        AbstractHttpConnection httpConnection = _connection;
         if (httpConnection != null)
         {
             try
@@ -798,7 +798,7 @@ public class HttpExchange
         }
     }
 
-    void associate(HttpConnection connection)
+    void associate(AbstractHttpConnection connection)
     {
         if (connection.getEndPoint().getLocalHost() != null)
             _localAddress = new Address(connection.getEndPoint().getLocalHost(),connection.getEndPoint().getLocalPort());
@@ -813,9 +813,9 @@ public class HttpExchange
         return this._connection != null;
     }
 
-    HttpConnection disassociate()
+    AbstractHttpConnection disassociate()
     {
-        HttpConnection result = _connection;
+        AbstractHttpConnection result = _connection;
         this._connection = null;
         if (getStatus() == STATUS_CANCELLING)
             setStatus(STATUS_CANCELLED);

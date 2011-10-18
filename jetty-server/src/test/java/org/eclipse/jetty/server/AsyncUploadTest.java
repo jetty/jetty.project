@@ -51,6 +51,7 @@ public class AsyncUploadTest
     {
         server = new Server();
         connector = new SelectChannelConnector();
+        connector.setMaxIdleTime(10000);
         server.addConnector(connector);
         server.setHandler(new EmptyHandler());
         server.start();
@@ -91,11 +92,9 @@ public class AsyncUploadTest
 
         InputStream in = socket.getInputStream();
         String response = IO.toString(in);
-        // System.err.println(response);
         assertTrue(response.indexOf("200 OK")>0);
 
         long end = System.nanoTime();
-        System.err.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
         assertEquals(content.length, total);
     }
 
@@ -120,7 +119,6 @@ public class AsyncUploadTest
                         int read;
                         while((read =in.read(b))>=0)
                             total += read;
-                        System.err.println("Read "+ total);
                     }
                     catch(Exception e)
                     {

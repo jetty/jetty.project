@@ -213,6 +213,12 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public void onInputShutdown() throws IOException
+    {
+        // TODO
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return _parser.isBufferEmpty() && _generator.isBufferEmpty();

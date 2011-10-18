@@ -100,7 +100,7 @@ public abstract class AbstractGenerator implements Generator
     }
     
     /* ------------------------------------------------------------------------------- */
-    public void reset(boolean returnBuffers)
+    public void reset()
     {
         _state = STATE_HEADER;
         _status = 0;
@@ -113,20 +113,6 @@ public abstract class AbstractGenerator implements Generator
         _contentWritten = 0;
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
         _date = null;
-
-        // always return the body buffer
-        if (_buffer!=null)
-            _buffers.returnBuffer(_buffer);
-        _buffer=null;
-
-        if (returnBuffers)
-        {
-            if (_header!=null)
-                _buffers.returnBuffer(_header);
-            _header=null;
-        }
-        else if (_header != null) 
-            _header.clear();
 
         _content = null;
         _method=null;

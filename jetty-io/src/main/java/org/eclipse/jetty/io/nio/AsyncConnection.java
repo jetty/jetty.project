@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -11,18 +11,12 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.server;
-import org.eclipse.jetty.server.bio.SocketConnector;
-import org.junit.BeforeClass;
+package org.eclipse.jetty.io.nio;
 
-/**
- * HttpServer Tester.
- */
-public class SocketServerTest extends HttpServerTestBase
+import java.io.IOException;
+import org.eclipse.jetty.io.Connection;
+
+public interface AsyncConnection extends Connection
 {
-    @BeforeClass
-    public static void init() throws Exception
-    {
-        startServer(new SocketConnector());
-    }    
+    void onInputShutdown() throws IOException;
 }

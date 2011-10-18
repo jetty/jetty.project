@@ -16,6 +16,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.SimpleBuffers;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.util.B64Code;
@@ -207,11 +208,11 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, final SelectionKey sKey) throws IOException
         {
-            return new SelectChannelEndPoint(channel,selectSet,sKey);
+            return new SelectChannelEndPoint(channel,selectSet,sKey,channel.socket().getSoTimeout());
         }
 
         @Override
-        protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+        protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
         {
             WebSocketClient.WebSocketFuture holder = (WebSocketClient.WebSocketFuture) endpoint.getSelectionKey().attachment();
             return new HandshakeConnection(endpoint,holder);
@@ -255,7 +256,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     /** Handshake Connection.
      * Handles the connection until the handshake succeeds or fails.
      */
-    class HandshakeConnection extends AbstractConnection
+    class HandshakeConnection extends AbstractConnection implements AsyncConnection
     {
         private final SelectChannelEndPoint _endp;
         private final WebSocketClient.WebSocketFuture _future;
@@ -370,15 +371,11 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         {
             while (_endp.isOpen() && !_parser.isComplete())
             {
-                switch (_parser.parseAvailable())
+                if (!_parser.parseAvailable())
                 {
-                    case -1:
+                    if (_endp.isInputShutdown())
                         _future.handshakeFailed(new IOException("Incomplete handshake response"));
-                        return this;
-                    case 0:
-                        return this;
-                    default:
-                        break;
+                    return this;
                 }
             }
             if (_error==null)
@@ -405,6 +402,11 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
             _endp.close();
             return this;
+        }
+
+        public void onInputShutdown() throws IOException
+        {
+            // TODO
         }
 
         public boolean isIdle()

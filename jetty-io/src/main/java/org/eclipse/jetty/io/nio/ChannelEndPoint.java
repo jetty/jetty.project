@@ -101,50 +101,68 @@ public class ChannelEndPoint implements EndPoint
         return _channel.isOpen();
     }
 
+    /** Shutdown the channel Input.
+     * Cannot be overridden. To override, see {@link #shutdownInput()}
+     * @throws IOException
+     */
+    protected final void shutdownChannelInput() throws IOException
+    {
+        if (_channel.isOpen())
+        {
+            if (_channel instanceof SocketChannel)
+            {
+                Socket socket= ((SocketChannel)_channel).socket();
+                if (!socket.isInputShutdown())
+                    socket.shutdownInput();
+                if(socket.isOutputShutdown())
+                    close();
+            }
+            else
+                close();
+        }
+    }
+    
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
     public void shutdownInput() throws IOException
     {
-        if (_channel.isOpen() && _channel instanceof SocketChannel)
-        {
-            Socket socket= ((SocketChannel)_channel).socket();
-            if (!socket.isClosed())
-            {
-                if(socket.isOutputShutdown())
-                    socket.close();
-                else if (!socket.isInputShutdown())
-                    socket.shutdownInput();
-            }
-        }
+        shutdownChannelInput();
     }
 
+    protected final void shutdownChannelOutput() throws IOException
+    {
+        if (_channel.isOpen())
+        {
+            if (_channel instanceof SocketChannel)
+            {
+                Socket socket= ((SocketChannel)_channel).socket();
+                if (!socket.isOutputShutdown())
+                    socket.shutdownOutput();
+                if (socket.isInputShutdown())
+                    close();
+            }
+            else
+                close();
+        }
+    }
+    
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
     public void shutdownOutput() throws IOException
     {
-        if (_channel.isOpen() && _channel instanceof SocketChannel)
-        {
-            Socket socket= ((SocketChannel)_channel).socket();
-            if (!socket.isClosed())
-            {
-                if (socket.isInputShutdown())
-                    socket.close();
-                else if (!socket.isOutputShutdown())
-                    socket.shutdownOutput();
-            }
-        }
+        shutdownChannelOutput();
     }
 
     public boolean isOutputShutdown()
     {
-        return _channel.isOpen() && _socket!=null && _socket.isOutputShutdown();
+        return !_channel.isOpen() || _socket!=null && _socket.isOutputShutdown();
     }
 
     public boolean isInputShutdown()
     {
-        return _channel.isOpen() && _socket!=null && _socket.isInputShutdown();
+        return !_channel.isOpen() || _socket!=null && _socket.isInputShutdown();
     }
 
     /* (non-Javadoc)
@@ -188,7 +206,7 @@ public class ChannelEndPoint implements EndPoint
                 {
                     if (!isInputShutdown())
                         shutdownInput();
-                    else if (isOutputShutdown())
+                    if (isOutputShutdown())
                         _channel.close();
                 }
             }
@@ -197,7 +215,7 @@ public class ChannelEndPoint implements EndPoint
                 LOG.debug(x);
                 try
                 {
-                    close();
+                    _channel.close();
                 }
                 catch (IOException xx)
                 {

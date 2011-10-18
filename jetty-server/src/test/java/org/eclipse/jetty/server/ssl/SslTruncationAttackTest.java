@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
@@ -53,7 +54,7 @@ public class SslTruncationAttackTest
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key) throws IOException
             {
-                return new SslSelectChannelEndPoint(getSslBuffers(), channel, selectSet, key, createSSLEngine(channel))
+                return new SslSelectChannelEndPoint(getSslBuffers(), channel, selectSet, key, createSSLEngine(channel),channel.socket().getSoTimeout())
                 {
                     @Override
                     public void close() throws IOException
@@ -65,7 +66,7 @@ public class SslTruncationAttackTest
             }
 
             @Override
-            protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+            protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
             {
                 AsyncHttpConnection connection=new AsyncHttpConnection(this, endpoint, server)
                 {

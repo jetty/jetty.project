@@ -48,9 +48,9 @@ public class HttpDestination implements Dumpable
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final List<HttpExchange> _queue = new LinkedList<HttpExchange>();
-    private final List<HttpConnection> _connections = new LinkedList<HttpConnection>();
+    private final List<AbstractHttpConnection> _connections = new LinkedList<AbstractHttpConnection>();
     private final BlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
-    private final List<HttpConnection> _idle = new ArrayList<HttpConnection>();
+    private final List<AbstractHttpConnection> _idle = new ArrayList<AbstractHttpConnection>();
     private final HttpClient _client;
     private final Address _address;
     private final boolean _ssl;
@@ -168,9 +168,9 @@ public class HttpDestination implements Dumpable
      * @return a HttpConnection for this destination
      * @throws IOException if an I/O error occurs
      */
-    private HttpConnection getConnection(long timeout) throws IOException
+    private AbstractHttpConnection getConnection(long timeout) throws IOException
     {
-        HttpConnection connection = null;
+        AbstractHttpConnection connection = null;
 
         while ((connection == null) && (connection = getIdleConnection()) == null && timeout > 0)
         {
@@ -191,9 +191,9 @@ public class HttpDestination implements Dumpable
                 try
                 {
                     Object o = _newQueue.take();
-                    if (o instanceof HttpConnection)
+                    if (o instanceof AbstractHttpConnection)
                     {
-                        connection = (HttpConnection)o;
+                        connection = (AbstractHttpConnection)o;
                     }
                     else
                         throw (IOException)o;
@@ -220,17 +220,17 @@ public class HttpDestination implements Dumpable
         return connection;
     }
 
-    public HttpConnection reserveConnection(long timeout) throws IOException
+    public AbstractHttpConnection reserveConnection(long timeout) throws IOException
     {
-        HttpConnection connection = getConnection(timeout);
+        AbstractHttpConnection connection = getConnection(timeout);
         if (connection != null)
             connection.setReserved(true);
         return connection;
     }
 
-    public HttpConnection getIdleConnection() throws IOException
+    public AbstractHttpConnection getIdleConnection() throws IOException
     {
-        HttpConnection connection = null;
+        AbstractHttpConnection connection = null;
         while (true)
         {
             synchronized (this)
@@ -330,7 +330,7 @@ public class HttpDestination implements Dumpable
         }
     }
 
-    public void onNewConnection(final HttpConnection connection) throws IOException
+    public void onNewConnection(final AbstractHttpConnection connection) throws IOException
     {
         Connection q_connection = null;
 
@@ -381,7 +381,7 @@ public class HttpDestination implements Dumpable
         }
     }
 
-    public void returnConnection(HttpConnection connection, boolean close) throws IOException
+    public void returnConnection(AbstractHttpConnection connection, boolean close) throws IOException
     {
         if (connection.isReserved())
             connection.setReserved(false);
@@ -433,7 +433,7 @@ public class HttpDestination implements Dumpable
         }
     }
 
-    public void returnIdleConnection(HttpConnection connection)
+    public void returnIdleConnection(AbstractHttpConnection connection)
     {
         try
         {
@@ -533,7 +533,7 @@ public class HttpDestination implements Dumpable
         // so that we count also the queue time in the timeout
         ex.scheduleTimeout(this);
 
-        HttpConnection connection = getIdleConnection();
+        AbstractHttpConnection connection = getIdleConnection();
         if (connection != null)
         {
             send(connection, ex);
@@ -566,7 +566,7 @@ public class HttpDestination implements Dumpable
         }
     }
 
-    protected void send(HttpConnection connection, HttpExchange exchange) throws IOException
+    protected void send(AbstractHttpConnection connection, HttpExchange exchange) throws IOException
     {
         synchronized (this)
         {
@@ -594,7 +594,7 @@ public class HttpDestination implements Dumpable
         b.append('\n');
         synchronized (this)
         {
-            for (HttpConnection connection : _connections)
+            for (AbstractHttpConnection connection : _connections)
             {
                 b.append(connection.toDetailString());
                 if (_idle.contains(connection))
@@ -637,7 +637,7 @@ public class HttpDestination implements Dumpable
     {
         synchronized (this)
         {
-            for (HttpConnection connection : _connections)
+            for (AbstractHttpConnection connection : _connections)
             {
                 connection.close();
             }

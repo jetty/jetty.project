@@ -467,13 +467,12 @@ public class RequestTest
                     "\n"
                     );
         assertTrue(response.indexOf("200")>0);
-        assertTrue(response.indexOf("Connection: close")>0);
         assertTrue(response.indexOf("Hello World")>0);
 
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
-                    "Connection: Other, keep-alive\n"+
+                    "Connection: Other,,keep-alive\n"+
                     "\n"
                     );
         assertTrue(response.indexOf("200")>0);

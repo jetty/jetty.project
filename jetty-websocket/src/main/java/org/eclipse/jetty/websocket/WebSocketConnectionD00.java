@@ -203,6 +203,12 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public void onInputShutdown() throws IOException
+    {
+        // TODO
+    }
+
+    /* ------------------------------------------------------------ */
     private void doTheHixieHixieShake()
     {
         byte[] result=WebSocketConnectionD00.doTheHixieHixieShake(

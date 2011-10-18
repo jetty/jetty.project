@@ -94,10 +94,10 @@ public class NetworkTrafficListenerTest
 
         // Connect to the server
         Socket socket = new Socket("localhost", port);
-        assertTrue(openedLatch.await(1, TimeUnit.SECONDS));
-
+        assertTrue(openedLatch.await(10, TimeUnit.SECONDS));
+        
         socket.close();
-        assertTrue(closedLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(closedLatch.await(10, TimeUnit.SECONDS));
     }
 
     @Test

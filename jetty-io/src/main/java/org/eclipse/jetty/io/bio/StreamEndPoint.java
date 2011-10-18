@@ -21,6 +21,7 @@ import java.net.SocketTimeoutException;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 
 public class StreamEndPoint implements EndPoint
 {
@@ -72,10 +73,8 @@ public class StreamEndPoint implements EndPoint
 
     public void shutdownOutput() throws IOException
     {
-        if (_oshut)
-            return;
         _oshut = true;
-        if (_out!=null)
+        if (_ishut && _out!=null)
             _out.close();
     }
 
@@ -86,10 +85,8 @@ public class StreamEndPoint implements EndPoint
 
     public void shutdownInput() throws IOException
     {
-        if (_ishut)
-            return;
         _ishut = true;
-        if (_in!=null)
+        if (_oshut&&_in!=null)
             _in.close();
     }
 
@@ -122,6 +119,8 @@ public class StreamEndPoint implements EndPoint
      */
     public int fill(Buffer buffer) throws IOException
     {
+        if (_ishut)
+            return -1;
         if (_in==null)
             return 0;
 
@@ -136,13 +135,8 @@ public class StreamEndPoint implements EndPoint
         try
         {
             int read=buffer.readFrom(_in, space);
-            if (read<0 && isOpen())
-            {
-                if (!isInputShutdown())
-                    shutdownInput();
-                else if (isOutputShutdown())
-                    close();
-            }
+            if (read<0)
+                shutdownInput();
             return read;
         }
         catch(SocketTimeoutException e)
@@ -157,8 +151,10 @@ public class StreamEndPoint implements EndPoint
      */
     public int flush(Buffer buffer) throws IOException
     {
-        if (_out==null)
+        if (_oshut)
             return -1;
+        if (_out==null)
+            return 0;
         int length=buffer.length();
         if (length>0)
             buffer.writeTo(_out);

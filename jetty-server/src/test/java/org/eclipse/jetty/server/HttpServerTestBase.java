@@ -57,7 +57,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static final String REQUEST1=REQUEST1_HEADER+REQUEST1_CONTENT.getBytes().length+"\n\n"+REQUEST1_CONTENT;
 
     /** The expected response. */
-    private static final String RESPONSE1="HTTP/1.1 200 OK\n"+"Connection: close\n"+"Server: Jetty("+Server.getVersion()+")\n"+"\n"+"Hello world\n";
+    private static final String RESPONSE1="HTTP/1.1 200 OK\n"+"Content-Length: 13\n"+"Server: Jetty("+Server.getVersion()+")\n"+"\n"+"Hello world\n";
 
     // Break the request up into three pieces, splitting the header.
     private static final String FRAGMENT1=REQUEST1.substring(0,16);
@@ -143,14 +143,19 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             OutputStream os=client.getOutputStream();
 
-            os.write(("GET /R2 HTTP/1.1\015\012"+"Host: localhost\015\012"+"Transfer-Encoding: chunked\015\012"+"Content-Type: text/plain\015\012"
-                    +"Connection: close\015\012"+"\015\012").getBytes());
+            os.write(("GET /R2 HTTP/1.1\015\012"+
+                    "Host: localhost\015\012"+
+                    "Transfer-Encoding: chunked\015\012"+
+                    "Content-Type: text/plain\015\012"+
+                    "Connection: close\015\012"+
+                    "\015\012").getBytes());
             os.flush();
             Thread.sleep(PAUSE);
             os.write(("5\015\012").getBytes());
             os.flush();
             Thread.sleep(PAUSE);
-            os.write(("ABCDE\015\012"+"0;\015\012\015\012").getBytes());
+            os.write(("ABCDE\015\012"+
+                      "0;\015\012\015\012").getBytes());
             os.flush();
 
             // Read the response.
