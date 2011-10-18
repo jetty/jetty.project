@@ -40,6 +40,30 @@ import org.eclipse.jetty.websocket.WebSocket.OnControl;
 import org.eclipse.jetty.websocket.WebSocket.OnFrame;
 import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 
+
+/* ------------------------------------------------------------ */
+/**
+ * <pre>
+ *    0                   1                   2                   3
+ *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *   +-+-+-+-+-------+-+-------------+-------------------------------+
+ *   |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+ *   |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+ *   |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+ *   | |1|2|3|       |K|             |                               |
+ *   +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+ *   |     Extended payload length continued, if payload len == 127  |
+ *   + - - - - - - - - - - - - - - - +-------------------------------+
+ *   |                               |Masking-key, if MASK set to 1  |
+ *   +-------------------------------+-------------------------------+
+ *   | Masking-key (continued)       |          Payload Data         |
+ *   +-------------------------------- - - - - - - - - - - - - - - - +
+ *   :                     Payload Data continued ...                :
+ *   + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+ *   |                     Payload Data continued ...                |
+ *   +---------------------------------------------------------------+
+ * </pre>
+ */
 public class WebSocketConnectionD13 extends AbstractConnection implements WebSocketConnection
 {
     private static final Logger LOG = Log.getLogger(WebSocketConnectionD13.class);
@@ -225,12 +249,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                 int filled=_parser.parseNext();
 
                 progress = flushed>0 || filled>0;
-
-                if (filled<0 || flushed<0)
-                {
-                    _endp.close();
-                    break;
-                }
             }
         }
         catch(IOException e)
@@ -267,7 +285,8 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void onInputShutdown() throws IOException
     {
-        // TODO
+        if (!_closedIn)
+            _endp.close();
     }
     
     /* ------------------------------------------------------------ */
@@ -309,11 +328,11 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     {
         LOG.debug("ClosedIn {} {}",this,message);
 
-        final boolean close;
+        final boolean closed_out;
         final boolean tell_app;
         synchronized (this)
         {
-            close=_closedOut;
+            closed_out=_closedOut;
             _closedIn=true;
             tell_app=_closeCode==0;
             if (tell_app)
@@ -330,17 +349,8 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         }
         finally
         {
-            try
-            {
-                if (close)
-                    _endp.close();
-                else
-                    closeOut(code,message);
-            }
-            catch(IOException e)
-            {
-                LOG.ignore(e);
-            }
+            if (!closed_out)
+                closeOut(code,message);
         }
     }
 
@@ -349,13 +359,11 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     {
         LOG.debug("ClosedOut {} {}",this,message);
 
-        final boolean close;
+        final boolean closed_out;
         final boolean tell_app;
-        final boolean send_close;
         synchronized (this)
         {
-            close=_closedIn;
-            send_close=!_closedOut;
+            closed_out=_closedOut;
             _closedOut=true;
             tell_app=_closeCode==0;
             if (tell_app)
@@ -374,21 +382,16 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         {
             try
             {
-                if (send_close)
+                if (!closed_out)
                 {
                     if (code<=0)
                         code=WebSocketConnectionD13.CLOSE_NORMAL;
-                    byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
+                    byte[] bytes = (message==null?"xx":("xx"+message)).getBytes(StringUtil.__ISO_8859_1);
                     bytes[0]=(byte)(code/0x100);
                     bytes[1]=(byte)(code%0x100);
                     _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD13.OP_CLOSE,bytes,0,bytes.length);
                     _outbound.flush();
-                    if (close)
-                        _endp.shutdownOutput();
                 }
-                else if (close)
-                    _endp.close();
-
             }
             catch(IOException e)
             {

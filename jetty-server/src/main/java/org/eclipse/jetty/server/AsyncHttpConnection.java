@@ -82,7 +82,6 @@ public class AsyncHttpConnection extends HttpConnection implements AsyncConnecti
                     {
                         // Reset the parser/generator
                         progress=true;
-                        reset();
                         
                         // look for a switched connection instance?
                         if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
@@ -91,11 +90,13 @@ public class AsyncHttpConnection extends HttpConnection implements AsyncConnecti
                             if (switched!=null)
                                 connection=switched;
                         }
+
+                        reset();
                         
                         // TODO Is this required?
                         if (!_generator.isPersistent() && !_endp.isOutputShutdown())
                         {
-                            System.err.println("Safety net oshut!!!");
+                            LOG.warn("Safety net oshut!!!");
                             _endp.shutdownOutput();
                         }
                     }

@@ -205,6 +205,7 @@ public class WebSocketFactory
                 extensions_requested.add(tok.nextToken());
         }
 
+        
         final WebSocketConnection connection;
         final List<Extension> extensions;
         switch (draft)
@@ -251,6 +252,7 @@ public class WebSocketFactory
         connection.fillBuffersFrom(((HttpParser)http.getParser()).getBodyBuffer());
 
         // Tell jetty about the new connection
+        LOG.debug("Websocket upgrade {} {} {} {}",request.getRequestURI(),draft,protocol,connection);
         request.setAttribute("org.eclipse.jetty.io.Connection", connection);
     }
 

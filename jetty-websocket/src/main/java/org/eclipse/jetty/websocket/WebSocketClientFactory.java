@@ -227,7 +227,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         @Override
         protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
         {
-            throw new IllegalStateException();
+            LOG.debug("upgrade {} -> {}",oldConnection,endpoint.getConnection());
         }
 
         @Override
@@ -364,7 +364,6 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             {
                 future.handshakeFailed(e);
             }
-
         }
 
         public Connection handle() throws IOException
@@ -388,7 +387,15 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 {
                     Buffer header=_parser.getHeaderBuffer();
                     MaskGen maskGen=_future.getMaskGen();
-                    WebSocketConnectionD13 connection = new WebSocketConnectionD13(_future.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_future.getMaxIdleTime(),_future.getProtocol(),null,10,maskGen);
+                    WebSocketConnectionD13 connection = 
+                        new WebSocketConnectionD13(_future.getWebSocket(),
+                            _endp,
+                            _buffers,System.currentTimeMillis(),
+                            _future.getMaxIdleTime(),
+                            _future.getProtocol(),
+                            null,
+                            WebSocketConnectionD13.VERSION,
+                            maskGen);
 
                     if (header.hasContent())
                         connection.fillBuffersFrom(header);
@@ -406,7 +413,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
         public void onInputShutdown() throws IOException
         {
-            // TODO
+            _endp.close();
         }
 
         public boolean isIdle()
@@ -425,6 +432,11 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 _future.handshakeFailed(new ProtocolException(_error));
             else
                 _future.handshakeFailed(new EOFException());
+        }
+        
+        public String toString()
+        {
+            return "HS"+super.toString();
         }
     }
 }

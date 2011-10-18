@@ -65,7 +65,7 @@ public class WebSocketMessageD13Test
             }
         };
         wsHandler.getWebSocketFactory().setBufferSize(8192);
-        wsHandler.getWebSocketFactory().setMaxIdleTime(1000);
+        wsHandler.getWebSocketFactory().setMaxIdleTime(1000); 
         wsHandler.setHandler(new DefaultHandler());
         __server.setHandler(wsHandler);
         __server.start();
@@ -390,7 +390,7 @@ public class WebSocketMessageD13Test
             output.write(bytes[i]^0xff);
         output.flush();
         // Make sure the read times out if there are problems with the implementation
-        socket.setSoTimeout(1000);
+        socket.setSoTimeout(1000); 
 
         InputStream input = socket.getInputStream();
         

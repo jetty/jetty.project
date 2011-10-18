@@ -579,8 +579,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         if (next!=_connection)
                         {
                             LOG.debug("{} replaced {}",next,_connection);
+                            Connection old=_connection;
                             _connection=next;
-                            _manager.endPointUpgraded(this,_connection);
+                            _manager.endPointUpgraded(this,old);
                             continue;
                         }
                         break;

@@ -40,57 +40,48 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
     {
         try
         {
-            int no_progress = 0;
-
+            boolean progress=true;
             boolean failed = false;
-            while (_endp.isBufferingInput() || _endp.isOpen())
+
+            // While the endpoint is open 
+            // AND we have more characters to read OR we made some progress 
+            while (_endp.isOpen() && 
+                   (_parser.isMoreInBuffer() || _endp.isBufferingInput() || progress))
             {
+                
+                // If no exchange, skipCRLF or close on unexpected characters
+                HttpExchange exchange;
                 synchronized (this)
                 {
-                    while (_exchange == null)
+                    exchange=_exchange;
+                }
+
+                if (exchange == null)
+                {
+                    long filled = _parser.fill();
+                    if (filled < 0)
+                        close();
+                    else
                     {
-                        if (_endp.isBlocking())
+                        // Hopefully just space?
+                        _parser.skipCRLF();
+                        if (_parser.isMoreInBuffer())
                         {
-                            try
-                            {
-                                this.wait();
-                            }
-                            catch (InterruptedException e)
-                            {
-                                throw new InterruptedIOException();
-                            }
-                        }
-                        else
-                        {
-                            long filled = _parser.fill();
-                            if (filled < 0)
-                            {
-                                close();
-                            }
-                            else
-                            {
-                                // Hopefully just space?
-                                _parser.skipCRLF();
-                                if (_parser.isMoreInBuffer())
-                                {
-                                    LOG.warn("Unexpected data received but no request sent");
-                                    close();
-                                }
-                            }
-                            return this;
+                            LOG.warn("Unexpected data received but no request sent");
+                            close();
                         }
                     }
+                    return this;
                 }
 
                 try
                 {
-                    if (_exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
+                    if (exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
                     {
-                        no_progress = 0;
+                        progress=true;
                         commitRequest();
                     }
 
-                    long io = 0;
                     _endp.flush();
 
                     if (_generator.isComplete())
@@ -98,47 +89,38 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                         if (!_requestComplete)
                         {
                             _requestComplete = true;
-                            _exchange.getEventListener().onRequestComplete();
+                            exchange.getEventListener().onRequestComplete();
                         }
                     }
                     else
                     {
-                        // Write as much of the request as possible
-                        synchronized (this)
-                        {
-                            if (_exchange == null)
-                                continue;
-                        }
-
                         long flushed = _generator.flushBuffer();
-                        io += flushed;
-
-                        if (!_generator.isComplete())
+                        progress|=(flushed>0);
+                            
+                        if (_generator.isComplete())
                         {
-                            if (_exchange!=null)
+                            InputStream in = exchange.getRequestContentSource();
+                            if (in != null)
                             {
-                                InputStream in = _exchange.getRequestContentSource();
-                                if (in != null)
+                                if (_requestContentChunk == null || _requestContentChunk.length() == 0)
                                 {
-                                    if (_requestContentChunk == null || _requestContentChunk.length() == 0)
-                                    {
-                                        _requestContentChunk = _exchange.getRequestContentChunk();
+                                    _requestContentChunk = _exchange.getRequestContentChunk();
 
-                                        if (_requestContentChunk != null)
-                                            _generator.addContent(_requestContentChunk,false);
-                                        else
-                                            _generator.complete();
+                                    if (_requestContentChunk != null)
+                                        _generator.addContent(_requestContentChunk,false);
+                                    else
+                                        _generator.complete();
 
-                                        flushed = _generator.flushBuffer();
-                                        io += flushed;
-                                    }
+                                    flushed = _generator.flushBuffer();
+                                    progress|=(flushed>0);
                                 }
-                                else
-                                    _generator.complete();
                             }
                             else
                                 _generator.complete();
                         }
+                        else
+                            _generator.complete();
+                        
                     }
 
                     if (_generator.isComplete() && !_requestComplete)
@@ -151,25 +133,12 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     if (!_parser.isComplete() && (_generator.isComplete() || _generator.isCommitted() && !_endp.isBlocking()))
                     {
                         if (_parser.parseAvailable())
-                            io++;
+                            progress=true;
 
                         if (_parser.isIdle() && (_endp.isInputShutdown() || !_endp.isOpen()))
                             throw new EOFException();
                     }
-
-                    if (io > 0)
-                        no_progress = 0;
-                    else if (no_progress++ >= 1 && !_endp.isBlocking())
-                    {
-                        // SSL may need an extra flush as it may have made "no progress" while actually doing a handshake.
-                        if (_endp instanceof SslSelectChannelEndPoint && !_generator.isComplete() && !_generator.isEmpty())
-                        {
-                            long flushed = _generator.flushBuffer();
-                            if (flushed>0)
-                                continue;
-                        }
-                        return this;
-                    }
+                    
                 }
                 catch (Throwable e)
                 {
@@ -270,10 +239,10 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
 
                             reset(true);
 
-                            no_progress = 0;
+                            progress=true;
                             if (_exchange != null)
                             {
-                                HttpExchange exchange=_exchange;
+                                exchange=_exchange;
                                 _exchange = null;
 
                                 // Reset the maxIdleTime because it may have been changed

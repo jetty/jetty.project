@@ -18,6 +18,7 @@ import java.io.IOException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -34,7 +35,7 @@ public class WebSocketParserD13 implements WebSocketParser
 
     public enum State {
 
-        START(0), OPCODE(1), LENGTH_7(1), LENGTH_16(2), LENGTH_63(8), MASK(4), PAYLOAD(0), DATA(0), SKIP(1);
+        START(0), OPCODE(1), LENGTH_7(1), LENGTH_16(2), LENGTH_63(8), MASK(4), PAYLOAD(0), DATA(0), SKIP(1), SEEK_EOF(1);
 
         int _needs;
 
@@ -125,11 +126,12 @@ public class WebSocketParserD13 implements WebSocketParser
     {
         if (_buffer==null)
             _buffer=_buffers.getBuffer();
-        int total_filled=0;
-        int events=0;
+        
+        boolean progress=false;
+        int filled=-1;
 
         // Loop until a datagram call back or can't fill anymore
-        while(true)
+        while(!progress && (!_endp.isInputShutdown()||_endp.isBufferingInput()||_buffer.length()>0))
         {
             int available=_buffer.length();
 
@@ -158,35 +160,38 @@ public class WebSocketParserD13 implements WebSocketParser
                         }
 
                         // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
-                        events++;
                         _bytesNeeded-=data.length();
+                        progress=true;
                         _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionD13.FLAG_FIN)), _opcode, data);
 
                         _opcode=WebSocketConnectionD13.OP_CONTINUATION;
                     }
 
                     if (_buffer.space() == 0)
-                    throw new IllegalStateException("FULL: "+_state+" "+_bytesNeeded+">"+_buffer.capacity());
+                        throw new IllegalStateException("FULL: "+_state+" "+_bytesNeeded+">"+_buffer.capacity());
                 }
 
                 // catch IOExceptions (probably EOF) and try to parse what we have
                 try
                 {
-                    int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
-                    if (filled<=0)
-                        return (total_filled+events)>0?(total_filled+events):filled;
-                    total_filled+=filled;
+                    filled=_endp.isInputShutdown()?-1:_endp.fill(_buffer);
                     available=_buffer.length();
+                    // System.err.printf(">> filled %d/%d%n",filled,available);
+                    if (filled<=0)
+                        break;
                 }
                 catch(IOException e)
                 {
                     LOG.debug(e);
-                    return (total_filled+events)>0?(total_filled+events):-1;
+                    filled=-1;
+                    break;
                 }
             }
-
+            // Did we get enough?
+            if (available<(_state==State.SKIP?1:_bytesNeeded))
+                break;
+            
             // if we are here, then we have sufficient bytes to process the current state.
-
             // Parse the buffer byte by byte (unless it is STATE_DATA)
             byte b;
             while (_state!=State.DATA && available>=(_state==State.SKIP?1:_bytesNeeded))
@@ -195,7 +200,7 @@ public class WebSocketParserD13 implements WebSocketParser
                 {
                     case START:
                         _skip=false;
-                        _state=State.OPCODE;
+                        _state=_opcode==WebSocketConnectionD13.OP_CLOSE?State.SEEK_EOF:State.OPCODE;
                         _bytesNeeded=_state.getNeeds();
                         continue;
 
@@ -207,9 +212,9 @@ public class WebSocketParserD13 implements WebSocketParser
 
                         if (WebSocketConnectionD13.isControlFrame(_opcode)&&!WebSocketConnectionD13.isLastFrame(_flags))
                         {
-                            events++;
                             LOG.warn("Fragmented Control from "+_endp);
                             _handler.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Fragmented control");
+                            progress=true;
                             _skip=true;
                         }
 
@@ -249,7 +254,7 @@ public class WebSocketParserD13 implements WebSocketParser
                         {
                             if (_length>_buffer.capacity() && !_fragmentFrames)
                             {
-                                events++;
+                                progress=true;
                                 _handler.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
@@ -268,7 +273,7 @@ public class WebSocketParserD13 implements WebSocketParser
                             _bytesNeeded=(int)_length;
                             if (_length>=_buffer.capacity() && !_fragmentFrames)
                             {
-                                events++;
+                                progress=true;
                                 _handler.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
@@ -296,12 +301,19 @@ public class WebSocketParserD13 implements WebSocketParser
 
                     case SKIP:
                         int skip=Math.min(available,_bytesNeeded);
+                        progress=true;
                         _buffer.skip(skip);
                         available-=skip;
                         _bytesNeeded-=skip;
                         if (_bytesNeeded==0)
                             _state=State.START;
-
+                        break;
+                        
+                    case SEEK_EOF:
+                        progress=true;
+                        _buffer.skip(available);
+                        available=0;
+                        break;
                 }
             }
 
@@ -311,7 +323,7 @@ public class WebSocketParserD13 implements WebSocketParser
                 {
                     _buffer.skip(_bytesNeeded);
                     _state=State.START;
-                    events++;
+                    progress=true;
                     _handler.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Not masked");
                 }
                 else
@@ -328,15 +340,18 @@ public class WebSocketParserD13 implements WebSocketParser
                     }
 
                     // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
-                    events++;
+
+                    progress=true;
                     _handler.onFrame(_flags, _opcode, data);
                     _bytesNeeded=0;
                     _state=State.START;
                 }
 
-                return total_filled+events;
+                break;
             }
         }
+        
+        return progress?1:filled;
     }
 
     /* ------------------------------------------------------------ */
