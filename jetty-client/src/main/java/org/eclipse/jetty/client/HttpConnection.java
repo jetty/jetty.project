@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -279,7 +280,7 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                         io += filled;
 
                         if (_parser.isIdle() && (_endp.isInputShutdown() || !_endp.isOpen()))
-                            throw new EOFException();
+                            throw new EofException();
                     }
 
                     if (io > 0)

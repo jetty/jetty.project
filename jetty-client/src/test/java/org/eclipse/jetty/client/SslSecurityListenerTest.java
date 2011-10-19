@@ -165,7 +165,7 @@ public class SslSecurityListenerTest
 
         connector.setPort(0);
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystore);
+        cf.setKeyStorePath(keystore);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
 

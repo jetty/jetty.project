@@ -84,7 +84,7 @@ public class SslTruncationAttackTest
 
         String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
         SslContextFactory sslContextFactory = connector.getSslContextFactory();
-        sslContextFactory.setKeyStore(keystorePath);
+        sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
         sslContextFactory.setTrustStore(keystorePath);
