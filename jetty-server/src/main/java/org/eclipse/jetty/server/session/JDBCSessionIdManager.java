@@ -199,6 +199,16 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     }
     
     
+    public void setDatasource (DataSource ds)
+    {
+        _datasource = ds;
+    }
+    
+    public DataSource getDataSource ()
+    {
+        return _datasource;
+    }
+    
     public String getDriverClassName()
     {
         return _driverClassName;
@@ -471,6 +481,9 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     private void initializeDatabase ()
     throws Exception
     {
+        if (_datasource != null)
+            return; //already set up
+        
         if (_jndiName!=null)
         {
             InitialContext ic = new InitialContext();
