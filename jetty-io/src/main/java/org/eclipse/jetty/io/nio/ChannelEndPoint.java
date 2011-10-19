@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.nio;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.GatheringByteChannel;
@@ -136,11 +137,18 @@ public class ChannelEndPoint implements EndPoint
         {
             if (_channel instanceof SocketChannel)
             {
-                Socket socket= ((SocketChannel)_channel).socket();
-                if (!socket.isOutputShutdown())
-                    socket.shutdownOutput();
-                if (socket.isInputShutdown())
-                    close();
+                try
+                {
+                    Socket socket= ((SocketChannel)_channel).socket();
+                    if (!socket.isOutputShutdown())
+                        socket.shutdownOutput();
+                    if (socket.isInputShutdown())
+                        close();
+                }
+                catch(SocketException e)
+                {
+                    LOG.ignore(e);
+                }
             }
             else
                 close();
