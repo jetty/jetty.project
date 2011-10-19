@@ -80,12 +80,11 @@ public class Log
                 __log.debug("Logging to {} via {}", __log, log_class.getName());
             }
         }
-        catch(NoClassDefFoundError e)
+        catch(Throwable e)
         {
-            initStandardLogging(e);
-        }
-        catch(Exception e)
-        {
+            if (e instanceof ThreadDeath)
+                throw (ThreadDeath)e;
+            
             initStandardLogging(e);
         }
 
