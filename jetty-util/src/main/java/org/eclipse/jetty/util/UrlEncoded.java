@@ -322,6 +322,7 @@ public class UrlEncoded extends MultiMap
                 catch(NotUtf8Exception e)
                 {
                     LOG.warn(e.toString());
+                    LOG.debug(e);
                 }
             }
             
