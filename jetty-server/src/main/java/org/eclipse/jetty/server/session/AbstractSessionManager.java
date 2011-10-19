@@ -15,27 +15,19 @@ package org.eclipse.jetty.server.session;
 
 import static java.lang.Math.round;
 
-
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.ServletContext;
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.SessionTrackingMode;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.ServletRequest;
-
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -382,7 +374,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                                         sessionPath,
                                         _cookieConfig.getMaxAge(),
                                         _cookieConfig.isHttpOnly(),
-                                        _cookieConfig.isSecure());                  
+                                        requestIsSecure&&_cookieConfig.isSecure());                  
             }
             else
             {
@@ -393,7 +385,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                                         sessionPath,
                                         _cookieConfig.getMaxAge(),
                                         _cookieConfig.isHttpOnly(),
-                                        _cookieConfig.isSecure(),
+                                        requestIsSecure&&_cookieConfig.isSecure(),
                                         _sessionComment,
                                         1);    
             }
