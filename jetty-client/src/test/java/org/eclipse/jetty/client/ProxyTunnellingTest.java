@@ -48,7 +48,7 @@ public class ProxyTunnellingTest
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keyStorePath);
+        cf.setKeyStorePath(keyStorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
         startServer(connector, handler);

@@ -261,7 +261,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public void setKeystore(String keystore)
     {
-        _sslContextFactory.setKeyStore(keystore);
+        _sslContextFactory.setKeyStorePath(keystore);
     }
 
     /* ------------------------------------------------------------ */
@@ -272,7 +272,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public String getKeystore()
     {
-        return _sslContextFactory.getKeyStore();
+        return _sslContextFactory.getKeyStorePath();
     }
 
     /* ------------------------------------------------------------ */

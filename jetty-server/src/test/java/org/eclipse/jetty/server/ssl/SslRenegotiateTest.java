@@ -95,7 +95,7 @@ public class SslRenegotiateTest
             String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
             connector.setPort(0);
             SslContextFactory cf = connector.getSslContextFactory();
-            cf.setKeyStore(keystore);
+            cf.setKeyStorePath(keystore);
             cf.setKeyStorePassword("storepwd");
             cf.setKeyManagerPassword("keypwd");
             cf.setAllowRenegotiate(reneg);

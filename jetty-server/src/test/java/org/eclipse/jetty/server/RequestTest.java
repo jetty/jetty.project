@@ -92,12 +92,12 @@ public class RequestTest
                 {
                     //catch the error and check the param map is not null
                     map = request.getParameterMap();
+                    System.err.println(map);
                     assertFalse(map == null);
                     assertTrue(map.isEmpty());
                     
                     Enumeration names = request.getParameterNames();
                     assertFalse(names.hasMoreElements());
-                    
                 }
                
                 return true;
@@ -111,7 +111,32 @@ public class RequestTest
         "Content-Type: text/html;charset=utf8\n"+
         "\n";
         
-        String response = _connector.getResponses(request);
+        String responses=_connector.getResponses(request);
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
+        
+    }
+    
+    @Test
+    public void testBadUtf8ParamExtraction() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                String value=request.getParameter("param");
+                return value.startsWith("aaa") && value.endsWith("bb");
+            }
+        };
+        
+        //Send a request with query string with illegal hex code to cause
+        //an exception parsing the params
+        String request="GET /?param=aaa%E7bbb HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: text/html;charset=utf8\n"+
+        "\n";
+        
+        String responses=_connector.getResponses(request);
+        assertTrue(responses.startsWith("HTTP/1.1 200"));        
     }
 
     

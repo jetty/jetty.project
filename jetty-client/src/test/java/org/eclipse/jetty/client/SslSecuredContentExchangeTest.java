@@ -63,7 +63,7 @@ extends ContentExchangeTest
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystore.getAbsolutePath());
+        cf.setKeyStorePath(keystore.getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
         server.addConnector(connector);
