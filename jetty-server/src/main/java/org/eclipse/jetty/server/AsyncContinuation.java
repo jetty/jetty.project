@@ -69,7 +69,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     
 
     /* ------------------------------------------------------------ */
-    protected HttpConnection _connection;
+    protected AbstractHttpConnection _connection;
     private List<ContinuationListener> _continuationListeners;
 
     /* ------------------------------------------------------------ */
@@ -90,7 +90,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
-    protected void setConnection(final HttpConnection connection)
+    protected void setConnection(final AbstractHttpConnection connection)
     {
         synchronized(this)
         {

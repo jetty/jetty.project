@@ -116,7 +116,7 @@ public class LocalConnector extends AbstractConnector
                 };
 
                 endPoint.setGrowOutput(true);
-                HttpConnection connection = new BlockingHttpConnection(LocalConnector.this, endPoint, getServer());
+                AbstractHttpConnection connection = new BlockingHttpConnection(LocalConnector.this, endPoint, getServer());
                 endPoint.setConnection(connection);
                 connectionOpened(connection);
 

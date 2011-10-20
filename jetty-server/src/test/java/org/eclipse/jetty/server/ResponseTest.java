@@ -80,7 +80,7 @@ public class ResponseTest
     @Test
     public void testContentType() throws Exception
     {
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = connection.getResponse();
 
         assertEquals(null,response.getContentType());
@@ -134,7 +134,7 @@ public class ResponseTest
     public void testLocale() throws Exception
     {
 
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Request request = connection.getRequest();
         Response response = connection.getResponse();
         ContextHandler context = new ContextHandler();
@@ -158,7 +158,7 @@ public class ResponseTest
     @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
 
         Request request = connection.getRequest();
         Response response = connection.getResponse();
@@ -332,7 +332,7 @@ public class ResponseTest
     public void testEncodeRedirect()
         throws Exception
     {
-        HttpConnection connection=new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection=new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = new Response(connection);
         Request request = connection.getRequest();
         request.setServerName("myhost");
@@ -397,7 +397,7 @@ public class ResponseTest
         for (int i=1;i<tests.length;i++)
         {
             ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
-            HttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
+            AbstractHttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
             Response response = new Response(connection);
             Request request = connection.getRequest();
             request.setServerName("myhost");
@@ -491,9 +491,9 @@ public class ResponseTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         endPoint.setOut(new ByteArrayBuffer(1024));
         endPoint.setGrowOutput(true);
-        HttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
+        AbstractHttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
         connection.getGenerator().reset();
-        HttpConnection.setCurrentConnection(connection);
+        AbstractHttpConnection.setCurrentConnection(connection);
         Response response = connection.getResponse();
         connection.getRequest().setRequestURI("/test");
         return response;
@@ -593,7 +593,7 @@ public class ResponseTest
         }
     }
     
-    static class TestHttpConnection extends HttpConnection
+    static class TestHttpConnection extends AbstractHttpConnection
     {
         
         public TestHttpConnection(Connector connector, EndPoint endpoint, Server server)

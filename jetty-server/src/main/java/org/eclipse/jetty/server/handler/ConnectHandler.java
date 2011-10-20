@@ -26,7 +26,7 @@ import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.HostMap;
@@ -232,7 +232,7 @@ public class ConnectHandler extends HandlerWrapper
         // 1. when this unread data is written and the server replies before the clientToProxy
         // connection is installed (it is only installed after returning from this method)
         // 2. when the client sends data before this unread data has been written.
-        HttpConnection httpConnection = HttpConnection.getCurrentConnection();
+        AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentConnection();
         Buffer headerBuffer = ((HttpParser)httpConnection.getParser()).getHeaderBuffer();
         Buffer bodyBuffer = ((HttpParser)httpConnection.getParser()).getBodyBuffer();
         int length = headerBuffer == null ? 0 : headerBuffer.length();
@@ -272,7 +272,7 @@ public class ConnectHandler extends HandlerWrapper
 
     private ClientToProxyConnection prepareConnections(ConcurrentMap<String, Object> context, SocketChannel channel, Buffer buffer)
     {
-        HttpConnection httpConnection = HttpConnection.getCurrentConnection();
+        AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentConnection();
         ProxyToServerConnection proxyToServer = newProxyToServerConnection(context, buffer);
         ClientToProxyConnection clientToProxy = newClientToProxyConnection(context, channel, httpConnection.getEndPoint(), httpConnection.getTimeStamp());
         clientToProxy.setConnection(proxyToServer);

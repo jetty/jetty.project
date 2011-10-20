@@ -168,14 +168,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 return;
             }
 
-            // Otherwise if we are still dispatched
-            if (!isReadyForDispatch())
-            {
-                // we are not interested in further selecting
-                _key.interestOps(0);
-                return;
-            }
-
             // Remove writeable op
             if ((_key.readyOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE && (_key.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE)
             {
@@ -337,16 +329,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isReadyForDispatch()
-    {
-        synchronized (this)
-        {
-            // Ready if not dispatched and not suspended
-            return !(_dispatched || getConnection().isSuspended());
-        }
-    }
-
-    /* ------------------------------------------------------------ */
     /*
      * Allows thread to block waiting for further events.
      */
@@ -467,9 +449,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         {
             if (getChannel().isOpen())
             {
+                boolean read_interest = _readBlocked || (!_dispatched && !_connection.isSuspended());
+                boolean write_interest= _writeBlocked || (!_dispatched && !_writable);
                 _interestOps =
-                    ((!_socket.isInputShutdown() && (!_dispatched || _readBlocked))  ? SelectionKey.OP_READ  : 0)
-                |   ((!_socket.isOutputShutdown()&& (!_writable   || _writeBlocked)) ? SelectionKey.OP_WRITE : 0);
+                    ((!_socket.isInputShutdown() && read_interest ) ? SelectionKey.OP_READ  : 0)
+                |   ((!_socket.isOutputShutdown()&& write_interest) ? SelectionKey.OP_WRITE : 0);
                 try
                 {
                     current_ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
@@ -488,6 +472,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             _selectSet.wakeup();
         }
     }
+    
 
     /* ------------------------------------------------------------ */
     /**

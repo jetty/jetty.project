@@ -27,7 +27,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
@@ -351,7 +351,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             return true;
         }
-        HttpConnection connection = HttpConnection.getCurrentConnection();
+        AbstractHttpConnection connection = AbstractHttpConnection.getCurrentConnection();
         Connector connector = connection.getConnector();
 
         if (dataConstraint == UserDataConstraint.Integral)

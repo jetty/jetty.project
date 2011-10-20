@@ -96,7 +96,7 @@ import org.eclipse.jetty.util.log.Logger;
  * against the servlet URL patterns and {@link Request#setServletPath(String)} called as a result.</li>
  * </ul>
  * 
- * A request instance is created for each {@link HttpConnection} accepted by the server 
+ * A request instance is created for each {@link AbstractHttpConnection} accepted by the server 
  * and recycled for each HTTP request received via that connection. An effort is made
  * to avoid reparsing headers and cookies that are likely to be the same for 
  * requests from the same connection.
@@ -116,7 +116,7 @@ public class Request implements HttpServletRequest
         if (request instanceof Request)
             return (Request) request;
 
-        return HttpConnection.getCurrentConnection().getRequest();
+        return AbstractHttpConnection.getCurrentConnection().getRequest();
     }
     protected final AsyncContinuation _async = new AsyncContinuation();
     private boolean _asyncSupported=true;
@@ -124,7 +124,7 @@ public class Request implements HttpServletRequest
     private Authentication _authentication;
     private MultiMap<String> _baseParameters;
     private String _characterEncoding;
-    protected HttpConnection _connection;
+    protected AbstractHttpConnection _connection;
     private ContextHandler.Context _context;
     private boolean _newContext;
     private String _contextPath;
@@ -170,7 +170,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public Request(HttpConnection connection)
+    public Request(AbstractHttpConnection connection)
     {
         setConnection(connection);
     }
@@ -382,7 +382,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the connection.
      */
-    public HttpConnection getConnection()
+    public AbstractHttpConnection getConnection()
     {
         return _connection;
     }
@@ -1466,7 +1466,7 @@ public class Request implements HttpServletRequest
             {
                 try 
                 {
-                    ((HttpConnection.Output)getServletResponse().getOutputStream()).sendContent(value); 
+                    ((AbstractHttpConnection.Output)getServletResponse().getOutputStream()).sendContent(value); 
                 } 
                 catch (IOException e)
                 {
@@ -1483,7 +1483,7 @@ public class Request implements HttpServletRequest
                         NIOBuffer buffer = byteBuffer.isDirect()
                         ?new DirectNIOBuffer(byteBuffer,true)
                         :new IndirectNIOBuffer(byteBuffer,true);
-                        ((HttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
+                        ((AbstractHttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
                     }
                 }
                 catch (IOException e)
@@ -1579,7 +1579,7 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     //final so we can safely call this from constructor
-    protected final void setConnection(HttpConnection connection)
+    protected final void setConnection(AbstractHttpConnection connection)
     {
         _connection=connection;
     	_async.setConnection(connection);

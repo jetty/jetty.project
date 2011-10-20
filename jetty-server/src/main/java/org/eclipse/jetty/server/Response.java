@@ -65,7 +65,7 @@ public class Response implements HttpServletResponse
      */
     public final static String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
-    private final HttpConnection _connection;
+    private final AbstractHttpConnection _connection;
     private int _status=SC_OK;
     private String _reason;
     private Locale _locale;
@@ -81,7 +81,7 @@ public class Response implements HttpServletResponse
     /**
      *
      */
-    public Response(HttpConnection connection)
+    public Response(AbstractHttpConnection connection)
     {
         _connection=connection;
     }

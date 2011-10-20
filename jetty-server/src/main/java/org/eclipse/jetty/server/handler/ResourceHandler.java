@@ -30,7 +30,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -432,10 +432,10 @@ public class ResourceHandler extends AbstractHandler
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
 
         // See if a short direct method can be used?
-        if (out instanceof HttpConnection.Output)
+        if (out instanceof AbstractHttpConnection.Output)
         {
             // TODO file mapped buffers
-            ((HttpConnection.Output)out).sendContent(resource.getInputStream());
+            ((AbstractHttpConnection.Output)out).sendContent(resource.getInputStream());
         }
         else
         {

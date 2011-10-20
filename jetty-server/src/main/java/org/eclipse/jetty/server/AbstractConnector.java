@@ -1039,7 +1039,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
     {
-        _requestStats.set((oldConnection instanceof HttpConnection)?((HttpConnection)oldConnection).getRequests():0);
+        _requestStats.set((oldConnection instanceof AbstractHttpConnection)?((AbstractHttpConnection)oldConnection).getRequests():0);
     }
 
     /* ------------------------------------------------------------ */
@@ -1051,7 +1051,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
             return;
 
         long duration = System.currentTimeMillis() - connection.getTimeStamp();
-        int requests = (connection instanceof HttpConnection)?((HttpConnection)connection).getRequests():0;
+        int requests = (connection instanceof AbstractHttpConnection)?((AbstractHttpConnection)connection).getRequests():0;
         _requestStats.set(requests);
         _connectionStats.decrement();
         _connectionDurationStats.set(duration);

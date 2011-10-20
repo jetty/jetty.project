@@ -35,7 +35,7 @@ import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.MultiMap;
@@ -259,7 +259,7 @@ public class FormAuthenticator extends LoginAuthenticator
                                 // so restore method and parameters
 
                                 session.removeAttribute(__J_POST);                        
-                                Request base_request = (req instanceof Request)?(Request)req:HttpConnection.getCurrentConnection().getRequest();
+                                Request base_request = (req instanceof Request)?(Request)req:AbstractHttpConnection.getCurrentConnection().getRequest();
                                 base_request.setMethod(HttpMethods.POST);
                                 base_request.setParameters(j_post);
                             }
@@ -289,7 +289,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     
                     if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(req.getContentType()) && HttpMethods.POST.equals(request.getMethod()))
                     {
-                        Request base_request = (req instanceof Request)?(Request)req:HttpConnection.getCurrentConnection().getRequest();
+                        Request base_request = (req instanceof Request)?(Request)req:AbstractHttpConnection.getCurrentConnection().getRequest();
                         base_request.extractParameters();                        
                         session.setAttribute(__J_POST, new MultiMap<String>(base_request.getParameters()));
                     }

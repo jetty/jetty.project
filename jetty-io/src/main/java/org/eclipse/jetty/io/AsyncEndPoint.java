@@ -22,12 +22,6 @@ public interface AsyncEndPoint extends EndPoint
      */
     public void asyncDispatch();
     
-    /**
-     * @return true if this endpoint can accept a dispatch. False if the 
-     * endpoint cannot accept a dispatched (eg is suspended or already dispatched)
-     */
-    public boolean isReadyForDispatch();
-    
     /* ------------------------------------------------------------ */
     /** Schedule a write dispatch.
      * Set the endpoint to not be writable and schedule a dispatch when

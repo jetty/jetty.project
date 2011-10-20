@@ -58,13 +58,14 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
 
                 if (exchange == null)
                 {
-                    long filled = _parser.fill();
+                    // TODO long filled = _parser.fill();
+                    long filled = -1;
                     if (filled < 0)
                         close();
                     else
                     {
                         // Hopefully just space?
-                        _parser.skipCRLF();
+                        // TODO _parser.skipCRLF();
                         if (_parser.isMoreInBuffer())
                         {
                             LOG.warn("Unexpected data received but no request sent");

@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -394,7 +395,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                     String exch= exchange.toString();
                     String reason = _endp.isOpen()?(_endp.isInputShutdown()?"half closed: ":"local close: "):"closed: ";
                     exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                    exchange.getEventListener().onException(new EOFException(reason+exch));
+                    exchange.getEventListener().onException(new EofException(reason+exch));
             }
         }
 

@@ -11,7 +11,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class BlockingHttpConnection extends HttpConnection
+public class BlockingHttpConnection extends AbstractHttpConnection
 {
     private static final Logger LOG = Log.getLogger(BlockingHttpConnection.class);
 

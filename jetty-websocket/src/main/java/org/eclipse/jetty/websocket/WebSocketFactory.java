@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -194,7 +194,7 @@ public class WebSocketFactory
         int draft = request.getIntHeader("Sec-WebSocket-Version");
         if (draft < 0)
             draft = request.getIntHeader("Sec-WebSocket-Draft");
-        HttpConnection http = HttpConnection.getCurrentConnection();
+        AbstractHttpConnection http = AbstractHttpConnection.getCurrentConnection();
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
 
         List<String> extensions_requested = new ArrayList<String>();

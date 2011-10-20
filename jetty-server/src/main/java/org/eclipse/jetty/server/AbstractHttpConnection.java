@@ -88,12 +88,12 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </p>
  *
  */
-public abstract class HttpConnection  extends AbstractConnection
+public abstract class AbstractHttpConnection  extends AbstractConnection
 {
-    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+    private static final Logger LOG = Log.getLogger(AbstractHttpConnection.class);
 
     private static final int UNKNOWN = -2;
-    private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
+    private static final ThreadLocal<AbstractHttpConnection> __currentConnection = new ThreadLocal<AbstractHttpConnection>();
 
     private int _requests;
 
@@ -127,13 +127,13 @@ public abstract class HttpConnection  extends AbstractConnection
     private boolean  _delayedHandling=false;
 
     /* ------------------------------------------------------------ */
-    public static HttpConnection getCurrentConnection()
+    public static AbstractHttpConnection getCurrentConnection()
     {
         return __currentConnection.get();
     }
 
     /* ------------------------------------------------------------ */
-    protected static void setCurrentConnection(HttpConnection connection)
+    protected static void setCurrentConnection(AbstractHttpConnection connection)
     {
         __currentConnection.set(connection);
     }
@@ -142,7 +142,7 @@ public abstract class HttpConnection  extends AbstractConnection
     /** Constructor
      *
      */
-    public HttpConnection(Connector connector, EndPoint endpoint, Server server)
+    public AbstractHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(endpoint);
         _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
@@ -159,7 +159,7 @@ public abstract class HttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
+    protected AbstractHttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
         super(endpoint);
@@ -326,7 +326,7 @@ public abstract class HttpConnection  extends AbstractConnection
         }
 
         if (_in == null)
-            _in = new HttpInput(HttpConnection.this);
+            _in = new HttpInput(AbstractHttpConnection.this);
         return _in;
     }
 
@@ -841,6 +841,12 @@ public abstract class HttpConnection  extends AbstractConnection
                         _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
                         _generator.setPersistent(true);
                     }
+                    else if (HttpMethods.CONNECT.equals(_request.getMethod()))
+                    {
+                        _generator.setPersistent(true);
+                        _parser.setPersistent(true);
+                    }
+                    
                     if (_server.getSendDateHeader())
                         _generator.setDate(_request.getTimeStampBuffer());
                     break;
@@ -943,7 +949,7 @@ public abstract class HttpConnection  extends AbstractConnection
     {
         Output()
         {
-            super(HttpConnection.this);
+            super(AbstractHttpConnection.this);
         }
 
         /* ------------------------------------------------------------ */
@@ -1113,7 +1119,7 @@ public abstract class HttpConnection  extends AbstractConnection
     {
         OutputWriter()
         {
-            super(HttpConnection.this._out);
+            super(AbstractHttpConnection.this._out);
         }
     }
 

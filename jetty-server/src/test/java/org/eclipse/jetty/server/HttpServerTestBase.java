@@ -931,7 +931,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
             OutputStream os=client.getOutputStream();
             InputStream is=client.getInputStream();
 
@@ -959,7 +959,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(false);
             
             if (!client.isClosed())
                 client.close();

@@ -39,7 +39,7 @@ import org.junit.Test;
 /**
  * @version $Revision: 889 $ $Date: 2009-09-14 14:52:16 +1000 (Mon, 14 Sep 2009) $
  */
-public class AsyncUploadTest
+public class AsyncRequestReadTest
 {
     private static Server server;
     private static Connector connector;
@@ -71,7 +71,6 @@ public class AsyncUploadTest
         byte[] content = new byte[16*4096];
         Arrays.fill(content, (byte)120);
 
-        long start = System.nanoTime();
         OutputStream out = socket.getOutputStream();
         out.write("POST / HTTP/1.1\r\n".getBytes());
         out.write("Host: localhost\r\n".getBytes());
@@ -93,7 +92,6 @@ public class AsyncUploadTest
         String response = IO.toString(in);
         assertTrue(response.indexOf("200 OK")>0);
 
-        long end = System.nanoTime();
         assertEquals(content.length, total);
     }
 
@@ -112,7 +110,6 @@ public class AsyncUploadTest
                 {
                     try
                     {
-                        Thread.sleep(100);
                         InputStream in = request.getInputStream();
                         byte[] b = new byte[4*4096];
                         int read;

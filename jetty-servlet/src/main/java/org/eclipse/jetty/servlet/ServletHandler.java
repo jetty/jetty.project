@@ -46,7 +46,7 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.DispatcherType;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
@@ -1328,7 +1328,7 @@ public class ServletHandler extends ScopedHandler
                     filter.doFilter(request, response, _next);
                 else
                 {
-                    final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+                    final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
                     final boolean suspendable=baseRequest.isAsyncSupported();
                     if (suspendable)
                     {
@@ -1353,7 +1353,7 @@ public class ServletHandler extends ScopedHandler
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("call servlet " + _servletHolder);
-                final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+                final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
                 _servletHolder.handle(baseRequest,request, response);
             }
             else // Not found
