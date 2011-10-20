@@ -24,7 +24,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
@@ -32,8 +31,7 @@ public class EchoHandler extends AbstractHandler
 {
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Request base_request = (request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
-        base_request.setHandled(true);
+        baseRequest.setHandled(true);
 
         if (request.getContentType() != null)
             response.setContentType(request.getContentType());

@@ -17,7 +17,6 @@ import com.sun.net.httpserver.Authenticator.Result;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpPrincipal;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 
@@ -80,8 +79,7 @@ public class HttpSpiContextHandler extends ContextHandler
         }
         finally
         {
-            Request base_request = (req instanceof Request) ? (Request)req:HttpConnection.getCurrentConnection().getRequest();
-            base_request.setHandled(true);
+            baseRequest.setHandled(true);
         }
         
     }
