@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.util.thread;
@@ -28,9 +28,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
-/** 
+/**
  * Jetty ThreadPool using java 5 ThreadPoolExecutor
- * This class wraps a {@link ExecutorService} as a {@link ThreadPool} and 
+ * This class wraps a {@link ExecutorService} as a {@link ThreadPool} and
  * {@link LifeCycle} interfaces so that it may be used by the Jetty <code>org.eclipse.jetty.server.Server</code>
  */
 public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool, LifeCycle
@@ -41,67 +41,83 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
     /* ------------------------------------------------------------ */
     public ExecutorThreadPool(ExecutorService executor)
     {
-        _executor=executor;
+        _executor = executor;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** constructor.
+    /**
      * Wraps an {@link ThreadPoolExecutor}.
-     * Core size is 32, max pool size is 256, pool thread timeout after 60 seconds and
+     * Max pool size is 256, pool thread timeout after 60 seconds and
      * an unbounded {@link LinkedBlockingQueue} is used for the job queue;
      */
     public ExecutorThreadPool()
     {
-        this(new ThreadPoolExecutor(32,256,60,TimeUnit.SECONDS,new LinkedBlockingQueue<Runnable>()));
+        // Using an unbounded queue makes the maxThreads parameter useless
+        // Refer to ThreadPoolExecutor javadocs for details
+        this(new ThreadPoolExecutor(256, 256, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>()));
     }
-    
+
     /* ------------------------------------------------------------ */
-    /** constructor.
+    /**
      * Wraps an {@link ThreadPoolExecutor}.
-     * Core size is 32, max pool size is 256, pool thread timeout after 60 seconds
-     * @param queueSize if -1, an unbounded {@link LinkedBlockingQueue} is used, if 0 then a
-     * {@link SynchronousQueue} is used, other a {@link ArrayBlockingQueue} of the given size is used.
+     * Max pool size is 256, pool thread timeout after 60 seconds, and core pool size is 32 when queueSize >= 0.
+     * @param queueSize can be -1 for using an unbounded {@link LinkedBlockingQueue}, 0 for using a
+     * {@link SynchronousQueue}, greater than 0 for using a {@link ArrayBlockingQueue} of the given size.
      */
     public ExecutorThreadPool(int queueSize)
     {
-        this(new ThreadPoolExecutor(32,256,60,TimeUnit.SECONDS,
-                queueSize<0?new LinkedBlockingQueue<Runnable>()
-                        : (queueSize==0?new SynchronousQueue<Runnable>()
-                                :new ArrayBlockingQueue<Runnable>(queueSize))));
+        this(queueSize < 0 ? new ThreadPoolExecutor(256, 256, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>()) :
+                queueSize == 0 ? new ThreadPoolExecutor(32, 256, 60, TimeUnit.SECONDS, new SynchronousQueue<Runnable>()) :
+                        new ThreadPoolExecutor(32, 256, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(queueSize)));
     }
 
     /* ------------------------------------------------------------ */
-    /** constructor.
+    /**
      * Wraps an {@link ThreadPoolExecutor} using
      * an unbounded {@link LinkedBlockingQueue} is used for the jobs queue;
+     * @param corePoolSize must be equal to maximumPoolSize
+     * @param maximumPoolSize the maximum number of threads to allow in the pool
+     * @param keepAliveTime the max time a thread can remain idle, in milliseconds
      */
     public ExecutorThreadPool(int corePoolSize, int maximumPoolSize, long keepAliveTime)
     {
-        this(new ThreadPoolExecutor(corePoolSize,maximumPoolSize,keepAliveTime,TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>()));
+        this(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.MILLISECONDS);
     }
 
     /* ------------------------------------------------------------ */
-    /** constructor.
+    /**
      * Wraps an {@link ThreadPoolExecutor} using
-     * an unbounded {@link LinkedBlockingQueue} is used for the jobs queue;
+     * an unbounded {@link LinkedBlockingQueue} is used for the jobs queue.
+     * @param corePoolSize must be equal to maximumPoolSize
+     * @param maximumPoolSize the maximum number of threads to allow in the pool
+     * @param keepAliveTime the max time a thread can remain idle
+     * @param unit the unit for the keepAliveTime
      */
     public ExecutorThreadPool(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit)
     {
-        this(new ThreadPoolExecutor(corePoolSize,maximumPoolSize,keepAliveTime,unit,new LinkedBlockingQueue<Runnable>()));
+        this(corePoolSize, maximumPoolSize, keepAliveTime, unit, new LinkedBlockingQueue<Runnable>());
     }
 
     /* ------------------------------------------------------------ */
+
+    /**
+     * Wraps an {@link ThreadPoolExecutor}
+     * @param corePoolSize the number of threads to keep in the pool, even if they are idle
+     * @param maximumPoolSize the maximum number of threads to allow in the pool
+     * @param keepAliveTime the max time a thread can remain idle
+     * @param unit the unit for the keepAliveTime
+     * @param workQueue the queue to use for holding tasks before they are executed
+     */
     public ExecutorThreadPool(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue)
     {
-        this(new ThreadPoolExecutor(corePoolSize,maximumPoolSize,keepAliveTime,unit,workQueue));
+        this(new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue));
     }
-
 
     /* ------------------------------------------------------------ */
     public boolean dispatch(Runnable job)
     {
         try
-        {       
+        {
             _executor.execute(job);
             return true;
         }
@@ -118,7 +134,7 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         if (_executor instanceof ThreadPoolExecutor)
         {
             final ThreadPoolExecutor tpe = (ThreadPoolExecutor)_executor;
-            return tpe.getPoolSize() -tpe.getActiveCount();
+            return tpe.getPoolSize() - tpe.getActiveCount();
         }
         return -1;
     }
@@ -139,8 +155,9 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
     {
         if (_executor instanceof ThreadPoolExecutor)
         {
-            final ThreadPoolExecutor tpe = (ThreadPoolExecutor)_executor;            
-            return tpe.getTaskCount()>=(tpe.getMaximumPoolSize());
+            final ThreadPoolExecutor tpe = (ThreadPoolExecutor)_executor;
+            int idleThreads = tpe.getPoolSize() - tpe.getActiveCount();
+            return tpe.getPoolSize() == tpe.getMaximumPoolSize() && tpe.getQueue().size() >= idleThreads;
         }
         return false;
     }
@@ -148,14 +165,7 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
     /* ------------------------------------------------------------ */
     public void join() throws InterruptedException
     {
-        _executor.awaitTermination(Long.MAX_VALUE,TimeUnit.MILLISECONDS);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
+        _executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
     }
 
     /* ------------------------------------------------------------ */
@@ -165,5 +175,4 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         super.doStop();
         _executor.shutdownNow();
     }
-
 }
