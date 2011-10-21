@@ -159,6 +159,7 @@ public abstract class Utf8Appendable
             }
             else if (_state == UTF8_REJECT)
             {
+                _codep=0;
                 _state = UTF8_ACCEPT;
                 _appendable.append(REPLACEMENT);
                 throw new NotUtf8Exception();

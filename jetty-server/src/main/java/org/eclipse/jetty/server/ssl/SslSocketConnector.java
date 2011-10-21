@@ -176,7 +176,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Deprecated
     public String getKeystore()
     {
-        return _sslContextFactory.getKeyStore();
+        return _sslContextFactory.getKeyStorePath();
     }
 
     /* ------------------------------------------------------------ */
@@ -427,7 +427,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Deprecated
     public void setKeystore(String keystore)
     {
-        _sslContextFactory.setKeyStore(keystore);
+        _sslContextFactory.setKeyStorePath(keystore);
     }
 
     /* ------------------------------------------------------------ */
