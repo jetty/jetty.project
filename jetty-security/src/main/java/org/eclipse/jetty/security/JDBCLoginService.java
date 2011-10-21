@@ -137,7 +137,7 @@ public class JDBCLoginService extends MappedLoginService
             || _password == null
             || _cacheTime < 0)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("UserRealm " + getName() + " has not been properly configured");
+            LOG.warn("UserRealm " + getName() + " has not been properly configured");
         }
         _cacheTime *= 1000;
         _lastHashPurge = 0;

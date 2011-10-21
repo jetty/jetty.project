@@ -963,7 +963,8 @@ public abstract class HttpConnection  extends AbstractConnection
         @Override
         public void startResponse(Buffer version, int status, Buffer reason)
         {
-            LOG.debug("Bad request!: "+version+" "+status+" "+reason);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Bad request!: "+version+" "+status+" "+reason);
         }
     }
 

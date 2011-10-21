@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 @SuppressWarnings("deprecation")
 public abstract class AbstractSessionManager extends AbstractLifeCycle implements SessionManager
 {
-    final static Logger __log = SessionHandler.__log;
+    final static Logger __log = SessionHandler.LOG;
     
     /* ------------------------------------------------------------ */
     public final static int __distantFuture=60*60*24*7*52*20;

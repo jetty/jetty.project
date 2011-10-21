@@ -56,28 +56,28 @@ public class Log
         });
     }
 
-    private static Logger __log;
+    private static Logger LOG;
     private static boolean __initialized;
 
     public static boolean initialized()
     {
-        if (__log != null)
+        if (LOG != null)
             return true;
 
         synchronized (Log.class)
         {
             if (__initialized)
-                return __log != null;
+                return LOG != null;
             __initialized = true;
         }
 
         try
         {
             Class<?> log_class = Loader.loadClass(Log.class, __logClass);
-            if (__log == null || !__log.getClass().equals(log_class))
+            if (LOG == null || !LOG.getClass().equals(log_class))
             {
-                __log = (Logger)log_class.newInstance();
-                __log.debug("Logging to {} via {}", __log, log_class.getName());
+                LOG = (Logger)log_class.newInstance();
+                LOG.debug("Logging to {} via {}", LOG, log_class.getName());
             }
         }
         catch(Throwable e)
@@ -88,7 +88,7 @@ public class Log
             initStandardLogging(e);
         }
 
-        return __log != null;
+        return LOG != null;
     }
 
     private static void initStandardLogging(Throwable e)
@@ -96,17 +96,17 @@ public class Log
         Class<?> log_class;
         if(e != null && __ignored)
             e.printStackTrace();
-        if (__log == null)
+        if (LOG == null)
         {
             log_class = StdErrLog.class;
-            __log = new StdErrLog();
-            __log.debug("Logging to {} via {}", __log, log_class.getName());
+            LOG = new StdErrLog();
+            LOG.debug("Logging to {} via {}", LOG, log_class.getName());
         }
     }
 
     public static void setLog(Logger log)
     {
-        Log.__log = log;
+        Log.LOG = log;
     }
 
     /**
@@ -116,7 +116,7 @@ public class Log
     public static Logger getLog()
     {
         initialized();
-        return __log;
+        return LOG;
     }
     
     /**
@@ -125,7 +125,7 @@ public class Log
      */
     public static Logger getRootLogger() {
         initialized();
-        return __log;
+        return LOG;
     }
 
     static boolean isIgnored()
@@ -179,7 +179,7 @@ public class Log
     {
         if (!isDebugEnabled())
             return;
-        __log.debug(EXCEPTION, th);
+        LOG.debug(EXCEPTION, th);
     }
 
     /**
@@ -190,7 +190,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.debug(msg);
+        LOG.debug(msg);
     }
 
     /**
@@ -201,7 +201,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.debug(msg, arg);
+        LOG.debug(msg, arg);
     }
 
     /**
@@ -212,7 +212,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.debug(msg, arg0, arg1);
+        LOG.debug(msg, arg0, arg1);
     }
 
     /**
@@ -228,7 +228,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.ignore(thrown);
+        LOG.ignore(thrown);
     }
 
     /**
@@ -239,7 +239,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.info(msg);
+        LOG.info(msg);
     }
 
     /**
@@ -250,7 +250,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.info(msg, arg);
+        LOG.info(msg, arg);
     }
 
     /**
@@ -261,7 +261,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.info(msg, arg0, arg1);
+        LOG.info(msg, arg0, arg1);
     }
 
     /**
@@ -272,7 +272,7 @@ public class Log
     {
         if (!initialized())
             return false;
-        return __log.isDebugEnabled();
+        return LOG.isDebugEnabled();
     }
 
     /**
@@ -283,7 +283,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(msg);
+        LOG.warn(msg);
     }
 
     /**
@@ -294,7 +294,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(msg, arg);
+        LOG.warn(msg, arg);
     }
 
     /**
@@ -305,7 +305,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(msg, arg0, arg1);
+        LOG.warn(msg, arg0, arg1);
     }
 
     /**
@@ -316,7 +316,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(msg, th);
+        LOG.warn(msg, th);
     }
 
     /**
@@ -327,7 +327,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(EXCEPTION, th);
+        LOG.warn(EXCEPTION, th);
     }
     
     /**
@@ -352,6 +352,6 @@ public class Log
         if (!initialized())
             return null;
 
-        return name == null ? __log : __log.getLogger(name);
+        return name == null ? LOG : LOG.getLogger(name);
     }
 }

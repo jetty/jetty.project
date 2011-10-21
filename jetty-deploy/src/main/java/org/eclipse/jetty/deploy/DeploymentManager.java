@@ -481,7 +481,7 @@ public class DeploymentManager extends AggregateLifeCycle
                 while (it.hasNext())
                 {
                     Node node = it.next();
-                    LOG.debug("Executing Node: " + node);
+                    LOG.debug("Executing Node {}",node);
                     _lifecycle.runBindings(node,appentry.app,this);
                     appentry.setLifeCycleNode(node);
                 }

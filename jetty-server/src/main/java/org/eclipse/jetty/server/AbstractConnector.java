@@ -634,7 +634,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     public void setForwarded(boolean check)
     {
         if (check)
-            LOG.debug(this + " is forwarded");
+            LOG.debug("{} is forwarded",this);
         _forwarded = check;
     }
 
@@ -1001,7 +1001,8 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         if (on && _statsStartedAt.get() != -1)
             return;
 
-        LOG.debug("Statistics on = " + on + " for " + this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Statistics on = " + on + " for " + this);
 
         statsReset();
         _statsStartedAt.set(on?System.currentTimeMillis():-1);

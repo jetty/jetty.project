@@ -280,7 +280,7 @@ public class ProxyRule extends PatternRule
 
         if (debug != 0)
         {
-            _log.debug(debug + " " + request.getMethod() + " " + url + " " + request.getProtocol());
+            _log.debug("{} {} {} {}", debug ,request.getMethod(), url, request.getProtocol());
         }
         
         boolean hasContent = createHeaders(request,debug,exchange);
@@ -393,7 +393,7 @@ public class ProxyRule extends PatternRule
                 if (val != null)
                 {
                     if (debug != 0)
-                        _log.debug(debug + " " + hdr + ": " + val);
+                        _log.debug("{} {} {}",debug,hdr,val);
 
                     exchange.setRequestHeader(hdr,val);
                 }
