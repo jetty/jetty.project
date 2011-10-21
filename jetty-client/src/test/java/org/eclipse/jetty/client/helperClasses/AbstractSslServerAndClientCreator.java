@@ -42,7 +42,7 @@ public abstract class AbstractSslServerAndClientCreator implements ServerAndClie
 
         connector.setPort(0);
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystore);
+        cf.setKeyStorePath(keystore);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
         connector.setAllowRenegotiate(true);

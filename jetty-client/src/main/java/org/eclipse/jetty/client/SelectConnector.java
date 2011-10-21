@@ -228,6 +228,10 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
         @Override
         protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
         {
+            Timeout.Task connectTimeout = _connectingChannels.remove(channel);
+            if (connectTimeout != null)
+                connectTimeout.cancel();
+            
             if (attachment instanceof HttpDestination)
                 ((HttpDestination)attachment).onConnectionFailed(ex);
             else

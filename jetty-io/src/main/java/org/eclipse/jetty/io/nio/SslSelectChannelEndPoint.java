@@ -561,7 +561,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         catch(SSLException e)
         {
-            LOG.warn(getRemoteAddr() + ":" + getRemotePort() + " ",e);
+            LOG.debug(getRemoteAddr() + ":" + getRemotePort() + " ",e);
             super.close();
             throw e;
         }

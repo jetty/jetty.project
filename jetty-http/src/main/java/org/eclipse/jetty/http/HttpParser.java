@@ -306,7 +306,7 @@ public class HttpParser implements Parser
                     throw ex;
 
                 if (!isComplete() && !isIdle())
-                    throw new EOFException();
+                    throw new EofException();
 
                 return -1;
             }
