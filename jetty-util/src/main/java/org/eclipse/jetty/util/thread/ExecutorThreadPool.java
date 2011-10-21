@@ -156,8 +156,9 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
         if (_executor instanceof ThreadPoolExecutor)
         {
             final ThreadPoolExecutor tpe = (ThreadPoolExecutor)_executor;
-            int idleThreads = tpe.getPoolSize() - tpe.getActiveCount();
-            return tpe.getPoolSize() == tpe.getMaximumPoolSize() && tpe.getQueue().size() >= idleThreads;
+            // getActiveCount() locks the thread pool, so execute it last
+            return tpe.getPoolSize() == tpe.getMaximumPoolSize() &&
+                    tpe.getQueue().size() >= tpe.getPoolSize() - tpe.getActiveCount();
         }
         return false;
     }
