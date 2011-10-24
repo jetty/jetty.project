@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JDBCSessionIdManager extends AbstractSessionIdManager
 {    
-    final static Logger LOG = SessionHandler.__log;
+    final static Logger LOG = SessionHandler.LOG;
     
     protected final HashSet<String> _sessionIds = new HashSet<String>();
     protected Server _server;
@@ -108,7 +108,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         throws SQLException
         {
             _dbName = dbMeta.getDatabaseProductName().toLowerCase(); 
-            LOG.debug ("Using database "+_dbName);
+            LOG.debug ("Using database {}",_dbName);
             _isLower = dbMeta.storesLowerCaseIdentifiers();
             _isUpper = dbMeta.storesUpperCaseIdentifiers();
         }
@@ -255,7 +255,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         if ((System.currentTimeMillis()%2) == 0)
             _scavengeIntervalMs += tenPercent;
         
-        if (LOG.isDebugEnabled()) LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
         if (_timer!=null && (period!=old_period || _task==null))
         {
             synchronized (this)
@@ -434,7 +435,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             initializeDatabase();
             prepareTables();        
             super.doStart();
-            if (LOG.isDebugEnabled()) LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("Scavenging interval = "+getScavengeInterval()+" sec");
             _timer=new Timer("JDBCSessionScavenger", true);
             setScavengeInterval(getScavengeInterval());
         }
@@ -684,7 +686,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         List<String> expiredSessionIds = new ArrayList<String>();
         try
         {            
-            if (LOG.isDebugEnabled()) LOG.debug("Scavenge sweep started at "+System.currentTimeMillis());
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("Scavenge sweep started at "+System.currentTimeMillis());
             if (_lastScavengeTime > 0)
             {
                 connection = getConnection();
@@ -693,7 +696,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 PreparedStatement statement = connection.prepareStatement(_selectExpiredSessions);
                 long lowerBound = (_lastScavengeTime - _scavengeIntervalMs);
                 long upperBound = _lastScavengeTime;
-                if (LOG.isDebugEnabled()) LOG.debug (" Searching for sessions expired between "+lowerBound + " and "+upperBound);
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug (" Searching for sessions expired between "+lowerBound + " and "+upperBound);
                 
                 statement.setLong(1, lowerBound);
                 statement.setLong(2, upperBound);

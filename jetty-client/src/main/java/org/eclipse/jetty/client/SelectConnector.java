@@ -168,7 +168,8 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             Timeout.Task connectTimeout = _connectingChannels.remove(channel);
             if (connectTimeout != null)
                 connectTimeout.cancel();
-            LOG.debug("Channels with connection pending: {}", _connectingChannels.size());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Channels with connection pending: {}", _connectingChannels.size());
 
             // key should have destination at this point (will be replaced by endpoint after this call)
             HttpDestination dest=(HttpDestination)key.attachment();

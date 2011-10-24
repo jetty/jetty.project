@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SessionHandler extends ScopedHandler
 {
-    final static Logger __log = Log.getLogger("org.eclipse.jetty.server.session");
+    final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,SessionTrackingMode.URL);
 
@@ -181,10 +181,10 @@ public class SessionHandler extends ScopedHandler
                 }
             }
 
-            if(__log.isDebugEnabled())
+            if(LOG.isDebugEnabled())
             {
-                __log.debug("sessionManager="+_sessionManager);
-                __log.debug("session="+session);
+                LOG.debug("sessionManager="+_sessionManager);
+                LOG.debug("session="+session);
             }
 
             // start manual inline of nextScope(target,baseRequest,request,response);
@@ -271,7 +271,8 @@ public class SessionHandler extends ScopedHandler
                     {
                         requested_session_id=cookies[i].getValue();
                         requested_session_id_from_cookie = true;
-                        if(__log.isDebugEnabled())__log.debug("Got Session ID "+requested_session_id+" from cookie");
+                        if(LOG.isDebugEnabled())
+                            LOG.debug("Got Session ID {} from cookie",requested_session_id);
                         
                         session=sessionManager.getHttpSession(requested_session_id);
                         if (session!=null && sessionManager.isValid(session))
@@ -304,8 +305,8 @@ public class SessionHandler extends ScopedHandler
                     requested_session_id = uri.substring(s,i);
                     requested_session_id_from_cookie = false;
                     session=sessionManager.getHttpSession(requested_session_id);
-                    if(__log.isDebugEnabled())
-                        __log.debug("Got Session ID "+requested_session_id+" from URL"); 
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("Got Session ID {} from URL",requested_session_id);
                 }
             }
         }

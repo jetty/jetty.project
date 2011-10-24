@@ -377,7 +377,8 @@ public class JDBCSessionManager extends AbstractSessionManager
         @Override
         protected void timeout() throws IllegalStateException
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Timing out session id="+getClusterId());
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("Timing out session id="+getClusterId());
             super.timeout();
         }
     }
@@ -790,7 +791,8 @@ public class JDBCSessionManager extends AbstractSessionManager
             while (itor.hasNext())
             {
                 String sessionId = (String)itor.next();
-                if (LOG.isDebugEnabled()) LOG.debug("Expiring session id "+sessionId);
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("Expiring session id "+sessionId);
                 
                 Session session = (Session)_sessions.get(sessionId);
                 if (session != null)
@@ -800,7 +802,8 @@ public class JDBCSessionManager extends AbstractSessionManager
                 }
                 else
                 {
-                    if (LOG.isDebugEnabled()) LOG.debug("Unrecognized session id="+sessionId);
+                    if (LOG.isDebugEnabled()) 
+                        LOG.debug("Unrecognized session id="+sessionId);
                 }
             }
         }

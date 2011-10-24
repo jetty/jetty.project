@@ -157,7 +157,8 @@ public class HttpGenerator extends AbstractGenerator
 
         if (_last || _state==STATE_END)
         {
-            LOG.debug("Ignoring extra content {}",content);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring extra content {}",content.toDetailString());
             content.clear();
             return;
         }
@@ -242,7 +243,8 @@ public class HttpGenerator extends AbstractGenerator
 
         if (_last || _state==STATE_END)
         {
-            LOG.debug("Ignoring extra content {}",Byte.valueOf(b));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring extra content {}",Byte.valueOf(b));
             return false;
         }
 

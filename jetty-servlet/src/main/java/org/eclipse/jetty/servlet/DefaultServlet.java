@@ -280,7 +280,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (h.getServletInstance()==this)
                 _defaultHolder=h;
 
-        if (LOG.isDebugEnabled()) LOG.debug("resource base = "+_resourceBase);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("resource base = "+_resourceBase);
     }
 
     /**

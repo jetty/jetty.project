@@ -55,12 +55,11 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
         //cannot configure if the _context is already started
         if (context.isStarted())
         {
-            if (LOG.isDebugEnabled()){LOG.debug("Cannot configure webapp after it is started");}
+            LOG.debug("Cannot configure webapp after it is started");
             return;
         }
         
-        if(LOG.isDebugEnabled())
-            LOG.debug("Configuring web-jetty.xml");
+        LOG.debug("Configuring web-jetty.xml");
         
         Resource web_inf = context.getWebInf();
         // handle any WEB-INF descriptors
@@ -80,9 +79,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
                 try
                 {
                     context.setServerClasses(null);
-                    if(LOG.isDebugEnabled()) {
+                    if(LOG.isDebugEnabled())
                         LOG.debug("Configure: "+jetty);
-                    }
                     
                     XmlConfiguration jetty_config = (XmlConfiguration)context.getAttribute(XML_CONFIGURATION);
                     
