@@ -123,7 +123,6 @@ public class HttpExchange
     {
         if (getStatus() < HttpExchange.STATUS_COMPLETED)
             setStatus(HttpExchange.STATUS_EXPIRED);
-
         destination.exchangeExpired(this);
         AbstractHttpConnection connection = _connection;
         if (connection != null)
@@ -709,21 +708,24 @@ public class HttpExchange
     {
         synchronized (this)
         {
-            if (_requestContentChunk == null)
-                _requestContentChunk = new ByteArrayBuffer(4096); // TODO configure
-            else
+            if (_requestContentSource!=null)
             {
-                if (_requestContentChunk.hasContent())
-                    throw new IllegalStateException();
-                _requestContentChunk.clear();
-            }
+                if (_requestContentChunk == null)
+                    _requestContentChunk = new ByteArrayBuffer(4096); // TODO configure
+                else
+                {
+                    if (_requestContentChunk.hasContent())
+                        throw new IllegalStateException();
+                    _requestContentChunk.clear();
+                }
 
-            int read = _requestContentChunk.capacity();
-            int length = _requestContentSource.read(_requestContentChunk.array(),0,read);
-            if (length >= 0)
-            {
-                _requestContentChunk.setPutIndex(length);
-                return _requestContentChunk;
+                int read = _requestContentChunk.capacity();
+                int length = _requestContentSource.read(_requestContentChunk.array(),0,read);
+                if (length >= 0)
+                {
+                    _requestContentChunk.setPutIndex(length);
+                    return _requestContentChunk;
+                }
             }
             return null;
         }

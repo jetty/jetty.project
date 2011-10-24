@@ -52,7 +52,7 @@ public class HttpWriterTest
             }
 
             @Override
-            public long flushBuffer() throws IOException
+            public int flushBuffer() throws IOException
             {
                 return 0;
             }

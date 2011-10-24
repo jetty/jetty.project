@@ -11,7 +11,7 @@ public abstract class AbstractConnection implements Connection
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
     private final long _timeStamp;
-    protected final EndPoint _endp;
+    public final EndPoint _endp; // TODO make private
 
     public AbstractConnection(EndPoint endp)
     {

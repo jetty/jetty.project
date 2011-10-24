@@ -422,7 +422,7 @@ public abstract class AbstractGenerator implements Generator
     }
 
     /* ------------------------------------------------------------ */
-    public abstract long flushBuffer() throws IOException;
+    public abstract int flushBuffer() throws IOException;
 
     
     /* ------------------------------------------------------------ */

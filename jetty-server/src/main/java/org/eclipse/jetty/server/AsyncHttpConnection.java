@@ -30,7 +30,6 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         boolean some_progress=false; 
         boolean progress=true; 
         
-        // Loop while more in buffer
         try
         {
             setCurrentConnection(this);

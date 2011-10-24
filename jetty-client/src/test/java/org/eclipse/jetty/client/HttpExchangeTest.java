@@ -127,6 +127,7 @@ public class HttpExchangeTest
      */
     public void sender(final int nb, final boolean close) throws Exception
     {
+        // System.err.printf("%nSENDER %d %s%n",nb,close);
         _count.set(0);
         final CountDownLatch complete = new CountDownLatch(nb);
         final AtomicInteger allcontent = new AtomicInteger(nb);
@@ -299,7 +300,7 @@ public class HttpExchangeTest
             httpExchange.setURI(uri);
             httpExchange.setMethod(HttpMethods.GET);
             _httpClient.send(httpExchange);
-            int status = httpExchange.waitForDone();
+            int status = httpExchange.waitForDone();            
             //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
             String result=httpExchange.getResponseContent();
             assertNotNull("Should have received response content", result);

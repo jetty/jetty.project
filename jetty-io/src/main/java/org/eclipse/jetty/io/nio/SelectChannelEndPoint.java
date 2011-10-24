@@ -427,6 +427,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.io.AsyncEndPoint#scheduleWrite()
+     */
     public void scheduleWrite()
     {
         if (_writable==true)
@@ -434,6 +437,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         
         _writable=false;
         updateKey();
+    }
+    
+    // TODO remove
+    public boolean isWritable()
+    {
+        return _writable;
     }
 
     /* ------------------------------------------------------------ */

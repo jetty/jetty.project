@@ -127,7 +127,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             else
             {
                 AsyncEndPoint scep = (AsyncEndPoint)_endp;
-                scep.scheduleWrite();
+                scep.asyncDispatch();
             }
 
             adjustIdleTimeout();
@@ -254,29 +254,14 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         }
     }
 
-    protected void reset(boolean returnBuffers) throws IOException
+    protected void reset() throws IOException
     {
         _connectionHeader = null;
         _parser.reset();
-        if (returnBuffers)
-            _parser.returnBuffers();
         _generator.reset();
         _http11 = true;
     }
 
-    protected boolean shouldClose()
-    {
-        if (_endp.isInputShutdown())
-            return true;
-        if (_connectionHeader!=null)
-        {
-            if (HttpHeaderValues.CLOSE_BUFFER.equals(_connectionHeader))
-                return true;
-            if (HttpHeaderValues.KEEP_ALIVE_BUFFER.equals(_connectionHeader))
-                return false;
-        }
-        return !_http11;
-    }
 
     private class Handler extends HttpParser.EventHandler
     {
@@ -294,28 +279,33 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         public void startResponse(Buffer version, int status, Buffer reason) throws IOException
         {
             HttpExchange exchange = _exchange;
-            if (exchange!=null)
+            if (exchange==null)
             {
-                switch(status)
-                {
-                    case HttpStatus.CONTINUE_100:
-                    case HttpStatus.PROCESSING_102:
-                        // TODO check if appropriate expect was sent in the request.
-                        exchange.setEventListener(new NonFinalResponseListener(exchange));
-                        break;
-
-                    case HttpStatus.OK_200:
-                        // handle special case for CONNECT 200 responses
-                        if (HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
-                            _parser.setHeadResponse(true);
-                        break;
-                }
-
-                _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
-                _status=status;
-                exchange.getEventListener().onResponseStatus(version,status,reason);
-                exchange.setStatus(HttpExchange.STATUS_PARSING_HEADERS);
+                LOG.warn("No exchange for response");
+                _endp.close();
+                return;
             }
+            
+            switch(status)
+            {
+                case HttpStatus.CONTINUE_100:
+                case HttpStatus.PROCESSING_102:
+                    // TODO check if appropriate expect was sent in the request.
+                    exchange.setEventListener(new NonFinalResponseListener(exchange));
+                    break;
+
+                case HttpStatus.OK_200:
+                    // handle special case for CONNECT 200 responses
+                    if (HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
+                        _parser.setHeadResponse(true);
+                    break;
+            }
+
+            _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
+            _status=status;
+            exchange.getEventListener().onResponseStatus(version,status,reason);
+            exchange.setStatus(HttpExchange.STATUS_PARSING_HEADERS);
+            
         }
 
         @Override
@@ -429,6 +419,12 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
 
     protected void exchangeExpired(HttpExchange exchange)
     {
+        System.err.println("exchangeEXPIRED "+this);
+        System.err.println(exchange);
+        System.err.println(_endp);
+        System.err.println(_generator);
+        System.err.println(_parser);
+        
         synchronized (this)
         {
             // We are expiring an exchange, but the exchange is pending

@@ -487,7 +487,7 @@ public class Ajp13Generator extends AbstractGenerator
 
     /* ------------------------------------------------------------ */
     @Override
-    public long flushBuffer() throws IOException
+    public int flushBuffer() throws IOException
     {
         try
         {

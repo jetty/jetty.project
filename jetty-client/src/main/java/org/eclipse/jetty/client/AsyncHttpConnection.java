@@ -12,6 +12,7 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
+import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -21,7 +22,6 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
 {
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
     
-    private Buffer _requestContentChunk;
     private boolean _requestComplete;
     private int _status;
     
@@ -30,116 +30,97 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         super(requestBuffers,responseBuffers,endp);
     }
 
-    protected void reset(boolean returnBuffers) throws IOException
+    protected void reset() throws IOException
     {
         _requestComplete = false;
-        super.reset(returnBuffers);
+        super.reset();
     }
     
     public Connection handle() throws IOException
     {
+        Connection connection = this;
+        boolean progress=true;
+
         try
         {
-            boolean progress=true;
             boolean failed = false;
 
+            int loops=1000; // TODO remove this safety net
+            
             // While the endpoint is open 
             // AND we have more characters to read OR we made some progress 
             while (_endp.isOpen() && 
                    (_parser.isMoreInBuffer() || _endp.isBufferingInput() || progress))
             {
+                // System.err.println("loop");
+                if (loops--<0)
+                {
+                    System.err.println("LOOPING!!!");
+                    System.err.println(this);
+                    System.err.println(_endp);
+                    System.err.println(((SelectChannelEndPoint)_endp).getSelectManager().dump());
+                    System.exit(1);
+                }
                 
-                // If no exchange, skipCRLF or close on unexpected characters
-                HttpExchange exchange;
-                synchronized (this)
-                {
-                    exchange=_exchange;
-                }
-
-                if (exchange == null)
-                {
-                    // TODO long filled = _parser.fill();
-                    long filled = -1;
-                    if (filled < 0)
-                        close();
-                    else
-                    {
-                        // Hopefully just space?
-                        // TODO _parser.skipCRLF();
-                        if (_parser.isMoreInBuffer())
-                        {
-                            LOG.warn("Unexpected data received but no request sent");
-                            close();
-                        }
-                    }
-                    return this;
-                }
-
+                progress=false;
+                HttpExchange exchange=_exchange;
                 try
                 {
-                    if (exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
+                    // Should we commit the request?
+                    if (!_generator.isCommitted() && exchange!=null && exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
                     {
                         progress=true;
                         commitRequest();
                     }
 
-                    _endp.flush();
+                    // Generate output
+                    if (_generator.isCommitted() && !_generator.isComplete())
+                    {
+                        int flushed=_generator.flushBuffer();
+                        if (flushed>0)
+                            progress=true;
 
-                    if (_generator.isComplete())
-                    {
-                        if (!_requestComplete)
+                        // Is there more content to send or should we complete the generator
+                        if (!_generator.isComplete() && _generator.isEmpty())
                         {
-                            _requestComplete = true;
-                            exchange.getEventListener().onRequestComplete();
-                        }
-                    }
-                    else
-                    {
-                        long flushed = _generator.flushBuffer();
-                        progress|=(flushed>0);
-                            
-                        if (_generator.isComplete())
-                        {
-                            InputStream in = exchange.getRequestContentSource();
-                            if (in != null)
+                            if (exchange!=null)
                             {
-                                if (_requestContentChunk == null || _requestContentChunk.length() == 0)
+                                Buffer chunk = _exchange.getRequestContentChunk();
+                                if (chunk!=null)
+                                    _generator.addContent(chunk,false);
+                                else
                                 {
-                                    _requestContentChunk = _exchange.getRequestContentChunk();
-
-                                    if (_requestContentChunk != null)
-                                        _generator.addContent(_requestContentChunk,false);
-                                    else
-                                        _generator.complete();
-
-                                    flushed = _generator.flushBuffer();
-                                    progress|=(flushed>0);
+                                    _generator.complete();
+                                    progress=true;
                                 }
                             }
                             else
+                            {
                                 _generator.complete();
+                                progress=true;
+                            }
                         }
                         else
+                        {
                             _generator.complete();
-                        
+                            progress=true;
+                        }
                     }
 
+                    // Signal request completion
                     if (_generator.isComplete() && !_requestComplete)
                     {
                         _requestComplete = true;
-                        _exchange.getEventListener().onRequestComplete();
+                        exchange.getEventListener().onRequestComplete();
                     }
 
-                    // If we are not ended then parse available
-                    if (!_parser.isComplete() && (_generator.isComplete() || _generator.isCommitted() && !_endp.isBlocking()))
-                    {
-                        if (_parser.parseAvailable())
-                            progress=true;
+                    // Flush output from buffering endpoint
+                    if (_endp.isBufferingOutput())
+                        _endp.flush();
 
-                        if (_parser.isIdle() && (_endp.isInputShutdown() || !_endp.isOpen()))
-                            throw new EOFException();
-                    }
-                    
+                    // Read any input that is available
+                    if (!_parser.isComplete() && _parser.parseAvailable())
+                        progress=true;
                 }
                 catch (Throwable e)
                 {
@@ -152,144 +133,85 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
 
                     synchronized (this)
                     {
-                        if (_exchange != null)
+                        if (exchange != null)
                         {
                             // Cancelling the exchange causes an exception as we close the connection,
                             // but we don't report it as it is normal cancelling operation
-                            if (_exchange.getStatus() != HttpExchange.STATUS_CANCELLING &&
-                                    _exchange.getStatus() != HttpExchange.STATUS_CANCELLED)
+                            if (exchange.getStatus() != HttpExchange.STATUS_CANCELLING &&
+                                    exchange.getStatus() != HttpExchange.STATUS_CANCELLED)
                             {
-                                _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                                _exchange.getEventListener().onException(e);
+                                exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                                exchange.getEventListener().onException(e);
                             }
                         }
                         else
                         {
                             if (e instanceof IOException)
                                 throw (IOException)e;
-
                             if (e instanceof Error)
                                 throw (Error)e;
-
                             if (e instanceof RuntimeException)
                                 throw (RuntimeException)e;
-
                             throw new RuntimeException(e);
                         }
                     }
                 }
                 finally
                 {
-                    boolean complete = false;
-                    boolean close = failed; // always close the connection on error
-                    if (!failed)
+                    boolean complete = failed || _generator.isComplete() && _parser.isComplete();
+                    
+                    if (complete)
                     {
-                        // are we complete?
-                        if (_generator.isComplete())
-                        {
-                            if (!_requestComplete)
-                            {
-                                _requestComplete = true;
-                                _exchange.getEventListener().onRequestComplete();
-                            }
+                        boolean persistent = !failed && _parser.isPersistent() && _generator.isPersistent();
+                        _generator.setPersistent(persistent);
+                        reset();
+                        if (persistent)
+                            _endp.setMaxIdleTime((int)_destination.getHttpClient().getIdleTimeout());
 
-                            // we need to return the HttpConnection to a state that
-                            // it can be reused or closed out
-                            if (_parser.isComplete())
-                            {
-                                _exchange.cancelTimeout(_destination.getHttpClient());
-                                complete = true;
-                            }
-                        }
-
-                        // if the endpoint is closed, but the parser incomplete
-                        if (!_endp.isOpen() && !(_parser.isComplete()||_parser.isIdle()))
-                        {
-                            // we wont be called again so let the parser see the close
-                            complete=true;
-                            _parser.parseAvailable();
-                            // TODO should not need this
-                            if (!(_parser.isComplete()||_parser.isIdle()))
-                            {
-                                LOG.warn("Incomplete {} {}",_parser,_endp);
-                                if (_exchange!=null && !_exchange.isDone())
-                                {
-                                    _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                                    _exchange.getEventListener().onException(new EOFException("Incomplete"));
-                                }
-                            }
-                        }
-                    }
-
-                    if (_endp.isInputShutdown() && !_parser.isComplete() && !_parser.isIdle())
-                    {
-                        if (_exchange!=null && !_exchange.isDone())
-                        {
-                            _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                            _exchange.getEventListener().onException(new EOFException("Incomplete"));
-                        }
-                        _endp.close();
-                    }
-
-                    if (complete || failed)
-                    {
                         synchronized (this)
                         {
-                            if (!close)
-                                close = shouldClose();
+                            exchange=_exchange;
+                            _exchange = null;
 
-                            reset(true);
-
-                            progress=true;
-                            if (_exchange != null)
+                            // Cancel the exchange
+                            if (exchange!=null)
                             {
-                                exchange=_exchange;
-                                _exchange = null;
-
-                                // Reset the maxIdleTime because it may have been changed
-                                if (!close)
-                                    _endp.setMaxIdleTime((int)_destination.getHttpClient().getIdleTimeout());
-
-                                if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
+                                exchange.cancelTimeout(_destination.getHttpClient());
+                                
+                                // TODO should we check the exchange is done?
+                            }
+                            
+                            // handle switched protocols
+                            if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
+                            {
+                                Connection switched=exchange.onSwitchProtocol(_endp);
+                                if (switched!=null)
+                                    connection=switched;
                                 {
-                                    Connection switched=exchange.onSwitchProtocol(_endp);
-                                    if (switched!=null)
-                                    {
-                                        // switched protocol!
-                                        exchange = _pipeline;
-                                        _pipeline = null;
-                                        if (exchange!=null)
-                                            _destination.send(exchange);
+                                    // switched protocol!
+                                    _pipeline = null;
+                                    if (_pipeline!=null)
+                                        _destination.send(_pipeline);
+                                    _pipeline = null;
 
-                                        return switched;
-                                    }
-                                }
-
-                                if (_pipeline == null)
-                                {
-                                    if (!isReserved())
-                                        _destination.returnConnection(this, close);
-                                }
-                                else
-                                {
-                                    if (close)
-                                    {
-                                        if (!isReserved())
-                                            _destination.returnConnection(this,close);
-
-                                        exchange = _pipeline;
-                                        _pipeline = null;
-                                        _destination.send(exchange);
-                                    }
-                                    else
-                                    {
-                                        exchange = _pipeline;
-                                        _pipeline = null;
-                                        send(exchange);
-                                    }
+                                    connection=switched;
                                 }
                             }
+                            
+                            // handle pipelined requests
+                            if (_pipeline!=null)
+                            {
+                                if (!persistent || connection!=this)
+                                    _destination.send(_pipeline);
+                                else
+                                    _exchange=_pipeline;
+                                _pipeline=null;
+                            }
+                            
+                            if (_exchange==null && !isReserved())  // TODO how do we return switched connections?
+                                _destination.returnConnection(this, !persistent);
                         }
+                    
                     }
                 }
             }
@@ -297,20 +219,29 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         finally
         {
             _parser.returnBuffers();
-
-            // Do we have more stuff to write?
-            if (!_generator.isComplete() && _generator.getBytesBuffered()>0 && _endp.isOpen() && _endp instanceof AsyncEndPoint)
+            _generator.returnBuffers();
+            
+            // TODO why is this needed?
+            if (!_generator.isEmpty())
             {
-                // Assume we are write blocked!
-                ((AsyncEndPoint)_endp).scheduleWrite();
+                if (((SelectChannelEndPoint)_endp).isWritable())
+                {
+                    System.err.println("early exit??? "+progress);
+                    System.err.println(_endp);
+                    System.err.println(_generator);
+                    System.exit(1);
+                }
+                
+                ((SelectChannelEndPoint)_endp).scheduleWrite();
             }
         }
 
-        return this;
+        return connection;
     }
     
     public void onInputShutdown() throws IOException
     {
-        // TODO
+        if (_generator.isIdle())
+            _endp.shutdownOutput();
     }
 }
