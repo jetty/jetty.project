@@ -1,4 +1,17 @@
-jetty-7.5.4-SNAPSHOT
+jetty-7.5.4.v20111024 - 24 October 2011
+ + 358263 JDBCSessionIdManager add setDatasource(DataSource) method
+ + 358649 Replace existing StdErrLog system properties for DEBUG/IGNORED with
+   LEVEL instead.
+ + 360836 Accept parameters with bad UTF-8. Use replacement character
+ + 360912 CrossOriginFilter does not send Access-Control-Allow-Origin on
+   responses. 355103 Make allowCredentials default to true in
+   CrossOriginFilter.
+ + 360938 Connections closed after a while.
+ + 361319 Log initialization does not catch correct exceptions on all jvms
+ + 361325 359292 Allow KeyStore to be set
+ + 361456 release timer task on connection failed
+ + 361655 ExecutorThreadPool.isLowOnThreads() returns wrong value.
+ + JETTY-1444 start threadpool before selector manager
 
 jetty-7.5.3.v20111011 - 11 October 2011
  + 348978 migrate jetty-http-spi
