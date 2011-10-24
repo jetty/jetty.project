@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>8.0.4.v20111024</version>
+    <version>8.0.5-SNAPSHOT</version>
   </parent>
 
 
