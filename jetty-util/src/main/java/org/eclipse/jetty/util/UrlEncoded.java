@@ -20,6 +20,9 @@ import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Handles coding of MIME  "x-www-form-urlencoded".
@@ -42,7 +45,7 @@ import java.util.Map;
  */
 public class UrlEncoded extends MultiMap
 {
-    // private static final Logger LOG = Log.getLogger(UrlEncoded.class);
+    private static final Logger LOG = Log.getLogger(UrlEncoded.class);
 
     public static final String ENCODING = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset",StringUtil.__UTF8);
 
@@ -267,50 +270,59 @@ public class UrlEncoded extends MultiMap
         {
             String key = null;
             String value = null;
-            
+
             // TODO cache of parameter names ???
             int end=offset+length;
             for (int i=offset;i<end;i++)
             {
                 byte b=raw[i];
-                switch ((char)(0xff&b))
+                try
                 {
-                    case '&':
-                        value = buffer.length()==0?"":buffer.toString();
-                        buffer.reset();
-                        if (key != null)
-                        {
-                            map.add(key,value);
-                        }
-                        else if (value!=null&&value.length()>0)
-                        {
-                            map.add(value,"");
-                        }
-                        key = null;
-                        value=null;
-                        break;
-                        
-                    case '=':
-                        if (key!=null)
-                        {
+                    switch ((char)(0xff&b))
+                    {
+                        case '&':
+                            value = buffer.length()==0?"":buffer.toString();
+                            buffer.reset();
+                            if (key != null)
+                            {
+                                map.add(key,value);
+                            }
+                            else if (value!=null&&value.length()>0)
+                            {
+                                map.add(value,"");
+                            }
+                            key = null;
+                            value=null;
+                            break;
+
+                        case '=':
+                            if (key!=null)
+                            {
+                                buffer.append(b);
+                                break;
+                            }
+                            key = buffer.toString();
+                            buffer.reset();
+                            break;
+
+                        case '+':
+                            buffer.append((byte)' ');
+                            break;
+
+                        case '%':
+                            if (i+2<end)
+                                buffer.append((byte)((TypeUtil.convertHexDigit(raw[++i])<<4) + TypeUtil.convertHexDigit(raw[++i])));
+                            break;
+                            
+                        default:
                             buffer.append(b);
                             break;
-                        }
-                        key = buffer.toString();
-                        buffer.reset();
-                        break;
-                        
-                    case '+':
-                        buffer.append((byte)' ');
-                        break;
-                        
-                    case '%':
-                        if (i+2<end)
-                            buffer.append((byte)((TypeUtil.convertHexDigit(raw[++i])<<4) + TypeUtil.convertHexDigit(raw[++i])));
-                        break;
-                    default:
-                        buffer.append(b);
-                    break;
+                    }
+                }
+                catch(NotUtf8Exception e)
+                {
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
                 }
             }
             

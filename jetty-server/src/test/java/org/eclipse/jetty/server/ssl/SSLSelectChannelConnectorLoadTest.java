@@ -45,7 +45,7 @@ public class SSLSelectChannelConnectorLoadTest
 
         String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystorePath);
+        cf.setKeyStorePath(keystorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStore(keystorePath);

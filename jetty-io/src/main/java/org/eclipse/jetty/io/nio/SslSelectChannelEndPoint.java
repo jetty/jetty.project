@@ -72,7 +72,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         _engine=engine;
         _session=engine.getSession();
 
-        if (_debug) LOG.debug(_session+" channel="+channel);
+        if (_debug) 
+            LOG.debug(_session+" channel="+channel);
     }
 
     /* ------------------------------------------------------------ */
@@ -86,7 +87,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         _engine=engine;
         _session=engine.getSession();
 
-        if (_debug) LOG.debug(_session+" channel="+channel);
+        if (_debug) 
+            LOG.debug(_session+" channel="+channel);
     }
 
 
@@ -503,7 +505,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         int total_filled=0;
         boolean remoteClosed = false;
 
-        LOG.debug("{} unwrap space={} open={}",_session,_inNIOBuffer.space(),super.isOpen());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} unwrap space={} open={}",_session,_inNIOBuffer.space(),super.isOpen());
 
         // loop filling as much encrypted data as we can into the buffer
         while (_inNIOBuffer.space()>0 && super.isOpen())
@@ -561,7 +564,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         }
         catch(SSLException e)
         {
-            LOG.warn(getRemoteAddr() + ":" + getRemotePort() + " ",e);
+            LOG.debug(getRemoteAddr() + ":" + getRemotePort() + " ",e);
             super.close();
             throw e;
         }
@@ -637,7 +640,8 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     out_buffer.position(_outNIOBuffer.putIndex());
                     out_buffer.limit(out_buffer.capacity());
                     _result=_engine.wrap(bbuf,out_buffer);
-                    if (_debug) LOG.debug("{} wrap {}",_session,_result);
+                    if (_debug) 
+                        LOG.debug("{} wrap {}",_session,_result);
                     if (!_handshook && _result.getHandshakeStatus()==SSLEngineResult.HandshakeStatus.FINISHED)
                         _handshook=true;
                     _outNIOBuffer.setPutIndex(out_buffer.position());

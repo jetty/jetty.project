@@ -31,3 +31,6 @@ target/
 
 # vim
 .*.sw[a-p]
+
+# merge tooling
+*.orig

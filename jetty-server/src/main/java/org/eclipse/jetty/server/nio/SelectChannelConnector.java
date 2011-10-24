@@ -245,9 +245,9 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.setMaxIdleTime(getMaxIdleTime());
         _manager.setLowResourcesConnections(getLowResourcesConnections());
         _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
-        _manager.start();
 
         super.doStart();
+        _manager.start();
     }
 
     /* ------------------------------------------------------------ */

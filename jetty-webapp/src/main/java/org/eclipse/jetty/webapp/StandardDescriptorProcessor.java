@@ -147,7 +147,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
         }
-        if (LOG.isDebugEnabled()) LOG.debug("ContextParam: " + name + "=" + value);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("ContextParam: " + name + "=" + value);
 
     }
     

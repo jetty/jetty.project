@@ -141,27 +141,44 @@ public class StdErrLog implements Logger
             }
             else
             {
-                if ("ALL".equalsIgnoreCase(levelStr.trim()))
+                int level = getLevelId(levelStr);
+                if (level != (-1))
                 {
-                    return LEVEL_ALL;
-                }
-                else if ("DEBUG".equalsIgnoreCase(levelStr.trim()))
-                {
-                    return LEVEL_DEBUG;
-                }
-                else if ("INFO".equalsIgnoreCase(levelStr.trim()))
-                {
-                    return LEVEL_INFO;
-                }
-                else if ("WARN".equalsIgnoreCase(levelStr.trim()))
-                {
-                    return LEVEL_WARN;
+                    return level;
                 }
             }
         }
 
         // Default Logging Level
-        return LEVEL_INFO;
+        return getLevelId(props.getProperty("log.LEVEL", "INFO"));
+    }
+    
+    protected static int getLevelId(String levelName)
+    {
+        if (levelName == null)
+        {
+            return -1;
+        }
+        String levelStr = levelName.trim();
+        if ("ALL".equalsIgnoreCase(levelStr))
+        {
+            return LEVEL_ALL;
+        }
+        else if ("DEBUG".equalsIgnoreCase(levelStr))
+        {
+            return LEVEL_DEBUG;
+        }
+        else if ("INFO".equalsIgnoreCase(levelStr))
+        {
+            return LEVEL_INFO;
+        }
+        else if ("WARN".equalsIgnoreCase(levelStr))
+        {
+            return LEVEL_WARN;
+        }
+
+        System.err.println("Unknown StdErrLog level [" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN] as values.");
+        return -1;
     }
 
     /**
@@ -541,7 +558,7 @@ public class StdErrLog implements Logger
             StdErrLog sel = new StdErrLog(fullname);
             // Preserve configuration for new loggers configuration
             sel.setPrintLongNames(_printLongNames);
-            sel.setLevel(_level);
+            // Let Level come from configured Properties instead - sel.setLevel(_level);
             sel.setSource(_source);
             logger = __loggers.putIfAbsent(fullname,sel);
             if (logger == null)

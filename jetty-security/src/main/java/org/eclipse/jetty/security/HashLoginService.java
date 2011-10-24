@@ -135,9 +135,8 @@ public class HashLoginService extends MappedLoginService implements UserListener
         if (_propertyUserStore == null)
         {
             if(LOG.isDebugEnabled())
-            {
                 LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " refreshInterval: " + _refreshInterval);
-            }
+            
             _propertyUserStore = new PropertyUserStore();
             _propertyUserStore.setRefreshInterval(_refreshInterval);
             _propertyUserStore.setConfig(_config);
