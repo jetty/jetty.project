@@ -389,7 +389,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("servlet {} -> {}",baseRequest.getContextPath()+"|"+baseRequest.getServletPath()+"|"+baseRequest.getPathInfo(),servlet_holder);
+            LOG.debug("servlet {}|{}|{} -> {}",baseRequest.getContextPath(),baseRequest.getServletPath(),baseRequest.getPathInfo(),servlet_holder);
 
         try
         {
@@ -454,7 +454,7 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        LOG.debug("chain=",chain);
+        LOG.debug("chain={}",chain);
         
         try
         {
@@ -1230,7 +1230,8 @@ public class ServletHandler extends ScopedHandler
                   HttpServletResponse response)
         throws IOException
     {
-        if(LOG.isDebugEnabled())LOG.debug("Not Found "+request.getRequestURI());
+        if(LOG.isDebugEnabled())
+            LOG.debug("Not Found "+request.getRequestURI());
         response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
     
@@ -1391,13 +1392,15 @@ public class ServletHandler extends ScopedHandler
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
-            if (LOG.isDebugEnabled()) LOG.debug("doFilter " + _filter);
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("doFilter " + _filter);
 
             // pass to next filter
             if (_filter < LazyList.size(_chain))
             {
                 FilterHolder holder= (FilterHolder)LazyList.get(_chain, _filter++);
-                if (LOG.isDebugEnabled()) LOG.debug("call filter " + holder);
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("call filter " + holder);
                 Filter filter= holder.getFilter();
                 
                 if (holder.isAsyncSupported() || !_baseRequest.isAsyncSupported())
@@ -1423,7 +1426,8 @@ public class ServletHandler extends ScopedHandler
             // Call servlet
             if (_servletHolder != null)
             {
-                if (LOG.isDebugEnabled()) LOG.debug("call servlet " + _servletHolder);
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("call servlet " + _servletHolder);
                 _servletHolder.handle(_baseRequest,request, response);
             }
             else // Not found

@@ -162,11 +162,8 @@ public class HashedSession extends AbstractSession
             // Access now to prevent race with idling period
             access(System.currentTimeMillis());
 
-            
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("Deidling " + super.getId());
-            }
 
             FileInputStream fis = null;
 

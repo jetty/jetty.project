@@ -76,9 +76,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
         _engine=engine;
         _session=engine.getSession();
 
-        if (_debug) LOG.debug(_session+" channel="+channel);
+        if (_debug) 
+            LOG.debug(_session+" channel="+channel);
     }
-
 
     /* ------------------------------------------------------------ */
     private void needOutBuffer()
@@ -530,6 +530,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             int total_filled=0;
             boolean remoteClosed = false;
 
+        if (LOG.isDebugEnabled())
             LOG.debug("{} unwrap space={} open={}",_session,_inNIOBuffer.space(),super.isOpen());
 
             // loop filling as much encrypted data as we can into the buffer

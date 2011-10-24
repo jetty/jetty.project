@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HashSessionManager extends AbstractSessionManager
 {
-    final static Logger __log = SessionHandler.__log;
+    final static Logger __log = SessionHandler.LOG;
     
     protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
     private static int __id;

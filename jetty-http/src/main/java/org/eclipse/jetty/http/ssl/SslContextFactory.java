@@ -300,8 +300,10 @@ public class SslContextFactory extends AbstractLifeCycle
                 _context.init(keyManagers,trustManagers,secureRandom);
 
                 SSLEngine engine=newSslEngine();
+                
                 LOG.info("Enabled Protocols {} of {}",Arrays.asList(engine.getEnabledProtocols()),Arrays.asList(engine.getSupportedProtocols()));
-                LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
             }
         }
     }
