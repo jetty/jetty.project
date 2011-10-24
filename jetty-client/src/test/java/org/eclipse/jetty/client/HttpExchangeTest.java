@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.server.Server;
@@ -53,7 +54,7 @@ import org.junit.Test;
  */
 public class HttpExchangeTest
 {
-    final static boolean verbose=false;
+    final static boolean verbose=true;
     protected static int _maxConnectionsPerAddress = 2;
     protected static String _scheme = "http";
     protected static Server _server;
@@ -147,7 +148,7 @@ public class HttpExchangeTest
                 protected void onRequestCommitted()
                 {
                     if (verbose)
-                        System.err.println("[ ");
+                        System.err.println(n+" [ "+this);
                     result = "committed";
                 }
 
@@ -156,7 +157,7 @@ public class HttpExchangeTest
                 protected void onRequestComplete() throws IOException
                 {
                     if (verbose)
-                        System.err.println("[ ==");
+                        System.err.println(n+" [ ==");
                     result = "sent";
                 }
 
@@ -165,7 +166,7 @@ public class HttpExchangeTest
                 protected void onResponseStatus(Buffer version, int status, Buffer reason)
                 {
                     if (verbose)
-                        System.err.println("] "+version+" "+status+" "+reason);
+                        System.err.println(n+" ] "+version+" "+status+" "+reason);
                     result = "status";
                 }
 
@@ -174,7 +175,7 @@ public class HttpExchangeTest
                 protected void onResponseHeader(Buffer name, Buffer value)
                 {
                     if (verbose)
-                        System.err.println("] "+name+": "+value);
+                        System.err.println(n+" ] "+name+": "+value);
                 }
 
                 /* ------------------------------------------------------------ */
@@ -182,7 +183,7 @@ public class HttpExchangeTest
                 protected void onResponseHeaderComplete() throws IOException
                 {
                     if (verbose)
-                        System.err.println("] -");
+                        System.err.println(n+" ] -");
                     result = "content";
                     super.onResponseHeaderComplete();
                 }
@@ -193,7 +194,7 @@ public class HttpExchangeTest
                 {
                     len += content.length();
                     if (verbose)
-                        System.err.println("] "+content.length()+" -> "+len);
+                        System.err.println(n+" ] "+content.length()+" -> "+len);
                 }
 
                 /* ------------------------------------------------------------ */
@@ -201,12 +202,12 @@ public class HttpExchangeTest
                 protected void onResponseComplete()
                 {
                     if (verbose)
-                        System.err.println("] == "+len+" "+complete.getCount()+"/"+nb);
+                        System.err.println(n+" ] == "+len+" "+complete.getCount()+"/"+nb);
                     result = "complete";
                     if (len == 2009)
                         allcontent.decrementAndGet();
                     else
-                        System.err.println(n + " ONLY " + len+ "/2009");
+                        System.err.println(n+ " ONLY " + len+ "/2009");
                     complete.countDown();
                 }
 
@@ -215,10 +216,10 @@ public class HttpExchangeTest
                 protected void onConnectionFailed(Throwable ex)
                 {
                     if (verbose)
-                        System.err.println("] "+ex);
+                        System.err.println(n+" ] "+ex);
                     complete.countDown();
                     result = "failed";
-                    System.err.println(n + " FAILED " + ex);
+                    System.err.println(n+ " FAILED " + ex);
                     super.onConnectionFailed(ex);
                 }
 
@@ -227,10 +228,10 @@ public class HttpExchangeTest
                 protected void onException(Throwable ex)
                 {
                     if (verbose)
-                        System.err.println("] "+ex);
+                        System.err.println(n+" ] "+ex);
                     complete.countDown();
                     result = "excepted";
-                    System.err.println(n + " EXCEPTED " + ex);
+                    System.err.println(n+ " EXCEPTED " + ex);
                     super.onException(ex);
                 }
 
@@ -239,7 +240,7 @@ public class HttpExchangeTest
                 protected void onExpire()
                 {
                     if (verbose)
-                        System.err.println("] expired");
+                        System.err.println(n+" ] expired");
                     complete.countDown();
                     result = "expired";
                     System.err.println(n + " EXPIRED " + len);
@@ -478,10 +479,7 @@ public class HttpExchangeTest
     @Test
     public void testSlowPost() throws Exception
     {
-        ContentExchange httpExchange=new ContentExchange()
-        {
-            
-        };
+        ContentExchange httpExchange=new ContentExchange();
         httpExchange.setURI(getBaseURI());
         httpExchange.setMethod(HttpMethods.POST);
 
@@ -497,6 +495,15 @@ public class HttpExchangeTest
                 if (_index>=data.length())
                     return -1;
 
+                try
+                {
+                    Thread.sleep(5);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+                
                 return data.charAt(_index++);
             }
 

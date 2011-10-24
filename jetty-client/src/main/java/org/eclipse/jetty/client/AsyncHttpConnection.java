@@ -1,10 +1,8 @@
 package org.eclipse.jetty.client;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
 
+import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
@@ -13,7 +11,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -24,10 +21,13 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
     
     private boolean _requestComplete;
     private int _status;
+    private Buffer _requestContentChunk;
+    private final AsyncEndPoint _asyncEndp;
     
     AsyncHttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         super(requestBuffers,responseBuffers,endp);
+        _asyncEndp=(AsyncEndPoint)endp;
     }
 
     protected void reset() throws IOException
@@ -45,14 +45,13 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         {
             boolean failed = false;
 
-            int loops=1000; // TODO remove this safety net
+            int loops=10000; // TODO remove this safety net
             
             // While the endpoint is open 
             // AND we have more characters to read OR we made some progress 
             while (_endp.isOpen() && 
                    (_parser.isMoreInBuffer() || _endp.isBufferingInput() || progress))
             {
-                // System.err.println("loop");
                 if (loops--<0)
                 {
                     System.err.println("LOOPING!!!");
@@ -65,7 +64,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 progress=false;
                 HttpExchange exchange=_exchange;
                 try
-                {
+                {                  
                     // Should we commit the request?
                     if (!_generator.isCommitted() && exchange!=null && exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
                     {
@@ -76,51 +75,51 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     // Generate output
                     if (_generator.isCommitted() && !_generator.isComplete())
                     {
-                        int flushed=_generator.flushBuffer();
-                        if (flushed>0)
+                        if (_generator.flushBuffer()>0)
                             progress=true;
 
                         // Is there more content to send or should we complete the generator
-                        if (!_generator.isComplete() && _generator.isEmpty())
+                        if (_generator.isState(AbstractGenerator.STATE_CONTENT))
                         {
-                            if (exchange!=null)
+                            // Look for more content to send.
+                            if (_requestContentChunk==null)
+                                _requestContentChunk = exchange.getRequestContentChunk(null);
+                                
+                            if (_requestContentChunk==null)
                             {
-                                Buffer chunk = _exchange.getRequestContentChunk();
-                                if (chunk!=null)
-                                    _generator.addContent(chunk,false);
-                                else
-                                {
-                                    _generator.complete();
-                                    progress=true;
-                                }
-                            }
-                            else
-                            {
-                                _generator.complete();
                                 progress=true;
+                                _generator.complete();
                             }
-                        }
-                        else
-                        {
-                            _generator.complete();
-                            progress=true;
+                            else if (_generator.isEmpty())
+                            {
+                                progress=true;
+                                Buffer chunk=_requestContentChunk;
+                                _requestContentChunk=exchange.getRequestContentChunk(null);
+                                _generator.addContent(chunk,_requestContentChunk==null);
+                            }
                         }
                     }
-
+                    
                     // Signal request completion
                     if (_generator.isComplete() && !_requestComplete)
                     {
+                        progress=true;
                         _requestComplete = true;
                         exchange.getEventListener().onRequestComplete();
                     }
-
+                    
                     // Flush output from buffering endpoint
                     if (_endp.isBufferingOutput())
                         _endp.flush();
-
+                    
                     // Read any input that is available
                     if (!_parser.isComplete() && _parser.parseAvailable())
                         progress=true;
+
+                    // Has any IO been done by the endpoint itself since last loop
+                    if (_asyncEndp.hasProgressed())
+                        progress=true;
+                    
                 }
                 catch (Throwable e)
                 {
@@ -138,7 +137,8 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             // Cancelling the exchange causes an exception as we close the connection,
                             // but we don't report it as it is normal cancelling operation
                             if (exchange.getStatus() != HttpExchange.STATUS_CANCELLING &&
-                                    exchange.getStatus() != HttpExchange.STATUS_CANCELLED)
+                                    exchange.getStatus() != HttpExchange.STATUS_CANCELLED &&
+                                    !exchange.isDone())
                             {
                                 exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
                                 exchange.getEventListener().onException(e);
@@ -220,20 +220,6 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         {
             _parser.returnBuffers();
             _generator.returnBuffers();
-            
-            // TODO why is this needed?
-            if (!_generator.isEmpty())
-            {
-                if (((SelectChannelEndPoint)_endp).isWritable())
-                {
-                    System.err.println("early exit??? "+progress);
-                    System.err.println(_endp);
-                    System.err.println(_generator);
-                    System.exit(1);
-                }
-                
-                ((SelectChannelEndPoint)_endp).scheduleWrite();
-            }
         }
 
         return connection;

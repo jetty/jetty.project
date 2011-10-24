@@ -228,7 +228,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 
                 if (_trustAll)
                 {
-                    LOG.info("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
+                    LOG.debug("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
                     // Create a trust manager that does not validate certificate chains
                     TrustManager trustAllCerts = new X509TrustManager()
                     {

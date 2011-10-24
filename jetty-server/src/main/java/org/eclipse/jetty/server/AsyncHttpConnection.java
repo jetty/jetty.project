@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
@@ -18,10 +19,12 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
     
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
     private int _total_no_progress;
+    private final AsyncEndPoint _asyncEndp;
 
     public AsyncHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(connector,endpoint,server);
+        _asyncEndp=(AsyncEndPoint)endpoint;
     }
 
     public Connection handle() throws IOException
@@ -62,6 +65,10 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     if (_endp.isBufferingOutput())
                         _endp.flush();
                     
+                    // Has any IO been done by the endpoint itself since last loop
+                    if (_asyncEndp.hasProgressed())
+                        progress=true;
+                    
                 }
                 catch (HttpException e)
                 {
@@ -100,7 +107,6 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                         }
                     }
                     
-                    some_progress|=progress|((SelectChannelEndPoint)_endp).isProgressing();
                 }
             }
         }

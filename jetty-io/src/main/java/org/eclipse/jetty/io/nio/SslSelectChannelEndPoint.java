@@ -152,17 +152,6 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
 
     /* ------------------------------------------------------------ */
     /**
-     * @return True if the endpoint has produced/consumed bytes itself (non application data).
-     */
-    public boolean isProgressing()
-    {
-        SSLEngineResult result = _result;
-        _result=null;
-        return result!=null && (result.bytesConsumed()>0 || result.bytesProduced()>0);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return True if SSL re-negotiation is allowed (default false)
      */
     public boolean isAllowRenegotiate()
@@ -765,9 +754,10 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     {
         final NIOBuffer i=_inNIOBuffer;
         final NIOBuffer o=_outNIOBuffer;
-        return "SSL"+super.toString()+","+(_engine==null?"-":_engine.getHandshakeStatus())+", in/out="+
-        (i==null?0:i.length())+"/"+(o==null?0:o.length())+
-        " bi/o="+isBufferingInput()+"/"+isBufferingOutput()+
-        " "+_result;
+        return "SSL"+super.toString()+
+        ","+(_engine==null?"-":_engine.getHandshakeStatus())+
+        ((i!=null&&i.length()>0)?(",in="+i.length()):"")+
+        ((o!=null&&o.length()>0)?(",out="+o.length()):"")+
+        (_result==null?"":(","+_result.getStatus()+",bp="+_result.bytesProduced()+",bc="+_result.bytesConsumed()));  
     }
 }

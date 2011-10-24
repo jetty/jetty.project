@@ -98,7 +98,6 @@ public class HttpExchange
     private InputStream _requestContentSource;
 
     private AtomicInteger _status = new AtomicInteger(STATUS_START);
-    private Buffer _requestContentChunk;
     private boolean _retryStatus = false;
     // controls if the exchange will have listeners autoconfigured by the destination
     private boolean _configureListeners = true;
@@ -705,27 +704,21 @@ public class HttpExchange
         return _requestContentSource;
     }
 
-    public Buffer getRequestContentChunk() throws IOException
+    public Buffer getRequestContentChunk(Buffer buffer) throws IOException
     {
         synchronized (this)
         {
             if (_requestContentSource!=null)
             {
-                if (_requestContentChunk == null)
-                    _requestContentChunk = new ByteArrayBuffer(4096); // TODO configure
-                else
-                {
-                    if (_requestContentChunk.hasContent())
-                        throw new IllegalStateException();
-                    _requestContentChunk.clear();
-                }
+                if (buffer == null)
+                    buffer = new ByteArrayBuffer(8192); // TODO configure
 
-                int read = _requestContentChunk.capacity();
-                int length = _requestContentSource.read(_requestContentChunk.array(),0,read);
+                int space = buffer.space();
+                int length = _requestContentSource.read(buffer.array(),buffer.putIndex(),space);
                 if (length >= 0)
                 {
-                    _requestContentChunk.setPutIndex(length);
-                    return _requestContentChunk;
+                    buffer.setPutIndex(buffer.putIndex()+length);
+                    return buffer;
                 }
             }
             return null;

@@ -72,9 +72,6 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     @Override
     public void testPerf() throws Exception
     {
-        // TODO needs to be further investigated
-        Assume.assumeTrue(!OS.IS_OSX || Stress.isEnabled());
-        
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
         IgnoreTestOnBuggyIBM();
         super.testPerf();

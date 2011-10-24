@@ -39,4 +39,12 @@ public interface AsyncEndPoint extends EndPoint
      */
     public void cancelIdle();
 
+    /* ------------------------------------------------------------ */
+    public boolean isWritable();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if IO has been successfully performed since the last call to {@link #hasProgressed()}
+     */
+    public boolean hasProgressed();
 }

@@ -1093,9 +1093,10 @@ public class HttpGenerator extends AbstractGenerator
     @Override
     public String toString()
     {
-        return "HttpGenerator s="+_state+
-        " h="+(_header==null?"null":_header.length())+
-        " b="+(_buffer==null?"null":_buffer.length())+
-        " c="+(_content==null?"null":_content.length());
+        return "HttpGenerator{s="+_state+
+        ",h="+(_header==null?"":_header.length())+
+        ",b="+(_buffer==null?"":_buffer.length())+
+        ",c="+(_content==null?"":_content.length())+
+        "}";
     }
 }

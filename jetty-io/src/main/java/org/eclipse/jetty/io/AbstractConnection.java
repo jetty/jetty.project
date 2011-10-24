@@ -15,13 +15,13 @@ public abstract class AbstractConnection implements Connection
 
     public AbstractConnection(EndPoint endp)
     {
-        _endp=endp;
+        _endp=(EndPoint)endp;
         _timeStamp = System.currentTimeMillis();
     }
     
     public AbstractConnection(EndPoint endp,long timestamp)
     {
-        _endp=endp;
+        _endp=(EndPoint)endp;
         _timeStamp = timestamp;
     }
 

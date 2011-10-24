@@ -78,6 +78,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     
     private boolean _ishut;
     
+    private volatile boolean _progressed;
+    
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
         throws IOException
@@ -273,17 +275,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return True if the endpoint has produced/consumed bytes itself (non application data).
-     */
-    public boolean isProgressing()
+    @Override
+    public int fill(Buffer buffer) throws IOException
     {
-        return false;
+        int length=super.fill(buffer);
+        _progressed|=(length>0);
+        return length;
     }
     
     /* ------------------------------------------------------------ */
-    /*
-     */
     @Override
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
@@ -299,8 +299,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     updateKey();
             }
         }
-        else
+        else if (l>0)
+        {
+            _progressed=true;
             _writable=true;
+        }
         return l;
     }
 
@@ -322,8 +325,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     updateKey();
             }
         }
-        else
+        else if (l>0)
+        {
+            _progressed=true;
             _writable=true;
+        }
         
         return l;
     }
@@ -439,10 +445,18 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         updateKey();
     }
     
-    // TODO remove
+    /* ------------------------------------------------------------ */
     public boolean isWritable()
     {
         return _writable;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean hasProgressed()
+    {
+        boolean progressed=_progressed;
+        _progressed=false;
+        return progressed;
     }
 
     /* ------------------------------------------------------------ */
@@ -672,9 +686,20 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized(this)
         {
-            return "SCEP@" + hashCode() + _channel+            
-            "[o="+isOpen()+" d=" + _dispatched + ",io=" + _interestOps+
-            ",w=" + _writable + ",rb=" + _readBlocked + ",wb=" + _writeBlocked + "]";
+            return "SCEP@" + hashCode() + 
+            "{"+_socket.getRemoteSocketAddress()+"->"+_socket.getLocalSocketAddress()+
+            (_dispatched?",D":"") +
+            (isOpen()?",open":"") +
+            (isInputShutdown()?",ishut":"") +
+            (isOutputShutdown()?",oshut":"") +
+            (_readBlocked?"":",RB") +
+            (_writeBlocked?"":",WB") +
+            (_writable?"":",!W") +
+            ",io="+_interestOps +
+            ((_key==null || !_key.isValid())?"!":(
+            (_key.isReadable()?"R":"")+
+            (_key.isWritable()?"W":"")))+
+            "}";
         }
     }
 
