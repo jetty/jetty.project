@@ -242,6 +242,8 @@ public class StdErrLogTest
         // Level Debug
         log.setLevel(StdErrLog.LEVEL_DEBUG);
         log.debug("my hovercraft is");
+        
+        Assert.assertThat("log should report as debug enabled", log.isDebugEnabled(), is(true));
 
         // Level All
         log.setLevel(StdErrLog.LEVEL_ALL);
