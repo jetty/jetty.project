@@ -400,11 +400,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (LOG.isDebugEnabled())
         {
             ClassLoader loader = getClassLoader();
-            LOG.debug("Thread Context class loader is: " + loader);
+            LOG.debug("Thread Context classloader {}",loader);
             loader=loader.getParent();
             while(loader!=null)
             {
-                LOG.debug("Parent class loader is: " + loader);
+                LOG.debug("Parent class loader: {} ",loader);
                 loader=loader.getParent();
             }
         }

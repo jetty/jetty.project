@@ -15,27 +15,19 @@ package org.eclipse.jetty.server.session;
 
 import static java.lang.Math.round;
 
-
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.ServletContext;
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.SessionTrackingMode;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.ServletRequest;
-
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
@@ -69,7 +61,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 @SuppressWarnings("deprecation")
 public abstract class AbstractSessionManager extends AbstractLifeCycle implements SessionManager
 {
-    final static Logger __log = SessionHandler.__log;
+    final static Logger __log = SessionHandler.LOG;
 
     public Set<SessionTrackingMode> __defaultSessionTrackingModes =
         Collections.unmodifiableSet(
@@ -300,6 +292,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         return _sessionIdManager;
     }
 
+
     /* ------------------------------------------------------------ */
     /**
      * @return seconds
@@ -364,6 +357,22 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         return _refreshCookieAge;
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the secureCookies.
+     */
+    public boolean getSecureCookies()
+    {
+        return _secureCookies;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String getSessionCookie()
+    {
+        return _sessionCookie;
+    }
+
     /* ------------------------------------------------------------ */
     public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
     {
@@ -382,7 +391,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                                         sessionPath,
                                         _cookieConfig.getMaxAge(),
                                         _cookieConfig.isHttpOnly(),
-                                        _cookieConfig.isSecure());                  
+                                        requestIsSecure&&_cookieConfig.isSecure());                  
             }
             else
             {
@@ -393,7 +402,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                                         sessionPath,
                                         _cookieConfig.getMaxAge(),
                                         _cookieConfig.isHttpOnly(),
-                                        _cookieConfig.isSecure(),
+                                        requestIsSecure&&_cookieConfig.isSecure(),
                                         _sessionComment,
                                         1);    
             }
@@ -401,6 +410,11 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
             return cookie;
         }
         return null;
+    }
+
+    public String getSessionDomain()
+    {
+        return _sessionDomain;
     }
 
     /* ------------------------------------------------------------ */
@@ -422,6 +436,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         throw new UnsupportedOperationException();
     }
 
+   
+
     /* ------------------------------------------------------------ */
     public int getSessions()
     {
@@ -438,6 +454,15 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     public String getSessionIdPathParameterNamePrefix()
     {
         return _sessionIdPathParameterNamePrefix;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the usingCookies.
+     */
+    public boolean isUsingCookies()
+    {
+        return _usingCookies;
     }
 
     /* ------------------------------------------------------------ */
@@ -531,6 +556,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         _sessionIdManager=metaManager;
     }
 
+
+
     /* ------------------------------------------------------------ */
     /**
      * @param seconds
@@ -547,34 +574,14 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         _refreshCookieAge=ageInSeconds;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Set if the session manager should use SecureCookies.
-     * A secure cookie will only be sent by a browser on a secure (https) connection to 
-     * avoid the concern of cookies being intercepted on non secure channels.
-     * For the cookie to be issued as secure, the {@link ServletRequest#isSecure()} method must return true.
-     * If SSL offload is used, then the {@link AbstractConnector#customize(org.eclipse.jetty.io.EndPoint, Request)}
-     * method can be used to force the request to be https, or the {@link AbstractConnector#setForwarded(boolean)}
-     * can be set to true, so that the X-Forwarded-Proto header is respected.
-     * <p>
-     * If secure session cookies are used, then a session may not be shared between http and https requests.
-     * 
-     * @param secureCookies If true, use secure cookies.
-     */
-    public void setSecureCookies(boolean secureCookies)
-    {
-        _secureCookies=secureCookies;
-    }
+
 
     public void setSessionCookie(String cookieName)
     {
         _sessionCookie=cookieName;
     }
 
-    public void setSessionDomain(String domain)
-    {
-        _sessionDomain=domain;
-    }
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -586,21 +593,23 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         _sessionHandler=sessionHandler;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.SessionManager#setSessionPath(java.lang.String)
-     */
-    public void setSessionPath(String path)
-    {
-        _sessionPath=path;
-    }
-
+ 
     /* ------------------------------------------------------------ */
     public void setSessionIdPathParameterName(String param)
     {
         _sessionIdPathParameterName =(param==null||"none".equals(param))?null:param;
         _sessionIdPathParameterNamePrefix =(param==null||"none".equals(param))?null:(";"+ _sessionIdPathParameterName +"=");
     }
+    /* ------------------------------------------------------------ */
+    /**
+     * @param usingCookies
+     *            The usingCookies to set.
+     */
+    public void setUsingCookies(boolean usingCookies)
+    {
+        _usingCookies=usingCookies;
+    }
+
 
     protected abstract void addSession(AbstractSession session);
 
@@ -740,13 +749,6 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
         _sessionTrackingModes=new HashSet<SessionTrackingMode>(sessionTrackingModes);
         _usingCookies=_sessionTrackingModes.contains(SessionTrackingMode.COOKIE);
         _usingURLs=_sessionTrackingModes.contains(SessionTrackingMode.URL);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isUsingCookies()
-    {
-        return _usingCookies;
     }
 
     /* ------------------------------------------------------------ */

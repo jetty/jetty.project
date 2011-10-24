@@ -58,7 +58,7 @@ public class SslCertSecuredExchangeTest extends ContentExchangeTest
         cf.setValidateCerts(true);
         cf.setCrlPath(_crlpath);
         cf.setNeedClientAuth(true);
-        cf.setKeyStore(_keypath);
+        cf.setKeyStorePath(_keypath);
         cf.setKeyStorePassword(_password);
         cf.setKeyManagerPassword(_password);
         cf.setTrustStore(_trustpath);
@@ -159,7 +159,7 @@ public class SslCertSecuredExchangeTest extends ContentExchangeTest
         cf.setCrlPath(_crlpath);
         
         cf.setCertAlias("client");
-        cf.setKeyStore(_clientpath);
+        cf.setKeyStorePath(_clientpath);
         cf.setKeyStorePassword(_password);
         cf.setKeyManagerPassword(_password);
         

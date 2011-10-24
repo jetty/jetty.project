@@ -81,7 +81,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         // cannot configure if the context is already started
         if (context.isStarted())
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Cannot configure webapp after it is started");
+            LOG.debug("Cannot configure webapp after it is started");
             return;
         }
 
@@ -104,7 +104,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
             // do web.xml file
             Resource web = web_inf.addPath("web.xml");
             if (web.exists()) return web;
-            LOG.debug("No WEB-INF/web.xml in " + context.getWar() + ". Serving files and default/dynamic servlets only");
+            if (LOG.isDebugEnabled())
+                LOG.debug("No WEB-INF/web.xml in " + context.getWar() + ". Serving files and default/dynamic servlets only");
         }
         return null;
     }

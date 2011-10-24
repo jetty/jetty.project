@@ -177,6 +177,8 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /** SSL context */
     private SSLContext _context;
+    
+    private boolean _trustAll;
 
     /* ------------------------------------------------------------ */
     /**
@@ -185,6 +187,17 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory()
     {
+        _trustAll=true;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Construct an instance of SslContextFactory
+     * Default constructor for use in XmlConfiguration files
+     */
+    public SslContextFactory(boolean trustAll)
+    {
+        _trustAll=trustAll;
     }
 
     /* ------------------------------------------------------------ */
@@ -207,29 +220,36 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         if (_context == null)
         {
-            if (_keyStoreInputStream == null && _keyStorePath == null &&
-                    _trustStoreInputStream == null && _trustStorePath == null )
+            if (_keyStore==null && _keyStoreInputStream == null && _keyStorePath == null &&
+                _trustStore==null && _trustStoreInputStream == null && _trustStorePath == null )
             {
-                LOG.debug("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
-                // Create a trust manager that does not validate certificate chains
-                TrustManager trustAllCerts = new X509TrustManager()
+                TrustManager[] trust_managers=null;
+                
+                if (_trustAll)
                 {
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers()
+                    LOG.info("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
+                    // Create a trust manager that does not validate certificate chains
+                    TrustManager trustAllCerts = new X509TrustManager()
                     {
-                        return null;
-                    }
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers()
+                        {
+                            return null;
+                        }
 
-                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
-                    {
-                    }
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
+                        {
+                        }
 
-                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
-                    {
-                    }
-                };
-
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
+                        {
+                        }
+                    };
+                    trust_managers = new TrustManager[] { trustAllCerts };
+                }
+                
+                SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
                 _context = SSLContext.getInstance(_sslProtocol);
-                _context.init(null, new TrustManager[]{trustAllCerts}, null);
+                _context.init(null, trust_managers, secureRandom);
             }
             else
             {
@@ -279,8 +299,10 @@ public class SslContextFactory extends AbstractLifeCycle
                 _context.init(keyManagers,trustManagers,secureRandom);
 
                 SSLEngine engine=newSslEngine();
+                
                 LOG.info("Enabled Protocols {} of {}",Arrays.asList(engine.getEnabledProtocols()),Arrays.asList(engine.getSupportedProtocols()));
-                LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
             }
         }
     }
@@ -402,16 +424,36 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * @return The file or URL of the SSL Key store.
      */
-    public String getKeyStore()
+    public String getKeyStorePath()
     {
         return _keyStorePath;
     }
 
     /* ------------------------------------------------------------ */
+    @Deprecated
+    public String getKeyStore()
+    {
+        return _keyStorePath;
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param keyStorePath
      *            The file or URL of the SSL Key store.
      */
+    public void setKeyStorePath(String keyStorePath)
+    {
+        checkNotStarted();
+
+        _keyStorePath = keyStorePath;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param keyStorePath
+     * @deprecated Use {@link #setKeyStorePath(String)}
+     */
+    @Deprecated
     public void setKeyStore(String keyStorePath)
     {
         checkNotStarted();
@@ -479,7 +521,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Set the keyStoreInputStream.
      * @param keyStoreInputStream the InputStream to the KeyStore
      *
-     * @deprecated
+     * @deprecated Use {@link #setKeyStore(KeyStore)}
      */
     @Deprecated
     public void setKeyStoreInputStream(InputStream keyStoreInputStream)
@@ -842,7 +884,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         return (_keyManagerFactoryAlgorithm);
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @param algorithm
@@ -866,8 +908,27 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
+     * @return True if all certificates should be trusted if there is no KeyStore or TrustStore
+     */
+    public boolean isTrustAll()
+    {
+        return _trustAll;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param trustAll True if all certificates should be trusted if there is no KeyStore or TrustStore
+     */
+    public void setTrustAll(boolean trustAll)
+    {
+        _trustAll = trustAll;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
      * @param algorithm
      *            The algorithm name (default "SunX509") used by the {@link TrustManagerFactory}
+     *            Use the string "TrustAll" to install a trust manager that trusts all.
      */
     public void setTrustManagerFactoryAlgorithm(String algorithm)
     {
@@ -1039,7 +1100,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
-    {
+    {   
         TrustManager[] managers = null;
         if (trustStore != null)
         {

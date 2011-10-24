@@ -52,7 +52,7 @@ public abstract class SslValidationTestBase extends ContentExchangeTest
         srvFactory.setCrlPath(_crlpath);
         srvFactory.setNeedClientAuth(true);
 
-        srvFactory.setKeyStore(_keypath);
+        srvFactory.setKeyStorePath(_keypath);
         srvFactory.setKeyStorePassword(_password);
         srvFactory.setKeyManagerPassword(_password);
         
@@ -88,7 +88,7 @@ public abstract class SslValidationTestBase extends ContentExchangeTest
         cf.setValidateCerts(true);
         cf.setCrlPath(_crlpath);
         
-        cf.setKeyStore(_clientpath);
+        cf.setKeyStorePath(_clientpath);
         cf.setKeyStorePassword(_password);
         cf.setKeyManagerPassword(_password);
         

@@ -90,7 +90,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             try
             {
                 _class=Loader.loadClass(Holder.class, _className);
-                if(LOG.isDebugEnabled())LOG.debug("Holding {}",_class);
+                if(LOG.isDebugEnabled())
+                    LOG.debug("Holding {}",_class);
             }
             catch (Exception e)
             {

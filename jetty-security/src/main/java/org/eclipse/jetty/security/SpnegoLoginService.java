@@ -100,7 +100,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         
         _targetName = properties.getProperty("targetName");
         
-        LOG.debug("\n\nTarget Name\n\n" + _targetName);
+        LOG.debug("Target Name {}", _targetName);
         
         super.doStart();
     }

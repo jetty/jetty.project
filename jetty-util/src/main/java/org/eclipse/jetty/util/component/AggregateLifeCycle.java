@@ -144,7 +144,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
                     t=(T)o;
             }
         }
-        if (count>1)
+        if (count>1 && LOG.isDebugEnabled())
             LOG.debug("getBean({}) 1 of {}",clazz.getName(),count);
         
         return t;

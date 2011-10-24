@@ -698,14 +698,14 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     @Deprecated
     public String getKeyStoreLocation()
     {
-        return _sslContextFactory.getKeyStore();
+        return _sslContextFactory.getKeyStorePath();
     }
 
     /* ------------------------------------------------------------ */
     @Deprecated
     public void setKeyStoreLocation(String keyStoreLocation)
     {
-        _sslContextFactory.setKeyStore(keyStoreLocation);
+        _sslContextFactory.setKeyStorePath(keyStoreLocation);
     }
 
     @Deprecated
