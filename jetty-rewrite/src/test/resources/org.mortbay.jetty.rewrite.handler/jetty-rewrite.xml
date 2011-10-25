@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.eclipse.org/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
@@ -85,7 +85,7 @@
           <Array type="org.eclipse.jetty.rewrite.handler.Rule">
 
             <Item>
-              <New id="" class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
+              <New id="rewrite" class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
                 <Set name="pattern">/*</Set>
                 <Set name="replacement">/test</Set>
               </New>
