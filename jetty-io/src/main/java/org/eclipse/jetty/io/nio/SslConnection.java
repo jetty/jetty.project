@@ -25,6 +25,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
@@ -49,23 +50,34 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private final ThreadLocal<NIOBuffer> __outBuffer = new ThreadLocal<NIOBuffer>();
     private final SSLEngine _engine;
     private final SSLSession _session;
-    private AsyncConnection _delegate;
+    private AsyncConnection _connection;
     private int _allocations;
     private NIOBuffer _inbound;
     private NIOBuffer _unwrapBuf;
     private NIOBuffer _outbound;
+    private AsyncEndPoint _aEndp;
     
-    public SslConnection(SSLEngine engine,AsyncConnection connection,EndPoint endp)
+    public SslConnection(SSLEngine engine,EndPoint endp)
     {
-        this(engine,connection,endp,System.currentTimeMillis());
+        this(engine,endp,System.currentTimeMillis());
     }
     
-    public SslConnection(SSLEngine engine,AsyncConnection connection,EndPoint endp, long timeStamp)
+    public SslConnection(SSLEngine engine,EndPoint endp, long timeStamp)
     {
         super(endp,timeStamp);
-        _delegate=connection;
         _engine=engine;
         _session=_engine.getSession();
+        _aEndp=(AsyncEndPoint)endp;
+    }
+    
+    public synchronized void setConnection(AsyncConnection connection)
+    {
+        _connection=connection;
+    }
+    
+    public synchronized AsyncConnection getConnection()
+    {
+        return _connection;
     }
 
     private void allocateBuffers()
@@ -139,20 +151,24 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 LOG.debug("{} filled={} flushed={}",_session,filled,flushed);
                 
                 // If we are handshook let the delegate connection 
-                if (_engine.getHandshakeStatus()==HandshakeStatus.NOT_HANDSHAKING)
+                if (_engine.getHandshakeStatus()!=HandshakeStatus.NOT_HANDSHAKING)
+                    process(null,null);
+                else
                 {
                     // handle the delegate connection
-                    AsyncConnection next = (AsyncConnection)_delegate.handle();
-                    if (next!=_delegate && next==null)
+                    AsyncConnection next = (AsyncConnection)_connection.handle();
+                    if (next!=_connection && next==null)
                     {
-                        _delegate=next;
+                        _connection=next;
                         progress=true;
                     }
                 }
-                else
-                {
-                    process(null,null);
-                }
+                
+                // pass on ishut/oshut state
+                if (!_inbound.hasContent() && _endp.isInputShutdown())
+                    _engine.closeInbound();
+                if (!_outbound.hasContent() && _engine.isOutboundDone())
+                    _endp.shutdownOutput();
             }
         }
         finally
@@ -184,7 +200,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    private synchronized int process(NIOBuffer toFill, NIOBuffer toFlush) throws IOException
+    private synchronized boolean process(Buffer toFill, Buffer toFlush) throws IOException
     {
         if (toFill==null)
         {
@@ -195,16 +211,14 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         else if (_unwrapBuf!=null && _unwrapBuf.hasContent())
         {
             _unwrapBuf.skip(toFill.put(_unwrapBuf));
-            return 1;
+            return true;
         }
         if (toFlush==null)
             toFlush=__ZERO_BUFFER;
 
         HandshakeStatus initialStatus = _engine.getHandshakeStatus();
         boolean progress=true;
-        int received=0;
-        int sent=0;
-
+        boolean some_progress=false;
         try
         {
             allocateBuffers();
@@ -245,14 +259,15 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
                         // Detect SUN JVM Bug!!!
                         if(initialStatus==HandshakeStatus.NOT_HANDSHAKING &&
-                                _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP && sent==0)
+                                _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP /* && sent==0 */ )
                         {
                             // This should be NEED_WRAP
                             // The fix simply detects the signature of the bug and then close the connection (fail-fast) so that ff3 will delegate to using SSL instead of TLS.
                             // This is a jvm bug on java1.6 where the SSLEngine expects more data from the initial handshake when the client(ff3-tls) already had given it.
                             // See http://jira.codehaus.org/browse/JETTY-567 for more details
                             LOG.warn("{} JETTY-567",_session);
-                            return -1;
+                            _endp.close();
+                            return false;
                         }
                     }
                     break;
@@ -274,21 +289,20 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     break;
                 }
 
-                LOG.debug("{} progress {}",_session,progress);
+                LOG.debug("{} progress={}",_session,progress);
+                some_progress|=progress;
             }
-
-            LOG.debug("{} received {} sent {}",_session,received,sent);
         }
         finally
         {
             releaseBuffers();
         }
-        return (received<0||sent<0)?-1:(received+sent);
+        return some_progress;
     }
     
-    private synchronized boolean wrap(final NIOBuffer buffer) throws IOException
+    private synchronized boolean wrap(final Buffer buffer) throws IOException
     {
-        ByteBuffer bbuf=buffer.getByteBuffer();
+        ByteBuffer bbuf=extractByteBuffer(buffer);
         final SSLEngineResult result;
         
         synchronized(bbuf)
@@ -355,13 +369,13 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         return result.bytesConsumed()>0 || result.bytesProduced()>0;
     }
     
-    private synchronized boolean unwrap(final NIOBuffer buffer) throws IOException
+    private synchronized boolean unwrap(final Buffer buffer) throws IOException
     {
         if (!_inbound.hasContent())
             return false;
         
         buffer.compact();
-        ByteBuffer bbuf=buffer.getByteBuffer();
+        ByteBuffer bbuf=extractByteBuffer(buffer);
         final SSLEngineResult result;
         
         synchronized(bbuf)
@@ -432,4 +446,197 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         return result.bytesConsumed()>0 || result.bytesProduced()>0;
     }
 
+
+    /* ------------------------------------------------------------ */
+    private ByteBuffer extractByteBuffer(Buffer buffer)
+    {
+        if (buffer.buffer() instanceof NIOBuffer)
+            return ((NIOBuffer)buffer.buffer()).getByteBuffer();
+        return ByteBuffer.wrap(buffer.array());
+    }
+    
+    /* ------------------------------------------------------------ */
+    public AsyncEndPoint getSslEndPoint()
+    {
+        return new EP();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public class EP implements AsyncEndPoint
+    {
+        
+        public void shutdownOutput() throws IOException
+        {
+            _engine.closeOutbound();
+        }
+
+        public boolean isOutputShutdown()
+        {
+            return _engine.isOutboundDone();
+        }
+
+        public void shutdownInput() throws IOException
+        {
+            _engine.closeInbound();
+        }
+
+        public boolean isInputShutdown()
+        {
+            return _engine.isInboundDone();
+        }
+
+        public void close() throws IOException
+        {
+            _endp.close();
+        }
+
+        public int fill(Buffer buffer) throws IOException
+        {
+            int size=buffer.length();
+            process(buffer,null);
+            int filled=buffer.length()-size;
+            
+            if (filled==0 && isInputShutdown())
+                return -1;
+            return filled;
+        }
+
+        public int flush(Buffer buffer) throws IOException
+        {
+            int size=buffer.length();
+            process(null,buffer);
+            int flushed=size-buffer.length();
+            return flushed;
+        }
+
+        public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+        {
+            if (header!=null && header.hasContent())
+                return flush(header);
+            if (buffer!=null && buffer.hasContent())
+                return flush(buffer);
+            if (trailer!=null && trailer.hasContent())
+                return flush(trailer);
+            return 0;
+        }
+
+        public boolean blockReadable(long millisecs) throws IOException
+        {
+            return false;
+        }
+
+        public boolean blockWritable(long millisecs) throws IOException
+        {
+            return false;
+        }
+
+        public boolean isOpen()
+        {
+            return false;
+        }
+
+        public Object getTransport()
+        {
+            return null;
+        }
+
+        public boolean isBufferingInput()
+        {
+            return false;
+        }
+
+        public boolean isBufferingOutput()
+        {
+            return false;
+        }
+
+        public void flush() throws IOException
+        {
+            
+        }
+
+        public void asyncDispatch()
+        {
+            _aEndp.asyncDispatch();
+        }
+
+        public void scheduleWrite()
+        {
+            _aEndp.scheduleWrite();
+        }
+
+        public void scheduleIdle()
+        {
+            _aEndp.scheduleIdle();
+        }
+
+        public void cancelIdle()
+        {
+            _aEndp.cancelIdle();
+        }
+
+        public boolean isWritable()
+        {
+            return _aEndp.isWritable();
+        }
+
+        public boolean hasProgressed()
+        {
+            return _aEndp.hasProgressed();
+        }
+
+        public String getLocalAddr()
+        {
+            return _aEndp.getLocalAddr();
+        }
+
+        public String getLocalHost()
+        {
+            return _aEndp.getLocalHost();
+        }
+
+        public int getLocalPort()
+        {
+            return _aEndp.getLocalPort();
+        }
+
+        public String getRemoteAddr()
+        {
+            return _aEndp.getRemoteAddr();
+        }
+
+        public String getRemoteHost()
+        {
+            return _aEndp.getRemoteHost();
+        }
+
+        public int getRemotePort()
+        {
+            return _aEndp.getRemotePort();
+        }
+
+        public boolean isBlocking()
+        {
+            return _aEndp.isBlocking();
+        }
+
+        public boolean isBufferred()
+        {
+            return _aEndp.isBufferred();
+        }
+
+        public int getMaxIdleTime()
+        {
+            return _aEndp.getMaxIdleTime();
+        }
+
+        public void setMaxIdleTime(int timeMs) throws IOException
+        {
+            _aEndp.setMaxIdleTime(timeMs);
+        }
+        
+    }
+    
+    
 }

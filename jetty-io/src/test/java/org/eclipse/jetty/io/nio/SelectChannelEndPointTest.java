@@ -59,6 +59,9 @@ public class SelectChannelEndPointTest
             return new SelectChannelEndPoint(channel,selectSet,sKey,2000);
         }    
     };
+
+    boolean _echo=true;
+    boolean _block=true;
     
     @Before
     public void startManager() throws Exception
@@ -82,16 +85,15 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(),_connector.socket().getLocalPort());
     }
     
-    protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel, EndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
     
-    public static class TestConnection extends AbstractConnection implements AsyncConnection
+    public class TestConnection extends AbstractConnection implements AsyncConnection
     {
         NIOBuffer _in = new IndirectNIOBuffer(32*1024);
         NIOBuffer _out = new IndirectNIOBuffer(32*1024);
-        boolean _echo=true;
         
         public TestConnection(EndPoint endp)
         {
@@ -178,12 +180,63 @@ public class SelectChannelEndPointTest
         }
         
         // write then shutdown
-        client.getOutputStream().write("Goodbye".getBytes("UTF-8"));
+        client.getOutputStream().write("Goodbye Cruel TLS".getBytes("UTF-8"));
+
+        // Verify echo server to client
+        for (char c : "Goodbye Cruel TLS".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b>0);
+            assertEquals(c,(char)b);
+        }
+        
+        client.close();
+        
+    }
+    
+    
+    @Test
+    public void testShutdown() throws Exception
+    {
+        Socket client = newClient();
+            
+        client.setSoTimeout(500);
+        
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+        
+        _manager.register(server);
+        
+        // Write client to server
+        client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
+        
+        // Verify echo server to client
+        for (char c : "HelloWorld".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b>0);
+            assertEquals(c,(char)b);
+        }
+        
+        // wait for read timeout
+        long start=System.currentTimeMillis();
+        try
+        {
+            client.getInputStream().read();
+            Assert.fail();
+        }
+        catch(SocketTimeoutException e)
+        {
+            assertTrue(System.currentTimeMillis()-start>=400);
+        }
+        
+        // write then shutdown
+        client.getOutputStream().write("Goodbye Cruel TLS".getBytes("UTF-8"));
         client.shutdownOutput();
         
 
         // Verify echo server to client
-        for (char c : "Goodbye".toCharArray())
+        for (char c : "Goodbye Cruel TLS".toCharArray())
         {
             int b = client.getInputStream().read();
             assertTrue(b>0);
