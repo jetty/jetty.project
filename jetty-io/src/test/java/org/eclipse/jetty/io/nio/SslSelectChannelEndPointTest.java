@@ -51,7 +51,13 @@ public class SslSelectChannelEndPointTest extends SelectChannelEndPointTest
         connection.setConnection(delegate);
         return connection;
     }
-    
+
+    @Test
+    @Override
+    public void testEcho() throws Exception
+    {
+        super.testEcho();
+    }
 
     
     @Test
@@ -110,8 +116,6 @@ public class SslSelectChannelEndPointTest extends SelectChannelEndPointTest
                 System.err.println(engine.getHandshakeStatus());
             }
         }
-
-        Thread.sleep(2000);
         
 
         /* 
