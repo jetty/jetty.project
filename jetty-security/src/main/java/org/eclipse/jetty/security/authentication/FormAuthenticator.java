@@ -30,7 +30,6 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
@@ -43,6 +42,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.security.Constraint;
 
 /**
  * FORM Authenticator.

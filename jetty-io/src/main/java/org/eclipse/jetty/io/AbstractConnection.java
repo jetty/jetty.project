@@ -35,7 +35,7 @@ public abstract class AbstractConnection implements Connection
         return _endp;
     }
 
-    public void idleExpired()
+    public void onIdleExpired()
     {
         try
         {

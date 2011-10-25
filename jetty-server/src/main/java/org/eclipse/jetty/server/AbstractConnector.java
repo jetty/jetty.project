@@ -1046,7 +1046,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     protected void connectionClosed(Connection connection)
     {
-        connection.closed();
+        connection.onClose();
 
         if (_statsStartedAt.get() == -1)
             return;

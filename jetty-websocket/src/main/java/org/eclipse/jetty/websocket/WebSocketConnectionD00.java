@@ -239,7 +239,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         _websocket.onClose(WebSocketConnectionD06.CLOSE_NORMAL,"");
     }

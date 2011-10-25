@@ -174,7 +174,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         return false;
     }
 
-    public void closed()
+    public void onClose()
     {
     }
 

@@ -26,9 +26,9 @@ public class SocketEndPointTest extends EndPointTest<SocketEndPoint>
     }
 
     @Override
-    protected Connection<SocketEndPoint> newConnection() throws Exception
+    protected EndPointPair<SocketEndPoint> newConnection() throws Exception
     {
-        Connection<SocketEndPoint> c = new Connection<SocketEndPoint>();
+        EndPointPair<SocketEndPoint> c = new EndPointPair<SocketEndPoint>();
         c.client=new SocketEndPoint(new Socket(connector.getInetAddress(),connector.getLocalPort()));
         c.server=new SocketEndPoint(connector.accept());
         return c;

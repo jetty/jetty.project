@@ -25,7 +25,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.security.Constraint;
 
 /* ------------------------------------------------------------ */
 /**

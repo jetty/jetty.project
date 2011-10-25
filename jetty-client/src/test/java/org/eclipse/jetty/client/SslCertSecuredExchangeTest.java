@@ -20,9 +20,6 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.http.security.Credential;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.IdentityService;
@@ -38,6 +35,9 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslCertSecuredExchangeTest extends ContentExchangeTest
 { 

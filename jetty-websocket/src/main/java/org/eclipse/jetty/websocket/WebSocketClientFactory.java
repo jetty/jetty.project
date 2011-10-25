@@ -233,7 +233,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         @Override
         protected void endPointClosed(SelectChannelEndPoint endpoint)
         {
-            endpoint.getConnection().closed();
+            endpoint.getConnection().onClose();
         }
 
         @Override
@@ -426,7 +426,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             return false;
         }
 
-        public void closed()
+        public void onClose()
         {
             if (_error!=null)
                 _future.handshakeFailed(new ProtocolException(_error));

@@ -656,7 +656,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         LOG.debug("closed {}",this);
     }

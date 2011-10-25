@@ -297,7 +297,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void idleExpired()
+    public void onIdleExpired()
     {
         long idle = System.currentTimeMillis()-((SelectChannelEndPoint)_endp).getIdleTimestamp();
         closeOut(WebSocketConnectionD13.CLOSE_NORMAL,"Idle for "+idle+"ms > "+_endp.getMaxIdleTime()+"ms");
@@ -310,7 +310,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         final boolean closed;
         synchronized (this)

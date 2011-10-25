@@ -9,19 +9,19 @@ import org.junit.Test;
 
 public abstract class EndPointTest<T extends EndPoint>
 {
-    public static class Connection<T>
+    public static class EndPointPair<T>
     {
         public T client;
         public T server;
     }
     
-    protected abstract Connection<T> newConnection() throws Exception;
+    protected abstract EndPointPair<T> newConnection() throws Exception;
    
 
     @Test
     public void testClientServerExchange() throws Exception
     {
-        Connection<T> c = newConnection();
+        EndPointPair<T> c = newConnection();
         Buffer buffer = new IndirectNIOBuffer(4096);
         
         c.client.flush(new ByteArrayBuffer("request"));
@@ -96,7 +96,7 @@ public abstract class EndPointTest<T extends EndPoint>
     @Test
     public void testClientClose() throws Exception
     {
-        Connection<T> c = newConnection();
+        EndPointPair<T> c = newConnection();
         Buffer buffer = new IndirectNIOBuffer(4096);
         
         c.client.flush(new ByteArrayBuffer("request"));

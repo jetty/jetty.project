@@ -192,6 +192,9 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
     @Override
     public void shutdownInput() throws IOException
     {
+        System.err.println("SSL sIn");
+        super.shutdownInput();
+        /*
         LOG.debug("{} shutdownInput",_session);
 
         // All SSL closes should be graceful, as it is more secure.
@@ -212,12 +215,14 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             LOG.ignore(e);
             close();
         }
+        */
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void shutdownOutput() throws IOException
     {
+        System.err.println("SSL sOut");
         LOG.debug("{} shutdownOutput",_session);
 
         // All SSL closes should be graceful, as it is more secure.
@@ -526,6 +531,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             while (_inNIOBuffer.space()>0 && super.isOpen())
             {
                 int filled=super.fill(_inNIOBuffer);
+                System.err.println("f="+filled);
                 if (_debug) LOG.debug("{} filled {}",_session,filled);
                 if (filled < 0)
                     remoteClosed = true;
@@ -612,6 +618,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
                     return (total_filled > 0);
 
                 case CLOSED:
+                    System.err.println("unwrap CLOSE");
                     if (super.isOpen())
                         super.close();
                     // return true is some bytes somewhere were moved about.
@@ -709,6 +716,7 @@ public class SslSelectChannelEndPoint extends SelectChannelEndPoint
             case OK:
                 return _result.bytesConsumed();
             case CLOSED:
+                System.err.println("wrap CLOSE");
                 if (super.isOpen())
                     super.close();
                 return _result.bytesConsumed()>0?_result.bytesConsumed():-1;

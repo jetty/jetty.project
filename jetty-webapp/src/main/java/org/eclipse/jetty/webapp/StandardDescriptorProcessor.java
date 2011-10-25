@@ -26,7 +26,6 @@ import java.util.Map;
 
 import javax.servlet.ServletException;
 
-import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**

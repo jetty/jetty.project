@@ -604,7 +604,7 @@ public class ConnectHandler extends HandlerWrapper
             return false;
         }
 
-        public void closed()
+        public void onClose()
         {
         }
 
@@ -665,7 +665,7 @@ public class ConnectHandler extends HandlerWrapper
             _endPoint.shutdownOutput();
         }
 
-        public void idleExpired()
+        public void onIdleExpired()
         {
             try
             {
@@ -787,7 +787,7 @@ public class ConnectHandler extends HandlerWrapper
             return false;
         }
 
-        public void closed()
+        public void onClose()
         {
         }
 
@@ -832,7 +832,7 @@ public class ConnectHandler extends HandlerWrapper
             _endPoint.shutdownOutput();
         }
 
-        public void idleExpired()
+        public void onIdleExpired()
         {
             try
             {

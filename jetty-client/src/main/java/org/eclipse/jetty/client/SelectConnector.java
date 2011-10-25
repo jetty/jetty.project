@@ -26,7 +26,6 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Timeout;
 
 class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector

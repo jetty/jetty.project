@@ -26,9 +26,9 @@ public class ChannelEndPointTest extends EndPointTest<ChannelEndPoint>
     }
 
     @Override
-    protected Connection<ChannelEndPoint> newConnection() throws Exception
+    protected EndPointPair<ChannelEndPoint> newConnection() throws Exception
     {
-        Connection<ChannelEndPoint> c = new Connection<ChannelEndPoint>();
+        EndPointPair<ChannelEndPoint> c = new EndPointPair<ChannelEndPoint>();
         
         c.client=new ChannelEndPoint(SocketChannel.open(connector.socket().getLocalSocketAddress()));
         c.server=new ChannelEndPoint(connector.accept());

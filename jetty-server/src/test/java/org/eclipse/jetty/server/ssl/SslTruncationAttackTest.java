@@ -18,7 +18,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

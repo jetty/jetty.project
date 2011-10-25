@@ -19,7 +19,6 @@ import org.eclipse.jetty.ajp.Ajp13SocketConnector;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class LikeJettyXml

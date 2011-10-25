@@ -227,7 +227,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void idleExpired()
+    public void onIdleExpired()
     {
         closeOut(WebSocketConnectionD06.CLOSE_NORMAL,"Idle");
     }
@@ -239,7 +239,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         _webSocket.onClose(WebSocketConnectionD06.CLOSE_NORMAL,"");
     }

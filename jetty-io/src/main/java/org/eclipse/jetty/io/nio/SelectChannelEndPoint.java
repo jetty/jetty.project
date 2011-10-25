@@ -271,7 +271,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     protected void idleExpired()
     {
-        _connection.idleExpired();
+        _connection.onIdleExpired();
     }
 
     /* ------------------------------------------------------------ */
