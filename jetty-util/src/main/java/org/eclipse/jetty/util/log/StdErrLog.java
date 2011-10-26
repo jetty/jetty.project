@@ -43,15 +43,18 @@ public class StdErrLog implements Logger
             System.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
     private final static boolean __long = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
 
+    /**
+     * Tracking for child loggers only.
+     */
     private final static ConcurrentMap<String, StdErrLog> __loggers = new ConcurrentHashMap<String, StdErrLog>();
 
     static
     {
-        String deprecatedProperites[] =
+        String deprecatedProperties[] =
         { "DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG" };
 
         // Toss a message to users about deprecated system properties
-        for (String deprecatedProp : deprecatedProperites)
+        for (String deprecatedProp : deprecatedProperties)
         {
             if (System.getProperty(deprecatedProp) != null)
             {
@@ -92,13 +95,18 @@ public class StdErrLog implements Logger
 
     public StdErrLog(String name)
     {
+        this(name,System.getProperties());
+    }
+
+    public StdErrLog(String name, Properties props)
+    {
         this._name = name == null?"":name;
         this._abbrevname = condensePackageString(this._name);
-        this._level = getLoggingLevel(System.getProperties(),this._name);
+        this._level = getLoggingLevel(props,this._name);
 
         try
         {
-            _source = Boolean.parseBoolean(System.getProperty(_name + ".SOURCE",Boolean.toString(_source)));
+            _source = Boolean.parseBoolean(props.getProperty(_name + ".SOURCE",Boolean.toString(_source)));
         }
         catch (AccessControlException ace)
         {
@@ -126,34 +134,29 @@ public class StdErrLog implements Logger
         {
             String levelStr = props.getProperty(nameSegment + ".LEVEL");
             // System.err.printf("[StdErrLog.CONFIG] Checking for property [%s.LEVEL] = %s%n",nameSegment,levelStr);
-            if (levelStr == null)
+            int level = getLevelId(nameSegment + ".LEVEL",levelStr);
+            if (level != (-1))
             {
-                // Trim and try again.
-                int idx = nameSegment.lastIndexOf('.');
-                if (idx >= 0)
-                {
-                    nameSegment = nameSegment.substring(0,idx);
-                }
-                else
-                {
-                    nameSegment = null;
-                }
+                return level;
+            }
+
+            // Trim and try again.
+            int idx = nameSegment.lastIndexOf('.');
+            if (idx >= 0)
+            {
+                nameSegment = nameSegment.substring(0,idx);
             }
             else
             {
-                int level = getLevelId(levelStr);
-                if (level != (-1))
-                {
-                    return level;
-                }
+                nameSegment = null;
             }
         }
 
         // Default Logging Level
-        return getLevelId(props.getProperty("log.LEVEL", "INFO"));
+        return getLevelId("log.LEVEL",props.getProperty("log.LEVEL","INFO"));
     }
-    
-    protected static int getLevelId(String levelName)
+
+    protected static int getLevelId(String levelSegment, String levelName)
     {
         if (levelName == null)
         {
@@ -177,7 +180,7 @@ public class StdErrLog implements Logger
             return LEVEL_WARN;
         }
 
-        System.err.println("Unknown StdErrLog level [" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN] as values.");
+        System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN] as values.");
         return -1;
     }
 
@@ -312,7 +315,7 @@ public class StdErrLog implements Logger
 
     public boolean isDebugEnabled()
     {
-        return (_level >= LEVEL_DEBUG);
+        return (_level <= LEVEL_DEBUG);
     }
 
     /**
@@ -543,16 +546,53 @@ public class StdErrLog implements Logger
         }
     }
 
+    /**
+     * A more robust form of name blank test. Will return true for null names, and names that have only whitespace
+     * 
+     * @param name
+     *            the name to test
+     * @return true for null or blank name, false if any non-whitespace character is found.
+     */
+    private static boolean isBlank(String name)
+    {
+        if (name == null)
+        {
+            return true;
+        }
+        int size = name.length();
+        char c;
+        for (int i = 0; i < size; i++)
+        {
+            c = name.charAt(i);
+            if (!Character.isWhitespace(c))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Get a Child Logger relative to this Logger.
+     * 
+     * @param name
+     *            the child name
+     * @return the appropriate child logger (if name specified results in a new unique child)
+     */
     public Logger getLogger(String name)
     {
-        String fullname = _name == null || _name.length() == 0?name:_name + "." + name;
-
-        if ((name == null && this._name == null) || fullname.equals(_name))
+        if (isBlank(name))
         {
             return this;
         }
 
-        StdErrLog logger = __loggers.get(name);
+        String fullname = name;
+        if (!isBlank(_name))
+        {
+            fullname = _name + "." + name;
+        }
+
+        StdErrLog logger = __loggers.get(fullname);
         if (logger == null)
         {
             StdErrLog sel = new StdErrLog(fullname);
