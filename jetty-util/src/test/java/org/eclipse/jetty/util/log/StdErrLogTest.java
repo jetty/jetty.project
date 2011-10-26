@@ -181,7 +181,7 @@ public class StdErrLogTest
     public void testWarnFiltering() throws UnsupportedEncodingException
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
-        log.setHideStacks(true);
+        log.setHideStacks(false);
 
         ByteArrayOutputStream test = new ByteArrayOutputStream();
         PrintStream err = new PrintStream(test);
@@ -198,12 +198,20 @@ public class StdErrLogTest
         log.setLevel(StdErrLog.LEVEL_WARN);
         log.warn("Cheer Me");
 
+        log.warn("<zoom>", new Throwable("out of focus"));
+        log.warn(new Throwable("scene lost"));
+
         // Validate Output
         String output = new String(test.toByteArray(),"UTF-8");
-        System.err.print(output);
+        // System.err.print(output);
         Assert.assertThat(output,containsString("See Me"));
         Assert.assertThat(output,containsString("Hear Me"));
         Assert.assertThat(output,containsString("Cheer Me"));
+
+        // Validate Stack Traces
+        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
+        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
+        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
     }
 
     /**
@@ -215,7 +223,7 @@ public class StdErrLogTest
     public void testInfoFiltering() throws UnsupportedEncodingException
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
-        log.setHideStacks(true);
+        log.setHideStacks(false);
 
         ByteArrayOutputStream test = new ByteArrayOutputStream();
         PrintStream err = new PrintStream(test);
@@ -232,17 +240,29 @@ public class StdErrLogTest
         log.setLevel(StdErrLog.LEVEL_ALL);
         log.info("it is scratched.");
 
+        log.info("<zoom>", new Throwable("out of focus"));
+        log.info(new Throwable("scene lost"));
+
         // Level Warn
         log.setLevel(StdErrLog.LEVEL_WARN);
         log.info("sorry?");
+        log.info("<spoken line>", new Throwable("on editing room floor"));
 
         // Validate Output
         String output = new String(test.toByteArray(),"UTF-8");
-        System.err.print(output);
+        // System.err.print(output);
         Assert.assertThat(output,containsString("I will not buy"));
         Assert.assertThat(output,containsString("this record"));
         Assert.assertThat(output,containsString("it is scratched."));
         Assert.assertThat(output,not(containsString("sorry?")));
+        
+        // Validate Stack Traces
+        Assert.assertThat(output,not(containsString("<spoken line>")));
+        Assert.assertThat(output,not(containsString("on editing room floor")));
+
+        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
+        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
+        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
     }
 
     /**
@@ -262,11 +282,15 @@ public class StdErrLogTest
 
         // Normal/Default behavior
         log.debug("Tobacconist");
+        log.debug("<spoken line>", new Throwable("on editing room floor"));
 
         // Level Debug
         log.setLevel(StdErrLog.LEVEL_DEBUG);
         log.debug("my hovercraft is");
         
+        log.debug("<zoom>", new Throwable("out of focus"));
+        log.debug(new Throwable("scene lost"));
+
         // Level All
         log.setLevel(StdErrLog.LEVEL_ALL);
         log.debug("full of eels.");
@@ -277,11 +301,19 @@ public class StdErrLogTest
 
         // Validate Output
         String output = new String(test.toByteArray(),"UTF-8");
-        System.err.print(output);
+        // System.err.print(output);
         Assert.assertThat(output,not(containsString("Tobacconist")));
         Assert.assertThat(output,containsString("my hovercraft is"));
         Assert.assertThat(output,containsString("full of eels."));
         Assert.assertThat(output,not(containsString("what?")));
+
+        // Validate Stack Traces
+        Assert.assertThat(output,not(containsString("<spoken line>")));
+        Assert.assertThat(output,not(containsString("on editing room floor")));
+        
+        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
+        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
+        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
     }
 
     /**
@@ -312,7 +344,7 @@ public class StdErrLogTest
 
         // Validate Output
         String output = new String(test.toByteArray(),"UTF-8");
-        System.err.print(output);
+        // System.err.print(output);
         Assert.assertThat(output,not(containsString("IGNORE ME")));
         Assert.assertThat(output,containsString("Don't ignore me"));
         Assert.assertThat(output,not(containsString("Debug me")));
@@ -335,4 +367,147 @@ public class StdErrLogTest
         log.setLevel(StdErrLog.LEVEL_WARN);
         Assert.assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
     }
+    
+    @Test
+    public void testSetGetLevel()
+    {
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        log.setHideStacks(true);
+        
+        log.setLevel(StdErrLog.LEVEL_ALL);
+        Assert.assertThat("log.level(all).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_ALL));
+
+        log.setLevel(StdErrLog.LEVEL_DEBUG);
+        Assert.assertThat("log.level(debug).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_DEBUG));
+
+        log.setLevel(StdErrLog.LEVEL_INFO);
+        Assert.assertThat("log.level(info).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_INFO));
+
+        log.setLevel(StdErrLog.LEVEL_WARN);
+        Assert.assertThat("log.level(warn).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_WARN));
+    }
+    
+    @Test
+    public void testGetChildLogger_Simple()
+    {
+        String baseName = "jetty";
+        StdErrLog log = new StdErrLog(baseName);
+        log.setHideStacks(true);
+        
+        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+        
+        Logger log2 = log.getLogger("child");
+        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty.child"));
+    }
+    
+    @Test
+    public void testGetChildLogger_Deep()
+    {
+        String baseName = "jetty";
+        StdErrLog log = new StdErrLog(baseName);
+        log.setHideStacks(true);
+        
+        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+        
+        Logger log2 = log.getLogger("child.of.the.sixties");
+        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty.child.of.the.sixties"));
+    }
+
+    @Test
+    public void testGetChildLogger_Null()
+    {
+        String baseName = "jetty";
+        StdErrLog log = new StdErrLog(baseName);
+        log.setHideStacks(true);
+        
+        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+        
+        // Pass null as child reference, should return parent logger
+        Logger log2 = log.getLogger(null);
+        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
+        Assert.assertSame("Should have returned same logger", log2, log);
+    }
+
+    @Test
+    public void testGetChildLogger_EmptyName()
+    {
+        String baseName = "jetty";
+        StdErrLog log = new StdErrLog(baseName);
+        log.setHideStacks(true);
+        
+        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+        
+        // Pass empty name as child reference, should return parent logger
+        Logger log2 = log.getLogger("");
+        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
+        Assert.assertSame("Should have returned same logger", log2, log);
+    }
+
+    @Test
+    public void testGetChildLogger_EmptyNameSpaces()
+    {
+        String baseName = "jetty";
+        StdErrLog log = new StdErrLog(baseName);
+        log.setHideStacks(true);
+        
+        Assert.assertThat("Logger.name", log.getName(), is("jetty"));
+        
+        // Pass empty name as child reference, should return parent logger
+        Logger log2 = log.getLogger("      ");
+        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
+        Assert.assertSame("Should have returned same logger", log2, log);
+    }
+
+    @Test
+    public void testGetChildLogger_NullParent()
+    {
+        StdErrLog log = new StdErrLog(null);
+        
+        Assert.assertThat("Logger.name", log.getName(), is(""));
+        
+        Logger log2 = log.getLogger("jetty");
+        Assert.assertThat("Logger.child.name", log2.getName(), is("jetty"));
+        Assert.assertNotSame("Should have returned same logger", log2, log);
+    }
+    
+    @Test
+    public void testToString()
+    {
+        StdErrLog log = new StdErrLog("jetty");
+
+        log.setLevel(StdErrLog.LEVEL_ALL);
+        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=ALL"));
+
+        log.setLevel(StdErrLog.LEVEL_DEBUG);
+        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=DEBUG"));
+        
+        log.setLevel(StdErrLog.LEVEL_INFO);
+        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=INFO"));
+        
+        log.setLevel(StdErrLog.LEVEL_WARN);
+        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=WARN"));
+        
+        log.setLevel(99); // intentionally bogus level
+        Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=?"));
+    }
+    
+    @Test
+    public void testPrintSource() throws UnsupportedEncodingException
+    {
+        StdErrLog log = new StdErrLog("test");
+        log.setLevel(StdErrLog.LEVEL_DEBUG);
+        log.setSource(true);
+
+        ByteArrayOutputStream test = new ByteArrayOutputStream();
+        PrintStream err = new PrintStream(test);
+        log.setStdErrStream(err);
+        
+        log.debug("Show me the source!");
+        
+        String output = new String(test.toByteArray(),"UTF-8");
+        // System.err.print(output);   
+        
+        Assert.assertThat(output, containsString(".StdErrLogTest#testPrintSource(StdErrLogTest.java:"));
+    }
+
 }
