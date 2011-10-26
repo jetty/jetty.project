@@ -126,34 +126,32 @@ public class StdErrLog implements Logger
         {
             String levelStr = props.getProperty(nameSegment + ".LEVEL");
             // System.err.printf("[StdErrLog.CONFIG] Checking for property [%s.LEVEL] = %s%n",nameSegment,levelStr);
-            if (levelStr == null)
+            if (levelStr != null) 
             {
-                // Trim and try again.
-                int idx = nameSegment.lastIndexOf('.');
-                if (idx >= 0)
-                {
-                    nameSegment = nameSegment.substring(0,idx);
-                }
-                else
-                {
-                    nameSegment = null;
-                }
-            }
-            else
-            {
-                int level = getLevelId(levelStr);
+                int level = getLevelId(nameSegment + ".LEVEL", levelStr);
                 if (level != (-1))
                 {
                     return level;
                 }
             }
+            
+            // Trim and try again.
+            int idx = nameSegment.lastIndexOf('.');
+            if (idx >= 0)
+            {
+                nameSegment = nameSegment.substring(0,idx);
+            }
+            else
+            {
+                nameSegment = null;
+            }
         }
 
         // Default Logging Level
-        return getLevelId(props.getProperty("log.LEVEL", "INFO"));
+        return getLevelId("log.LEVEL", props.getProperty("log.LEVEL", "INFO"));
     }
     
-    protected static int getLevelId(String levelName)
+    protected static int getLevelId(String levelSegment, String levelName)
     {
         if (levelName == null)
         {
@@ -177,7 +175,7 @@ public class StdErrLog implements Logger
             return LEVEL_WARN;
         }
 
-        System.err.println("Unknown StdErrLog level [" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN] as values.");
+        System.err.println("Unknown StdErrLog level [" + levelSegment + "]=[" + levelStr + "], expecting only [ALL, DEBUG, INFO, WARN] as values.");
         return -1;
     }
 
