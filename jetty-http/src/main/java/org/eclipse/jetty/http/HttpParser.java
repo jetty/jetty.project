@@ -299,9 +299,7 @@ public class HttpParser implements Parser
                 }
 
                 if (filled < 0 || _endp.isInputShutdown())
-                {
-                    System.err.println("CLOSING f="+filled+"/"+_buffer.length()+" "+_endp);
-                    
+                {                    
                     _persistent=false;
 
                     // do we have content to deliver?

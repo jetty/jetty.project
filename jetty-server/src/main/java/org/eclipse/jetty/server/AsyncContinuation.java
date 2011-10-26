@@ -596,7 +596,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             }
             else
             {
-                _connection.scheduleTimeout(_event,_timeoutMs);
+                ((AsyncEndPoint)endp).scheduleTimeout(_event,_timeoutMs);
             }
         }
     }
@@ -617,7 +617,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             final AsyncEventState event=_event;
             if (event!=null)
-                _connection.cancelTimeout(event);
+            {
+                ((AsyncEndPoint)endp).cancelTimeout(event);
+            }
         }
     }
 

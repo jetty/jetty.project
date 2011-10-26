@@ -22,6 +22,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -118,9 +119,9 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
-        SelectChannelEndPoint cep = ((SelectChannelEndPoint)endpoint);
-        cep.cancelIdle();
-        request.setTimeStamp(cep.getSelectSet().getNow());
+        AsyncEndPoint aEndp = ((AsyncEndPoint)endpoint);
+        aEndp.cancelIdle();
+        request.setTimeStamp(System.currentTimeMillis());
         endpoint.setMaxIdleTime(_maxIdleTime);
         super.customize(endpoint, request);
     }
@@ -129,7 +130,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void persist(EndPoint endpoint) throws IOException
     {
-        ((SelectChannelEndPoint)endpoint).scheduleIdle();
+        ((AsyncEndPoint)endpoint).scheduleIdle();
         super.persist(endpoint);
     }
 
@@ -287,9 +288,9 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected AsyncConnection newConnection(SocketChannel channel,final SelectChannelEndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel,final AsyncEndPoint endpoint)
     {
-        return new SelectChannelHttpConnection(SelectChannelConnector.this,endpoint,getServer(),endpoint);
+        return new SelectChannelHttpConnection(SelectChannelConnector.this,endpoint,getServer());
     }
 
     /* ------------------------------------------------------------ */
@@ -308,27 +309,14 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------ */
     private class SelectChannelHttpConnection extends AsyncHttpConnection
     {
-        private final SelectChannelEndPoint _endpoint;
+        private final AsyncEndPoint _endpoint;
 
-        private SelectChannelHttpConnection(Connector connector, EndPoint endpoint, Server server, SelectChannelEndPoint endpoint2)
+        private SelectChannelHttpConnection(Connector connector, EndPoint endpoint, Server server)
         {
             super(connector,endpoint,server);
-            _endpoint = endpoint2;
+            _endpoint=null;
         }
 
-        /* ------------------------------------------------------------ */
-        @Override
-        public void cancelTimeout(Task task)
-        {
-            _endpoint.getSelectSet().cancelTimeout(task);
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public void scheduleTimeout(Task task, long timeoutMs)
-        {
-            _endpoint.getSelectSet().scheduleTimeout(task,timeoutMs);
-        }
     }
 
     /* ------------------------------------------------------------ */

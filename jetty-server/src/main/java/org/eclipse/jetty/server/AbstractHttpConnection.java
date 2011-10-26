@@ -365,13 +365,19 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    public void scheduleTimeout(Timeout.Task task, long timeoutMs)
+    /**
+     * @deprecated
+     */
+    public final void scheduleTimeout(Timeout.Task task, long timeoutMs)
     {
         throw new UnsupportedOperationException();
     }
 
     /* ------------------------------------------------------------ */
-    public void cancelTimeout(Timeout.Task task)
+    /**
+     * @deprecated
+     */
+    public final void cancelTimeout(Timeout.Task task)
     {
         throw new UnsupportedOperationException();
     }

@@ -23,6 +23,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
+import javax.print.attribute.standard.MediaSize.Engineering;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -33,17 +34,15 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------ */
 /**
  */
 public class SslConnection extends AbstractConnection implements AsyncConnection
 {
-    private static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio.ssl");
-    static
-    {
-        LOG.setDebugEnabled(true);
-    }
+    static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio.ssl");
+    
     private static final NIOBuffer __ZERO_BUFFER=new IndirectNIOBuffer(0);
     
     private final ThreadLocal<NIOBuffer> __inBuffer = new ThreadLocal<NIOBuffer>();
@@ -51,11 +50,13 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private final SSLEngine _engine;
     private final SSLSession _session;
     private AsyncConnection _connection;
+    private final SslEndPoint _sslEndPoint = new SslEndPoint();
     private int _allocations;
     private NIOBuffer _inbound;
     private NIOBuffer _unwrapBuf;
     private NIOBuffer _outbound;
     private AsyncEndPoint _aEndp;
+
     
     public SslConnection(SSLEngine engine,EndPoint endp)
     {
@@ -90,14 +91,14 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 {
                     _inbound = __inBuffer.get();
                     if (_inbound==null)
-                        _inbound=new IndirectNIOBuffer(_session.getPacketBufferSize());
+                        _inbound=new IndirectNIOBuffer(_session.getPacketBufferSize()*2);
                 }
 
                 if (_outbound==null)
                 {
                     _outbound = __outBuffer.get();
                     if (_outbound==null)
-                        _outbound=new IndirectNIOBuffer(_session.getPacketBufferSize());
+                        _outbound=new IndirectNIOBuffer(_session.getPacketBufferSize()*2);
                 }
             }
         }
@@ -138,21 +139,10 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             while (progress)
             {
                 progress=false;
-                int filled=0,flushed=0;
-                
-                // Read any available data
-                if (_inbound.space()>0 && (filled=_endp.fill(_inbound))>0)
-                    progress = true;
-                
-                // flush any output data
-                if (_outbound.hasContent() && (flushed=_endp.flush(_outbound))>0)
-                    progress = true;
-                
-                LOG.debug("{} filled={} flushed={}",_session,filled,flushed);
                 
                 // If we are handshook let the delegate connection 
                 if (_engine.getHandshakeStatus()!=HandshakeStatus.NOT_HANDSHAKING)
-                    process(null,null);
+                    progress|=process(null,null);
                 else
                 {
                     // handle the delegate connection
@@ -164,11 +154,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     }
                 }
                 
-                // pass on ishut/oshut state
-                if (!_inbound.hasContent() && _endp.isInputShutdown())
-                    _engine.closeInbound();
-                if (!_outbound.hasContent() && _engine.isOutboundDone())
-                    _endp.shutdownOutput();
+                
+                LOG.debug("{} handle progress=",_session,progress);
             }
         }
         finally
@@ -226,7 +213,18 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             while (progress)
             {
                 progress=false;
+                int filled=0,flushed=0;
+                
+                // Read any available data
+                if (_inbound.space()>0 && (filled=_endp.fill(_inbound))>0)
+                    progress = true;
+                
+                // flush any output data
+                if (_outbound.hasContent() && (flushed=_endp.flush(_outbound))>0)
+                    progress = true;
 
+                LOG.debug("{} filled={} flushed={}",_session,filled,flushed);
+                
                 // handle the current hand share status
                 LOG.debug("{} status {}",_session,_engine.getHandshakeStatus());
                 switch(_engine.getHandshakeStatus())
@@ -239,7 +237,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         // Try wrapping some application data
                         if (toFlush.hasContent() && _outbound.space()>0 && wrap(toFlush))
                             progress=true;
-
 
                         // Try unwrapping some application data
                         if (toFill.space()>0 && _inbound.hasContent() && unwrap(toFill))
@@ -289,7 +286,13 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     break;
                 }
 
-                LOG.debug("{} progress={}",_session,progress);
+                // pass on ishut/oshut state
+                if (!_inbound.hasContent() && _endp.isInputShutdown())
+                    _engine.closeInbound();
+                if (!_outbound.hasContent() && _engine.isOutboundDone())
+                    _endp.shutdownOutput();
+                
+                LOG.debug("{} process progress={}",_session,progress);
                 some_progress|=progress;
             }
         }
@@ -333,7 +336,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 catch(SSLException e)
                 {
                     LOG.warn(_endp+":",e);
-                    _endp.close();  // TODO ?
+                    _endp.close();
                     throw e;
                 }
                 finally
@@ -358,7 +361,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 break;
                 
             case CLOSED:
-                System.err.println("wrap CLOSE");
+                _endp.close();
                 break;
 
             default:
@@ -432,7 +435,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 break;
                 
             case CLOSED:
-                System.err.println("unwrap CLOSE");
+                _endp.close();
                 break;
 
             default:
@@ -458,13 +461,22 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     /* ------------------------------------------------------------ */
     public AsyncEndPoint getSslEndPoint()
     {
-        return new EP();
+        return _sslEndPoint;
     }
     
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class EP implements AsyncEndPoint
+    public class SslEndPoint implements AsyncEndPoint
     {
+        public SSLEngine getSslEngine()
+        {
+            return _engine;
+        }
+
+        public SslConnection getSslConnection()
+        {
+            return SslConnection.this;
+        }
         
         public void shutdownOutput() throws IOException
         {
@@ -473,17 +485,17 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public boolean isOutputShutdown()
         {
-            return _engine.isOutboundDone();
+            return !isOpen();
         }
 
         public void shutdownInput() throws IOException
         {
-            _engine.closeInbound();
+            // We do not do a closeInput here, as that prevents any writes
         }
 
         public boolean isInputShutdown()
         {
-            return _engine.isInboundDone();
+            return !isOpen();
         }
 
         public void close() throws IOException
@@ -523,37 +535,64 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public boolean blockReadable(long millisecs) throws IOException
         {
-            return false;
+            long now = System.currentTimeMillis();
+            long end=millisecs>0?(now+millisecs):Long.MAX_VALUE;
+            
+            while (now<end)
+            {
+                process(null,null);
+                synchronized (this)
+                {
+                    if (_unwrapBuf!=null && _unwrapBuf.hasContent())
+                        break;
+                    if (_inbound!=null && _inbound.hasContent())
+                        break;
+                }
+                _endp.blockReadable(end-now);
+                now = System.currentTimeMillis();
+            }
+            
+            return now<end;
         }
 
         public boolean blockWritable(long millisecs) throws IOException
         {
-            return false;
+            return _endp.blockWritable(millisecs);
         }
 
         public boolean isOpen()
         {
-            return false;
+            return _endp.isOpen();
         }
 
         public Object getTransport()
         {
-            return null;
+            return _endp;
         }
 
         public boolean isBufferingInput()
         {
+            synchronized (this)
+            {
+                if (_unwrapBuf!=null && _unwrapBuf.hasContent())
+                    return true;
+                if (_inbound!=null && _inbound.hasContent())
+                    return true;
+            }
             return false;
         }
 
         public boolean isBufferingOutput()
         {
-            return false;
+            synchronized (this)
+            {
+                return _outbound!=null && _outbound.hasContent();
+            }
         }
 
         public void flush() throws IOException
         {
-            
+            process(null,null);
         }
 
         public void asyncDispatch()
@@ -576,6 +615,16 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             _aEndp.cancelIdle();
         }
 
+        public void scheduleTimeout(Task task, long timeoutMs)
+        {
+            _aEndp.scheduleTimeout(task,timeoutMs);
+        }
+
+        public void cancelTimeout(Task task)
+        {
+            _aEndp.cancelTimeout(task);
+        }
+        
         public boolean isWritable()
         {
             return _aEndp.isWritable();
@@ -618,12 +667,12 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public boolean isBlocking()
         {
-            return _aEndp.isBlocking();
+            return false;
         }
 
         public boolean isBufferred()
         {
-            return _aEndp.isBufferred();
+            return true;
         }
 
         public int getMaxIdleTime()
@@ -635,6 +684,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         {
             _aEndp.setMaxIdleTime(timeMs);
         }
+
         
     }
     

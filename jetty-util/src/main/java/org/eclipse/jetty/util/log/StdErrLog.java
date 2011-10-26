@@ -312,7 +312,7 @@ public class StdErrLog implements Logger
 
     public boolean isDebugEnabled()
     {
-        return (_level >= LEVEL_DEBUG);
+        return (_level <= LEVEL_DEBUG);
     }
 
     /**

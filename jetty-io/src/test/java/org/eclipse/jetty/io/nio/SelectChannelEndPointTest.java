@@ -61,7 +61,7 @@ public class SelectChannelEndPointTest
     };
 
     boolean _echo=true;
-    boolean _block=true;
+    int _blockAt=0;
     
     @Before
     public void startManager() throws Exception
@@ -110,6 +110,13 @@ public class SelectChannelEndPointTest
                 if (_in.space()>0 && _endp.fill(_in)>0)
                     progress=true;
 
+                if (_blockAt>0 && _in.length()>0 && _in.length()<_blockAt)
+                {
+                    _endp.blockReadable(10000);
+                    if (_in.space()>0 && _endp.fill(_in)>0)
+                        progress=true;
+                }
+                
                 if (_echo && _in.hasContent() && _in.skip(_out.put(_in))>0)
                     progress=true;
                 
@@ -247,4 +254,51 @@ public class SelectChannelEndPointTest
         assertEquals(-1,client.getInputStream().read());
         
     }
+    
+    
+
+    @Test
+    public void testBlockIn() throws Exception
+    {
+        Socket client = newClient();
+            
+        client.setSoTimeout(200);
+        
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+        
+        _manager.register(server);
+        
+        // Write 8 and cause block for 10
+        _blockAt=10;
+        client.getOutputStream().write("12345678".getBytes("UTF-8"));
+        
+        Thread.sleep(200);
+
+        // No echo as blocking for 10
+        long start=System.currentTimeMillis();
+        try
+        {
+            client.getInputStream().read();
+            Assert.fail();
+        }
+        catch(SocketTimeoutException e)
+        {
+            System.err.println("blocked "+(System.currentTimeMillis()-start));
+            assertTrue(System.currentTimeMillis()-start>=100);
+        }
+
+        // write remaining characters
+        client.getOutputStream().write("90ABCDEF".getBytes("UTF-8"));
+        
+        
+        // Verify echo server to client
+        for (char c : "1234567890ABCDEF".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b>0);
+            assertEquals(c,(char)b);
+        }
+    }
+    
 }

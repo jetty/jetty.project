@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------ */
 /**
@@ -248,6 +249,18 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         return true;
     }
 
+    /* ------------------------------------------------------------ */
+    public void cancelTimeout(Task task)
+    {
+        getSelectSet().cancelTimeout(task);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void scheduleTimeout(Task task, long timeoutMs)
+    {
+        getSelectSet().scheduleTimeout(task,timeoutMs);
+    }
+    
     /* ------------------------------------------------------------ */
     public void scheduleIdle()
     {

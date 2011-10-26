@@ -28,7 +28,7 @@ import org.junit.Test;
 /**
  * HttpServer Tester.
  */
-public class SslSelectChannelServerTest extends HttpServerTestBase
+public class SelectChannelServerSslTest extends HttpServerTestBase
 {
     static SSLContext __sslContext;
     {
@@ -76,24 +76,6 @@ public class SslSelectChannelServerTest extends HttpServerTestBase
         {
             e.printStackTrace();
             throw new RuntimeException(e);
-        }
-        
+        }   
     }
-
-    @Test
-    @Override
-    public void testBlockingWhileWritingResponseContent() throws Exception
-    {
-        super.testBlockingWhileWritingResponseContent();
-    }
-
-
-    @Test
-    @Override
-    public void testBigBlocks() throws Exception
-    {
-        super.testBigBlocks();
-    }
-    
-    
 }
