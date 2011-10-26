@@ -558,6 +558,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
             AsyncConnection delegate = super.newConnection(channel,connection.getSslEndPoint());
             connection.setConnection(delegate);
+            connection.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
             return connection;
         }
         catch(IOException e)

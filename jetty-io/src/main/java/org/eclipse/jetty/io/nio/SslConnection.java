@@ -56,6 +56,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private NIOBuffer _unwrapBuf;
     private NIOBuffer _outbound;
     private AsyncEndPoint _aEndp;
+    private boolean _allowRenegotiate=true;
+    private boolean _handshook;
 
     
     public SslConnection(SSLEngine engine,EndPoint endp)
@@ -81,6 +83,30 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         return _connection;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if SSL re-negotiation is allowed (default false)
+     */
+    public boolean isAllowRenegotiate()
+    {
+        return _allowRenegotiate;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set if SSL re-negotiation is allowed. CVE-2009-3555 discovered
+     * a vulnerability in SSL/TLS with re-negotiation.  If your JVM
+     * does not have CVE-2009-3555 fixed, then re-negotiation should
+     * not be allowed.  CVE-2009-3555 was fixed in Sun java 1.6 with a ban
+     * of renegotiates in u19 and with RFC5746 in u22.
+     *
+     * @param allowRenegotiate
+     *            true if re-negotiation is allowed (default false)
+     */
+    public void setAllowRenegotiate(boolean allowRenegotiate)
+    {
+        _allowRenegotiate = allowRenegotiate;
+    }
     private void allocateBuffers()
     {
         synchronized (this)
@@ -255,8 +281,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         }
 
                         // Detect SUN JVM Bug!!!
+                        /* TODO
                         if(initialStatus==HandshakeStatus.NOT_HANDSHAKING &&
-                                _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP /* && sent==0 */ )
+                                _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP && sent==0 )
                         {
                             // This should be NEED_WRAP
                             // The fix simply detects the signature of the bug and then close the connection (fail-fast) so that ff3 will delegate to using SSL instead of TLS.
@@ -266,13 +293,16 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                             _endp.close();
                             return false;
                         }
+                        */
                     }
                     break;
 
                     case NEED_WRAP:
                     {
                         // The SSL needs to send some handshake data to the other side
-                        if (wrap(toFlush))
+                        if (_handshook && !_allowRenegotiate)
+                            _endp.close();
+                        else if (wrap(toFlush))
                             progress=true;
                     }
                     break;
@@ -280,7 +310,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     case NEED_UNWRAP:
                     {
                         // The SSL needs to receive some handshake data from the other side
-                        if (unwrap(toFill))
+                        if (_handshook && !_allowRenegotiate)
+                            _endp.close();
+                        else if (unwrap(toFill))
                             progress=true;
                     }
                     break;
@@ -329,8 +361,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                             result.bytesConsumed(),
                             result.bytesProduced());
 
+                    
                     buffer.skip(result.bytesConsumed());
-                    buffer.compact();
                     _outbound.setPutIndex(_outbound.putIndex()+result.bytesProduced());
                 }
                 catch(SSLException e)
@@ -358,6 +390,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 break;
 
             case OK:
+                if (result.getHandshakeStatus()==HandshakeStatus.FINISHED)
+                    _handshook=true;
                 break;
                 
             case CLOSED:
@@ -377,7 +411,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         if (!_inbound.hasContent())
             return false;
         
-        buffer.compact();
         ByteBuffer bbuf=extractByteBuffer(buffer);
         final SSLEngineResult result;
         
@@ -432,6 +465,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 break;
 
             case OK:
+                if (result.getHandshakeStatus()==HandshakeStatus.FINISHED)
+                    _handshook=true;
                 break;
                 
             case CLOSED:
@@ -507,6 +542,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         {
             int size=buffer.length();
             process(buffer,null);
+            
             int filled=buffer.length()-size;
             
             if (filled==0 && isInputShutdown())

@@ -12,9 +12,14 @@
 // ========================================================================
 
 package org.eclipse.jetty.server.ssl;
+import static org.junit.Assert.assertEquals;
+
 import java.io.FileInputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.security.KeyStore;
+import java.util.Arrays;
+import java.util.Random;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -77,5 +82,58 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             e.printStackTrace();
             throw new RuntimeException(e);
         }   
+    }   
+
+    public void testRequest2Fragments() throws Exception
+    {
+        super.testRequest2Fragments();
+    }
+
+    @Test
+    public void testRequest2FixedFragments() throws Exception
+    {
+        configureServer(new EchoHandler());
+
+        byte[] bytes=REQUEST2.getBytes();
+        int[] points=new int[]{74,325};
+
+        // Sort the list
+        Arrays.sort(points);
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+
+
+            int last=0;
+
+            // Write out the fragments
+            for (int j=0; j<points.length; ++j)
+            {
+                int point=points[j];                
+                os.write(bytes,last,point-last);
+                last=point;
+                os.flush();
+                Thread.sleep(PAUSE);
+
+            }
+
+            // Write the last fragment
+            os.write(bytes,last,bytes.length-last);
+            os.flush();
+            Thread.sleep(PAUSE);
+            
+
+            // Read the response
+            String response=readResponse(client);
+
+            // Check the response
+            assertEquals(RESPONSE2,response);
+        }
+        finally
+        {
+            client.close();
+        }
     }
 }

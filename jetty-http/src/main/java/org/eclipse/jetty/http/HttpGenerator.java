@@ -790,7 +790,6 @@ public class HttpGenerator extends AbstractGenerator
 
             // end the header.
             _header.put(HttpTokens.CRLF);
-
             _state = STATE_CONTENT;
 
         }

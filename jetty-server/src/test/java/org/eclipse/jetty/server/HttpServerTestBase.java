@@ -65,12 +65,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static final String FRAGMENT3=REQUEST1.substring(34);
 
     /** Second test request. */
-    private static final String REQUEST2_HEADER=
+    protected static final String REQUEST2_HEADER=
         "POST / HTTP/1.0\n"+
         "Host: localhost\n"+
         "Content-Type: text/xml;charset=ISO-8859-1\n"+
         "Content-Length: ";
-    private static final String REQUEST2_CONTENT=
+    protected static final String REQUEST2_CONTENT=
         "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"+
         "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"+
         "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"+
@@ -80,10 +80,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         "        </getJobDetails>\n"+
         "    </request>\n"+
         "</nimbus>";
-    private static final String REQUEST2=REQUEST2_HEADER+REQUEST2_CONTENT.getBytes().length+"\n\n"+REQUEST2_CONTENT;
+    protected static final String REQUEST2=REQUEST2_HEADER+REQUEST2_CONTENT.getBytes().length+"\n\n"+REQUEST2_CONTENT;
 
     /** The second expected response. */
-    private static final String RESPONSE2_CONTENT=
+    protected static final String RESPONSE2_CONTENT=
             "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"+
             "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"+
             "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"+
@@ -93,7 +93,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             "        </getJobDetails>\n"+
             "    </request>\n"
             +"</nimbus>\n";
-    private static final String RESPONSE2=
+    protected static final String RESPONSE2=
         "HTTP/1.1 200 OK\n"+
         "Content-Type: text/xml;charset=ISO-8859-1\n"+
         "Content-Length: "+RESPONSE2_CONTENT.getBytes().length+"\n"+
@@ -1141,7 +1141,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * @return The response string.
      * @throws IOException in case of I/O problems
      */
-    private static String readResponse(Socket client) throws IOException
+    protected static String readResponse(Socket client) throws IOException
     {
         BufferedReader br=null;
 

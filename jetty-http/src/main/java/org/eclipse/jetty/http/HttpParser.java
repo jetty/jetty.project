@@ -1025,7 +1025,8 @@ public class HttpParser implements Parser
 
             try
             {
-                return _endp.fill(_buffer);
+                int filled = _endp.fill(_buffer);
+                return filled;
             }
             catch(IOException e)
             {
