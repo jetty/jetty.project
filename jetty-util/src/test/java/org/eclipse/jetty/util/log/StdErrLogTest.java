@@ -17,6 +17,8 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
@@ -28,6 +30,105 @@ import org.junit.Test;
  */
 public class StdErrLogTest
 {
+    @Test
+    public void testStdErrLogFormat() throws UnsupportedEncodingException
+    {
+        StdErrLog log = new StdErrLog(LogTest.class.getName());
+        StdErrCapture output = new StdErrCapture(log);
+
+        log.info("testing:{},{}","test","format1");
+        log.info("testing:{}","test","format2");
+        log.info("testing","test","format3");
+        log.info("testing:{},{}","test",null);
+        log.info("testing {} {}",null,null);
+        log.info("testing:{}",null,null);
+        log.info("testing",null,null);
+
+        output.assertContains("INFO:oejul.LogTest:testing:test,format1");
+        output.assertContains("INFO:oejul.LogTest:testing:test,format1");
+        output.assertContains("INFO:oejul.LogTest:testing:test format2");
+        output.assertContains("INFO:oejul.LogTest:testing test format3");
+        output.assertContains("INFO:oejul.LogTest:testing:test,null");
+        output.assertContains("INFO:oejul.LogTest:testing null null");
+        output.assertContains("INFO:oejul.LogTest:testing:null");
+        output.assertContains("INFO:oejul.LogTest:testing");
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void testStdErrLogDebug()
+    {
+        StdErrLog log = new StdErrLog("xxx");
+        StdErrCapture output = new StdErrCapture(log);
+        
+        log.setLevel(StdErrLog.LEVEL_DEBUG);
+        log.debug("testing {} {}","test","debug");
+        log.info("testing {} {}","test","info");
+        log.warn("testing {} {}","test","warn");
+        log.setLevel(StdErrLog.LEVEL_INFO);
+        log.debug("YOU SHOULD NOT SEE THIS!",null,null);
+        
+        // Test for backward compat with old (now deprecated) method
+        log.setDebugEnabled(true);
+        log.debug("testing {} {}","test","debug-deprecated");
+
+        log.setDebugEnabled(false);
+        log.debug("testing {} {}","test","debug-deprecated-false");
+
+        output.assertContains("DBUG:xxx:testing test debug");
+        output.assertContains("INFO:xxx:testing test info");
+        output.assertContains("WARN:xxx:testing test warn");
+        output.assertNotContains("YOU SHOULD NOT SEE THIS!");
+        output.assertContains("DBUG:xxx:testing test debug-deprecated");
+        output.assertNotContains("DBUG:xxx:testing test debug-depdeprecated-false");
+    }
+    
+    @Test
+    public void testStdErrLogName()
+    {
+        StdErrLog log = new StdErrLog("test");
+        log.setPrintLongNames(true);
+        StdErrCapture output = new StdErrCapture(log);
+        
+        Assert.assertThat("Log.name", log.getName(), is("test"));
+        Logger next=log.getLogger("next");
+        Assert.assertThat("Log.name(child)", next.getName(), is("test.next"));
+        next.info("testing {} {}","next","info");
+        
+        output.assertContains(":test.next:testing next info");
+    }
+    
+    @Test
+    public void testStdErrThrowable()
+    {
+        // Common Throwable (for test)
+        Throwable th = new Throwable("Message");
+        
+        // Capture raw string form
+        StringWriter tout = new StringWriter();
+        th.printStackTrace(new PrintWriter(tout));
+        String ths = tout.toString();
+        
+        // Start test
+        StdErrLog log = new StdErrLog("test");
+        StdErrCapture output = new StdErrCapture(log);
+
+        log.warn("ex",th);
+        output.assertContains(ths);
+        
+        th = new Throwable("Message with \033 escape");
+
+        log.warn("ex",th);
+        output.assertNotContains("Message with \033 escape");
+        log.info(th.toString());
+        output.assertNotContains("Message with \033 escape");
+        
+        log.warn("ex",th);
+        output.assertContains("Message with ? escape");
+        log.info(th.toString());
+        output.assertContains("Message with ? escape");
+    }
+
     /**
      * Test to make sure that using a Null parameter on parameterized messages does not result in a NPE
      */

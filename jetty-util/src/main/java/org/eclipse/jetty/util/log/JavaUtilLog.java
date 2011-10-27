@@ -24,13 +24,8 @@ import java.util.logging.Level;
  * </p>
  *
  * <p>
- * Honors the standard jetty system property <code>"org.eclipse.jetty.util.log.DEBUG"</code> to set logger into debug
- * mode (defaults to false, set to "true" to enable)
- * </p>
- *
- * <p>
  * You can also set the logger level using <a href="http://java.sun.com/j2se/1.5.0/docs/guide/logging/overview.html">
- * standard java.util.logging configuration</a> against the name <code>"org.eclipse.jetty.util.log"</code>.
+ * standard java.util.logging configuration</a>.
  * </p>
  */
 public class JavaUtilLog implements Logger

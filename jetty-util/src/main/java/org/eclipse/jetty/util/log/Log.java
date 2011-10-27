@@ -62,12 +62,16 @@ public class Log
     public static boolean initialized()
     {
         if (LOG != null)
+        {
             return true;
+        }
 
         synchronized (Log.class)
         {
             if (__initialized)
+            {
                 return LOG != null;
+            }
             __initialized = true;
         }
 
@@ -80,11 +84,14 @@ public class Log
                 LOG.debug("Logging to {} via {}", LOG, log_class.getName());
             }
         }
+        catch(ThreadDeath e) 
+        {
+            // Let ThreadDeath pass through
+            throw e;
+        }
         catch(Throwable e)
         {
-            if (e instanceof ThreadDeath)
-                throw (ThreadDeath)e;
-            
+            // Unable to load specified Logger implementation, default to standard logging.
             initStandardLogging(e);
         }
 
@@ -95,7 +102,10 @@ public class Log
     {
         Class<?> log_class;
         if(e != null && __ignored)
+        {
             e.printStackTrace();
+        }
+        
         if (LOG == null)
         {
             log_class = StdErrLog.class;

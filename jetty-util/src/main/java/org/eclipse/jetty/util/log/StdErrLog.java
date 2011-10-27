@@ -600,6 +600,7 @@ public class StdErrLog implements Logger
             sel.setPrintLongNames(_printLongNames);
             // Let Level come from configured Properties instead - sel.setLevel(_level);
             sel.setSource(_source);
+            sel._stderr = this._stderr;
             logger = __loggers.putIfAbsent(fullname,sel);
             if (logger == null)
             {

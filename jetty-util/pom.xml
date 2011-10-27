@@ -66,13 +66,51 @@
           <onlyAnalyze>org.eclipse.jetty.util.*</onlyAnalyze>
         </configuration>
       </plugin>
+      <!--
+      Copies the slf4j jars into a place where they can be used for a few targeted test cases.
+      and not infect the rest of the running tests due to automatic discovery in the org.eclipse.jetty.util.log.Log
+      class 
+       -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>2.1</version>
+        <executions>
+          <execution>
+            <id>copy-slf4j-test-jars</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>slf4j-api</artifactId>
+                  <version>1.6.1</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>slf4j-jdk14</artifactId>
+                  <version>1.6.1</version>
+                  <type>jar</type>
+                </artifactItem>
+              </artifactItems>
+              <overWriteIfNewer>true</overWriteIfNewer>
+              <overWriteSnapshots>true</overWriteSnapshots>
+              <outputDirectory>${project.build.directory}/test-jars</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
     <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-test-helper</artifactId>
-        <scope>test</scope>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
