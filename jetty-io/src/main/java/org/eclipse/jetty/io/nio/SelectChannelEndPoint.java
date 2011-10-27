@@ -94,10 +94,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _open=true;
         _key = key;
 
-        _connection = _manager.newConnection(channel,this);
-
         scheduleIdle();
-        
     }
     
     /* ------------------------------------------------------------ */
@@ -124,10 +121,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     public void setConnection(Connection connection)
     {
-        // TODO Only needed for local connection
         Connection old=_connection;
         _connection=(AsyncConnection)connection;
-        _manager.endPointUpgraded(this,old);
+        if (old!=null && old!=_connection)
+            _manager.endPointUpgraded(this,old);
     }
 
     /* ------------------------------------------------------------ */

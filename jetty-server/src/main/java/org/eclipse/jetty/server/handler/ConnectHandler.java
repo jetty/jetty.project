@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -422,17 +423,18 @@ public class ConnectHandler extends HandlerWrapper
     private class Manager extends SelectorManager
     {
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey selectionKey) throws IOException
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
-            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, selectionKey, channel.socket().getSoTimeout());
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel, selectSet, key, channel.socket().getSoTimeout());
+            endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
             endp.setMaxIdleTime(_writeTimeout);
             return endp;
         }
 
         @Override
-        protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
-            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)endpoint.getSelectionKey().attachment();
+            ProxyToServerConnection proxyToServer = (ProxyToServerConnection)attachment;
             proxyToServer.setTimeStamp(System.currentTimeMillis());
             proxyToServer.setEndPoint(endpoint);
             return proxyToServer;
@@ -472,7 +474,7 @@ public class ConnectHandler extends HandlerWrapper
         private volatile Buffer _data;
         private volatile ClientToProxyConnection _toClient;
         private volatile long _timestamp;
-        private volatile SelectChannelEndPoint _endPoint;
+        private volatile AsyncEndPoint _endPoint;
 
         public ProxyToServerConnection(ConcurrentMap<String, Object> context, Buffer data)
         {
@@ -589,7 +591,7 @@ public class ConnectHandler extends HandlerWrapper
             _timestamp = timestamp;
         }
 
-        public void setEndPoint(SelectChannelEndPoint endpoint)
+        public void setEndPoint(AsyncEndPoint endpoint)
         {
             _endPoint = endpoint;
         }

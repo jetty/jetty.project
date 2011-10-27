@@ -10,6 +10,7 @@ import java.util.Random;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -206,15 +207,17 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, final SelectionKey sKey) throws IOException
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, final SelectionKey key) throws IOException
         {
-            return new SelectChannelEndPoint(channel,selectSet,sKey,channel.socket().getSoTimeout());
+            SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key,channel.socket().getSoTimeout());
+            endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+            return endp;
         }
 
         @Override
-        protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
-            WebSocketClient.WebSocketFuture holder = (WebSocketClient.WebSocketFuture) endpoint.getSelectionKey().attachment();
+            WebSocketClient.WebSocketFuture holder = (WebSocketClient.WebSocketFuture) attachment;
             return new HandshakeConnection(endpoint,holder);
         }
 
@@ -258,14 +261,14 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      */
     class HandshakeConnection extends AbstractConnection implements AsyncConnection
     {
-        private final SelectChannelEndPoint _endp;
+        private final AsyncEndPoint _endp;
         private final WebSocketClient.WebSocketFuture _future;
         private final String _key;
         private final HttpParser _parser;
         private String _accept;
         private String _error;
 
-        public HandshakeConnection(SelectChannelEndPoint endpoint, WebSocketClient.WebSocketFuture future)
+        public HandshakeConnection(AsyncEndPoint endpoint, WebSocketClient.WebSocketFuture future)
         {
             super(endpoint,System.currentTimeMillis());
             _endp=endpoint;

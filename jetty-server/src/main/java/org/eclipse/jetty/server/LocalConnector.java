@@ -110,7 +110,8 @@ public class LocalConnector extends AbstractConnector
                     @Override
                     public void setConnection(Connection connection)
                     {
-                        connectionUpgraded(getConnection(),connection);
+                        if (getConnection()!=null && connection!=getConnection())
+                            connectionUpgraded(getConnection(),connection);
                         super.setConnection(connection);
                     }
                 };

@@ -352,9 +352,9 @@ public class HttpDestination implements Dumpable
             else
             {
                 EndPoint endPoint = connection.getEndPoint();
-                if (isProxied() && endPoint instanceof SelectConnector.ProxySelectChannelEndPoint)
+                if (isProxied() && endPoint instanceof SelectConnector.UpgradableEndPoint)
                 {
-                    SelectConnector.ProxySelectChannelEndPoint proxyEndPoint = (SelectConnector.ProxySelectChannelEndPoint)endPoint;
+                    SelectConnector.UpgradableEndPoint proxyEndPoint = (SelectConnector.UpgradableEndPoint)endPoint;
                     HttpExchange exchange = _queue.get(0);
                     ConnectExchange connect = new ConnectExchange(getAddress(), proxyEndPoint, exchange);
                     connect.setAddress(getProxy());
@@ -668,10 +668,10 @@ public class HttpDestination implements Dumpable
     
     private class ConnectExchange extends ContentExchange
     {
-        private final SelectConnector.ProxySelectChannelEndPoint proxyEndPoint;
+        private final SelectConnector.UpgradableEndPoint proxyEndPoint;
         private final HttpExchange exchange;
 
-        public ConnectExchange(Address serverAddress, SelectConnector.ProxySelectChannelEndPoint proxyEndPoint, HttpExchange exchange)
+        public ConnectExchange(Address serverAddress, SelectConnector.UpgradableEndPoint proxyEndPoint, HttpExchange exchange)
         {
             this.proxyEndPoint = proxyEndPoint;
             this.exchange = exchange;

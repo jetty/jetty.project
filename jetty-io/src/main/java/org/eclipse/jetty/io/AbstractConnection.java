@@ -11,7 +11,7 @@ public abstract class AbstractConnection implements Connection
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
     private final long _timeStamp;
-    public final EndPoint _endp; // TODO make private
+    protected final EndPoint _endp; 
 
     public AbstractConnection(EndPoint endp)
     {
@@ -59,6 +59,6 @@ public abstract class AbstractConnection implements Connection
     
     public String toString()
     {
-        return super.toString()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
+        return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
     }
 }

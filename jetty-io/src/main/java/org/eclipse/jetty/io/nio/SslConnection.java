@@ -59,12 +59,14 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private boolean _allowRenegotiate=true;
     private boolean _handshook;
 
-    
+
+    /* ------------------------------------------------------------ */
     public SslConnection(SSLEngine engine,EndPoint endp)
     {
         this(engine,endp,System.currentTimeMillis());
     }
-    
+
+    /* ------------------------------------------------------------ */
     public SslConnection(SSLEngine engine,EndPoint endp, long timeStamp)
     {
         super(endp,timeStamp);
@@ -72,12 +74,14 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         _session=_engine.getSession();
         _aEndp=(AsyncEndPoint)endp;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public synchronized void setConnection(AsyncConnection connection)
     {
         _connection=connection;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public synchronized AsyncConnection getConnection()
     {
         return _connection;
@@ -478,8 +482,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             throw new IOException(result.toString());
         }
         
-        if (LOG.isDebugEnabled() && result.bytesProduced()>0)
-            LOG.debug("{} unwrapped '{}'",_session,buffer);
+        //if (LOG.isDebugEnabled() && result.bytesProduced()>0)
+        //    LOG.debug("{} unwrapped '{}'",_session,buffer);
         
         return result.bytesConsumed()>0 || result.bytesProduced()>0;
     }
@@ -719,6 +723,16 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         public void setMaxIdleTime(int timeMs) throws IOException
         {
             _aEndp.setMaxIdleTime(timeMs);
+        }
+
+        public Connection getConnection()
+        {
+            return _connection;
+        }
+
+        public void setConnection(Connection connection)
+        {
+            _connection=(AsyncConnection)connection;            
         }
 
         

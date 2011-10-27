@@ -193,7 +193,7 @@ public class SocketConnector extends AbstractConnector
 
         public void setConnection(Connection connection)
         {
-            if (_connection!=connection)
+            if (_connection!=connection && _connection!=null)
                 connectionUpgraded(_connection,connection);
             _connection=connection;
         }

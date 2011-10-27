@@ -278,7 +278,9 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------ */
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        return new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
+        SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
+        endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+        return endp;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -353,7 +355,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         }
 
         @Override
-        protected AsyncConnection newConnection(SocketChannel channel,SelectChannelEndPoint endpoint)
+        public AsyncConnection newConnection(SocketChannel channel,AsyncEndPoint endpoint, Object attachment)
         {
             return SelectChannelConnector.this.newConnection(channel,endpoint);
         }

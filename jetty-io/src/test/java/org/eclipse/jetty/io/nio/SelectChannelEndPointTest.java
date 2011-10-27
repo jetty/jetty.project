@@ -11,6 +11,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -48,15 +49,17 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        protected AsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel,endpoint);
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey sKey) throws IOException
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
-            return new SelectChannelEndPoint(channel,selectSet,sKey,2000);
+            SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,2000);
+            endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+            return endp;
         }    
     };
 

@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.View;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
@@ -38,7 +40,7 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
             {
-                return new SelectChannelEndPoint(channel,selectSet,key, _maxIdleTime)
+                SelectChannelEndPoint endp=new SelectChannelEndPoint(channel,selectSet,key, _maxIdleTime)
                 {
                     int write;
                     int read;
@@ -134,6 +136,8 @@ public class BusySelectChannelServerTest extends HttpServerTestBase
                         return super.fill(buffer);
                     }
                 };
+                endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+                return endp;
             }
         };
         connector.setAcceptors(1);

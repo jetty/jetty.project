@@ -26,7 +26,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         super(connector,endpoint,server);
         _asyncEndp=(AsyncEndPoint)endpoint;
     }
-
+    
     public Connection handle() throws IOException
     {
         Connection connection = this;

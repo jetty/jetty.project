@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -354,7 +353,8 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
     @Override
     public String toString()
     {
-        return "HttpConnection@" + hashCode() + "//" + _destination.getAddress().getHost() + ":" + _destination.getAddress().getPort();
+        return "HttpConnection@" + hashCode() + "//" + 
+        (_destination==null?"?.?.?.?:??":(_destination.getAddress().getHost() + ":" + _destination.getAddress().getPort()));
     }
 
     public String toDetailString()

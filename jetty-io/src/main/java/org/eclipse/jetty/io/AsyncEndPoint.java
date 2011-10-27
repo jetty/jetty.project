@@ -52,6 +52,13 @@ public interface AsyncEndPoint extends EndPoint
     
 
     /* ------------------------------------------------------------ */
+    public Connection getConnection();
+
+    /* ------------------------------------------------------------ */
+    public void setConnection(Connection connection);
+    
+    
+    /* ------------------------------------------------------------ */
     /**
      */
     public void scheduleTimeout(Timeout.Task task, long timeoutMs);
