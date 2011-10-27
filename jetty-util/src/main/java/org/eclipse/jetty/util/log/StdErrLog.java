@@ -38,7 +38,8 @@ import org.eclipse.jetty.util.DateCache;
 public class StdErrLog implements Logger
 {
     private static DateCache _dateCache;
-
+    private static Properties __props = System.getProperties();
+    
     private final static boolean __source = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.SOURCE",
             System.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
     private final static boolean __long = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
@@ -78,6 +79,8 @@ public class StdErrLog implements Logger
     public static final int LEVEL_WARN = 3;
 
     private int _level = LEVEL_INFO;
+    // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
+    private int _configuredLevel;
     private PrintStream _stderr = System.err;
     private boolean _source = __source;
     // Print the long form names, otherwise use abbreviated
@@ -95,14 +98,16 @@ public class StdErrLog implements Logger
 
     public StdErrLog(String name)
     {
-        this(name,System.getProperties());
+        this(name,__props);
     }
 
     public StdErrLog(String name, Properties props)
     {
+        __props = props;
         this._name = name == null?"":name;
         this._abbrevname = condensePackageString(this._name);
         this._level = getLoggingLevel(props,this._name);
+        this._configuredLevel = this._level;
 
         try
         {
@@ -319,18 +324,36 @@ public class StdErrLog implements Logger
     }
 
     /**
-     * @deprecated use {@link #setLevel(int)} instead.
+     * Legacy interface where a programmatic configuration of the logger level
+     * is done as a wholesale approach.
      */
-    @Deprecated
     public void setDebugEnabled(boolean enabled)
     {
         if (enabled)
         {
-            _level = LEVEL_DEBUG;
+            synchronized (__loggers)
+            {
+                this._level = LEVEL_DEBUG;
+                
+                // Boot stomp all cached log levels to DEBUG
+                for(StdErrLog log: __loggers.values()) 
+                {
+                    log._level = LEVEL_DEBUG;
+                }
+            }
         }
         else
         {
-            _level = LEVEL_INFO;
+            synchronized (__loggers)
+            {
+                this._level = this._configuredLevel;
+                
+                // restore all cached log configured levels
+                for(StdErrLog log: __loggers.values()) 
+                {
+                    log._level = log._configuredLevel;
+                }
+            }
         }
     }
 
@@ -636,6 +659,11 @@ public class StdErrLog implements Logger
                 break;
         }
         return s.toString();
+    }
+    
+    public static void setProperties(Properties props)
+    {
+        __props = props;
     }
 
     public void ignore(Throwable ignored)
