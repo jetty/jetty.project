@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.client.helperClasses.AsyncSslServerAndClientCreator;
 import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
 import org.junit.Before;
+import org.junit.Test;
 
 public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
 {
@@ -28,6 +29,13 @@ public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
         _server = serverAndClientCreator.createServer();
         _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
         _port = _server.getConnectors()[0].getLocalPort();
+    }
+
+
+    @Test
+    public void testPerf1() throws Exception
+    {
+        sender(1,true);
     }
 
 

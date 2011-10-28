@@ -291,6 +291,7 @@ public class HttpParser implements Parser
                 try
                 {
                     filled=fill();
+                    LOG.debug("filled {}/{}",filled,_buffer.length());
                 }
                 catch(IOException e)
                 {
@@ -298,7 +299,7 @@ public class HttpParser implements Parser
                     ex=e;
                 }
 
-                if (filled < 0 || _endp.isInputShutdown())
+                if (filled < 0 )
                 {                    
                     _persistent=false;
 

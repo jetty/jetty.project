@@ -56,6 +56,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     public SslSelectChannelConnector()
     {
         this(new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH));
+        setSoLingerTime(30000);
     }
 
     /* ------------------------------------------------------------ */
@@ -63,6 +64,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     {
         _sslContextFactory = sslContextFactory;
         setUseDirectBuffers(false);
+        setSoLingerTime(30000);
     }
 
     /* ------------------------------------------------------------ */

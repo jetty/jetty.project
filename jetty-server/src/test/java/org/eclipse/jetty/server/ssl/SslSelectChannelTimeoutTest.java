@@ -58,12 +58,4 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         
     }
 
-    @Test
-    public void testNoProgress() throws Exception
-    {
-        testMaxIdleNoRequest();
-        super.testMaxIdleWithSlowRequest();
-    }
-
-
 }

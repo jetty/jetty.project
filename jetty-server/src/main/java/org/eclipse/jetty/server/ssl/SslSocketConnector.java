@@ -64,6 +64,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     public SslSocketConnector()
     {
         this(new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH));
+        setSoLingerTime(30000);
     }
 
     /* ------------------------------------------------------------ */

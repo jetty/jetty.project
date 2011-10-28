@@ -220,12 +220,14 @@ public class ChannelEndPoint implements EndPoint
             }
             catch (IOException x)
             {
-                LOG.debug(x);
+                LOG.debug(x.toString());
+                LOG.ignore(x);
                 try
                 {
-                    _channel.close();
+                    if (_channel.isOpen())
+                        _channel.close();
                 }
-                catch (IOException xx)
+                catch (Exception xx)
                 {
                     LOG.ignore(xx);
                 }

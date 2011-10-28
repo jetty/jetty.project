@@ -37,14 +37,8 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         {
             setCurrentConnection(this);
             
-            // While the endpoint is open 
-            // AND we are not suspended
-            // AND we have more characters to read OR we made some progress 
-            // AND the connection has not changed
-            while (_endp.isOpen() && 
-                   !_request.getAsyncContinuation().isSuspending() && 
-                   (_parser.isMoreInBuffer() || _endp.isBufferingInput() || progress) && 
-                   connection==this)
+            // While progress and the connection has not changed
+            while (progress && connection==this)
             {
                 progress=false;
                 try

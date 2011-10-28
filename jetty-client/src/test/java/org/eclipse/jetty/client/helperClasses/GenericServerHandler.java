@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
@@ -69,6 +70,12 @@ public class GenericServerHandler extends AbstractHandler
         catch (InterruptedException e)
         {
             LOG.debug(e);
+        }
+        catch (EofException e)
+        {
+            LOG.info(e.toString());
+            LOG.debug(e);
+            throw e;
         }
         catch (IOException e)
         {

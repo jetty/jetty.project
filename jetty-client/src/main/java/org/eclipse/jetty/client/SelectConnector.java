@@ -454,5 +454,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             _endp.setMaxIdleTime(timeMs);
         }
 
+        public String toString()
+        {
+            return "Upgradable:"+_endp.toString();
+        }
     }
 }

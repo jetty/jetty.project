@@ -222,18 +222,30 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         if (toFill==null)
         {
             if (_unwrapBuf==null)
-                _unwrapBuf=new IndirectNIOBuffer(_session.getApplicationBufferSize());
+                _unwrapBuf=new IndirectNIOBuffer(_session.getApplicationBufferSize()*2);
             toFill=_unwrapBuf;
+        }
+        else if (toFill.capacity()<_session.getApplicationBufferSize())
+        {
+            boolean progress=process(null,toFlush);
+            if (_unwrapBuf!=null && _unwrapBuf.hasContent())
+            {
+                _unwrapBuf.skip(toFill.put(_unwrapBuf));
+                return true;
+            }
+            else
+                return progress;
         }
         else if (_unwrapBuf!=null && _unwrapBuf.hasContent())
         {
             _unwrapBuf.skip(toFill.put(_unwrapBuf));
             return true;
         }
+        
+        
         if (toFlush==null)
             toFlush=__ZERO_BUFFER;
 
-        HandshakeStatus initialStatus = _engine.getHandshakeStatus();
         boolean progress=true;
         boolean some_progress=false;
         try
@@ -244,16 +256,23 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             {
                 progress=false;
                 int filled=0,flushed=0;
-                
-                // Read any available data
-                if (_inbound.space()>0 && (filled=_endp.fill(_inbound))>0)
-                    progress = true;
-                
-                // flush any output data
-                if (_outbound.hasContent() && (flushed=_endp.flush(_outbound))>0)
-                    progress = true;
 
-                LOG.debug("{} filled={} flushed={}",_session,filled,flushed);
+                try
+                {
+                    // Read any available data
+                    if (_inbound.space()>0 && (filled=_endp.fill(_inbound))>0)
+                        progress = true;
+
+                    // flush any output data
+                    if (_outbound.hasContent() && (flushed=_endp.flush(_outbound))>0)
+                        progress = true;
+                }
+                catch (Exception e)
+                {
+                    LOG.debug(e.toString());
+                    LOG.ignore(e);
+                }
+                LOG.debug("{} {} filled={}/{} flushed={}/{}",_session,this,filled,_inbound.length(),flushed,_outbound.length());
                 
                 // handle the current hand share status
                 LOG.debug("{} status {}",_session,_engine.getHandshakeStatus());
@@ -445,8 +464,10 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 }
                 catch(SSLException e)
                 {
-                    LOG.warn(_endp+":",e);
-                    _endp.close();  // TODO ?
+                    LOG.warn(_endp+":"+e);
+                    LOG.debug(e);
+                    if (_endp.isOpen())
+                        _endp.close(); 
                     throw e;
                 }
                 finally
@@ -465,7 +486,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 break;
 
             case BUFFER_OVERFLOW:
-                LOG.debug("{} wrap {}",_session,result);
+                LOG.debug("{} unwrap {} {}->{}",_session,result.getStatus(),_inbound.toDetailString(),buffer.toDetailString());
                 break;
 
             case OK:
@@ -502,7 +523,16 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     {
         return _sslEndPoint;
     }
-    
+
+    public String toString()
+    {
+        Buffer i=_inbound;
+        Buffer o=_outbound;
+        Buffer u=_unwrapBuf;
+
+        return super.toString()+" i/u/o="+(i==null?0:i.length())+"/"+(u==null?0:u.length())+"/"+(o==null?0:o.length());
+    }
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     public class SslEndPoint implements AsyncEndPoint
@@ -529,12 +559,18 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public void shutdownInput() throws IOException
         {
-            // We do not do a closeInput here, as that prevents any writes
+            // We do not do a closeInput here, as SSL does not support half close.
+            // isInputShutdown works it out itself from buffer state and underlying endpoint state.
         }
 
         public boolean isInputShutdown()
         {
-            return !isOpen();
+            synchronized (SslConnection.this)
+            {
+                return _endp.isInputShutdown() &&
+                !(_unwrapBuf!=null&&_unwrapBuf.hasContent()) &&
+                !(_inbound!=null&&_inbound.hasContent());
+            }
         }
 
         public void close() throws IOException
@@ -735,6 +771,13 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             _connection=(AsyncConnection)connection;            
         }
 
+        public String toString()
+        {
+            Buffer i=_inbound;
+            Buffer o=_outbound;
+            Buffer u=_unwrapBuf;
+            return "SSL:"+_endp+" "+_engine.getHandshakeStatus()+" i/u/o="+(i==null?0:i.length())+"/"+(u==null?0:u.length())+"/"+(o==null?0:o.length());
+        }
         
     }
     
