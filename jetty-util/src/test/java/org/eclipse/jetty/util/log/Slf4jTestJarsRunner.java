@@ -24,63 +24,49 @@ public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
 {
     private static class Slf4jTestClassLoader extends URLClassLoader
     {
+        private ClassLoader parent;
+
         public Slf4jTestClassLoader(URL[] urls, ClassLoader parent)
         {
-            super(urls, parent);
+            super(urls,parent);
+            this.parent = parent;
         }
-
-        @Override
-        protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
-        {
-            System.err.printf("[slf4j.cl] loadClass(%s)%n", name);
-            
-            ClassNotFoundException ex= null;
-            Class<?> c = null;
-            try
-            {
-                c = this.findClass(name);
-                if ( resolve )
-                {
-                    resolveClass(c);
-                }
-                return c;
-
-            }
-            catch (ClassNotFoundException e)
-            {
-                ex= e;
-            }
-            
-            if ( c == null )
-            {
-                try
-                {
-                    c = super.loadClass(name,resolve);
-                }
-                catch (ClassNotFoundException e)
-                {
-                    ex= e;
-                }
-            }
-            
-           throw ex;
-            
-        }
-
-
 
         @Override
         public Class<?> loadClass(String name) throws ClassNotFoundException
         {
             System.err.printf("[slf4j.cl] loadClass(%s)%n",name);
-            return super.loadClass(name);
-        }
+            Class<?> c = null;
+            try
+            {
+                c = super.loadClass(name);
+                System.err.println("FOUND in slf4j classloader: " + name);
+            }
+            catch (ClassNotFoundException e)
+            {
+                System.err.println("Not found in slf4j classloader: " + name);
+            }
 
-        @Override
-        protected Class<?> findClass(String name) throws ClassNotFoundException
-        {
-            System.err.printf("[slf4j.cl] findClass(%s)%n",name);
-            return super.findClass(name);
+            if (c == null)
+            {
+                try
+                {
+                    c = parent.loadClass(name);
+                    System.err.println("FOUND in parent classloader: " + name);
+                }
+                catch (ClassNotFoundException e)
+                {
+                    System.err.println("Not found in parent classloader: " + name);
+                }
+            }
+
+            if (c != null)
+            {
+                System.err.printf("[slf4j.cl] loadClass(%s) -> %s%n",name,c);
+                return c;
+            }
+
+            throw new ClassNotFoundException(name);
         }
     }
 
@@ -143,14 +129,14 @@ public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
                 System.out.println("Classpath entry: " + url);
             }
 
-            slf4jClassLoader = new Slf4jTestClassLoader(urls, original);
+            slf4jClassLoader = new Slf4jTestClassLoader(urls,original);
         }
         catch (MalformedURLException e)
         {
             throw new InitializationError(e);
         }
     }
-    
+
     @Override
     protected Object createTest() throws Exception
     {
@@ -158,13 +144,13 @@ public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
         {
             Thread.currentThread().setContextClassLoader(slf4jClassLoader);
             TestClass testclass = getTestClass();
-            
+
             Class<?> tc = slf4jClassLoader.loadClass(testclass.getName());
-            
-            Constructor<?>[] constructors= tc.getConstructors();
-            Assert.assertEquals(1, constructors.length);
+
+            Constructor<?>[] constructors = tc.getConstructors();
+            Assert.assertEquals(1,constructors.length);
             Constructor<?> constructor = constructors[0];
-            
+
             return constructor.newInstance();
         }
         finally
