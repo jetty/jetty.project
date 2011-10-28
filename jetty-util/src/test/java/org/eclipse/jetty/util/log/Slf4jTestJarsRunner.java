@@ -2,6 +2,7 @@ package org.eclipse.jetty.util.log;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.internal.runners.model.EachTestNotifier;
 import org.junit.runner.Description;
@@ -16,6 +18,7 @@ import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.TestClass;
 
 public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
 {
@@ -140,16 +143,33 @@ public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
                 System.out.println("Classpath entry: " + url);
             }
 
-            for ( URL url : urls )
-            {
-                System.out.println(url.toString());
-            }
-                        
             slf4jClassLoader = new Slf4jTestClassLoader(urls);
         }
         catch (MalformedURLException e)
         {
             throw new InitializationError(e);
+        }
+    }
+    
+    @Override
+    protected Object createTest() throws Exception
+    {
+        try
+        {
+            Thread.currentThread().setContextClassLoader(slf4jClassLoader);
+            TestClass testclass = getTestClass();
+            
+            Class<?> tc = slf4jClassLoader.loadClass(testclass.getName());
+            
+            Constructor<?>[] constructors= tc.getConstructors();
+            Assert.assertEquals(1, constructors.length);
+            Constructor<?> constructor = constructors[0];
+            
+            return constructor.newInstance();
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(original);
         }
     }
 
