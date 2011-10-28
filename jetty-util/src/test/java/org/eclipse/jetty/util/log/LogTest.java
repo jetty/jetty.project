@@ -74,7 +74,7 @@ public class LogTest
         assertTrue(false);
     }
     
-    @Test
+    // @Test
     public void testStdErrLogFormat()
     {
         StdErrLog log = new StdErrLog(LogTest.class.getName());
