@@ -24,9 +24,9 @@ public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
 {
     private static class Slf4jTestClassLoader extends URLClassLoader
     {
-        public Slf4jTestClassLoader(URL[] urls)
+        public Slf4jTestClassLoader(URL[] urls, ClassLoader parent)
         {
-            super(urls);
+            super(urls, parent);
         }
 
         @Override
@@ -143,7 +143,7 @@ public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
                 System.out.println("Classpath entry: " + url);
             }
 
-            slf4jClassLoader = new Slf4jTestClassLoader(urls);
+            slf4jClassLoader = new Slf4jTestClassLoader(urls, original);
         }
         catch (MalformedURLException e)
         {
