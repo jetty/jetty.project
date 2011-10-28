@@ -30,7 +30,7 @@ import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
-import org.eclipse.jetty.http.security.Password;
+import org.eclipse.jetty.util.security.Password;
 
 /**
  * MailSessionReference
