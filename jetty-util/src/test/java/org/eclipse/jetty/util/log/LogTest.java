@@ -44,7 +44,7 @@ public class LogTest
         log.info("Test default logging");
     }
 
-    @Test
+    // @Test
     public void testNamedLogNamed_StdErrLog()
     {
         Log.setLog(new StdErrLog());
