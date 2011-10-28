@@ -61,7 +61,6 @@ public class LogTest
     }
 
     @Test
-    @Ignore
     public void testNamedLogNamed_Slf4J() throws Exception
     {
         Log.setLog(new Slf4jLog());

@@ -27,6 +27,46 @@ public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
         }
 
         @Override
+        protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
+        {
+            System.err.printf("[slf4j.cl] loadClass(%s)%n", name);
+            
+            ClassNotFoundException ex= null;
+            Class<?> c = null;
+            try
+            {
+                c = this.findClass(name);
+                if ( resolve )
+                {
+                    resolveClass(c);
+                }
+                return c;
+
+            }
+            catch (ClassNotFoundException e)
+            {
+                ex= e;
+            }
+            
+            if ( c == null )
+            {
+                try
+                {
+                    c = super.loadClass(name,resolve);
+                }
+                catch (ClassNotFoundException e)
+                {
+                    ex= e;
+                }
+            }
+            
+           throw ex;
+            
+        }
+
+
+
+        @Override
         public Class<?> loadClass(String name) throws ClassNotFoundException
         {
             System.err.printf("[slf4j.cl] loadClass(%s)%n",name);
@@ -100,6 +140,11 @@ public class Slf4jTestJarsRunner extends BlockJUnit4ClassRunner
                 System.out.println("Classpath entry: " + url);
             }
 
+            for ( URL url : urls )
+            {
+                System.out.println(url.toString());
+            }
+                        
             slf4jClassLoader = new Slf4jTestClassLoader(urls);
         }
         catch (MalformedURLException e)
