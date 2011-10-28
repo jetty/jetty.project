@@ -54,7 +54,6 @@ public class StdErrLogTest
         output.assertContains("INFO:oejul.LogTest:testing");
     }
 
-    @SuppressWarnings("deprecation")
     @Test
     public void testStdErrLogDebug()
     {
@@ -283,10 +282,8 @@ public class StdErrLogTest
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setHideStacks(false);
-
-        ByteArrayOutputStream test = new ByteArrayOutputStream();
-        PrintStream err = new PrintStream(test);
-        log.setStdErrStream(err);
+        
+        StdErrCapture output = new StdErrCapture(log);
 
         // Start with default level
         log.warn("See Me");
@@ -303,16 +300,15 @@ public class StdErrLogTest
         log.warn(new Throwable("scene lost"));
 
         // Validate Output
-        String output = new String(test.toByteArray(),"UTF-8");
         // System.err.print(output);
-        Assert.assertThat(output,containsString("See Me"));
-        Assert.assertThat(output,containsString("Hear Me"));
-        Assert.assertThat(output,containsString("Cheer Me"));
+        output.assertContains("See Me");
+        output.assertContains("Hear Me");
+        output.assertContains("Cheer Me");
 
         // Validate Stack Traces
-        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
+        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains("java.lang.Throwable: out of focus");
+        output.assertContains("java.lang.Throwable: scene lost");
     }
 
     /**
@@ -326,9 +322,7 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setHideStacks(false);
 
-        ByteArrayOutputStream test = new ByteArrayOutputStream();
-        PrintStream err = new PrintStream(test);
-        log.setStdErrStream(err);
+        StdErrCapture output = new StdErrCapture(log);
 
         // Normal/Default behavior
         log.info("I will not buy");
@@ -350,20 +344,18 @@ public class StdErrLogTest
         log.info("<spoken line>", new Throwable("on editing room floor"));
 
         // Validate Output
-        String output = new String(test.toByteArray(),"UTF-8");
-        // System.err.print(output);
-        Assert.assertThat(output,containsString("I will not buy"));
-        Assert.assertThat(output,containsString("this record"));
-        Assert.assertThat(output,containsString("it is scratched."));
-        Assert.assertThat(output,not(containsString("sorry?")));
+        output.assertContains("I will not buy");
+        output.assertContains("this record");
+        output.assertContains("it is scratched.");
+        output.assertNotContains("sorry?");
         
         // Validate Stack Traces
-        Assert.assertThat(output,not(containsString("<spoken line>")));
-        Assert.assertThat(output,not(containsString("on editing room floor")));
+        output.assertNotContains("<spoken line>");
+        output.assertNotContains("on editing room floor");
 
-        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
+        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains("java.lang.Throwable: out of focus");
+        output.assertContains("java.lang.Throwable: scene lost");
     }
 
     /**
@@ -377,9 +369,7 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setHideStacks(true);
 
-        ByteArrayOutputStream test = new ByteArrayOutputStream();
-        PrintStream err = new PrintStream(test);
-        log.setStdErrStream(err);
+        StdErrCapture output = new StdErrCapture(log);
 
         // Normal/Default behavior
         log.debug("Tobacconist");
@@ -401,20 +391,19 @@ public class StdErrLogTest
         log.debug("what?");
 
         // Validate Output
-        String output = new String(test.toByteArray(),"UTF-8");
         // System.err.print(output);
-        Assert.assertThat(output,not(containsString("Tobacconist")));
-        Assert.assertThat(output,containsString("my hovercraft is"));
-        Assert.assertThat(output,containsString("full of eels."));
-        Assert.assertThat(output,not(containsString("what?")));
+        output.assertNotContains("Tobacconist");
+        output.assertContains("my hovercraft is");
+        output.assertContains("full of eels.");
+        output.assertNotContains("what?");
 
         // Validate Stack Traces
-        Assert.assertThat(output,not(containsString("<spoken line>")));
-        Assert.assertThat(output,not(containsString("on editing room floor")));
+        output.assertNotContains("<spoken line>");
+        output.assertNotContains("on editing room floor");
         
-        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
+        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains("java.lang.Throwable: out of focus");
+        output.assertContains("java.lang.Throwable: scene lost");
     }
 
     /**
@@ -428,9 +417,7 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setHideStacks(true);
 
-        ByteArrayOutputStream test = new ByteArrayOutputStream();
-        PrintStream err = new PrintStream(test);
-        log.setStdErrStream(err);
+        StdErrCapture output = new StdErrCapture(log);
 
         // Normal/Default behavior
         log.ignore(new Throwable("IGNORE ME"));
@@ -444,11 +431,10 @@ public class StdErrLogTest
         log.ignore(new Throwable("Debug me"));
 
         // Validate Output
-        String output = new String(test.toByteArray(),"UTF-8");
         // System.err.print(output);
-        Assert.assertThat(output,not(containsString("IGNORE ME")));
-        Assert.assertThat(output,containsString("Don't ignore me"));
-        Assert.assertThat(output,not(containsString("Debug me")));
+        output.assertNotContains("IGNORE ME");
+        output.assertContains("Don't ignore me");
+        output.assertNotContains("Debug me");
     }
     
     @Test
