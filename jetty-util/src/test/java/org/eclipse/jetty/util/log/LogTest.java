@@ -15,9 +15,9 @@ package org.eclipse.jetty.util.log;
 
 import static org.hamcrest.Matchers.*;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,17 +25,17 @@ import org.junit.runner.RunWith;
 @RunWith(Slf4jTestJarsRunner.class)
 public class LogTest
 {
-    private Logger originalLogger;
+    private static Logger originalLogger;
 
     @SuppressWarnings("deprecation")
-    @Before
-    public void rememberOriginalLogger()
+    @BeforeClass
+    public static void rememberOriginalLogger()
     {
         originalLogger = Log.getLog();
     }
 
-    @After
-    public void restoreOriginalLogger()
+    @AfterClass
+    public static void restoreOriginalLogger()
     {
         Log.setLog(originalLogger);
     }

@@ -14,22 +14,32 @@ public class StdErrCapture
 
     public StdErrCapture(StdErrLog log)
     {
-        test = new ByteArrayOutputStream();
-        err = new PrintStream(test);
+        this();
         log.setStdErrStream(err);
     }
-    
+
+    public StdErrCapture()
+    {
+        test = new ByteArrayOutputStream();
+        err = new PrintStream(test);
+    }
+
+    public void capture(StdErrLog log)
+    {
+        log.setStdErrStream(err);
+    }
+
     public void assertContains(String expectedString)
     {
         err.flush();
         String output = new String(test.toByteArray());
-        Assert.assertThat(output, containsString(expectedString));
+        Assert.assertThat(output,containsString(expectedString));
     }
 
     public void assertNotContains(String unexpectedString)
     {
         err.flush();
         String output = new String(test.toByteArray());
-        Assert.assertThat(output, not(containsString(unexpectedString)));
+        Assert.assertThat(output,not(containsString(unexpectedString)));
     }
 }
