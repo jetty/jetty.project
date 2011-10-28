@@ -348,6 +348,18 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             if (exchange!=null)
                 exchange.setStatus(HttpExchange.STATUS_COMPLETED);
         }
+
+        @Override
+        public void earlyEOF()
+        {
+            HttpExchange exchange = _exchange;
+            if (exchange!=null)
+            {
+                exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+            }
+        }
+        
+        
     }
 
     @Override

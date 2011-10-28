@@ -339,6 +339,12 @@ public class HttpExchange
                         case STATUS_START:
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
+                            
+                        case STATUS_COMPLETED:
+                            set = true;
+                            done();
+                            break; 
+                            
                         default:
                             set = true;
                             break;
