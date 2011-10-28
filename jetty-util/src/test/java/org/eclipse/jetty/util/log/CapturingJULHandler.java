@@ -4,8 +4,6 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
@@ -14,24 +12,22 @@ import org.junit.Assert;
 
 public class CapturingJULHandler extends Handler
 {
-    private List<String> lines = new ArrayList<String>();
+    private static final String LN = System.getProperty("line.separator");
+    private StringBuilder output = new StringBuilder();
 
     @Override
     public void publish(LogRecord record)
     {
         StringBuilder buf = new StringBuilder();
         buf.append(record.getLevel().getName()).append("|");
-        String logname = record.getLoggerName();
-        int idx = logname.lastIndexOf('.');
-        if (idx > 0)
-        {
-            logname = logname.substring(idx + 1);
-        }
-        buf.append(logname);
-        buf.append("|");
+        buf.append(record.getLoggerName()).append("|");
         buf.append(record.getMessage());
 
-        lines.add(buf.toString());
+        output.append(buf);
+        if (record.getMessage().length() > 0)
+        {
+            output.append(LN);
+        }
 
         if (record.getThrown() != null)
         {
@@ -39,14 +35,14 @@ public class CapturingJULHandler extends Handler
             PrintWriter capture = new PrintWriter(sw);
             record.getThrown().printStackTrace(capture);
             capture.flush();
-            lines.add(sw.toString());
+            output.append(sw.toString());
             IO.close(capture);
         }
     }
 
     public void clear()
     {
-        lines.clear();
+        output.setLength(0);
     }
 
     @Override
@@ -63,14 +59,11 @@ public class CapturingJULHandler extends Handler
 
     public void dump()
     {
-        for (String line : lines)
-        {
-            System.out.println(line);
-        }
+        System.out.println(output);
     }
 
     public void assertContainsLine(String line)
     {
-        Assert.assertThat(lines, contains(line));
+        Assert.assertThat(output.toString(),containsString(line));
     }
 }

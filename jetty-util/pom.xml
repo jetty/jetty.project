@@ -80,6 +80,11 @@
       <scope>provided</scope>
       <optional>true</optional>
     </dependency>
+    <!--
+      This dependency is used to test Slf4jLog.
+      Due to the introduction of src/test/resource/jetty-logging.properties (and the Log.static{} block)
+      the default Log implementation is still StdErrLog during testing. 
+     -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-jdk14</artifactId>

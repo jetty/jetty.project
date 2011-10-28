@@ -71,8 +71,8 @@ public class Log
             {
                 /* First see if the jetty-logging.properties object exists in the classpath.
                  * This is an optional feature used by embedded mode use, and test cases to allow for early
-                 * configuration of the Log in situations where access to the System.properties is
-                 * impossible.
+                 * configuration of the Log class in situations where access to the System.properties are
+                 * either too late or just impossible.
                  */
                 URL testProps = Log.class.getClassLoader().getResource("jetty-logging.properties");
                 if (testProps != null)

@@ -30,6 +30,7 @@ import java.util.logging.Level;
  */
 public class JavaUtilLog implements Logger
 {
+    private Level configuredLevel;
     private java.util.logging.Logger _logger;
 
     public JavaUtilLog()
@@ -44,6 +45,7 @@ public class JavaUtilLog implements Logger
         {
             _logger.setLevel(Level.FINE);
         }
+        configuredLevel = _logger.getLevel();
     }
 
     public String getName()
@@ -88,7 +90,15 @@ public class JavaUtilLog implements Logger
 
     public void setDebugEnabled(boolean enabled)
     {
-        _logger.setLevel(Level.FINE);
+        if (enabled)
+        {
+            configuredLevel = _logger.getLevel();
+            _logger.setLevel(Level.FINE);
+        }
+        else
+        {
+            _logger.setLevel(configuredLevel);
+        }
     }
 
     public void debug(String msg, Object... args)
