@@ -37,7 +37,6 @@ public class Slf4jLog implements Logger
         }
         catch (ClassNotFoundException ex)
         {
-            ex.printStackTrace(System.err);
             throw new NoClassDefFoundError("org.slf4j.impl.StaticLoggerBinder");
         }
 

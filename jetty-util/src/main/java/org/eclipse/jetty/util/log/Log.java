@@ -46,18 +46,34 @@ public class Log
     public final static String EXCEPTION= "EXCEPTION ";
     public final static String IGNORED= "IGNORED ";
 
+    /**
+     * Logging Configuration Properties
+     */
     protected static Properties __props;
+    /**
+     * The {@link Logger} implementation class name
+     */
     public static String __logClass;
+    /**
+     * Legacy flag indicating if {@link Log#ignore(Throwable)} methods produce any output in the {@link Logger}s
+     */
     public static boolean __ignored;
 
     static
     {
+        /* Instantiate a default configuration properties (empty)
+         */
         __props = new Properties();
 
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             public Object run()
             {
+                /* First see if the jetty-logging.properties object exists in the classpath.
+                 * This is an optional feature used by embedded mode use, and test cases to allow for early
+                 * configuration of the Log in situations where access to the System.properties is
+                 * impossible.
+                 */
                 URL testProps = Log.class.getClassLoader().getResource("jetty-logging.properties");
                 if (testProps != null)
                 {
@@ -78,6 +94,9 @@ public class Log
                     }
                 }
 
+                /* Now load the System.properties as-is into the __props, these values will override
+                 * any key conflicts in __props.
+                 */
                 @SuppressWarnings("unchecked")
                 Enumeration<String> systemKeyEnum = (Enumeration<String>)System.getProperties().propertyNames();
                 while (systemKeyEnum.hasMoreElements())
@@ -86,6 +105,8 @@ public class Log
                     __props.setProperty(key,System.getProperty(key));
                 }
 
+                /* Now use the configuration properties to configure the Log statics
+                 */
                 __logClass = __props.getProperty("org.eclipse.jetty.util.log.class","org.eclipse.jetty.util.log.Slf4jLog");
                 __ignored = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.IGNORED","false"));
                 return null;
