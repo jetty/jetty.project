@@ -18,11 +18,8 @@ import static org.hamcrest.Matchers.*;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(Slf4jTestJarsRunner.class)
 public class LogTest
 {
     private static Logger originalLogger;
@@ -38,6 +35,13 @@ public class LogTest
     public static void restoreOriginalLogger()
     {
         Log.setLog(originalLogger);
+    }
+    
+    @Test
+    public void testDefaultLogging()
+    {
+        Logger log = Log.getLogger(LogTest.class);
+        log.info("Test default logging");
     }
 
     @Test

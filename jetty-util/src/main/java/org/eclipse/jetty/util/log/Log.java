@@ -13,10 +13,16 @@
 
 package org.eclipse.jetty.util.log;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Enumeration;
+import java.util.Properties;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 
 /**
@@ -40,17 +46,48 @@ public class Log
     public final static String EXCEPTION= "EXCEPTION ";
     public final static String IGNORED= "IGNORED ";
 
+    protected static Properties __props;
     public static String __logClass;
     public static boolean __ignored;
 
     static
     {
+        __props = new Properties();
+
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             public Object run()
             {
-                __logClass = System.getProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.Slf4jLog");
-                __ignored = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.IGNORED", "false"));
+                URL testProps = Log.class.getClassLoader().getResource("jetty-logging.properties");
+                if (testProps != null)
+                {
+                    InputStream in = null;
+                    try
+                    {
+                        in = testProps.openStream();
+                        __props.load(in);
+                    }
+                    catch (IOException e)
+                    {
+                        System.err.println("Unable to load " + testProps);
+                        e.printStackTrace(System.err);
+                    }
+                    finally
+                    {
+                        IO.close(in);
+                    }
+                }
+
+                @SuppressWarnings("unchecked")
+                Enumeration<String> systemKeyEnum = (Enumeration<String>)System.getProperties().propertyNames();
+                while (systemKeyEnum.hasMoreElements())
+                {
+                    String key = systemKeyEnum.nextElement();
+                    __props.setProperty(key,System.getProperty(key));
+                }
+
+                __logClass = __props.getProperty("org.eclipse.jetty.util.log.class","org.eclipse.jetty.util.log.Slf4jLog");
+                __ignored = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.IGNORED","false"));
                 return null;
             }
         });

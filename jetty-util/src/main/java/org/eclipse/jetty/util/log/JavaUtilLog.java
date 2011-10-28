@@ -40,8 +40,10 @@ public class JavaUtilLog implements Logger
     public JavaUtilLog(String name)
     {
         _logger = java.util.logging.Logger.getLogger(name);
-        if (Boolean.getBoolean("org.eclipse.jetty.util.log.DEBUG"))
+        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.DEBUG", "false")))
+        {
             _logger.setLevel(Level.FINE);
+        }
     }
 
     public String getName()

@@ -38,11 +38,11 @@ import org.eclipse.jetty.util.DateCache;
 public class StdErrLog implements Logger
 {
     private static DateCache _dateCache;
-    private static Properties __props = System.getProperties();
+    private static Properties __props = Log.__props;
     
-    private final static boolean __source = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.SOURCE",
-            System.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
-    private final static boolean __long = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
+    private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
+            Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
+    private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
 
     /**
      * Tracking for child loggers only.
