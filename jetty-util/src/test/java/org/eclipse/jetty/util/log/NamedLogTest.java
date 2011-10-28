@@ -27,12 +27,12 @@ public class NamedLogTest
         Red red = new Red();
         Green green = new Green();
         Blue blue = new Blue();
-        
+
         StdErrCapture output = new StdErrCapture();
-        
-        setLoggerOptions(Red.class, output);
-        setLoggerOptions(Green.class, output);
-        setLoggerOptions(Blue.class, output);
+
+        setLoggerOptions(Red.class,output);
+        setLoggerOptions(Green.class,output);
+        setLoggerOptions(Blue.class,output);
 
         red.generateLogs();
         green.generateLogs();
@@ -47,8 +47,9 @@ public class NamedLogTest
     {
         Logger logger = Log.getLogger(clazz);
         logger.setDebugEnabled(true);
-        
-        if(logger instanceof StdErrLog) {
+
+        if (logger instanceof StdErrLog)
+        {
             StdErrLog sel = (StdErrLog)logger;
             sel.setPrintLongNames(true);
             output.capture(sel);
