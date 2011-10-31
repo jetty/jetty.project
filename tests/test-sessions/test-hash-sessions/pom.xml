@@ -26,15 +26,23 @@
   <artifactId>test-hash-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Hash</name>
   <build>
-       <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
-       </plugins>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
   <dependencies>
        <dependency>
