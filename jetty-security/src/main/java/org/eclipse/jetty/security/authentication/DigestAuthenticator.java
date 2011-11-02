@@ -87,7 +87,18 @@ public class DigestAuthenticator extends LoginAuthenticator
         
         String mna=configuration.getInitParameter("maxNonceAge");
         if (mna!=null)
-            _maxNonceAgeMs=Long.valueOf(mna);
+        {
+            synchronized (this)
+            {
+                _maxNonceAgeMs=Long.valueOf(mna);
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public synchronized void setMaxNonceAge(long maxNonceAgeInMillis)
+    {
+        _maxNonceAgeMs = maxNonceAgeInMillis;
     }
 
     /* ------------------------------------------------------------ */
@@ -235,7 +246,11 @@ public class DigestAuthenticator extends LoginAuthenticator
     private int checkNonce(Digest digest, Request request)
     {
         // firstly let's expire old nonces
-        long expired = request.getTimeStamp()-_maxNonceAgeMs;
+        long expired;
+        synchronized (this)
+        {
+            expired = request.getTimeStamp()-_maxNonceAgeMs;
+        }
         
         Nonce nonce=_nonceQueue.peek();
         while (nonce!=null && nonce._ts<expired)

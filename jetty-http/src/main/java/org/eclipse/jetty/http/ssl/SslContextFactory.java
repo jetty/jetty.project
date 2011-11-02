@@ -1377,7 +1377,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Set the trust store resource.
      * @param resource the trust store resource to set
      */
-    public void setTrustStore(Resource resource)
+    public void setTrustStoreResource(Resource resource)
     {
         checkNotStarted();
 

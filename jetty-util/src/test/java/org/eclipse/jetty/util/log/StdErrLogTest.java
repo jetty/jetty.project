@@ -17,6 +17,8 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
@@ -28,6 +30,104 @@ import org.junit.Test;
  */
 public class StdErrLogTest
 {
+    @Test
+    public void testStdErrLogFormat() throws UnsupportedEncodingException
+    {
+        StdErrLog log = new StdErrLog(LogTest.class.getName());
+        StdErrCapture output = new StdErrCapture(log);
+
+        log.info("testing:{},{}","test","format1");
+        log.info("testing:{}","test","format2");
+        log.info("testing","test","format3");
+        log.info("testing:{},{}","test",null);
+        log.info("testing {} {}",null,null);
+        log.info("testing:{}",null,null);
+        log.info("testing",null,null);
+
+        output.assertContains("INFO:oejul.LogTest:testing:test,format1");
+        output.assertContains("INFO:oejul.LogTest:testing:test,format1");
+        output.assertContains("INFO:oejul.LogTest:testing:test format2");
+        output.assertContains("INFO:oejul.LogTest:testing test format3");
+        output.assertContains("INFO:oejul.LogTest:testing:test,null");
+        output.assertContains("INFO:oejul.LogTest:testing null null");
+        output.assertContains("INFO:oejul.LogTest:testing:null");
+        output.assertContains("INFO:oejul.LogTest:testing");
+    }
+
+    @Test
+    public void testStdErrLogDebug()
+    {
+        StdErrLog log = new StdErrLog("xxx");
+        StdErrCapture output = new StdErrCapture(log);
+        
+        log.setLevel(StdErrLog.LEVEL_DEBUG);
+        log.debug("testing {} {}","test","debug");
+        log.info("testing {} {}","test","info");
+        log.warn("testing {} {}","test","warn");
+        log.setLevel(StdErrLog.LEVEL_INFO);
+        log.debug("YOU SHOULD NOT SEE THIS!",null,null);
+        
+        // Test for backward compat with old (now deprecated) method
+        log.setDebugEnabled(true);
+        log.debug("testing {} {}","test","debug-deprecated");
+
+        log.setDebugEnabled(false);
+        log.debug("testing {} {}","test","debug-deprecated-false");
+
+        output.assertContains("DBUG:xxx:testing test debug");
+        output.assertContains("INFO:xxx:testing test info");
+        output.assertContains("WARN:xxx:testing test warn");
+        output.assertNotContains("YOU SHOULD NOT SEE THIS!");
+        output.assertContains("DBUG:xxx:testing test debug-deprecated");
+        output.assertNotContains("DBUG:xxx:testing test debug-depdeprecated-false");
+    }
+    
+    @Test
+    public void testStdErrLogName()
+    {
+        StdErrLog log = new StdErrLog("test");
+        log.setPrintLongNames(true);
+        StdErrCapture output = new StdErrCapture(log);
+        
+        Assert.assertThat("Log.name", log.getName(), is("test"));
+        Logger next=log.getLogger("next");
+        Assert.assertThat("Log.name(child)", next.getName(), is("test.next"));
+        next.info("testing {} {}","next","info");
+        
+        output.assertContains(":test.next:testing next info");
+    }
+    
+    @Test
+    public void testStdErrThrowable()
+    {
+        // Common Throwable (for test)
+        Throwable th = new Throwable("Message");
+        
+        // Capture raw string form
+        StringWriter tout = new StringWriter();
+        th.printStackTrace(new PrintWriter(tout));
+        String ths = tout.toString();
+        
+        // Start test
+        StdErrLog log = new StdErrLog("test");
+        StdErrCapture output = new StdErrCapture(log);
+
+        log.warn("ex",th);
+        output.assertContains(ths);
+        
+        th = new Throwable("Message with \033 escape");
+
+        log.warn("ex",th);
+        output.assertNotContains("Message with \033 escape");
+        log.info(th.toString());
+        output.assertNotContains("Message with \033 escape");
+        
+        log.warn("ex",th);
+        output.assertContains("Message with ? escape");
+        log.info(th.toString());
+        output.assertContains("Message with ? escape");
+    }
+
     /**
      * Test to make sure that using a Null parameter on parameterized messages does not result in a NPE
      */
@@ -182,10 +282,8 @@ public class StdErrLogTest
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setHideStacks(false);
-
-        ByteArrayOutputStream test = new ByteArrayOutputStream();
-        PrintStream err = new PrintStream(test);
-        log.setStdErrStream(err);
+        
+        StdErrCapture output = new StdErrCapture(log);
 
         // Start with default level
         log.warn("See Me");
@@ -202,16 +300,15 @@ public class StdErrLogTest
         log.warn(new Throwable("scene lost"));
 
         // Validate Output
-        String output = new String(test.toByteArray(),"UTF-8");
         // System.err.print(output);
-        Assert.assertThat(output,containsString("See Me"));
-        Assert.assertThat(output,containsString("Hear Me"));
-        Assert.assertThat(output,containsString("Cheer Me"));
+        output.assertContains("See Me");
+        output.assertContains("Hear Me");
+        output.assertContains("Cheer Me");
 
         // Validate Stack Traces
-        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
+        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains("java.lang.Throwable: out of focus");
+        output.assertContains("java.lang.Throwable: scene lost");
     }
 
     /**
@@ -225,9 +322,7 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setHideStacks(false);
 
-        ByteArrayOutputStream test = new ByteArrayOutputStream();
-        PrintStream err = new PrintStream(test);
-        log.setStdErrStream(err);
+        StdErrCapture output = new StdErrCapture(log);
 
         // Normal/Default behavior
         log.info("I will not buy");
@@ -249,20 +344,18 @@ public class StdErrLogTest
         log.info("<spoken line>", new Throwable("on editing room floor"));
 
         // Validate Output
-        String output = new String(test.toByteArray(),"UTF-8");
-        // System.err.print(output);
-        Assert.assertThat(output,containsString("I will not buy"));
-        Assert.assertThat(output,containsString("this record"));
-        Assert.assertThat(output,containsString("it is scratched."));
-        Assert.assertThat(output,not(containsString("sorry?")));
+        output.assertContains("I will not buy");
+        output.assertContains("this record");
+        output.assertContains("it is scratched.");
+        output.assertNotContains("sorry?");
         
         // Validate Stack Traces
-        Assert.assertThat(output,not(containsString("<spoken line>")));
-        Assert.assertThat(output,not(containsString("on editing room floor")));
+        output.assertNotContains("<spoken line>");
+        output.assertNotContains("on editing room floor");
 
-        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
+        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains("java.lang.Throwable: out of focus");
+        output.assertContains("java.lang.Throwable: scene lost");
     }
 
     /**
@@ -276,9 +369,7 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setHideStacks(true);
 
-        ByteArrayOutputStream test = new ByteArrayOutputStream();
-        PrintStream err = new PrintStream(test);
-        log.setStdErrStream(err);
+        StdErrCapture output = new StdErrCapture(log);
 
         // Normal/Default behavior
         log.debug("Tobacconist");
@@ -300,20 +391,19 @@ public class StdErrLogTest
         log.debug("what?");
 
         // Validate Output
-        String output = new String(test.toByteArray(),"UTF-8");
         // System.err.print(output);
-        Assert.assertThat(output,not(containsString("Tobacconist")));
-        Assert.assertThat(output,containsString("my hovercraft is"));
-        Assert.assertThat(output,containsString("full of eels."));
-        Assert.assertThat(output,not(containsString("what?")));
+        output.assertNotContains("Tobacconist");
+        output.assertContains("my hovercraft is");
+        output.assertContains("full of eels.");
+        output.assertNotContains("what?");
 
         // Validate Stack Traces
-        Assert.assertThat(output,not(containsString("<spoken line>")));
-        Assert.assertThat(output,not(containsString("on editing room floor")));
+        output.assertNotContains("<spoken line>");
+        output.assertNotContains("on editing room floor");
         
-        Assert.assertThat(output,containsString(".StdErrLogTest:<zoom>"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: out of focus"));
-        Assert.assertThat(output,containsString("java.lang.Throwable: scene lost"));
+        output.assertContains(".StdErrLogTest:<zoom>");
+        output.assertContains("java.lang.Throwable: out of focus");
+        output.assertContains("java.lang.Throwable: scene lost");
     }
 
     /**
@@ -327,9 +417,7 @@ public class StdErrLogTest
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
         log.setHideStacks(true);
 
-        ByteArrayOutputStream test = new ByteArrayOutputStream();
-        PrintStream err = new PrintStream(test);
-        log.setStdErrStream(err);
+        StdErrCapture output = new StdErrCapture(log);
 
         // Normal/Default behavior
         log.ignore(new Throwable("IGNORE ME"));
@@ -343,11 +431,10 @@ public class StdErrLogTest
         log.ignore(new Throwable("Debug me"));
 
         // Validate Output
-        String output = new String(test.toByteArray(),"UTF-8");
         // System.err.print(output);
-        Assert.assertThat(output,not(containsString("IGNORE ME")));
-        Assert.assertThat(output,containsString("Don't ignore me"));
-        Assert.assertThat(output,not(containsString("Debug me")));
+        output.assertNotContains("IGNORE ME");
+        output.assertContains("Don't ignore me");
+        output.assertNotContains("Debug me");
     }
     
     @Test
@@ -510,4 +597,50 @@ public class StdErrLogTest
         Assert.assertThat(output, containsString(".StdErrLogTest#testPrintSource(StdErrLogTest.java:"));
     }
 
+    @Test
+    public void testConfiguredAndSetDebugEnabled()
+    {
+        Properties props = new Properties();
+        props.setProperty("org.eclipse.jetty.util.LEVEL","WARN");
+        props.setProperty("org.eclipse.jetty.io.LEVEL", "WARN");
+        
+        StdErrLog root = new StdErrLog("", props);
+        assertLevel(root,StdErrLog.LEVEL_INFO); // default
+
+        StdErrLog log = (StdErrLog)root.getLogger(StdErrLogTest.class.getName());
+        Assert.assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
+        assertLevel(log,StdErrLog.LEVEL_WARN); // as configured
+        
+        // Boot stomp it all to debug
+        root.setDebugEnabled(true);
+        Assert.assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(true));
+        assertLevel(log,StdErrLog.LEVEL_DEBUG); // as stomped
+
+        // Restore configured
+        root.setDebugEnabled(false);
+        Assert.assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
+        assertLevel(log,StdErrLog.LEVEL_WARN); // as configured
+    }
+    
+    private void assertLevel(StdErrLog log, int expectedLevel)
+    {
+        Assert.assertThat("Log[" + log.getName() + "].level",levelToString(log.getLevel()),is(levelToString(expectedLevel)));
+    }
+    
+    private String levelToString(int level)
+    {
+        switch (level)
+        {
+            case StdErrLog.LEVEL_ALL:
+                return "ALL";
+            case StdErrLog.LEVEL_DEBUG:
+                return "DEBUG";
+            case StdErrLog.LEVEL_INFO:
+                return "INFO";
+            case StdErrLog.LEVEL_WARN:
+                return "WARN";
+            default:
+                return Integer.toString(level);
+        }
+    }
 }
