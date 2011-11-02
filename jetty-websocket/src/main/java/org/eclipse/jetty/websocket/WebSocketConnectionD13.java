@@ -370,6 +370,8 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             {
                 if (send_close)
                 {
+                    // Close code 1005 (CLOSE No Code) is never to be sent as a status over
+                    // a Close control frame.
                     if ( (code<=0) || (code == WebSocketConnectionD13.CLOSE_NO_CODE) ) 
                     {
                         code=WebSocketConnectionD13.CLOSE_NORMAL;
@@ -747,6 +749,11 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                             code=(0xff&buffer.array()[buffer.getIndex()])*0x100+(0xff&buffer.array()[buffer.getIndex()+1]);
                             if (buffer.length()>2)
                                 message=new String(buffer.array(),buffer.getIndex()+2,buffer.length()-2,StringUtil.__UTF8);
+                        } else if(buffer.length() == 1)
+                        {
+                            // Invalid length. use status code 1002 (Protocol error) 
+                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid payload length of 1");
+                            return;
                         }
                         closeIn(code,message);
                         break;
