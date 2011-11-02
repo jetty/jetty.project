@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,7 +31,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
@@ -301,7 +301,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closeIn(int code,String message)
     {
-        LOG.debug("ClosedIn {} {}",this,message);
+        LOG.debug("ClosedIn {} {} {}",this,code,message);
 
         final boolean close;
         final boolean tell_app;
@@ -341,7 +341,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closeOut(int code,String message)
     {
-        LOG.debug("ClosedOut {} {}",this,message);
+        LOG.debug("ClosedOut {} {} {}",this,code,message);
 
         final boolean close;
         final boolean tell_app;
@@ -370,8 +370,10 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             {
                 if (send_close)
                 {
-                    if (code<=0)
+                    if ( (code<=0) || (code == WebSocketConnectionD13.CLOSE_NO_CODE) ) 
+                    {
                         code=WebSocketConnectionD13.CLOSE_NORMAL;
+                    }
                     byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                     bytes[0]=(byte)(code/0x100);
                     bytes[1]=(byte)(code%0x100);
