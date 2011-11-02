@@ -325,10 +325,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             
             for (int i = 0; i < virtualHosts.length; i++)
             {
-                String normalizedVirtualHost = normalizeHostname(virtualHosts[i]);
-                if (!existingVirtualHosts.contains(normalizedVirtualHost))
+                String toRemoveVirtualHost = normalizeHostname(virtualHosts[i]);
+                if (existingVirtualHosts.contains(toRemoveVirtualHost))
                 {
-                    existingVirtualHosts.remove(normalizedVirtualHost);
+                    existingVirtualHosts.remove(toRemoveVirtualHost);
                 }
             }
             
