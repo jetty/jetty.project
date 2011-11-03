@@ -451,6 +451,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         /* ------------------------------------------------------------ */
         public void sendControl(byte ctrl, byte[] data, int offset, int length) throws IOException
         {
+            // TODO: section 5.5 states that control frames MUST never be length > 125 bytes and MUST NOT be fragmented 
             if (_closedOut)
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             _outbound.addFrame((byte)FLAG_FIN,ctrl,data,offset,length);
@@ -625,6 +626,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     private class WSFrameHandler implements WebSocketParser.FrameHandler
     {
+        private static final int MAX_CONTROL_FRAME_PAYLOAD = 125;
         private final Utf8StringBuilder _utf8 = new Utf8StringBuilder(512); // TODO configure initial capacity
         private ByteArrayBuffer _aggregate;
         private byte _opcode=-1;
@@ -729,8 +731,15 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                     case WebSocketConnectionD13.OP_PING:
                     {
                         LOG.debug("PING {}",this);
-                        if (!_closedOut)
+                        if (!_closedOut) 
+                        {
+                            if(buffer.length() > MAX_CONTROL_FRAME_PAYLOAD)
+                            {
+                                errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame payload size of " + buffer.length() + " exceeds allowed max size of " + MAX_CONTROL_FRAME_PAYLOAD);
+                                return;
+                            }
                             _connection.sendControl(WebSocketConnectionD13.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
+                        }
                         break;
                     }
 
@@ -742,6 +751,12 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                     case WebSocketConnectionD13.OP_CLOSE:
                     {
+                        if(buffer.length() > MAX_CONTROL_FRAME_PAYLOAD)
+                        {
+                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame payload size of " + buffer.length() + " exceeds allowed max size of " + MAX_CONTROL_FRAME_PAYLOAD);
+                            return;
+                        }
+                        
                         int code=WebSocketConnectionD13.CLOSE_NO_CODE;
                         String message=null;
                         if (buffer.length()>=2)
