@@ -747,6 +747,19 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         if (buffer.length()>=2)
                         {
                             code=(0xff&buffer.array()[buffer.getIndex()])*0x100+(0xff&buffer.array()[buffer.getIndex()+1]);
+                            
+                            // Validate close status codes.
+                            if (code < WebSocketConnectionD13.CLOSE_NORMAL ||
+                                code == WebSocketConnectionD13.CLOSE_UNDEFINED || 
+                                code == WebSocketConnectionD13.CLOSE_NO_CLOSE ||
+                                code == WebSocketConnectionD13.CLOSE_NO_CODE ||
+                                ( code > 1010 && code <= 2999 ) ||
+                                code >= 5000 )
+                            {
+                                errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid close control status code " + code);
+                                return;
+                            }
+                            
                             if (buffer.length()>2) 
                             {
                                 if(_utf8.append(buffer.array(),buffer.getIndex()+2,buffer.length()-2,_connection.getMaxTextMessageSize()))
