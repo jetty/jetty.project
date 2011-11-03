@@ -647,12 +647,13 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                 if (STRICT)
                 {
-                    if (isControlFrame(opcode) && buffer.length()>125)
+                    if (isControlFrame(opcode) && buffer.length()>MAX_CONTROL_FRAME_PAYLOAD)
                     {
-                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large");
+                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large: " + buffer.length() + " > " + MAX_CONTROL_FRAME_PAYLOAD);
                         return;
                     }
 
+                    // TODO: check extensions for RSV bit(s) meanings
                     if ((flags&0x7)!=0)
                     {
                         errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
@@ -733,11 +734,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         LOG.debug("PING {}",this);
                         if (!_closedOut) 
                         {
-                            if(buffer.length() > MAX_CONTROL_FRAME_PAYLOAD)
-                            {
-                                errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame payload size of " + buffer.length() + " exceeds allowed max size of " + MAX_CONTROL_FRAME_PAYLOAD);
-                                return;
-                            }
                             _connection.sendControl(WebSocketConnectionD13.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
                         }
                         break;
@@ -751,12 +747,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                     case WebSocketConnectionD13.OP_CLOSE:
                     {
-                        if(buffer.length() > MAX_CONTROL_FRAME_PAYLOAD)
-                        {
-                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame payload size of " + buffer.length() + " exceeds allowed max size of " + MAX_CONTROL_FRAME_PAYLOAD);
-                            return;
-                        }
-                        
                         int code=WebSocketConnectionD13.CLOSE_NO_CODE;
                         String message=null;
                         if (buffer.length()>=2)
