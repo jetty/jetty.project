@@ -747,9 +747,16 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         if (buffer.length()>=2)
                         {
                             code=(0xff&buffer.array()[buffer.getIndex()])*0x100+(0xff&buffer.array()[buffer.getIndex()+1]);
-                            if (buffer.length()>2)
-                                message=new String(buffer.array(),buffer.getIndex()+2,buffer.length()-2,StringUtil.__UTF8);
-                        } else if(buffer.length() == 1)
+                            if (buffer.length()>2) 
+                            {
+                                if(_utf8.append(buffer.array(),buffer.getIndex()+2,buffer.length()-2,_connection.getMaxTextMessageSize()))
+                                {
+                                    message = _utf8.toString();
+                                    _utf8.reset();
+                                }
+                            }
+                        } 
+                        else if(buffer.length() == 1)
                         {
                             // Invalid length. use status code 1002 (Protocol error) 
                             errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid payload length of 1");
