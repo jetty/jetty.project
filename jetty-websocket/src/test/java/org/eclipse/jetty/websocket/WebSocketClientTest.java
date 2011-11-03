@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class WebSocketClientTest
@@ -419,6 +418,7 @@ public class WebSocketClientTest
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch _latch = new CountDownLatch(1);
         final BlockingQueue<String> queue = new BlockingArrayQueue<String>();
+        final StringBuilder closeMessage = new StringBuilder();
         Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket.OnTextMessage()
         {
             public void onOpen(Connection connection)
@@ -429,6 +429,7 @@ public class WebSocketClientTest
             public void onClose(int closeCode, String message)
             {
                 close.set(closeCode);
+                closeMessage.append(message);
                 _latch.countDown();
             }
 
@@ -477,8 +478,8 @@ public class WebSocketClientTest
 
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
-        Assert.assertEquals(1111,close.get());
-
+        Assert.assertEquals(1002,close.get());
+        Assert.assertEquals("Invalid close control status code 1111", closeMessage.toString());
     }
 
 
@@ -522,6 +523,7 @@ public class WebSocketClientTest
 
         Thread consumer = new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -585,6 +587,7 @@ public class WebSocketClientTest
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch _latch = new CountDownLatch(1);
+        final StringBuilder closeMessage = new StringBuilder();
         final Exchanger<String> exchanger = new Exchanger<String>();
         Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket.OnTextMessage()
         {
@@ -595,8 +598,8 @@ public class WebSocketClientTest
 
             public void onClose(int closeCode, String message)
             {
-                //System.err.println("CLOSE "+closeCode+" "+message);
                 close.set(closeCode);
+                closeMessage.append(message);
                 _latch.countDown();
             }
 
@@ -632,6 +635,7 @@ public class WebSocketClientTest
         // Set up a consumer of received messages that waits a while before consuming
         Thread consumer = new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -689,8 +693,8 @@ public class WebSocketClientTest
 
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
-        Assert.assertEquals(1111,close.get());
-
+        Assert.assertEquals(1002,close.get());
+        Assert.assertEquals("Invalid close control status code 1111", closeMessage.toString());
     }
 
     private void respondToClient(Socket connection, String serverResponse) throws IOException
