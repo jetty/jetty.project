@@ -357,34 +357,27 @@ public class HttpConnection extends AbstractConnection implements Dumpable
                                 complete = true;
                             }
                         }
-
-                        // if the endpoint is closed, but the parser incomplete
-                        if (!_endp.isOpen() && !(_parser.isComplete()||_parser.isIdle()))
-                        {
-                            // we wont be called again so let the parser see the close
-                            complete=true;
-                            _parser.parseAvailable();
-                            // TODO should not need this
-                            if (!(_parser.isComplete()||_parser.isIdle()))
-                            {
-                                LOG.warn("Incomplete {} {}",_parser,_endp);
-                                if (_exchange!=null && !_exchange.isDone())
-                                {
-                                    _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                                    _exchange.getEventListener().onException(new EOFException("Incomplete"));
-                                }
-                            }
-                        }
                     }
 
-                    if (_endp.isInputShutdown() && !_parser.isComplete() && !_parser.isIdle())
+                    // if the endpoint is closed, but the parser incomplete
+                    if ((!_endp.isOpen()||_endp.isInputShutdown()) && !(_parser.isComplete()||_parser.isIdle()))
                     {
-                        if (_exchange!=null && !_exchange.isDone())
+                        // we wont be called again so let the parser see the close
+                        complete=true;
+                        _parser.parseAvailable();
+
+                        // parsing again may have changed the parser state, so check again
+                        if (!(_parser.isComplete()||_parser.isIdle()))
                         {
-                            _exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                            _exchange.getEventListener().onException(new EOFException("Incomplete"));
+                            LOG.warn("Incomplete {} {}",_parser,_endp);
+                            HttpExchange exchange = _exchange;
+                            if (exchange!=null && !exchange.isDone())
+                            {
+                                exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                                exchange.getEventListener().onException(new EOFException("Incomplete"));
+                            }
+                            _endp.close();
                         }
-                        _endp.close();
                     }
 
                     if (complete || failed)
