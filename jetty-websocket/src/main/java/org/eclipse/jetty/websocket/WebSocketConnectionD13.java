@@ -43,7 +43,6 @@ import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 public class WebSocketConnectionD13 extends AbstractConnection implements WebSocketConnection
 {
     private static final Logger LOG = Log.getLogger(WebSocketConnectionD13.class);
-    private static final boolean BRUTAL=Boolean.getBoolean("org.eclipse.jetty.websocket.BRUTAL");
     
     final static byte OP_CONTINUATION = 0x00;
     final static byte OP_TEXT = 0x01;
@@ -880,17 +879,16 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         private void errorClose(int code, String message)
         {
             _connection.close(code,message);
-            if (BRUTAL)
+            
+            // Brutally drop the connection
+            try
             {
-                try
-                {
-                    _endp.close();
-                }
-                catch (IOException e)
-                {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
-                }
+                _endp.close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn(e.toString());
+                LOG.debug(e);
             }
         }
         
