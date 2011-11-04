@@ -54,7 +54,7 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
         Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
         socket.connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
 
-        EndPoint endpoint=new SocketEndPoint(socket);
+        final EndPoint endpoint=new SocketEndPoint(socket);
 
         final AbstractHttpConnection connection=new BlockingHttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
         connection.setDestination(destination);

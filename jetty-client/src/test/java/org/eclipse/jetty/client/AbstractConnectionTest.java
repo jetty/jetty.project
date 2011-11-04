@@ -362,36 +362,33 @@ public abstract class AbstractConnectionTest
             HttpDestination dest = httpClient.getDestination(new Address("localhost", port),false);
 
             httpClient.send(exchange);
-            Socket s = serverSocket.accept();
-            s.setSoTimeout(10000);
+            Socket server = serverSocket.accept();
+            server.setSoTimeout(5000);
             byte[] buf = new byte[4096];
             
-            int len=s.getInputStream().read(buf);
-            System.err.println(new String(buf,0,len));
+            int len=server.getInputStream().read(buf);
             assertEquals(1,dest.getConnections());
             assertEquals(0,dest.getIdleConnections());
 
-            s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
-            System.err.println("--");
+            server.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
             
-            Thread.sleep(300);
+            assertEquals(HttpExchange.STATUS_COMPLETED,exchange.waitForDone());
+            Thread.sleep(200); // TODO get rid of this
             assertEquals(1,dest.getConnections());
             assertEquals(1,dest.getIdleConnections());
 
             exchange = new ConnectionExchange();
             exchange.setAddress(new Address("localhost", port));
             exchange.setRequestURI("/");
-
             httpClient.send(exchange);
-            System.err.println(">>");
-            Thread.sleep(100);
-            assertEquals(1,dest.getConnections());
-            len=s.getInputStream().read(buf);
-            System.err.println(new String(buf,0,len));
             assertEquals(1,dest.getConnections());
             assertEquals(0,dest.getIdleConnections());
-            s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
-            System.err.println("==");
+            
+            
+            len=server.getInputStream().read(buf);
+            assertEquals(1,dest.getConnections());
+            assertEquals(0,dest.getIdleConnections());
+            server.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
 
             Thread.sleep(500);
 
@@ -403,12 +400,10 @@ public abstract class AbstractConnectionTest
             assertEquals(0,dest.getConnections());
             assertEquals(0,dest.getIdleConnections());
 
-            System.err.println("closing");
             serverSocket.close();
         }
         finally
         {
-            System.err.println("stopping");
             httpClient.stop();
         }
     }

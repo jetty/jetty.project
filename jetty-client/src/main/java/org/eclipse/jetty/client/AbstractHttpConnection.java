@@ -119,16 +119,6 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
 
             _exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_COMMIT);
 
-            if (_endp.isBlocking())
-            {
-                this.notify();
-            }
-            else
-            {
-                AsyncEndPoint scep = (AsyncEndPoint)_endp;
-                scep.asyncDispatch();
-            }
-
             adjustIdleTimeout();
 
             return true;
@@ -366,7 +356,8 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
     public String toString()
     {
         return "HttpConnection@" + hashCode() + "//" + 
-        (_destination==null?"?.?.?.?:??":(_destination.getAddress().getHost() + ":" + _destination.getAddress().getPort()));
+        (_destination==null?"?.?.?.?:??":(_destination.getAddress().getHost() + ":" + _destination.getAddress().getPort()))+
+        ",g="+_generator.getState()+",p="+_parser.getState();
     }
 
     public String toDetailString()
@@ -431,12 +422,6 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
 
     protected void exchangeExpired(HttpExchange exchange)
     {
-        System.err.println("exchangeEXPIRED "+this);
-        System.err.println(exchange);
-        System.err.println(_endp);
-        System.err.println(_generator);
-        System.err.println(_parser);
-        
         synchronized (this)
         {
             // We are expiring an exchange, but the exchange is pending

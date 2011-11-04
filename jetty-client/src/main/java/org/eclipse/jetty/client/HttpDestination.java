@@ -246,12 +246,16 @@ public class HttpDestination implements Dumpable
             }
 
             if (connection == null)
+            {
                 return null;
-
+            }
+            
             // Check if the connection was idle,
             // but it expired just a moment ago
             if (connection.cancelIdleTimeout())
+            {
                 return connection;
+            }
         }
     }
 

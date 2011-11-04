@@ -254,4 +254,13 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         if (_generator.isIdle())
             _endp.shutdownOutput();
     }
+    
+    @Override
+    public boolean send(HttpExchange ex) throws IOException
+    {
+        boolean sent=super.send(ex);
+        if (sent)
+            _asyncEndp.asyncDispatch();
+        return sent;
+    }
 }

@@ -1,6 +1,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpParser;
@@ -46,9 +47,25 @@ public class BlockingHttpConnection extends AbstractHttpConnection
             while (_endp.isOpen() && connection==this)
             {
                 LOG.debug("open={} more={} buffering={}",_endp.isOpen(),_parser.isMoreInBuffer(),_endp.isBufferingInput());
-                
-                HttpExchange exchange=_exchange;
-                
+
+                HttpExchange exchange;
+                synchronized (this)
+                {
+                    exchange=_exchange;
+                    
+                    while (exchange == null)
+                    {
+                        try
+                        {
+                            this.wait();
+                            exchange=_exchange;
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new InterruptedIOException();
+                        }
+                    }
+                }
                 LOG.debug("exchange {}",exchange);
                 
                 try
@@ -221,5 +238,20 @@ public class BlockingHttpConnection extends AbstractHttpConnection
     {
         if (_generator.isIdle())
             _endp.shutdownOutput();
+    }
+
+    
+    @Override
+    public boolean send(HttpExchange ex) throws IOException
+    {
+        boolean sent=super.send(ex);
+        if (sent)
+        {
+            synchronized (this)
+            {
+                notifyAll();
+            }
+        }
+        return sent;
     }
 }

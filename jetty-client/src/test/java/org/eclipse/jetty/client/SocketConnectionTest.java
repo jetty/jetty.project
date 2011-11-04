@@ -88,4 +88,9 @@ public class SocketConnectionTest extends AbstractConnectionTest
             httpClient.stop();
         }
     }
+    
+    public void testIdleConnection() throws Exception
+    {
+        super.testIdleConnection();
+    }
 }
