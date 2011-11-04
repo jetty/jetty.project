@@ -15,7 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.net.ConnectException;
+import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -692,12 +692,13 @@ public class HttpDestination implements Dumpable
             {
                 proxyEndPoint.upgrade();
             }
-            else if(responseStatus == HttpStatus.GATEWAY_TIMEOUT_504){
+            else if(responseStatus == HttpStatus.GATEWAY_TIMEOUT_504)
+            {
                 onExpire();
             }
             else
             {
-                onException(new ConnectException("Proxy: " + proxyEndPoint.getRemoteAddr() +":" + proxyEndPoint.getRemotePort() + " didn't return http return code 200, but " + responseStatus + " while trying to request: " + exchange.getAddress().toString()));
+                onException(new ProtocolException("Proxy: " + proxyEndPoint.getRemoteAddr() +":" + proxyEndPoint.getRemotePort() + " didn't return http return code 200, but " + responseStatus + " while trying to request: " + exchange.getAddress().toString()));
             }
         }
 

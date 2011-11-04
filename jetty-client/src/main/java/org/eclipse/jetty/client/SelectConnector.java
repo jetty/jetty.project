@@ -15,14 +15,11 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
@@ -107,7 +104,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             else
             {
                 channel.configureBlocking(false);
-                channel.connect(address.toSocketAddress());            
+                channel.connect(address.toSocketAddress());
                 _selectorManager.register(channel,destination);
                 ConnectTimeout connectTimeout = new ConnectTimeout(channel,destination);
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
@@ -232,7 +229,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             Timeout.Task connectTimeout = _connectingChannels.remove(channel);
             if (connectTimeout != null)
                 connectTimeout.cancel();
-            
+
             if (attachment instanceof HttpDestination)
                 ((HttpDestination)attachment).onConnectionFailed(ex);
             else
@@ -280,12 +277,14 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     public static class ProxySelectChannelEndPoint extends SslSelectChannelEndPoint
     {
         private final SelectChannelEndPoint plainEndPoint;
+        private final EnforceOverrideEndPointMethods enforcer;
         private volatile boolean upgraded = false;
 
         public ProxySelectChannelEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key, Buffers sslBuffers, SSLEngine engine, int maxIdleTimeout) throws IOException
         {
             super(sslBuffers, channel, selectSet, key, engine, maxIdleTimeout);
             this.plainEndPoint = new SelectChannelEndPoint(channel, selectSet, key, maxIdleTimeout);
+            this.enforcer = new EnforceOverrideEndPointMethods();
         }
 
         public void upgrade()
@@ -295,179 +294,338 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
 
         public void shutdownOutput() throws IOException
         {
-            if (upgraded)
-                super.shutdownOutput();
-            else
-                plainEndPoint.shutdownOutput();
+            enforcer.shutdownOutput();
+        }
+
+        public boolean isOutputShutdown()
+        {
+            return enforcer.isOutputShutdown();
+        }
+
+        public void shutdownInput() throws IOException
+        {
+            enforcer.shutdownInput();
+        }
+
+        public boolean isInputShutdown()
+        {
+            return enforcer.isInputShutdown();
         }
 
         public void close() throws IOException
         {
-            if (upgraded)
-                super.close();
-            else
-                plainEndPoint.close();
+            enforcer.close();
         }
 
         public int fill(Buffer buffer) throws IOException
         {
-            if (upgraded)
-                return super.fill(buffer);
-            else
-                return plainEndPoint.fill(buffer);
+            return enforcer.fill(buffer);
         }
 
         public int flush(Buffer buffer) throws IOException
         {
-            if (upgraded)
-                return super.flush(buffer);
-            else
-                return plainEndPoint.flush(buffer);
+            return enforcer.flush(buffer);
         }
 
         public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
         {
-            if (upgraded)
-                return super.flush(header, buffer, trailer);
-            else
-                return plainEndPoint.flush(header, buffer, trailer);
+            return enforcer.flush(header, buffer, trailer);
         }
 
         public String getLocalAddr()
         {
-            if (upgraded)
-                return super.getLocalAddr();
-            else
-                return plainEndPoint.getLocalAddr();
+            return enforcer.getLocalAddr();
         }
 
         public String getLocalHost()
         {
-            if (upgraded)
-                return super.getLocalHost();
-            else
-                return plainEndPoint.getLocalHost();
+            return enforcer.getLocalHost();
         }
 
         public int getLocalPort()
         {
-            if (upgraded)
-                return super.getLocalPort();
-            else
-                return plainEndPoint.getLocalPort();
+            return enforcer.getLocalPort();
         }
 
         public String getRemoteAddr()
         {
-            if (upgraded)
-                return super.getRemoteAddr();
-            else
-                return plainEndPoint.getRemoteAddr();
+            return enforcer.getRemoteAddr();
         }
 
         public String getRemoteHost()
         {
-            if (upgraded)
-                return super.getRemoteHost();
-            else
-                return plainEndPoint.getRemoteHost();
+            return enforcer.getRemoteHost();
         }
 
         public int getRemotePort()
         {
-            if (upgraded)
-                return super.getRemotePort();
-            else
-                return plainEndPoint.getRemotePort();
+            return enforcer.getRemotePort();
         }
 
         public boolean isBlocking()
         {
-            if (upgraded)
-                return super.isBlocking();
-            else
-                return plainEndPoint.isBlocking();
+            return enforcer.isBlocking();
         }
 
         public boolean isBufferred()
         {
-            if (upgraded)
-                return super.isBufferred();
-            else
-                return plainEndPoint.isBufferred();
+            return enforcer.isBufferred();
         }
 
         public boolean blockReadable(long millisecs) throws IOException
         {
-            if (upgraded)
-                return super.blockReadable(millisecs);
-            else
-                return plainEndPoint.blockReadable(millisecs);
+            return enforcer.blockReadable(millisecs);
         }
 
         public boolean blockWritable(long millisecs) throws IOException
         {
-            if (upgraded)
-                return super.blockWritable(millisecs);
-            else
-                return plainEndPoint.blockWritable(millisecs);
+            return enforcer.blockWritable(millisecs);
         }
 
         public boolean isOpen()
         {
-            if (upgraded)
-                return super.isOpen();
-            else
-                return plainEndPoint.isOpen();
+            return enforcer.isOpen();
         }
 
         public Object getTransport()
         {
-            if (upgraded)
-                return super.getTransport();
-            else
-                return plainEndPoint.getTransport();
+            return enforcer.getTransport();
         }
 
         public boolean isBufferingInput()
         {
-            if (upgraded)
-                return super.isBufferingInput();
-            else
-                return plainEndPoint.isBufferingInput();
+            return enforcer.isBufferingInput();
         }
 
         public boolean isBufferingOutput()
         {
-            if (upgraded)
-                return super.isBufferingOutput();
-            else
-                return plainEndPoint.isBufferingOutput();
+            return enforcer.isBufferingOutput();
         }
 
         public void flush() throws IOException
         {
-            if (upgraded)
-                super.flush();
-            else
-                plainEndPoint.flush();
-
+            enforcer.flush();
         }
 
         public int getMaxIdleTime()
         {
-            if (upgraded)
-                return super.getMaxIdleTime();
-            else
-                return plainEndPoint.getMaxIdleTime();
+            return enforcer.getMaxIdleTime();
         }
 
         public void setMaxIdleTime(int timeMs) throws IOException
         {
-            if (upgraded)
-                super.setMaxIdleTime(timeMs);
-            else
-                plainEndPoint.setMaxIdleTime(timeMs);
+            enforcer.setMaxIdleTime(timeMs);
+        }
+
+        /**
+         * The only reason this class exist is to enforce that
+         * {@link ProxySelectChannelEndPoint} overrides all methods of {@link EndPoint}.
+         * Therefore, if a method is added to {@link EndPoint}, this class
+         * won't compile anymore, will need an implementation, and one must remember
+         * to override the correspondent method in {@link ProxySelectChannelEndPoint}.
+         */
+        private class EnforceOverrideEndPointMethods implements EndPoint
+        {
+            public void shutdownOutput() throws IOException
+            {
+                if (upgraded)
+                    ProxySelectChannelEndPoint.super.shutdownOutput();
+                else
+                    plainEndPoint.shutdownOutput();
+            }
+
+            public boolean isOutputShutdown()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.isOutputShutdown();
+                else
+                    return plainEndPoint.isOutputShutdown();
+            }
+
+            public void shutdownInput() throws IOException
+            {
+                if (upgraded)
+                    ProxySelectChannelEndPoint.super.shutdownInput();
+                else
+                    plainEndPoint.shutdownInput();
+            }
+
+            public boolean isInputShutdown()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.isInputShutdown();
+                else
+                    return plainEndPoint.isInputShutdown();
+            }
+
+            public void close() throws IOException
+            {
+                if (upgraded)
+                    ProxySelectChannelEndPoint.super.close();
+                else
+                    plainEndPoint.close();
+            }
+
+            public int fill(Buffer buffer) throws IOException
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.fill(buffer);
+                else
+                    return plainEndPoint.fill(buffer);
+            }
+
+            public int flush(Buffer buffer) throws IOException
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.flush(buffer);
+                else
+                    return plainEndPoint.flush(buffer);
+            }
+
+            public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.flush(header, buffer, trailer);
+                else
+                    return plainEndPoint.flush(header, buffer, trailer);
+            }
+
+            public String getLocalAddr()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.getLocalAddr();
+                else
+                    return plainEndPoint.getLocalAddr();
+            }
+
+            public String getLocalHost()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.getLocalHost();
+                else
+                    return plainEndPoint.getLocalHost();
+            }
+
+            public int getLocalPort()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.getLocalPort();
+                else
+                    return plainEndPoint.getLocalPort();
+            }
+
+            public String getRemoteAddr()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.getRemoteAddr();
+                else
+                    return plainEndPoint.getRemoteAddr();
+            }
+
+            public String getRemoteHost()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.getRemoteHost();
+                else
+                    return plainEndPoint.getRemoteHost();
+            }
+
+            public int getRemotePort()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.getRemotePort();
+                else
+                    return plainEndPoint.getRemotePort();
+            }
+
+            public boolean isBlocking()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.isBlocking();
+                else
+                    return plainEndPoint.isBlocking();
+            }
+
+            public boolean isBufferred()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.isBufferred();
+                else
+                    return plainEndPoint.isBufferred();
+            }
+
+            public boolean blockReadable(long millisecs) throws IOException
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.blockReadable(millisecs);
+                else
+                    return plainEndPoint.blockReadable(millisecs);
+            }
+
+            public boolean blockWritable(long millisecs) throws IOException
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.blockWritable(millisecs);
+                else
+                    return plainEndPoint.blockWritable(millisecs);
+            }
+
+            public boolean isOpen()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.isOpen();
+                else
+                    return plainEndPoint.isOpen();
+            }
+
+            public Object getTransport()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.getTransport();
+                else
+                    return plainEndPoint.getTransport();
+            }
+
+            public boolean isBufferingInput()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.isBufferingInput();
+                else
+                    return plainEndPoint.isBufferingInput();
+            }
+
+            public boolean isBufferingOutput()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.isBufferingOutput();
+                else
+                    return plainEndPoint.isBufferingOutput();
+            }
+
+            public void flush() throws IOException
+            {
+                if (upgraded)
+                    ProxySelectChannelEndPoint.super.flush();
+                else
+                    plainEndPoint.flush();
+
+            }
+
+            public int getMaxIdleTime()
+            {
+                if (upgraded)
+                    return ProxySelectChannelEndPoint.super.getMaxIdleTime();
+                else
+                    return plainEndPoint.getMaxIdleTime();
+            }
+
+            public void setMaxIdleTime(int timeMs) throws IOException
+            {
+                if (upgraded)
+                    ProxySelectChannelEndPoint.super.setMaxIdleTime(timeMs);
+                else
+                    plainEndPoint.setMaxIdleTime(timeMs);
+            }
         }
     }
 }

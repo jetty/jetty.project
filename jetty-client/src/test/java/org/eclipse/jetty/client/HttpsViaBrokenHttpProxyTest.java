@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
-
+import java.net.ProtocolException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,27 +29,24 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 /* ------------------------------------------------------------ */
 /**
  * This UnitTest class executes two tests. Both will send a http request to https://google.com through a misbehaving proxy server.
- *
+ * <p/>
  * The first test runs against a proxy which simply closes the connection (as nginx does) for a connect request. The second proxy server always responds with a
  * 500 error.
- *
+ * <p/>
  * The expected result for both tests is an exception and the HttpExchange should have status HttpExchange.STATUS_EXCEPTED.
  */
 public class HttpsViaBrokenHttpProxyTest
 {
-
     private Server _proxy = new Server();
     private HttpClient _client = new HttpClient();
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @throws java.lang.Exception
-     */
     @Before
-    public void setUpBeforeClass() throws Exception
+    public void init() throws Exception
     {
         // setup proxies with different behaviour
         _proxy.addConnector(new SelectChannelConnector());
@@ -59,19 +54,52 @@ public class HttpsViaBrokenHttpProxyTest
         _proxy.start();
         int proxyClosingConnectionPort = _proxy.getConnectors()[0].getLocalPort();
 
-        _client.setProxy(new Address("localhost",proxyClosingConnectionPort));
+        _client.setProxy(new Address("localhost", proxyClosingConnectionPort));
         _client.start();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @throws java.lang.Exception
-     */
     @After
-    public void tearDownAfterClass() throws Exception
+    public void destroy() throws Exception
     {
         _client.stop();
         _proxy.stop();
+    }
+
+    @Test
+    public void httpsViaProxyThatClosesConnectionOnConnectRequestTest() throws Exception
+    {
+        sendRequestThroughProxy(new ContentExchange(), "close", 9);
+    }
+
+    @Test
+    public void httpsViaProxyThatReturns500ErrorTest() throws Exception
+    {
+        HttpExchange exchange = new ContentExchange()
+        {
+            @Override
+            protected void onException(Throwable x)
+            {
+                // Suppress logging for expected exception
+                if (!(x instanceof ProtocolException))
+                    super.onException(x);
+            }
+        };
+        sendRequestThroughProxy(exchange, "error500", 9);
+    }
+
+    @Test
+    public void httpsViaProxyThatReturns504ErrorTest() throws Exception
+    {
+        sendRequestThroughProxy(new ContentExchange(), "error504", 8);
+    }
+
+    private void sendRequestThroughProxy(HttpExchange exchange, String desiredBehaviour, int exptectedStatus) throws Exception
+    {
+        String url = "https://" + desiredBehaviour + ".com/";
+        exchange.setURL(url);
+        exchange.addRequestHeader("behaviour", desiredBehaviour);
+        _client.send(exchange);
+        assertEquals(HttpExchange.toState(exptectedStatus) + " status awaited", exptectedStatus, exchange.waitForDone());
     }
 
     private class BadBehavingConnectHandler extends ConnectHandler
@@ -81,7 +109,9 @@ public class HttpsViaBrokenHttpProxyTest
                 throws ServletException, IOException
         {
             if (serverAddress.contains("close"))
+            {
                 HttpConnection.getCurrentConnection().getEndPoint().close();
+            }
             else if (serverAddress.contains("error500"))
             {
                 response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
@@ -91,41 +121,6 @@ public class HttpsViaBrokenHttpProxyTest
                 response.setStatus(HttpStatus.GATEWAY_TIMEOUT_504);
             }
             baseRequest.setHandled(true);
-        }
-    }
-
-    @Test
-    public void httpsViaProxyThatClosesConnectionOnConnectRequestTest()
-    {
-        sendRequestThroughProxy("close",9);
-    }
-
-    @Test
-    public void httpsViaProxyThatReturns500ErrorTest() throws Exception
-    {
-        sendRequestThroughProxy("error500",9);
-    }
-
-    @Test
-    public void httpsViaProxyThatReturns504ErrorTest() throws Exception
-    {
-        sendRequestThroughProxy("error504",8);
-    }
-
-    private void sendRequestThroughProxy(String desiredBehaviour, int exptectedStatus)
-    {
-        String url = "https://" + desiredBehaviour + ".com/";
-        try
-        {
-            ContentExchange exchange = new ContentExchange();
-            exchange.setURL(url);
-            exchange.addRequestHeader("behaviour",desiredBehaviour);
-            _client.send(exchange);
-            assertEquals(HttpExchange.toState(exptectedStatus) + " status awaited",exptectedStatus,exchange.waitForDone());
-        }
-        catch (Exception e)
-        {
-            System.out.println(e.getMessage());
         }
     }
 }
