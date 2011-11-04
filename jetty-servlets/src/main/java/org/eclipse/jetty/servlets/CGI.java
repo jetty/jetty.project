@@ -34,22 +34,26 @@ import org.eclipse.jetty.util.log.Logger;
 //-----------------------------------------------------------------------------
 /**
  * CGI Servlet.
- *
+ * <p/>
  * The cgi bin directory can be set with the "cgibinResourceBase" init parameter or it will default to the resource base of the context. If the
  * "cgibinResourceBaseIsRelative" init parameter is set the resource base is relative to the webapp. For example "WEB-INF/cgi" would work.
- *
+ * <br/>
+ * Not that this only works for extracted war files as "jar cf" will not reserve the execute permissions on the cgi files.
+ * <p/>
  * The "commandPrefix" init parameter may be used to set a prefix to all commands passed to exec. This can be used on systems that need assistance to execute a
  * particular file type. For example on windows this can be set to "perl" so that perl scripts are executed.
- *
+ * <p/>
  * The "Path" init param is passed to the exec environment as PATH. Note: Must be run unpacked somewhere in the filesystem.
- *
+ * <p/>
  * Any initParameter that starts with ENV_ is used to set an environment variable with the name stripped of the leading ENV_ and using the init parameter value.
- *
- *
- *
  */
 public class CGI extends HttpServlet
 {
+    /**
+     *
+     */
+    private static final long serialVersionUID = -6182088932884791073L;
+
     private static final Logger LOG = Log.getLogger(CGI.class);
 
     private boolean _ok;
