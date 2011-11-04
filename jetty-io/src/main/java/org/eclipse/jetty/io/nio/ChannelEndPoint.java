@@ -112,10 +112,18 @@ public class ChannelEndPoint implements EndPoint
             Socket socket= ((SocketChannel)_channel).socket();
             if (!socket.isClosed())
             {
-                if(socket.isOutputShutdown())
-                    socket.close();
-                else if (!socket.isInputShutdown())
-                    socket.shutdownInput();
+
+                try
+                {
+                    if (!socket.isInputShutdown())
+                        socket.shutdownInput();
+                    if (socket.isOutputShutdown())
+                        socket.close();
+                }
+                catch (SocketException e)
+                {
+                    LOG.ignore(e);
+                }
             }
         }
     }
@@ -132,12 +140,12 @@ public class ChannelEndPoint implements EndPoint
             {
                 try
                 {
+                    if (!socket.isOutputShutdown())
+                        socket.shutdownOutput();
                     if (socket.isInputShutdown())
                         socket.close();
-                    else if (!socket.isOutputShutdown())
-                        socket.shutdownOutput();
                 }
-                catch(SocketException e)
+                catch (SocketException e)
                 {
                     LOG.ignore(e);
                 }
@@ -174,7 +182,7 @@ public class ChannelEndPoint implements EndPoint
         {
             final NIOBuffer nbuf = (NIOBuffer)buf;
             final ByteBuffer bbuf=nbuf.getByteBuffer();
-            
+
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
             try
             {
@@ -211,7 +219,7 @@ public class ChannelEndPoint implements EndPoint
                 {
                     LOG.ignore(xx);
                 }
-                
+
                 if (len>0)
                     throw x;
                 len=-1;
@@ -221,7 +229,7 @@ public class ChannelEndPoint implements EndPoint
         {
             throw new IOException("Not Implemented");
         }
-        
+
         return len;
     }
 
