@@ -43,7 +43,6 @@ import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 public class WebSocketConnectionD13 extends AbstractConnection implements WebSocketConnection
 {
     private static final Logger LOG = Log.getLogger(WebSocketConnectionD13.class);
-    private static final boolean STRICT=Boolean.getBoolean("org.eclipse.jetty.websocket.STRICT");
     private static final boolean BRUTAL=Boolean.getBoolean("org.eclipse.jetty.websocket.BRUTAL");
     
     final static byte OP_CONTINUATION = 0x00;
@@ -645,24 +644,23 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             {
                 byte[] array=buffer.array();
 
-                if (STRICT)
+                if (isControlFrame(opcode) && buffer.length()>MAX_CONTROL_FRAME_PAYLOAD)
                 {
-                    if (isControlFrame(opcode) && buffer.length()>MAX_CONTROL_FRAME_PAYLOAD)
-                    {
-                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large: " + buffer.length() + " > " + MAX_CONTROL_FRAME_PAYLOAD);
-                        return;
-                    }
+                    errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large: " + buffer.length() + " > " + MAX_CONTROL_FRAME_PAYLOAD);
+                    return;
+                }
 
-                    // TODO: check extensions for RSV bit(s) meanings
-                    if ((flags&0x7)!=0)
-                    {
-                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
-                        return;
-                    }
+                // TODO: check extensions for RSV bit(s) meanings
+                if ((flags&0x7)!=0)
+                {
+                    errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
+                    return;
+                }
 
-                    // Ignore all frames after error close
-                    if (_closeCode!=0 && _closeCode!=CLOSE_NORMAL && opcode!=OP_CLOSE)
-                        return;
+                // Ignore all frames after error close
+                if (_closeCode!=0 && _closeCode!=CLOSE_NORMAL && opcode!=OP_CLOSE)
+                {
+                    return;
                 }
                 
                 // Deliver frame if websocket is a FrameWebSocket
@@ -786,7 +784,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                     case WebSocketConnectionD13.OP_TEXT:
                     {
-                        if (STRICT && _opcode!=-1)
+                        if (_opcode!=-1)
                         {
                             errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
                             return;
@@ -827,7 +825,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         
                     case WebSocketConnectionD13.OP_BINARY:
                     {
-                        if (STRICT && _opcode!=-1)
+                        if (_opcode!=-1)
                         {
                             errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
                             return;
@@ -857,8 +855,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                     }
 
                     default:
-                        if (STRICT)
-                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad opcode 0x"+Integer.toHexString(opcode));
+                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad opcode 0x"+Integer.toHexString(opcode));
                         return;
                 }
             }
