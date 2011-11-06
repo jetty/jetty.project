@@ -21,7 +21,6 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
     
     private boolean _requestComplete;
-    private int _status;
     private Buffer _requestContentChunk;
     private final AsyncEndPoint _asyncEndp;
     
@@ -45,27 +44,11 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         try
         {
             boolean failed = false;
-
-            int loops=10000; // TODO remove this safety net
             
             // While we are making progress and have not changed connection
             while (progress && connection==this)
             {
                 LOG.debug("open={} more={} buffering={} progress={}",_endp.isOpen(),_parser.isMoreInBuffer(),_endp.isBufferingInput(),progress);
-                
-                if (loops--<0)
-                {
-                    System.err.println("LOOPING!!!");
-                    System.err.println(this);
-                    System.err.println(_endp);
-                    _endp.close();
-                }
-                else if (loops==10)
-                {
-                    LOG.setDebugEnabled(true);
-                    Log.getLogger(HttpParser.class).setDebugEnabled(true);
-                    Log.getLogger("org.eclipse.jetty.io.nio.ssl").setDebugEnabled(true);
-                }
                 
                 progress=false;
                 HttpExchange exchange=_exchange;
