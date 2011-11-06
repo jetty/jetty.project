@@ -78,7 +78,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                     }
 
                     // Generate output
-                    if (_generator.isCommitted() && !_generator.isComplete())
+                    while (_generator.isCommitted() && !_generator.isComplete())
                     {
                         if (_generator.flushBuffer()>0)
                         {

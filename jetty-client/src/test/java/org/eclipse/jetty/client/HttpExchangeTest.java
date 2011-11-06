@@ -492,6 +492,7 @@ public class HttpExchangeTest
             @Override
             public int read() throws IOException
             {
+                // System.err.printf("reading 1 of %d/%d%n",_index,data.length());
                 if (_index>=data.length())
                     return -1;
 
@@ -503,13 +504,15 @@ public class HttpExchangeTest
                 {
                     e.printStackTrace();
                 }
-                
+
+                // System.err.printf("read 1%n");
                 return data.charAt(_index++);
             }
 
             @Override
             public int read(byte[] b, int off, int len) throws IOException
             {
+                // System.err.printf("reading %d of %d/%d%n",len,_index,data.length());
                 if (_index >= data.length())
                     return -1;
 
@@ -526,18 +529,17 @@ public class HttpExchangeTest
 
                 while (l < 5 && _index < data.length() && l < len)
                     b[off + l++] = (byte)data.charAt(_index++);
+                // System.err.printf("read %d%n",l);
                 return l;
             }
 
         };
 
         httpExchange.setRequestContentSource(content);
-        // httpExchange.setRequestContent(new ByteArrayBuffer(data));
 
         _httpClient.send(httpExchange);
 
         int status = httpExchange.waitForDone();
-        // httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
         String result = httpExchange.getResponseContent();
         assertEquals(HttpExchange.STATUS_COMPLETED,status);
         assertEquals(data,result);
