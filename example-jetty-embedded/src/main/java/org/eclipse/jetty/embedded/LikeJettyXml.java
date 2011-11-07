@@ -13,12 +13,22 @@
 
 package org.eclipse.jetty.embedded;
 
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.ajp.Ajp13SocketConnector;
+import org.eclipse.jetty.client.ContentExchange;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
@@ -32,10 +42,11 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class LikeJettyXml
 {
@@ -70,6 +81,7 @@ public class LikeJettyXml
         server.setConnectors(new Connector[]
         { connector });
 
+        /*
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
         SslContextFactory cf = ssl_connector.getSslContextFactory();
@@ -93,13 +105,16 @@ public class LikeJettyXml
         ssl_connector.setStatsOn(true);
         server.addConnector(ssl_connector);
         ssl_connector.open();
-        
+        */
 
         
+        /*
         
         Ajp13SocketConnector ajp = new Ajp13SocketConnector();
         ajp.setPort(8009);
         server.addConnector(ajp);
+        
+        */
         
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -143,10 +158,9 @@ public class LikeJettyXml
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
         
-        
+  
         server.start();
         
         server.join();
     }
-
 }

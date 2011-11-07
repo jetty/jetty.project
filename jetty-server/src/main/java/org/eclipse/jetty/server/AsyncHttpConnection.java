@@ -14,8 +14,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class AsyncHttpConnection extends AbstractHttpConnection implements AsyncConnection
 {
-    private final static int NO_PROGRESS_INFO = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_INFO",1000);
-    private final static int NO_PROGRESS_CLOSE = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_CLOSE",2000);
+    private final static int NO_PROGRESS_INFO = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_INFO",100);
+    private final static int NO_PROGRESS_CLOSE = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_CLOSE",200);
     
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
     private int _total_no_progress;
@@ -77,6 +77,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 }
                 finally
                 {                  
+                    some_progress|=progress;
                     //  Is this request/response round complete and are fully flushed?
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
@@ -111,11 +112,13 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
             _generator.returnBuffers();
             
             // Safety net to catch spinning
-            if (!some_progress)
+            if (some_progress)
+                _total_no_progress=0;
+            else
             {
                 _total_no_progress++;
                 if (NO_PROGRESS_INFO>0 && _total_no_progress%NO_PROGRESS_INFO==0 && (NO_PROGRESS_CLOSE<=0 || _total_no_progress< NO_PROGRESS_CLOSE))
-                    LOG.info("EndPoint making no progress: "+_total_no_progress+" "+_endp);
+                    LOG.info("EndPoint making no progress: "+_total_no_progress+" "+_endp+" "+this);
                 if (NO_PROGRESS_CLOSE>0 && _total_no_progress==NO_PROGRESS_CLOSE)
                 {
                     LOG.warn("Closing EndPoint making no progress: "+_total_no_progress+" "+_endp+" "+this);

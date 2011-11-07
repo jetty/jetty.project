@@ -690,6 +690,12 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return super.toString()+" "+_parser+" "+_generator+" "+_requests;
+    }
+
+    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class RequestHandler extends HttpParser.EventHandler
