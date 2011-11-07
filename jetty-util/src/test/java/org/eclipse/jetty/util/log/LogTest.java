@@ -13,165 +13,71 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.junit.Assert.assertTrue;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
-import junit.framework.Assert;
+import static org.hamcrest.Matchers.*;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class LogTest
 {
-    static PrintStream _orig= System.err;
-    static ByteArrayOutputStream _out = new ByteArrayOutputStream();
-    static PrintStream _pout = new PrintStream(_out);
-    
+    private static Logger originalLogger;
 
+    @SuppressWarnings("deprecation")
     @BeforeClass
-    public static  void setUp()
+    public static void rememberOriginalLogger()
     {
-        System.setErr(_pout);
+        originalLogger = Log.getLog();
     }
-    
+
     @AfterClass
-    public static void tearDown()
+    public static void restoreOriginalLogger()
     {
-        System.setErr(_orig);
-    }
-    
-    private void logNotContains(String text)
-    {
-        _pout.flush();
-        String err = _out.toString();
-        _out.reset();
-        
-        if (err.indexOf(text)<0)
-            return;
-        
-        _orig.println("FAIL '"+text+"' in '"+err+"'");
-        
-        assertTrue(false);
-    }
-    
-    private void logContains(String text)
-    {
-        _pout.flush();
-        String err = _out.toString();
-        _out.reset();
-        
-        err = err.replaceAll("\r\n","\n");
-        text = text.replaceAll("\r\n","\n");
-        
-        if (err.indexOf(text)>=0)
-            return;
-        
-        _orig.println("FAIL '"+text+"' not in '"+err+"'");
-        assertTrue(false);
+        Log.setLog(originalLogger);
     }
     
     @Test
-    public void testStdErrLogFormat()
+    public void testDefaultLogging()
     {
-        StdErrLog log = new StdErrLog(LogTest.class.getName());
+        Logger log = Log.getLogger(LogTest.class);
+        log.info("Test default logging");
+    }
 
-        log.info("testing:{},{}","test","format");
-        logContains("INFO:oejul.LogTest:testing:test,format");
-        
-        log.info("testing:{}","test","format");
-        logContains("INFO:oejul.LogTest:testing:test format");
-        
-        log.info("testing","test","format");
-        logContains("INFO:oejul.LogTest:testing test format");
-       
-        log.info("testing:{},{}","test",null);
-        logContains("INFO:oejul.LogTest:testing:test,null");
-       
-        log.info("testing {} {}",null,null);
-        logContains("INFO:oejul.LogTest:testing null null");
-        
-        log.info("testing:{}",null,null);
-        logContains("INFO:oejul.LogTest:testing:null");
-        
-        log.info("testing",null,null);
-        logContains("INFO:oejul.LogTest:testing");
+    // @Test
+    public void testNamedLogNamed_StdErrLog()
+    {
+        Log.setLog(new StdErrLog());
+
+        assertNamedLogging(Red.class);
+        assertNamedLogging(Blue.class);
+        assertNamedLogging(Green.class);
+    }
+
+    @Test
+    public void testNamedLogNamed_JUL()
+    {
+        Log.setLog(new JavaUtilLog());
+
+        assertNamedLogging(Red.class);
+        assertNamedLogging(Blue.class);
+        assertNamedLogging(Green.class);
+    }
+
+    @Test
+    public void testNamedLogNamed_Slf4J() throws Exception
+    {
+        Log.setLog(new Slf4jLog());
+
+        assertNamedLogging(Red.class);
+        assertNamedLogging(Blue.class);
+        assertNamedLogging(Green.class);
     }
 
     @SuppressWarnings("deprecation")
-    @Test
-    public void testStdErrLogDebug()
+    private void assertNamedLogging(Class<?> clazz)
     {
-        StdErrLog log = new StdErrLog("xxx");
-        
-        log.setLevel(StdErrLog.LEVEL_DEBUG);
-        log.debug("testing {} {}","test","debug");
-        logContains("DBUG:xxx:testing test debug");
-        
-        log.info("testing {} {}","test","info");
-        logContains("INFO:xxx:testing test info");
-        
-        log.warn("testing {} {}","test","warn");
-        logContains("WARN:xxx:testing test warn");
-        
-        log.setLevel(StdErrLog.LEVEL_INFO);
-        log.debug("YOU SHOULD NOT SEE THIS!",null,null);
-        logNotContains("YOU SHOULD NOT SEE THIS!");
-        
-        // Test for backward compat with old (now deprecated) method
-        log.setDebugEnabled(true);
-        log.debug("testing {} {}","test","debug-deprecated");
-        logContains("DBUG:xxx:testing test debug-deprecated");
-
-        log.setDebugEnabled(false);
-        log.debug("testing {} {}","test","debug-deprecated-false");
-        logNotContains("DBUG:xxx:testing test debug-depdeprecated-false");
-    }
-    
-    @Test
-    public void testStdErrLogName()
-    {
-        StdErrLog log = new StdErrLog("test");
-        log.setPrintLongNames(true);
-        Assert.assertEquals("test",log.getName());
-        
-        Logger next=log.getLogger("next");
-        
-        Assert.assertEquals("test.next",next.getName());
-        
-        next.info("testing {} {}","next","info");
-        logContains(":test.next:testing next info");
-    }
-    
-    @Test
-    public void testStdErrThrowable()
-    {
-        Throwable th = new Throwable("Message");
-        
-        th.printStackTrace();
-        _pout.flush();
-        String ths = _out.toString();
-        _out.reset();
-        
-
-        StdErrLog log = new StdErrLog("test");
-        log.warn("ex",th);
-
-        logContains(ths);
-        
-        th = new Throwable("Message with \033 escape");
-
-        log.warn("ex",th);
-        logNotContains("Message with \033 escape");
-        log.info(th.toString());
-        logNotContains("Message with \033 escape");
-        
-        log.warn("ex",th);
-        logContains("Message with ? escape");
-        log.info(th.toString());
-        logContains("Message with ? escape");
+        Logger lc = Log.getLogger(clazz);
+        Assert.assertThat("Named logging (impl=" + Log.getLog().getClass().getName() + ")",lc.getName(),is(clazz.getName()));
     }
 }

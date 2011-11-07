@@ -319,8 +319,15 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             });
 
             String path=_future.getURI().getPath();
-            if (path==null || path.length()==0)
+            if (path==null || path.length()==0) 
+            {
                 path="/";
+            }
+            
+            if(_future.getURI().getRawQuery() != null)
+            {
+                path += "?" + _future.getURI().getRawQuery();
+            }
 
             String origin = future.getOrigin();
 

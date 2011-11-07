@@ -21,5 +21,4 @@ public class SslContextFactory extends org.eclipse.jetty.util.ssl.SslContextFact
     {
         super(keyStorePath);
     }
-    
 }

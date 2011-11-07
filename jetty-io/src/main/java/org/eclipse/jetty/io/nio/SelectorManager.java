@@ -64,7 +64,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private long _lowResourcesConnections;
     private SelectSet[] _selectSet;
     private int _selectSets=1;
-    private volatile int _set;
+    private volatile int _set=0;
     private boolean _deferringInterestedOps0=true;
     private int _selectorPriorityDelta=0;
 
@@ -129,6 +129,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         // be distributed over the available sets.
 
         int s=_set++;
+        if (s<0)
+            s=-s;
         s=s%_selectSets;
         SelectSet[] sets=_selectSet;
         if (sets!=null)
@@ -151,6 +153,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         // be distributed over the available sets.
 
         int s=_set++;
+        if (s<0)
+            s=-s;
         s=s%_selectSets;
         SelectSet[] sets=_selectSet;
         if (sets!=null)
@@ -168,6 +172,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public void register(ServerSocketChannel acceptChannel)
     {
         int s=_set++;
+        if (s<0)
+            s=-s;
         s=s%_selectSets;
         SelectSet set=_selectSet[s];
         set.addChange(acceptChannel);

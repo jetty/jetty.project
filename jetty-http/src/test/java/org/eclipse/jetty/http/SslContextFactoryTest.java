@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.security.KeyStore;
 
 import org.eclipse.jetty.http.ssl.SslContextFactory;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
 
 
@@ -71,5 +72,71 @@ public class SslContextFactoryTest
         SslContextFactory cf = new SslContextFactory();
         cf.start();
         assertTrue(cf.getSslContext()!=null);
+    }
+
+    @Test
+    public void testNoTsResourceKs() throws Exception
+    {
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+
+        SslContextFactory cf = new SslContextFactory();
+        cf.setKeyStoreResource(keystoreResource);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+
+        cf.start();
+
+        assertTrue(cf.getSslContext()!=null);
+
+    }
+
+    @Test
+    public void testResourceTsResourceKs() throws Exception
+    {
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource truststoreResource = Resource.newSystemResource("keystore");
+
+        SslContextFactory cf = new SslContextFactory();
+        cf.setKeyStoreResource(keystoreResource);
+        cf.setTrustStoreResource(truststoreResource);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStorePassword("storepwd");
+
+        cf.start();
+
+        assertTrue(cf.getSslContext()!=null);
+    }
+
+    @Test(expected = java.security.UnrecoverableKeyException.class)
+    public void testResourceTsResourceKsWrongPW() throws Exception
+    {
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource truststoreResource = Resource.newSystemResource("keystore");
+
+        SslContextFactory cf = new SslContextFactory();
+        cf.setKeyStoreResource(keystoreResource);
+        cf.setTrustStoreResource(truststoreResource);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("wrong_keypwd");
+        cf.setTrustStorePassword("storepwd");
+
+        cf.start();
+    }
+
+    @Test(expected = java.io.IOException.class)
+    public void testResourceTsWrongPWResourceKs() throws Exception
+    {
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource truststoreResource = Resource.newSystemResource("keystore");
+
+        SslContextFactory cf = new SslContextFactory();
+        cf.setKeyStoreResource(keystoreResource);
+        cf.setTrustStoreResource(truststoreResource);
+        cf.setKeyStorePassword("storepwd");
+        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStorePassword("wrong_storepwd");
+
+        cf.start();
     }
 }

@@ -93,7 +93,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     public void accept(int acceptorID) throws IOException
     {
         ServerSocketChannel server = _acceptChannel;
-        if (server!=null && server.isOpen())
+        if (server!=null && server.isOpen() && _manager.isStarted())
         {
             SocketChannel channel = _acceptChannel.accept();
             channel.configureBlocking(false);

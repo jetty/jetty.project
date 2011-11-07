@@ -195,7 +195,7 @@ public class ChannelEndPoint implements EndPoint
         {
             final NIOBuffer nbuf = (NIOBuffer)buf;
             final ByteBuffer bbuf=nbuf.getByteBuffer();
-            
+
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
             try
             {
@@ -234,7 +234,7 @@ public class ChannelEndPoint implements EndPoint
                 {
                     LOG.ignore(xx);
                 }
-                
+
                 if (len>0)
                     throw x;
                 len=-1;
@@ -244,7 +244,7 @@ public class ChannelEndPoint implements EndPoint
         {
             throw new IOException("Not Implemented");
         }
-        
+
         return len;
     }
 

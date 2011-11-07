@@ -15,7 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.net.ConnectException;
+import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -65,7 +65,7 @@ public class HttpDestination implements Dumpable
     private List<HttpCookie> _cookies;
 
 
-    
+
     HttpDestination(HttpClient client, Address address, boolean ssl)
     {
         _client = client;
@@ -528,7 +528,7 @@ public class HttpDestination implements Dumpable
         // Add any known authorizations
         if (_authorizations != null)
         {
-            Authentication auth = (Authentication)_authorizations.match(ex.getURI());
+            Authentication auth = (Authentication)_authorizations.match(ex.getRequestURI());
             if (auth != null)
                 (auth).setCredentials(ex);
         }
@@ -669,7 +669,7 @@ public class HttpDestination implements Dumpable
             AggregateLifeCycle.dump(out,indent,_connections);
         }
     }
-    
+
     private class ConnectExchange extends ContentExchange
     {
         private final SelectConnector.UpgradableEndPoint proxyEndPoint;
@@ -691,13 +691,18 @@ public class HttpDestination implements Dumpable
         @Override
         protected void onResponseComplete() throws IOException
         {
-            if (getResponseStatus() == HttpStatus.OK_200)
+            int responseStatus = getResponseStatus();
+            if (responseStatus == HttpStatus.OK_200)
             {
                 proxyEndPoint.upgrade();
             }
+            else if(responseStatus == HttpStatus.GATEWAY_TIMEOUT_504)
+            {
+                onExpire();
+            }
             else
             {
-                onConnectionFailed(new ConnectException(exchange.getAddress().toString()));
+                onException(new ProtocolException("Proxy: " + proxyEndPoint.getRemoteAddr() +":" + proxyEndPoint.getRemotePort() + " didn't return http return code 200, but " + responseStatus + " while trying to request: " + exchange.getAddress().toString()));
             }
         }
 
@@ -706,5 +711,22 @@ public class HttpDestination implements Dumpable
         {
             HttpDestination.this.onConnectionFailed(x);
         }
+
+        @Override
+        protected void onException(Throwable x)
+        {
+            _queue.remove(exchange);
+            exchange.setStatus(STATUS_EXCEPTED);
+            exchange.getEventListener().onException(x);
+        }
+
+        @Override
+        protected void onExpire()
+        {
+            _queue.remove(exchange);
+            exchange.setStatus(STATUS_EXPIRED);
+            exchange.getEventListener().onExpire();
+        }
+
     }
 }

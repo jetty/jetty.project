@@ -13,10 +13,16 @@
 
 package org.eclipse.jetty.util.log;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Enumeration;
+import java.util.Properties;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 
 /**
@@ -40,17 +46,69 @@ public class Log
     public final static String EXCEPTION= "EXCEPTION ";
     public final static String IGNORED= "IGNORED ";
 
+    /**
+     * Logging Configuration Properties
+     */
+    protected static Properties __props;
+    /**
+     * The {@link Logger} implementation class name
+     */
     public static String __logClass;
+    /**
+     * Legacy flag indicating if {@link Log#ignore(Throwable)} methods produce any output in the {@link Logger}s
+     */
     public static boolean __ignored;
 
     static
     {
+        /* Instantiate a default configuration properties (empty)
+         */
+        __props = new Properties();
+
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             public Object run()
             {
-                __logClass = System.getProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.Slf4jLog");
-                __ignored = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.IGNORED", "false"));
+                /* First see if the jetty-logging.properties object exists in the classpath.
+                 * This is an optional feature used by embedded mode use, and test cases to allow for early
+                 * configuration of the Log class in situations where access to the System.properties are
+                 * either too late or just impossible.
+                 */
+                URL testProps = Log.class.getClassLoader().getResource("jetty-logging.properties");
+                if (testProps != null)
+                {
+                    InputStream in = null;
+                    try
+                    {
+                        in = testProps.openStream();
+                        __props.load(in);
+                    }
+                    catch (IOException e)
+                    {
+                        System.err.println("Unable to load " + testProps);
+                        e.printStackTrace(System.err);
+                    }
+                    finally
+                    {
+                        IO.close(in);
+                    }
+                }
+
+                /* Now load the System.properties as-is into the __props, these values will override
+                 * any key conflicts in __props.
+                 */
+                @SuppressWarnings("unchecked")
+                Enumeration<String> systemKeyEnum = (Enumeration<String>)System.getProperties().propertyNames();
+                while (systemKeyEnum.hasMoreElements())
+                {
+                    String key = systemKeyEnum.nextElement();
+                    __props.setProperty(key,System.getProperty(key));
+                }
+
+                /* Now use the configuration properties to configure the Log statics
+                 */
+                __logClass = __props.getProperty("org.eclipse.jetty.util.log.class","org.eclipse.jetty.util.log.Slf4jLog");
+                __ignored = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.IGNORED","false"));
                 return null;
             }
         });
@@ -62,12 +120,16 @@ public class Log
     public static boolean initialized()
     {
         if (LOG != null)
+        {
             return true;
+        }
 
         synchronized (Log.class)
         {
             if (__initialized)
+            {
                 return LOG != null;
+            }
             __initialized = true;
         }
 
@@ -80,11 +142,14 @@ public class Log
                 LOG.debug("Logging to {} via {}", LOG, log_class.getName());
             }
         }
+        catch(ThreadDeath e) 
+        {
+            // Let ThreadDeath pass through
+            throw e;
+        }
         catch(Throwable e)
         {
-            if (e instanceof ThreadDeath)
-                throw (ThreadDeath)e;
-            
+            // Unable to load specified Logger implementation, default to standard logging.
             initStandardLogging(e);
         }
 
@@ -95,7 +160,10 @@ public class Log
     {
         Class<?> log_class;
         if(e != null && __ignored)
+        {
             e.printStackTrace();
+        }
+        
         if (LOG == null)
         {
             log_class = StdErrLog.class;

@@ -1,8 +1,6 @@
 package org.eclipse.jetty.websocket;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -461,6 +459,7 @@ public class WebSocketMessageD13Test
         // unblock the latch in 4s
         new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -544,6 +543,7 @@ public class WebSocketMessageD13Test
         final AtomicLong totalB=new AtomicLong();
         new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -950,9 +950,9 @@ public class WebSocketMessageD13Test
         output.flush();
 
         assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
-        assertEquals(2,input.read());
+        assertEquals(41,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(0x81FF,code);
+        assertEquals(1002,code); // Invalid code 0x81FF
     }
 
     @Test

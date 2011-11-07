@@ -42,7 +42,7 @@ public class ProxyTunnellingTest
     {
         return proxyConnector.getLocalPort();
     }
-    
+
     protected void startSSLServer(Handler handler) throws Exception
     {
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
@@ -218,11 +218,11 @@ public class ProxyTunnellingTest
             ContentExchange exchange = new ContentExchange(true)
             {
                 @Override
-                protected void onConnectionFailed(Throwable x)
+                protected void onException(Throwable x)
                 {
                     latch.countDown();
                 }
-                
+
             };
             exchange.setMethod(HttpMethods.GET);
             String body = "BODY";
