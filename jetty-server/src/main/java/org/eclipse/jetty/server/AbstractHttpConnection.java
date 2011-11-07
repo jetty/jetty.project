@@ -870,6 +870,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
                     if (!_host)
                     {
+                        LOG.debug("!host {}",this);
                         _generator.setResponse(HttpStatus.BAD_REQUEST_400, null);
                         _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
                         _generator.completeHeader(_responseFields, true);
@@ -879,6 +880,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
                     if (_expect)
                     {
+                        LOG.debug("!expectation {}",this);
                         _generator.setResponse(HttpStatus.EXPECTATION_FAILED_417, null);
                         _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
                         _generator.completeHeader(_responseFields, true);

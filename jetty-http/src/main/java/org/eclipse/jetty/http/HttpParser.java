@@ -973,6 +973,12 @@ public class HttpParser implements Parser
 
             return progress;
         }
+        catch(HttpException e)
+        {
+            _persistent=false;
+            _state=STATE_SEEKING_EOF;
+            throw e;
+        }
         finally
         {
             _lock.unlock();

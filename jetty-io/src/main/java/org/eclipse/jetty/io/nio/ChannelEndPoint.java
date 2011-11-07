@@ -108,6 +108,7 @@ public class ChannelEndPoint implements EndPoint
      */
     protected final void shutdownChannelInput() throws IOException
     {
+        LOG.debug("ishut {}",this);
         if (_channel.isOpen())
         {
             if (_channel instanceof SocketChannel)
@@ -133,6 +134,7 @@ public class ChannelEndPoint implements EndPoint
 
     protected final void shutdownChannelOutput() throws IOException
     {
+        LOG.debug("oshut {}",this);
         if (_channel.isOpen())
         {
             if (_channel instanceof SocketChannel)
@@ -178,6 +180,7 @@ public class ChannelEndPoint implements EndPoint
      */
     public void close() throws IOException
     {
+        LOG.debug("close {}",this);
         _channel.close();
     }
 

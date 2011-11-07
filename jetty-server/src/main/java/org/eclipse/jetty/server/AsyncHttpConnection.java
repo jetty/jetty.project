@@ -14,8 +14,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class AsyncHttpConnection extends AbstractHttpConnection implements AsyncConnection
 {
-    private final static int NO_PROGRESS_INFO = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_INFO",100);
-    private final static int NO_PROGRESS_CLOSE = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_CLOSE",200);
+    private final static int NO_PROGRESS_INFO = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_INFO",1000);
+    private final static int NO_PROGRESS_CLOSE = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_CLOSE",2000);
     
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
     private int _total_no_progress;
@@ -72,11 +72,11 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                         LOG.debug("fields="+_requestFields);
                         LOG.debug(e);
                     }
+                    progress=true;
                     _generator.sendError(e.getStatus(), e.getReason(), null, true);
-                    _parser.reset();
                 }
                 finally
-                {                    
+                {                  
                     //  Is this request/response round complete and are fully flushed?
                     if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
                     {
@@ -118,7 +118,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     LOG.info("EndPoint making no progress: "+_total_no_progress+" "+_endp);
                 if (NO_PROGRESS_CLOSE>0 && _total_no_progress==NO_PROGRESS_CLOSE)
                 {
-                    LOG.warn("Closing EndPoint making no progress: "+_total_no_progress+" "+_endp);
+                    LOG.warn("Closing EndPoint making no progress: "+_total_no_progress+" "+_endp+" "+this);
                     if (_endp instanceof SelectChannelEndPoint)
                         ((SelectChannelEndPoint)_endp).getChannel().close();
                 }

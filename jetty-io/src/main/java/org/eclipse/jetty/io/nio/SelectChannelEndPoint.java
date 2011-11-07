@@ -705,7 +705,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             (_readBlocked?"":",RB") +
             (_writeBlocked?"":",WB") +
             (_writable?"":",!W") +
-            ",io="+_interestOps +
+            ","+_interestOps +
             ((_key==null || !_key.isValid())?"!":(
             (_key.isReadable()?"R":"")+
             (_key.isWritable()?"W":"")))+
