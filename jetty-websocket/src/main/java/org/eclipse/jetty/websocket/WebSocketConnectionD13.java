@@ -382,16 +382,18 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             {
                 if (!closed_out)
                 {
-                    // Close code 1005 (CLOSE No Code) is never to be sent as a status over
-                    // a Close control frame.
-                    if ( (code<=0) || (code == WebSocketConnectionD13.CLOSE_NO_CODE) ) 
-                    {
+                    // Close code 1005/1006 are never to be sent as a status over
+                    // a Close control frame. Code<-1 also means no node.
+                    
+                    if (code<0 || (code == WebSocketConnectionD13.CLOSE_NO_CODE) || code==WebSocketConnectionD13.CLOSE_NO_CLOSE)
+                        code=-1;
+                    else if (code==0)
                         code=WebSocketConnectionD13.CLOSE_NORMAL;
-                    }
+                    
                     byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                     bytes[0]=(byte)(code/0x100);
                     bytes[1]=(byte)(code%0x100);
-                    _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD13.OP_CLOSE,bytes,0,bytes.length);
+                    _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD13.OP_CLOSE,bytes,0,code>0?bytes.length:0);
                     _outbound.flush();
                 }
             }
@@ -607,6 +609,12 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         {
             close(CLOSE_NORMAL,null);
         }
+        
+        /* ------------------------------------------------------------ */
+        public void close()
+        {
+            close(CLOSE_NORMAL,null);
+        }
 
         /* ------------------------------------------------------------ */
         public void setAllowFrameFragmentation(boolean allowFragmentation)
@@ -767,7 +775,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                                 ( code > 1010 && code <= 2999 ) ||
                                 code >= 5000 )
                             {
-                                errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid close control status code " + code);
+                                errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid close code " + code);
                                 return;
                             }
                             

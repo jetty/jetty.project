@@ -585,9 +585,15 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         {
             return opcode==OP_PONG;
         }
-
+        
         /* ------------------------------------------------------------ */
         public void disconnect()
+        {
+            close();
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void close()
         {
             close(CLOSE_NORMAL,null);
         }

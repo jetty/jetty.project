@@ -297,6 +297,12 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void disconnect()
     {
+        close();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void close()
+    {
         try
         {
             _generator.flush();

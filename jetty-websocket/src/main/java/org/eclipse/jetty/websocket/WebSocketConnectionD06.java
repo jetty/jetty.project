@@ -509,6 +509,12 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         /* ------------------------------------------------------------ */
         public void disconnect()
         {
+            close();
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void close()
+        {
             close(CLOSE_NORMAL,null);
         }
 

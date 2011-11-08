@@ -109,7 +109,23 @@ public interface WebSocket
         String getProtocol();
         void sendMessage(String data) throws IOException;
         void sendMessage(byte[] data, int offset, int length) throws IOException;
+        
+        /**
+         * @deprecated Use {@link #close()}
+         */
         void disconnect();
+
+        /** 
+         * Close the connection with normal close code.
+         */
+        void close();
+        
+        /** Close the connection with specific closeCode and message.
+         * @param closeCode The close code to send, or -1 for no close code
+         * @param message The message to send or null for no message
+         */
+        void close(int closeCode,String message);
+        
         boolean isOpen();
 
         /**
@@ -154,12 +170,6 @@ public interface WebSocket
      */
     public interface FrameConnection extends Connection
     {
-        /** Close the connection with specific closeCode and message.
-         * @param closeCode
-         * @param message
-         */
-        void close(int closeCode,String message);
-        
         /**
          * @return The opcode of a binary message
          */
