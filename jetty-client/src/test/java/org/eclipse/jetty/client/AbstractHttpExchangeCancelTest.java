@@ -76,13 +76,13 @@ public abstract class AbstractHttpExchangeCancelTest
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
-            void setStatus(int status)
+            boolean setStatus(int status)
             {
                 // Cancel before setting the new status
                 if (getStatus() == HttpExchange.STATUS_START &&
                     status == STATUS_WAITING_FOR_CONNECTION)
                     cancel();
-                super.setStatus(status);
+                return super.setStatus(status);
             }
         };
         exchange.setAddress(newAddress());
@@ -113,14 +113,15 @@ public abstract class AbstractHttpExchangeCancelTest
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
-            void setStatus(int status)
+            boolean setStatus(int status)
             {
                 // Cancel after setting the new status
                 int oldStatus = getStatus();
-                super.setStatus(status);
+                boolean set = super.setStatus(status);
                 if (oldStatus == STATUS_START &&
                     getStatus() == HttpExchange.STATUS_WAITING_FOR_CONNECTION)
                     cancel();
+                return set;
             }
         };
         exchange.setAddress(newAddress());

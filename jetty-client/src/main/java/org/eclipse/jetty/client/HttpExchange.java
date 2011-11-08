@@ -181,12 +181,18 @@ public class HttpExchange
         }
     }
 
-    void setStatus(int newStatus)
+    /* ------------------------------------------------------------ */
+    /**
+     * @param newStatus
+     * @return True if the status was actually set.
+     */
+    boolean setStatus(int newStatus)
     {
+        boolean set = false;
         try
         {
             int oldStatus = _status.get();
-            boolean set = false;
+            boolean ignored = false;
             if (oldStatus != newStatus)
             {
                 long now = System.currentTimeMillis();
@@ -313,7 +319,7 @@ public class HttpExchange
                         case STATUS_CANCELLING:
                         case STATUS_EXPIRED:
                             // Don't change the status, it's too late
-                            set = true;
+                            ignored = true;
                             break;
                     }
                     break;
@@ -327,7 +333,7 @@ public class HttpExchange
                             break;
                         default:
                             // Ignore other statuses, we're cancelling
-                            set = true;
+                            ignored = true;
                             break;
                     }
                     break;
@@ -341,12 +347,12 @@ public class HttpExchange
                             break;
                             
                         case STATUS_COMPLETED:
-                            set = true;
+                            ignored = true;
                             done();
                             break; 
                             
                         default:
-                            set = true;
+                            ignored = true;
                             break;
                     }
                     break;
@@ -355,7 +361,7 @@ public class HttpExchange
                     throw new AssertionError(oldStatus + " => " + newStatus);
             }
 
-            if (!set)
+            if (!set && !ignored)
                 throw new IllegalStateException(toState(oldStatus) + " => " + toState(newStatus));
             LOG.debug("setStatus {} {}",newStatus,this);
         }
@@ -363,6 +369,7 @@ public class HttpExchange
         {
             LOG.warn(x);
         }
+        return set;
     }
 
     private boolean setStatusExpired(int newStatus, int oldStatus)

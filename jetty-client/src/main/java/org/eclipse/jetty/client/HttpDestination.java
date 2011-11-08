@@ -294,8 +294,8 @@ public class HttpDestination implements Dumpable
             else if (_queue.size() > 0)
             {
                 HttpExchange ex = _queue.remove(0);
-                ex.setStatus(HttpExchange.STATUS_EXCEPTED);
-                ex.getEventListener().onConnectionFailed(throwable);
+                if (ex.setStatus(HttpExchange.STATUS_EXCEPTED))
+                    ex.getEventListener().onConnectionFailed(throwable);
 
                 // Since an existing connection had failed, we need to create a
                 // connection if the  queue is not empty and client is running.
@@ -328,8 +328,8 @@ public class HttpDestination implements Dumpable
             if (_queue.size() > 0)
             {
                 HttpExchange ex = _queue.remove(0);
-                ex.setStatus(HttpExchange.STATUS_EXCEPTED);
-                ex.getEventListener().onException(throwable);
+                if(ex.setStatus(HttpExchange.STATUS_EXCEPTED))
+                    ex.getEventListener().onException(throwable);
             }
         }
     }
@@ -428,7 +428,6 @@ public class HttpDestination implements Dumpable
             synchronized (this)
             {
                 _connections.remove(connection);
-                System.err.println("Q "+_queue);
                 if (!_queue.isEmpty())
                     startConnection = true;
             }
@@ -717,16 +716,16 @@ public class HttpDestination implements Dumpable
         protected void onException(Throwable x)
         {
             _queue.remove(exchange);
-            exchange.setStatus(STATUS_EXCEPTED);
-            exchange.getEventListener().onException(x);
+            if (exchange.setStatus(STATUS_EXCEPTED))
+                exchange.getEventListener().onException(x);
         }
 
         @Override
         protected void onExpire()
         {
             _queue.remove(exchange);
-            exchange.setStatus(STATUS_EXPIRED);
-            exchange.getEventListener().onExpire();
+            if (exchange.setStatus(STATUS_EXPIRED))
+                exchange.getEventListener().onExpire();
         }
 
     }

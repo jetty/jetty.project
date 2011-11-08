@@ -346,8 +346,11 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             HttpExchange exchange = _exchange;
             if (exchange!=null)
             {
-                exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                exchange.getEventListener().onException(new EofException("early EOF"));
+                if (!exchange.isDone())
+                {
+                    if (exchange.setStatus(HttpExchange.STATUS_EXCEPTED))
+                        exchange.getEventListener().onException(new EofException("early EOF"));
+                }
             }
         }
         
@@ -389,8 +392,8 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 default:
                     String exch= exchange.toString();
                     String reason = _endp.isOpen()?(_endp.isInputShutdown()?"half closed: ":"local close: "):"closed: ";
-                    exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                    exchange.getEventListener().onException(new EofException(reason+exch));
+                    if (exchange.setStatus(HttpExchange.STATUS_EXCEPTED))
+                        exchange.getEventListener().onException(new EofException(reason+exch));
             }
         }
 

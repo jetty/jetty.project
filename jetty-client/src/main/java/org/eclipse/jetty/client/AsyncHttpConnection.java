@@ -161,8 +161,8 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                                     exchange.getStatus() != HttpExchange.STATUS_CANCELLED &&
                                     !exchange.isDone())
                             {
-                                exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
-                                exchange.getEventListener().onException(e);
+                                if (exchange.setStatus(HttpExchange.STATUS_EXCEPTED))
+                                    exchange.getEventListener().onException(e);
                             }
                         }
                         else
