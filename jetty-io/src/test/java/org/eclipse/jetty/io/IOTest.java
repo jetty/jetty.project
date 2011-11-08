@@ -140,7 +140,7 @@ public class IOTest
         Socket server;
        
         connector = new ServerSocket(9123);
-        client = new Socket("192.168.1.13",connector.getLocalPort());
+        client = new Socket("127.0.0.1",connector.getLocalPort());
         server = connector.accept();
         client.setTcpNoDelay(true);
         client.setSoLinger(true,0);
