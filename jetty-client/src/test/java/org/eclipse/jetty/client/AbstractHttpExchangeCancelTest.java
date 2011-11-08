@@ -170,8 +170,6 @@ public abstract class AbstractHttpExchangeCancelTest
     @Test
     public void testHttpExchangeCancelOnRequestComplete() throws Exception
     {
-        LOG.setDebugEnabled(true);
-        
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
