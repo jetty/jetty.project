@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,7 +31,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
@@ -43,8 +43,6 @@ import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
 public class WebSocketConnectionD13 extends AbstractConnection implements WebSocketConnection
 {
     private static final Logger LOG = Log.getLogger(WebSocketConnectionD13.class);
-    private static final boolean STRICT=Boolean.getBoolean("org.eclipse.jetty.websocket.STRICT");
-    private static final boolean BRUTAL=Boolean.getBoolean("org.eclipse.jetty.websocket.BRUTAL");
     
     final static byte OP_CONTINUATION = 0x00;
     final static byte OP_TEXT = 0x01;
@@ -301,7 +299,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closeIn(int code,String message)
     {
-        LOG.debug("ClosedIn {} {}",this,message);
+        LOG.debug("ClosedIn {} {} {}",this,code,message);
 
         final boolean close;
         final boolean tell_app;
@@ -341,7 +339,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     public void closeOut(int code,String message)
     {
-        LOG.debug("ClosedOut {} {}",this,message);
+        LOG.debug("ClosedOut {} {} {}",this,code,message);
 
         final boolean close;
         final boolean tell_app;
@@ -370,8 +368,12 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             {
                 if (send_close)
                 {
-                    if (code<=0)
+                    // Close code 1005 (CLOSE No Code) is never to be sent as a status over
+                    // a Close control frame.
+                    if ( (code<=0) || (code == WebSocketConnectionD13.CLOSE_NO_CODE) ) 
+                    {
                         code=WebSocketConnectionD13.CLOSE_NORMAL;
+                    }
                     byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                     bytes[0]=(byte)(code/0x100);
                     bytes[1]=(byte)(code%0x100);
@@ -447,6 +449,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         /* ------------------------------------------------------------ */
         public void sendControl(byte ctrl, byte[] data, int offset, int length) throws IOException
         {
+            // TODO: section 5.5 states that control frames MUST never be length > 125 bytes and MUST NOT be fragmented 
             if (_closedOut)
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             _outbound.addFrame((byte)FLAG_FIN,ctrl,data,offset,length);
@@ -621,6 +624,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     /* ------------------------------------------------------------ */
     private class WSFrameHandler implements WebSocketParser.FrameHandler
     {
+        private static final int MAX_CONTROL_FRAME_PAYLOAD = 125;
         private final Utf8StringBuilder _utf8 = new Utf8StringBuilder(512); // TODO configure initial capacity
         private ByteArrayBuffer _aggregate;
         private byte _opcode=-1;
@@ -639,23 +643,23 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             {
                 byte[] array=buffer.array();
 
-                if (STRICT)
+                if (isControlFrame(opcode) && buffer.length()>MAX_CONTROL_FRAME_PAYLOAD)
                 {
-                    if (isControlFrame(opcode) && buffer.length()>125)
-                    {
-                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large");
-                        return;
-                    }
+                    errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large: " + buffer.length() + " > " + MAX_CONTROL_FRAME_PAYLOAD);
+                    return;
+                }
 
-                    if ((flags&0x7)!=0)
-                    {
-                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
-                        return;
-                    }
+                // TODO: check extensions for RSV bit(s) meanings
+                if ((flags&0x7)!=0)
+                {
+                    errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
+                    return;
+                }
 
-                    // Ignore all frames after error close
-                    if (_closeCode!=0 && _closeCode!=CLOSE_NORMAL && opcode!=OP_CLOSE)
-                        return;
+                // Ignore all frames after error close
+                if (_closeCode!=0 && _closeCode!=CLOSE_NORMAL && opcode!=OP_CLOSE)
+                {
+                    return;
                 }
                 
                 // Deliver frame if websocket is a FrameWebSocket
@@ -725,8 +729,10 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                     case WebSocketConnectionD13.OP_PING:
                     {
                         LOG.debug("PING {}",this);
-                        if (!_closedOut)
+                        if (!_closedOut) 
+                        {
                             _connection.sendControl(WebSocketConnectionD13.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
+                        }
                         break;
                     }
 
@@ -743,8 +749,33 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         if (buffer.length()>=2)
                         {
                             code=(0xff&buffer.array()[buffer.getIndex()])*0x100+(0xff&buffer.array()[buffer.getIndex()+1]);
-                            if (buffer.length()>2)
-                                message=new String(buffer.array(),buffer.getIndex()+2,buffer.length()-2,StringUtil.__UTF8);
+                            
+                            // Validate close status codes.
+                            if (code < WebSocketConnectionD13.CLOSE_NORMAL ||
+                                code == WebSocketConnectionD13.CLOSE_UNDEFINED || 
+                                code == WebSocketConnectionD13.CLOSE_NO_CLOSE ||
+                                code == WebSocketConnectionD13.CLOSE_NO_CODE ||
+                                ( code > 1010 && code <= 2999 ) ||
+                                code >= 5000 )
+                            {
+                                errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid close control status code " + code);
+                                return;
+                            }
+                            
+                            if (buffer.length()>2) 
+                            {
+                                if(_utf8.append(buffer.array(),buffer.getIndex()+2,buffer.length()-2,_connection.getMaxTextMessageSize()))
+                                {
+                                    message = _utf8.toString();
+                                    _utf8.reset();
+                                }
+                            }
+                        } 
+                        else if(buffer.length() == 1)
+                        {
+                            // Invalid length. use status code 1002 (Protocol error) 
+                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid payload length of 1");
+                            return;
                         }
                         closeIn(code,message);
                         break;
@@ -752,7 +783,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                     case WebSocketConnectionD13.OP_TEXT:
                     {
-                        if (STRICT && _opcode!=-1)
+                        if (_opcode!=-1)
                         {
                             errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
                             return;
@@ -793,7 +824,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         
                     case WebSocketConnectionD13.OP_BINARY:
                     {
-                        if (STRICT && _opcode!=-1)
+                        if (_opcode!=-1)
                         {
                             errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
                             return;
@@ -823,8 +854,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                     }
 
                     default:
-                        if (STRICT)
-                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad opcode 0x"+Integer.toHexString(opcode));
+                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad opcode 0x"+Integer.toHexString(opcode));
                         return;
                 }
             }
@@ -849,17 +879,16 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         private void errorClose(int code, String message)
         {
             _connection.close(code,message);
-            if (BRUTAL)
+            
+            // Brutally drop the connection
+            try
             {
-                try
-                {
-                    _endp.close();
-                }
-                catch (IOException e)
-                {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
-                }
+                _endp.close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn(e.toString());
+                LOG.debug(e);
             }
         }
         

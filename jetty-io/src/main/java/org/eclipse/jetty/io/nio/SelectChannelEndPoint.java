@@ -660,7 +660,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized(this)
         {
-            return "SCEP@" + hashCode() + _channel+            
+            return "SCEP@" + hashCode() + "/" + _channel+            
             "[o="+isOpen()+" d=" + _dispatched + ",io=" + _interestOps+
             ",w=" + _writable + ",rb=" + _readBlocked + ",wb=" + _writeBlocked + "]";
         }
