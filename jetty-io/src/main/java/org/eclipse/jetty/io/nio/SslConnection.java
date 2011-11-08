@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2004-2011 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,13 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------ */
-/**
+/** SSL Connection.
+ * An AysyncConnection that acts as an interceptor between and EndPoint and another 
+ * Connection, that implements TLS encryption using an {@link SSLEngine}. 
+ * <p>
+ * The connector uses an {@link AsyncEndPoint} (like {@link SelectChannelEndPoint}) as 
+ * it's source/sink of encrypted data.   It then provides {@link #getSslEndPoint()} to 
+ * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  */
 public class SslConnection extends AbstractConnection implements AsyncConnection
 {
