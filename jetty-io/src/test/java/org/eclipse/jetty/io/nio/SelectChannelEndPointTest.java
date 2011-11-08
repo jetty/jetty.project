@@ -1,7 +1,7 @@
 package org.eclipse.jetty.io.nio;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -283,12 +283,12 @@ public class SelectChannelEndPointTest
         try
         {
             client.getInputStream().read();
-            Assert.fail();
+            Assert.fail("Should have timed out waiting for a response");
         }
         catch(SocketTimeoutException e)
         {
             System.err.println("blocked "+(System.currentTimeMillis()-start));
-            assertTrue(System.currentTimeMillis()-start>=100);
+            Assert.assertThat("Expected timeout", System.currentTimeMillis()-start, greaterThanOrEqualTo(100L));
         }
 
         // write remaining characters
