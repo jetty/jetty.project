@@ -96,6 +96,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
 
     public boolean send(HttpExchange ex) throws IOException
     {
+        LOG.debug("Send {} on {}",ex,this);
         synchronized (this)
         {
             if (_exchange != null)
@@ -346,6 +347,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             if (exchange!=null)
             {
                 exchange.setStatus(HttpExchange.STATUS_EXCEPTED);
+                exchange.getEventListener().onException(new EofException("early EOF"));
             }
         }
         

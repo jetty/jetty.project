@@ -428,6 +428,7 @@ public class HttpDestination implements Dumpable
             synchronized (this)
             {
                 _connections.remove(connection);
+                System.err.println("Q "+_queue);
                 if (!_queue.isEmpty())
                     startConnection = true;
             }

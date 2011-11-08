@@ -48,19 +48,19 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
             // While we are making progress and have not changed connection
             while (progress && connection==this)
             {
-                LOG.debug("open={} more={} buffering={} progress={}",_endp.isOpen(),_parser.isMoreInBuffer(),_endp.isBufferingInput(),progress);
+                LOG.debug("while open={} more={} buffering={} progress={}",_endp.isOpen(),_parser.isMoreInBuffer(),_endp.isBufferingInput(),progress);
                 
                 progress=false;
                 HttpExchange exchange=_exchange;
                 
-                LOG.debug("exchange {}",exchange);
+                LOG.debug("exchange {} on {}",exchange,this);
                 
                 try
                 {                  
                     // Should we commit the request?
                     if (!_generator.isCommitted() && exchange!=null && exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
                     {
-                        LOG.debug("commit");
+                        LOG.debug("commit {}",exchange);
                         progress=true;
                         commitRequest();
                     }
@@ -83,7 +83,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                                 
                             if (_requestContentChunk==null)
                             {
-                                LOG.debug("complete");
+                                LOG.debug("complete {}",exchange);
                                 progress=true;
                                 _generator.complete();
                             }
@@ -101,7 +101,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     // Signal request completion
                     if (_generator.isComplete() && !_requestComplete)
                     {
-                        LOG.debug("requestComplete");
+                        LOG.debug("requestComplete {}",exchange);
                         progress=true;
                         _requestComplete = true;
                         exchange.getEventListener().onRequestComplete();
@@ -121,7 +121,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     // Has any IO been done by the endpoint itself since last loop
                     if (_asyncEndp.hasProgressed())
                     {
-                        LOG.debug("hasProgressed");
+                        LOG.debug("hasProgressed {}",exchange);
                         progress=true;
                     }
                 }
@@ -162,8 +162,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 }
                 finally
                 {
-                    LOG.debug("{} {} progress={}",_generator, _parser,progress);
-                    LOG.debug("{}",_endp);
+                    LOG.debug("finally {} on {} progress={} {}",exchange,this,progress,_endp);
                     
                     boolean complete = failed || _generator.isComplete() && _parser.isComplete();
                     
@@ -227,6 +226,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         {
             _parser.returnBuffers();
             _generator.returnBuffers();
+            LOG.debug("unhandle {} on {}",_exchange,_endp);
         }
 
         return connection;

@@ -196,7 +196,7 @@ public class HttpExchange
                 if (newStatus==STATUS_SENDING_REQUEST)
                     _sent=_lastStateChange;
             }
-
+            
             // State machine: from which old status you can go into which new status
             switch (oldStatus)
             {
@@ -357,6 +357,7 @@ public class HttpExchange
 
             if (!set)
                 throw new IllegalStateException(toState(oldStatus) + " => " + toState(newStatus));
+            LOG.debug("setStatus {} {}",newStatus,this);
         }
         catch (IOException x)
         {

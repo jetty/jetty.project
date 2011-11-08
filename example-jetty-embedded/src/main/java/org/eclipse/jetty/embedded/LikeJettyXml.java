@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.embedded;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.concurrent.CountDownLatch;
