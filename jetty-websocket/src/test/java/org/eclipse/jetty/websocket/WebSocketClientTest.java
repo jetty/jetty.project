@@ -479,7 +479,7 @@ public class WebSocketClientTest
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
         Assert.assertEquals(1002,close.get());
-        Assert.assertEquals("Invalid close control status code 1111", closeMessage.toString());
+        Assert.assertEquals("Invalid close code 1111", closeMessage.toString());
     }
 
 
@@ -694,7 +694,7 @@ public class WebSocketClientTest
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
         Assert.assertEquals(1002,close.get());
-        Assert.assertEquals("Invalid close control status code 1111", closeMessage.toString());
+        Assert.assertEquals("Invalid close code 1111", closeMessage.toString());
     }
 
     private void respondToClient(Socket connection, String serverResponse) throws IOException
