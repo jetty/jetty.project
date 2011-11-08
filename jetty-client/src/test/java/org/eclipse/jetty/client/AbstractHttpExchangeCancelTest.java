@@ -14,9 +14,8 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -27,23 +26,25 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
- * @version $Revision$ $Date$
  */
 public abstract class AbstractHttpExchangeCancelTest
 {
+    private static final Logger LOG = Log.getLogger(AbstractHttpExchangeCancelTest.TestHttpExchange.class);
+    
     private Server server;
     private Connector connector;
 
@@ -168,6 +169,8 @@ public abstract class AbstractHttpExchangeCancelTest
     @Test
     public void testHttpExchangeCancelOnRequestComplete() throws Exception
     {
+        LOG.setDebugEnabled(true);
+        
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
@@ -183,10 +186,10 @@ public abstract class AbstractHttpExchangeCancelTest
         getHttpClient().send(exchange);
 
         int status = exchange.waitForDone();
-        assertEquals(HttpExchange.STATUS_CANCELLED, status);
-        assertFalse(exchange.isResponseCompleted());
-        assertFalse(exchange.isFailed());
-        assertFalse(exchange.isAssociated());
+        assertThat("Exchange Status", status, is(HttpExchange.STATUS_CANCELLED));
+        assertThat("Exchange.isResponseCompleted", exchange.isResponseCompleted(), is(false));
+        assertThat("Exchange.isFailed", exchange.isFailed(), is(false));
+        assertThat("Exchange.isAssociated", exchange.isAssociated(), is(false));
     }
 
     /* ------------------------------------------------------------ */
@@ -444,6 +447,7 @@ public abstract class AbstractHttpExchangeCancelTest
         @Override
         protected synchronized void onException(Throwable ex)
         {
+            LOG.debug(ex);
             if (ex instanceof SocketTimeoutException ||
                 ex.getCause() instanceof SocketTimeoutException)
                 expired=true;
