@@ -276,7 +276,8 @@ public class SelectChannelEndPointTest
         _blockAt=10;
         client.getOutputStream().write("12345678".getBytes("UTF-8"));
         
-        Thread.sleep(200);
+        long specifiedTimeout = 200L;
+        Thread.sleep(specifiedTimeout);
 
         // No echo as blocking for 10
         long start=System.currentTimeMillis();
@@ -288,7 +289,7 @@ public class SelectChannelEndPointTest
         catch(SocketTimeoutException e)
         {
             System.err.println("blocked "+(System.currentTimeMillis()-start));
-            Assert.assertThat("Expected timeout", System.currentTimeMillis()-start, greaterThanOrEqualTo(100L));
+            Assert.assertThat("Expected timeout", System.currentTimeMillis()-start, greaterThanOrEqualTo(specifiedTimeout));
         }
 
         // write remaining characters
