@@ -95,6 +95,8 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     protected boolean _httpOnly=false;
     protected SessionIdManager _sessionIdManager;
     protected boolean _secureCookies=false;
+    protected boolean _secureRequestOnly=true;
+
     protected final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<HttpSessionAttributeListener>();
     protected final List<HttpSessionListener> _sessionListeners= new CopyOnWriteArrayList<HttpSessionListener>();
 
@@ -360,13 +362,38 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the secureCookies.
+     * @return same as SessionCookieConfig.getSecure(). If true, session
+     * cookies are ALWAYS marked as secure. If false, a session cookie is
+     * ONLY marked as secure if _secureRequestOnly == true and it is a HTTPS request.
      */
     public boolean getSecureCookies()
     {
         return _secureCookies;
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if session cookie is to be marked as secure only on HTTPS requests
+     */
+    public boolean isSecureRequestOnly()
+    {
+        return _secureRequestOnly;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return if true, session cookie will be marked as secure only iff 
+     * HTTPS request. Can be overridden by setting SessionCookieConfig.setSecure(true),
+     * in which case the session cookie will be marked as secure on both HTTPS and HTTP.
+     */
+    public void setSecureRequestOnly(boolean secureRequestOnly)
+    {
+        _secureRequestOnly = secureRequestOnly;
+    }
 
+    
+    
     /* ------------------------------------------------------------ */
     public String getSessionCookie()
     {
@@ -374,6 +401,31 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
+    /** 
+     * A sessioncookie is marked as secure IFF any of the following conditions are true:
+     * <ol>
+     * <li>SessionCookieConfig.setSecure == true</li>
+     * <li>SessionCookieConfig.setSecure == false && _secureRequestOnly==true && request is HTTPS</li>
+     * </ol>
+     * According to SessionCookieConfig javadoc, case 1 can be used when:
+     * "... even though the request that initiated the session came over HTTP, 
+     * is to support a topology where the web container is front-ended by an 
+     * SSL offloading load balancer. In this case, the traffic between the client 
+     * and the load balancer will be over HTTPS, whereas the traffic between the 
+     * load balancer and the web container will be over HTTP."
+     * 
+     * For case 2, you can use _secureRequestOnly to determine if you want the
+     * Servlet Spec 3.0  default behaviour when SessionCookieConfig.setSecure==false, 
+     * which is:
+     * "they shall be marked as secure only if the request that initiated the 
+     * corresponding session was also secure"
+     * 
+     * The default for _secureRequestOnly is true, which gives the above behaviour. If
+     * you set it to false, then a session cookie is NEVER marked as secure, even if
+     * the initiating request was secure.
+     * 
+     * @see org.eclipse.jetty.server.SessionManager#getSessionCookie(javax.servlet.http.HttpSession, java.lang.String, boolean)
+     */
     public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
     {
         if (isUsingCookies())
@@ -391,7 +443,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                                         sessionPath,
                                         _cookieConfig.getMaxAge(),
                                         _cookieConfig.isHttpOnly(),
-                                        requestIsSecure&&_cookieConfig.isSecure());                  
+                                        _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure));                  
             }
             else
             {
@@ -402,7 +454,7 @@ public abstract class AbstractSessionManager extends AbstractLifeCycle implement
                                         sessionPath,
                                         _cookieConfig.getMaxAge(),
                                         _cookieConfig.isHttpOnly(),
-                                        requestIsSecure&&_cookieConfig.isSecure(),
+                                        _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
                                         _sessionComment,
                                         1);    
             }
