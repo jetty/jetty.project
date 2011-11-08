@@ -1,4 +1,4 @@
-/ ========================================================================
+// ========================================================================
 // Copyright (c) 2006-2011 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-    package org.eclipse.jetty.client;
+package org.eclipse.jetty.client;
 
 import java.io.IOException;
 
