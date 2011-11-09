@@ -1,12 +1,17 @@
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.util.ssl;
 
 import static junit.framework.Assert.assertTrue;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyStore;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
+import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -108,7 +113,7 @@ public class SslContextFactoryTest
         assertTrue(cf.getSslContext()!=null);
     }
 
-    @Test(expected = java.security.UnrecoverableKeyException.class)
+    @Test
     public void testResourceTsResourceKsWrongPW() throws Exception
     {
         Resource keystoreResource = Resource.newSystemResource("keystore");
@@ -121,10 +126,18 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("wrong_keypwd");
         cf.setTrustStorePassword("storepwd");
 
-        cf.start();
+        try
+        {
+            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+            cf.start();
+            Assert.fail();
+        }
+        catch(java.security.UnrecoverableKeyException e)
+        {
+        }
     }
 
-    @Test(expected = java.io.IOException.class)
+    @Test
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
         Resource keystoreResource = Resource.newSystemResource("keystore");
@@ -137,6 +150,14 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStorePassword("wrong_storepwd");
 
-        cf.start();
+        try
+        {
+            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+            cf.start();
+            Assert.fail();
+        }
+        catch(IOException e)
+        {
+        }
     }
 }

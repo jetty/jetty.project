@@ -79,7 +79,6 @@ public class LikeJettyXml
         server.setConnectors(new Connector[]
         { connector });
 
-        /*
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);
         SslContextFactory cf = ssl_connector.getSslContextFactory();
@@ -98,12 +97,9 @@ public class LikeJettyXml
                     "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
-        cf.setProtocol("TLSv1.1");
-        cf.addExcludeProtocols(new String[]{"TLSv1","SSLv3"});
         ssl_connector.setStatsOn(true);
         server.addConnector(ssl_connector);
         ssl_connector.open();
-        */
 
         
         /*

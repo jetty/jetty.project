@@ -323,7 +323,7 @@ public class HttpParserTest
 
                 io.setInput(http);
 
-                System.err.println(tst);
+                // System.err.println(tst);
                 parser.parse();
                 assertEquals(tst,"GET", f0);
                 assertEquals(tst,"/", f1);
