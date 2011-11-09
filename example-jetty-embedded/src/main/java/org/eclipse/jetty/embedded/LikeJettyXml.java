@@ -13,20 +13,11 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.ajp.Ajp13SocketConnector;
-import org.eclipse.jetty.client.ContentExchange;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
@@ -42,9 +33,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class LikeJettyXml
 {
@@ -61,7 +50,7 @@ public class LikeJettyXml
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
-        mbContainer.addBean(Log.getLog());
+        mbContainer.addBean(Log.getRootLogger());
 
         
         // Setup Threadpool
