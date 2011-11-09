@@ -179,4 +179,9 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         Assert.assertEquals(-1,filled);
     }
 
+    @Test
+    public void testStress() throws Exception
+    {
+        super.testStress();
+    }
 }

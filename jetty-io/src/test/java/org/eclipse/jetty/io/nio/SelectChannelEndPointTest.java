@@ -3,12 +3,16 @@ package org.eclipse.jetty.io.nio;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -111,8 +115,11 @@ public class SelectChannelEndPointTest
                 progress=false;
                 _in.compact();
                 if (_in.space()>0 && _endp.fill(_in)>0)
+                {
                     progress=true;
-
+                    ((AsyncEndPoint)_endp).cancelIdle();
+                }
+                
                 if (_blockAt>0 && _in.length()>0 && _in.length()<_blockAt)
                 {
                     _endp.blockReadable(10000);
@@ -146,10 +153,12 @@ public class SelectChannelEndPointTest
 
         public void onClose()
         {
+            System.err.println("onClose");
         }
 
         public void onInputShutdown() throws IOException
         {
+            System.err.println("onInputShutdown");
         }
         
     }
@@ -304,5 +313,54 @@ public class SelectChannelEndPointTest
             assertEquals(c,(char)b);
         }
     }
-    
+
+    @Test
+    public void testStress() throws Exception
+    {
+        Socket client = newClient();
+        client.setSoTimeout(10000);
+        
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+        
+        _manager.register(server);
+        int writes = 1000000;
+        
+        final CountDownLatch latch = new CountDownLatch(writes);
+        final InputStream in = new BufferedInputStream(client.getInputStream());
+        
+        new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    while (latch.getCount()>0)
+                    {
+                        // Verify echo server to client
+                        for (char c : "HelloWorld".toCharArray())
+                        {
+                            int b = in.read();
+                            assertTrue(b>0);
+                            assertEquals(c,(char)b);
+                        }
+                        latch.countDown();
+                    }
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+        
+        byte[] bytes="HelloWorld".getBytes("UTF-8");
+        
+        // Write client to server
+        for (int i=0;i<writes;i++)
+            client.getOutputStream().write(bytes);
+        
+        assertTrue(latch.await(100,TimeUnit.SECONDS));
+        
+    }
 }
