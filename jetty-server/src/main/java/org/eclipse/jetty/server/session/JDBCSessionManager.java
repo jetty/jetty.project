@@ -299,21 +299,21 @@ public class JDBCSessionManager extends AbstractSessionManager
          }
          
          @Override
-        public void setAttribute (String name, Object value)
+         public void setAttribute (String name, Object value)
          {
              super.setAttribute(name, value);
              _dirty=true;
          }
 
          @Override
-        public void removeAttribute (String name)
+         public void removeAttribute (String name)
          {
              super.removeAttribute(name); 
              _dirty=true;
          }
          
          @Override
-        protected void cookieSet()
+         protected void cookieSet()
          {
              _data.setCookieSet(_data.getAccessed());
          }
@@ -805,12 +805,13 @@ public class JDBCSessionManager extends AbstractSessionManager
                 }
             }
         }
+        catch(ThreadDeath e)
+        {
+            throw e;
+        }
         catch (Throwable t)
         {
-            if (t instanceof ThreadDeath)
-                throw ((ThreadDeath)t);
-            else
-                LOG.warn("Problem expiring sessions", t);
+            LOG.warn("Problem expiring sessions", t);
         }
         finally
         {

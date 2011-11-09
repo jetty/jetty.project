@@ -296,7 +296,6 @@ public class StreamEndPoint implements EndPoint
         _out=out;
     }
 
-
     /* ------------------------------------------------------------ */
     public void flush()
         throws IOException
@@ -306,19 +305,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isBufferingInput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
     public boolean isBufferingOutput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferred()
     {
         return false;
     }

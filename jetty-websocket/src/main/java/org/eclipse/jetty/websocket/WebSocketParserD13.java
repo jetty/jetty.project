@@ -131,7 +131,7 @@ public class WebSocketParserD13 implements WebSocketParser
         int filled=-1;
 
         // Loop until a datagram call back or can't fill anymore
-        while(!progress && (!_endp.isInputShutdown()||_endp.isBufferingInput()||_buffer.length()>0))
+        while(!progress && (!_endp.isInputShutdown()||_buffer.length()>0))
         {
             int available=_buffer.length();
 

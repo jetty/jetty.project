@@ -1120,7 +1120,6 @@ public class XmlConfiguration
     @SuppressWarnings("unchecked")
     public static void main(final String[] args) throws Exception
     {
-
         final AtomicReference<Throwable> exception = new AtomicReference<Throwable>();
 
         AccessController.doPrivileged(new PrivilegedAction()

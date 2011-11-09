@@ -122,12 +122,8 @@ public interface EndPoint
      */
     public int getRemotePort();
 
-
     /* ------------------------------------------------------------ */
     public boolean isBlocking();
-    
-    /* ------------------------------------------------------------ */
-    public boolean isBufferred();
     
     /* ------------------------------------------------------------ */
     public boolean blockReadable(long millisecs) throws IOException;
@@ -146,12 +142,6 @@ public interface EndPoint
     
     /* ------------------------------------------------------------ */
     /**
-     * @return True if the endpoint has some buffered input data
-     */
-    public boolean isBufferingInput();
-    
-    /* ------------------------------------------------------------ */
-    /**
      * @return True if the endpoint has some buffered output data
      */
     public boolean isBufferingOutput();
@@ -162,7 +152,6 @@ public interface EndPoint
      * @throws EofException If the endpoint is closed or output is shutdown.
      */
     public void flush() throws IOException;
-    
     
     /* ------------------------------------------------------------ */
     /** Get the max idle time in ms.

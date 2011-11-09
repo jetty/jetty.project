@@ -59,11 +59,10 @@ public class BlockingHttpConnection extends AbstractHttpConnection
         {
             boolean failed = false;
 
-            
             // While we are making progress and have not changed connection
             while (_endp.isOpen() && connection==this)
             {
-                LOG.debug("open={} more={} buffering={}",_endp.isOpen(),_parser.isMoreInBuffer(),_endp.isBufferingInput());
+                LOG.debug("open={} more={}",_endp.isOpen(),_parser.isMoreInBuffer());
 
                 HttpExchange exchange;
                 synchronized (this)
@@ -141,14 +140,14 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                     {
                         LOG.debug("parsed");
                     }
-                    
+                }
+                catch (ThreadDeath e)
+                {
+                    throw e;
                 }
                 catch (Throwable e)
                 {
                     LOG.debug("Failure on " + _exchange, e);
-
-                    if (e instanceof ThreadDeath)
-                        throw (ThreadDeath)e;
 
                     failed = true;
 

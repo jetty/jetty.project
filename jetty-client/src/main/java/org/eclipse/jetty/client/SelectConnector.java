@@ -273,7 +273,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             ((SelectChannelEndPoint)_endp).setConnection(sslConnection);
 
             _endp=sslConnection.getSslEndPoint();
-            sslConnection.setConnection(connection);
+            sslConnection.getSslEndPoint().setConnection(connection);
             
             LOG.debug("upgrade {} to {} for {}",this,sslConnection,connection);
         }
@@ -404,11 +404,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             return _endp.isBlocking();
         }
 
-        public boolean isBufferred()
-        {
-            return _endp.isBufferred();
-        }
-
         public boolean blockReadable(long millisecs) throws IOException
         {
             return _endp.blockReadable(millisecs);
@@ -427,11 +422,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
         public Object getTransport()
         {
             return _endp.getTransport();
-        }
-
-        public boolean isBufferingInput()
-        {
-            return _endp.isBufferingInput();
         }
 
         public boolean isBufferingOutput()

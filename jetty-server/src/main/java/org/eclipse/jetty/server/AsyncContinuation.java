@@ -557,7 +557,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     protected void scheduleDispatch()
     {
         EndPoint endp=_connection.getEndPoint();
-        if (!endp.isBlocking())
+        if (endp instanceof AsyncEndPoint)
         {
             ((AsyncEndPoint)endp).asyncDispatch();
         }

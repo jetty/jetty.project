@@ -113,7 +113,7 @@ public class SslContextFactoryTest
         assertTrue(cf.getSslContext()!=null);
     }
 
-    @Test
+    @Test(expected=java.security.UnrecoverableKeyException.class)
     public void testResourceTsResourceKsWrongPW() throws Exception
     {
         Resource keystoreResource = Resource.newSystemResource("keystore");
@@ -126,18 +126,12 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("wrong_keypwd");
         cf.setTrustStorePassword("storepwd");
 
-        try
-        {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
-            cf.start();
-            Assert.fail();
-        }
-        catch(java.security.UnrecoverableKeyException e)
-        {
-        }
+        ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+        cf.start();
+        Assert.fail();
     }
 
-    @Test
+    @Test(expected=java.io.IOException.class)
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
         Resource keystoreResource = Resource.newSystemResource("keystore");
@@ -150,14 +144,8 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStorePassword("wrong_storepwd");
 
-        try
-        {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
-            cf.start();
-            Assert.fail();
-        }
-        catch(IOException e)
-        {
-        }
+        ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+        cf.start();
+        Assert.fail();
     }
 }

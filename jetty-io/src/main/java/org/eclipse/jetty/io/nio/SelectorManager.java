@@ -507,11 +507,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     {
                         LOG.ignore(e);
                     }
+                    catch(ThreadDeath e)
+                    {
+                        throw e;
+                    }
                     catch (Throwable e)
                     {
-                        if (e instanceof ThreadDeath)
-                            throw (ThreadDeath)e;
-
                         if (isRunning())
                             LOG.warn(e);
                         else
