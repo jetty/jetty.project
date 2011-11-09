@@ -77,7 +77,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         
         SslBuffers(int packetSize, int appSize)
         {
-            System.err.println("New "+Thread.currentThread());
             _in=new IndirectNIOBuffer(packetSize);
             _out=new IndirectNIOBuffer(packetSize);
             _unwrap=new IndirectNIOBuffer(appSize);
