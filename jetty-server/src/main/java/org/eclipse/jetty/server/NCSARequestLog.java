@@ -507,15 +507,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                 buf.append("Async");
 
             long responseLength = response.getContentCount();
-            if (responseLength == 0)
-            {
-                System.err.println("Content-Length: "+response.getHeader("Content-Length")+" "+request.getConnection()+" "+request.getConnection().getEndPoint());
-                new Throwable().printStackTrace();
-                System.exit(1);
-                buf.append(' ');
-                buf.append('0');
-            }
-            else if (responseLength >= 0)
+            if (responseLength >= 0)
             {
                 buf.append(' ');
                 if (responseLength > 99999)

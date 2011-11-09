@@ -51,13 +51,13 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     
     private static final NIOBuffer __ZERO_BUFFER=new IndirectNIOBuffer(0);
     
-    private final ThreadLocal<NIOBuffer> __inBuffer = new ThreadLocal<NIOBuffer>();
-    private final ThreadLocal<NIOBuffer> __outBuffer = new ThreadLocal<NIOBuffer>();
+    private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<SslBuffers>();
     private final SSLEngine _engine;
     private final SSLSession _session;
     private AsyncConnection _connection;
     private final SslEndPoint _sslEndPoint = new SslEndPoint();
     private int _allocations;
+    private SslBuffers _buffers;
     private NIOBuffer _inbound;
     private NIOBuffer _unwrapBuf;
     private NIOBuffer _outbound;
@@ -66,6 +66,23 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private boolean _handshook;
     private boolean _oshut;
 
+    /* ------------------------------------------------------------ */
+    /* this is a half baked buffer pool
+     */
+    private static class SslBuffers
+    {
+        final NIOBuffer _in;
+        final NIOBuffer _out;
+        final NIOBuffer _unwrap;
+        
+        SslBuffers(int packetSize, int appSize)
+        {
+            System.err.println("New "+Thread.currentThread());
+            _in=new IndirectNIOBuffer(packetSize);
+            _out=new IndirectNIOBuffer(packetSize);
+            _unwrap=new IndirectNIOBuffer(appSize);
+        }
+    }
 
     /* ------------------------------------------------------------ */
     public SslConnection(SSLEngine engine,EndPoint endp)
@@ -118,53 +135,51 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     {
         _allowRenegotiate = allowRenegotiate;
     }
+    
+    /* ------------------------------------------------------------ */
     private void allocateBuffers()
     {
         synchronized (this)
         {
             if (_allocations++==0)
             {
-                if (_inbound==null)
+                if (_buffers==null)
                 {
-                    _inbound = __inBuffer.get();
-                    if (_inbound==null)
-                        _inbound=new IndirectNIOBuffer(_session.getPacketBufferSize()*2);
-                }
-
-                if (_outbound==null)
-                {
-                    _outbound = __outBuffer.get();
-                    if (_outbound==null)
-                        _outbound=new IndirectNIOBuffer(_session.getPacketBufferSize()*2);
+                    _buffers=__buffers.get();
+                    if (_buffers==null)
+                        _buffers=new SslBuffers(_session.getPacketBufferSize()*2,_session.getApplicationBufferSize()*2);
+                    _inbound=_buffers._in;
+                    _outbound=_buffers._out;
+                    _unwrapBuf=_buffers._unwrap;
+                    __buffers.set(null);
                 }
             }
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
     private void releaseBuffers()
     {
         synchronized (this)
         {
             if (--_allocations==0)
             {
-                if (_inbound!=null && _inbound.length()==0)
+                if (_buffers!=null &&
+                    _inbound.length()==0 &&
+                    _outbound.length()==0 &&
+                    _unwrapBuf.length()==0)
                 {
-                    __inBuffer.set(_inbound);
                     _inbound=null;
-                }
-
-                if (_outbound!=null && _outbound.length()==0)
-                {
-                    __outBuffer.set(_outbound);
                     _outbound=null;
-                }
-                
-                if (_unwrapBuf!=null && _unwrapBuf.length()==0)
                     _unwrapBuf=null;
+                    __buffers.set(_buffers);
+                    _buffers=null;
+                }
             }
         }
     }
-    
+
+    /* ------------------------------------------------------------ */
     public Connection handle() throws IOException
     {
         try
@@ -202,21 +217,25 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         return this;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return false;
     }
 
+    /* ------------------------------------------------------------ */
     public boolean isSuspended()
     {
         return false;
     }
 
+    /* ------------------------------------------------------------ */
     public void onClose()
     {
         
     }
 
+    /* ------------------------------------------------------------ */
     public void onInputShutdown() throws IOException
     {
         
@@ -226,11 +245,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private synchronized boolean process(Buffer toFill, Buffer toFlush) throws IOException
     {
         if (toFill==null)
-        {
-            if (_unwrapBuf==null)
-                _unwrapBuf=new IndirectNIOBuffer(_session.getApplicationBufferSize()*2);
             toFill=_unwrapBuf;
-        }
         else if (toFill.capacity()<_session.getApplicationBufferSize())
         {
             boolean progress=process(null,toFlush);
