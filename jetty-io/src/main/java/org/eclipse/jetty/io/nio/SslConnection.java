@@ -73,13 +73,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     {
         final NIOBuffer _in;
         final NIOBuffer _out;
-        final NIOBuffer _unwrap;
         
         SslBuffers(int packetSize, int appSize)
         {
             _in=new IndirectNIOBuffer(packetSize);
             _out=new IndirectNIOBuffer(packetSize);
-            _unwrap=new IndirectNIOBuffer(appSize);
         }
     }
 
@@ -149,7 +147,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         _buffers=new SslBuffers(_session.getPacketBufferSize()*2,_session.getApplicationBufferSize()*2);
                     _inbound=_buffers._in;
                     _outbound=_buffers._out;
-                    _unwrapBuf=_buffers._unwrap;
                     __buffers.set(null);
                 }
             }
@@ -165,15 +162,16 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             {
                 if (_buffers!=null &&
                     _inbound.length()==0 &&
-                    _outbound.length()==0 &&
-                    _unwrapBuf.length()==0)
+                    _outbound.length()==0 )
                 {
                     _inbound=null;
                     _outbound=null;
-                    _unwrapBuf=null;
                     __buffers.set(_buffers);
                     _buffers=null;
                 }
+
+		if (_unwrapBuf!=null && _unwrapBuf.length()==0)
+		    _unwrapBuf=null;
             }
         }
     }
@@ -244,7 +242,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private synchronized boolean process(Buffer toFill, Buffer toFlush) throws IOException
     {
         if (toFill==null)
+	{
+	    if (_unwrapBuf==null)
+	      _unwrapBuf=new IndirectNIOBuffer(_session.getApplicationBufferSize()*2);
             toFill=_unwrapBuf;
+	}
         else if (toFill.capacity()<_session.getApplicationBufferSize())
         {
             boolean progress=process(null,toFlush);
