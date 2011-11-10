@@ -364,7 +364,19 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
+    public boolean isBufferingInput()
+    {
+        return false;
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isBufferingOutput()
+    {
+        return false;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isBufferred()
     {
         return false;
     }

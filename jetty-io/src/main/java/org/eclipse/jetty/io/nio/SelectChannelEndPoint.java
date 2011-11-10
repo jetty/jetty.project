@@ -41,9 +41,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private final SelectorManager _manager;
     private  SelectionKey _key;
     private final Runnable _handler = new Runnable()
-    {
-        public void run() { handle(); }
-    };
+        {
+            public void run() { handle(); }
+        };
 
     /** The desired value for {@link SelectionKey#interestOps()} */
     private int _interestOps;
@@ -65,6 +65,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /** true if the last write operation succeed and wrote all offered bytes */
     private volatile boolean _writable = true;
 
+    
     /** True if a thread has is blocked in {@link #blockReadable(long)} */
     private boolean _readBlocked;
 
@@ -629,6 +630,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 }
                 finally
                 {
+                    dispatched=!undispatch();
+                                        
                     if (!_ishut && isInputShutdown() && isOpen())
                     {
                         _ishut=true;
@@ -636,12 +639,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         {
                             _connection.onInputShutdown();
                         }
-                        catch(ThreadDeath e)
-                        {
-                            throw e;
-                        }
                         catch(Throwable x)
                         {
+                            if (x instanceof ThreadDeath)
+                                throw (ThreadDeath)x;
                             LOG.warn("onInputShutdown failed", x);
                             try{close();}
                             catch(IOException e2){LOG.ignore(e2);}
@@ -651,7 +652,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                             updateKey();
                         }
                     }
-                    dispatched=!undispatch();
                 }
             }
         }

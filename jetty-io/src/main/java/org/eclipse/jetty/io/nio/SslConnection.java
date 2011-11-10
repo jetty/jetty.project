@@ -64,7 +64,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private AsyncEndPoint _aEndp;
     private boolean _allowRenegotiate=true;
     private boolean _handshook;
-    private boolean _ishut;
     private boolean _oshut;
 
     /* ------------------------------------------------------------ */
@@ -97,6 +96,12 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         _engine=engine;
         _session=_engine.getSession();
         _aEndp=(AsyncEndPoint)endp;
+    }
+
+    /* ------------------------------------------------------------ */
+    public synchronized void setConnection(AsyncConnection connection)
+    {
+        _connection=connection;
     }
 
     /* ------------------------------------------------------------ */
@@ -193,7 +198,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 {
                     // handle the delegate connection
                     AsyncConnection next = (AsyncConnection)_connection.handle();
-                    if (next!=_connection && next!=null)
+                    if (next!=_connection && next==null)
                     {
                         _connection=next;
                         progress=true;
@@ -206,25 +211,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         finally
         {
             releaseBuffers();
-            
-            if (!_ishut && _sslEndPoint.isInputShutdown() && _sslEndPoint.isOpen())
-            {
-                _ishut=true;
-                try
-                {
-                    _connection.onInputShutdown();
-                }
-                catch(ThreadDeath e)
-                {
-                    throw e;
-                }
-                catch(Throwable x)
-                {
-                    LOG.warn("onInputShutdown failed", x);
-                    try{_endp.close();}
-                    catch(IOException e2){LOG.ignore(e2);}
-                }
-            }
         }
         
         return this;
@@ -695,6 +681,18 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             return _endp;
         }
 
+        public boolean isBufferingInput()
+        {
+            synchronized (this)
+            {
+                if (_unwrapBuf!=null && _unwrapBuf.hasContent())
+                    return true;
+                if (_inbound!=null && _inbound.hasContent())
+                    return true;
+            }
+            return false;
+        }
+
         public boolean isBufferingOutput()
         {
             synchronized (this)
@@ -781,6 +779,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         public boolean isBlocking()
         {
             return false;
+        }
+
+        public boolean isBufferred()
+        {
+            return true;
         }
 
         public int getMaxIdleTime()

@@ -15,7 +15,7 @@ package org.eclipse.jetty.io;
 
 import org.eclipse.jetty.util.thread.Timeout;
 
-public interface AsyncEndPoint extends ConnectedEndPoint
+public interface AsyncEndPoint extends EndPoint
 {
     /* ------------------------------------------------------------ */
     /**
@@ -49,6 +49,14 @@ public interface AsyncEndPoint extends ConnectedEndPoint
      * @return True if IO has been successfully performed since the last call to {@link #hasProgressed()}
      */
     public boolean hasProgressed();
+    
+
+    /* ------------------------------------------------------------ */
+    public Connection getConnection();
+
+    /* ------------------------------------------------------------ */
+    public void setConnection(Connection connection);
+    
     
     /* ------------------------------------------------------------ */
     /**

@@ -472,12 +472,11 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     _request.setHandled(true);
                     _response.sendError(e.getStatus(), e.getReason());
                 }
-                catch(ThreadDeath e)
-                {
-                    throw e;
-                }
                 catch (Throwable e)
                 {
+                    if (e instanceof ThreadDeath)
+                        throw (ThreadDeath)e;
+
                     LOG.warn(String.valueOf(_uri),e);
                     error=true;
                     _request.setHandled(true);

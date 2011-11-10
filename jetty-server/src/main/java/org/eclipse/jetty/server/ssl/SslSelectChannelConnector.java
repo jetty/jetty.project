@@ -559,7 +559,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
             SslConnection connection = new SslConnection(engine,endpoint);
 
             AsyncConnection delegate = super.newConnection(channel,connection.getSslEndPoint());
-            connection.getSslEndPoint().setConnection(delegate);
+            connection.setConnection(delegate);
             connection.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
             return connection;
         }

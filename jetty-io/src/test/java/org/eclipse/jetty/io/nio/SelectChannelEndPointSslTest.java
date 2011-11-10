@@ -49,7 +49,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         SslConnection connection = new SslConnection(engine,endpoint);
 
         AsyncConnection delegate = super.newConnection(channel,connection.getSslEndPoint());
-        connection.getSslEndPoint().setConnection(delegate);
+        connection.setConnection(delegate);
         return connection;
     }
 

@@ -299,9 +299,7 @@ public class HttpParser implements Parser
                     ex=e;
                 }
 
-                if (filled>0)
-                    progress++;
-                else if (filled < 0 )
+                if (filled < 0 )
                 {                    
                     _persistent=false;
 
@@ -1195,7 +1193,7 @@ public class HttpParser implements Parser
             {
                 if (!_endp.isBlocking())
                 {
-                    if (parseNext()>0)
+                    if (_endp.isBufferingInput() && parseNext()>0)
                         continue;
 
                     if (!_endp.blockReadable(maxIdleTime))
