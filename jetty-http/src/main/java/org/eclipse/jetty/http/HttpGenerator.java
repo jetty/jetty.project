@@ -986,7 +986,10 @@ public class HttpGenerator extends AbstractGenerator
                         }
                         else
                         {
-                            // No space so lets use the header buffer.
+                            // No space so lets use a header buffer.
+                            if (_header == null)
+                                _header = _buffers.getHeader();
+                            
                             if (_needCRLF)
                             {
                                 if (_header.length() > 0) throw new IllegalStateException("EOC");
