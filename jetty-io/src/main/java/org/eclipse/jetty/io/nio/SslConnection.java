@@ -198,7 +198,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 {
                     // handle the delegate connection
                     AsyncConnection next = (AsyncConnection)_connection.handle();
-                    if (next!=_connection && next==null)
+                    if (next!=_connection && next!=null)
                     {
                         _connection=next;
                         progress=true;
