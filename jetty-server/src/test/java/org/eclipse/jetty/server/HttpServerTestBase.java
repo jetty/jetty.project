@@ -226,6 +226,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 // Check the response
                 assertEquals("response "+i,RESPONSE2,response);
             }
+            catch(IOException e)
+            {
+                e.printStackTrace();
+                _server.dumpStdErr();
+                throw e;
+            }
             finally
             {
                 client.close();

@@ -36,7 +36,7 @@ public class HttpServerTestFixture
     protected Socket newSocket(String host,int port) throws Exception
     {
         Socket socket = new Socket(host,port);
-        socket.setSoTimeout(30000);
+        socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
         socket.setSoLinger(false,0);
         return socket;
