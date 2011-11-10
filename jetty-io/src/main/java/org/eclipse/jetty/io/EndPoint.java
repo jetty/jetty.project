@@ -122,12 +122,8 @@ public interface EndPoint
      */
     public int getRemotePort();
 
-
     /* ------------------------------------------------------------ */
     public boolean isBlocking();
-    
-    /* ------------------------------------------------------------ */
-    public boolean isBufferred();
     
     /* ------------------------------------------------------------ */
     public boolean blockReadable(long millisecs) throws IOException;

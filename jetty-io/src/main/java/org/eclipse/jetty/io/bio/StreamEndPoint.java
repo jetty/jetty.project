@@ -318,12 +318,6 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isBufferred()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
     public int getMaxIdleTime()
     {
         return _maxIdleTime;

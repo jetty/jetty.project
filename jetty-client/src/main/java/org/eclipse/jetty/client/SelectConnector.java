@@ -404,11 +404,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             return _endp.isBlocking();
         }
 
-        public boolean isBufferred()
-        {
-            return _endp.isBufferred();
-        }
-
         public boolean blockReadable(long millisecs) throws IOException
         {
             return _endp.blockReadable(millisecs);

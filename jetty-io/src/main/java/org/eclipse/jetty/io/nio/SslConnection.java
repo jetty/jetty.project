@@ -64,6 +64,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private AsyncEndPoint _aEndp;
     private boolean _allowRenegotiate=true;
     private boolean _handshook;
+    private boolean _ishut;
     private boolean _oshut;
 
     /* ------------------------------------------------------------ */
@@ -199,6 +200,25 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         finally
         {
             releaseBuffers();
+            
+            if (!_ishut && _sslEndPoint.isInputShutdown() && _sslEndPoint.isOpen())
+            {
+                _ishut=true;
+                try
+                {
+                    _connection.onInputShutdown();
+                }
+                catch (ThreadDeath e)
+                {
+                    throw e;
+                }
+                catch(Throwable x)
+                {
+                    LOG.warn("onInputShutdown failed", x);
+                    try{_sslEndPoint.close();}
+                    catch(IOException e2){LOG.ignore(e2);}
+                }
+            }
         }
         
         return this;
@@ -767,11 +787,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         public boolean isBlocking()
         {
             return false;
-        }
-
-        public boolean isBufferred()
-        {
-            return true;
         }
 
         public int getMaxIdleTime()

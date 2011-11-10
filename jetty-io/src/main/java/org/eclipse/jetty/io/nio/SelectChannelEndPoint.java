@@ -630,8 +630,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 }
                 finally
                 {
-                    dispatched=!undispatch();
-                                        
                     if (!_ishut && isInputShutdown() && isOpen())
                     {
                         _ishut=true;
@@ -654,6 +652,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                             updateKey();
                         }
                     }
+                    dispatched=!undispatch();
                 }
             }
         }

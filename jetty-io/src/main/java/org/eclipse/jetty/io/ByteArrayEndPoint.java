@@ -374,13 +374,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     {
         return false;
     }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferred()
-    {
-        return false;
-    }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return the growOutput
