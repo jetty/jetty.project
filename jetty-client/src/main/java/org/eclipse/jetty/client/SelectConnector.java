@@ -273,7 +273,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             ((SelectChannelEndPoint)_endp).setConnection(sslConnection);
 
             _endp=sslConnection.getSslEndPoint();
-            sslConnection.setConnection(connection);
+            sslConnection.getSslEndPoint().setConnection(connection);
             
             LOG.debug("upgrade {} to {} for {}",this,sslConnection,connection);
         }

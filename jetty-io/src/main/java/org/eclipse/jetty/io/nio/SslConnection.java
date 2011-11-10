@@ -99,18 +99,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public synchronized void setConnection(AsyncConnection connection)
-    {
-        _connection=connection;
-    }
-
-    /* ------------------------------------------------------------ */
-    public synchronized AsyncConnection getConnection()
-    {
-        return _connection;
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * @return True if SSL re-negotiation is allowed (default false)
      */
