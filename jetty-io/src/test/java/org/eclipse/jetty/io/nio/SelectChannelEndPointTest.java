@@ -292,8 +292,8 @@ public class SelectChannelEndPointTest
         long start=System.currentTimeMillis();
         try
         {
-            client.getInputStream().read();
-            Assert.fail("Should have timed out waiting for a response");
+            int b= client.getInputStream().read();
+            Assert.fail("Should have timed out waiting for a response, but read "+b);
         }
         catch(SocketTimeoutException e)
         {
