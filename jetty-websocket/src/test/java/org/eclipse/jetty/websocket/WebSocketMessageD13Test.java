@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -1122,17 +1123,25 @@ public class WebSocketMessageD13Test
             else
                 assertEquals(tst,tests[t][2],-1);
             
-            output.write(0x88);
-            output.write(0x80);
-            output.write(0x00);
-            output.write(0x00);
-            output.write(0x00);
-            output.write(0x00);
-            output.flush();
-
+            try
+            {
+                output.write(0x88);
+                output.write(0x80);
+                output.write(0x00);
+                output.write(0x00);
+                output.write(0x00);
+                output.write(0x00);
+                output.flush();
+            }
+            catch(IOException e)
+            {
+                System.err.println("socket "+socket);
+                throw e;
+            }
+            
             len = input.read(buf);
             assertEquals(tst,-1,len);
-        }
+        }  
     }
     
 

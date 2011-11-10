@@ -247,13 +247,17 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                 int filled=_parser.parseNext();
 
                 progress = flushed>0 || filled>0;
+                
+                if (_endp instanceof AsyncEndPoint && ((AsyncEndPoint)_endp).hasProgressed())
+                    progress=true;
             }
         }
         catch(IOException e)
         {
             try
             {
-                _endp.close();
+                if (_endp.isOpen())
+                    _endp.close();
             }
             catch(IOException e2)
             {

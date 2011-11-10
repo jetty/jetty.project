@@ -1145,11 +1145,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         BufferedReader br=null;
 
+        StringBuilder sb=new StringBuilder();
         try
         {
             br=new BufferedReader(new InputStreamReader(client.getInputStream()));
 
-            StringBuilder sb=new StringBuilder();
             String line;
 
             while ((line=br.readLine())!=null)
@@ -1159,6 +1159,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             return sb.toString();
+        }
+        catch(IOException e)
+        {
+            System.err.println(e+" while reading '"+sb+"'");
+            throw e;
         }
         finally
         {

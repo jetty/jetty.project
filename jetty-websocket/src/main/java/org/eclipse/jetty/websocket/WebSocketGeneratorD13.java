@@ -190,7 +190,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
 
         if (_buffer!=null)
         {
-            int flushed=_endp.flush(_buffer);
+            int flushed=_buffer.hasContent()?_endp.flush(_buffer):0;
             if (_closed&&_buffer.length()==0)
                 _endp.shutdownOutput();
             return flushed;
