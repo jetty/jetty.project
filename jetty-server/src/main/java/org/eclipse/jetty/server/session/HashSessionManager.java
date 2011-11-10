@@ -309,12 +309,13 @@ public class HashSessionManager extends AbstractSessionManager
                 }
             }
         }
+        catch (ThreadDeath e)
+        {
+            throw e;
+        }
         catch (Throwable t)
         {
-            if (t instanceof ThreadDeath)
-                throw ((ThreadDeath)t);
-            else
-                __log.warn("Problem scavenging sessions", t);
+            __log.warn("Problem scavenging sessions", t);
         }
         finally
         {

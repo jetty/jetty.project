@@ -142,12 +142,13 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                         progress=true;
                     }
                 }
+                catch (ThreadDeath e)
+                {
+                    throw e;
+                }
                 catch (Throwable e)
                 {
                     LOG.debug("Failure on " + _exchange, e);
-
-                    if (e instanceof ThreadDeath)
-                        throw (ThreadDeath)e;
 
                     failed = true;
 
