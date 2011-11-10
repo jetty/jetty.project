@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.AbstractGenerator;
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
@@ -24,7 +23,6 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -36,11 +34,11 @@ import org.eclipse.jetty.util.log.Logger;
 public class AsyncHttpConnection extends AbstractHttpConnection implements AsyncConnection
 {
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
-    
+
     private boolean _requestComplete;
     private Buffer _requestContentChunk;
     private final AsyncEndPoint _asyncEndp;
-    
+
     AsyncHttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         super(requestBuffers,responseBuffers,endp);
@@ -52,7 +50,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         _requestComplete = false;
         super.reset();
     }
-    
+
     public Connection handle() throws IOException
     {
         Connection connection = this;
@@ -61,19 +59,19 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         try
         {
             boolean failed = false;
-            
+
             // While we are making progress and have not changed connection
             while (progress && connection==this)
             {
                 LOG.debug("while open={} more={} buffering={} progress={}",_endp.isOpen(),_parser.isMoreInBuffer(),_endp.isBufferingInput(),progress);
-                
+
                 progress=false;
                 HttpExchange exchange=_exchange;
-                
+
                 LOG.debug("exchange {} on {}",exchange,this);
-                
+
                 try
-                {                  
+                {
                     // Should we commit the request?
                     if (!_generator.isCommitted() && exchange!=null && exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
                     {
@@ -97,7 +95,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             // Look for more content to send.
                             if (_requestContentChunk==null)
                                 _requestContentChunk = exchange.getRequestContentChunk(null);
-                                
+
                             if (_requestContentChunk==null)
                             {
                                 LOG.debug("complete {}",exchange);
@@ -114,7 +112,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             }
                         }
                     }
-                    
+
                     // Signal request completion
                     if (_generator.isComplete() && !_requestComplete)
                     {
@@ -123,18 +121,17 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                         _requestComplete = true;
                         exchange.getEventListener().onRequestComplete();
                     }
-                    
-                    // Flush output from buffering endpoint
-                    if (_endp.isBufferingOutput())
-                        _endp.flush();
-                    
+
+                    // Flush output
+                    _endp.flush();
+
                     // Read any input that is available
                     if (!_parser.isComplete() && _parser.parseAvailable())
                     {
                         LOG.debug("parsed");
                         progress=true;
                     }
-                    
+
                     // Has any IO been done by the endpoint itself since last loop
                     if (_asyncEndp.hasProgressed())
                     {
@@ -181,9 +178,9 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 finally
                 {
                     LOG.debug("finally {} on {} progress={} {}",exchange,this,progress,_endp);
-                    
+
                     boolean complete = failed || _generator.isComplete() && _parser.isComplete();
-                    
+
                     if (complete)
                     {
                         boolean persistent = !failed && _parser.isPersistent() && _generator.isPersistent();
@@ -201,10 +198,10 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             if (exchange!=null)
                             {
                                 exchange.cancelTimeout(_destination.getHttpClient());
-                                
+
                                 // TODO should we check the exchange is done?
                             }
-                            
+
                             // handle switched protocols
                             if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                             {
@@ -221,7 +218,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                                     connection=switched;
                                 }
                             }
-                            
+
                             // handle pipelined requests
                             if (_pipeline!=null)
                             {
@@ -231,11 +228,11 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                                     _exchange=_pipeline;
                                 _pipeline=null;
                             }
-                            
+
                             if (_exchange==null && !isReserved())  // TODO how do we return switched connections?
                                 _destination.returnConnection(this, !persistent);
                         }
-                    
+
                     }
                 }
             }
@@ -249,13 +246,13 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
 
         return connection;
     }
-    
+
     public void onInputShutdown() throws IOException
     {
         if (_generator.isIdle())
             _endp.shutdownOutput();
     }
-    
+
     @Override
     public boolean send(HttpExchange ex) throws IOException
     {

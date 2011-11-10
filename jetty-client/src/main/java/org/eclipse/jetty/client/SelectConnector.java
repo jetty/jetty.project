@@ -20,15 +20,10 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.Buffers.Type;
-import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.AsyncConnection;
@@ -49,7 +44,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     private final HttpClient _httpClient;
     private final Manager _selectorManager=new Manager();
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
-    
+
     /**
      * @param httpClient the HttpClient this connector is associated to
      */
@@ -94,7 +89,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             else
             {
                 channel.configureBlocking(false);
-                channel.connect(address.toSocketAddress());            
+                channel.connect(address.toSocketAddress());
                 _selectorManager.register(channel,destination);
                 ConnectTimeout connectTimeout = new ConnectTimeout(channel,destination);
                 _httpClient.schedule(connectTimeout,_httpClient.getConnectTimeout());
@@ -119,7 +114,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     class Manager extends SelectorManager
     {
         Logger LOG = SelectConnector.LOG;
-        
+
         @Override
         public boolean dispatch(Runnable task)
         {
@@ -164,24 +159,24 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
 
             SelectChannelEndPoint scep= new SelectChannelEndPoint(channel, selectSet, key, (int)_httpClient.getIdleTimeout());
             ep = scep;
-            
+
             if (dest.isSecure())
             {
                 LOG.debug("secure to {}, proxied={}",channel,dest.isProxied());
                 ep = new UpgradableEndPoint(ep,newSslEngine(channel));
             }
-            
+
             AsyncConnection connection = selectSet.getManager().newConnection(channel,ep, key.attachment());
             ep.setConnection(connection);
-            
+
             AbstractHttpConnection httpConnection=(AbstractHttpConnection)connection;
             httpConnection.setDestination(dest);
-            
+
             if (dest.isSecure() && !dest.isProxied())
                 ((UpgradableEndPoint)ep).upgrade();
-            
+
             dest.onNewConnection(httpConnection);
-            
+
             return scep;
         }
 
@@ -215,7 +210,7 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             Timeout.Task connectTimeout = _connectingChannels.remove(channel);
             if (connectTimeout != null)
                 connectTimeout.cancel();
-            
+
             if (attachment instanceof HttpDestination)
                 ((HttpDestination)attachment).onConnectionFailed(ex);
             else
@@ -253,12 +248,12 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             }
         }
     }
-    
+
     public static class UpgradableEndPoint implements AsyncEndPoint
     {
         AsyncEndPoint _endp;
         SSLEngine _engine;
-        
+
         public UpgradableEndPoint(AsyncEndPoint endp, SSLEngine engine) throws IOException
         {
             _engine=engine;
@@ -268,17 +263,17 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
         public void upgrade()
         {
             AsyncHttpConnection connection = (AsyncHttpConnection) ((SelectChannelEndPoint)_endp).getConnection();
-            
+
             SslConnection sslConnection = new SslConnection(_engine,_endp);
             ((SelectChannelEndPoint)_endp).setConnection(sslConnection);
 
             _endp=sslConnection.getSslEndPoint();
             sslConnection.getSslEndPoint().setConnection(connection);
-            
+
             LOG.debug("upgrade {} to {} for {}",this,sslConnection,connection);
         }
-        
-        
+
+
         public Connection getConnection()
         {
             return _endp.getConnection();
@@ -427,11 +422,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
         public boolean isBufferingInput()
         {
             return _endp.isBufferingInput();
-        }
-
-        public boolean isBufferingOutput()
-        {
-            return _endp.isBufferingOutput();
         }
 
         public void flush() throws IOException

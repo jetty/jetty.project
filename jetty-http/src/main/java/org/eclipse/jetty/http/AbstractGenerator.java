@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
@@ -27,11 +27,11 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /**
  * Abstract Generator. Builds HTTP Messages.
- * 
+ *
  * Currently this class uses a system parameter "jetty.direct.writers" to control
- * two optional writer to byte conversions. buffer.writers=true will probably be 
+ * two optional writer to byte conversions. buffer.writers=true will probably be
  * faster, but will consume more memory.   This option is just for testing and tuning.
- * 
+ *
  */
 public abstract class AbstractGenerator implements Generator
 {
@@ -42,16 +42,16 @@ public abstract class AbstractGenerator implements Generator
     public final static int STATE_CONTENT = 2;
     public final static int STATE_FLUSHING = 3;
     public final static int STATE_END = 4;
-    
+
     public static final byte[] NO_BYTES = {};
 
     // data
 
     protected final Buffers _buffers; // source of buffers
     protected final EndPoint _endp;
-    
+
     protected int _state = STATE_HEADER;
-    
+
     protected int _status = 0;
     protected int _version = HttpVersions.HTTP_1_1_ORDINAL;
     protected  Buffer _reason;
@@ -64,20 +64,20 @@ public abstract class AbstractGenerator implements Generator
     protected boolean _head = false;
     protected boolean _noContent = false;
     protected Boolean _persistent = null;
-    
+
     protected Buffer _header; // Buffer for HTTP header (and maybe small _content)
     protected Buffer _buffer; // Buffer for copy of passed _content
     protected Buffer _content; // Buffer passed to addContent
-    
+
     protected Buffer _date;
-    
+
     private boolean _sendServerVersion;
 
-    
+
     /* ------------------------------------------------------------------------------- */
     /**
      * Constructor.
-     * 
+     *
      * @param buffers buffer pool
      * @param io the end point
      */
@@ -89,16 +89,16 @@ public abstract class AbstractGenerator implements Generator
 
     /* ------------------------------------------------------------------------------- */
     public abstract boolean isRequest();
-    
+
     /* ------------------------------------------------------------------------------- */
     public abstract boolean isResponse();
-    
+
     /* ------------------------------------------------------------------------------- */
     public boolean isOpen()
     {
         return _endp.isOpen();
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
@@ -120,7 +120,7 @@ public abstract class AbstractGenerator implements Generator
 
     /* ------------------------------------------------------------------------------- */
     public void returnBuffers()
-    {     
+    {
         if (_buffer!=null && _buffer.length()==0)
         {
             _buffers.returnBuffer(_buffer);
@@ -131,22 +131,22 @@ public abstract class AbstractGenerator implements Generator
         {
             _buffers.returnBuffer(_header);
             _header=null;
-        }         
+        }
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     public void resetBuffer()
-    {                   
+    {
         if(_state>=STATE_FLUSHING)
             throw new IllegalStateException("Flushed");
-        
+
         _last = false;
         _persistent=null;
         _contentWritten = 0;
         _contentLength = HttpTokens.UNKNOWN_CONTENT;
         _content=null;
         if (_buffer!=null)
-            _buffer.clear();  
+            _buffer.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -176,25 +176,25 @@ public abstract class AbstractGenerator implements Generator
             _buffer = nb;
         }
     }
-    
-    /* ------------------------------------------------------------ */    
+
+    /* ------------------------------------------------------------ */
     public Buffer getUncheckedBuffer()
     {
         return _buffer;
     }
-    
-    /* ------------------------------------------------------------ */    
+
+    /* ------------------------------------------------------------ */
     public boolean getSendServerVersion ()
     {
         return _sendServerVersion;
     }
-    
-    /* ------------------------------------------------------------ */    
+
+    /* ------------------------------------------------------------ */
     public void setSendServerVersion (boolean sendServerVersion)
     {
         _sendServerVersion = sendServerVersion;
     }
-    
+
     /* ------------------------------------------------------------ */
     public int getState()
     {
@@ -242,7 +242,7 @@ public abstract class AbstractGenerator implements Generator
         else
             _contentLength=value;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param head The head to set.
@@ -263,7 +263,7 @@ public abstract class AbstractGenerator implements Generator
         ?_persistent.booleanValue()
         :(isRequest()?true:_version>HttpVersions.HTTP_1_0_ORDINAL);
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setPersistent(boolean persistent)
     {
@@ -277,7 +277,7 @@ public abstract class AbstractGenerator implements Generator
      */
     public void setVersion(int version)
     {
-        if (_state != STATE_HEADER) 
+        if (_state != STATE_HEADER)
             throw new IllegalStateException("STATE!=START "+_state);
         _version = version;
         if (_version==HttpVersions.HTTP_0_9_ORDINAL && _method!=null)
@@ -289,7 +289,7 @@ public abstract class AbstractGenerator implements Generator
     {
         return _version;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.http.Generator#setDate(org.eclipse.jetty.io.Buffer)
@@ -326,7 +326,7 @@ public abstract class AbstractGenerator implements Generator
         if (reason!=null)
         {
             int len=reason.length();
-            
+
             // TODO don't hard code
             if (len>1024)
                 len=1024;
@@ -364,14 +364,14 @@ public abstract class AbstractGenerator implements Generator
             if(_buffer!=null)
                 _buffer.clear();
         }
-        else 
+        else
         {
             _contentWritten+=_buffer.length();
             if (_head)
                 _buffer.clear();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isBufferFull()
     {
@@ -390,20 +390,20 @@ public abstract class AbstractGenerator implements Generator
     {
         return _contentWritten>0;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isAllContentWritten()
     {
         return _contentLength>=0 && _contentWritten>=_contentLength;
     }
-    
+
     /* ------------------------------------------------------------ */
     public abstract void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Complete the message.
-     * 
+     *
      * @throws IOException
      */
     public void complete() throws IOException
@@ -424,7 +424,7 @@ public abstract class AbstractGenerator implements Generator
     /* ------------------------------------------------------------ */
     public abstract int flushBuffer() throws IOException;
 
-    
+
     /* ------------------------------------------------------------ */
     public void flush(long maxIdleTime) throws IOException
     {
@@ -436,21 +436,12 @@ public abstract class AbstractGenerator implements Generator
         if (content!=null && content.length()>0 || buffer!=null && buffer.length()>0 || isBufferFull())
         {
             flushBuffer();
-            
+
             while (now<end && (content!=null && content.length()>0 ||buffer!=null && buffer.length()>0) && _endp.isOpen()&& !_endp.isOutputShutdown())
             {
                 blockForOutput(end-now);
                 now=System.currentTimeMillis();
             }
-        }
-        
-        // make sure buffered data is also flushed
-        while (now<end && _endp.isBufferingOutput() && _endp.isOpen() && !_endp.isOutputShutdown())
-        {
-            if (!_endp.isBlocking())
-                _endp.blockWritable(end-now);
-            _endp.flush();
-            now=System.currentTimeMillis();
         }
     }
 
@@ -458,7 +449,7 @@ public abstract class AbstractGenerator implements Generator
     /**
      * Utility method to send an error response. If the builder is not committed, this call is
      * equivalent to a setResponse, addContent and complete call.
-     * 
+     *
      * @param code The error code
      * @param reason The error reason
      * @param content Contents of the error page
@@ -477,7 +468,7 @@ public abstract class AbstractGenerator implements Generator
         {
             LOG.debug("sendError: {} {}",code,reason);
             setResponse(code, reason);
-            if (content != null) 
+            if (content != null)
             {
                 completeHeader(null, false);
                 addContent(new View(new ByteArrayBuffer(content)), Generator.LAST);
@@ -498,7 +489,7 @@ public abstract class AbstractGenerator implements Generator
     {
         return _contentWritten;
     }
-    
+
 
 
     /* ------------------------------------------------------------ */
@@ -523,9 +514,9 @@ public abstract class AbstractGenerator implements Generator
                 _endp.close();
                 throw new EofException("timeout");
             }
-            
+
             flushBuffer();
         }
     }
-    
+
 }

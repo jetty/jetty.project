@@ -28,13 +28,13 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Asychronous Server HTTP connection
- * 
+ *
  */
 public class AsyncHttpConnection extends AbstractHttpConnection implements AsyncConnection
 {
     private final static int NO_PROGRESS_INFO = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_INFO",100);
     private final static int NO_PROGRESS_CLOSE = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_CLOSE",200);
-    
+
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
     private int _total_no_progress;
     private final AsyncEndPoint _asyncEndp;
@@ -44,17 +44,17 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         super(connector,endpoint,server);
         _asyncEndp=(AsyncEndPoint)endpoint;
     }
-    
+
     public Connection handle() throws IOException
     {
         Connection connection = this;
-        boolean some_progress=false; 
-        boolean progress=true; 
-        
+        boolean some_progress=false;
+        boolean progress=true;
+
         try
         {
             setCurrentConnection(this);
-            
+
             // While progress and the connection has not changed
             while (progress && connection==this)
             {
@@ -63,7 +63,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 {
                     // Handle resumed request
                     if (_request._async.isAsync() && !_request._async.isComplete())
-                        handleRequest(); 
+                        handleRequest();
                     // else Parse more input
                     else if (!_parser.isComplete() && _parser.parseAvailable())
                         progress=true;
@@ -72,15 +72,14 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     if (_generator.isCommitted() && !_generator.isComplete() && !_endp.isOutputShutdown())
                         if (_generator.flushBuffer()>0)
                             progress=true;
-                    
-                    // Flush output from buffering endpoint
-                    if (_endp.isBufferingOutput())
-                        _endp.flush();
-                    
+
+                    // Flush output
+                    _endp.flush();
+
                     // Has any IO been done by the endpoint itself since last loop
                     if (_asyncEndp.hasProgressed())
                         progress=true;
-                    
+
                 }
                 catch (HttpException e)
                 {
@@ -94,14 +93,14 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     _generator.sendError(e.getStatus(), e.getReason(), null, true);
                 }
                 finally
-                {                  
+                {
                     some_progress|=progress;
                     //  Is this request/response round complete and are fully flushed?
-                    if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
+                    if (_parser.isComplete() && _generator.isComplete())
                     {
                         // Reset the parser/generator
                         progress=true;
-                        
+
                         // look for a switched connection instance?
                         if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
@@ -111,7 +110,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                         }
 
                         reset();
-                        
+
                         // TODO Is this required?
                         if (!_generator.isPersistent() && !_endp.isOutputShutdown())
                         {
@@ -119,7 +118,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             _endp.shutdownOutput();
                         }
                     }
-                    
+
                 }
             }
         }
@@ -128,7 +127,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
             setCurrentConnection(null);
             _parser.returnBuffers();
             _generator.returnBuffers();
-            
+
             // Safety net to catch spinning
             if (some_progress)
                 _total_no_progress=0;

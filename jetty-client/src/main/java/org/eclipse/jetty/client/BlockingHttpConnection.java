@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 
 import org.eclipse.jetty.http.AbstractGenerator;
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
@@ -38,7 +37,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
     private boolean _requestComplete;
     private int _status;
     private Buffer _requestContentChunk;
-    
+
     BlockingHttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
     {
         super(requestBuffers,responseBuffers,endp);
@@ -49,7 +48,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
         _requestComplete = false;
         super.reset();
     }
-    
+
     @Override
     public Connection handle() throws IOException
     {
@@ -59,7 +58,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
         {
             boolean failed = false;
 
-            
+
             // While we are making progress and have not changed connection
             while (_endp.isOpen() && connection==this)
             {
@@ -69,7 +68,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                 synchronized (this)
                 {
                     exchange=_exchange;
-                    
+
                     while (exchange == null)
                     {
                         try
@@ -84,9 +83,9 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                     }
                 }
                 LOG.debug("exchange {}",exchange);
-                
+
                 try
-                {                  
+                {
                     // Should we commit the request?
                     if (!_generator.isCommitted() && exchange!=null && exchange.getStatus() == HttpExchange.STATUS_WAITING_FOR_COMMIT)
                     {
@@ -108,7 +107,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                             // Look for more content to send.
                             if (_requestContentChunk==null)
                                 _requestContentChunk = exchange.getRequestContentChunk(null);
-                                
+
                             if (_requestContentChunk==null)
                             {
                                 LOG.debug("complete");
@@ -123,7 +122,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                             }
                         }
                     }
-                    
+
                     // Signal request completion
                     if (_generator.isComplete() && !_requestComplete)
                     {
@@ -131,17 +130,16 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                         _requestComplete = true;
                         exchange.getEventListener().onRequestComplete();
                     }
-                    
-                    // Flush output from buffering endpoint
-                    if (_endp.isBufferingOutput())
-                        _endp.flush();
-                    
+
+                    // Flush output
+                    _endp.flush();
+
                     // Read any input that is available
                     if (!_parser.isComplete() && _parser.parseAvailable())
                     {
                         LOG.debug("parsed");
                     }
-                    
+
                 }
                 catch (ThreadDeath e)
                 {
@@ -183,9 +181,9 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                 {
                     LOG.debug("{} {}",_generator, _parser);
                     LOG.debug("{}",_endp);
-                    
+
                     boolean complete = failed || _generator.isComplete() && _parser.isComplete();
-                    
+
                     if (complete)
                     {
                         boolean persistent = !failed && _parser.isPersistent() && _generator.isPersistent();
@@ -203,10 +201,10 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                             if (exchange!=null)
                             {
                                 exchange.cancelTimeout(_destination.getHttpClient());
-                                
+
                                 // TODO should we check the exchange is done?
                             }
-                            
+
                             // handle switched protocols
                             if (_status==HttpStatus.SWITCHING_PROTOCOLS_101)
                             {
@@ -223,7 +221,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                                     connection=switched;
                                 }
                             }
-                            
+
                             // handle pipelined requests
                             if (_pipeline!=null)
                             {
@@ -233,11 +231,11 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                                     _exchange=_pipeline;
                                 _pipeline=null;
                             }
-                            
+
                             if (_exchange==null && !isReserved())  // TODO how do we return switched connections?
                                 _destination.returnConnection(this, !persistent);
                         }
-                    
+
                     }
                 }
             }
@@ -251,14 +249,14 @@ public class BlockingHttpConnection extends AbstractHttpConnection
         return connection;
     }
 
-    
+
     public void onInputShutdown() throws IOException
     {
         if (_generator.isIdle())
             _endp.shutdownOutput();
     }
 
-    
+
     @Override
     public boolean send(HttpExchange ex) throws IOException
     {

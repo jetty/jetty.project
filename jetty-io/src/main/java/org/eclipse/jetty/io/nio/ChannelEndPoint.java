@@ -22,8 +22,6 @@ import java.nio.channels.ByteChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
@@ -131,7 +129,7 @@ public class ChannelEndPoint implements EndPoint
                 close();
         }
     }
-    
+
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
@@ -168,7 +166,7 @@ public class ChannelEndPoint implements EndPoint
                 close();
         }
     }
-    
+
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
@@ -515,12 +513,6 @@ public class ChannelEndPoint implements EndPoint
 
     /* ------------------------------------------------------------ */
     public boolean isBufferingInput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingOutput()
     {
         return false;
     }
