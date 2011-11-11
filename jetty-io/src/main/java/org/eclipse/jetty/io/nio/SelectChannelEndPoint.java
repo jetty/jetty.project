@@ -79,8 +79,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     
     private boolean _ishut;
     
-    private volatile boolean _progressed;
-    
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
         throws IOException
@@ -283,15 +281,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         _connection.onIdleExpired();
     }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public int fill(Buffer buffer) throws IOException
-    {
-        int length=super.fill(buffer);
-        _progressed|=(length>0);
-        return length;
-    }
     
     /* ------------------------------------------------------------ */
     @Override
@@ -311,7 +300,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         else if (l>0)
         {
-            _progressed=true;
             _writable=true;
         }
         return l;
@@ -337,7 +325,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         else if (l>0)
         {
-            _progressed=true;
             _writable=true;
         }
         
@@ -464,9 +451,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     public boolean hasProgressed()
     {
-        boolean progressed=_progressed;
-        _progressed=false;
-        return progressed;
+        return false;
     }
 
     /* ------------------------------------------------------------ */

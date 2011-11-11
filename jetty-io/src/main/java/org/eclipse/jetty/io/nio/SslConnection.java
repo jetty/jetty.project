@@ -15,6 +15,8 @@ package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -60,6 +62,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private boolean _handshook;
     private boolean _ishut;
     private boolean _oshut;
+    private final AtomicBoolean _progressed = new AtomicBoolean();
 
     /* ------------------------------------------------------------ */
     /* this is a half baked buffer pool
@@ -377,6 +380,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         finally
         {
             releaseBuffers();
+            _progressed.set(some_progress);
         }
         return some_progress;
     }
@@ -725,7 +729,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public boolean hasProgressed()
         {
-            return _aEndp.hasProgressed();
+            return _progressed.getAndSet(false);
         }
 
         public String getLocalAddr()
