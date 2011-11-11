@@ -141,18 +141,11 @@ public interface EndPoint
     public Object getTransport();
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return True if the endpoint has some buffered input data
-     */
-    public boolean isBufferingInput();
-
-    /* ------------------------------------------------------------ */
     /** Flush any buffered output.
      * May fail to write all data if endpoint is non-blocking
      * @throws EofException If the endpoint is closed or output is shutdown.
      */
     public void flush() throws IOException;
-
 
     /* ------------------------------------------------------------ */
     /** Get the max idle time in ms.

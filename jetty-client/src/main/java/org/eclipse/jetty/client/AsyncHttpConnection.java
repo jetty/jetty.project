@@ -63,7 +63,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
             // While we are making progress and have not changed connection
             while (progress && connection==this)
             {
-                LOG.debug("while open={} more={} buffering={} progress={}",_endp.isOpen(),_parser.isMoreInBuffer(),_endp.isBufferingInput(),progress);
+                LOG.debug("while open={} more={} progress={}",_endp.isOpen(),_parser.isMoreInBuffer(),progress);
 
                 progress=false;
                 HttpExchange exchange=_exchange;

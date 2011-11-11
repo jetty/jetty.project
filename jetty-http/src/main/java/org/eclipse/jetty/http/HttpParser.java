@@ -1193,7 +1193,7 @@ public class HttpParser implements Parser
             {
                 if (!_endp.isBlocking())
                 {
-                    if (_endp.isBufferingInput() && parseNext()>0)
+                    if (parseNext()>0)
                         continue;
 
                     if (!_endp.blockReadable(maxIdleTime))

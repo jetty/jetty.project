@@ -362,13 +362,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     public void flush() throws IOException
     {
     }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingInput()
-    {
-        return false;
-    }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return the growOutput

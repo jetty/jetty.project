@@ -62,7 +62,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
             // While we are making progress and have not changed connection
             while (_endp.isOpen() && connection==this)
             {
-                LOG.debug("open={} more={} buffering={}",_endp.isOpen(),_parser.isMoreInBuffer(),_endp.isBufferingInput());
+                LOG.debug("open={} more={}",_endp.isOpen(),_parser.isMoreInBuffer());
 
                 HttpExchange exchange;
                 synchronized (this)

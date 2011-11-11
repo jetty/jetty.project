@@ -419,11 +419,6 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             return _endp.getTransport();
         }
 
-        public boolean isBufferingInput()
-        {
-            return _endp.isBufferingInput();
-        }
-
         public void flush() throws IOException
         {
             _endp.flush();

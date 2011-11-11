@@ -512,12 +512,6 @@ public class ChannelEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isBufferingInput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
     public int getMaxIdleTime()
     {
         return _maxIdleTime;

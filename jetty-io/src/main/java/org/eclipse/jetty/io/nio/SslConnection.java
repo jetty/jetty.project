@@ -683,18 +683,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             return _endp;
         }
 
-        public boolean isBufferingInput()
-        {
-            synchronized (this)
-            {
-                if (_unwrapBuf!=null && _unwrapBuf.hasContent())
-                    return true;
-                if (_inbound!=null && _inbound.hasContent())
-                    return true;
-            }
-            return false;
-        }
-
         public void flush() throws IOException
         {
             process(null,null);
