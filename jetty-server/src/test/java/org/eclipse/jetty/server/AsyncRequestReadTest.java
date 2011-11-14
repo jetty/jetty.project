@@ -62,10 +62,11 @@ public class AsyncRequestReadTest
         server.stop();
         server.join();
     }
-
+    
     @Test
     public void test() throws Exception
     {
+        total=0;
         final Socket socket =  new Socket("localhost",connector.getLocalPort());
 
         byte[] content = new byte[16*4096];
