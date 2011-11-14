@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -43,7 +45,7 @@ public class AsyncRequestReadTest
 {
     private static Server server;
     private static Connector connector;
-    private static int total;
+    private final static Exchanger<Long> __total=new Exchanger<Long>();
 
     @BeforeClass
     public static void startServer() throws Exception
@@ -66,7 +68,6 @@ public class AsyncRequestReadTest
     @Test
     public void test() throws Exception
     {
-        total=0;
         final Socket socket =  new Socket("localhost",connector.getLocalPort());
 
         byte[] content = new byte[16*4096];
@@ -93,6 +94,7 @@ public class AsyncRequestReadTest
         String response = IO.toString(in);
         assertTrue(response.indexOf("200 OK")>0);
 
+        long total=__total.exchange(0L,30,TimeUnit.SECONDS);
         assertEquals(content.length, total);
     }
 
@@ -109,6 +111,7 @@ public class AsyncRequestReadTest
                 @Override
                 public void run()
                 {
+                    long total=0;
                     try
                     {
                         InputStream in = request.getInputStream();
@@ -126,6 +129,14 @@ public class AsyncRequestReadTest
                     {
                         httpResponse.setStatus(200);
                         continuation.complete();
+                        try
+                        {
+                            __total.exchange(total);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }.start();
