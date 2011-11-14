@@ -691,7 +691,7 @@ public class HttpGenerator extends AbstractGenerator
                     {
                         // we have seen all the _content there is
                         _contentLength = _contentWritten;
-                        if (content_length == null && (isResponse() || _contentLength>0 || content_type ))
+                        if (content_length == null && (isResponse() || _contentLength>0 || content_type ) && !_noContent)
                         {
                             // known length but not actually set.
                             _header.put(HttpHeaders.CONTENT_LENGTH_BUFFER);

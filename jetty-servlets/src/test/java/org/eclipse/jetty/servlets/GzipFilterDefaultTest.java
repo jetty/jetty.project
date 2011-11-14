@@ -1,5 +1,13 @@
 package org.eclipse.jetty.servlets;
 
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -13,6 +21,29 @@ import org.junit.Test;
  */
 public class GzipFilterDefaultTest
 {
+    
+    
+    public static class HttpStatusServlet extends HttpServlet
+    {
+        private int _status = 204;
+        
+        public HttpStatusServlet()
+        {
+            super();
+        }
+        
+        public void setStatus (int status)
+        {
+            _status = status;
+        }
+
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setStatus(_status);
+        }
+        
+    }
     @Rule
     public TestingDir testingdir = new TestingDir();
 
@@ -77,11 +108,33 @@ public class GzipFilterDefaultTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed("file.mp3", filesize);
+            tester.assertIsResponseNotGzipCompressed("file.mp3", filesize, HttpStatus.OK_200);
         }
         finally
         {
             tester.stop();
         }
     }
+    
+    @Test
+    public void testIsNotGzipCompressedHttpStatus() throws Exception
+    { 
+        GzipTester tester = new GzipTester(testingdir);
+
+        // Test error code 204
+        FilterHolder holder = tester.setContentServlet(HttpStatusServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            tester.assertIsResponseNotGzipCompressed(null, -1, 204);
+        }
+        finally
+        {
+            tester.stop();
+        }
+
+    }
+
 }

@@ -120,7 +120,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     public void setStatus(int sc, String sm)
     {
         super.setStatus(sc,sm);
-        if (sc<200||sc>=300)
+        if (sc<200 || sc==204 || sc==205 || sc>=300)
             noGzip();
     }
 
@@ -131,7 +131,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     public void setStatus(int sc)
     {
         super.setStatus(sc);
-        if (sc<200||sc>=300)
+        if (sc<200 || sc==204 || sc==205 ||sc>=300)
             noGzip();
     }
 

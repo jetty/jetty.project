@@ -202,7 +202,7 @@ public class GzipTester
      *            passing -1 will disable the Content-Length assertion)
      * @throws Exception
      */
-    public void assertIsResponseNotGzipCompressed(String filename, int expectedFilesize) throws Exception
+    public void assertIsResponseNotGzipCompressed(String filename, int expectedFilesize, int status) throws Exception
     {
         System.err.printf("[GzipTester] requesting /context/%s%n",filename);
         HttpTester request = new HttpTester();
@@ -212,7 +212,10 @@ public class GzipTester
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding","gzip");
-        request.setURI("/context/" + filename);
+        if (filename == null)
+            request.setURI("/context/");
+        else
+            request.setURI("/context/"+filename);
 
         // Issue the request
         ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
@@ -222,7 +225,7 @@ public class GzipTester
 
         // Assert the response headers
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
-        Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
+        Assert.assertThat("Response.status",response.getStatus(),is(status));
         if (expectedFilesize != (-1))
         {
             Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
@@ -230,29 +233,35 @@ public class GzipTester
             Assert.assertThat("Response.header[Content-Length]",serverLength,is(expectedFilesize));
         }
         Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString("gzip")));
-
+        
         // Assert that the contents are what we expect.
-        File serverFile = testdir.getFile(filename);
-        String expected = IO.readToString(serverFile);
-        String actual = null;
-
-        InputStream in = null;
-        ByteArrayOutputStream out = null;
-        try
+        if (filename != null)
         {
-            in = new ByteArrayInputStream(response.getContentBytes());
-            out = new ByteArrayOutputStream();
-            IO.copy(in,out);
+            File serverFile = testdir.getFile(filename);
+            String expected = IO.readToString(serverFile);
+            String actual = null;
 
-            actual = out.toString(encoding);
-            Assert.assertEquals("Server contents",expected,actual);
-        }
-        finally
-        {
-            IO.close(out);
-            IO.close(in);
+            InputStream in = null;
+            ByteArrayOutputStream out = null;
+            try
+            {
+                in = new ByteArrayInputStream(response.getContentBytes());
+                out = new ByteArrayOutputStream();
+                IO.copy(in,out);
+
+                actual = out.toString(encoding);
+                Assert.assertEquals("Server contents",expected,actual);
+            }
+            finally
+            {
+                IO.close(out);
+                IO.close(in);
+            }
         }
     }
+    
+    
+  
 
     /**
      * Generate string content of arbitrary length.
@@ -342,6 +351,8 @@ public class GzipTester
         FilterHolder holder = servletTester.addFilter(GzipFilter.class,"/*",0);
         return holder;
     }
+    
+  
 
     public void setEncoding(String encoding)
     {
