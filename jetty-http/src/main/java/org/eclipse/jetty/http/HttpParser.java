@@ -83,8 +83,6 @@ public class HttpParser implements Parser
     protected int _chunkPosition;
     private boolean _headResponse;
     
-    private Lock _lock = new ReentrantLock(); // Ensure only a single parsing/resetting thread
-
     /* ------------------------------------------------------------------------------- */
     /**
      * Constructor.
@@ -252,7 +250,6 @@ public class HttpParser implements Parser
      */
     public int parseNext() throws IOException
     {   
-        _lock.lock();
         try
         {
             int progress=0;
@@ -278,6 +275,7 @@ public class HttpParser implements Parser
             {
                 _state=STATE_END;
                 _handler.messageComplete(_contentPosition);
+                returnBuffers();
                 return 1;
             }
 
@@ -340,6 +338,7 @@ public class HttpParser implements Parser
                     if (!isComplete() && !isIdle())
                         throw new EofException();
 
+                    returnBuffers();
                     return -1;
                 }
                 length=_buffer.length();
@@ -453,6 +452,7 @@ public class HttpParser implements Parser
                             _state=STATE_SEEKING_EOF;
                             _handler.headerComplete();
                             _handler.messageComplete(_contentPosition);
+                            returnBuffers();
                             return 1;
                         }
                         break;
@@ -482,6 +482,7 @@ public class HttpParser implements Parser
                                 _state=STATE_SEEKING_EOF;
                                 _handler.headerComplete();
                                 _handler.messageComplete(_contentPosition);
+                                returnBuffers();
                                 return 1;
                             }
                         }
@@ -645,7 +646,8 @@ public class HttpParser implements Parser
                                             _handler.headerComplete();
                                             _state=_persistent||(_responseStatus>=100&&_responseStatus<200)?STATE_END:STATE_SEEKING_EOF;
                                             _handler.messageComplete(_contentPosition);
-                                            break;
+                                            returnBuffers();
+                                            return 1;
 
                                         default:
                                             _state=STATE_CONTENT;
@@ -850,6 +852,7 @@ public class HttpParser implements Parser
                         {
                             _state=_persistent?STATE_END:STATE_SEEKING_EOF;
                             _handler.messageComplete(_contentPosition);
+                            returnBuffers();
                             return 1;
                         }
 
@@ -869,6 +872,7 @@ public class HttpParser implements Parser
                         {
                             _state=_persistent?STATE_END:STATE_SEEKING_EOF;
                             _handler.messageComplete(_contentPosition);
+                            returnBuffers();
                         }
                         // TODO adjust the _buffer to keep unconsumed content
                         return 1;
@@ -903,6 +907,7 @@ public class HttpParser implements Parser
                                     _eol=_buffer.get();
                                 _state=_persistent?STATE_END:STATE_SEEKING_EOF;
                                 _handler.messageComplete(_contentPosition);
+                                returnBuffers();
                                 return 1;
                             }
                             else
@@ -933,6 +938,7 @@ public class HttpParser implements Parser
                                     _eol=_buffer.get();
                                 _state=_persistent?STATE_END:STATE_SEEKING_EOF;
                                 _handler.messageComplete(_contentPosition);
+                                returnBuffers();
                                 return 1;
                             }
                             else
@@ -978,10 +984,6 @@ public class HttpParser implements Parser
             _persistent=false;
             _state=STATE_SEEKING_EOF;
             throw e;
-        }
-        finally
-        {
-            _lock.unlock();
         }
     }
 
@@ -1048,85 +1050,70 @@ public class HttpParser implements Parser
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
-        _lock.lock();
-        try
+        // reset state
+        _contentView.setGetIndex(_contentView.putIndex());
+        _state=_persistent?STATE_START:(_endp.isInputShutdown()?STATE_END:STATE_SEEKING_EOF);
+        _contentLength=HttpTokens.UNKNOWN_CONTENT;
+        _contentPosition=0;
+        _length=0;
+        _responseStatus=0;
+
+        // Consume LF if CRLF
+        if (_eol == HttpTokens.CARRIAGE_RETURN && _buffer!=null && _buffer.hasContent() && _buffer.peek() == HttpTokens.LINE_FEED)
+            _eol=_buffer.get();
+
+        if (_body!=null && _body.hasContent())
         {
-            // reset state
-            _contentView.setGetIndex(_contentView.putIndex());
-            _state=_persistent?STATE_START:(_endp.isInputShutdown()?STATE_END:STATE_SEEKING_EOF);
-            _contentLength=HttpTokens.UNKNOWN_CONTENT;
-            _contentPosition=0;
-            _length=0;
-            _responseStatus=0;
-
-            // Consume LF if CRLF
-            if (_eol == HttpTokens.CARRIAGE_RETURN && _buffer!=null && _buffer.hasContent() && _buffer.peek() == HttpTokens.LINE_FEED)
-                _eol=_buffer.get();
-
-            if (_body!=null && _body.hasContent())
+            // There is content in the body after the end of the request.
+            // This is probably a pipelined header of the next request, so we need to
+            // copy it to the header buffer.
+            if (_header==null)
             {
-                // There is content in the body after the end of the request.
-                // This is probably a pipelined header of the next request, so we need to
-                // copy it to the header buffer.
-                if (_header==null)
-                {
-                    _header=_buffers.getHeader();
-                }
-                else
-                {
-                    _header.setMarkIndex(-1);
-                    _header.compact();
-                }
-                int take=_header.space();
-                if (take>_body.length())
-                    take=_body.length();
-                _body.peek(_body.getIndex(),take);
-                _body.skip(_header.put(_body.peek(_body.getIndex(),take)));
+                _header=_buffers.getHeader();
             }
-
-            if (_header!=null)
+            else
             {
                 _header.setMarkIndex(-1);
                 _header.compact();
             }
-            if (_body!=null)
-                _body.setMarkIndex(-1);
+            int take=_header.space();
+            if (take>_body.length())
+                take=_body.length();
+            _body.peek(_body.getIndex(),take);
+            _body.skip(_header.put(_body.peek(_body.getIndex(),take)));
+        }
 
-            _buffer=_header;
-        }
-        finally
+        if (_header!=null)
         {
-            _lock.unlock();
+            _header.setMarkIndex(-1);
+            _header.compact();
         }
+        if (_body!=null)
+            _body.setMarkIndex(-1);
+
+        _buffer=_header;
+        returnBuffers();
     }
 
 
     /* ------------------------------------------------------------------------------- */
     public void returnBuffers()
     {
-        _lock.lock();
-        try
+        if (_body!=null && !_body.hasContent() && _body.markIndex()==-1 && _buffers!=null)
         {
-            if (_body!=null && !_body.hasContent() && _body.markIndex()==-1 && _buffers!=null)
-            {
-                if (_buffer==_body)
-                    _buffer=_header;
-                if (_buffers!=null)
-                    _buffers.returnBuffer(_body);
-                _body=null;
-            }
-
-            if (_header!=null && !_header.hasContent() && _header.markIndex()==-1 && _buffers!=null)
-            {
-                if (_buffer==_header)
-                    _buffer=null;
-                _buffers.returnBuffer(_header);
-                _header=null;
-            }
+            if (_buffer==_body)
+                _buffer=_header;
+            if (_buffers!=null)
+                _buffers.returnBuffer(_body);
+            _body=null;
         }
-        finally
+
+        if (_header!=null && !_header.hasContent() && _header.markIndex()==-1 && _buffers!=null)
         {
-            _lock.unlock();
+            if (_buffer==_header)
+                _buffer=null;
+            _buffers.returnBuffer(_header);
+            _header=null;
         }
     }
 

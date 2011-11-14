@@ -125,9 +125,12 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         finally
         {
             setCurrentConnection(null);
-            _parser.returnBuffers();
-            _generator.returnBuffers();
-
+            if (!_request.isAsyncStarted())
+            { 
+                _parser.returnBuffers();
+                _generator.returnBuffers();
+            }
+            
             // Safety net to catch spinning
             if (some_progress)
                 _total_no_progress=0;
