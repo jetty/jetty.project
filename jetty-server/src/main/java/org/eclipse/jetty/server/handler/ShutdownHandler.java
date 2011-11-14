@@ -114,6 +114,10 @@ public class ShutdownHandler extends AbstractHandler
         {
             shutdownServer();
         }
+        catch (InterruptedException e)
+        {
+            LOG.ignore(e);
+        }
         catch (Exception e)
         {
             throw new RuntimeException("Shutting down server",e);
