@@ -124,7 +124,7 @@ public class ChannelEndPoint implements EndPoint
                     LOG.debug(e.toString());
                     LOG.ignore(e);
                     if (!socket.isClosed())
-                        socket.close();
+                        close();
                 }
                 finally
                 {
@@ -162,6 +162,8 @@ public class ChannelEndPoint implements EndPoint
                 {
                     LOG.warn(e.toString());
                     LOG.debug(e);
+                    if (!socket.isClosed())
+                        close();
                 }
                 finally
                 {
