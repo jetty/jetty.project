@@ -35,12 +35,5 @@ public class ChannelEndPointTest extends EndPointTest<ChannelEndPoint>
         c.server=new ChannelEndPoint(connector.accept());
         return c;
     }
-    
-    @Test
-    public void stress() throws Exception
-    {
-        
-            testClientServerExchange();
-    }
 
 }

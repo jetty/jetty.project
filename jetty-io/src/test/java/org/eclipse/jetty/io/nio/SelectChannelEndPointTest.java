@@ -154,12 +154,12 @@ public class SelectChannelEndPointTest
 
         public void onClose()
         {
-            System.err.println("onClose");
+            // System.err.println("onClose");
         }
 
         public void onInputShutdown() throws IOException
         {
-            System.err.println("onInputShutdown");
+            // System.err.println("onInputShutdown");
         }
 
     }
@@ -303,7 +303,7 @@ public class SelectChannelEndPointTest
         catch(SocketTimeoutException e)
         {
             int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
-            System.err.println("blocked " + elapsed);
+            // System.err.println("blocked " + elapsed);
             Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(specifiedTimeout));
         }
 

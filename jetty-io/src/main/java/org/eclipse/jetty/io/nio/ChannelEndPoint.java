@@ -160,8 +160,8 @@ public class ChannelEndPoint implements EndPoint
                 }
                 catch(SocketException e)
                 {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
+                    LOG.debug(e.toString());
+                    LOG.ignore(e);
                     if (!socket.isClosed())
                         close();
                 }
