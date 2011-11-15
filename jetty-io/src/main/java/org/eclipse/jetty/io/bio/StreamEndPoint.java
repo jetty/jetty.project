@@ -133,10 +133,10 @@ public class StreamEndPoint implements EndPoint
 
         try
         {
-            int read=buffer.readFrom(_in, space);
-            if (read<0)
+            int filled=buffer.readFrom(_in, space);
+            if (filled<0)
                 shutdownInput();
-            return read;
+            return filled;
         }
         catch(SocketTimeoutException e)
         {

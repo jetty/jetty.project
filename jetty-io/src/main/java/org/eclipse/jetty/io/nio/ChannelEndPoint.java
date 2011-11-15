@@ -341,7 +341,7 @@ public class ChannelEndPoint implements EndPoint
                  trailer!=null && trailer.length()>0)
                 length+=flush(trailer);
         }
-
+        
         return length;
     }
 

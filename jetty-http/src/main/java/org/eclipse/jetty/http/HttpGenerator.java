@@ -849,10 +849,7 @@ public class HttpGenerator extends AbstractGenerator
             int total= 0;
 
             int len = -1;
-            int to_flush = 
-                ((_header != null && _header.length() > 0)?4:0) | 
-                ((_buffer != null && _buffer.length() > 0)?2:0) | 
-                ((_bypass && _content != null && _content.length() > 0)?1:0);
+            int to_flush = flushMask();
             int last_flush;
             
             do
@@ -923,15 +920,13 @@ public class HttpGenerator extends AbstractGenerator
                             // Try to prepare more to write.
                             prepareBuffers();
                     }
+                    
                 }            
 
                 if (len > 0)
                     total+=len;
                 
-                to_flush = 
-                    ((_header != null && _header.length() > 0)?4:0) | 
-                    ((_buffer != null && _buffer.length() > 0)?2:0) | 
-                    ((_bypass && _content != null && _content.length() > 0)?1:0);
+                to_flush = flushMask();
             }
             // loop while progress is being made (OR we have prepared some buffers that might make progress)
             while (len>0 || (to_flush!=0 && last_flush==0));
@@ -944,7 +939,15 @@ public class HttpGenerator extends AbstractGenerator
             throw (e instanceof EofException) ? e:new EofException(e);
         }
     }
-
+    
+    /* ------------------------------------------------------------ */
+    private int flushMask() 
+    {
+        return  ((_header != null && _header.length() > 0)?4:0)
+        | ((_buffer != null && _buffer.length() > 0)?2:0)
+        | ((_bypass && _content != null && _content.length() > 0)?1:0);
+    }
+    
     /* ------------------------------------------------------------ */
     private void prepareBuffers()
     {
@@ -963,7 +966,7 @@ public class HttpGenerator extends AbstractGenerator
             // Chunk buffer if need be
             if (_contentLength == HttpTokens.CHUNKED_CONTENT)
             {
-                if ((_buffer==null||_buffer.length()==0) && _content!=null)
+                if (_bypass && (_buffer==null||_buffer.length()==0) && _content!=null)
                 {
                     // this is a bypass write
                     int size = _content.length();
