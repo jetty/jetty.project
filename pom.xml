@@ -336,7 +336,6 @@
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-servlets</module>
-    <module>jetty-jsp-2.1</module>
     <module>jetty-deploy</module>
     <module>jetty-ajp</module>
     <module>jetty-jndi</module>

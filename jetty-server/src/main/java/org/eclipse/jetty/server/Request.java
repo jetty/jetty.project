@@ -988,6 +988,9 @@ public class Request implements HttpServletRequest
         // Return already determined host
         if (_serverName != null) 
             return _serverName;
+        
+        if (_uri == null)
+            throw new IllegalStateException("No uri");
 
         // Return host from absolute URI
         _serverName = _uri.getHost();
