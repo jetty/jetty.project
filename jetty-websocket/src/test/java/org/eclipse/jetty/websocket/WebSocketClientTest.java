@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -518,7 +520,7 @@ public class WebSocketClientTest
         Assert.assertTrue(open.get());
         Assert.assertEquals(0,close.get());
 
-        final int messages=20000;
+        final int messages=200000;
         final AtomicLong totalB=new AtomicLong();
 
         Thread consumer = new Thread()
@@ -526,9 +528,10 @@ public class WebSocketClientTest
             @Override
             public void run()
             {
+                // Thread.sleep is for artificially poor performance reader needed for this testcase.
                 try
                 {
-                    Thread.sleep(2000);
+                    Thread.sleep(200);
                     byte[] recv = new byte[32*1024];
 
                     int len=0;
@@ -552,26 +555,23 @@ public class WebSocketClientTest
         consumer.start();
 
         // Send lots of messages client to server
-        long max=0;
         long start=System.currentTimeMillis();
         String mesg="This is a test message to send";
         for (int i=0;i<messages;i++)
         {
-            connection.sendMessage("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-            if (i%100==0)
-            {
-                long now=System.currentTimeMillis();
-                long duration=now-start;
-                start=now;
-                if (duration>max)
-                    max=duration;
-            }
+            connection.sendMessage(mesg);
         }
 
+        // Duration for the write phase
+        long writeDur = (System.currentTimeMillis() - start);
+
         // wait for consumer to complete
-        while (totalB.get()<messages*(mesg.length()+6L))
+        while (totalB.get()<messages*(mesg.length()+6L)) 
+        {
             Thread.sleep(10);
-        Assert.assertTrue(max>1000); // writing was blocked
+        }
+        
+        Assert.assertThat("write duration", writeDur, greaterThan(1000L)); // writing was blocked
         Assert.assertEquals(messages*(mesg.length()+6L),totalB.get());
 
         consumer.interrupt();
@@ -640,14 +640,23 @@ public class WebSocketClientTest
             {
                 try
                 {
-                    Thread.sleep(2000);
-                    while(m.get()<messages)
+                    Thread.sleep(200);
+                    while (m.get() < messages)
                     {
-                       String msg =exchanger.exchange(null);
-                       if ("Hello".equals(msg))
-                           m.incrementAndGet();
-                       else
-                           throw new IllegalStateException("exchanged "+msg);
+                        String msg = exchanger.exchange(null);
+                        if ("Hello".equals(msg))
+                        {
+                            m.incrementAndGet();
+                        }
+                        else
+                        {
+                            throw new IllegalStateException("exchanged " + msg);
+                        }
+                        if (m.get() % 1000 == 0)
+                        {
+                            // Artificially slow reader
+                            Thread.sleep(10);
+                        }
                     }
                 }
                 catch(InterruptedException e)
@@ -662,28 +671,22 @@ public class WebSocketClientTest
         };
         consumer.start();
 
-
-        long max=0;
         long start=System.currentTimeMillis();
         for (int i=0;i<messages;i++)
         {
             socket.getOutputStream().write(send,0,send.length);
             socket.getOutputStream().flush();
-            if (i%100==0)
-            {
-                long now=System.currentTimeMillis();
-                long duration=now-start;
-                start=now;
-                if (duration>max)
-                    max=duration;
-            }
         }
-
-        while(consumer.isAlive())
+        
+        while(consumer.isAlive()) 
+        {
             Thread.sleep(10);
+        }
+        
+        // Duration of the read operation.
+        long readDur = (System.currentTimeMillis() - start);
 
-
-        Assert.assertTrue(max>1000); // writing was blocked
+        Assert.assertThat("read duration", readDur, greaterThan(1000L)); // reading was blocked
         Assert.assertEquals(m.get(),messages);
 
         // Close with code
