@@ -119,6 +119,13 @@ public class ChannelEndPoint implements EndPoint
                     if (!socket.isInputShutdown())
                         socket.shutdownInput();
                 }
+                catch(SocketException e)
+                {
+                    LOG.debug(e.toString());
+                    LOG.ignore(e);
+                    if (!socket.isClosed())
+                        socket.close();
+                }
                 finally
                 {
                     if(socket.isOutputShutdown() && !socket.isClosed())

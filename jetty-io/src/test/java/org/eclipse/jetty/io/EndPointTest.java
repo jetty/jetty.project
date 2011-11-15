@@ -61,33 +61,46 @@ public abstract class EndPointTest<T extends EndPoint>
         buffer.clear();
         len = c.client.fill(buffer);
         assertEquals(-1,len);
-
-        assertTrue(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
-        assertFalse(c.client.isOutputShutdown());
-        assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
-        assertTrue(c.server.isOutputShutdown());
         
-        c.client.shutdownOutput();
+        if (!c.client.isOpen())
+        {
+            // Half closing is not working - maybe an OS thing
+            assertTrue(c.client.isInputShutdown());
+            assertTrue(c.client.isOutputShutdown());
+            assertFalse(c.server.isOpen());
+            assertTrue(c.server.isInputShutdown());
+            assertTrue(c.server.isOutputShutdown());
+        }
+        else
+        {
+            // Half closing is working
 
-        assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
-        assertTrue(c.client.isOutputShutdown());
-        assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
-        assertTrue(c.server.isOutputShutdown());
-        
-        buffer.clear();
-        len = c.server.fill(buffer);
-        assertEquals(-1,len);
+            assertTrue(c.client.isInputShutdown());
+            assertFalse(c.client.isOutputShutdown());
+            assertTrue(c.server.isOpen());
+            assertFalse(c.server.isInputShutdown());
+            assertTrue(c.server.isOutputShutdown());
 
-        assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
-        assertTrue(c.client.isOutputShutdown());
-        assertFalse(c.server.isOpen());
-        assertTrue(c.server.isInputShutdown());
-        assertTrue(c.server.isOutputShutdown());
+            c.client.shutdownOutput();
+
+            assertFalse(c.client.isOpen());
+            assertTrue(c.client.isInputShutdown());
+            assertTrue(c.client.isOutputShutdown());
+            assertTrue(c.server.isOpen());
+            assertFalse(c.server.isInputShutdown());
+            assertTrue(c.server.isOutputShutdown());
+
+            buffer.clear();
+            len = c.server.fill(buffer);
+            assertEquals(-1,len);
+
+            assertFalse(c.client.isOpen());
+            assertTrue(c.client.isInputShutdown());
+            assertTrue(c.client.isOutputShutdown());
+            assertFalse(c.server.isOpen());
+            assertTrue(c.server.isInputShutdown());
+            assertTrue(c.server.isOutputShutdown());
+        }
         
     }
     
@@ -123,21 +136,35 @@ public abstract class EndPointTest<T extends EndPoint>
         len = c.server.fill(buffer);
         assertEquals(-1,len);
 
-        assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
-        assertTrue(c.client.isOutputShutdown());
-        assertTrue(c.server.isOpen());
-        assertTrue(c.server.isInputShutdown());
-        assertFalse(c.server.isOutputShutdown());  
-        
-        c.server.shutdownOutput();
+        if (!c.server.isOpen())
+        {
+            // Half closing is not working - maybe an OS thing
+            assertFalse(c.client.isOpen());
+            assertTrue(c.client.isInputShutdown());
+            assertTrue(c.client.isOutputShutdown());
+            assertFalse(c.server.isOpen());
+            assertTrue(c.server.isInputShutdown());
+            assertTrue(c.server.isOutputShutdown()); 
+        }
+        else
+        {
+            // Half closing is working
+            assertFalse(c.client.isOpen());
+            assertTrue(c.client.isInputShutdown());
+            assertTrue(c.client.isOutputShutdown());
+            assertTrue(c.server.isOpen());
+            assertTrue(c.server.isInputShutdown());
+            assertFalse(c.server.isOutputShutdown());  
 
-        assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
-        assertTrue(c.client.isOutputShutdown());
-        assertFalse(c.server.isOpen());
-        assertTrue(c.server.isInputShutdown());
-        assertTrue(c.server.isOutputShutdown());  
+            c.server.shutdownOutput();
+
+            assertFalse(c.client.isOpen());
+            assertTrue(c.client.isInputShutdown());
+            assertTrue(c.client.isOutputShutdown());
+            assertFalse(c.server.isOpen());
+            assertTrue(c.server.isInputShutdown());
+            assertTrue(c.server.isOutputShutdown());  
+        }
     }   
     
 }
