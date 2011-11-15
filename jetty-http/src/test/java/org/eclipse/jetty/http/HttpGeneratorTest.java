@@ -138,7 +138,7 @@ public class HttpGeneratorTest
     }
 
     private static final String[] headers= { "Content-Type","Content-Length","Connection","Transfer-Encoding","Other"};
-    private class TR
+    private static class TR
     {
         private int _code;
         private String _body;

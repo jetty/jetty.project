@@ -135,7 +135,7 @@ public class LifeCycleListenerTest
         lifecycle.stop();
         assertFalse("The stopping event occurred", listener.stopping);
     }
-    private class TestLifeCycle extends AbstractLifeCycle
+    private static class TestLifeCycle extends AbstractLifeCycle
     {
         Exception cause;
         

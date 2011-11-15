@@ -462,13 +462,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
      */
     private void updateKey()
     {
-        int current_ops=-1;
+        final boolean changed;
         synchronized (this)
         {
+            int current_ops=-1;
             if (getChannel().isOpen())
             {
                 boolean read_interest = _readBlocked || (!_dispatched && !_connection.isSuspended());
                 boolean write_interest= _writeBlocked || (!_dispatched && !_writable);
+                
                 _interestOps =
                     ((!_socket.isInputShutdown() && read_interest ) ? SelectionKey.OP_READ  : 0)
                 |   ((!_socket.isOutputShutdown()&& write_interest) ? SelectionKey.OP_WRITE : 0);
@@ -482,9 +484,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     LOG.ignore(e);
                 }
             }
+            changed=_interestOps!=current_ops;
         }
 
-        if(_interestOps != current_ops)
+        if(changed)
         {
             _selectSet.addChange(this);
             _selectSet.wakeup();

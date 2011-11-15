@@ -92,10 +92,15 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void accept(int acceptorID) throws IOException
     {
-        ServerSocketChannel server = _acceptChannel;
+        ServerSocketChannel server;
+        synchronized(this)
+        {
+            server = _acceptChannel;
+        }
+        
         if (server!=null && server.isOpen() && _manager.isStarted())
         {
-            SocketChannel channel = _acceptChannel.accept();
+            SocketChannel channel = server.accept();
             channel.configureBlocking(false);
             Socket socket = channel.socket();
             configure(socket);
@@ -141,7 +146,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
     
     /* ------------------------------------------------------------ */
-    public Object getConnection()
+    public synchronized Object getConnection()
     {
         return _acceptChannel;
     }
@@ -299,11 +304,15 @@ public class SelectChannelConnector extends AbstractNIOConnector
     public void dump(Appendable out, String indent) throws IOException
     {
         out.append(String.valueOf(this)).append("\n");
-        ServerSocketChannel channel=_acceptChannel;
+        ServerSocketChannel channel;
+        synchronized (this)
+        {
+            channel=_acceptChannel;
+        }
         if (channel==null)
             AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{null,"CLOSED",_manager}));
         else
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{_acceptChannel,_acceptChannel.isOpen()?"OPEN":"CLOSED",_manager}));
+            AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{channel,channel.isOpen()?"OPEN":"CLOSED",_manager}));
     }
 
     /* ------------------------------------------------------------ */

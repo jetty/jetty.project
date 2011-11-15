@@ -576,7 +576,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isShutdown()
     {
-        return !_shutdown;
+        synchronized (this)
+        {
+            return !_shutdown;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -602,7 +605,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isAvailable()
     {
-        return _available;
+        synchronized (this)
+        {
+            return _available;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -666,7 +672,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             // defers the calling of super.doStart()
             startContext();
 
-            _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
+            synchronized(this)
+            {
+                _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
+            }
         }
         finally
         {

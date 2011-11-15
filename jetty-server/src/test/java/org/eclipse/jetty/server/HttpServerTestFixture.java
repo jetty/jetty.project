@@ -189,7 +189,7 @@ public class HttpServerTestFixture
     }
 
     // Create a trust manager that does not validate certificate chains
-    public static TrustManager[] __trustAllCerts = new TrustManager[] { 
+    public final static TrustManager[] __trustAllCerts = new TrustManager[] { 
         new X509TrustManager(){     
             public java.security.cert.X509Certificate[] getAcceptedIssuers() { 
                 return null;
@@ -203,7 +203,7 @@ public class HttpServerTestFixture
         } 
     };
     
-    public static HostnameVerifier __hostnameverifier = new HostnameVerifier()
+    public final static HostnameVerifier __hostnameverifier = new HostnameVerifier()
     {
         public boolean verify(String hostname, SSLSession session)
         {

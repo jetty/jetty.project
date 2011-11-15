@@ -160,7 +160,6 @@ public class ResponseTest
     {
         AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
 
-        Request request = connection.getRequest();
         Response response = connection.getResponse();
 
 

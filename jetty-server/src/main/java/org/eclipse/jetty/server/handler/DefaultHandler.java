@@ -110,10 +110,6 @@ public class DefaultHandler extends AbstractHandler
         response.setContentType(MimeTypes.TEXT_HTML);
         
         ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);
-
-        String uri=request.getRequestURI();
-        uri=StringUtil.replace(uri,"<","&lt;");
-        uri=StringUtil.replace(uri,">","&gt;");
         
         writer.write("<HTML>\n<HEAD>\n<TITLE>Error 404 - Not Found");
         writer.write("</TITLE>\n<BODY>\n<H2>Error 404 - Not Found.</H2>\n");

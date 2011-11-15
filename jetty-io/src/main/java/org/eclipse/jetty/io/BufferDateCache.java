@@ -46,7 +46,6 @@ public class BufferDateCache extends DateCache
     public synchronized Buffer formatBuffer(long date)
     {
         String d = super.format(date);
-        //noinspection StringEquality
         if (d==_last)
             return _buffer;
         _last=d;

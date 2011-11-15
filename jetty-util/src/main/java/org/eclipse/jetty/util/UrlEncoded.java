@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * @see java.net.URLEncoder
  */
-public class UrlEncoded extends MultiMap
+public class UrlEncoded extends MultiMap implements Cloneable
 {
     private static final Logger LOG = Log.getLogger(UrlEncoded.class);
 

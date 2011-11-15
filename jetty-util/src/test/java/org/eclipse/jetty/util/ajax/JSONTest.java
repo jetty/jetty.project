@@ -203,7 +203,7 @@ public class JSONTest
     public void testZeroByte()
     {
         String withzero="\u0000";
-        String json = JSON.toString(withzero);
+        JSON.toString(withzero);
     }
     
     /* ------------------------------------------------------------ */

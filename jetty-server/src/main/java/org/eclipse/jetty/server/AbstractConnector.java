@@ -358,7 +358,11 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     public void join() throws InterruptedException
     {
-        Thread[] threads = _acceptorThread;
+        Thread[] threads;
+        synchronized(this)
+        {
+            threads= _acceptorThread;
+        }
         if (threads != null)
             for (int i = 0; i < threads.length; i++)
                 if (threads[i] != null)

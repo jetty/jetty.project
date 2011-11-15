@@ -309,7 +309,6 @@ public class ResourceHandler extends AbstractHandler
         }
         else
         {
-            included = Boolean.FALSE;
             servletPath = request.getServletPath();
             pathInfo = request.getPathInfo();
         }

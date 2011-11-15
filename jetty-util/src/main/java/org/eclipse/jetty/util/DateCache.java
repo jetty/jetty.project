@@ -104,7 +104,7 @@ public class DateCache
     /** Set the timezone.
      * @param tz TimeZone
      */
-    public void setTimeZone(TimeZone tz)
+    public synchronized void setTimeZone(TimeZone tz)
     {
         setTzFormatString(tz);        
         if( _locale != null ) 
@@ -145,7 +145,7 @@ public class DateCache
     }
     
     /* ------------------------------------------------------------ */
-    private void setTzFormatString(final  TimeZone tz )
+    private synchronized void setTzFormatString(final  TimeZone tz )
     {
         int zIndex = _formatString.indexOf( "ZZZ" );
         if( zIndex >= 0 )

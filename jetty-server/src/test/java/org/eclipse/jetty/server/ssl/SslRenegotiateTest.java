@@ -216,7 +216,7 @@ public class SslRenegotiateTest
 
     private void doWrap() throws Exception
     {
-        SSLEngineResult result =_engine.wrap(_outAppB,_outPacketB);
+        _engine.wrap(_outAppB,_outPacketB);
 //        System.err.println("wrapped "+result.bytesConsumed()+" to "+result.bytesProduced());
         _outPacketB.flip();
         while (_outPacketB.hasRemaining())

@@ -160,7 +160,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Read the response.
             String response=readResponse(client);
-            assertTrue(true); // nothing checked yet.
+            assertTrue (response.indexOf("200")>0);
         }
         finally
         {
@@ -556,8 +556,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             
             // read and check the times are < 999ms
             String[] times=in.readLine().split(",");
-            
-            // Assert.assertTrue(Integer.valueOf(t).intValue()<999);
+            for (String t: times)
+               Assert.assertTrue(Integer.valueOf(t).intValue()<999);
             
             
             // read the EOF chunk
@@ -587,7 +587,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // read and check the times are < 999ms
             times=in.readLine().split(",");
-            //Assert.assertTrue(t,Integer.valueOf(t).intValue()<999);
+            for (String t: times)
+                Assert.assertTrue(t,Integer.valueOf(t).intValue()<999);
             
             // check close
             Assert.assertTrue(in.readLine()==null);
@@ -1060,7 +1061,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         AvailableHandler ah=new AvailableHandler();
         configureServer(ah);
 
-        long start=System.currentTimeMillis();
         Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {

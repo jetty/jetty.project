@@ -15,6 +15,7 @@
 package org.eclipse.jetty.server.ssl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -129,6 +131,7 @@ public class SslUploadTest
 
         InputStream in = socket.getInputStream();
         String response = IO.toString(in);
+        assertTrue (response.indexOf("200")>0);
         // System.err.println(response);
 
         long end = System.nanoTime();
