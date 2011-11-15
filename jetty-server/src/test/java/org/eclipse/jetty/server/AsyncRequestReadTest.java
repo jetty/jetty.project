@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 
@@ -98,6 +99,57 @@ public class AsyncRequestReadTest
         assertEquals(content.length, total);
     }
 
+    @Test
+    public void tests() throws Exception
+    {
+        runTest(64,4,4,20);
+        runTest(256,16,16,50);
+        runTest(256,1,128,10);
+        runTest(128*1024,1,64,10);
+        runTest(256*1024,5321,10,100);
+        runTest(512*1024,32*1024,10,10);
+    }
+    
+    
+    public void runTest(int contentSize, int chunkSize, int chunks, int delayMS) throws Exception
+    {
+        String tst=contentSize+","+chunkSize+","+chunks+","+delayMS;
+        System.err.println(tst);
+        
+        final Socket socket =  new Socket("localhost",connector.getLocalPort());
+
+        byte[] content = new byte[contentSize];
+        Arrays.fill(content, (byte)120);
+
+        OutputStream out = socket.getOutputStream();
+        out.write("POST / HTTP/1.1\r\n".getBytes());
+        out.write("Host: localhost\r\n".getBytes());
+        out.write(("Content-Length: "+content.length+"\r\n").getBytes());
+        out.write("Content-Type: bytes\r\n".getBytes());
+        out.write("Connection: close\r\n".getBytes());
+        out.write("\r\n".getBytes());
+        out.flush();
+
+        int offset=0;
+        for (int i=0;i<chunks;i++)
+        {
+            out.write(content,offset,chunkSize);
+            offset+=chunkSize;
+            Thread.sleep(delayMS);
+        }
+        out.write(content,offset,content.length-offset);
+
+        out.flush();
+
+        InputStream in = socket.getInputStream();
+        String response = IO.toString(in);
+        assertTrue(tst,response.indexOf("200 OK")>0);
+
+        long total=__total.exchange(0L,30,TimeUnit.SECONDS);
+        assertEquals(tst,content.length, total);
+    }
+
+    
     private static class EmptyHandler extends AbstractHandler
     {
         public void handle(String path, final Request request, HttpServletRequest httpRequest, final HttpServletResponse httpResponse) throws IOException, ServletException

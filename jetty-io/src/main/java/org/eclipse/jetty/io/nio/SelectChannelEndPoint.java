@@ -148,7 +148,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 return;
             }
 
-            // If there are threads dispatched reading and writing
+            // If there are threads dispatched reading and writing            
             if (_readBlocked || _writeBlocked)
             {
                 // assert _dispatched;
@@ -161,8 +161,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 this.notifyAll();
 
                 // we are not interested in further selecting
-                if (_dispatched)
-                    _key.interestOps(0);
+                _key.interestOps(0);
                 return;
             }
 
