@@ -297,7 +297,9 @@ public class HttpParser implements Parser
                     ex=e;
                 }
 
-                if (filled < 0 )
+                if (filled > 0 )
+                    progress++;
+                else if (filled < 0 )
                 {                    
                     _persistent=false;
 

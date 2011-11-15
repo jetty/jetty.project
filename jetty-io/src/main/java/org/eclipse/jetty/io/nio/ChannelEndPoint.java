@@ -326,20 +326,6 @@ public class ChannelEndPoint implements EndPoint
         }
         else
         {
-            if (header!=null)
-            {
-                if (buffer!=null && buffer.length()>0 && header.space()>buffer.length())
-                {
-                    header.put(buffer);
-                    buffer.clear();
-                }
-                if (trailer!=null && trailer.length()>0 && header.space()>trailer.length())
-                {
-                    header.put(trailer);
-                    trailer.clear();
-                }
-            }
-
             // flush header
             if (header!=null && header.length()>0)
                 length=flush(header);

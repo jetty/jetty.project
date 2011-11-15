@@ -969,6 +969,9 @@ public class HttpGenerator extends AbstractGenerator
                     int size = _content.length();
                     _bufferChunked = true;
 
+                    if (_header == null)
+                        _header = _buffers.getHeader();
+                    
                     // if we need CRLF add this to header
                     if (_needCRLF)
                     {
