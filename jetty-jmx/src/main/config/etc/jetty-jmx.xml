@@ -10,6 +10,17 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
+  <!-- Set the java.rmi.server.hostname property in case you've    -->
+  <!-- got a misconfigured /etc/hosts entry or the like.           -->
+  <!-- =========================================================== -->
+  <!-- 
+  <Call class="java.lang.System" name="setProperty">
+    <Arg>java.rmi.server.hostname</Arg>
+    <Arg>127.0.0.1</Arg>
+  </Call>
+  -->
+  
+  <!-- =========================================================== -->
   <!-- Initialize an mbean server                                  -->
   <!-- =========================================================== -->
   <Call id="MBeanServer" class="java.lang.management.ManagementFactory"
