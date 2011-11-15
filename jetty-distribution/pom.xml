@@ -80,6 +80,7 @@
                   <url url="${jetty-orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
                   <url url="${jetty-orbit-url}/org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.transaction_${orbit-javax-transaction-version}.jar" />
+                  <url url="${jetty-orbit-url}/ecj-${eclipse-ecj-version}.jar" />
                 </get>
 
                 <!-- Step 2: copy the orbit artifact from orbit-cache to the appropriate lib directory -->
@@ -123,8 +124,9 @@
                     <include name="javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
                     <include name="javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
                     <include name="com.sun.el_${orbit-com-sun-el-version}.jar" />
-                    <include name="org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
                     <include name="org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />         
+                    <include name="org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
+                    <include name="ecj-${eclipse-ecj-version}.jar" />
                   </fileset>
                 </copy>
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
