@@ -63,6 +63,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class MultiPartFilter implements Filter
 {
+    public final static String CONTENT_TYPE_SUFFIX=".org.eclipse.jetty.servlet.contentType";
     private final static String FILES ="org.eclipse.jetty.servlet.MultiPartFilter.files";
     private File tempdir;
     private boolean _deleteFiles;
@@ -132,8 +133,11 @@ public class MultiPartFilter implements Filter
             String content_disposition=null;
             String content_transfer_encoding=null;
             
+            
             outer:while(!lastPart)
             {
+                String type_content=null;
+                
                 while(true)
                 {
                     // read a line
@@ -155,7 +159,9 @@ public class MultiPartFilter implements Filter
                         if(key.equals("content-disposition"))
                             content_disposition=value;
                         else if(key.equals("content-transfer-encoding"))
-                        	content_transfer_encoding=value;
+                            content_transfer_encoding=value;
+                        else if (key.equals("content-type"))
+                             type_content = value;  
                     }
                 }
                 // Extract content-disposition
@@ -207,6 +213,8 @@ public class MultiPartFilter implements Filter
                             out = new BufferedOutputStream(out, _fileOutputBuffer);
                         request.setAttribute(name,file);
                         params.add(name, filename);
+                        if (type_content != null)
+                            params.add(name+CONTENT_TYPE_SUFFIX, type_content);
                         
                         if (_deleteFiles)
                         {
@@ -330,6 +338,8 @@ public class MultiPartFilter implements Filter
                 {
                     bytes = ((ByteArrayOutputStream)out).toByteArray();
                     params.add(name,bytes);
+                    if (type_content != null)
+                        params.add(name+CONTENT_TYPE_SUFFIX, type_content);
                 }
             }
         

@@ -15,6 +15,7 @@ package org.eclipse.jetty.servlets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,6 +40,21 @@ public class MultipartFilterTest
     private File _dir;
     private ServletTester tester;
 
+    
+    public static class TestServlet extends DumpServlet
+    {
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            assertNotNull(req.getParameter("fileup"));
+            assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
+            assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
+ 
+            super.doPost(req, resp);
+        }
+        
+    }
     @Before
     public void setUp() throws Exception
     {
@@ -51,7 +67,7 @@ public class MultipartFilterTest
         tester=new ServletTester();
         tester.setContextPath("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
-        tester.addServlet(DumpServlet.class, "/");
+        tester.addServlet(TestServlet.class, "/");
         FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*",FilterMapping.DEFAULT);
         multipartFilter.setInitParameter("deleteFiles", "true");
         tester.start();
@@ -93,6 +109,7 @@ public class MultipartFilterTest
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
     }
+    
 
     @Test
     public void testPost() throws Exception
@@ -124,6 +141,7 @@ public class MultipartFilterTest
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
+  
 
     @Test
     public void testEncodedPost() throws Exception
