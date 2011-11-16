@@ -44,6 +44,7 @@ public class ChannelEndPoint implements EndPoint
     protected final InetSocketAddress _local;
     protected final InetSocketAddress _remote;
     protected int _maxIdleTime;
+    private boolean _ishut;
 
     public ChannelEndPoint(ByteChannel channel) throws IOException
     {
@@ -126,17 +127,16 @@ public class ChannelEndPoint implements EndPoint
                     // System.err.println(e);
                     LOG.debug(e.toString());
                     LOG.ignore(e);
-                    if (!_socket.isClosed())
-                        close();
                 }
                 finally
                 {
+                    _ishut=true;
                     if(_socket.isOutputShutdown() && !_socket.isClosed())
                         close();
                 }
             }
             else
-                close();
+                _ishut=true;
         }
     }
 
@@ -172,7 +172,7 @@ public class ChannelEndPoint implements EndPoint
                 }
                 finally
                 {
-                    if (_socket.isInputShutdown() && !_socket.isClosed())
+                    if ((_ishut||_socket.isInputShutdown()) && !_socket.isClosed())
                         close();
                 }
             }
@@ -196,7 +196,7 @@ public class ChannelEndPoint implements EndPoint
 
     public boolean isInputShutdown()
     {
-        return !_channel.isOpen() || _socket!=null && _socket.isInputShutdown();
+        return !_channel.isOpen() || _ishut || _socket!=null && _socket.isInputShutdown();
     }
 
     /* (non-Javadoc)
