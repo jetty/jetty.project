@@ -160,34 +160,41 @@ public class IOTest
         // Client reads response
         assertEquals(1,client.getInputStream().read());
         
-        // Client reads -1 and does ishut
-        assertEquals(-1,client.getInputStream().read());
-        assertFalse(client.isInputShutdown());
-        System.err.println("ISHUT "+client);
-        client.shutdownInput();
-        
-        // Client ???
-        System.err.println("OSHUT "+client);
-        client.shutdownOutput();
-        System.err.println("CLOSE "+client);
-        client.close();
-        
-        // Server reads -1, does ishut and then close
-        assertEquals(-1,server.getInputStream().read());
-        assertFalse(server.isInputShutdown());
-        System.err.println("ISHUT "+server);
-        
         try
         {
-            server.shutdownInput();
+            // Client reads -1 and does ishut
+            assertEquals(-1,client.getInputStream().read());
+            assertFalse(client.isInputShutdown());
+            System.err.println("ISHUT "+client);
+            client.shutdownInput();
+
+            // Client ???
+            System.err.println("OSHUT "+client);
+            client.shutdownOutput();
+            System.err.println("CLOSE "+client);
+            client.close();
+
+            // Server reads -1, does ishut and then close
+            assertEquals(-1,server.getInputStream().read());
+            assertFalse(server.isInputShutdown());
+            System.err.println("ISHUT "+server);
+
+            try
+            {
+                server.shutdownInput();
+            }
+            catch(SocketException e)
+            {
+                System.err.println(e);
+            }
+            System.err.println("CLOSE "+server);
+            server.close();
+
         }
-        catch(SocketException e)
+        catch(Exception e)
         {
             System.err.println(e);
         }
-        System.err.println("CLOSE "+server);
-        server.close();
-        
     }
 
     @Test

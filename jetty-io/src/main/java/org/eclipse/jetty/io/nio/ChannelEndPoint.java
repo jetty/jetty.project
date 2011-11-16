@@ -215,6 +215,8 @@ public class ChannelEndPoint implements EndPoint
      */
     public int fill(Buffer buffer) throws IOException
     {
+        if (_ishut)
+            return -1;
         Buffer buf = buffer.buffer();
         int len=0;
         if (buf instanceof NIOBuffer)
