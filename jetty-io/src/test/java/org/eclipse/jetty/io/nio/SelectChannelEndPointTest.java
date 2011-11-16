@@ -209,8 +209,14 @@ public class SelectChannelEndPointTest
             assertTrue(b>0);
             assertEquals(c,(char)b);
         }
-
         client.close();
+        
+        int i=0;
+        while (server.isOpen())
+        {
+            assert(i++<10);
+            Thread.sleep(10);
+        }
 
     }
 
@@ -324,7 +330,7 @@ public class SelectChannelEndPointTest
     public void testStress() throws Exception
     {
         Socket client = newClient();
-        client.setSoTimeout(10000);
+        client.setSoTimeout(30000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);

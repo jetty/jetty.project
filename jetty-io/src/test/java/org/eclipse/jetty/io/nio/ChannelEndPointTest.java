@@ -36,4 +36,9 @@ public class ChannelEndPointTest extends EndPointTest<ChannelEndPoint>
         return c;
     }
 
+    @Override
+    public void testClientServerExchange() throws Exception
+    {
+        super.testClientServerExchange();
+    }
 }

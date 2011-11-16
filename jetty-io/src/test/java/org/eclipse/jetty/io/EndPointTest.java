@@ -24,11 +24,15 @@ public abstract class EndPointTest<T extends EndPoint>
         EndPointPair<T> c = newConnection();
         Buffer buffer = new IndirectNIOBuffer(4096);
         
+        // Client sends a request
         c.client.flush(new ByteArrayBuffer("request"));
+        
+        // Server receives the request
         int len = c.server.fill(buffer);
         assertEquals(7,len);
         assertEquals("request",buffer.toString());
 
+        // Client and server are open
         assertTrue(c.client.isOpen());
         assertFalse(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
@@ -36,9 +40,11 @@ public abstract class EndPointTest<T extends EndPoint>
         assertFalse(c.server.isInputShutdown());
         assertFalse(c.server.isOutputShutdown());
         
+        // Server sends response and closes output
         c.server.flush(new ByteArrayBuffer("response"));
         c.server.shutdownOutput();
         
+        // client server are open, server is oshut
         assertTrue(c.client.isOpen());
         assertFalse(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
@@ -46,11 +52,13 @@ public abstract class EndPointTest<T extends EndPoint>
         assertFalse(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
         
+        // Client reads response
         buffer.clear();
         len = c.client.fill(buffer);
         assertEquals(8,len);
         assertEquals("response",buffer.toString());
 
+        // Client and server are open, server is oshut
         assertTrue(c.client.isOpen());
         assertFalse(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
@@ -58,10 +66,12 @@ public abstract class EndPointTest<T extends EndPoint>
         assertFalse(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
         
+        // Client reads -1
         buffer.clear();
         len = c.client.fill(buffer);
         assertEquals(-1,len);
 
+        // Client and server are open, server is oshut, client is ishut
         assertTrue(c.client.isOpen());
         assertTrue(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
@@ -69,19 +79,23 @@ public abstract class EndPointTest<T extends EndPoint>
         assertFalse(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
         
+        // Client shutsdown output, which is a close because already ishut
         c.client.shutdownOutput();
 
+        // Client is closed. Server is open and oshut
         assertFalse(c.client.isOpen());
         assertTrue(c.client.isInputShutdown());
         assertTrue(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
         assertFalse(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
-        
+
+        // Server reads close
         buffer.clear();
         len = c.server.fill(buffer);
         assertEquals(-1,len);
 
+        // Client and Server are closed
         assertFalse(c.client.isOpen());
         assertTrue(c.client.isInputShutdown());
         assertTrue(c.client.isOutputShutdown());

@@ -111,24 +111,27 @@ public class ChannelEndPoint implements EndPoint
         LOG.debug("ishut {}",this);
         if (_channel.isOpen())
         {
-            if (_channel instanceof SocketChannel)
+            if (_socket!=null)
             {
-                Socket socket= ((SocketChannel)_channel).socket();
                 try
                 {
-                    if (!socket.isInputShutdown())
-                        socket.shutdownInput();
+                    if (!_socket.isInputShutdown())
+                    {
+                        // System.err.println("ISHUT "+_socket);
+                        _socket.shutdownInput();
+                    }
                 }
                 catch(SocketException e)
-                {
+                {             
+                    // System.err.println(e);
                     LOG.debug(e.toString());
                     LOG.ignore(e);
-                    if (!socket.isClosed())
+                    if (!_socket.isClosed())
                         close();
                 }
                 finally
                 {
-                    if(socket.isOutputShutdown() && !socket.isClosed())
+                    if(_socket.isOutputShutdown() && !_socket.isClosed())
                         close();
                 }
             }
@@ -150,24 +153,26 @@ public class ChannelEndPoint implements EndPoint
         LOG.debug("oshut {}",this);
         if (_channel.isOpen())
         {
-            if (_channel instanceof SocketChannel)
+            if (_socket!=null)
             {
-                Socket socket= ((SocketChannel)_channel).socket();
                 try
                 {
-                    if (!socket.isOutputShutdown())
-                        socket.shutdownOutput();
+                    if (!_socket.isOutputShutdown())
+                    {
+                        // System.err.println("OSHUT "+_socket);
+                        _socket.shutdownOutput();
+                    }
                 }
                 catch(SocketException e)
                 {
                     LOG.debug(e.toString());
                     LOG.ignore(e);
-                    if (!socket.isClosed())
+                    if (!_socket.isClosed())
                         close();
                 }
                 finally
                 {
-                    if (socket.isInputShutdown() && !socket.isClosed())
+                    if (_socket.isInputShutdown() && !_socket.isClosed())
                         close();
                 }
             }
@@ -200,6 +205,8 @@ public class ChannelEndPoint implements EndPoint
     public void close() throws IOException
     {
         LOG.debug("close {}",this);
+
+        // System.err.println("CLOSE "+_socket);
         _channel.close();
     }
 
