@@ -111,14 +111,19 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
 
                         reset();
 
-                        // TODO Is this required?
+                        // TODO Is this still required?
                         if (!_generator.isPersistent() && !_endp.isOutputShutdown())
                         {
-                            LOG.warn("Safety net oshut!!!");
+                            LOG.warn("Safety net oshut!!!  IF YOU SEE THIS, PLEASE RAISE BUGZILLA");
                             _endp.shutdownOutput();
                         }
                     }
-
+                    else if (_request.getAsyncContinuation().isAsyncStarted())
+                    {
+                        // The request is suspended, so even though progress has been made, break the while loop
+                        LOG.debug("suspended {}",this);
+                        break;
+                    }
                 }
             }
         }
