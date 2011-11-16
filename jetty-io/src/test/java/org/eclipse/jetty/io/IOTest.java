@@ -151,15 +151,15 @@ public class IOTest
         
         // Server reads 
         assertEquals(1,server.getInputStream().read());
-        
+
         // Write from server to client with oshut
         server.getOutputStream().write(1);
         System.err.println("OSHUT "+server);
         server.shutdownOutput();
-        
+
         // Client reads response
         assertEquals(1,client.getInputStream().read());
-        
+
         try
         {
             // Client reads -1 and does ishut
@@ -193,6 +193,7 @@ public class IOTest
         }
         catch(Exception e)
         {
+            // Dang OSX!
             System.err.println(e);
         }
     }
