@@ -289,7 +289,7 @@ public class SelectChannelEndPointTest
         OutputStream clientOutputStream = client.getOutputStream();
         InputStream clientInputStream = client.getInputStream();
 
-        int specifiedTimeout = 200;
+        int specifiedTimeout = 400;
         client.setSoTimeout(specifiedTimeout);
 
         // Write 8 and cause block for 10
@@ -309,8 +309,8 @@ public class SelectChannelEndPointTest
         catch(SocketTimeoutException e)
         {
             int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
-            // System.err.println("blocked " + elapsed);
-            Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(specifiedTimeout));
+            System.err.println("blocked for " + elapsed+ "ms");
+            Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3*specifiedTimeout/4));
         }
 
         // write remaining characters

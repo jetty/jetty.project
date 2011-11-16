@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class HttpExchange
 {
-    private static final Logger LOG = Log.getLogger(HttpExchange.class);
+    static final Logger LOG = Log.getLogger(HttpExchange.class);
 
     public static final int STATUS_START = 0;
     public static final int STATUS_WAITING_FOR_CONNECTION = 1;

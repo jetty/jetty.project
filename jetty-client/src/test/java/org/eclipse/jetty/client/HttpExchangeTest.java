@@ -54,7 +54,7 @@ import org.junit.Test;
  */
 public class HttpExchangeTest
 {
-    final static boolean verbose=true;
+    final static boolean verbose=HttpExchange.LOG.isDebugEnabled();
     protected static int _maxConnectionsPerAddress = 2;
     protected static String _scheme = "http";
     protected static Server _server;
