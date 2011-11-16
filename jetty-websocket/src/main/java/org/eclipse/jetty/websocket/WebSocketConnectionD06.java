@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -213,6 +214,12 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public void onInputShutdown() throws IOException
+    {
+        // TODO
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return _parser.isBufferEmpty() && _generator.isBufferEmpty();
@@ -220,7 +227,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void idleExpired()
+    public void onIdleExpired()
     {
         closeOut(WebSocketConnectionD06.CLOSE_NORMAL,"Idle");
     }
@@ -232,7 +239,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         _webSocket.onClose(WebSocketConnectionD06.CLOSE_NORMAL,"");
     }
@@ -501,6 +508,12 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
         /* ------------------------------------------------------------ */
         public void disconnect()
+        {
+            close();
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void close()
         {
             close(CLOSE_NORMAL,null);
         }

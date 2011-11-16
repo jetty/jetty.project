@@ -47,11 +47,11 @@ import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.UncheckedIOException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
@@ -95,7 +95,6 @@ public class ServletHandler extends ScopedHandler
     private int _maxFilterChainsCacheSize=512;
     private boolean _startWithUnavailable=true;
     private IdentityService _identityService;
-    private SecurityHandler _securityHandler;
     
     private ServletHolder[] _servlets=new ServletHolder[0];
     private ServletMapping[] _servletMappings;
@@ -154,9 +153,9 @@ public class ServletHandler extends ScopedHandler
 
         if (_contextHandler!=null)
         {
-            _securityHandler = (SecurityHandler)_contextHandler.getChildHandlerByClass(SecurityHandler.class);
-            if (_securityHandler!=null)
-                _identityService=_securityHandler.getIdentityService();
+            SecurityHandler security_handler = (SecurityHandler)_contextHandler.getChildHandlerByClass(SecurityHandler.class);
+            if (security_handler!=null)
+                _identityService=security_handler.getIdentityService();
         }
         
         updateNameMappings();
@@ -492,7 +491,7 @@ public class ServletHandler extends ScopedHandler
         {
             throw e;
         }
-        catch(UncheckedIOException e)
+        catch(RuntimeIOException e)
         {
             throw e;
         }
@@ -525,10 +524,10 @@ public class ServletHandler extends ScopedHandler
                 if (cause!=null)
                     th=cause;
             }
-            else if (th instanceof UncheckedIOException)
+            else if (th instanceof RuntimeIOException)
             {
                 LOG.debug(th);
-                Throwable cause=(IOException)((UncheckedIOException)th).getCause();
+                Throwable cause=(IOException)((RuntimeIOException)th).getCause();
                 if (cause!=null)
                     th=cause;
             }
@@ -536,8 +535,8 @@ public class ServletHandler extends ScopedHandler
             // handle or log exception
             if (th instanceof HttpException)
                 throw (HttpException)th;
-            else if (th instanceof UncheckedIOException)
-                throw (UncheckedIOException)th;
+            else if (th instanceof RuntimeIOException)
+                throw (RuntimeIOException)th;
             else if (th instanceof EofException)
                 throw (EofException)th;
 
@@ -1337,7 +1336,7 @@ public class ServletHandler extends ScopedHandler
                     filter.doFilter(request, response, _next);
                 else
                 {
-                    final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+                    final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
                     final boolean suspendable=baseRequest.isAsyncSupported();
                     if (suspendable)
                     {
@@ -1362,7 +1361,7 @@ public class ServletHandler extends ScopedHandler
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("call servlet " + _servletHolder);
-                final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+                final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
                 _servletHolder.handle(baseRequest,request, response);
             }
             else // Not found

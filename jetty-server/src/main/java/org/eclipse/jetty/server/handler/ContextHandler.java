@@ -61,7 +61,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
@@ -598,7 +598,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isShutdown()
     {
-        return !_shutdown;
+        synchronized (this)
+        {
+            return !_shutdown;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -624,7 +627,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isAvailable()
     {
-        return _available;
+        synchronized (this)
+        {
+            return _available;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -688,7 +694,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             // defers the calling of super.doStart()
             startContext();
 
-            _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
+            synchronized(this)
+            {
+                _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
+            }
         }
         finally
         {
@@ -866,7 +875,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         // Check the connector
         if (_connectors != null && _connectors.size() > 0)
         {
-            String connector = HttpConnection.getCurrentConnection().getConnector().getName();
+            String connector = AbstractHttpConnection.getCurrentConnection().getConnector().getName();
             if (connector == null || !_connectors.contains(connector))
                 return false;
         }

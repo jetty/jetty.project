@@ -138,7 +138,7 @@ public class HttpGeneratorClientTest
                         String t="v="+v+",r="+r+",chunks="+chunks+",c="+c+",tr="+tr[r];
                         // System.err.println(t);
 
-                        hb.reset(true);
+                        hb.reset();
                         endp.reset();
                         fields.clear();
 
@@ -193,7 +193,7 @@ public class HttpGeneratorClientTest
     }
 
     private static final String[] headers= { "Content-Type","Content-Length","Connection","Transfer-Encoding","Other"};
-    private class TR
+    private static class TR
     {
         private String[] values=new String[headers.length];
         private String body;

@@ -151,7 +151,6 @@ public class JarResource extends URLResource
         JarInputStream jin = new JarInputStream(is);
         JarEntry entry;
         boolean shouldExtract;
-        String directoryCanonicalPath = directory.getCanonicalPath()+"/";
         while((entry=jin.getNextJarEntry())!=null)
         {
             String entryName = entry.getName();

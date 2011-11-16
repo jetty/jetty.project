@@ -14,7 +14,6 @@
 
 package org.eclipse.jetty.client.helperClasses;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
@@ -22,6 +21,7 @@ import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
 /* ------------------------------------------------------------ */
@@ -35,7 +35,7 @@ public abstract class AbstractSslServerAndClientCreator implements ServerAndClie
     public Server createServer() throws Exception
     {
         Server server = new Server();
-        //SslSelectChannelConnector connector = new SslSelectChannelConnector();
+        // SslSelectChannelConnector connector = new SslSelectChannelConnector();
         SslSocketConnector connector = new SslSocketConnector();
 
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
@@ -45,7 +45,6 @@ public abstract class AbstractSslServerAndClientCreator implements ServerAndClie
         cf.setKeyStorePath(keystore);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        connector.setAllowRenegotiate(true);
 
         server.setConnectors(new Connector[]{ connector });
         server.setHandler(new GenericServerHandler());

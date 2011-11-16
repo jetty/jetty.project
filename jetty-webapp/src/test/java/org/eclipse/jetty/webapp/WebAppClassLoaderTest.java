@@ -1,5 +1,8 @@
 package org.eclipse.jetty.webapp;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -8,10 +11,6 @@ import java.util.List;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class WebAppClassLoaderTest
 {

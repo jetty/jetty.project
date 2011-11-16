@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -54,7 +55,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
 
     private static final int __MONITOR_PERIOD=Integer.getInteger("org.eclipse.jetty.io.nio.MONITOR_PERIOD",1000).intValue();
-    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",25000).intValue();
+    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",100000).intValue();
     private static final int __BUSY_PAUSE=Integer.getInteger("org.eclipse.jetty.io.nio.BUSY_PAUSE",50).intValue();
     private static final int __IDLE_TICK=Integer.getInteger("org.eclipse.jetty.io.nio.IDLE_TICK",400).intValue();
 
@@ -343,7 +344,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected abstract void endPointUpgraded(ConnectedEndPoint endpoint,Connection oldConnection);
 
     /* ------------------------------------------------------------------------------- */
-    protected abstract Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint);
+    public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment);
 
     /* ------------------------------------------------------------ */
     /**
@@ -506,11 +507,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     {
                         LOG.ignore(e);
                     }
+                    catch (ThreadDeath e)
+                    {
+                        throw e;
+                    }
                     catch (Throwable e)
                     {
-                        if (e instanceof ThreadDeath)
-                            throw (ThreadDeath)e;
-
                         if (isRunning())
                             LOG.warn(e);
                         else
@@ -590,6 +592,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                         {
                                             System.err.println(set+":\n"+set.dump());
                                         }
+                                        public String toString() {return "Dump-"+super.toString();}
                                     });
                                 }
                             }
@@ -719,6 +722,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                 endp.checkIdleTimestamp(idle_now);
                             }
                         }
+                        public String toString() {return "Idle-"+super.toString();}
                     });
                     
                 }
@@ -843,6 +847,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private SelectChannelEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
         {
             SelectChannelEndPoint endp = newEndPoint(channel,this,sKey);
+            LOG.debug("created {}",endp);
             endPointOpened(endp);
             _endPoints.put(endp,this);
             return endp;

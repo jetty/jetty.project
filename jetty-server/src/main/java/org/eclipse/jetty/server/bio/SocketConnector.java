@@ -31,7 +31,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.BlockingHttpConnection;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -193,7 +193,7 @@ public class SocketConnector extends AbstractConnector
 
         public void setConnection(Connection connection)
         {
-            if (_connection!=connection)
+            if (_connection!=connection && _connection!=null)
                 connectionUpgraded(_connection,connection);
             _connection=connection;
         }
@@ -219,8 +219,8 @@ public class SocketConnector extends AbstractConnector
         @Override
         public void close() throws IOException
         {
-            if (_connection instanceof HttpConnection)
-                ((HttpConnection)_connection).getRequest().getAsyncContinuation().cancel();
+            if (_connection instanceof AbstractHttpConnection)
+                ((AbstractHttpConnection)_connection).getRequest().getAsyncContinuation().cancel();
             super.close();
         }
 

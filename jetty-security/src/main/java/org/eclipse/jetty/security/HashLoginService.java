@@ -15,13 +15,13 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.security.PropertyUserStore.UserListener;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.Credential;
 
 /* ------------------------------------------------------------ */
 /**

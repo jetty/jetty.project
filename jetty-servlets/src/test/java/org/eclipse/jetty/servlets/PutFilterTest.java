@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.OutputStream;
@@ -23,6 +26,7 @@ import javax.servlet.DispatcherType;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -32,9 +36,6 @@ import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class PutFilterTest
 {

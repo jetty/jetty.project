@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -79,14 +80,34 @@ public class SocketEndPoint extends StreamEndPoint
     @Override
     public boolean isInputShutdown()
     {
-        return !isOpen() || super.isInputShutdown();
+        if (_socket instanceof SSLSocket)
+            return super.isInputShutdown();
+        return _socket.isClosed() || _socket.isInputShutdown();
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public boolean isOutputShutdown()
+    {        
+        if (_socket instanceof SSLSocket)
+            return super.isOutputShutdown();
+        
+        return _socket.isClosed() || _socket.isOutputShutdown();
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    /*
+     */
+    protected final void shutdownSocketOutput() throws IOException
     {
-        return !isOpen() || super.isOutputShutdown();
+        if (!_socket.isClosed())
+        {
+            if (!_socket.isOutputShutdown())
+                _socket.shutdownOutput();
+            if (_socket.isInputShutdown())
+                _socket.close();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -96,15 +117,27 @@ public class SocketEndPoint extends StreamEndPoint
     @Override
     public void shutdownOutput() throws IOException
     {
-        if (!isOutputShutdown())
-        {
+        if (_socket instanceof SSLSocket)
             super.shutdownOutput();
-            if (!(_socket instanceof SSLSocket))
-                _socket.shutdownOutput();
-        }
+        else
+            shutdownSocketOutput();
     }
 
 
+    /* ------------------------------------------------------------ */
+    /*
+     */
+    public void shutdownSocketInput() throws IOException
+    {
+        if (!_socket.isClosed())
+        {
+            if (!_socket.isInputShutdown())
+                _socket.shutdownInput();
+            if (_socket.isOutputShutdown())
+                _socket.close();
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.io.bio.StreamEndPoint#shutdownOutput()
@@ -112,12 +145,10 @@ public class SocketEndPoint extends StreamEndPoint
     @Override
     public void shutdownInput() throws IOException
     {
-        if (!isInputShutdown())
-        {
+        if (_socket instanceof SSLSocket)
             super.shutdownInput();
-            if (!(_socket instanceof SSLSocket))
-                _socket.shutdownInput();
-        }
+        else
+            shutdownSocketInput();
     }
 
     /* ------------------------------------------------------------ */

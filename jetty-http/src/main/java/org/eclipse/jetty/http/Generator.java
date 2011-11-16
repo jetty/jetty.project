@@ -50,7 +50,7 @@ public interface Generator
 
     void completeHeader(HttpFields responseFields, boolean last) throws IOException;
 
-    long flushBuffer() throws IOException;
+    int flushBuffer() throws IOException;
 
     int getContentBufferSize();
 
@@ -70,7 +70,7 @@ public interface Generator
 
     boolean isPersistent();
 
-    void reset(boolean returnBuffers);
+    void reset();
 
     void resetBuffer();
     

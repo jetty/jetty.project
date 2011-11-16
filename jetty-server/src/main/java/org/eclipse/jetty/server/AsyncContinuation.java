@@ -74,7 +74,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     private static final int __COMPLETED=9;    // Request is complete
     
     /* ------------------------------------------------------------ */
-    protected HttpConnection _connection;
+    protected AbstractHttpConnection _connection;
     private List<AsyncListener> _lastAsyncListeners;
     private List<AsyncListener> _asyncListeners;
     private List<ContinuationListener> _continuationListeners;
@@ -98,7 +98,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
-    protected void setConnection(final HttpConnection connection)
+    protected void setConnection(final AbstractHttpConnection connection)
     {
         synchronized(this)
         {
@@ -206,6 +206,26 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 case __ASYNCSTARTED:
                 case __REDISPATCHING:
                 case __COMPLETING:
+                case __ASYNCWAIT:
+                    return true;
+                    
+                default:
+                    return false;   
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* (non-Javadoc)
+     * @see javax.servlet.ServletRequest#isSuspended()
+     */
+    public boolean isSuspending()
+    {
+        synchronized(this)
+        {
+            switch(_state)
+            {
+                case __ASYNCSTARTED:
                 case __ASYNCWAIT:
                     return true;
                     
@@ -379,8 +399,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     {
                         _state=__UNCOMPLETED;
                         return true;
-                    }
-                    
+                    }         
                     _initial=false;
                     _state=__REDISPATCHED;
                     return false; 
@@ -496,7 +515,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 case __ASYNCWAIT:
                     if (_continuation) 
                         dispatch();
-                    else
+                   else
                         // TODO maybe error dispatch?
                         complete();
             }
@@ -659,7 +678,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
         EndPoint endp=_connection.getEndPoint();
         if (!endp.isBlocking())
         {
-            ((AsyncEndPoint)endp).dispatch();
+            ((AsyncEndPoint)endp).asyncDispatch();
         }
     }
 
@@ -696,7 +715,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             }
             else
             {
-                _connection.scheduleTimeout(_event._timeout,_timeoutMs);
+                ((AsyncEndPoint)endp).scheduleTimeout(_event._timeout,_timeoutMs);
             }
         }
     }
@@ -717,7 +736,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             final AsyncEventState event=_event;
             if (event!=null)
-                _connection.cancelTimeout(event._timeout);
+            {
+                ((AsyncEndPoint)endp).cancelTimeout(event._timeout);
+            }
         }
     }
 

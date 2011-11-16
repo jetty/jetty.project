@@ -15,11 +15,9 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
-import org.eclipse.jetty.ajp.Ajp13SocketConnector;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Connector;
@@ -33,8 +31,8 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class LikeJettyXml
@@ -52,7 +50,7 @@ public class LikeJettyXml
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer);
-        mbContainer.addBean(Log.getLog());
+        mbContainer.addBean(Log.getRootLogger());
 
         
         // Setup Threadpool
@@ -88,18 +86,18 @@ public class LikeJettyXml
                     "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
-        cf.setProtocol("TLSv1.1");
-        cf.addExcludeProtocols(new String[]{"TLSv1","SSLv3"});
         ssl_connector.setStatsOn(true);
         server.addConnector(ssl_connector);
         ssl_connector.open();
-        
 
         
+        /*
         
         Ajp13SocketConnector ajp = new Ajp13SocketConnector();
         ajp.setPort(8009);
         server.addConnector(ajp);
+        
+        */
         
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -143,10 +141,9 @@ public class LikeJettyXml
         server.setStopAtShutdown(true);
         server.setSendServerVersion(true);
         
-        
+  
         server.start();
         
         server.join();
     }
-
 }

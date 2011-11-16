@@ -52,7 +52,7 @@ public class HttpWriterTest
             }
 
             @Override
-            public long flushBuffer() throws IOException
+            public int flushBuffer() throws IOException
             {
                 return 0;
             }
@@ -76,7 +76,7 @@ public class HttpWriterTest
 
         };
 
-        HttpConnection connection = new HttpConnection(null,endp,new Server(),null,generator,null)
+        AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,generator,null)
         {
             @Override
             public Connection handle() throws IOException
@@ -169,7 +169,7 @@ public class HttpWriterTest
 
         hb.setResponse(200,"OK");
 
-        HttpConnection connection = new HttpConnection(null,endp,new Server(),null,hb,null)
+        AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,hb,null)
         {
             @Override
             public Connection handle() throws IOException

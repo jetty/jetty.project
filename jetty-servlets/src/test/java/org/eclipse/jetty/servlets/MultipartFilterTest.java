@@ -15,6 +15,7 @@ package org.eclipse.jetty.servlets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -45,6 +46,7 @@ public class MultipartFilterTest
     private File _dir;
     private ServletTester tester;
 
+  
     @Before
     public void setUp() throws Exception
     {
@@ -100,6 +102,7 @@ public class MultipartFilterTest
         assertTrue(response.getMethod()==null);
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
     }
+    
 
     @Test
     public void testPost() throws Exception
@@ -131,6 +134,7 @@ public class MultipartFilterTest
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
+  
 
     @Test
     public void testEncodedPost() throws Exception

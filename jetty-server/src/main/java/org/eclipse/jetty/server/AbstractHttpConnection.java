@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
+// Copyright (c) 2004-2011 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
-import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.EncodedHttpURI;
 import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpBuffers;
@@ -46,7 +45,7 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.UncheckedIOException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 import org.eclipse.jetty.server.nio.NIOConnector;
 import org.eclipse.jetty.server.ssl.SslConnector;
@@ -89,12 +88,12 @@ import org.eclipse.jetty.util.thread.Timeout;
  * </p>
  *
  */
-public abstract class HttpConnection  extends AbstractConnection
+public abstract class AbstractHttpConnection  extends AbstractConnection
 {
-    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+    private static final Logger LOG = Log.getLogger(AbstractHttpConnection.class);
 
     private static final int UNKNOWN = -2;
-    private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
+    private static final ThreadLocal<AbstractHttpConnection> __currentConnection = new ThreadLocal<AbstractHttpConnection>();
 
     private int _requests;
 
@@ -128,13 +127,13 @@ public abstract class HttpConnection  extends AbstractConnection
     private boolean  _delayedHandling=false;
 
     /* ------------------------------------------------------------ */
-    public static HttpConnection getCurrentConnection()
+    public static AbstractHttpConnection getCurrentConnection()
     {
         return __currentConnection.get();
     }
 
     /* ------------------------------------------------------------ */
-    protected static void setCurrentConnection(HttpConnection connection)
+    protected static void setCurrentConnection(AbstractHttpConnection connection)
     {
         __currentConnection.set(connection);
     }
@@ -143,7 +142,7 @@ public abstract class HttpConnection  extends AbstractConnection
     /** Constructor
      *
      */
-    public HttpConnection(Connector connector, EndPoint endpoint, Server server)
+    public AbstractHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(endpoint);
         _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
@@ -160,7 +159,7 @@ public abstract class HttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    protected HttpConnection(Connector connector, EndPoint endpoint, Server server,
+    protected AbstractHttpConnection(Connector connector, EndPoint endpoint, Server server,
             Parser parser, Generator generator, Request request)
     {
         super(endpoint);
@@ -327,7 +326,7 @@ public abstract class HttpConnection  extends AbstractConnection
         }
 
         if (_in == null)
-            _in = new HttpInput(HttpConnection.this);
+            _in = new HttpInput(AbstractHttpConnection.this);
         return _in;
     }
 
@@ -366,30 +365,34 @@ public abstract class HttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    public void scheduleTimeout(Timeout.Task task, long timeoutMs)
+    /**
+     * @deprecated
+     */
+    public final void scheduleTimeout(Timeout.Task task, long timeoutMs)
     {
         throw new UnsupportedOperationException();
     }
 
     /* ------------------------------------------------------------ */
-    public void cancelTimeout(Timeout.Task task)
+    /**
+     * @deprecated
+     */
+    public final void cancelTimeout(Timeout.Task task)
     {
         throw new UnsupportedOperationException();
     }
 
     /* ------------------------------------------------------------ */
-    public void reset(boolean returnBuffers)
+    public void reset()
     {
         _parser.reset(); 
-        if (returnBuffers)
-            _parser.returnBuffers();
+        _parser.returnBuffers(); // TODO maybe only on unhandle
         _requestFields.clear();
         _request.recycle();
-
-        _generator.reset(returnBuffers); // TODO maybe only release when low on resources
+        _generator.reset(); 
+        _generator.returnBuffers();// TODO maybe only on unhandle
         _responseFields.clear();
         _response.recycle();
-
         _uri.clear();
     }
 
@@ -458,7 +461,7 @@ public abstract class HttpConnection  extends AbstractConnection
                     error=true;
                     _request.setHandled(true);
                 }
-                catch (UncheckedIOException e)
+                catch (RuntimeIOException e)
                 {
                     async_exception=e;
                     LOG.debug(e);
@@ -472,11 +475,12 @@ public abstract class HttpConnection  extends AbstractConnection
                     _request.setHandled(true);
                     _response.sendError(e.getStatus(), e.getReason());
                 }
+                catch (ThreadDeath e)
+                {
+                    throw e;
+                }
                 catch (Throwable e)
                 {
-                    if (e instanceof ThreadDeath)
-                        throw (ThreadDeath)e;
-
                     async_exception=e;
                     LOG.warn(String.valueOf(_uri),e);
                     error=true;
@@ -565,7 +569,7 @@ public abstract class HttpConnection  extends AbstractConnection
                 LOG.warn("header full: "+e);
 
                 _response.reset();
-                _generator.reset(true);
+                _generator.reset();
                 _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
                 _generator.completeHeader(_responseFields,Generator.LAST);
                 _generator.complete();
@@ -597,7 +601,7 @@ public abstract class HttpConnection  extends AbstractConnection
                 LOG.debug(e);
 
                 _response.reset();
-                _generator.reset(true);
+                _generator.reset();
                 _generator.setResponse(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
                 _generator.completeHeader(_responseFields,Generator.LAST);
                 _generator.complete();
@@ -664,7 +668,7 @@ public abstract class HttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         LOG.debug("closed {}",this);
     }
@@ -689,6 +693,12 @@ public abstract class HttpConnection  extends AbstractConnection
         if (_endp.getMaxIdleTime()>0)
             return _endp.getMaxIdleTime();
         return _connector.getMaxIdleTime();
+    }
+
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return super.toString()+" "+_parser+" "+_generator+" "+_requests;
     }
 
     /* ------------------------------------------------------------ */
@@ -730,7 +740,8 @@ public abstract class HttpConnection  extends AbstractConnection
 
                   case HttpMethods.HEAD_ORDINAL:
                       _head=true;
-                      // fall through
+                      _uri.parse(uri.array(), uri.getIndex(), uri.length());
+                      break;
 
                   default:
                       _uri.parse(uri.array(), uri.getIndex(), uri.length());
@@ -822,46 +833,6 @@ public abstract class HttpConnection  extends AbstractConnection
                     value = MimeTypes.CACHE.lookup(value);
                     _charset=MimeTypes.getCharsetFromContentType(value);
                     break;
-
-                case HttpHeaders.CONNECTION_ORDINAL:
-                    //looks rather clumsy, but the idea is to optimize for a single valued header
-                    switch(HttpHeaderValues.CACHE.getOrdinal(value))
-                    {
-                        case -1:
-                        {
-                            String[] values = value.toString().split(",");
-                            for  (int i=0;values!=null && i<values.length;i++)
-                            {
-                                CachedBuffer cb = HttpHeaderValues.CACHE.get(values[i].trim());
-
-                                if (cb!=null)
-                                {
-                                    switch(cb.getOrdinal())
-                                    {
-                                        case HttpHeaderValues.CLOSE_ORDINAL:
-                                            _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
-                                            _generator.setPersistent(false);
-                                            break;
-
-                                        case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
-                                            if (_version==HttpVersions.HTTP_1_0_ORDINAL)
-                                                _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
-                                            break;
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                        case HttpHeaderValues.CLOSE_ORDINAL:
-                            _responseFields.put(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
-                            _generator.setPersistent(false);
-                            break;
-
-                        case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
-                            if (_version==HttpVersions.HTTP_1_0_ORDINAL)
-                                _responseFields.put(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
-                            break;
-                    }
             }
 
             _requestFields.add(name, value);
@@ -883,19 +854,35 @@ public abstract class HttpConnection  extends AbstractConnection
                     break;
                 case HttpVersions.HTTP_1_0_ORDINAL:
                     _generator.setHead(_head);
-
+                    if (_parser.isPersistent())
+                    {
+                        _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
+                        _generator.setPersistent(true);
+                    }
+                    else if (HttpMethods.CONNECT.equals(_request.getMethod()))
+                    {
+                        _generator.setPersistent(true);
+                        _parser.setPersistent(true);
+                    }
+                    
                     if (_server.getSendDateHeader())
                         _generator.setDate(_request.getTimeStampBuffer());
-
                     break;
+                    
                 case HttpVersions.HTTP_1_1_ORDINAL:
                     _generator.setHead(_head);
 
+                    if (!_parser.isPersistent())
+                    {
+                        _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
+                        _generator.setPersistent(false);
+                    }
                     if (_server.getSendDateHeader())
                         _generator.setDate(_request.getTimeStampBuffer());
 
                     if (!_host)
                     {
+                        LOG.debug("!host {}",this);
                         _generator.setResponse(HttpStatus.BAD_REQUEST_400, null);
                         _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
                         _generator.completeHeader(_responseFields, true);
@@ -905,6 +892,7 @@ public abstract class HttpConnection  extends AbstractConnection
 
                     if (_expect)
                     {
+                        LOG.debug("!expectation {}",this);
                         _generator.setResponse(HttpStatus.EXPECTATION_FAILED_417, null);
                         _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
                         _generator.completeHeader(_responseFields, true);
@@ -971,6 +959,7 @@ public abstract class HttpConnection  extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("Bad request!: "+version+" "+status+" "+reason);
         }
+        
     }
 
 
@@ -981,7 +970,7 @@ public abstract class HttpConnection  extends AbstractConnection
     {
         Output()
         {
-            super(HttpConnection.this);
+            super(AbstractHttpConnection.this);
         }
 
         /* ------------------------------------------------------------ */
@@ -1151,7 +1140,7 @@ public abstract class HttpConnection  extends AbstractConnection
     {
         OutputWriter()
         {
-            super(HttpConnection.this._out);
+            super(AbstractHttpConnection.this._out);
         }
     }
 

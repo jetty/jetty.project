@@ -133,9 +133,9 @@ public class Ajp13Generator extends AbstractGenerator
 
     /* ------------------------------------------------------------ */
     @Override
-    public void reset(boolean returnBuffers)
+    public void reset()
     {
-        super.reset(returnBuffers);
+        super.reset();
 
         _needEOC = false;
         _needMore = false;
@@ -487,7 +487,7 @@ public class Ajp13Generator extends AbstractGenerator
 
     /* ------------------------------------------------------------ */
     @Override
-    public long flushBuffer() throws IOException
+    public int flushBuffer() throws IOException
     {
         try
         {
@@ -819,7 +819,7 @@ public class Ajp13Generator extends AbstractGenerator
         while (buff.length() > 0);
         _buffers.returnBuffer(buff);
 
-        reset(true);
+        reset();
 
     }
 

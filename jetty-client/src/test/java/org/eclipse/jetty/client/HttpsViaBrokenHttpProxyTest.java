@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ConnectHandler;
@@ -68,7 +68,16 @@ public class HttpsViaBrokenHttpProxyTest
     @Test
     public void httpsViaProxyThatClosesConnectionOnConnectRequestTest() throws Exception
     {
-        sendRequestThroughProxy(new ContentExchange(), "close", 9);
+        sendRequestThroughProxy(new ContentExchange()
+        {
+
+            @Override
+            protected void onException(Throwable x)
+            {
+                
+            }
+            
+        }, "close", 9);
     }
 
     @Test
@@ -110,7 +119,7 @@ public class HttpsViaBrokenHttpProxyTest
         {
             if (serverAddress.contains("close"))
             {
-                HttpConnection.getCurrentConnection().getEndPoint().close();
+                AbstractHttpConnection.getCurrentConnection().getEndPoint().close();
             }
             else if (serverAddress.contains("error500"))
             {

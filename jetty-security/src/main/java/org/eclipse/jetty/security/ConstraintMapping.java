@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.security;
 
-import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.util.security.Constraint;
 
 public class ConstraintMapping
 {

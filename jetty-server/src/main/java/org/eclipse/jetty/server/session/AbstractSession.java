@@ -457,7 +457,10 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     /* ------------------------------------------------------------- */
     protected void cookieSet()
     {
-        _cookieSet=_accessed;
+        synchronized (this)
+        {
+            _cookieSet=_accessed;
+        }
     }
 
     /* ------------------------------------------------------------ */

@@ -14,6 +14,9 @@ package org.eclipse.jetty.server.handler;
 
 import java.net.URI;
 
+import junit.framework.Assert;
+import junit.framework.TestCase;
+
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
@@ -22,9 +25,6 @@ import org.eclipse.jetty.toolchain.test.SimpleRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import junit.framework.Assert;
-import junit.framework.TestCase;
 
 /**
  * Resource Handler test

@@ -40,7 +40,6 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.BufferDateCache;
 import org.eclipse.jetty.io.BufferUtil;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;

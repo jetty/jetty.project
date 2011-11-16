@@ -18,6 +18,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -203,6 +204,12 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public void onInputShutdown() throws IOException
+    {
+        // TODO
+    }
+
+    /* ------------------------------------------------------------ */
     private void doTheHixieHixieShake()
     {
         byte[] result=WebSocketConnectionD00.doTheHixieHixieShake(
@@ -232,7 +239,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         _websocket.onClose(WebSocketConnectionD06.CLOSE_NORMAL,"");
     }
@@ -289,6 +296,12 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     public void disconnect()
+    {
+        close();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void close()
     {
         try
         {

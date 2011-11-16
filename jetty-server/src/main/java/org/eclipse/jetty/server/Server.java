@@ -334,7 +334,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handle(HttpConnection connection) throws IOException, ServletException
+    public void handle(AbstractHttpConnection connection) throws IOException, ServletException
     {
         final String target=connection.getRequest().getPathInfo();
         final Request request=connection.getRequest();
@@ -356,7 +356,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handleAsync(HttpConnection connection) throws IOException, ServletException
+    public void handleAsync(AbstractHttpConnection connection) throws IOException, ServletException
     {
         final AsyncContinuation async = connection.getRequest().getAsyncContinuation();
         final AsyncContinuation.AsyncEventState state = async.getAsyncEventState();

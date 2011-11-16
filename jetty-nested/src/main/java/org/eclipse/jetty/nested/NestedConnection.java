@@ -25,9 +25,10 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 
 
-public class NestedConnection extends HttpConnection
+public class NestedConnection extends AbstractHttpConnection
 {
     protected NestedConnection(final NestedConnector connector, final NestedEndPoint endp, final HttpServletRequest outerRequest, HttpServletResponse outerResponse,String nestedIn)
         throws IOException

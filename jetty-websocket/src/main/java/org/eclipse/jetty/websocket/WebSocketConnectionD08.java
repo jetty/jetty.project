@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -258,6 +259,12 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public void onInputShutdown() throws IOException
+    {
+        // TODO
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return _parser.isBufferEmpty() && _outbound.isBufferEmpty();
@@ -265,7 +272,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void idleExpired()
+    public void onIdleExpired()
     {
         long idle = System.currentTimeMillis()-((SelectChannelEndPoint)_endp).getIdleTimestamp();
         closeOut(WebSocketConnectionD08.CLOSE_NORMAL,"Idle for "+idle+"ms > "+_endp.getMaxIdleTime()+"ms");
@@ -278,7 +285,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         final boolean closed;
         synchronized (this)
@@ -578,9 +585,15 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         {
             return opcode==OP_PONG;
         }
-
+        
         /* ------------------------------------------------------------ */
         public void disconnect()
+        {
+            close();
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void close()
         {
             close(CLOSE_NORMAL,null);
         }

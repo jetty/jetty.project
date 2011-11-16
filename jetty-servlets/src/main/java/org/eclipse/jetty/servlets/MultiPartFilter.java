@@ -69,6 +69,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class MultiPartFilter implements Filter
 {
+    public final static String CONTENT_TYPE_SUFFIX=".org.eclipse.jetty.servlet.contentType";
     private final static String FILES ="org.eclipse.jetty.servlet.MultiPartFilter.files";
     private File tempdir;
     private boolean _deleteFiles;

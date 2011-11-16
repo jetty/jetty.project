@@ -37,7 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.TestCase;
 
-import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -48,7 +48,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
  */
 public class SSLCloseTest extends TestCase
 {
-    private static SslSelectChannelEndPoint __endp;
+    private static AsyncEndPoint __endp;
     private static class CredulousTM implements TrustManager, X509TrustManager
     {
         public X509Certificate[] getAcceptedIssuers()
@@ -85,9 +85,9 @@ public class SSLCloseTest extends TestCase
         String keystore = System.getProperty("user.dir")+File.separator+"src"+File.separator+"test"+File.separator+"resources"+File.separator+"keystore";
         
         connector.setPort(0);
-        connector.setKeystore(keystore);
-        connector.setPassword("storepwd");
-        connector.setKeyPassword("keypwd");
+        connector.getSslContextFactory().setKeyStorePath(keystore);
+        connector.getSslContextFactory().setKeyStorePassword("storepwd");
+        connector.getSslContextFactory().setKeyManagerPassword("keypwd");
 
         server.setConnectors(new Connector[]
         { connector });
@@ -136,7 +136,7 @@ public class SSLCloseTest extends TestCase
                 baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setHeader("test","value");
-                __endp=(SslSelectChannelEndPoint)baseRequest.getConnection().getEndPoint();
+                __endp=(AsyncEndPoint)baseRequest.getConnection().getEndPoint();
                 
                 OutputStream out=response.getOutputStream();
 

@@ -11,17 +11,17 @@ public abstract class AbstractConnection implements Connection
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
     private final long _timeStamp;
-    protected final EndPoint _endp;
+    protected final EndPoint _endp; 
 
     public AbstractConnection(EndPoint endp)
     {
-        _endp=endp;
+        _endp=(EndPoint)endp;
         _timeStamp = System.currentTimeMillis();
     }
     
     public AbstractConnection(EndPoint endp,long timestamp)
     {
-        _endp=endp;
+        _endp=(EndPoint)endp;
         _timeStamp = timestamp;
     }
 
@@ -35,7 +35,7 @@ public abstract class AbstractConnection implements Connection
         return _endp;
     }
 
-    public void idleExpired()
+    public void onIdleExpired()
     {
         try
         {
@@ -59,6 +59,6 @@ public abstract class AbstractConnection implements Connection
     
     public String toString()
     {
-        return super.toString()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
+        return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
     }
 }

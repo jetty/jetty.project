@@ -29,7 +29,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.server.BlockingHttpConnection;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.log.Log;
@@ -208,7 +207,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
         {
             try
             {
-                close();
+                super.close();
             }
             catch (IOException e)
             {
@@ -222,7 +221,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             if (!getThreadPool().dispatch(this))
             {
                 LOG.warn("dispatch failed for  {}",_connection);
-                BlockingChannelEndPoint.this.close();
+                super.close();
             }
         }
         
@@ -303,13 +302,17 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             catch (HttpException e)
             {
                 LOG.debug("BAD", e);
-                try{BlockingChannelEndPoint.this.close();}
+                try{super.close();}
                 catch(IOException e2){LOG.ignore(e2);}
+            }
+            catch(ThreadDeath e)
+            {
+                throw e;
             }
             catch(Throwable e)
             {
                 LOG.warn("handle failed",e);
-                try{BlockingChannelEndPoint.this.close();}
+                try{super.close();}
                 catch(IOException e2){LOG.ignore(e2);}
             }
             finally

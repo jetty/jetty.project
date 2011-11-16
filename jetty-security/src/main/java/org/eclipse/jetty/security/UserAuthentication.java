@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.security;
 
-import java.io.Serializable;
-
-import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.UserIdentity.Scope;

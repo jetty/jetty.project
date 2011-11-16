@@ -358,7 +358,11 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     public void join() throws InterruptedException
     {
-        Thread[] threads = _acceptorThread;
+        Thread[] threads;
+        synchronized(this)
+        {
+            threads= _acceptorThread;
+        }
         if (threads != null)
             for (int i = 0; i < threads.length; i++)
                 if (threads[i] != null)
@@ -1040,19 +1044,19 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
     {
-        _requestStats.set((oldConnection instanceof HttpConnection)?((HttpConnection)oldConnection).getRequests():0);
+        _requestStats.set((oldConnection instanceof AbstractHttpConnection)?((AbstractHttpConnection)oldConnection).getRequests():0);
     }
 
     /* ------------------------------------------------------------ */
     protected void connectionClosed(Connection connection)
     {
-        connection.closed();
+        connection.onClose();
 
         if (_statsStartedAt.get() == -1)
             return;
 
         long duration = System.currentTimeMillis() - connection.getTimeStamp();
-        int requests = (connection instanceof HttpConnection)?((HttpConnection)connection).getRequests():0;
+        int requests = (connection instanceof AbstractHttpConnection)?((AbstractHttpConnection)connection).getRequests():0;
         _requestStats.set(requests);
         _connectionStats.decrement();
         _connectionDurationStats.set(duration);

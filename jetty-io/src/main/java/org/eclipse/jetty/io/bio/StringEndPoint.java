@@ -53,6 +53,8 @@ public class StringEndPoint extends StreamEndPoint
             _in=_bin;
             _bout = new ByteArrayOutputStream();
             _out=_bout;
+            _ishut=false;
+            _oshut=false;
         }
         catch(Exception e)
         {

@@ -102,29 +102,77 @@ public class ChannelEndPoint implements EndPoint
         return _channel.isOpen();
     }
 
+    /** Shutdown the channel Input.
+     * Cannot be overridden. To override, see {@link #shutdownInput()}
+     * @throws IOException
+     */
+    protected final void shutdownChannelInput() throws IOException
+    {
+        LOG.debug("ishut {}",this);
+        if (_channel.isOpen())
+        {
+            if (_channel instanceof SocketChannel)
+            {
+                Socket socket= ((SocketChannel)_channel).socket();
+                try
+                {
+                    if (!socket.isInputShutdown())
+                        socket.shutdownInput();
+                }
+                catch(SocketException e)
+                {
+                    LOG.debug(e.toString());
+                    LOG.ignore(e);
+                    if (!socket.isClosed())
+                        close();
+                }
+                finally
+                {
+                    if(socket.isOutputShutdown() && !socket.isClosed())
+                        close();
+                }
+            }
+            else
+                close();
+        }
+    }
+
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
     public void shutdownInput() throws IOException
     {
-        if (_channel.isOpen() && _channel instanceof SocketChannel)
-        {
-            Socket socket= ((SocketChannel)_channel).socket();
-            if (!socket.isClosed())
-            {
+        shutdownChannelInput();
+    }
 
+    protected final void shutdownChannelOutput() throws IOException
+    {
+        LOG.debug("oshut {}",this);
+        if (_channel.isOpen())
+        {
+            if (_channel instanceof SocketChannel)
+            {
+                Socket socket= ((SocketChannel)_channel).socket();
                 try
                 {
-                    if (!socket.isInputShutdown())
-                        socket.shutdownInput();
-                    if (socket.isOutputShutdown())
-                        socket.close();
+                    if (!socket.isOutputShutdown())
+                        socket.shutdownOutput();
                 }
-                catch (SocketException e)
+                catch(SocketException e)
                 {
-                    LOG.ignore(e);
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
+                    if (!socket.isClosed())
+                        close();
+                }
+                finally
+                {
+                    if (socket.isInputShutdown() && !socket.isClosed())
+                        close();
                 }
             }
+            else
+                close();
         }
     }
 
@@ -133,34 +181,17 @@ public class ChannelEndPoint implements EndPoint
      */
     public void shutdownOutput() throws IOException
     {
-        if (_channel.isOpen() && _channel instanceof SocketChannel)
-        {
-            Socket socket= ((SocketChannel)_channel).socket();
-            if (!socket.isClosed())
-            {
-                try
-                {
-                    if (!socket.isOutputShutdown())
-                        socket.shutdownOutput();
-                    if (socket.isInputShutdown())
-                        socket.close();
-                }
-                catch (SocketException e)
-                {
-                    LOG.ignore(e);
-                }
-            }
-        }
+        shutdownChannelOutput();
     }
 
     public boolean isOutputShutdown()
     {
-        return _channel.isOpen() && _socket!=null && _socket.isOutputShutdown();
+        return !_channel.isOpen() || _socket!=null && _socket.isOutputShutdown();
     }
 
     public boolean isInputShutdown()
     {
-        return _channel.isOpen() && _socket!=null && _socket.isInputShutdown();
+        return !_channel.isOpen() || _socket!=null && _socket.isInputShutdown();
     }
 
     /* (non-Javadoc)
@@ -168,6 +199,7 @@ public class ChannelEndPoint implements EndPoint
      */
     public void close() throws IOException
     {
+        LOG.debug("close {}",this);
         _channel.close();
     }
 
@@ -204,18 +236,20 @@ public class ChannelEndPoint implements EndPoint
                 {
                     if (!isInputShutdown())
                         shutdownInput();
-                    else if (isOutputShutdown())
+                    if (isOutputShutdown())
                         _channel.close();
                 }
             }
             catch (IOException x)
             {
-                LOG.debug(x);
+                LOG.debug(x.toString());
+                LOG.ignore(x);
                 try
                 {
-                    close();
+                    if (_channel.isOpen())
+                        _channel.close();
                 }
-                catch (IOException xx)
+                catch (Exception xx)
                 {
                     LOG.ignore(xx);
                 }
@@ -301,20 +335,6 @@ public class ChannelEndPoint implements EndPoint
         }
         else
         {
-            if (header!=null)
-            {
-                if (buffer!=null && buffer.length()>0 && header.space()>buffer.length())
-                {
-                    header.put(buffer);
-                    buffer.clear();
-                }
-                if (trailer!=null && trailer.length()>0 && header.space()>trailer.length())
-                {
-                    header.put(trailer);
-                    trailer.clear();
-                }
-            }
-
             // flush header
             if (header!=null && header.length()>0)
                 length=flush(header);
@@ -330,7 +350,7 @@ public class ChannelEndPoint implements EndPoint
                  trailer!=null && trailer.length()>0)
                 length+=flush(trailer);
         }
-
+        
         return length;
     }
 
@@ -490,24 +510,6 @@ public class ChannelEndPoint implements EndPoint
     public void flush()
         throws IOException
     {
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingInput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingOutput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferred()
-    {
-        return false;
     }
 
     /* ------------------------------------------------------------ */

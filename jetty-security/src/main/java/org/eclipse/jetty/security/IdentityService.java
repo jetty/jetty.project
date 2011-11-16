@@ -14,9 +14,9 @@
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
+
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 

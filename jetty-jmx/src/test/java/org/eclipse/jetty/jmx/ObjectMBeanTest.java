@@ -13,10 +13,11 @@
 
 package org.eclipse.jetty.jmx;
 
-import com.acme.Derived;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
+import com.acme.Derived;
 
 public class ObjectMBeanTest
 {

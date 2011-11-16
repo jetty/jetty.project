@@ -1,9 +1,11 @@
 package org.eclipse.jetty.servlets;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -20,9 +22,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -177,7 +176,7 @@ public abstract class AbstractDoSFilterTest
                 {
                     // Cause a delay, then sleep while holding pass
                     String request="GET /ctx/dos/sleeper HTTP/1.1\r\nHost: localhost\r\n\r\n";
-                    String last="GET /ctx/dos/sleeper?sleep=3000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
+                    String last="GET /ctx/dos/sleeper?sleep=2000 HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
                     String responses = doRequests(request+request+request+request,1,0,0,last);
                 }
                 catch(Exception e)
@@ -192,7 +191,7 @@ public abstract class AbstractDoSFilterTest
         String request="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\n\r\n";
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
-        //System.out.println("responses are " + responses);
+        System.out.println("responses are " + responses);
         assertEquals("200 OK responses", 5,count(responses,"HTTP/1.1 200 OK"));
         assertEquals("delayed responses", 1,count(responses,"DoSFilter: delayed"));
         assertEquals("throttled responses", 1,count(responses,"DoSFilter: throttled"));
@@ -228,6 +227,8 @@ public abstract class AbstractDoSFilterTest
         String last="GET /ctx/dos/test HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
         String responses = doRequests(request+request+request+request,1,0,0,last);
 
+        System.err.println("RESPONSES: \n"+responses);
+        
         assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
         assertEquals(1,count(responses,"HTTP/1.1 503"));
         assertEquals(1,count(responses,"DoSFilter: delayed"));

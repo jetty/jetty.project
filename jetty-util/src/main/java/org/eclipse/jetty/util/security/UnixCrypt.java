@@ -21,7 +21,7 @@
  * by Iris Van den Broeke, Daniel Deville
  */
 
-package org.eclipse.jetty.http.security;
+package org.eclipse.jetty.util.security;
 
 
 /* ------------------------------------------------------------ */

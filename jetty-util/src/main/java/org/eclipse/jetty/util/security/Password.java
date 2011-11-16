@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.http.security;
+package org.eclipse.jetty.util.security;
 
 import java.io.IOException;
 import java.util.Arrays;

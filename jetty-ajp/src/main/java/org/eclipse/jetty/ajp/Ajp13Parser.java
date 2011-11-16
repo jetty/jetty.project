@@ -148,21 +148,16 @@ public class Ajp13Parser implements Parser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public int parseAvailable() throws IOException
+    public boolean parseAvailable() throws IOException
     {
-        int len = parseNext();
-        int total = len > 0 ? len : 0;
-
+        boolean progress=parseNext()>0;
+        
         // continue parsing
-        while (!isComplete() && _buffer != null && _buffer.length() > 0)
+        while (!isComplete() && _buffer!=null && _buffer.length()>0)
         {
-            len = parseNext();
-            if (len > 0)
-                total += len;
-            else
-                break;
+            progress |= parseNext()>0;
         }
-        return total;
+        return progress;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -876,6 +871,15 @@ public class Ajp13Parser implements Parser
 
             return _content.length() > 0;
         }
+    }
 
+    public boolean isPersistent()
+    {
+        return true;
+    }
+
+    public void setPersistent(boolean persistent)
+    {
+        LOG.warn("AJP13.setPersistent is not IMPLEMENTED!");
     }
 }

@@ -107,7 +107,7 @@ public class UncheckedPrintWriter extends PrintWriter
     {
         setError();
         if (_throwUnchecked)
-            throw new UncheckedIOException(th);
+            throw new RuntimeIOException(th);
         LOG.debug(th);
     }
 

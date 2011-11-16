@@ -18,7 +18,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -37,7 +37,7 @@ public class CloseableDoSFilter extends DoSFilter
     {
         try
         {
-            Request base_request=(request instanceof Request)?(Request)request:HttpConnection.getCurrentConnection().getRequest();
+            Request base_request=(request instanceof Request)?(Request)request:AbstractHttpConnection.getCurrentConnection().getRequest();
             base_request.getConnection().getEndPoint().close();
         }
         catch(IOException e)

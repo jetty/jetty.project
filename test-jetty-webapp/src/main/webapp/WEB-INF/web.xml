@@ -39,7 +39,7 @@
     <async-support>true</async-support>
     <init-param>
       <param-name>maxRequests</param-name>
-      <param-value>20</param-value>
+      <param-value>10000</param-value>
     </init-param>
     <init-param>
       <param-name>managedAttr</param-name>
