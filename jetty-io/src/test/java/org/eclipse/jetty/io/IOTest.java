@@ -139,7 +139,7 @@ public class IOTest
         ServerSocketChannel connector = ServerSocketChannel.open();
         connector.socket().bind(null);
         
-        Socket client = new Socket("localhost",connector.socket().getLocalPort());
+        Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket();
         client.setSoTimeout(1000);
         client.setSoLinger(false,-1);
         Socket server = connector.accept().socket();
