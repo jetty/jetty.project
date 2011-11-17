@@ -31,16 +31,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AsyncContextTest
+public class LocalAsyncContextTest
 {
     protected Server _server = new Server();
     protected SuspendHandler _handler = new SuspendHandler();
-    protected LocalConnector _connector;
+    protected Connector _connector;
 
     @Before
     public void init() throws Exception
     {
-        _connector = new LocalConnector();
+        _connector = initConnector();
         _server.setConnectors(new Connector[]{ _connector });
 
         SessionHandler session = new SessionHandler();
@@ -48,6 +48,11 @@ public class AsyncContextTest
 
         _server.setHandler(session);
         _server.start();
+    }
+    
+    protected Connector initConnector()
+    {
+        return new LocalConnector();
     }
 
     @After
@@ -129,14 +134,21 @@ public class AsyncContextTest
 
     private synchronized String process(String content) throws Exception
     {
-        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n";
+        String request = "GET / HTTP/1.1\r\n" + 
+        "Host: localhost\r\n"+
+        "Connection: close\r\n";
 
         if (content==null)
             request+="\r\n";
         else
-            request+="Content-Length: "+content.length()+"\r\n" + "\r\n" + content;
+            request+="Content-Length: "+content.length()+"\r\n" +"\r\n" + content;
 
-        return _connector.getResponses(request);
+        return getResponse(request);
+    }
+    
+    protected String getResponse(String request) throws Exception
+    {
+        return ((LocalConnector)_connector).getResponses(request);
     }
 
     private static class SuspendHandler extends HandlerWrapper
