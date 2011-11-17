@@ -31,14 +31,11 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.AsyncHttpConnection;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------------------------- */
 /**
@@ -97,7 +94,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         {
             server = _acceptChannel;
         }
-        
+
         if (server!=null && server.isOpen() && _manager.isStarted())
         {
             SocketChannel channel = server.accept();
@@ -144,7 +141,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     {
         return _manager;
     }
-    
+
     /* ------------------------------------------------------------ */
     public synchronized Object getConnection()
     {
@@ -297,7 +294,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------------------------- */
     protected AsyncConnection newConnection(SocketChannel channel,final AsyncEndPoint endpoint)
     {
-        return new SelectChannelHttpConnection(SelectChannelConnector.this,endpoint,getServer());
+        return new AsyncHttpConnection(SelectChannelConnector.this,endpoint,getServer());
     }
 
     /* ------------------------------------------------------------ */
@@ -310,24 +307,9 @@ public class SelectChannelConnector extends AbstractNIOConnector
             channel=_acceptChannel;
         }
         if (channel==null)
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{null,"CLOSED",_manager}));
+            AggregateLifeCycle.dump(out,indent,Arrays.asList(null,"CLOSED",_manager));
         else
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{channel,channel.isOpen()?"OPEN":"CLOSED",_manager}));
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class SelectChannelHttpConnection extends AsyncHttpConnection
-    {
-        private final AsyncEndPoint _endpoint;
-
-        private SelectChannelHttpConnection(Connector connector, EndPoint endpoint, Server server)
-        {
-            super(connector,endpoint,server);
-            _endpoint=null;
-        }
-
+            AggregateLifeCycle.dump(out,indent,Arrays.asList(channel,channel.isOpen()?"OPEN":"CLOSED",_manager));
     }
 
     /* ------------------------------------------------------------ */
