@@ -444,7 +444,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 // Stopped concurrently ?
                 if (selector == null)
                     return;
-
+                
                 // Make any key changes required
                 Object change;
                 int changes=_changes.size();
@@ -585,15 +585,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                     // Log and dump some status
                                     _paused=true;
                                     LOG.warn("Selector {} is too busy, pausing!",this);
-                                    final SelectSet set = this;
-                                    SelectorManager.this.dispatch(
-                                    new Runnable(){
-                                        public void run()
-                                        {
-                                            System.err.println(set+":\n"+set.dump());
-                                        }
-                                        public String toString() {return "Dump-"+super.toString();}
-                                    });
                                 }
                             }
                         }
@@ -990,6 +981,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 else
                     dumpto.add(key.attachment()+" - - ");
             }
+        }
+
+        /* ------------------------------------------------------------ */
+        public String toString()
+        {
+            String s=super.toString()+" "+SelectorManager.this.getState();
+            Selector selector=_selector;
+            if (selector!=null && selector.isOpen())
+                s+=",k="+selector.keys().size()+",s="+selector.selectedKeys().size();
+            return s;
         }
     }
 
