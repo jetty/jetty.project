@@ -22,6 +22,7 @@ public class Siege
         private final CountDownLatch _latch;
         volatile int _status;
         volatile int _count;
+        volatile long _bytes;
         final List<String> _uris;
         final int _repeats;
         int _u;
@@ -70,8 +71,17 @@ public class Siege
             {
                 _latch.countDown();
                 long duration=System.currentTimeMillis()-_start;
-                System.err.printf("Got %d/%d in %dms %d%n",_count,_uris.size()*_repeats,duration,_latch.getCount());
+                System.err.printf("Got %d/%d with %dB in %dms %d%n",_count,_uris.size()*_repeats,_bytes,duration,_latch.getCount());
             }
+        }
+        
+
+        /* ------------------------------------------------------------ */
+        @Override
+        protected void onResponseContent(Buffer content) throws IOException
+        {
+            _bytes+=content.length();
+            super.onResponseContent(content);
         }
 
         /* ------------------------------------------------------------ */

@@ -102,6 +102,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                         // Reset the parser/generator
                         progress=true;
                         reset();
+                        _endp.flush();
 
                         // look for a switched connection instance?
                         if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
@@ -114,7 +115,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                         // TODO Is this required?
                         if (!_generator.isPersistent() && !_endp.isOutputShutdown())
                         {
-                            System.err.println("Safety net oshut!!!");
+                            LOG.warn("Safety net oshut!!! Please open a bugzilla");
                             _endp.shutdownOutput();
                         }
                     }
