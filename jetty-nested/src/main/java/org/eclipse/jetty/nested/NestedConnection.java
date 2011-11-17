@@ -24,7 +24,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 
 
