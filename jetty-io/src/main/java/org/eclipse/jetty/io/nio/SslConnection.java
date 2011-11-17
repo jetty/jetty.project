@@ -657,14 +657,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
             while (now<end)
             {
-                process(null,null);
-                synchronized (SslConnection.this)
-                {
-                    if (_unwrapBuf!=null && _unwrapBuf.hasContent())
-                        break;
-                    if (_inbound!=null && _inbound.hasContent())
-                        break;
-                }
+                if (process(null,null))
+                    break;
                 _endp.blockReadable(end-now);
                 now = System.currentTimeMillis();
             }

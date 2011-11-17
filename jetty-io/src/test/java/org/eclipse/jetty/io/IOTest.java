@@ -23,6 +23,8 @@ import java.io.ByteArrayOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
@@ -51,14 +53,12 @@ public class IOTest
     }
     
     @Test
-    public void testHalfCloses() throws Exception
+    public void testHalfClose() throws Exception
     {
         ServerSocket connector = new ServerSocket(0);
         
         Socket client = new Socket("localhost",connector.getLocalPort());
-        System.err.println(client);
         Socket server = connector.accept();
-        System.err.println(server);
         
         // we can write both ways
         client.getOutputStream().write(1);
@@ -129,9 +129,73 @@ public class IOTest
         // which has to be closed explictly
         server.close();
         assertTrue(server.isClosed());
+            
+    }
+
+    
+    @Test
+    public void testHalfCloseClientServer() throws Exception
+    {
+        ServerSocketChannel connector = ServerSocketChannel.open();
+        connector.socket().bind(null);
         
+        Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket();
+        client.setSoTimeout(1000);
+        client.setSoLinger(false,-1);
+        Socket server = connector.accept().socket();
+        server.setSoTimeout(1000);
+        server.setSoLinger(false,-1);
         
+        // Write from client to server
+        client.getOutputStream().write(1);
         
+        // Server reads 
+        assertEquals(1,server.getInputStream().read());
+
+        // Write from server to client with oshut
+        server.getOutputStream().write(1);
+        System.err.println("OSHUT "+server);
+        server.shutdownOutput();
+
+        // Client reads response
+        assertEquals(1,client.getInputStream().read());
+
+        try
+        {
+            // Client reads -1 and does ishut
+            assertEquals(-1,client.getInputStream().read());
+            assertFalse(client.isInputShutdown());
+            System.err.println("ISHUT "+client);
+            client.shutdownInput();
+
+            // Client ???
+            System.err.println("OSHUT "+client);
+            client.shutdownOutput();
+            System.err.println("CLOSE "+client);
+            client.close();
+
+            // Server reads -1, does ishut and then close
+            assertEquals(-1,server.getInputStream().read());
+            assertFalse(server.isInputShutdown());
+            System.err.println("ISHUT "+server);
+
+            try
+            {
+                server.shutdownInput();
+            }
+            catch(SocketException e)
+            {
+                System.err.println(e);
+            }
+            System.err.println("CLOSE "+server);
+            server.close();
+
+        }
+        catch(Exception e)
+        {
+            // Dang OSX!
+            System.err.println(e);
+        }
     }
 
     @Test

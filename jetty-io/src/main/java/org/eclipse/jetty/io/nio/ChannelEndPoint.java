@@ -44,6 +44,7 @@ public class ChannelEndPoint implements EndPoint
     protected final InetSocketAddress _local;
     protected final InetSocketAddress _remote;
     protected int _maxIdleTime;
+    private boolean _ishut;
 
     public ChannelEndPoint(ByteChannel channel) throws IOException
     {
@@ -111,29 +112,31 @@ public class ChannelEndPoint implements EndPoint
         LOG.debug("ishut {}",this);
         if (_channel.isOpen())
         {
-            if (_channel instanceof SocketChannel)
+            if (_socket!=null)
             {
-                Socket socket= ((SocketChannel)_channel).socket();
                 try
                 {
-                    if (!socket.isInputShutdown())
-                        socket.shutdownInput();
+                    if (!_socket.isInputShutdown())
+                    {
+                        // System.err.println("ISHUT "+_socket);
+                        _socket.shutdownInput();
+                    }
                 }
                 catch(SocketException e)
-                {
+                {             
+                    // System.err.println(e);
                     LOG.debug(e.toString());
                     LOG.ignore(e);
-                    if (!socket.isClosed())
-                        close();
                 }
                 finally
                 {
-                    if(socket.isOutputShutdown() && !socket.isClosed())
+                    _ishut=true;
+                    if(_socket.isOutputShutdown() && !_socket.isClosed())
                         close();
                 }
             }
             else
-                close();
+                _ishut=true;
         }
     }
 
@@ -150,24 +153,26 @@ public class ChannelEndPoint implements EndPoint
         LOG.debug("oshut {}",this);
         if (_channel.isOpen())
         {
-            if (_channel instanceof SocketChannel)
+            if (_socket!=null)
             {
-                Socket socket= ((SocketChannel)_channel).socket();
                 try
                 {
-                    if (!socket.isOutputShutdown())
-                        socket.shutdownOutput();
+                    if (!_socket.isOutputShutdown())
+                    {
+                        // System.err.println("OSHUT "+_socket);
+                        _socket.shutdownOutput();
+                    }
                 }
                 catch(SocketException e)
                 {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
-                    if (!socket.isClosed())
+                    LOG.debug(e.toString());
+                    LOG.ignore(e);
+                    if (!_socket.isClosed())
                         close();
                 }
                 finally
                 {
-                    if (socket.isInputShutdown() && !socket.isClosed())
+                    if ((_ishut||_socket.isInputShutdown()) && !_socket.isClosed())
                         close();
                 }
             }
@@ -191,7 +196,7 @@ public class ChannelEndPoint implements EndPoint
 
     public boolean isInputShutdown()
     {
-        return !_channel.isOpen() || _socket!=null && _socket.isInputShutdown();
+        return !_channel.isOpen() || _ishut || _socket!=null && _socket.isInputShutdown();
     }
 
     /* (non-Javadoc)
@@ -200,6 +205,8 @@ public class ChannelEndPoint implements EndPoint
     public void close() throws IOException
     {
         LOG.debug("close {}",this);
+
+        // System.err.println("CLOSE "+_socket);
         _channel.close();
     }
 
@@ -208,6 +215,8 @@ public class ChannelEndPoint implements EndPoint
      */
     public int fill(Buffer buffer) throws IOException
     {
+        if (_ishut)
+            return -1;
         Buffer buf = buffer.buffer();
         int len=0;
         if (buf instanceof NIOBuffer)

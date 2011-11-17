@@ -154,12 +154,12 @@ public class SelectChannelEndPointTest
 
         public void onClose()
         {
-            System.err.println("onClose");
+            // System.err.println("onClose");
         }
 
         public void onInputShutdown() throws IOException
         {
-            System.err.println("onInputShutdown");
+            // System.err.println("onInputShutdown");
         }
 
     }
@@ -209,8 +209,14 @@ public class SelectChannelEndPointTest
             assertTrue(b>0);
             assertEquals(c,(char)b);
         }
-
         client.close();
+        
+        int i=0;
+        while (server.isOpen())
+        {
+            assert(i++<10);
+            Thread.sleep(10);
+        }
 
     }
 
@@ -283,7 +289,7 @@ public class SelectChannelEndPointTest
         OutputStream clientOutputStream = client.getOutputStream();
         InputStream clientInputStream = client.getInputStream();
 
-        int specifiedTimeout = 200;
+        int specifiedTimeout = 400;
         client.setSoTimeout(specifiedTimeout);
 
         // Write 8 and cause block for 10
@@ -303,8 +309,8 @@ public class SelectChannelEndPointTest
         catch(SocketTimeoutException e)
         {
             int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
-            System.err.println("blocked " + elapsed);
-            Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(specifiedTimeout));
+            System.err.println("blocked for " + elapsed+ "ms");
+            Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3*specifiedTimeout/4));
         }
 
         // write remaining characters
@@ -324,13 +330,13 @@ public class SelectChannelEndPointTest
     public void testStress() throws Exception
     {
         Socket client = newClient();
-        client.setSoTimeout(10000);
+        client.setSoTimeout(30000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
 
         _manager.register(server);
-        int writes = 1000000;
+        int writes = 100000;
 
         final CountDownLatch latch = new CountDownLatch(writes);
         final InputStream in = new BufferedInputStream(client.getInputStream());
