@@ -793,7 +793,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 o=_outbound;
                 u=_unwrapBuf;
             }
-            return "SSL:"+_endp+" "+_engine.getHandshakeStatus()+" i/u/o="+(i==null?0:i.length())+"/"+(u==null?0:u.length())+"/"+(o==null?0:o.length()+(_oshut?" oshut":""));
+            return "SSL:"+_endp+" "+_engine.getHandshakeStatus()+" i/u/o="+(i==null?0:i.length())+"/"+(u==null?0:u.length())+"/"+(o==null?0:o.length()+(_ishut?" ishut":"")+(_oshut?" oshut":""));
         }
 
     }

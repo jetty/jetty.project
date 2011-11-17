@@ -56,7 +56,7 @@ public class LikeJettyXml
         
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(100);
+        threadPool.setMaxThreads(500);
         server.setThreadPool(threadPool);
 
         // Setup Connectors

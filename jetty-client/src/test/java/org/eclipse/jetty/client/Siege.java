@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 /* ------------------------------------------------------------ */
@@ -181,8 +182,12 @@ public class Siege
             uris.add(arg);
         }
         
+        QueuedThreadPool pool = new QueuedThreadPool();
+        pool.setMaxThreads(500);
+        pool.setDaemon(true);
         
         HttpClient client = new HttpClient();
+        client.setThreadPool(pool);
         client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         client.setIdleTimeout(30000);
         client.setConnectTimeout(30000);
@@ -200,5 +205,7 @@ public class Siege
         }
         
         latch.await();
+        client.stop();
+        pool.stop();
     }
 }
