@@ -14,12 +14,18 @@ package org.eclipse.jetty.server.handler;
 //========================================================================
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -48,8 +54,36 @@ public class ShutdownHandlerTest
     public void shutdownServerWithCorrectTokenAndIPTest() throws Exception
     {
         setDefaultExpectations();
+        final CountDownLatch countDown = new CountDownLatch(1);
+        server.addLifeCycleListener(new AbstractLifeCycle.Listener () 
+        {
+
+            public void lifeCycleStarting(LifeCycle event)
+            {
+            }
+
+            public void lifeCycleStarted(LifeCycle event)
+            {
+            }
+
+            public void lifeCycleFailure(LifeCycle event, Throwable cause)
+            {  
+            }
+
+            public void lifeCycleStopping(LifeCycle event)
+            {  
+            }
+
+            public void lifeCycleStopped(LifeCycle event)
+            {
+                countDown.countDown();
+            }
+            
+        });
         shutdownHandler.handle("/shutdown",null,request,response);
-        assertEquals("Server should be stopped","STOPPED",server.getState());
+        boolean stopped = countDown.await(1000, TimeUnit.MILLISECONDS); //wait up to 1 sec to stop
+        assertTrue("Server lifecycle stop listener called", stopped);
+        assertEquals("Server should be stopped","STOPPED",server.getState());  
     }
 
     @Test
