@@ -198,6 +198,10 @@ public class SslBytesServerTest
 
         Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
 
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
         closeClient(client);
     }
 
@@ -352,6 +356,10 @@ public class SslBytesServerTest
             if (line.trim().length() == 0)
                 break;
         }
+
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
     }
@@ -605,6 +613,10 @@ public class SslBytesServerTest
         Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         // We can't forward to the client, its socket is already closed
 
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
         // Socket close
         record = proxy.readFromClient();
         Assert.assertNull("" + record, record);
@@ -719,6 +731,10 @@ public class SslBytesServerTest
         Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         // We can't forward to the client, its socket is already closed
 
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
         // Socket close
         record = proxy.readFromClient();
         Assert.assertNull("" + record, record);
@@ -784,6 +800,10 @@ public class SslBytesServerTest
             if (line.trim().length() == 0)
                 break;
         }
+
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
     }
@@ -854,6 +874,10 @@ public class SslBytesServerTest
             if (line.trim().length() == 0)
                 break;
         }
+
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
     }
@@ -974,6 +998,168 @@ public class SslBytesServerTest
             if (line.trim().length() == 0)
                 break;
         }
+
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        closeClient(client);
+    }
+
+    @Test
+    public void testRequestWithBigContentWithRenegotiationInMiddleOfContentWithSplitBoundary() throws Exception
+    {
+        final SSLSocket client = newClient();
+        final OutputStream clientOutput = client.getOutputStream();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        // Use a content that is larger than the TLS record which is 2^14 (around 16k)
+        byte[] data1 = new byte[80 * 1024];
+        Arrays.fill(data1, (byte)'X');
+        String content1 = new String(data1, "UTF-8");
+        byte[] data2 = new byte[48 * 1024];
+        Arrays.fill(data2, (byte)'Y');
+        final String content2 = new String(data2, "UTF-8");
+
+        // Write only part of the body
+        automaticProxyFlow = proxy.startAutomaticFlow();
+        clientOutput.write(("" +
+                "POST / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes("UTF-8"));
+        clientOutput.flush();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        // Renegotiate
+        Future<Object> renegotiation = threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                client.startHandshake();
+                return null;
+            }
+        });
+
+        // Renegotiation Handshake
+        TLSRecord record = proxy.readFromClient();
+        byte[] bytes = record.getBytes();
+        byte[] chunk1 = new byte[2 * bytes.length / 3];
+        System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
+        byte[] chunk2 = new byte[bytes.length - chunk1.length];
+        System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
+        proxy.flushToServer(chunk1);
+        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(chunk2);
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Renegotiation Handshake
+        record = proxy.readFromServer();
+        proxy.flushToClient(record);
+
+        // Renegotiation Change Cipher
+        record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
+        proxy.flushToClient(record);
+
+        // Renegotiation Handshake
+        record = proxy.readFromServer();
+        proxy.flushToClient(record);
+
+        // Trigger a read to have the client write the final renegotiation steps
+        client.setSoTimeout(100);
+        try
+        {
+            client.getInputStream().read();
+            Assert.fail();
+        }
+        catch (SocketTimeoutException x)
+        {
+            // Expected
+        }
+
+        // Renegotiation Change Cipher
+        record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.CHANGE_CIPHER_SPEC, record.getType());
+        bytes = record.getBytes();
+        chunk1 = new byte[2 * bytes.length / 3];
+        System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
+        chunk2 = new byte[bytes.length - chunk1.length];
+        System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
+        proxy.flushToServer(chunk1);
+        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(chunk2);
+        TimeUnit.MILLISECONDS.sleep(100);
+
+        // Renegotiation Handshake
+        record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
+        bytes = record.getBytes();
+        chunk1 = new byte[2 * bytes.length / 3];
+        System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
+        chunk2 = new byte[bytes.length - chunk1.length];
+        System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
+        proxy.flushToServer(chunk1);
+        TimeUnit.MILLISECONDS.sleep(100);
+        // Do not write the second chunk now, but merge it with content, see below
+
+        Assert.assertNull(renegotiation.get(5, TimeUnit.SECONDS));
+
+        // Write the rest of the request
+        Future<Object> request = threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                clientOutput.write(content2.getBytes("UTF-8"));
+                clientOutput.flush();
+                return null;
+            }
+        });
+
+        // Three TLSRecords will be generated for the remainder of the content
+        // Merge the last chunk of the renegotiation with the first data record
+        record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+        byte[] dataBytes = record.getBytes();
+        byte[] mergedBytes = new byte[chunk2.length + dataBytes.length];
+        System.arraycopy(chunk2, 0, mergedBytes, 0, chunk2.length);
+        System.arraycopy(dataBytes, 0, mergedBytes, chunk2.length, dataBytes.length);
+        proxy.flushToServer(mergedBytes);
+        // Write the remaining 2 TLS records
+        for (int i = 0; i < 2; ++i)
+        {
+            // Application data
+            record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+            proxy.flushToServer(record);
+        }
+
+        Assert.assertNull(request.get(5, TimeUnit.SECONDS));
+
+        // Read response
+        // Application Data
+        record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+        proxy.flushToClient(record);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        String line = reader.readLine();
+        Assert.assertNotNull(line);
+        Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
+        while ((line = reader.readLine()) != null)
+        {
+            if (line.trim().length() == 0)
+                break;
+        }
+
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
     }
