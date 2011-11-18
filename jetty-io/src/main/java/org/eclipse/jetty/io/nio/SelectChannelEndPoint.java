@@ -162,6 +162,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
                 // we are not interested in further selecting
                 _key.interestOps(0);
+                if (!_dispatched)
+                    updateKey();
                 return;
             }
 
