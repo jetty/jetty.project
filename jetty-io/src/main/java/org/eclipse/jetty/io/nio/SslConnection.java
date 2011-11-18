@@ -600,6 +600,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 _engine.closeOutbound();
                 _oshut=true;
             }
+            flush();
         }
 
         public boolean isOutputShutdown()
