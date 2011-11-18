@@ -240,6 +240,21 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     }
 
     /* ------------------------------------------------------------ */
+    @Override
+    public void onIdleExpired()
+    {
+        try
+        {
+            _sslEndPoint.shutdownOutput();
+        }
+        catch (IOException e)
+        {
+            LOG.warn(e);
+            super.onIdleExpired();
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
     public void onInputShutdown() throws IOException
     {
 
