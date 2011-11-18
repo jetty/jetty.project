@@ -42,6 +42,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
@@ -53,6 +55,7 @@ import static org.hamcrest.Matchers.lessThan;
 
 public class SslBytesServerTest
 {
+    private final Logger logger = Log.getLogger(getClass());
     private final AtomicInteger sslHandles = new AtomicInteger();
     private final AtomicInteger httpParses = new AtomicInteger();
     private ExecutorService threadPool;
@@ -63,7 +66,7 @@ public class SslBytesServerTest
     @Before
     public void startServer() throws Exception
     {
-        threadPool = Executors.newFixedThreadPool(2);
+        threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
         SslSelectChannelConnector connector = new SslSelectChannelConnector()
@@ -133,7 +136,7 @@ public class SslBytesServerTest
 
         proxy = new SimpleProxy(threadPool, "localhost", connector.getLocalPort());
         proxy.start();
-        System.err.println(":" + proxy.getPort() + " <==> :" + connector.getLocalPort());
+        logger.debug(":{} <==> :{}", proxy.getPort(), connector.getLocalPort());
     }
 
     @After
@@ -302,7 +305,7 @@ public class SslBytesServerTest
         TimeUnit.MILLISECONDS.sleep(100);
         // Socket close
         record = proxy.readFromClient();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToServer(record);
 
         // Close Alert
@@ -310,7 +313,7 @@ public class SslBytesServerTest
         proxy.flushToClient(record);
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
     }
 
@@ -477,7 +480,7 @@ public class SslBytesServerTest
         }
         // Socket close
         record = proxy.readFromClient();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToServer(record);
 
         // Close Alert
@@ -485,7 +488,7 @@ public class SslBytesServerTest
         proxy.flushToClient(record);
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
     }
 
@@ -535,7 +538,7 @@ public class SslBytesServerTest
         proxy.flushToServer(record);
         // Socket close
         record = proxy.readFromClient();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToServer(record);
 
         // Expect response from server
@@ -554,12 +557,12 @@ public class SslBytesServerTest
 
         // Socket close
         record = proxy.readFromClient();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToServer(record);
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
     }
 
@@ -619,12 +622,12 @@ public class SslBytesServerTest
 
         // Socket close
         record = proxy.readFromClient();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToServer(record);
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
     }
 
@@ -656,15 +659,22 @@ public class SslBytesServerTest
         proxy.flushToServer(record);
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
 
-        // Close the raw socket
-        // This generates a truncation attack, and we cannot respond
-        // because we won't know if the request was legitimate
+        // Application data
+        record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+        proxy.flushToClient(record);
+
+        // Close the raw socket, this generates a truncation attack
         proxy.flushToServer((TLSRecord)null);
 
         // Expect raw close from server
         record = proxy.readFromServer();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
+
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
 
         client.close();
     }
@@ -737,12 +747,12 @@ public class SslBytesServerTest
 
         // Socket close
         record = proxy.readFromClient();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToServer(record);
 
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
     }
 
@@ -1181,7 +1191,7 @@ public class SslBytesServerTest
         proxy.flushToServer(record);
         // Socket close
         record = proxy.readFromClient();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToServer(record);
 
         // Close Alert
@@ -1189,11 +1199,11 @@ public class SslBytesServerTest
         proxy.flushToClient(record);
         // Socket close
         record = proxy.readFromServer();
-        Assert.assertNull("" + record, record);
+        Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
     }
 
-    public static class SimpleProxy implements Runnable
+    public class SimpleProxy implements Runnable
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final ExecutorService threadPool;
@@ -1243,7 +1253,9 @@ public class SslBytesServerTest
 
         public TLSRecord readFromClient() throws IOException
         {
-            return read(client);
+            TLSRecord record = read(client);
+            logger.debug("C --> P {}", record);
+            return record;
         }
 
         private TLSRecord read(Socket socket) throws IOException
@@ -1342,7 +1354,9 @@ public class SslBytesServerTest
 
         public TLSRecord readFromServer() throws IOException
         {
-            return read(server);
+            TLSRecord record = read(server);
+            logger.debug("P <-- S {}", record);
+            return record;
         }
 
         public void flushToClient(TLSRecord record) throws IOException
@@ -1362,13 +1376,16 @@ public class SslBytesServerTest
             }
         }
 
-        public AutomaticFlow startAutomaticFlow()
+        public AutomaticFlow startAutomaticFlow() throws InterruptedException
         {
+            final CountDownLatch startLatch = new CountDownLatch(2);
             final CountDownLatch stopLatch = new CountDownLatch(2);
             Future<Object> clientToServer = threadPool.submit(new Callable<Object>()
             {
                 public Object call() throws Exception
                 {
+                    startLatch.countDown();
+                    logger.debug("Automatic flow C --> S started");
                     try
                     {
                         while (true)
@@ -1383,6 +1400,7 @@ public class SslBytesServerTest
                     finally
                     {
                         stopLatch.countDown();
+                        logger.debug("Automatic flow C --> S finished");
                     }
                 }
             });
@@ -1390,6 +1408,8 @@ public class SslBytesServerTest
             {
                 public Object call() throws Exception
                 {
+                    startLatch.countDown();
+                    logger.debug("Automatic flow C <-- S started");
                     try
                     {
                         while (true)
@@ -1404,9 +1424,11 @@ public class SslBytesServerTest
                     finally
                     {
                         stopLatch.countDown();
+                        logger.debug("Automatic flow C <-- S finished");
                     }
                 }
             });
+            Assert.assertTrue(startLatch.await(5, TimeUnit.SECONDS));
             return new AutomaticFlow(stopLatch, clientToServer, serverToClient);
         }
 
@@ -1415,7 +1437,7 @@ public class SslBytesServerTest
             return latch.await(time, unit);
         }
 
-        public static class AutomaticFlow
+        public class AutomaticFlow
         {
             private final CountDownLatch stopLatch;
             private final Future<Object> clientToServer;
