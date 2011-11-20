@@ -235,7 +235,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     /* ------------------------------------------------------------ */
     public void onClose()
     {
-
     }
 
     /* ------------------------------------------------------------ */
