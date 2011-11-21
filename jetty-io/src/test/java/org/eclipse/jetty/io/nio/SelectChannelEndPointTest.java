@@ -338,9 +338,13 @@ public class SelectChannelEndPointTest
         _manager.register(server);
         int writes = 100000;
 
+        final byte[] bytes="HelloWorld".getBytes("UTF-8");
         final CountDownLatch latch = new CountDownLatch(writes);
         final InputStream in = new BufferedInputStream(client.getInputStream());
-
+        final long start = System.currentTimeMillis();
+        client.getOutputStream().write(bytes);
+        client.getOutputStream().flush();
+        
         new Thread()
         {
             public void run()
@@ -350,29 +354,38 @@ public class SelectChannelEndPointTest
                     while (latch.getCount()>0)
                     {
                         // Verify echo server to client
-                        for (char c : "HelloWorld".toCharArray())
+                        for (byte b0 : bytes)
                         {
                             int b = in.read();
                             assertTrue(b>0);
-                            assertEquals(c,(char)b);
+                            assertEquals(0xff&b0,b);
                         }
                         latch.countDown();
+                        Thread.yield();
                     }
                 }
-                catch(Exception e)
+                catch(ThreadDeath t)
                 {
+                    throw t;
+                }
+                catch(Throwable e)
+                {
+                    System.err.println("latch="+latch.getCount());
+                    System.err.println("time="+(System.currentTimeMillis()-start));
                     e.printStackTrace();
                 }
             }
         }.start();
 
-        byte[] bytes="HelloWorld".getBytes("UTF-8");
 
         // Write client to server
-        for (int i=0;i<writes;i++)
+        for (int i=1;i<writes;i++)
+        {
             client.getOutputStream().write(bytes);
+            Thread.yield();
+        }
+        client.getOutputStream().flush();
 
         assertTrue(latch.await(100,TimeUnit.SECONDS));
-
     }
 }
