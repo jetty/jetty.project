@@ -160,4 +160,25 @@ public class SslContextFactoryTest
         {
         }
     }
+    
+    @Test
+    public void testNoKeyConfig() throws Exception
+    {
+        SslContextFactory cf = new SslContextFactory();
+        try
+        {
+            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+            cf.setTrustStore("/foo");
+            cf.start();
+            Assert.fail();
+        }
+        catch (IllegalStateException e)
+        {
+            
+        }
+        catch (Exception e)
+        {
+            Assert.fail("Unexpected exception");
+        }
+    }
 }

@@ -161,7 +161,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         if (_generator.isIdle() && !_request.getAsyncContinuation().isSuspended())
         {
             // then no more can happen, so close.
-            _endp.shutdownOutput();
+            _endp.close();
         }
     }
 

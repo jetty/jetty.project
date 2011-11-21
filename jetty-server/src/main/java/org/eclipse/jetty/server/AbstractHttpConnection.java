@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -148,7 +149,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _uri = StringUtil.__UTF8.equals(URIUtil.__CHARSET)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         HttpBuffers ab = (HttpBuffers)_connector;
-        _parser = new HttpParser(ab.getRequestBuffers(), endpoint, new RequestHandler());
+        _parser = newHttpParser(ab.getRequestBuffers(), endpoint, new RequestHandler());
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
         _request = new Request(this);
@@ -163,7 +164,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             Parser parser, Generator generator, Request request)
     {
         super(endpoint);
-        
+
         _uri = URIUtil.__CHARSET.equals(StringUtil.__UTF8)?new HttpURI():new EncodedHttpURI(URIUtil.__CHARSET);
         _connector = connector;
         _parser = parser;
@@ -174,6 +175,11 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _generator = generator;
         _generator.setSendServerVersion(server.getSendServerVersion());
         _server = server;
+    }
+
+    protected HttpParser newHttpParser(Buffers requestBuffers, EndPoint endpoint, HttpParser.EventHandler requestHandler)
+    {
+        return new HttpParser(requestBuffers, endpoint, requestHandler);
     }
 
     /* ------------------------------------------------------------ */
@@ -193,13 +199,13 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     {
         return _requests;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Server getServer()
     {
         return _server;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the associatedObject.
@@ -385,11 +391,11 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     /* ------------------------------------------------------------ */
     public void reset()
     {
-        _parser.reset(); 
+        _parser.reset();
         _parser.returnBuffers(); // TODO maybe only on unhandle
         _requestFields.clear();
         _request.recycle();
-        _generator.reset(); 
+        _generator.reset();
         _generator.returnBuffers();// TODO maybe only on unhandle
         _responseFields.clear();
         _response.recycle();
@@ -566,7 +572,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             }
             catch(RuntimeException e)
             {
-                LOG.warn("header full: "+e);
+                LOG.warn("header full: " + e);
 
                 _response.reset();
                 _generator.reset();
@@ -672,7 +678,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     {
         LOG.debug("closed {}",this);
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isExpecting100Continues()
     {
@@ -717,7 +723,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         public void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
         {
             uri=uri.asImmutableBuffer();
-            
+
             _host = false;
             _expect = false;
             _expect100Continue=false;
@@ -864,11 +870,11 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                         _generator.setPersistent(true);
                         _parser.setPersistent(true);
                     }
-                    
+
                     if (_server.getSendDateHeader())
                         _generator.setDate(_request.getTimeStampBuffer());
                     break;
-                    
+
                 case HttpVersions.HTTP_1_1_ORDINAL:
                     _generator.setHead(_head);
 
@@ -959,7 +965,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("Bad request!: "+version+" "+status+" "+reason);
         }
-        
+
     }
 
 
@@ -1144,5 +1150,5 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         }
     }
 
-    
+
 }

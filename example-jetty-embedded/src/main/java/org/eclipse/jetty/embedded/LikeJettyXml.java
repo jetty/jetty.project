@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -55,7 +56,7 @@ public class LikeJettyXml
         
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setMaxThreads(100);
+        threadPool.setMaxThreads(500);
         server.setThreadPool(threadPool);
 
         // Setup Connectors
@@ -63,7 +64,7 @@ public class LikeJettyXml
         connector.setPort(8080);
         connector.setMaxIdleTime(30000);
         connector.setConfidentialPort(8443);
-        connector.setStatsOn(true);
+        connector.setStatsOn(false);
         
         server.setConnectors(new Connector[]
         { connector });
@@ -86,11 +87,17 @@ public class LikeJettyXml
                     "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                     "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"
                 });
-        ssl_connector.setStatsOn(true);
+        ssl_connector.setStatsOn(false);
         server.addConnector(ssl_connector);
         ssl_connector.open();
-
         
+        SslSocketConnector ssl2_connector = new SslSocketConnector(cf);
+        ssl2_connector.setPort(8444);
+        ssl2_connector.setStatsOn(false);
+        server.addConnector(ssl2_connector);
+        ssl2_connector.open();
+
+       
         /*
         
         Ajp13SocketConnector ajp = new Ajp13SocketConnector();

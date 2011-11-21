@@ -14,16 +14,12 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffers;
@@ -33,10 +29,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.io.nio.SslConnection;
-import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -102,7 +95,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         SslConnection.SslEndPoint sslEndpoint=(SslConnection.SslEndPoint)endpoint;
         SSLEngine sslEngine=sslEndpoint.getSslEngine();
         SSLSession sslSession=sslEngine.getSession();
-                
+
         SslCertificates.customize(sslSession,endpoint,request);
     }
 
@@ -543,30 +536,31 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------------------------- */
     @Override
-    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
-    {
-        return super.newEndPoint(channel,selectSet,key);
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Override
     protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
         try
         {
             SSLEngine engine = createSSLEngine(channel);
-
-            SslConnection connection = new SslConnection(engine,endpoint);
-
-            AsyncConnection delegate = super.newConnection(channel,connection.getSslEndPoint());
+            SslConnection connection = newSslConnection(endpoint, engine);
+            AsyncConnection delegate = newPlainConnection(channel, connection.getSslEndPoint());
             connection.getSslEndPoint().setConnection(delegate);
             connection.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
             return connection;
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             throw new RuntimeIOException(e);
         }
+    }
+
+    protected AsyncConnection newPlainConnection(SocketChannel channel, AsyncEndPoint endPoint)
+    {
+        return super.newConnection(channel, endPoint);
+    }
+
+    protected SslConnection newSslConnection(AsyncEndPoint endpoint, SSLEngine engine)
+    {
+        return new SslConnection(engine, endpoint);
     }
 
     /* ------------------------------------------------------------ */
@@ -589,7 +583,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         {
             engine = _sslContextFactory.newSslEngine();
         }
-        
+
         engine.setUseClientMode(false);
         return engine;
     }

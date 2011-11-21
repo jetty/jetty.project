@@ -255,15 +255,8 @@ public class SslContextFactory extends AbstractLifeCycle
             else
             {
                 // verify that keystore and truststore
-                // parameters are set up correctly
-                try
-                {
-                    checkKeyStore();
-                }
-                catch(IllegalStateException e)
-                {
-                    LOG.ignore(e);
-                }
+                // parameters are set up correctly               
+                checkKeyStore();
 
                 KeyStore keyStore = loadKeyStore();
                 KeyStore trustStore = loadTrustStore();
@@ -1158,13 +1151,17 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * Check KetyStore Configuration. Ensures that if keystore has been
+     * Check KeyStore Configuration. Ensures that if keystore has been
      * configured but there's no truststore, that keystore is
      * used as truststore.
      * @throws IllegalStateException if SslContextFactory configuration can't be used.
      */
     public void checkKeyStore() 
     {
+        if (_context != null)
+            return; //nothing to check if using preconfigured context
+        
+        
         if (_keyStore == null && _keyStoreInputStream == null && _keyStorePath == null)
             throw new IllegalStateException("SSL doesn't have a valid keystore");
         

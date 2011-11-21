@@ -68,6 +68,8 @@ public class ShutdownHandler extends AbstractHandler
     private final Server _server;
 
     private boolean _exitJvm = false;
+  
+    
 
     /**
      * Creates a listener that lets the server be shut down remotely (but only from localhost).
@@ -110,18 +112,24 @@ public class ShutdownHandler extends AbstractHandler
 
         LOG.info("Shutting down by request from " + getRemoteAddr(request));
         
-        try
+        new Thread()
         {
-            shutdownServer();
-        }
-        catch (InterruptedException e)
-        {
-            LOG.ignore(e);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Shutting down server",e);
-        }
+            public void run ()
+            {
+                try
+                {
+                    shutdownServer();
+                }
+                catch (InterruptedException e)
+                {
+                    LOG.ignore(e);
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException("Shutting down server",e);
+                }
+            }
+        }.start();
     }
 
     private boolean requestFromLocalhost(HttpServletRequest request)

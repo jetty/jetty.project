@@ -1,6 +1,8 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,11 +35,26 @@ public class Curl
         client.start();
         boolean async=true;
         boolean dump= false;
+        boolean verbose= false;
         
-        final CountDownLatch latch = new CountDownLatch(args.length);
+        
+        int urls=0;
+        for (String arg : args)
+        {
+            if (!arg.startsWith("-"))
+                urls++;
+        }
+
+        final CountDownLatch latch = new CountDownLatch(urls);        
         
         for (String arg : args)
         {
+            if ("--verbose".equals(arg))
+            {
+                verbose=true;
+                continue;
+            }
+            
             if ("--sync".equals(arg))
             {
                 async=false;
@@ -63,6 +80,7 @@ public class Curl
             }
 
             final boolean d = dump;
+            final boolean v = verbose;
             HttpExchange ex = new HttpExchange()
             {
                 AtomicBoolean counted=new AtomicBoolean(false);
@@ -105,7 +123,8 @@ public class Curl
                     super.onResponseContent(content);
                     if (d)
                         System.out.print(content.toString());
-                    System.err.println("got "+content.length());
+                    if (v)
+                        System.err.println("got "+content.length());
                 }
 
                 /* ------------------------------------------------------------ */
@@ -116,7 +135,8 @@ public class Curl
                 protected void onResponseHeader(Buffer name, Buffer value) throws IOException
                 {
                     super.onResponseHeader(name,value);
-                    System.err.println(name+": "+value);
+                    if (v)
+                        System.err.println(name+": "+value);
                 }
 
                 /* ------------------------------------------------------------ */
@@ -127,7 +147,8 @@ public class Curl
                 protected void onResponseHeaderComplete() throws IOException
                 {
                     super.onResponseHeaderComplete();
-                    System.err.println();
+                    if (v)
+                        System.err.println();
                 }
 
                 /* ------------------------------------------------------------ */
@@ -138,7 +159,8 @@ public class Curl
                 protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
                 {
                     super.onResponseStatus(version,status,reason);
-                    System.err.println(version+" "+status+" "+reason);
+                    if (v)
+                        System.err.println(version+" "+status+" "+reason);
                 }
             };
             
