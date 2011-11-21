@@ -188,12 +188,12 @@ public class ChannelEndPoint implements EndPoint
 
     public boolean isOutputShutdown()
     {
-        return _oshut;
+        return _oshut || !_channel.isOpen() || _socket != null && _socket.isOutputShutdown();
     }
 
     public boolean isInputShutdown()
     {
-        return _ishut;
+        return _ishut || !_channel.isOpen() || _socket != null && _socket.isInputShutdown();
     }
 
     /* (non-Javadoc)
