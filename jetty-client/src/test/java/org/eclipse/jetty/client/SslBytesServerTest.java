@@ -66,6 +66,8 @@ public class SslBytesServerTest
     @Before
     public void startServer() throws Exception
     {
+        logger.setDebugEnabled(true);
+
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
@@ -107,7 +109,8 @@ public class SslBytesServerTest
             }
         };
 
-        connector.setPort(5870); // TODO: make this random
+//        connector.setPort(5870);
+        connector.setPort(0);
 
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
         SslContextFactory cf = connector.getSslContextFactory();
@@ -934,10 +937,12 @@ public class SslBytesServerTest
 
         // Renegotiation Handshake
         TLSRecord record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToServer(record);
 
         // Renegotiation Handshake
         record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToClient(record);
 
         // Renegotiation Change Cipher
@@ -947,6 +952,7 @@ public class SslBytesServerTest
 
         // Renegotiation Handshake
         record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToClient(record);
 
         // Trigger a read to have the client write the final renegotiation steps
@@ -968,6 +974,7 @@ public class SslBytesServerTest
 
         // Renegotiation Handshake
         record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToServer(record);
 
         Assert.assertNull(renegotiation.get(5, TimeUnit.SECONDS));
@@ -1058,6 +1065,7 @@ public class SslBytesServerTest
 
         // Renegotiation Handshake
         TLSRecord record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         byte[] bytes = record.getBytes();
         byte[] chunk1 = new byte[2 * bytes.length / 3];
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
@@ -1070,6 +1078,7 @@ public class SslBytesServerTest
 
         // Renegotiation Handshake
         record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToClient(record);
 
         // Renegotiation Change Cipher
@@ -1079,6 +1088,7 @@ public class SslBytesServerTest
 
         // Renegotiation Handshake
         record = proxy.readFromServer();
+        Assert.assertEquals(TLSRecord.Type.HANDSHAKE, record.getType());
         proxy.flushToClient(record);
 
         // Trigger a read to have the client write the final renegotiation steps
@@ -1222,7 +1232,8 @@ public class SslBytesServerTest
 
         public void start() throws Exception
         {
-            serverSocket = new ServerSocket(5871); // TODO: make this random
+//            serverSocket = new ServerSocket(5871);
+            serverSocket = new ServerSocket(0);
             Thread acceptor = new Thread(this);
             acceptor.start();
             server = new Socket(serverHost, serverPort);
