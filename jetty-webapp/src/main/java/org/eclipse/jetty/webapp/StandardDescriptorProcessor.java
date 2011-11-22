@@ -554,10 +554,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         XmlParser.Node multipart = node.get("multipart-config");
         if (multipart != null)
         {
-            String location = node.getString("location", false, true);
-            String maxFile = node.getString("max-file-size", false, true);
-            String maxRequest = node.getString("max-request-size", false, true);
-            String threshold = node.getString("file-size-threshold",false,true);
+            String location = multipart.getString("location", false, true);
+            String maxFile = multipart.getString("max-file-size", false, true);
+            String maxRequest = multipart.getString("max-request-size", false, true);
+            String threshold = multipart.getString("file-size-threshold",false,true);
             MultipartConfigElement element = new MultipartConfigElement(location,
                                                                         (maxFile==null||"".equals(maxFile)?-1L:Long.parseLong(maxFile)),
                                                                         (maxRequest==null||"".equals(maxRequest)?-1L:Long.parseLong(maxRequest)),
