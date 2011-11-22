@@ -370,24 +370,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public final void scheduleTimeout(Timeout.Task task, long timeoutMs)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public final void cancelTimeout(Timeout.Task task)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /* ------------------------------------------------------------ */
     public void reset()
     {
         _parser.reset();

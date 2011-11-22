@@ -30,12 +30,4 @@ public class ExternalKeyStoreAsyncSslHttpExchangeTest extends SslHttpExchangeTes
         _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
         _port = _server.getConnectors()[0].getLocalPort();
     }
-
-    @Override
-    @Test
-    public void testBigPostWithContentExchange() throws Exception
-    {
-        super.testBigPostWithContentExchange();
-    }
-
 }

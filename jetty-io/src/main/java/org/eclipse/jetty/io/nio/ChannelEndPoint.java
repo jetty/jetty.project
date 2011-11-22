@@ -205,8 +205,6 @@ public class ChannelEndPoint implements EndPoint
     public void close() throws IOException
     {
         LOG.debug("close {}",this);
-
-        // System.err.println("CLOSE "+_socket);
         _channel.close();
     }
 

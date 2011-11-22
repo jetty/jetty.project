@@ -361,7 +361,6 @@ public class SelectChannelEndPointTest
                             assertEquals(0xff&b0,b);
                         }
                         latch.countDown();
-                        Thread.yield();
                     }
                 }
                 catch(ThreadDeath t)
