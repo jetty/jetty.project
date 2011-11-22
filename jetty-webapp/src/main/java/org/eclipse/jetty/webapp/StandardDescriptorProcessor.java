@@ -513,15 +513,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String enabled = node.getString("enabled", false, true);
         if (enabled!=null)
         {
-            boolean is_enabled = enabled.length()==0||Boolean.valueOf(enabled);
-            // TODO handle enabled?
+            boolean is_enabled = enabled.length()==0||Boolean.valueOf(enabled);     
             Origin o = context.getMetaData().getOrigin(servlet_name+".servlet.enabled");
             switch (o)
             {
                 case NotSet:
                 {
                     //hasn't been set yet, so set it                
-                    //TODO
+                    holder.setEnabled(is_enabled);
                     context.getMetaData().setOrigin(servlet_name+".servlet.enabled", descriptor);
                     break;
                 }
@@ -532,7 +531,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     //was set in a web xml descriptor, only allow override from another web xml descriptor
                     if (!(descriptor instanceof FragmentDescriptor))
                     {
-                        //TODO
+                        holder.setEnabled(is_enabled);   
                         context.getMetaData().setOrigin(servlet_name+".servlet.enabled", descriptor);
                     }
                     break;
@@ -540,7 +539,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case WebFragment:
                 {
                     //was set by another fragment, this fragment's value must match
-                    //TODO
+                    if (holder.isEnabled() != is_enabled)
+                        throw new IllegalStateException("Conflicting value of servlet enabled for servlet "+servlet_name+" in "+descriptor.getResource());
                     break;
                 }
             }

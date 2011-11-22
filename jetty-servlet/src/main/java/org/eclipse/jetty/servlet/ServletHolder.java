@@ -74,6 +74,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private transient Servlet _servlet;
     private transient Config _config;
     private transient long _unavailable;
+    private transient boolean _enabled = true;
     private transient UnavailableException _unavailableEx;
     public static final Map<String,String> NO_MAPPED_ROLES = Collections.emptyMap();
 
@@ -246,11 +247,26 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _forcedPath = forcedPath;
     }
     
+    public boolean isEnabled()
+    {
+        return _enabled;
+    }
+
+
+    public void setEnabled(boolean enabled)
+    {
+        _enabled = enabled;
+    }
+
+
     /* ------------------------------------------------------------ */
     public void doStart()
         throws Exception
     {
         _unavailable=0;
+        if (!_enabled)
+            return;
+        
         try
         {
             super.doStart();

@@ -1191,7 +1191,7 @@ public class ServletHandler extends ScopedHandler
                 ServletHolder servlet_holder = (ServletHolder)_servletNameMap.get(_servletMappings[i].getServletName());
                 if (servlet_holder==null)
                     throw new IllegalStateException("No such servlet: "+_servletMappings[i].getServletName());
-                else if (_servletMappings[i].getPathSpecs()!=null)
+                else if (servlet_holder.isEnabled() && _servletMappings[i].getPathSpecs()!=null)
                 {
                     String[] pathSpecs = _servletMappings[i].getPathSpecs();
                     for (int j=0;j<pathSpecs.length;j++)
