@@ -22,6 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -47,10 +49,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 
 public class SslBytesServerTest
@@ -66,8 +70,6 @@ public class SslBytesServerTest
     @Before
     public void startServer() throws Exception
     {
-        logger.setDebugEnabled(true);
-
         threadPool = Executors.newCachedThreadPool();
         server = new Server();
 
@@ -898,6 +900,8 @@ public class SslBytesServerTest
     @Test
     public void testRequestWithBigContentWithRenegotiationInMiddleOfContent() throws Exception
     {
+        assumeJavaVersionSupportsTLSRenegotiations();
+
         final SSLSocket client = newClient();
         final OutputStream clientOutput = client.getOutputStream();
 
@@ -1026,6 +1030,8 @@ public class SslBytesServerTest
     @Test
     public void testRequestWithBigContentWithRenegotiationInMiddleOfContentWithSplitBoundary() throws Exception
     {
+        assumeJavaVersionSupportsTLSRenegotiations();
+
         final SSLSocket client = newClient();
         final OutputStream clientOutput = client.getOutputStream();
 
@@ -1182,6 +1188,20 @@ public class SslBytesServerTest
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
+    }
+
+    private void assumeJavaVersionSupportsTLSRenegotiations()
+    {
+        // Due to a security bug, TLS renegotiations were disabled in JDK 1.6.0_19-21
+        // so we check the java version in order to avoid to fail the test.
+        String javaVersion = System.getProperty("java.version");
+        Pattern regexp = Pattern.compile("1\\.6\\.0_(\\d{2})");
+        Matcher matcher = regexp.matcher(javaVersion);
+        if (matcher.matches())
+        {
+            String nano = matcher.group(1);
+            Assume.assumeThat(Integer.parseInt(nano), greaterThan(21));
+        }
     }
 
     private SSLSocket newClient() throws IOException, InterruptedException
