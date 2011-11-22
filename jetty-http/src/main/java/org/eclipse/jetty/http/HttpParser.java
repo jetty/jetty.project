@@ -330,7 +330,8 @@ public class HttpParser implements Parser
 
                         default:
                             _state=STATE_END;
-                            _handler.earlyEOF();
+                            if (!_headResponse)
+                                _handler.earlyEOF();
                             _handler.messageComplete(_contentPosition);
                     }
 
