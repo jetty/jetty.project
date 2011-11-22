@@ -466,7 +466,7 @@ public class SslBytesServerTest
         }
 
         // Check that we did not spin
-        Assert.assertThat(sslHandles.get(), lessThan(500));
+        Assert.assertThat(sslHandles.get(), lessThan(750));
         Assert.assertThat(httpParses.get(), lessThan(150));
 
         client.close();
