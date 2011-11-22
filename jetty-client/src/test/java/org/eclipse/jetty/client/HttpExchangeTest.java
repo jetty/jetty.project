@@ -469,6 +469,23 @@ public class HttpExchangeTest
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(niobuf);
         _httpClient.send(httpExchange);
+        
+        long start=System.currentTimeMillis();
+        while(!httpExchange.isDone())
+        {
+            long now=System.currentTimeMillis();
+            if ((now-start)>=10000)
+            {
+                System.err.println("TEST IS TAKING TOOOOO LONG!!!!!!!!!!!!!!!!!!!!");
+                System.err.println("CLIENT:");
+                System.err.println(_httpClient.dump());
+                System.err.println("SERVER:");
+                _server.dumpStdErr();
+                new Throwable().printStackTrace();
+                break;
+            }
+            Thread.sleep(100);
+        }
         status = httpExchange.waitForDone();
         assertEquals(HttpExchange.STATUS_COMPLETED, status);
         result=httpExchange.getResponseContent();
