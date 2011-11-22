@@ -35,6 +35,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -75,12 +76,16 @@ public class AsyncRequestReadTest
         Arrays.fill(content, (byte)120);
 
         OutputStream out = socket.getOutputStream();
-        out.write("POST / HTTP/1.1\r\n".getBytes());
-        out.write("Host: localhost\r\n".getBytes());
-        out.write(("Content-Length: "+content.length+"\r\n").getBytes());
-        out.write("Content-Type: bytes\r\n".getBytes());
-        out.write("Connection: close\r\n".getBytes());
-        out.write("\r\n".getBytes());
+        String header=
+            "POST / HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "Content-Length: "+content.length+"\r\n"+
+            "Content-Type: bytes\r\n"+
+            "Connection: close\r\n"+
+            "\r\n";
+        byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            
+        out.write(h);
         out.flush();
 
         out.write(content,0,4*4096);
@@ -98,7 +103,7 @@ public class AsyncRequestReadTest
         long total=__total.exchange(0L,30,TimeUnit.SECONDS);
         assertEquals(content.length, total);
     }
-
+    
     @Test
     public void tests() throws Exception
     {
@@ -114,7 +119,7 @@ public class AsyncRequestReadTest
     public void runTest(int contentSize, int chunkSize, int chunks, int delayMS) throws Exception
     {
         String tst=contentSize+","+chunkSize+","+chunks+","+delayMS;
-        System.err.println(tst);
+        //System.err.println(tst);
         
         final Socket socket =  new Socket("localhost",connector.getLocalPort());
 
