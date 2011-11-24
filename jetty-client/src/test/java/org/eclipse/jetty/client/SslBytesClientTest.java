@@ -35,6 +35,7 @@ public class SslBytesClientTest extends SslBytesTest
         threadPool = Executors.newCachedThreadPool();
 
         client = new HttpClient();
+        client.setMaxConnectionsPerAddress(1);
         client.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore");
         SslContextFactory cf = client.getSslContextFactory();
@@ -44,7 +45,7 @@ public class SslBytesClientTest extends SslBytesTest
         client.start();
 
         SSLContext sslContext = cf.getSslContext();
-        acceptor = (SSLServerSocket)sslContext.getServerSocketFactory().createServerSocket(5870);
+        acceptor = (SSLServerSocket)sslContext.getServerSocketFactory().createServerSocket(0);
 
         int serverPort = acceptor.getLocalPort();
 
@@ -74,6 +75,7 @@ public class SslBytesClientTest extends SslBytesTest
         String method = HttpMethods.GET;
         exchange.setMethod(method);
         client.send(exchange);
+        Assert.assertTrue(proxy.awaitClient(5, TimeUnit.SECONDS));
 
         final SSLSocket server = (SSLSocket)acceptor.accept();
         server.setUseClientMode(false);

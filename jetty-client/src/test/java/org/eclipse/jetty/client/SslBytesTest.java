@@ -97,8 +97,8 @@ public abstract class SslBytesTest
 
         public void start() throws Exception
         {
-            serverSocket = new ServerSocket(5871);
-//            serverSocket = new ServerSocket(0);
+//            serverSocket = new ServerSocket(5871);
+            serverSocket = new ServerSocket(0);
             Thread acceptor = new Thread(this);
             acceptor.start();
             server = new Socket(serverHost, serverPort);
