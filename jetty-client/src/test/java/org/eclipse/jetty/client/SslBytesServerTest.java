@@ -862,7 +862,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
-        Assert.assertThat(httpParses.get(), lessThan(50));
+        Assert.assertThat(httpParses.get(), lessThan(150));
 
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
 
@@ -882,7 +882,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
-        Assert.assertThat(httpParses.get(), lessThan(50));
+        Assert.assertThat(httpParses.get(), lessThan(150));
 
         closeClient(client);
     }
@@ -1175,7 +1175,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
-        Assert.assertThat(httpParses.get(), lessThan(50));
+        Assert.assertThat(httpParses.get(), lessThan(100));
 
         closeClient(client);
     }
