@@ -251,7 +251,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             super.onIdleExpired();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public void onInputShutdown() throws IOException
     {
@@ -797,20 +797,20 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public String toString()
         {
-            Buffer i;
-            Buffer o;
-            Buffer u;
-
+            int i;
+            int o;
+            int u;
             synchronized(SslConnection.this)
             {
-                i=_inbound;
-                o=_outbound;
-                u=_unwrapBuf;
+                i=_inbound==null?-1:_inbound.length();
+                o=_outbound==null?-1:_outbound.length();
+                u=_unwrapBuf==null?-1:_unwrapBuf.length();
             }
-            return "SSL:"+_endp+" "+_engine.getHandshakeStatus()+" i/u/o="+(i==null?0:i.length())+"/"+(u==null?0:u.length())+"/"+(o==null?0:o.length()+(_ishut?" ishut":"")+(_oshut?" oshut":""));
+            return String.format("SSL:%s %s i/u/o=%d/%d/%d ishut=%b oshut=%b",
+                    _endp,
+                    _engine.getHandshakeStatus(),
+                    i, u, o,
+                    _ishut, _oshut);
         }
-
     }
-
-
 }

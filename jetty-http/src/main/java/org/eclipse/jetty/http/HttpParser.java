@@ -14,8 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
@@ -82,7 +80,7 @@ public class HttpParser implements Parser
     protected int _chunkLength;
     protected int _chunkPosition;
     private boolean _headResponse;
-    
+
     /* ------------------------------------------------------------------------------- */
     /**
      * Constructor.
@@ -233,7 +231,7 @@ public class HttpParser implements Parser
     public boolean parseAvailable() throws IOException
     {
         boolean progress=parseNext()>0;
-        
+
         // continue parsing
         while (!isComplete() && _buffer!=null && _buffer.length()>0)
         {
@@ -249,7 +247,7 @@ public class HttpParser implements Parser
      * @return an indication of progress <0 EOF, 0 no progress, >0 progress.
      */
     public int parseNext() throws IOException
-    {   
+    {
         try
         {
             int progress=0;
@@ -300,7 +298,7 @@ public class HttpParser implements Parser
                 if (filled > 0 )
                     progress++;
                 else if (filled < 0 )
-                {                    
+                {
                     _persistent=false;
 
                     // do we have content to deliver?
@@ -1137,7 +1135,11 @@ public class HttpParser implements Parser
     @Override
     public String toString()
     {
-        return "HttpParser{s=" + _state + ",l=" + _length + ",c=" + _contentLength+"}";
+        return String.format("%s{s=%d,l=%d,c=%d}",
+                getClass().getSimpleName(),
+                _state,
+                _length,
+                _contentLength);
     }
 
     /* ------------------------------------------------------------ */
@@ -1170,7 +1172,7 @@ public class HttpParser implements Parser
     {
         if (_contentView.length()>0)
             return _contentView;
-        
+
         if (getState() <= STATE_END || isState(STATE_SEEKING_EOF))
             return null;
 
@@ -1202,7 +1204,7 @@ public class HttpParser implements Parser
             _endp.close();
             throw e;
         }
-        
+
         return _contentView.length()>0?_contentView:null;
     }
 
@@ -1260,7 +1262,7 @@ public class HttpParser implements Parser
          */
         public abstract void startResponse(Buffer version, int status, Buffer reason)
                 throws IOException;
-        
+
         public void earlyEOF()
         {}
     }

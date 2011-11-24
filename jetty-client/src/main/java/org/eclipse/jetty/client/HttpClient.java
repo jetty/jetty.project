@@ -16,12 +16,12 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.client.security.Authentication;
@@ -164,7 +164,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     public void dump(Appendable out, String indent) throws IOException
     {
         out.append(String.valueOf(this)).append("\n");
-        AggregateLifeCycle.dump(out,indent,_destinations.values());
+        AggregateLifeCycle.dump(out,indent,Arrays.asList(_threadPool,_connector),_destinations.values());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -190,7 +190,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
             pool.setName("HttpClient");
             _threadPool = pool;
         }
-            
+
         return _threadPool;
     }
 

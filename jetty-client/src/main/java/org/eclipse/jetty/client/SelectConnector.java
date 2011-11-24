@@ -18,6 +18,7 @@ import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.SSLEngine;
@@ -31,13 +32,15 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
 
-class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
+class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector, Dumpable
 {
     private static final Logger LOG = Log.getLogger(SelectConnector.class);
 
@@ -67,6 +70,17 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     protected void doStop() throws Exception
     {
         _selectorManager.stop();
+    }
+
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dump(out, indent, Arrays.asList(_selectorManager));
     }
 
     /* ------------------------------------------------------------ */

@@ -444,7 +444,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 // Stopped concurrently ?
                 if (selector == null)
                     return;
-                
+
                 // Make any key changes required
                 Object change;
                 int changes=_changes.size();
@@ -578,7 +578,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             {
                                 // Start injecting pauses
                                 _pausing=true;
-                                
+
                                 // if this is the first pause
                                 if (!_paused)
                                 {
@@ -715,16 +715,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                         public String toString() {return "Idle-"+super.toString();}
                     });
-                    
+
                 }
-                
+
                 // Reset busy select monitor counts
                 if (__MONITOR_PERIOD>0 && now>_monitorNext)
                 {
                     _busySelects=0;
                     _pausing=false;
                     _monitorNext=now+__MONITOR_PERIOD;
-                    
+
                 }
             }
             catch (ClosedSelectorException e)
@@ -977,20 +977,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             for (SelectionKey key: selector.keys())
             {
                 if (key.isValid())
-                    dumpto.add(key.attachment()+" "+key.interestOps()+" "+key.readyOps());
+                    dumpto.add(key.attachment()+" iOps="+key.interestOps()+" rOps="+key.readyOps());
                 else
-                    dumpto.add(key.attachment()+" - - ");
+                    dumpto.add(key.attachment()+" iOps=-1 rOps=-1");
             }
         }
 
         /* ------------------------------------------------------------ */
         public String toString()
         {
-            String s=super.toString()+" "+SelectorManager.this.getState();
             Selector selector=_selector;
-            if (selector!=null && selector.isOpen())
-                s+=",k="+selector.keys().size()+",s="+selector.selectedKeys().size();
-            return s;
+            return String.format("%s %s keys=%d selected=%d",
+                    super.toString(),
+                    SelectorManager.this.getState(),
+                    selector != null && selector.isOpen() ? selector.keys().size() : -1,
+                    selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
         }
     }
 

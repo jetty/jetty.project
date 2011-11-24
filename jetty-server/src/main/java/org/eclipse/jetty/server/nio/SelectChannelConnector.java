@@ -300,7 +300,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     /* ------------------------------------------------------------ */
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(String.valueOf(this)).append("\n");
+        super.dump(out, indent);
         ServerSocketChannel channel;
         synchronized (this)
         {
