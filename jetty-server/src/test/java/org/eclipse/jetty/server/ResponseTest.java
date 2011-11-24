@@ -29,6 +29,7 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
@@ -483,6 +484,24 @@ public class ResponseTest
         {
             server.stop();
         }
+    }
+
+    @Test
+    public void testAddCookie() throws Exception
+    {
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+
+        Cookie cookie=new Cookie("name","value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY__");
+        
+        response.addCookie(cookie);
+        
+        String set = response.getHttpFields().getStringField("Set-Cookie");
+        
+        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly",set);
     }
 
     private Response newResponse()
