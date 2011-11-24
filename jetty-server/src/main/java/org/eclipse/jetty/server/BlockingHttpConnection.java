@@ -31,19 +31,15 @@ public class BlockingHttpConnection extends AbstractHttpConnection
 {
     private static final Logger LOG = Log.getLogger(BlockingHttpConnection.class);
 
-    private volatile boolean _handling;
-
     public BlockingHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(connector,endpoint,server);
     }
 
-
     public BlockingHttpConnection(Connector connector, EndPoint endpoint, Server server, Parser parser, Generator generator, Request request)
     {
         super(connector,endpoint,server,parser,generator,request);
     }
-
 
     @Override
     protected void handleRequest() throws IOException
@@ -51,12 +47,10 @@ public class BlockingHttpConnection extends AbstractHttpConnection
         super.handleRequest();
     }
 
-
     public Connection handle() throws IOException
     {
         Connection connection = this;
 
-        boolean progress=true;
         try
         {
             setCurrentConnection(this);
@@ -67,17 +61,16 @@ public class BlockingHttpConnection extends AbstractHttpConnection
             {
                 try
                 {
-                    progress=false;
                     // If we are not ended then parse available
                     if (!_parser.isComplete() && !_endp.isInputShutdown())
-                        progress |= _parser.parseAvailable();
+                        _parser.parseAvailable();
 
                     // Do we have more generating to do?
                     // Loop here because some writes may take multiple steps and
                     // we need to flush them all before potentially blocking in the
                     // next loop.
                     if (_generator.isCommitted() && !_generator.isComplete() && !_endp.isOutputShutdown())
-                        progress |= _generator.flushBuffer()>0;
+                        _generator.flushBuffer();
 
                     // Flush buffers
                     _endp.flush();
@@ -100,9 +93,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                     if (_parser.isComplete() && _generator.isComplete())
                     {
                         // Reset the parser/generator
-                        progress=true;
                         reset();
-                        _endp.flush();
 
                         // look for a switched connection instance?
                         if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
@@ -121,6 +112,8 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                     }
                 }
             }
+
+            return connection;
         }
         finally
         {
@@ -128,7 +121,5 @@ public class BlockingHttpConnection extends AbstractHttpConnection
             _parser.returnBuffers();
             _generator.returnBuffers();
         }
-        return connection;
     }
-
 }

@@ -178,7 +178,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
                 // If we are handshook let the delegate connection
                 if (_engine.getHandshakeStatus()!=HandshakeStatus.NOT_HANDSHAKING)
-                    progress|=process(null,null);
+                {
+                    progress=process(null,null);
+                }
                 else
                 {
                     // handle the delegate connection
@@ -389,7 +391,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         finally
         {
             releaseBuffers();
-            _progressed.set(some_progress);
+            if (some_progress)
+                _progressed.set(true);
         }
         return some_progress;
     }
@@ -582,11 +585,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             return _engine;
         }
 
-        public SslConnection getSslConnection()
-        {
-            return SslConnection.this;
-        }
-
         public void shutdownOutput() throws IOException
         {
             synchronized (SslConnection.this)
@@ -643,10 +641,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public int flush(Buffer buffer) throws IOException
         {
-            int size=buffer.length();
-            process(null,buffer);
-            int flushed=size-buffer.length();
-            return flushed;
+            int size = buffer.length();
+            process(null, buffer);
+            return size-buffer.length();
         }
 
         public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException

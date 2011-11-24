@@ -79,7 +79,6 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     // Has any IO been done by the endpoint itself since last loop
                     if (_asyncEndp.hasProgressed())
                         progress=true;
-
                 }
                 catch (HttpException e)
                 {
@@ -122,6 +121,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     {
                         // The request is suspended, so even though progress has been made, break the while loop
                         LOG.debug("suspended {}",this);
+                        // TODO: breaking inside finally blocks is bad: rethink how we should exit from here
                         break;
                     }
                 }
@@ -131,11 +131,11 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         {
             setCurrentConnection(null);
             if (!_request.isAsyncStarted())
-            { 
+            {
                 _parser.returnBuffers();
                 _generator.returnBuffers();
             }
-            
+
             // Safety net to catch spinning
             if (some_progress)
                 _total_no_progress=0;

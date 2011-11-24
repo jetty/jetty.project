@@ -122,15 +122,15 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                         exchange.getEventListener().onRequestComplete();
                     }
 
-                    // Flush output
-                    _endp.flush();
-
                     // Read any input that is available
                     if (!_parser.isComplete() && _parser.parseAvailable())
                     {
-                        LOG.debug("parsed");
+                        LOG.debug("parsed {}",exchange);
                         progress=true;
                     }
+
+                    // Flush output
+                    _endp.flush();
 
                     // Has any IO been done by the endpoint itself since last loop
                     if (_asyncEndp.hasProgressed())

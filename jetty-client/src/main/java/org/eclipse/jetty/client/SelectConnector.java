@@ -169,10 +169,8 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             // key should have destination at this point (will be replaced by endpoint after this call)
             HttpDestination dest=(HttpDestination)key.attachment();
 
-            AsyncEndPoint ep=null;
-
-            SelectChannelEndPoint scep= new SelectChannelEndPoint(channel, selectSet, key, (int)_httpClient.getIdleTimeout());
-            ep = scep;
+            SelectChannelEndPoint scep = new SelectChannelEndPoint(channel, selectSet, key, (int)_httpClient.getIdleTimeout());
+            AsyncEndPoint ep = scep;
 
             if (dest.isSecure())
             {
@@ -276,10 +274,10 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
 
         public void upgrade()
         {
-            AsyncHttpConnection connection = (AsyncHttpConnection) ((SelectChannelEndPoint)_endp).getConnection();
+            AsyncHttpConnection connection = (AsyncHttpConnection)_endp.getConnection();
 
             SslConnection sslConnection = new SslConnection(_engine,_endp);
-            ((SelectChannelEndPoint)_endp).setConnection(sslConnection);
+            _endp.setConnection(sslConnection);
 
             _endp=sslConnection.getSslEndPoint();
             sslConnection.getSslEndPoint().setConnection(connection);
