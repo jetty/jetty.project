@@ -210,7 +210,7 @@ public class SelectChannelEndPointTest
             assertEquals(c,(char)b);
         }
         client.close();
-        
+
         int i=0;
         while (server.isOpen())
         {
@@ -344,7 +344,7 @@ public class SelectChannelEndPointTest
         final long start = System.currentTimeMillis();
         client.getOutputStream().write(bytes);
         client.getOutputStream().flush();
-        
+
         new Thread()
         {
             public void run()
@@ -362,10 +362,6 @@ public class SelectChannelEndPointTest
                         }
                         latch.countDown();
                     }
-                }
-                catch(ThreadDeath t)
-                {
-                    throw t;
                 }
                 catch(Throwable e)
                 {

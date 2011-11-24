@@ -4,13 +4,13 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
- 
+
 package org.eclipse.jetty.server.nio;
 
 import java.io.IOException;
@@ -39,25 +39,25 @@ import org.eclipse.jetty.util.log.Logger;
 /**  Blocking NIO connector.
  * This connector uses efficient NIO buffers with a traditional blocking thread model.
  * Direct NIO buffers are used and a thread is allocated per connections.
- * 
+ *
  * This connector is best used when there are a few very active connections.
- * 
+ *
  * @org.apache.xbean.XBean element="blockingNioConnector" description="Creates a blocking NIO based socket connector"
- * 
- * 
+ *
+ *
  *
  */
-public class BlockingChannelConnector extends AbstractNIOConnector 
+public class BlockingChannelConnector extends AbstractNIOConnector
 {
     private static final Logger LOG = Log.getLogger(BlockingChannelConnector.class);
 
     private transient ServerSocketChannel _acceptChannel;
     private final Set<BlockingChannelEndPoint> _endpoints = new ConcurrentHashSet<BlockingChannelEndPoint>();
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /** Constructor.
-     * 
+     *
      */
     public BlockingChannelConnector()
     {
@@ -103,12 +103,12 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                     }
                 }
             }
-            
+
         });
-        
+
     }
 
-    
+
     /* ------------------------------------------------------------ */
     public void open() throws IOException
     {
@@ -128,12 +128,12 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             _acceptChannel.close();
         _acceptChannel=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void accept(int acceptorID)
     	throws IOException, InterruptedException
-    {   
+    {
         SocketChannel channel = _acceptChannel.accept();
         channel.configureBlocking(true);
         Socket socket=channel.socket();
@@ -142,7 +142,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
         BlockingChannelEndPoint connection=new BlockingChannelEndPoint(channel);
         connection.dispatch();
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     @Override
     public void customize(EndPoint endpoint, Request request)
@@ -161,7 +161,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             return -1;
         return _acceptChannel.socket().getLocalPort();
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
@@ -170,14 +170,14 @@ public class BlockingChannelConnector extends AbstractNIOConnector
         private Connection _connection;
         private int _timeout;
         private volatile long _idleTimestamp;
-        
-        BlockingChannelEndPoint(ByteChannel channel) 
+
+        BlockingChannelEndPoint(ByteChannel channel)
             throws IOException
         {
             super(channel,BlockingChannelConnector.this._maxIdleTime);
             _connection = new BlockingHttpConnection(BlockingChannelConnector.this,this,getServer());
         }
-        
+
         /* ------------------------------------------------------------ */
         /** Get the connection.
          * @return the connection
@@ -186,7 +186,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
         {
             return _connection;
         }
-        
+
         /* ------------------------------------------------------------ */
         public void setConnection(Connection connection)
         {
@@ -214,7 +214,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                 LOG.ignore(e);
             }
         }
-        
+
         /* ------------------------------------------------------------ */
         void dispatch() throws IOException
         {
@@ -224,7 +224,7 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                 super.close();
             }
         }
-        
+
         /* ------------------------------------------------------------ */
         /**
          * @see org.eclipse.jetty.io.nio.ChannelEndPoint#fill(org.eclipse.jetty.io.Buffer)
@@ -288,9 +288,9 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                             _timeout=getMaxIdleTime();
                         }
                     }
-                    
+
                     _connection = _connection.handle();
-                    
+
                 }
             }
             catch (EofException e)
@@ -305,10 +305,6 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                 try{super.close();}
                 catch(IOException e2){LOG.ignore(e2);}
             }
-            catch(ThreadDeath e)
-            {
-                throw e;
-            }
             catch(Throwable e)
             {
                 LOG.warn("handle failed",e);
@@ -319,14 +315,14 @@ public class BlockingChannelConnector extends AbstractNIOConnector
             {
                 connectionClosed(_connection);
                 _endpoints.remove(this);
-                
+
                 // wait for client to close, but if not, close ourselves.
                 try
                 {
                     if (!_socket.isClosed())
                     {
                         long timestamp=System.currentTimeMillis();
-                        int max_idle=getMaxIdleTime(); 
+                        int max_idle=getMaxIdleTime();
 
                         _socket.setSoTimeout(getMaxIdleTime());
                         int c=0;

@@ -879,10 +879,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         return;
                 }
             }
-            catch(ThreadDeath th)
-            {
-                throw th;
-            }
             catch(Utf8Appendable.NotUtf8Exception notUtf8)
             {
                 LOG.warn("{} for {}",notUtf8,_endp);

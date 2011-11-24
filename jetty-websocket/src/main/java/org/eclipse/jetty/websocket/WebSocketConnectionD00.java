@@ -18,7 +18,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -299,7 +298,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     {
         close();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void close()
     {
@@ -489,10 +488,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                     if (_websocket instanceof WebSocket.OnBinaryMessage)
                         ((WebSocket.OnBinaryMessage)_websocket).onMessage(array,buffer.getIndex(),buffer.length());
                 }
-            }
-            catch(ThreadDeath th)
-            {
-                throw th;
             }
             catch(Throwable th)
             {

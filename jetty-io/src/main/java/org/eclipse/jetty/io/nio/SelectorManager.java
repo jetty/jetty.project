@@ -283,10 +283,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             {
                                 set.doSelect();
                             }
-                            catch(ThreadDeath e)
-                            {
-                                throw e;
-                            }
                             catch(IOException e)
                             {
                                 LOG.ignore(e);
@@ -506,10 +502,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     catch (CancelledKeyException e)
                     {
                         LOG.ignore(e);
-                    }
-                    catch (ThreadDeath e)
-                    {
-                        throw e;
                     }
                     catch (Throwable e)
                     {

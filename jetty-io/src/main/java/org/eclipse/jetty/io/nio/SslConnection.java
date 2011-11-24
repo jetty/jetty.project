@@ -204,10 +204,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 {
                     _connection.onInputShutdown();
                 }
-                catch (ThreadDeath e)
-                {
-                    throw e;
-                }
                 catch(Throwable x)
                 {
                     LOG.warn("onInputShutdown failed", x);

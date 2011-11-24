@@ -141,10 +141,6 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                     }
 
                 }
-                catch (ThreadDeath e)
-                {
-                    throw e;
-                }
                 catch (Throwable e)
                 {
                     LOG.debug("Failure on " + _exchange, e);

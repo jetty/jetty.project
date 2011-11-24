@@ -626,10 +626,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         {
                             _connection.onInputShutdown();
                         }
-                        catch (ThreadDeath e)
-                        {
-                            throw e;
-                        }
                         catch(Throwable x)
                         {
                             LOG.warn("onInputShutdown failed", x);
