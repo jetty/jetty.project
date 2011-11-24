@@ -149,7 +149,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
     }
 
     public abstract Connection handle() throws IOException;
-    
+
 
     public boolean isIdle()
     {
@@ -275,7 +275,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 _endp.close();
                 return;
             }
-            
+
             switch(status)
             {
                 case HttpStatus.CONTINUE_100:
@@ -295,7 +295,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             _status=status;
             exchange.getEventListener().onResponseStatus(version,status,reason);
             exchange.setStatus(HttpExchange.STATUS_PARSING_HEADERS);
-            
+
         }
 
         @Override
@@ -353,16 +353,19 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 }
             }
         }
-        
-        
+
+
     }
 
     @Override
     public String toString()
     {
-        return "HttpConnection@" + hashCode() + "//" + 
-        (_destination==null?"?.?.?.?:??":(_destination.getAddress().getHost() + ":" + _destination.getAddress().getPort()))+
-        ",g="+_generator.getState()+",p="+_parser.getState();
+        return String.format("%s@%x//%s,g=%s,p=%s",
+                getClass().getSimpleName(),
+                hashCode(),
+                _destination == null ? "?.?.?.?:??" : _destination.getAddress(),
+                _generator,
+                _parser);
     }
 
     public String toDetailString()

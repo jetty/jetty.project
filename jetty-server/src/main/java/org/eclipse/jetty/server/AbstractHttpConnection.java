@@ -55,7 +55,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.thread.Timeout;
 
 /**
  * <p>A HttpConnection represents the connection of a HTTP client to the server
@@ -680,7 +679,11 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return super.toString()+" "+_parser+" "+_generator+" "+_requests;
+        return String.format("%s,g=%s,p=%s,r=%d",
+                super.toString(),
+                _generator,
+                _parser,
+                _requests);
     }
 
     /* ------------------------------------------------------------ */
