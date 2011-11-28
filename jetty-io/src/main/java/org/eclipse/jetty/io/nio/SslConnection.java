@@ -703,14 +703,19 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             _aEndp.scheduleWrite();
         }
 
-        public void scheduleIdle()
+        public void onIdleExpired()
         {
-            _aEndp.scheduleIdle();
+            _aEndp.onIdleExpired();
         }
 
-        public void cancelIdle()
+        public void setCheckForIdle(boolean check)
         {
-            _aEndp.cancelIdle();
+            _aEndp.setCheckForIdle(check);
+        }
+
+        public boolean isCheckForIdle()
+        {
+            return _aEndp.isCheckForIdle();
         }
 
         public void scheduleTimeout(Task task, long timeoutMs)

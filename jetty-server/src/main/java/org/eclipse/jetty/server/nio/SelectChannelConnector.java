@@ -122,7 +122,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
         AsyncEndPoint aEndp = ((AsyncEndPoint)endpoint);
-        aEndp.cancelIdle();
+        aEndp.setCheckForIdle(false);
         request.setTimeStamp(System.currentTimeMillis());
         endpoint.setMaxIdleTime(_maxIdleTime);
         super.customize(endpoint, request);
@@ -132,7 +132,8 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void persist(EndPoint endpoint) throws IOException
     {
-        ((AsyncEndPoint)endpoint).scheduleIdle();
+        AsyncEndPoint aEndp = ((AsyncEndPoint)endpoint);
+        aEndp.setCheckForIdle(true);
         super.persist(endpoint);
     }
 

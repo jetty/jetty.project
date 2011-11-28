@@ -315,8 +315,6 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         @Override
         public void headerComplete() throws IOException
         {
-            if (_endp instanceof AsyncEndPoint)
-                ((AsyncEndPoint)_endp).scheduleIdle();
             HttpExchange exchange = _exchange;
             if (exchange!=null)
                 exchange.setStatus(HttpExchange.STATUS_PARSING_CONTENT);
@@ -325,8 +323,6 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         @Override
         public void content(Buffer ref) throws IOException
         {
-            if (_endp instanceof AsyncEndPoint)
-                ((AsyncEndPoint)_endp).scheduleIdle();
             HttpExchange exchange = _exchange;
             if (exchange!=null)
                 exchange.getEventListener().onResponseContent(ref);

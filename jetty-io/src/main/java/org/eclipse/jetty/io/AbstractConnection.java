@@ -39,7 +39,11 @@ public abstract class AbstractConnection implements Connection
     {
         try
         {
-            _endp.shutdownOutput();
+            LOG.debug("onIdleExpired {} {}",this,_endp);
+            if (_endp.isInputShutdown() || _endp.isOutputShutdown())
+                _endp.close();
+            else
+                _endp.shutdownOutput();
         }
         catch(IOException e)
         {
@@ -52,7 +56,6 @@ public abstract class AbstractConnection implements Connection
             catch(IOException e2)
             {
                 LOG.ignore(e2);
-
             }
         }
     }

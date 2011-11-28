@@ -92,7 +92,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _open=true;
         _key = key;
 
-        scheduleIdle();
+        setCheckForIdle(true);
     }
 
     /* ------------------------------------------------------------ */
@@ -258,29 +258,49 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    public void scheduleIdle()
+    public void setCheckForIdle(boolean check)
     {
-        _idleTimestamp=System.currentTimeMillis();
+        _idleTimestamp=check?System.currentTimeMillis():0;
     }
-
+    
     /* ------------------------------------------------------------ */
-    public void cancelIdle()
+    public boolean isCheckForIdle()
     {
-        _idleTimestamp=0;
+        return _idleTimestamp!=0;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    protected void notIdle()
+    {
+        if (_idleTimestamp!=0)
+            _idleTimestamp=System.currentTimeMillis();
+    }
+    
     /* ------------------------------------------------------------ */
     public void checkIdleTimestamp(long now)
     {
         long idleTimestamp=_idleTimestamp;
         if (!getChannel().isOpen() || idleTimestamp!=0 && _maxIdleTime>0 && now>(idleTimestamp+_maxIdleTime))
+        {
             onIdleExpired();
+            _idleTimestamp=now;
+        }
     }
 
     /* ------------------------------------------------------------ */
-    protected void onIdleExpired()
+    public void onIdleExpired()
     {
         _connection.onIdleExpired();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public int fill(Buffer buffer) throws IOException
+    {
+        int fill=super.fill(buffer);
+        if (fill>0)
+            notIdle();
+        return fill;
     }
 
     /* ------------------------------------------------------------ */
@@ -302,6 +322,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         else if (l>0)
         {
             _writable=true;
+            notIdle();
         }
         return l;
     }
@@ -327,6 +348,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         else if (l>0)
         {
             _writable=true;
+            notIdle();
         }
 
         return l;
@@ -346,6 +368,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
             long now=_selectSet.getNow();
             long end=now+timeoutMs;
+            boolean check=isCheckForIdle();
+            setCheckForIdle(true);
             try
             {
                 _readBlocked=true;
@@ -372,6 +396,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             finally
             {
                 _readBlocked=false;
+                setCheckForIdle(check);
             }
         }
         return true;
@@ -391,6 +416,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
             long now=_selectSet.getNow();
             long end=now+timeoutMs;
+            boolean check=isCheckForIdle();
+            setCheckForIdle(true);
             try
             {
                 _writeBlocked=true;
@@ -416,8 +443,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             finally
             {
                 _writeBlocked=false;
-                if (_idleTimestamp!=-1)
-                    scheduleIdle();
+                setCheckForIdle(check);
             }
         }
         return true;
@@ -528,7 +554,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                                 {
                                     _key.cancel();
                                 }
-                                cancelIdle();
 
                                 if (_open)
                                 {
@@ -557,7 +582,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 if (_key!=null && _key.isValid())
                     _key.cancel();
 
-                cancelIdle();
                 if (_open)
                 {
                     _open=false;

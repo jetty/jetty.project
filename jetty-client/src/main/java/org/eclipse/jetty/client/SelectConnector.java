@@ -331,19 +331,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             _endp.close();
         }
 
-        public void scheduleIdle()
-        {
-            _endp.scheduleIdle();
-        }
-
         public int fill(Buffer buffer) throws IOException
         {
             return _endp.fill(buffer);
-        }
-
-        public void cancelIdle()
-        {
-            _endp.cancelIdle();
         }
 
         public boolean isWritable()
@@ -446,9 +436,25 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
             _endp.setMaxIdleTime(timeMs);
         }
 
+        public void onIdleExpired()
+        {
+            _endp.onIdleExpired();
+        }
+
+        public void setCheckForIdle(boolean check)
+        {
+            _endp.setCheckForIdle(check);
+        }
+
+        public boolean isCheckForIdle()
+        {
+            return _endp.isCheckForIdle();
+        }
+        
         public String toString()
         {
             return "Upgradable:"+_endp.toString();
         }
+
     }
 }

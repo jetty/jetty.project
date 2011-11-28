@@ -24,10 +24,12 @@ import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
+    protected SelectChannelEndPoint _lastEndp;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     protected SelectorManager _manager = new SelectorManager()
@@ -64,6 +66,7 @@ public class SelectChannelEndPointTest
         {
             SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,2000);
             endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+            _lastEndp=endp;
             return endp;
         }
     };
@@ -116,10 +119,7 @@ public class SelectChannelEndPointTest
                 progress=false;
                 _in.compact();
                 if (_in.space()>0 && _endp.fill(_in)>0)
-                {
                     progress=true;
-                    ((AsyncEndPoint)_endp).cancelIdle();
-                }
 
                 while (_blockAt>0 && _in.length()>0 && _in.length()<_blockAt)
                 {
@@ -325,6 +325,54 @@ public class SelectChannelEndPointTest
             assertEquals(c,(char)b);
         }
     }
+    
+    @Test
+    public void testIdle() throws Exception
+    {
+        Socket client = newClient();
+
+        client.setSoTimeout(3000);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.register(server);
+
+        // Write client to server
+        client.getOutputStream().write("HelloWorld".getBytes("UTF-8"));
+
+        // Verify echo server to client
+        for (char c : "HelloWorld".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b>0);
+            assertEquals(c,(char)b);
+        }
+
+        // Set Max idle
+        _lastEndp.setMaxIdleTime(500);
+
+        // read until idle shutdown received
+        long start=System.currentTimeMillis();
+        int b=client.getInputStream().read();
+        assertEquals(-1,b);
+        long idle=System.currentTimeMillis()-start;
+        assertTrue(idle>400);
+        assertTrue(idle<2000);
+        
+        // But endpoint is still open.
+        assertTrue(_lastEndp.isOpen());
+        
+        
+        // Wait for another idle callback
+        Thread.sleep(1000);
+        // endpoint is closed.
+        
+        assertFalse(_lastEndp.isOpen());
+        
+    }
+
+
 
     @Test
     public void testStress() throws Exception

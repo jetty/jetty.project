@@ -43,7 +43,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     public final static byte LENGTH_FRAME=(byte)0x80;
     public final static byte SENTINEL_FRAME=(byte)0x00;
 
-    final IdleCheck _idle;
     final WebSocketParser _parser;
     final WebSocketGenerator _generator;
     final WebSocket _websocket;
@@ -56,8 +55,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         throws IOException
     {
         super(endpoint,timestamp);
-        if (endpoint instanceof AsyncEndPoint)
-            ((AsyncEndPoint)endpoint).cancelIdle();
 
         _endp.setMaxIdleTime(maxIdleTime);
 
@@ -66,28 +63,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
         _generator = new WebSocketGeneratorD00(buffers, _endp);
         _parser = new WebSocketParserD00(buffers, endpoint, new FrameHandlerD00(_websocket));
-
-        if (_endp instanceof SelectChannelEndPoint)
-        {
-            final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
-            scep.cancelIdle();
-            _idle=new IdleCheck()
-            {
-                public void access(EndPoint endp)
-                {
-                    scep.scheduleIdle();
-                }
-            };
-            scep.scheduleIdle();
-        }
-        else
-        {
-            _idle = new IdleCheck()
-            {
-                public void access(EndPoint endp)
-                {}
-            };
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -189,8 +164,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         {
             if (_endp.isOpen())
             {
-                _idle.access(_endp);
-
                 if (_endp.isInputShutdown() && _generator.isBufferEmpty())
                     _endp.close();
                 else
@@ -252,7 +225,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         _generator.addFrame((byte)0,SENTINEL_FRAME,data,0,data.length);
         _generator.flush();
         checkWriteable();
-        _idle.access(_endp);
     }
 
     /* ------------------------------------------------------------ */
@@ -261,7 +233,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         _generator.addFrame((byte)0,LENGTH_FRAME,data,offset,length);
         _generator.flush();
         checkWriteable();
-        _idle.access(_endp);
     }
 
     /* ------------------------------------------------------------ */
@@ -284,7 +255,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         _generator.addFrame((byte)0,opcode,content,offset,length);
         _generator.flush();
         checkWriteable();
-        _idle.access(_endp);
     }
 
     /* ------------------------------------------------------------ */
@@ -368,11 +338,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         {
             throw new IllegalStateException(e);
         }
-    }
-
-    private interface IdleCheck
-    {
-        void access(EndPoint endp);
     }
 
     public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException

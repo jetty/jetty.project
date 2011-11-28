@@ -825,8 +825,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         @Override
         public void headerComplete() throws IOException
         {
-            if (_endp instanceof AsyncEndPoint)
-                ((AsyncEndPoint)_endp).scheduleIdle();
             _requests++;
             _generator.setVersion(_version);
             switch (_version)
@@ -902,8 +900,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         @Override
         public void content(Buffer ref) throws IOException
         {
-            if (_endp instanceof AsyncEndPoint)
-                ((AsyncEndPoint)_endp).scheduleIdle();
             if (_delayedHandling)
             {
                 _delayedHandling=false;
