@@ -365,7 +365,7 @@ public class SelectChannelEndPointTest
         
         
         // Wait for another idle callback
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         // endpoint is closed.
         
         assertFalse(_lastEndp.isOpen());
