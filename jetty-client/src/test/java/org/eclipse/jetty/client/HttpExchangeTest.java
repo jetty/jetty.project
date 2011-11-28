@@ -38,7 +38,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.server.Server;
@@ -62,7 +61,7 @@ public class HttpExchangeTest
     protected static HttpClient _httpClient;
     protected static AtomicInteger _count = new AtomicInteger();
     protected static ServerAndClientCreator serverAndClientCreator = new HttpServerAndClientCreator();
-    
+
     protected static URI getBaseURI()
     {
         return URI.create(_scheme + "://localhost:" + _port + "/");
@@ -123,7 +122,7 @@ public class HttpExchangeTest
     /* ------------------------------------------------------------ */
     /**
      * Test sending data through the exchange.
-     * 
+     *
      * @throws IOException
      */
     public void sender(final int nb, final boolean close) throws Exception
@@ -262,12 +261,12 @@ public class HttpExchangeTest
 
             _httpClient.send(httpExchange[n]);
         }
-        
+
         if (!complete.await(2,TimeUnit.SECONDS))
             System.err.println(_httpClient.dump());
-        
+
         assertTrue(complete.await(20,TimeUnit.SECONDS));
-        
+
         assertEquals("nb="+nb+" close="+close,0,allcontent.get());
     }
 
@@ -301,7 +300,7 @@ public class HttpExchangeTest
             httpExchange.setURI(uri);
             httpExchange.setMethod(HttpMethods.GET);
             _httpClient.send(httpExchange);
-            int status = httpExchange.waitForDone();            
+            int status = httpExchange.waitForDone();
             //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
             String result=httpExchange.getResponseContent();
             assertNotNull("Should have received response content", result);
@@ -311,7 +310,7 @@ public class HttpExchangeTest
             Thread.sleep(5);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Test
     public void testLocalAddressAvailabilityWithContentExchange() throws Exception
@@ -324,9 +323,9 @@ public class HttpExchangeTest
             httpExchange.setMethod(HttpMethods.GET);
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
-            
+
             assertNotNull(httpExchange.getLocalAddress());
-            
+
             String result=httpExchange.getResponseContent();
             assertNotNull("Should have received response content", result);
             assertEquals("i="+i,0,result.indexOf("<hello>"));
@@ -335,13 +334,13 @@ public class HttpExchangeTest
             Thread.sleep(5);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Test
     public void testShutdownWithExchange() throws Exception
     {
         final AtomicReference<Throwable> throwable=new AtomicReference<Throwable>();
-        
+
         HttpExchange httpExchange=new HttpExchange()
         {
 
@@ -373,8 +372,8 @@ public class HttpExchangeTest
             @Override
             public void run()
             {
-                try { 
-                    Thread.sleep(500); 
+                try {
+                    Thread.sleep(500);
                     _httpClient.stop();
                 } catch(Exception e) {e.printStackTrace();}
             }
@@ -390,12 +389,12 @@ public class HttpExchangeTest
     /* ------------------------------------------------------------ */
     @Test
     public void testBigPostWithContentExchange() throws Exception
-    {   
+    {
         int size =32;
         ContentExchange httpExchange=new ContentExchange()
         {
             int total;
-            
+
             @Override
             protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
             {
@@ -438,7 +437,7 @@ public class HttpExchangeTest
                     System.err.println("] --");
                 super.onResponseHeaderComplete();
             }
-            
+
         };
 
         Buffer babuf = new ByteArrayBuffer(size*36*1024);
@@ -451,13 +450,28 @@ public class HttpExchangeTest
             babuf.put(bytes);
             niobuf.put(bytes);
         }
-        
+
         httpExchange.setURI(getBaseURI());
         httpExchange.setMethod(HttpMethods.POST);
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(babuf);
-        
         _httpClient.send(httpExchange);
+
+        long start=System.currentTimeMillis();
+        while(!httpExchange.isDone())
+        {
+            long now=System.currentTimeMillis();
+            if ((now-start)>=10000)
+            {
+                System.err.println("TEST IS TAKING TOOOOO LONG!!!!!!!!!!!!!!!!!!!!");
+                System.err.println("CLIENT:");
+                System.err.println(_httpClient.dump());
+                System.err.println("SERVER:");
+                _server.dumpStdErr();
+                break;
+            }
+            Thread.sleep(100);
+        }
         int status = httpExchange.waitForDone();
         assertEquals(HttpExchange.STATUS_COMPLETED,status);
         String result=httpExchange.getResponseContent();
@@ -469,6 +483,22 @@ public class HttpExchangeTest
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(niobuf);
         _httpClient.send(httpExchange);
+
+        start=System.currentTimeMillis();
+        while(!httpExchange.isDone())
+        {
+            long now=System.currentTimeMillis();
+            if ((now-start)>=10000)
+            {
+                System.err.println("TEST IS TAKING TOOOOO LONG!!!!!!!!!!!!!!!!!!!!");
+                System.err.println("CLIENT:");
+                System.err.println(_httpClient.dump());
+                System.err.println("SERVER:");
+                _server.dumpStdErr();
+                break;
+            }
+            Thread.sleep(100);
+        }
         status = httpExchange.waitForDone();
         assertEquals(HttpExchange.STATUS_COMPLETED, status);
         result=httpExchange.getResponseContent();
@@ -605,13 +635,13 @@ public class HttpExchangeTest
         // reserving one should now work
         c = destination.reserveConnection(500);
         assertNotNull(c);
-        
+
         // release connections
         for (AbstractHttpConnection httpConnection : connections){
             destination.returnConnection(httpConnection,false);
         }
     }
-    
+
     @Test
     public void testOptionsWithExchange() throws Exception
     {
@@ -621,15 +651,15 @@ public class HttpExchangeTest
         httpExchange.setMethod(HttpMethods.OPTIONS);
     //    httpExchange.setRequestHeader("Connection","close");
         _httpClient.send(httpExchange);
-        
+
         int state = httpExchange.waitForDone();
         assertEquals(HttpExchange.STATUS_COMPLETED, state);
         assertEquals(HttpStatus.OK_200,httpExchange.getResponseStatus());
-        
+
         HttpFields headers = httpExchange.getResponseFields();
         HttpAsserts.assertContainsHeaderKey("Content-Length", headers);
         assertEquals("Content-Length header value", 0, headers.getLongField("Content-Length"));
-        
+
         HttpAsserts.assertContainsHeaderKey("Allow",headers);
         String allow = headers.getStringField("Allow");
         String expectedMethods[] =

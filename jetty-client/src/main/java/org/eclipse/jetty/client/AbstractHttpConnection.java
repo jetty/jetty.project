@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpSchemes;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -149,7 +148,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
     }
 
     public abstract Connection handle() throws IOException;
-    
+
 
     public boolean isIdle()
     {
@@ -275,7 +274,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 _endp.close();
                 return;
             }
-            
+
             switch(status)
             {
                 case HttpStatus.CONTINUE_100:
@@ -295,7 +294,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             _status=status;
             exchange.getEventListener().onResponseStatus(version,status,reason);
             exchange.setStatus(HttpExchange.STATUS_PARSING_HEADERS);
-            
+
         }
 
         @Override
@@ -315,8 +314,6 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         @Override
         public void headerComplete() throws IOException
         {
-            if (_endp instanceof AsyncEndPoint)
-                ((AsyncEndPoint)_endp).scheduleIdle();
             HttpExchange exchange = _exchange;
             if (exchange!=null)
                 exchange.setStatus(HttpExchange.STATUS_PARSING_CONTENT);
@@ -325,8 +322,6 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         @Override
         public void content(Buffer ref) throws IOException
         {
-            if (_endp instanceof AsyncEndPoint)
-                ((AsyncEndPoint)_endp).scheduleIdle();
             HttpExchange exchange = _exchange;
             if (exchange!=null)
                 exchange.getEventListener().onResponseContent(ref);
@@ -353,16 +348,19 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 }
             }
         }
-        
-        
+
+
     }
 
     @Override
     public String toString()
     {
-        return "HttpConnection@" + hashCode() + "//" + 
-        (_destination==null?"?.?.?.?:??":(_destination.getAddress().getHost() + ":" + _destination.getAddress().getPort()))+
-        ",g="+_generator.getState()+",p="+_parser.getState();
+        return String.format("%s@%x//%s,g=%s,p=%s",
+                getClass().getSimpleName(),
+                hashCode(),
+                _destination == null ? "?.?.?.?:??" : _destination.getAddress(),
+                _generator,
+                _parser);
     }
 
     public String toDetailString()

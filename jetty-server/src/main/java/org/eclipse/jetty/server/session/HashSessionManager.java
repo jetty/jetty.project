@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server.session;
@@ -43,12 +43,12 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * This manager will create it's own Timer instance to scavenge threads, unless it discovers a shared Timer instance
  * set as the "org.eclipse.jetty.server.session.timer" attribute of the ContextHandler.
- * 
+ *
  */
 public class HashSessionManager extends AbstractSessionManager
 {
     final static Logger __log = SessionHandler.LOG;
-    
+
     protected final ConcurrentMap<String,HashedSession> _sessions=new ConcurrentHashMap<String,HashedSession>();
     private static int __id;
     private Timer _timer;
@@ -61,7 +61,7 @@ public class HashSessionManager extends AbstractSessionManager
     File _storeDir;
     private boolean _lazyLoad=false;
     private volatile boolean _sessionsLoaded=false;
-    
+
     /* ------------------------------------------------------------ */
     public HashSessionManager()
     {
@@ -86,7 +86,7 @@ public class HashSessionManager extends AbstractSessionManager
             _timerStop=true;
             _timer=new Timer("HashSessionScavenger-"+__id++, true);
         }
-        
+
         setScavengePeriod(getScavengePeriod());
 
         if (_storeDir!=null)
@@ -97,7 +97,7 @@ public class HashSessionManager extends AbstractSessionManager
             if (!_lazyLoad)
                 restoreSessions();
         }
- 
+
         setSavePeriod(getSavePeriod());
     }
 
@@ -107,7 +107,7 @@ public class HashSessionManager extends AbstractSessionManager
      */
     @Override
     public void doStop() throws Exception
-    {     
+    {
         // stop the scavengers
         synchronized(this)
         {
@@ -121,16 +121,16 @@ public class HashSessionManager extends AbstractSessionManager
                 _timer.cancel();
             _timer=null;
         }
-        
-        // This will callback invalidate sessions - where we decide if we will save 
+
+        // This will callback invalidate sessions - where we decide if we will save
         super.doStop();
- 
+
         _sessions.clear();
 
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @return the period in seconds at which a check is made for sessions to be invalidated.
      */
     public int getScavengePeriod()
@@ -154,7 +154,7 @@ public class HashSessionManager extends AbstractSessionManager
 
     /* ------------------------------------------------------------ */
     /**
-     * @return seconds Idle period after which a session is saved 
+     * @return seconds Idle period after which a session is saved
      */
     public int getIdleSavePeriod()
     {
@@ -163,15 +163,15 @@ public class HashSessionManager extends AbstractSessionManager
 
       return _idleSavePeriodMs / 1000;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * Configures the period in seconds after which a session is deemed idle and saved 
-     * to save on session memory.  
-     * 
-     * The session is persisted, the values attribute map is cleared and the session set to idled. 
-     * 
-     * @param seconds Idle period after which a session is saved 
+     * Configures the period in seconds after which a session is deemed idle and saved
+     * to save on session memory.
+     *
+     * The session is persisted, the values attribute map is cleared and the session set to idled.
+     *
+     * @param seconds Idle period after which a session is saved
      */
     public void setIdleSavePeriod(int seconds)
     {
@@ -197,7 +197,7 @@ public class HashSessionManager extends AbstractSessionManager
         if (period < 0)
             period=0;
         _savePeriodMs=period;
-        
+
         if (_timer!=null)
         {
             synchronized (this)
@@ -219,7 +219,7 @@ public class HashSessionManager extends AbstractSessionManager
                             {
                                 __log.warn(e);
                             }
-                        }   
+                        }
                     };
                     _timer.schedule(_saveTask,_savePeriodMs,_savePeriodMs);
                 }
@@ -235,10 +235,10 @@ public class HashSessionManager extends AbstractSessionManager
     {
         if (_savePeriodMs<=0)
             return 0;
-        
+
         return _savePeriodMs/1000;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param seconds the period in seconds at which a check is made for sessions to be invalidated.
@@ -268,13 +268,13 @@ public class HashSessionManager extends AbstractSessionManager
                     public void run()
                     {
                         scavenge();
-                    }   
+                    }
                 };
                 _timer.schedule(_task,_scavengePeriodMs,_scavengePeriodMs);
             }
         }
     }
-    
+
     /* -------------------------------------------------------------- */
     /**
      * Find sessions that have timed out and invalidate them. This runs in the
@@ -285,14 +285,14 @@ public class HashSessionManager extends AbstractSessionManager
         //don't attempt to scavenge if we are shutting down
         if (isStopping() || isStopped())
             return;
-        
+
         Thread thread=Thread.currentThread();
         ClassLoader old_loader=thread.getContextClassLoader();
         try
         {
             if (_loader!=null)
                 thread.setContextClassLoader(_loader);
-            
+
             // For each session
             long now=System.currentTimeMillis();
             for (Iterator<HashedSession> i=_sessions.values().iterator(); i.hasNext();)
@@ -306,13 +306,9 @@ public class HashSessionManager extends AbstractSessionManager
                 }
                 else if (_idleSavePeriodMs>0&&session.getAccessed()+_idleSavePeriodMs<now)
                 {
-                    session.idle(); 
+                    session.idle();
                 }
             }
-        }
-        catch (ThreadDeath e)
-        {
-            throw e;
         }
         catch (Throwable t)
         {
@@ -323,7 +319,7 @@ public class HashSessionManager extends AbstractSessionManager
             thread.setContextClassLoader(old_loader);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void addSession(AbstractSession session)
@@ -331,7 +327,7 @@ public class HashSessionManager extends AbstractSessionManager
         if (isRunning())
             _sessions.put(session.getClusterId(),(HashedSession)session);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public AbstractSession getSession(String idInCluster)
@@ -351,7 +347,7 @@ public class HashSessionManager extends AbstractSessionManager
         Map<String,HashedSession> sessions=_sessions;
         if (sessions==null)
             return null;
-        
+
         HashedSession session = sessions.get(idInCluster);
 
         if (session == null && _lazyLoad)
@@ -361,7 +357,7 @@ public class HashSessionManager extends AbstractSessionManager
 
         if (_idleSavePeriodMs!=0)
             session.deIdle();
-        
+
         return session;
     }
 
@@ -389,7 +385,7 @@ public class HashSessionManager extends AbstractSessionManager
                 for (HashedSession session : sessions)
                     session.invalidate();
             }
-            
+
             // check that no new sessions were created while we were iterating
             sessions=new ArrayList<HashedSession>(_sessions.values());
         }
@@ -401,13 +397,13 @@ public class HashSessionManager extends AbstractSessionManager
     {
         return new HashedSession(this, request);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected AbstractSession newSession(long created, long accessed, String clusterId)
     {
         return new HashedSession(this, created,accessed, clusterId);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected boolean removeSession(String clusterId)
@@ -432,7 +428,7 @@ public class HashSessionManager extends AbstractSessionManager
     {
         _lazyLoad = lazyLoad;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isLazyLoad()
     {
@@ -443,7 +439,7 @@ public class HashSessionManager extends AbstractSessionManager
     public void restoreSessions () throws Exception
     {
         _sessionsLoaded = true;
-        
+
         if (_storeDir==null || !_storeDir.exists())
         {
             return;
@@ -470,9 +466,9 @@ public class HashSessionManager extends AbstractSessionManager
             File file = new File(_storeDir,idInCuster);
             if (file.exists())
             {
-                FileInputStream in = new FileInputStream(file);           
+                FileInputStream in = new FileInputStream(file);
                 HashedSession session = restoreSession(in, null);
-                in.close();          
+                in.close();
                 addSession(session, false);
                 session.didActivate();
                 file.delete();
@@ -485,7 +481,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void saveSessions(boolean reactivate) throws Exception
     {
@@ -493,7 +489,7 @@ public class HashSessionManager extends AbstractSessionManager
         {
             return;
         }
-        
+
         if (!_storeDir.canWrite())
         {
             __log.warn ("Unable to save Sessions: Session persistence storage directory "+_storeDir.getAbsolutePath()+ " is not writeable");
@@ -508,7 +504,7 @@ public class HashSessionManager extends AbstractSessionManager
     public HashedSession restoreSession (InputStream is, HashedSession session) throws Exception
     {
         /*
-         * Take care of this class's fields first by calling 
+         * Take care of this class's fields first by calling
          * defaultReadObject
          */
         DataInputStream in = new DataInputStream(is);
@@ -517,7 +513,7 @@ public class HashSessionManager extends AbstractSessionManager
         long created = in.readLong();
         long accessed = in.readLong();
         int requests = in.readInt();
-      
+
         if (session == null)
             session = (HashedSession)newSession(created, accessed, clusterId);
         session.setRequests(requests);
@@ -538,7 +534,7 @@ public class HashSessionManager extends AbstractSessionManager
         return session;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     protected class ClassLoadingObjectInputStream extends ObjectInputStream

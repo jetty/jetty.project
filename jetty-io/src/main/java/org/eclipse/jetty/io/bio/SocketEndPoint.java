@@ -24,11 +24,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/**
- *
- * To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Generation - Code and Comments
- */
 public class SocketEndPoint extends StreamEndPoint
 {
     private static final Logger LOG = Log.getLogger(SocketEndPoint.class);
@@ -88,13 +83,13 @@ public class SocketEndPoint extends StreamEndPoint
     /* ------------------------------------------------------------ */
     @Override
     public boolean isOutputShutdown()
-    {        
+    {
         if (_socket instanceof SSLSocket)
             return super.isOutputShutdown();
-        
+
         return _socket.isClosed() || _socket.isOutputShutdown();
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /*
@@ -137,7 +132,7 @@ public class SocketEndPoint extends StreamEndPoint
                 _socket.close();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.io.bio.StreamEndPoint#shutdownOutput()
@@ -278,4 +273,9 @@ public class SocketEndPoint extends StreamEndPoint
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return _local + " <--> " + _remote;
+    }
 }

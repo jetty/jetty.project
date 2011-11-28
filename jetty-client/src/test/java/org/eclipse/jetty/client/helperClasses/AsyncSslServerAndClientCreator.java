@@ -1,7 +1,5 @@
 package org.eclipse.jetty.client.helperClasses;
 
-import java.io.FileInputStream;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 

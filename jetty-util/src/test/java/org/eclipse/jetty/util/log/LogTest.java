@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.util.log;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import org.junit.AfterClass;
 import org.junit.Assert;

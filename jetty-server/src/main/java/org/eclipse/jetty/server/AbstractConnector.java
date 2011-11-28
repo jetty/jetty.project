@@ -48,8 +48,8 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * <li>Base acceptor thread</li>
  * <li>Optional reverse proxy headers checking</li>
  * </ul>
- * 
- * 
+ *
+ *
  */
 public abstract class AbstractConnector extends HttpBuffers implements Connector, Dumpable
 {
@@ -181,7 +181,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      * <p>
      * Previously, Jetty supported separate idle timeouts and IO operation timeouts, however the expense of changing the value of soTimeout was significant, so
      * these timeouts were merged. With the advent of NIO, it may be possible to again differentiate these values (if there is demand).
-     * 
+     *
      * @param maxIdleTime
      *            The maxIdleTime to set.
      */
@@ -414,13 +414,13 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                 request.setScheme(HttpSchemes.HTTPS);
             }
         }
-        
+
         // Retrieving headers from the request
         String forwardedHost = getLeftMostFieldValue(httpFields,getForwardedHostHeader());
         String forwardedServer = getLeftMostFieldValue(httpFields,getForwardedServerHeader());
         String forwardedFor = getLeftMostFieldValue(httpFields,getForwardedForHeader());
         String forwardedProto = getLeftMostFieldValue(httpFields,getForwardedProtoHeader());
-        
+
         if (_hostHeader != null)
         {
             // Update host header
@@ -462,7 +462,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
             request.setRemoteHost(inetAddress == null?forwardedFor:inetAddress.getHostName());
         }
-        
+
         if (forwardedProto != null)
         {
             request.setScheme(forwardedProto);
@@ -615,7 +615,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     /**
      * Is reverse proxy handling on?
-     * 
+     *
      * @return true if this connector is checking the x-forwarded-for/host/server headers
      */
     public boolean isForwarded()
@@ -627,7 +627,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * Set reverse proxy handling. If set to true, then the X-Forwarded headers (or the headers set in their place) are looked for to set the request protocol,
      * host, server and client ip.
-     * 
+     *
      * @param check
      *            true if this connector is checking the x-forwarded-for/host/server headers
      * @set {@link #setForwardedForHeader(String)}
@@ -652,7 +652,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
      * This value is only used if {@link #isForwarded()} is true.
-     * 
+     *
      * @param hostHeader
      *            The value of the host header to force.
      */
@@ -663,7 +663,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /*
-     * 
+     *
      * @see #setForwarded(boolean)
      */
     public String getForwardedHostHeader()
@@ -726,7 +726,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     /**
      * Get the forwardedProtoHeader.
-     * 
+     *
      * @return the forwardedProtoHeader (default X-Forwarded-For)
      * @see #setForwarded(boolean)
      */
@@ -738,7 +738,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     /**
      * Set the forwardedProtoHeader.
-     * 
+     *
      * @param forwardedProtoHeader
      *            the forwardedProtoHeader to set (default X-Forwarded-For)
      * @see #setForwarded(boolean)
@@ -848,10 +848,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                     {
                         // Connector has been stopped
                         LOG.ignore(x);
-                    }
-                    catch (ThreadDeath e)
-                    {
-                        throw e;
                     }
                     catch (Throwable e)
                     {
@@ -1075,7 +1071,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * Set the priority offset of the acceptor threads. The priority is adjusted by this amount (default 0) to either favour the acceptance of new threads and
      * newly active connections or to favour the handling of already dispatched connections.
-     * 
+     *
      * @param offset
      *            the amount to alter the priority of the acceptor threads.
      */

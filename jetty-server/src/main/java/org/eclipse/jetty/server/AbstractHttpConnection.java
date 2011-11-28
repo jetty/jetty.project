@@ -39,7 +39,6 @@ import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.Buffers;
@@ -56,7 +55,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.thread.Timeout;
 
 /**
  * <p>A HttpConnection represents the connection of a HTTP client to the server
@@ -371,24 +369,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public final void scheduleTimeout(Timeout.Task task, long timeoutMs)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @deprecated
-     */
-    public final void cancelTimeout(Timeout.Task task)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /* ------------------------------------------------------------ */
     public void reset()
     {
         _parser.reset();
@@ -480,10 +460,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     error=true;
                     _request.setHandled(true);
                     _response.sendError(e.getStatus(), e.getReason());
-                }
-                catch (ThreadDeath e)
-                {
-                    throw e;
                 }
                 catch (Throwable e)
                 {
@@ -704,7 +680,11 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return super.toString()+" "+_parser+" "+_generator+" "+_requests;
+        return String.format("%s,g=%s,p=%s,r=%d",
+                super.toString(),
+                _generator,
+                _parser,
+                _requests);
     }
 
     /* ------------------------------------------------------------ */
@@ -850,8 +830,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         @Override
         public void headerComplete() throws IOException
         {
-            if (_endp instanceof AsyncEndPoint)
-                ((AsyncEndPoint)_endp).scheduleIdle();
             _requests++;
             _generator.setVersion(_version);
             switch (_version)
@@ -927,8 +905,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         @Override
         public void content(Buffer ref) throws IOException
         {
-            if (_endp instanceof AsyncEndPoint)
-                ((AsyncEndPoint)_endp).scheduleIdle();
             if (_delayedHandling)
             {
                 _delayedHandling=false;

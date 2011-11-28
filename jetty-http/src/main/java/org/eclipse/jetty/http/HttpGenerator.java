@@ -177,7 +177,7 @@ public class HttpGenerator extends AbstractGenerator
             return;
         }
         _last = last;
-        
+
         // Handle any unfinished business?
         if (_content!=null && _content.length()>0 || _bufferChunked)
         {
@@ -829,7 +829,7 @@ public class HttpGenerator extends AbstractGenerator
     {
         try
         {
-            
+
             if (_state == STATE_HEADER)
                 throw new IllegalStateException("State==HEADER");
 
@@ -851,7 +851,7 @@ public class HttpGenerator extends AbstractGenerator
             int len = -1;
             int to_flush = flushMask();
             int last_flush;
-            
+
             do
             {
                 last_flush=to_flush;
@@ -914,18 +914,18 @@ public class HttpGenerator extends AbstractGenerator
                                 _state = STATE_END;
 
                             if (_state==STATE_END && _persistent != null && !_persistent && _status!=100 && _method==null)
-                                _endp.shutdownOutput();                            
+                                _endp.shutdownOutput();
                         }
                         else
                             // Try to prepare more to write.
                             prepareBuffers();
                     }
-                    
-                }            
+
+                }
 
                 if (len > 0)
                     total+=len;
-                
+
                 to_flush = flushMask();
             }
             // loop while progress is being made (OR we have prepared some buffers that might make progress)
@@ -939,15 +939,15 @@ public class HttpGenerator extends AbstractGenerator
             throw (e instanceof EofException) ? e:new EofException(e);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
-    private int flushMask() 
+    private int flushMask()
     {
         return  ((_header != null && _header.length() > 0)?4:0)
         | ((_buffer != null && _buffer.length() > 0)?2:0)
         | ((_bypass && _content != null && _content.length() > 0)?1:0);
     }
-    
+
     /* ------------------------------------------------------------ */
     private void prepareBuffers()
     {
@@ -962,7 +962,7 @@ public class HttpGenerator extends AbstractGenerator
                 if (_content.length() == 0)
                     _content = null;
             }
-            
+
             // Chunk buffer if need be
             if (_contentLength == HttpTokens.CHUNKED_CONTENT)
             {
@@ -974,7 +974,7 @@ public class HttpGenerator extends AbstractGenerator
 
                     if (_header == null)
                         _header = _buffers.getHeader();
-                    
+
                     // if we need CRLF add this to header
                     if (_needCRLF)
                     {
@@ -985,7 +985,7 @@ public class HttpGenerator extends AbstractGenerator
                     // Add the chunk size to the header
                     BufferUtil.putHexInt(_header, size);
                     _header.put(HttpTokens.CRLF);
-                    
+
                     // Need a CRLF after the content
                     _needCRLF=true;
                 }
@@ -1018,7 +1018,7 @@ public class HttpGenerator extends AbstractGenerator
                             // No space so lets use a header buffer.
                             if (_header == null)
                                 _header = _buffers.getHeader();
-                            
+
                             if (_needCRLF)
                             {
                                 if (_header.length() > 0) throw new IllegalStateException("EOC");
@@ -1101,10 +1101,11 @@ public class HttpGenerator extends AbstractGenerator
     @Override
     public String toString()
     {
-        return "HttpGenerator{s="+_state+
-        ",h="+(_header==null?"":_header.length())+
-        ",b="+(_buffer==null?"":_buffer.length())+
-        ",c="+(_content==null?"":_content.length())+
-        "}";
+        return String.format("%s{s=%d,h=%d,b=%d,c=%d}",
+                getClass().getSimpleName(),
+                _state,
+                _header == null ? -1 : _header.length(),
+                _buffer == null ? -1 : _buffer.length(),
+                _content == null ? -1 : _content.length());
     }
 }

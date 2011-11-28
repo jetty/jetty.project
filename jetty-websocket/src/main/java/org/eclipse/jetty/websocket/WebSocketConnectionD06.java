@@ -28,7 +28,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -76,7 +75,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
 
     private final static byte[] MAGIC;
-    private final IdleCheck _idle;
     private final WebSocketParser _parser;
     private final WebSocketGenerator _generator;
     private final WebSocket _webSocket;
@@ -116,9 +114,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     {
         super(endpoint,timestamp);
 
-        if (endpoint instanceof AsyncEndPoint)
-            ((AsyncEndPoint)endpoint).cancelIdle();
-
         _endp.setMaxIdleTime(maxIdleTime);
 
         _webSocket = websocket;
@@ -129,28 +124,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         _generator = new WebSocketGeneratorD06(buffers, _endp,null);
         _parser = new WebSocketParserD06(buffers, endpoint, _frameHandler,true);
         _protocol=protocol;
-
-        if (_endp instanceof SelectChannelEndPoint)
-        {
-            final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
-            scep.cancelIdle();
-            _idle=new IdleCheck()
-            {
-                public void access(EndPoint endp)
-                {
-                    scep.scheduleIdle();
-                }
-            };
-            scep.scheduleIdle();
-        }
-        else
-        {
-            _idle = new IdleCheck()
-            {
-                public void access(EndPoint endp)
-                {}
-            };
-        }
 
         _maxTextMessageSize=buffers.getBufferSize();
         _maxBinaryMessageSize=-1;
@@ -200,7 +173,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         {
             if (_endp.isOpen())
             {
-                _idle.access(_endp);
                 if (_closedIn && _closedOut && _generator.isBufferEmpty())
                     _endp.close();
                 else if (_endp.isInputShutdown() && !_closedIn)
@@ -334,7 +306,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,0,data.length);
             _generator.flush();
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -345,7 +316,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_BINARY,content,offset,length);
             _generator.flush();
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -356,7 +326,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _generator.addFrame(flags,opcode,content,offset,length);
             _generator.flush();
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -367,7 +336,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _generator.addFrame((byte)0x8,control,data,offset,length);
             _generator.flush();
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -511,7 +479,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         {
             close();
         }
-        
+
         /* ------------------------------------------------------------ */
         public void close()
         {
@@ -713,10 +681,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                         }
                     }
                 }
-                catch(ThreadDeath th)
-                {
-                    throw th;
-                }
                 catch(Throwable th)
                 {
                     LOG.warn(th);
@@ -733,12 +697,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         {
             return WebSocketConnectionD06.this.toString()+"FH";
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    private interface IdleCheck
-    {
-        void access(EndPoint endp);
     }
 
     /* ------------------------------------------------------------ */

@@ -142,11 +142,6 @@ public class Log
                 LOG.debug("Logging to {} via {}", LOG, log_class.getName());
             }
         }
-        catch(ThreadDeath e) 
-        {
-            // Let ThreadDeath pass through
-            throw e;
-        }
         catch(Throwable e)
         {
             // Unable to load specified Logger implementation, default to standard logging.
@@ -163,7 +158,7 @@ public class Log
         {
             e.printStackTrace();
         }
-        
+
         if (LOG == null)
         {
             log_class = StdErrLog.class;
@@ -186,7 +181,7 @@ public class Log
         initialized();
         return LOG;
     }
-    
+
     /**
      * Get the root logger.
      * @return the root logger
@@ -397,10 +392,10 @@ public class Log
             return;
         LOG.warn(EXCEPTION, th);
     }
-    
+
     /**
      * Obtain a named Logger based on the fully qualified class name.
-     * 
+     *
      * @param clazz
      *            the class to base the Logger name off of
      * @return the Logger with the given name

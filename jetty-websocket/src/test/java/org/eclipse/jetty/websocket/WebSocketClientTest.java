@@ -1,6 +1,6 @@
 package org.eclipse.jetty.websocket;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
 
 import java.io.BufferedReader;
 import java.io.IOException;

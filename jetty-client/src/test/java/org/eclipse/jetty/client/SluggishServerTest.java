@@ -3,8 +3,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -13,8 +11,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpHeaderValues;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.io.Buffer;

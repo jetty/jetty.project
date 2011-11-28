@@ -31,16 +31,14 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class BlockingHttpConnection extends AbstractHttpConnection
 {
-
     private static final Logger LOG = Log.getLogger(BlockingHttpConnection.class);
 
     private boolean _requestComplete;
-    private int _status;
     private Buffer _requestContentChunk;
 
-    BlockingHttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
+    BlockingHttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endPoint)
     {
-        super(requestBuffers,responseBuffers,endp);
+        super(requestBuffers, responseBuffers, endPoint);
     }
 
     protected void reset() throws IOException
@@ -131,19 +129,14 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                         exchange.getEventListener().onRequestComplete();
                     }
 
-                    // Flush output
-                    _endp.flush();
-
                     // Read any input that is available
                     if (!_parser.isComplete() && _parser.parseAvailable())
                     {
                         LOG.debug("parsed");
                     }
 
-                }
-                catch (ThreadDeath e)
-                {
-                    throw e;
+                    // Flush output
+                    _endp.flush();
                 }
                 catch (Throwable e)
                 {
@@ -235,7 +228,6 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                             if (_exchange==null && !isReserved())  // TODO how do we return switched connections?
                                 _destination.returnConnection(this, !persistent);
                         }
-
                     }
                 }
             }
@@ -248,14 +240,6 @@ public class BlockingHttpConnection extends AbstractHttpConnection
 
         return connection;
     }
-
-
-    public void onInputShutdown() throws IOException
-    {
-        if (_generator.isIdle())
-            _endp.shutdownOutput();
-    }
-
 
     @Override
     public boolean send(HttpExchange ex) throws IOException

@@ -1,6 +1,8 @@
 package org.eclipse.jetty.websocket;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -19,7 +21,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.nio.ChannelEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;

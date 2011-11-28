@@ -25,8 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;

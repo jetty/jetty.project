@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.xml;
@@ -53,11 +53,11 @@ import org.xml.sax.SAXException;
 /**
  * Configure Objects from XML. This class reads an XML file conforming to the configure.dtd DTD and uses it to configure and object by calling set, put or other
  * methods on the object.
- * 
+ *
  * <p>
  * The actual XML file format may be changed (eg to spring XML) by implementing the {@link ConfigurationProcessorFactory} interfaces to be found by the
  * <code>ServiceLoader</code> by using the DTD and first tag element in the file. Note that DTD will be null if validation is off.
- * 
+ *
  */
 public class XmlConfiguration
 {
@@ -69,7 +69,7 @@ public class XmlConfiguration
     private static final Class<?>[] __primitiveHolders =
     { Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class };
     private static final Integer ZERO = new Integer(0);
-    
+
     private static final Iterable<?> __factoryLoader;
     static
     {
@@ -77,7 +77,7 @@ public class XmlConfiguration
         try
         {
             // Use reflection to look up 1.6 service loader
-            // loader=ServiceLoader.load(ConfigurationProcessorFactory.class); 
+            // loader=ServiceLoader.load(ConfigurationProcessorFactory.class);
             Class<?> slc = ClassLoader.getSystemClassLoader().loadClass("java.util.ServiceLoader");
             Method load = slc.getMethod("load",Class.class);
             loader=(Iterable<?>)load.invoke(null,ConfigurationProcessorFactory.class);
@@ -90,7 +90,7 @@ public class XmlConfiguration
         {
             __factoryLoader=loader;
         }
-    }  
+    }
 
     /* ------------------------------------------------------------ */
     private static XmlParser __parser;
@@ -135,7 +135,7 @@ public class XmlConfiguration
     /* ------------------------------------------------------------ */
     /**
      * Constructor. Reads the XML configuration file.
-     * 
+     *
      * @param configuration
      */
     public XmlConfiguration(URL configuration) throws SAXException, IOException
@@ -152,7 +152,7 @@ public class XmlConfiguration
     /* ------------------------------------------------------------ */
     /**
      * Constructor.
-     * 
+     *
      * @param configuration
      *            String of XML configuration commands excluding the normal XML preamble. The String should start with a " <Configure ...." element.
      * @exception SAXException
@@ -170,11 +170,11 @@ public class XmlConfiguration
             _dtd=__parser.getDTD();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Constructor.
-     * 
+     *
      * @param configuration
      *            An input stream containing a complete e.g. configuration file
      * @exception SAXException
@@ -217,7 +217,7 @@ public class XmlConfiguration
                 if (_processor!=null)
                     break;
             }
-            
+
             if (_processor==null)
                 throw new IllegalStateException("Unknown configuration type: "+config.getTag()+" in "+this);
         }
@@ -227,7 +227,7 @@ public class XmlConfiguration
         }
         _processor.init(_url,_config,_idMap, _propertyMap);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     public Map<String, Object> getIdMap()
@@ -263,13 +263,13 @@ public class XmlConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * Configure an object. 
+     * Configure an object.
      *
      * <p>Apply the XML configuration script to the passed object.</p>
-     * 
+     *
      * @param obj
      *            The object to be configured, which must be of a type or super type of the class attribute of the Configure element.
-     * @exception Exception 
+     * @exception Exception
      */
     public Object configure(Object obj) throws Exception
     {
@@ -279,7 +279,7 @@ public class XmlConfiguration
     /* ------------------------------------------------------------ */
     /**
      * Configure an object. If the configuration has an ID, an object is looked up by ID and it's type check. Otherwise a new object is created.
-     * 
+     *
      * @return The newly created configured object.
      * @exception Exception
      */
@@ -335,7 +335,7 @@ public class XmlConfiguration
             configure(obj,_config,0);
             return obj;
         }
-        
+
         /* ------------------------------------------------------------ */
         private Class<?> nodeClass(XmlParser.Node node) throws ClassNotFoundException
         {
@@ -345,11 +345,11 @@ public class XmlConfiguration
 
             return Loader.loadClass(XmlConfiguration.class,className,true);
         }
-        
+
         /* ------------------------------------------------------------ */
         /**
          * Recursive configuration step. This method applies the remaining Set, Put and Call elements to the current object.
-         * 
+         *
          * @param obj
          * @param cfg
          * @param i
@@ -403,7 +403,7 @@ public class XmlConfiguration
          * Call a set method. This method makes a best effort to find a matching set method. The type of the value is used to find a suitable set method by 1.
          * Trying for a trivial type match. 2. Looking for a native type match. 3. Trying all correctly named methods for an auto conversion. 4. Attempting to
          * construct a suitable value from original value. @param obj
-         * 
+         *
          * @param node
          */
         private void set(Object obj, XmlParser.Node node) throws Exception
@@ -583,7 +583,7 @@ public class XmlConfiguration
         /* ------------------------------------------------------------ */
         /*
          * Call a put method.
-         * 
+         *
          * @param obj @param node
          */
         private void put(Object obj, XmlParser.Node node) throws Exception
@@ -602,7 +602,7 @@ public class XmlConfiguration
         /* ------------------------------------------------------------ */
         /*
          * Call a get method. Any object returned from the call is passed to the configure method to consume the remaining elements. @param obj @param node
-         * 
+         *
          * @return @exception Exception
          */
         private Object get(Object obj, XmlParser.Node node) throws Exception
@@ -648,7 +648,7 @@ public class XmlConfiguration
          * Call a method. A method is selected by trying all methods with matching names and number of arguments. Any object returned from the call is passed to
          * the configure method to consume the remaining elements. Note that if this is a static call we consider only methods declared directly in the given
          * class. i.e. we ignore any static methods in superclasses. @param obj
-         * 
+         *
          * @param node @return @exception Exception
          */
         private Object call(Object obj, XmlParser.Node node) throws Exception
@@ -710,7 +710,7 @@ public class XmlConfiguration
         /* ------------------------------------------------------------ */
         /*
          * Create a new value object.
-         * 
+         *
          * @param obj @param node @return @exception Exception
          */
         private Object newObj(Object obj, XmlParser.Node node) throws Exception
@@ -785,7 +785,7 @@ public class XmlConfiguration
         /* ------------------------------------------------------------ */
         /*
          * Reference an id value object.
-         * 
+         *
          * @param obj @param node @return @exception NoSuchMethodException @exception ClassNotFoundException @exception InvocationTargetException
          */
         private Object refObj(Object obj, XmlParser.Node node) throws Exception
@@ -903,7 +903,7 @@ public class XmlConfiguration
         /* ------------------------------------------------------------ */
         /*
          * Create a new value object.
-         * 
+         *
          * @param obj @param node @return @exception Exception
          */
         private Object propertyObj(Object obj, XmlParser.Node node) throws Exception
@@ -1113,7 +1113,7 @@ public class XmlConfiguration
      * <p>
      * Any IDs created in a configuration are passed to the next configuration file on the command line using {@link #getIdMap()} and {@link #setIdMap(Map)} .
      * This allows objects with IDs created in one config file to be referenced in subsequent config files on the command line.
-     * 
+     *
      * @param args
      *            array of property and xml configuration filenames or {@link Resource}s.
      */
@@ -1221,16 +1221,13 @@ public class XmlConfiguration
         Throwable th = exception.get();
         if (th != null)
         {
-            if (th instanceof Exception)
+            if (th instanceof RuntimeException)
+                throw (RuntimeException)th;
+            else if (th instanceof Exception)
                 throw (Exception)th;
             else if (th instanceof Error)
                 throw (Error)th;
-            else if (th instanceof RuntimeException)
-                throw (RuntimeException)th;
-            else if (th instanceof ThreadDeath)
-                throw (ThreadDeath)th;
             throw new Error(th);
         }
     }
-
 }

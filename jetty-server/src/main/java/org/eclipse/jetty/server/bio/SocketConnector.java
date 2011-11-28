@@ -19,7 +19,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpException;
@@ -30,9 +29,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
-import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -156,19 +156,28 @@ public class SocketConnector extends AbstractConnector
     protected void doStop() throws Exception
     {
         super.doStop();
-        Set set=null;
-
+        Set<EndPoint> set = new HashSet<EndPoint>();
         synchronized(_connections)
         {
-            set= new HashSet(_connections);
+            set.addAll(_connections);
         }
-
-        Iterator iter=set.iterator();
-        while(iter.hasNext())
+        for (EndPoint endPoint : set)
         {
-            ConnectorEndPoint connection = (ConnectorEndPoint)iter.next();
+            ConnectorEndPoint connection = (ConnectorEndPoint)endPoint;
             connection.close();
         }
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        super.dump(out, indent);
+        Set<EndPoint> connections = new HashSet<EndPoint>();
+        synchronized (_connections)
+        {
+            connections.addAll(_connections);
+        }
+        AggregateLifeCycle.dump(out, indent, connections);
     }
 
     /* ------------------------------------------------------------------------------- */

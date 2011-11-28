@@ -18,8 +18,10 @@ import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -31,13 +33,15 @@ import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
 
-class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
+class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector, Dumpable
 {
     private static final Logger LOG = Log.getLogger(SelectConnector.class);
 
@@ -67,6 +71,17 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
     protected void doStop() throws Exception
     {
         _selectorManager.stop();
+    }
+
+    public String dump()
+    {
+        return AggregateLifeCycle.dump(this);
+    }
+
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dump(out, indent, Arrays.asList(_selectorManager));
     }
 
     /* ------------------------------------------------------------ */
@@ -155,10 +170,8 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             // key should have destination at this point (will be replaced by endpoint after this call)
             HttpDestination dest=(HttpDestination)key.attachment();
 
-            AsyncEndPoint ep=null;
-
-            SelectChannelEndPoint scep= new SelectChannelEndPoint(channel, selectSet, key, (int)_httpClient.getIdleTimeout());
-            ep = scep;
+            SelectChannelEndPoint scep = new SelectChannelEndPoint(channel, selectSet, key, (int)_httpClient.getIdleTimeout());
+            AsyncEndPoint ep = scep;
 
             if (dest.isSecure())
             {
@@ -262,10 +275,10 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
 
         public void upgrade()
         {
-            AsyncHttpConnection connection = (AsyncHttpConnection) ((SelectChannelEndPoint)_endp).getConnection();
+            AsyncHttpConnection connection = (AsyncHttpConnection)_endp.getConnection();
 
             SslConnection sslConnection = new SslConnection(_engine,_endp);
-            ((SelectChannelEndPoint)_endp).setConnection(sslConnection);
+            _endp.setConnection(sslConnection);
 
             _endp=sslConnection.getSslEndPoint();
             sslConnection.getSslEndPoint().setConnection(connection);
@@ -319,19 +332,9 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             _endp.close();
         }
 
-        public void scheduleIdle()
-        {
-            _endp.scheduleIdle();
-        }
-
         public int fill(Buffer buffer) throws IOException
         {
             return _endp.fill(buffer);
-        }
-
-        public void cancelIdle()
-        {
-            _endp.cancelIdle();
         }
 
         public boolean isWritable()
@@ -434,9 +437,25 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector
             _endp.setMaxIdleTime(timeMs);
         }
 
+        public void onIdleExpired()
+        {
+            _endp.onIdleExpired();
+        }
+
+        public void setCheckForIdle(boolean check)
+        {
+            _endp.setCheckForIdle(check);
+        }
+
+        public boolean isCheckForIdle()
+        {
+            return _endp.isCheckForIdle();
+        }
+        
         public String toString()
         {
             return "Upgradable:"+_endp.toString();
         }
+
     }
 }

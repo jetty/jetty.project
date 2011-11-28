@@ -29,18 +29,26 @@ public interface AsyncEndPoint extends ConnectedEndPoint
      * Set the endpoint to not be writable and schedule a dispatch when
      * it becomes writable.
      */
-    public void scheduleWrite();
-    
-    /* ------------------------------------------------------------ */
-    /** Schedule a call to the idle timeout
-     */
-    public void scheduleIdle();   
-    
-    /* ------------------------------------------------------------ */
-    /** Cancel a call to the idle timeout
-     */
-    public void cancelIdle();
+    public void scheduleWrite();  
 
+    /* ------------------------------------------------------------ */
+    /** Callback when idle.
+     * <p>An endpoint is idle if there has been no IO activity for 
+     * {@link #getMaxIdleTime()} and {@link #isCheckForIdle()} is true.
+     */
+    public void onIdleExpired();
+
+    /* ------------------------------------------------------------ */
+    /** Set if the endpoint should be checked for idleness
+     */
+    public void setCheckForIdle(boolean check);
+
+    /* ------------------------------------------------------------ */
+    /** Get if the endpoint should be checked for idleness
+     */
+    public boolean isCheckForIdle();
+
+    
     /* ------------------------------------------------------------ */
     public boolean isWritable();
 

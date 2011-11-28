@@ -19,8 +19,6 @@ import static org.hamcrest.Matchers.not;
 import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
 import org.eclipse.jetty.client.helperClasses.SslServerAndClientCreator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;

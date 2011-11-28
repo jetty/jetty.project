@@ -92,7 +92,7 @@ jetty-7.5.3.v20111011 - 11 October 2011
  + 358649 StdErrLog system properties for package/class logging LEVEL.
 
 jetty-7.5.2.v20111006 - 06 October 2011
- + 336443 add missing comma in DigestAuthenticator string
+ + 336443 check nonce count is increasing
  + 342161 ScannerTest fails intermittently on Mac OS X
  + 346419 testing HttpClient FDs
  + 353267 Request._parameters initialization bug

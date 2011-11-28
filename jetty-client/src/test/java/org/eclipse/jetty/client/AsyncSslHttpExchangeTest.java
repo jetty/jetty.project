@@ -40,9 +40,9 @@ public class AsyncSslHttpExchangeTest extends SslHttpExchangeTest
 
 
     @Override
-    public void testGetWithContentExchange() throws Exception
+    public void testBigPostWithContentExchange() throws Exception
     {
-        super.testGetWithContentExchange();
+        super.testBigPostWithContentExchange();
     }
     
 }

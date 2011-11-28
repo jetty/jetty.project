@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -195,6 +196,8 @@ public class WebSocketFactory
         if (draft < 0)
             draft = request.getIntHeader("Sec-WebSocket-Draft");
         AbstractHttpConnection http = AbstractHttpConnection.getCurrentConnection();
+        if (http instanceof BlockingHttpConnection)
+            throw new IllegalStateException("Websockets not supported on blocking connectors");
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
 
         List<String> extensions_requested = new ArrayList<String>();

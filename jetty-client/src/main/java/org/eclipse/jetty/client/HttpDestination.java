@@ -439,14 +439,7 @@ public class HttpDestination implements Dumpable
 
     public void returnIdleConnection(AbstractHttpConnection connection)
     {
-        try
-        {
-            connection.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-        }
+        connection.onIdleExpired();
 
         boolean startConnection = false;
         synchronized (this)
