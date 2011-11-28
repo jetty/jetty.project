@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.security.KeyStore;
 import java.util.Arrays;
-import java.util.Random;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;

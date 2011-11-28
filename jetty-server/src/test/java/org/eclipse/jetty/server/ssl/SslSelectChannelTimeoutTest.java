@@ -23,7 +23,6 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
 {

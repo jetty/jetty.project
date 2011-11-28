@@ -24,8 +24,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-import junit.framework.Assert;
-
 import org.junit.Test;
 
 /**

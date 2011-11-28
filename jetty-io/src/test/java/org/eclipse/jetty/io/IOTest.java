@@ -27,7 +27,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.IO;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**

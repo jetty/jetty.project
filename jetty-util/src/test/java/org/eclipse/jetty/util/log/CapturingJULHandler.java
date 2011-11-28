@@ -1,6 +1,6 @@
 package org.eclipse.jetty.util.log;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
