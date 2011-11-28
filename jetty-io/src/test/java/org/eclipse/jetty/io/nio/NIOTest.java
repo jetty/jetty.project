@@ -65,7 +65,7 @@ public class NIOTest
         server.getOutputStream().flush();
         
         // select again and assert selection found for read
-        selected = selector.selectNow();
+        selected = selector.select(1000);
         assertEquals(1,selected);
         assertEquals(1,selector.selectedKeys().size());
         assertTrue(key.isValid());
@@ -73,7 +73,7 @@ public class NIOTest
         assertEquals(1,key.readyOps());
 
         // select again and see that it is not reselect, but stays selected
-        selected = selector.selectNow();
+        selected = selector.select(100);
         assertEquals(0,selected);
         assertEquals(1,selector.selectedKeys().size());
         assertTrue(key.isValid());
@@ -94,7 +94,7 @@ public class NIOTest
         assertEquals(1,key.readyOps());
         
         // Even if we select again ?
-        selected = selector.selectNow();
+        selected = selector.select(100);
         assertEquals(0,selected);
         assertEquals(1,selector.selectedKeys().size());
         assertTrue(key.isValid());
@@ -110,7 +110,7 @@ public class NIOTest
         assertEquals(1,key.readyOps());
         
         // Now if we select again - it is still flagged as readable!!!
-        selected = selector.selectNow();
+        selected = selector.select(100);
         assertEquals(0,selected);
         assertEquals(0,selector.selectedKeys().size());
         assertTrue(key.isValid());
@@ -119,7 +119,7 @@ public class NIOTest
         
         // Only when it is selected for something else does that state change.
         key.interestOps(SelectionKey.OP_READ|SelectionKey.OP_WRITE);
-        selected = selector.selectNow();
+        selected = selector.select(1000);
         assertEquals(1,selected);
         assertEquals(1,selector.selectedKeys().size());
         assertTrue(key.isValid());
