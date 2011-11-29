@@ -103,6 +103,12 @@ public class BufferCache
         return lookup(buffer).toString();
     }
 
+    public int getOrdinal(String value)
+    {
+        CachedBuffer buffer = (CachedBuffer)_stringMap.get(value);
+        return buffer==null?-1:buffer.getOrdinal();
+    }
+    
     public int getOrdinal(Buffer buffer)
     {
         if (buffer instanceof CachedBuffer)

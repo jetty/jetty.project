@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.io;
@@ -19,7 +19,7 @@ import java.io.IOException;
 
 /* ------------------------------------------------------------ */
 /** ByteArrayEndPoint.
- * 
+ *
  *
  */
 public class ByteArrayEndPoint implements ConnectedEndPoint
@@ -36,12 +36,12 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
 
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     public ByteArrayEndPoint()
     {
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.io.ConnectedEndPoint#getConnection()
@@ -80,7 +80,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
 
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     public ByteArrayEndPoint(byte[] input, int outputSize)
     {
@@ -121,9 +121,9 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     {
         _out = out;
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#isOpen()
      */
     public boolean isOpen()
@@ -150,7 +150,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#isBlocking()
      */
     public boolean isBlocking()
@@ -171,7 +171,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#shutdownOutput()
      */
     public void shutdownOutput() throws IOException
@@ -180,16 +180,16 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#shutdownInput()
      */
     public void shutdownInput() throws IOException
     {
         close();
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#close()
      */
     public void close() throws IOException
@@ -198,30 +198,30 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
      */
     public int fill(Buffer buffer) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
-        
+
         if (_in!=null && _in.length()>0)
         {
             int len = buffer.put(_in);
             _in.skip(len);
             return len;
         }
-        
+
         if (_in!=null && _in.length()==0 && _nonBlocking)
             return 0;
-        
+
         close();
         return -1;
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer)
      */
     public int flush(Buffer buffer) throws IOException
@@ -252,24 +252,24 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
     public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
-        
+
         int flushed=0;
-        
+
         if (header!=null && header.length()>0)
             flushed=flush(header);
-        
+
         if (header==null || header.length()==0)
         {
             if (buffer!=null && buffer.length()>0)
                 flushed+=flush(buffer);
-            
+
             if (buffer==null || buffer.length()==0)
             {
                 if (trailer!=null && trailer.length()>0)
@@ -278,13 +278,13 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
                 }
             }
         }
-        
+
         return flushed;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * 
+     *
      */
     public void reset()
     {
@@ -296,7 +296,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalAddr()
      */
     public String getLocalAddr()
@@ -305,7 +305,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalHost()
      */
     public String getLocalHost()
@@ -314,7 +314,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getLocalPort()
      */
     public int getLocalPort()
@@ -323,7 +323,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemoteAddr()
      */
     public String getRemoteAddr()
@@ -332,7 +332,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemoteHost()
      */
     public String getRemoteHost()
@@ -341,7 +341,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getRemotePort()
      */
     public int getRemotePort()
@@ -350,7 +350,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.io.EndPoint#getConnection()
      */
     public Object getTransport()
@@ -360,27 +360,9 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
 
     /* ------------------------------------------------------------ */
     public void flush() throws IOException
-    {   
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingInput()
     {
-        return false;
     }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingOutput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferred()
-    {
-        return false;
-    }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @return the growOutput

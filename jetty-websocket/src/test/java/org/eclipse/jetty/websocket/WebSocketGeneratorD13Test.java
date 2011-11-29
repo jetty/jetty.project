@@ -1,9 +1,11 @@
 package org.eclipse.jetty.websocket;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -196,5 +198,41 @@ public class WebSocketGeneratorD13Test
         for (int i=0;i<b.length;i++)
             assertEquals('0'+(i%10),0xff&getMasked());
     }
+
     
+    @Test
+    public void testClose() throws Exception
+    {
+        _generator = new WebSocketGeneratorD13(_buffers, _endPoint,null);
+
+        byte[] data = "xxGame Over".getBytes(StringUtil.__UTF8);
+        data[0]=(byte)(1000/0x100);
+        data[1]=(byte)(1000%0x100);
+        _generator.addFrame((byte)0x8,(byte)0x08,data,0,data.length);
+        _generator.flush();
+        assertEquals((byte)0x88,_out.get());
+        assertEquals(11,0xff&_out.get());
+        _out.get();
+        _out.get();
+        assertEquals('G',_out.get());
+        assertEquals('a',_out.get());
+        assertEquals('m',_out.get());
+        assertEquals('e',_out.get());
+        assertEquals(' ',_out.get());
+        assertEquals('O',_out.get());
+        assertEquals('v',_out.get());
+        assertEquals('e',_out.get());
+        assertEquals('r',_out.get());
+
+        try
+        {
+            _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length);
+            assertTrue(false);
+        }
+        catch(EofException e)
+        {
+        }
+        
+        assertTrue(_endPoint.isOutputShutdown());
+    }
 }

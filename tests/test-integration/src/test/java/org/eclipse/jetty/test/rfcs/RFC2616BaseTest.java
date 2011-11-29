@@ -1075,8 +1075,6 @@ public abstract class RFC2616BaseTest
         specId = "10.3 Redirection HTTP/1.0 - basic";
         response.assertStatus(specId,HttpStatus.FOUND_302);
         response.assertHeader(specId,"Location",serverURI + "/tests/");
-        response.assertHeader(specId,"Connection","close");
-
     }
 
     /**
@@ -1136,9 +1134,6 @@ public abstract class RFC2616BaseTest
         String specId = "10.3 Redirection HTTP/1.0 w/content";
         response.assertStatus(specId,HttpStatus.FOUND_302);
         response.assertHeader(specId,"Location",server.getScheme() + "://localhost/tests/R1.txt");
-        response.assertHeader(specId,"Connection","close");
-        response.assertHeaderNotPresent(specId,"Content-Length");
-
     }
 
     /**
@@ -1803,7 +1798,6 @@ public abstract class RFC2616BaseTest
 
         response = responses.get(1); // response 2
         response.assertStatusOK(specId);
-        response.assertHeader(specId,"Connection","close");
         response.assertBodyContains(specId,"Resource=R2");
 
         /* Compatibility with HTTP/1.0 */
@@ -1849,7 +1843,6 @@ public abstract class RFC2616BaseTest
 
         response = responses.get(2);
         response.assertStatusOK(specId);
-        response.assertHeader(specId,"Connection","close");
         response.assertBody(specId,"Host=Default\nResource=R2\n");
     }
 

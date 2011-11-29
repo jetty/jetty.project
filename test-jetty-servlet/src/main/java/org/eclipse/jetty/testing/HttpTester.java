@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.bio.StringEndPoint;
@@ -130,14 +131,31 @@ public class HttpTester
      * @return Any unparsed data in the rawHTTP (eg pipelined requests)
      * @throws IOException
      */
-    public String parse(String rawHTTP) throws IOException
+    public String parse(String rawHTTP, boolean isHeadResponse) throws IOException
     {
         _charset = _defaultCharset;
         ByteArrayBuffer buf = new ByteArrayBuffer(getByteArray(rawHTTP));
         View view = new View(buf);
-        HttpParser parser = new HttpParser(view,new PH());
+        PH ph = new PH();
+        HttpParser parser = new HttpParser(view,ph);
+        parser.setHeadResponse(isHeadResponse);
         parser.parse();
+        if (ph.isEarlyEOF())
+            throw new EofException();
         return getString(view.asArray());
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Parse one HTTP request or response
+     * @param rawHTTP Raw HTTP to parse
+     * @return Any unparsed data in the rawHTTP (eg pipelined requests)
+     * @throws IOException
+     */
+    public String parse(String rawHTTP) throws IOException
+    {
+        return parse(rawHTTP, false);
     }
 
     /* ------------------------------------------------------------ */
@@ -147,14 +165,30 @@ public class HttpTester
      * @return Any unparsed data in the rawHTTP (eg pipelined requests)
      * @throws IOException
      */
-    public byte[] parse(byte[] rawHTTP) throws IOException
+    public byte[] parse(byte[] rawHTTP, boolean isHeadResponse) throws IOException
     {
         _charset = _defaultCharset;
         ByteArrayBuffer buf = new ByteArrayBuffer(rawHTTP);
         View view = new View(buf);
-        HttpParser parser = new HttpParser(view,new PH());
+        PH ph = new PH();
+        HttpParser parser = new HttpParser(view,ph);
+        parser.setHeadResponse(isHeadResponse);
         parser.parse();
+        if (ph.isEarlyEOF())
+            throw new EofException();
         return view.asArray();        
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Parse one HTTP request or response
+     * @param rawHTTP Raw HTTP to parse
+     * @return Any unparsed data in the rawHTTP (eg pipelined requests)
+     * @throws IOException
+     */
+    public byte[] parse(byte[] rawHTTP) throws IOException
+    {
+        return parse(rawHTTP, false);
     }
     
     /* ------------------------------------------------------------ */
@@ -484,6 +518,8 @@ public class HttpTester
     /* ------------------------------------------------------------ */
     private class PH extends HttpParser.EventHandler
     {
+        private volatile boolean _earlyEOF;
+        
         @Override
         public void startRequest(Buffer method, Buffer url, Buffer version) throws IOException
         {
@@ -532,6 +568,18 @@ public class HttpTester
                 _parsedContent=new ByteArrayOutputStream2();
             _parsedContent.write(ref.asArray());
         }
+
+        @Override
+        public void earlyEOF() 
+        {
+            _earlyEOF = true;
+        }
+        
+        public boolean isEarlyEOF()
+        {
+            return _earlyEOF;
+        }
+        
     }
 
 }

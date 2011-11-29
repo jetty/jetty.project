@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -110,10 +109,6 @@ public class DefaultHandler extends AbstractHandler
         response.setContentType(MimeTypes.TEXT_HTML);
         
         ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);
-
-        String uri=request.getRequestURI();
-        uri=StringUtil.replace(uri,"<","&lt;");
-        uri=StringUtil.replace(uri,">","&gt;");
         
         writer.write("<HTML>\n<HEAD>\n<TITLE>Error 404 - Not Found");
         writer.write("</TITLE>\n<BODY>\n<H2>Error 404 - Not Found.</H2>\n");

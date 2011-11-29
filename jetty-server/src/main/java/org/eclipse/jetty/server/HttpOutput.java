@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpOutput extends ServletOutputStream 
 {
-    protected final HttpConnection _connection;
+    protected final AbstractHttpConnection _connection;
     protected final AbstractGenerator _generator;
     private boolean _closed;
     
@@ -47,7 +47,7 @@ public class HttpOutput extends ServletOutputStream
     ByteArrayOutputStream2 _bytes;
 
     /* ------------------------------------------------------------ */
-    public HttpOutput(HttpConnection connection)
+    public HttpOutput(AbstractHttpConnection connection)
     {
         _connection=connection;
         _generator=(AbstractGenerator)connection.getGenerator();

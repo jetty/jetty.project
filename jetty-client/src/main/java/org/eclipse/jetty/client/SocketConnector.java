@@ -17,7 +17,6 @@ import java.io.InterruptedIOException;
 import java.net.Socket;
 
 import javax.net.SocketFactory;
-import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -55,9 +54,9 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
         Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
         socket.connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
 
-        EndPoint endpoint=new SocketEndPoint(socket);
+        final EndPoint endpoint=new SocketEndPoint(socket);
 
-        final HttpConnection connection=new HttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
+        final AbstractHttpConnection connection=new BlockingHttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
         connection.setDestination(destination);
         destination.onNewConnection(connection);
         _httpClient.getThreadPool().dispatch(new Runnable()

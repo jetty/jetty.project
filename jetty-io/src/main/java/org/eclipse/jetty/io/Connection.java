@@ -50,10 +50,10 @@ public interface Connection
     /**
      * Called when the connection is closed
      */
-    void closed();
+    void onClose();
     
     /**
      * Called when the connection idle timeout expires
      */
-    void idleExpired();
+    void onIdleExpired();
 }

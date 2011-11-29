@@ -69,7 +69,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     
 
     /* ------------------------------------------------------------ */
-    protected HttpConnection _connection;
+    protected AbstractHttpConnection _connection;
     private List<ContinuationListener> _continuationListeners;
 
     /* ------------------------------------------------------------ */
@@ -90,7 +90,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
-    protected void setConnection(final HttpConnection connection)
+    protected void setConnection(final AbstractHttpConnection connection)
     {
         synchronized(this)
         {
@@ -175,6 +175,26 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 case __ASYNCSTARTED:
                 case __REDISPATCHING:
                 case __COMPLETING:
+                case __ASYNCWAIT:
+                    return true;
+                    
+                default:
+                    return false;   
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /* (non-Javadoc)
+     * @see javax.servlet.ServletRequest#isSuspended()
+     */
+    public boolean isSuspending()
+    {
+        synchronized(this)
+        {
+            switch(_state)
+            {
+                case __ASYNCSTARTED:
                 case __ASYNCWAIT:
                     return true;
                     
@@ -539,7 +559,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
         EndPoint endp=_connection.getEndPoint();
         if (!endp.isBlocking())
         {
-            ((AsyncEndPoint)endp).dispatch();
+            ((AsyncEndPoint)endp).asyncDispatch();
         }
     }
 
@@ -576,7 +596,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             }
             else
             {
-                _connection.scheduleTimeout(_event,_timeoutMs);
+                ((AsyncEndPoint)endp).scheduleTimeout(_event,_timeoutMs);
             }
         }
     }
@@ -597,7 +617,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             final AsyncEventState event=_event;
             if (event!=null)
-                _connection.cancelTimeout(event);
+            {
+                ((AsyncEndPoint)endp).cancelTimeout(event);
+            }
         }
     }
 

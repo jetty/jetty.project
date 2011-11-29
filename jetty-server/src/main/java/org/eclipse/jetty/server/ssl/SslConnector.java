@@ -9,8 +9,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
 /* ------------------------------------------------------------ */

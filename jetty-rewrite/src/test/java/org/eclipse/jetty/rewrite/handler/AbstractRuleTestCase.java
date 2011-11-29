@@ -15,7 +15,7 @@ package org.eclipse.jetty.rewrite.handler;
 import org.eclipse.jetty.io.bio.StringEndPoint;
 import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -27,7 +27,7 @@ public abstract class AbstractRuleTestCase
     protected Server _server = new Server();
     protected LocalConnector _connector;
     protected StringEndPoint _endpoint = new StringEndPoint();
-    protected HttpConnection _connection;
+    protected AbstractHttpConnection _connection;
     protected Request _request;
     protected Response _response;
     protected boolean _isSecure = false;

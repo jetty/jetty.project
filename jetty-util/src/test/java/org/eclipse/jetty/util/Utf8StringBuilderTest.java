@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.util;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 public class Utf8StringBuilderTest
 {
@@ -24,7 +24,8 @@ public class Utf8StringBuilderTest
     public void testInvalid() throws Exception
     {
         String[] invalids =
-        { "c0af", "EDA080", "f08080af", "f8808080af", "e080af", "F4908080", "fbbfbfbfbf", "10FFFF" };
+        { "c0af", "EDA080", "f08080af", "f8808080af", "e080af", "F4908080", "fbbfbfbfbf", "10FFFF",
+          "CeBaE1BdB9Cf83CeBcCeB5EdA080656469746564" };
 
         for (String i : invalids)
         {

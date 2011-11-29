@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,8 +22,6 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
-
-import static org.junit.Assert.assertEquals;
 
 public class SocketConnectionTest extends AbstractConnectionTest
 {
@@ -87,5 +87,10 @@ public class SocketConnectionTest extends AbstractConnectionTest
         {
             httpClient.stop();
         }
+    }
+    
+    public void testIdleConnection() throws Exception
+    {
+        super.testIdleConnection();
     }
 }

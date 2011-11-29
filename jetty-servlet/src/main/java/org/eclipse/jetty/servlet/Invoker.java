@@ -26,9 +26,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -221,7 +221,7 @@ public class Invoker extends HttpServlet
         
         if (holder!=null)
         {
-            final Request baseRequest=(request instanceof Request)?((Request)request):HttpConnection.getCurrentConnection().getRequest();
+            final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
             holder.handle(baseRequest,
                     new InvokedRequest(request,included,servlet,servlet_path,path_info),
                           response);

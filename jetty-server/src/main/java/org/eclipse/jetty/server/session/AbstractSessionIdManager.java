@@ -78,7 +78,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
     /* ------------------------------------------------------------ */
-    public void setRandom(Random random)
+    public synchronized void setRandom(Random random)
     {
         _random=random;
         _weakRandom=false;

@@ -330,7 +330,7 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     public static boolean isUTF8(String charset)
     {
-        return charset==__UTF8||__UTF8.equalsIgnoreCase(charset)||__UTF8Alt.equalsIgnoreCase(charset);
+        return __UTF8.equalsIgnoreCase(charset)||__UTF8Alt.equalsIgnoreCase(charset);
     }
 
 

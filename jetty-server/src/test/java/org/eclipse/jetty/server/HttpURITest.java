@@ -27,9 +27,7 @@ import junit.framework.Assert;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.URIUtil;
 import org.junit.Test;
-import org.omg.Dynamic.Parameter;
 
 public class HttpURITest
 {

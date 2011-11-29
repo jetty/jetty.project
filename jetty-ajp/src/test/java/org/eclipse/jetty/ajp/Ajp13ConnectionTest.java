@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.ajp;
 
-import java.io.BufferedReader;
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -38,8 +38,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 public class Ajp13ConnectionTest
 {

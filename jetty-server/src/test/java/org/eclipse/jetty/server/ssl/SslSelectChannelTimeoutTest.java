@@ -20,10 +20,9 @@ import java.security.KeyStore;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
 {
@@ -57,13 +56,5 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
         
     }
-
-    @Test
-    public void testNoProgress() throws Exception
-    {
-        testMaxIdleNoRequest();
-        super.testMaxIdleWithSlowRequest();
-    }
-
 
 }

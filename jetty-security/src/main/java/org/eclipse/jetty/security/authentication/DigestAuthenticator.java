@@ -28,22 +28,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.http.security.Credential;
-import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
@@ -87,7 +86,18 @@ public class DigestAuthenticator extends LoginAuthenticator
         
         String mna=configuration.getInitParameter("maxNonceAge");
         if (mna!=null)
-            _maxNonceAgeMs=Long.valueOf(mna);
+        {
+            synchronized (this)
+            {
+                _maxNonceAgeMs=Long.valueOf(mna);
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public synchronized void setMaxNonceAge(long maxNonceAgeInMillis)
+    {
+        _maxNonceAgeMs = maxNonceAgeInMillis;
     }
 
     /* ------------------------------------------------------------ */
@@ -235,7 +245,11 @@ public class DigestAuthenticator extends LoginAuthenticator
     private int checkNonce(Digest digest, Request request)
     {
         // firstly let's expire old nonces
-        long expired = request.getTimeStamp()-_maxNonceAgeMs;
+        long expired;
+        synchronized (this)
+        {
+            expired = request.getTimeStamp()-_maxNonceAgeMs;
+        }
         
         Nonce nonce=_nonceQueue.peek();
         while (nonce!=null && nonce._ts<expired)

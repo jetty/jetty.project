@@ -14,13 +14,15 @@
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
 
-package org.eclipse.jetty.http.ssl;
+package org.eclipse.jetty.util.ssl;
 
 import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509KeyManager;
 
 
@@ -30,7 +32,7 @@ import javax.net.ssl.X509KeyManager;
  * while delegating processing to specified KeyManager
  * Can be used both with server and client sockets
  */
-public class AliasedX509KeyManager implements X509KeyManager
+public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
     private String _keyAlias;
     private X509KeyManager _keyManager;
@@ -42,7 +44,7 @@ public class AliasedX509KeyManager implements X509KeyManager
      * @param keyManager Instance of KeyManager to be wrapped
      * @throws Exception
      */
-    public AliasedX509KeyManager(String keyAlias, X509KeyManager keyManager) throws Exception
+    public AliasedX509ExtendedKeyManager(String keyAlias, X509KeyManager keyManager) throws Exception
     {
         _keyAlias = keyAlias;
         _keyManager = keyManager;
@@ -63,7 +65,7 @@ public class AliasedX509KeyManager implements X509KeyManager
      */
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {   
-        return _keyAlias == null ?_keyManager.chooseServerAlias(keyType, issuers, socket) : _keyAlias;
+        return _keyAlias == null ? _keyManager.chooseServerAlias(keyType, issuers, socket) : _keyAlias;
     }
 
     /* ------------------------------------------------------------ */
@@ -101,5 +103,26 @@ public class AliasedX509KeyManager implements X509KeyManager
     public PrivateKey getPrivateKey(String alias)
     {
         return _keyManager.getPrivateKey(alias);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.net.ssl.X509ExtendedKeyManager#chooseEngineServerAlias(java.lang.String, java.security.Principal[], javax.net.ssl.SSLEngine)
+     */
+    @Override
+    public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
+    {
+        return _keyAlias == null ? super.chooseEngineServerAlias(keyType,issuers,engine) : _keyAlias;
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see javax.net.ssl.X509ExtendedKeyManager#chooseEngineClientAlias(String[], Principal[], SSLEngine)
+     */
+    @Override
+    public String chooseEngineClientAlias(String keyType[], Principal[] issuers, SSLEngine engine)
+    {
+        return _keyAlias == null ? super.chooseEngineClientAlias(keyType,issuers,engine) : _keyAlias;
     }
 }

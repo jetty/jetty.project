@@ -29,6 +29,7 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
@@ -80,7 +81,7 @@ public class ResponseTest
     @Test
     public void testContentType() throws Exception
     {
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = connection.getResponse();
 
         assertEquals(null,response.getContentType());
@@ -134,7 +135,7 @@ public class ResponseTest
     public void testLocale() throws Exception
     {
 
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Request request = connection.getRequest();
         Response response = connection.getResponse();
         ContextHandler context = new ContextHandler();
@@ -158,9 +159,8 @@ public class ResponseTest
     @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
 
-        Request request = connection.getRequest();
         Response response = connection.getResponse();
 
 
@@ -332,7 +332,7 @@ public class ResponseTest
     public void testEncodeRedirect()
         throws Exception
     {
-        HttpConnection connection=new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection=new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = new Response(connection);
         Request request = connection.getRequest();
         request.setServerName("myhost");
@@ -397,7 +397,7 @@ public class ResponseTest
         for (int i=1;i<tests.length;i++)
         {
             ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
-            HttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
+            AbstractHttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
             Response response = new Response(connection);
             Request request = connection.getRequest();
             request.setServerName("myhost");
@@ -486,14 +486,32 @@ public class ResponseTest
         }
     }
 
+    @Test
+    public void testAddCookie() throws Exception
+    {
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+
+        Cookie cookie=new Cookie("name","value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY__");
+        
+        response.addCookie(cookie);
+        
+        String set = response.getHttpFields().getStringField("Set-Cookie");
+        
+        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly",set);
+    }
+
     private Response newResponse()
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         endPoint.setOut(new ByteArrayBuffer(1024));
         endPoint.setGrowOutput(true);
-        HttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
-        connection.getGenerator().reset(false);
-        HttpConnection.setCurrentConnection(connection);
+        AbstractHttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
+        connection.getGenerator().reset();
+        AbstractHttpConnection.setCurrentConnection(connection);
         Response response = connection.getResponse();
         connection.getRequest().setRequestURI("/test");
         return response;
@@ -593,7 +611,7 @@ public class ResponseTest
         }
     }
     
-    static class TestHttpConnection extends HttpConnection
+    static class TestHttpConnection extends AbstractHttpConnection
     {
         
         public TestHttpConnection(Connector connector, EndPoint endpoint, Server server)

@@ -24,17 +24,13 @@ import java.util.logging.Level;
  * </p>
  *
  * <p>
- * Honors the standard jetty system property <code>"org.eclipse.jetty.util.log.DEBUG"</code> to set logger into debug
- * mode (defaults to false, set to "true" to enable)
- * </p>
- *
- * <p>
  * You can also set the logger level using <a href="http://java.sun.com/j2se/1.5.0/docs/guide/logging/overview.html">
- * standard java.util.logging configuration</a> against the name <code>"org.eclipse.jetty.util.log"</code>.
+ * standard java.util.logging configuration</a>.
  * </p>
  */
 public class JavaUtilLog implements Logger
 {
+    private Level configuredLevel;
     private java.util.logging.Logger _logger;
 
     public JavaUtilLog()
@@ -45,8 +41,11 @@ public class JavaUtilLog implements Logger
     public JavaUtilLog(String name)
     {
         _logger = java.util.logging.Logger.getLogger(name);
-        if (Boolean.getBoolean("org.eclipse.jetty.util.log.DEBUG"))
+        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.DEBUG", "false")))
+        {
             _logger.setLevel(Level.FINE);
+        }
+        configuredLevel = _logger.getLevel();
     }
 
     public String getName()
@@ -91,7 +90,15 @@ public class JavaUtilLog implements Logger
 
     public void setDebugEnabled(boolean enabled)
     {
-        _logger.setLevel(Level.FINE);
+        if (enabled)
+        {
+            configuredLevel = _logger.getLevel();
+            _logger.setLevel(Level.FINE);
+        }
+        else
+        {
+            _logger.setLevel(configuredLevel);
+        }
     }
 
     public void debug(String msg, Object... args)

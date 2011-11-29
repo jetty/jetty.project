@@ -13,7 +13,10 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
+
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -25,8 +28,6 @@ import org.eclipse.jetty.server.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  *

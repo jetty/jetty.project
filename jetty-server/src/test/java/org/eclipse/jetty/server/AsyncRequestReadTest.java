@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,17 +42,18 @@ import org.junit.Test;
 /**
  * @version $Revision: 889 $ $Date: 2009-09-14 14:52:16 +1000 (Mon, 14 Sep 2009) $
  */
-public class AsyncUploadTest
+public class AsyncRequestReadTest
 {
     private static Server server;
     private static Connector connector;
-    private static int total;
+    private final static Exchanger<Long> __total=new Exchanger<Long>();
 
     @BeforeClass
     public static void startServer() throws Exception
     {
         server = new Server();
         connector = new SelectChannelConnector();
+        connector.setMaxIdleTime(10000);
         server.addConnector(connector);
         server.setHandler(new EmptyHandler());
         server.start();
@@ -62,7 +65,7 @@ public class AsyncUploadTest
         server.stop();
         server.join();
     }
-
+    
     @Test
     public void test() throws Exception
     {
@@ -71,14 +74,17 @@ public class AsyncUploadTest
         byte[] content = new byte[16*4096];
         Arrays.fill(content, (byte)120);
 
-        long start = System.nanoTime();
         OutputStream out = socket.getOutputStream();
-        out.write("POST / HTTP/1.1\r\n".getBytes());
-        out.write("Host: localhost\r\n".getBytes());
-        out.write(("Content-Length: "+content.length+"\r\n").getBytes());
-        out.write("Content-Type: bytes\r\n".getBytes());
-        out.write("Connection: close\r\n".getBytes());
-        out.write("\r\n".getBytes());
+        String header=
+            "POST / HTTP/1.1\r\n"+
+            "Host: localhost\r\n"+
+            "Content-Length: "+content.length+"\r\n"+
+            "Content-Type: bytes\r\n"+
+            "Connection: close\r\n"+
+            "\r\n";
+        byte[] h=header.getBytes(StringUtil.__ISO_8859_1);
+            
+        out.write(h);
         out.flush();
 
         out.write(content,0,4*4096);
@@ -91,14 +97,63 @@ public class AsyncUploadTest
 
         InputStream in = socket.getInputStream();
         String response = IO.toString(in);
-        // System.err.println(response);
         assertTrue(response.indexOf("200 OK")>0);
 
-        long end = System.nanoTime();
-        System.err.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
+        long total=__total.exchange(0L,30,TimeUnit.SECONDS);
         assertEquals(content.length, total);
     }
+    
+    @Test
+    public void tests() throws Exception
+    {
+        runTest(64,4,4,20);
+        runTest(256,16,16,50);
+        runTest(256,1,128,10);
+        runTest(128*1024,1,64,10);
+        runTest(256*1024,5321,10,100);
+        runTest(512*1024,32*1024,10,10);
+    }
+    
+    
+    public void runTest(int contentSize, int chunkSize, int chunks, int delayMS) throws Exception
+    {
+        String tst=contentSize+","+chunkSize+","+chunks+","+delayMS;
+        //System.err.println(tst);
+        
+        final Socket socket =  new Socket("localhost",connector.getLocalPort());
 
+        byte[] content = new byte[contentSize];
+        Arrays.fill(content, (byte)120);
+
+        OutputStream out = socket.getOutputStream();
+        out.write("POST / HTTP/1.1\r\n".getBytes());
+        out.write("Host: localhost\r\n".getBytes());
+        out.write(("Content-Length: "+content.length+"\r\n").getBytes());
+        out.write("Content-Type: bytes\r\n".getBytes());
+        out.write("Connection: close\r\n".getBytes());
+        out.write("\r\n".getBytes());
+        out.flush();
+
+        int offset=0;
+        for (int i=0;i<chunks;i++)
+        {
+            out.write(content,offset,chunkSize);
+            offset+=chunkSize;
+            Thread.sleep(delayMS);
+        }
+        out.write(content,offset,content.length-offset);
+
+        out.flush();
+
+        InputStream in = socket.getInputStream();
+        String response = IO.toString(in);
+        assertTrue(tst,response.indexOf("200 OK")>0);
+
+        long total=__total.exchange(0L,30,TimeUnit.SECONDS);
+        assertEquals(tst,content.length, total);
+    }
+
+    
     private static class EmptyHandler extends AbstractHandler
     {
         public void handle(String path, final Request request, HttpServletRequest httpRequest, final HttpServletResponse httpResponse) throws IOException, ServletException
@@ -112,15 +167,14 @@ public class AsyncUploadTest
                 @Override
                 public void run()
                 {
+                    long total=0;
                     try
                     {
-                        Thread.sleep(100);
                         InputStream in = request.getInputStream();
                         byte[] b = new byte[4*4096];
                         int read;
                         while((read =in.read(b))>=0)
                             total += read;
-                        System.err.println("Read "+ total);
                     }
                     catch(Exception e)
                     {
@@ -131,6 +185,14 @@ public class AsyncUploadTest
                     {
                         httpResponse.setStatus(200);
                         continuation.complete();
+                        try
+                        {
+                            __total.exchange(total);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }.start();

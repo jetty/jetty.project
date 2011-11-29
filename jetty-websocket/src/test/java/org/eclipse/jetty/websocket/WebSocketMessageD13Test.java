@@ -65,7 +65,7 @@ public class WebSocketMessageD13Test
             }
         };
         wsHandler.getWebSocketFactory().setBufferSize(8192);
-        wsHandler.getWebSocketFactory().setMaxIdleTime(1000);
+        wsHandler.getWebSocketFactory().setMaxIdleTime(1000); 
         wsHandler.setHandler(new DefaultHandler());
         __server.setHandler(wsHandler);
         __server.start();
@@ -390,7 +390,7 @@ public class WebSocketMessageD13Test
             output.write(bytes[i]^0xff);
         output.flush();
         // Make sure the read times out if there are problems with the implementation
-        socket.setSoTimeout(1000);
+        socket.setSoTimeout(1000); 
 
         InputStream input = socket.getInputStream();
         
@@ -461,6 +461,7 @@ public class WebSocketMessageD13Test
         // unblock the latch in 4s
         new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -544,6 +545,7 @@ public class WebSocketMessageD13Test
         final AtomicLong totalB=new AtomicLong();
         new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -908,52 +910,241 @@ public class WebSocketMessageD13Test
         assertEquals(WebSocketConnectionD13.CLOSE_MESSAGE_TOO_LARGE,code);
         lookFor("Message size > 15",input);
     }
+    
+    
 
     @Test
-    public void testCloseCode() throws Exception
+    public void testCloseIn() throws Exception
     {
-        Socket socket = new Socket("localhost", __connector.getLocalPort());
-        OutputStream output = socket.getOutputStream();
-        output.write(
-                ("GET /chat HTTP/1.1\r\n"+
-                 "Host: server.example.com\r\n"+
-                 "Upgrade: websocket\r\n"+
-                 "Connection: Upgrade\r\n"+
-                 "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
-                 "Sec-WebSocket-Origin: http://example.com\r\n"+
-                 "Sec-WebSocket-Protocol: chat\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
-                 "\r\n").getBytes("ISO-8859-1"));
-        output.flush();
+        int[][] tests = 
+        {
+                {-1,0,-1},
+                {-1,0,-1},
+                {1000,2,1000},
+                {1000,2+4,1000},
+                {1005,2+23,1002},
+                {1005,2+23,1002},
+                {1006,2+23,1002},
+                {1006,2+23,1002},
+                {4000,2,4000},
+                {4000,2+4,4000},
+                {9000,2+23,1002},
+                {9000,2+23,1002}
+        };
 
-        socket.setSoTimeout(100000);
-        InputStream input = socket.getInputStream();
+        String[] mesg =
+        {
+                "",
+                "",
+                "",
+                "mesg",
+                "",
+                "mesg",
+                "",
+                "mesg",
+                "",
+                "mesg",
+                "",
+                "mesg"
+        };
+        
+        String[] resp =
+        {
+                "",
+                "",
+                "",
+                "mesg",
+                "Invalid close code 1005",
+                "Invalid close code 1005",
+                "Invalid close code 1006",
+                "Invalid close code 1006",
+                "",
+                "mesg",
+                "Invalid close code 9000",
+                "Invalid close code 9000"
+        };
 
-        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
-        skipTo("Sec-WebSocket-Accept: ",input);
-        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
-        skipTo("\r\n\r\n",input);
+        for (int t=0;t<tests.length;t++)
+        {
+            String tst=""+t;
+            Socket socket = new Socket("localhost", __connector.getLocalPort());
+            OutputStream output = socket.getOutputStream();
+            output.write(
+                    ("GET /chat HTTP/1.1\r\n"+
+                            "Host: server.example.com\r\n"+
+                            "Upgrade: websocket\r\n"+
+                            "Connection: Upgrade\r\n"+
+                            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                            "Sec-WebSocket-Origin: http://example.com\r\n"+
+                            "Sec-WebSocket-Protocol: chat\r\n" +
+                            "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                    "\r\n").getBytes("ISO-8859-1"));
+            output.flush();
 
-        assertTrue(__serverWebSocket.awaitConnected(1000));
-        assertNotNull(__serverWebSocket.connection);
+            socket.setSoTimeout(100000);
+            InputStream input = socket.getInputStream();
 
-        __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
+            lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+            skipTo("Sec-WebSocket-Accept: ",input);
+            lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+            skipTo("\r\n\r\n",input);
 
-        output.write(0x88);
-        output.write(0x82);
-        output.write(0x00);
-        output.write(0x00);
-        output.write(0x00);
-        output.write(0x00);
-        output.write(0x81);
-        output.write(0xFF);
-        output.flush();
+            assertTrue(__serverWebSocket.awaitConnected(1000));
+            assertNotNull(__serverWebSocket.connection);
 
-        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
-        assertEquals(2,input.read());
-        int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(0x81FF,code);
+            int code=tests[t][0];
+            String m=mesg[t];
+            
+            output.write(0x88);
+            output.write(0x80 + (code<=0?0:(2+m.length())));
+            output.write(0x00);
+            output.write(0x00);
+            output.write(0x00);
+            output.write(0x00);
+            
+            if (code>0)
+            {
+                output.write(code/0x100);
+                output.write(code%0x100);
+                output.write(m.getBytes());
+            }
+            output.flush();
+            
+            __serverWebSocket.awaitDisconnected(1000);
+
+            byte[] buf = new byte[128];
+            int len = input.read(buf);
+                        
+            assertEquals(tst,2+tests[t][1],len);
+            assertEquals(tst,(byte)0x88,buf[0]);
+
+            if (len>=4)
+            {
+                code=(0xff&buf[2])*0x100+(0xff&buf[3]);
+                assertEquals(tst,tests[t][2],code);
+                
+                if (len>4)
+                {
+                    m = new String(buf,4,len-4,"UTF-8");
+                    assertEquals(tst,resp[t],m);
+                }
+            }
+            else
+                assertEquals(tst,tests[t][2],-1);
+            
+
+            len = input.read(buf);
+            assertEquals(tst,-1,len);
+        }
     }
+    
+
+
+    @Test
+    public void testCloseOut() throws Exception
+    {
+        int[][] tests = 
+        {
+                {-1,0,-1},
+                {-1,0,-1},
+                {0,2,1000},
+                {0,2+4,1000},
+                {1000,2,1000},
+                {1000,2+4,1000},
+                {1005,0,-1},
+                {1005,0,-1},
+                {1006,0,-1},
+                {1006,0,-1},
+                {9000,2,9000},
+                {9000,2+4,9000}
+        };
+
+        String[] mesg =
+        {
+                null,
+                "Not Sent",
+                null,
+                "mesg",
+                null,
+                "mesg",
+                null,
+                "mesg",
+                null,
+                "mesg",
+                null,
+                "mesg"
+        };
+
+        for (int t=0;t<tests.length;t++)
+        {
+            String tst=""+t;
+            Socket socket = new Socket("localhost", __connector.getLocalPort());
+            OutputStream output = socket.getOutputStream();
+            output.write(
+                    ("GET /chat HTTP/1.1\r\n"+
+                            "Host: server.example.com\r\n"+
+                            "Upgrade: websocket\r\n"+
+                            "Connection: Upgrade\r\n"+
+                            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                            "Sec-WebSocket-Origin: http://example.com\r\n"+
+                            "Sec-WebSocket-Protocol: chat\r\n" +
+                            "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                    "\r\n").getBytes("ISO-8859-1"));
+            output.flush();
+
+            socket.setSoTimeout(100000);
+            InputStream input = socket.getInputStream();
+
+            lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+            skipTo("Sec-WebSocket-Accept: ",input);
+            lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+            skipTo("\r\n\r\n",input);
+
+            assertTrue(__serverWebSocket.awaitConnected(1000));
+            assertNotNull(__serverWebSocket.connection);
+
+            __serverWebSocket.getConnection().close(tests[t][0],mesg[t]);
+
+            byte[] buf = new byte[128];
+            int len = input.read(buf);
+            assertEquals(tst,2+tests[t][1],len);
+            assertEquals(tst,(byte)0x88,buf[0]);
+
+            if (len>=4)
+            {
+                int code=(0xff&buf[2])*0x100+(0xff&buf[3]);
+                assertEquals(tst,tests[t][2],code);
+                
+                if (len>4)
+                {
+                    String m = new String(buf,4,len-4,"UTF-8");
+                    assertEquals(tst,mesg[t],m);
+                }
+            }
+            else
+                assertEquals(tst,tests[t][2],-1);
+            
+            try
+            {
+                output.write(0x88);
+                output.write(0x80);
+                output.write(0x00);
+                output.write(0x00);
+                output.write(0x00);
+                output.write(0x00);
+                output.flush();
+            }
+            catch(IOException e)
+            {
+                System.err.println("socket "+socket);
+                throw e;
+            }
+            
+            len = input.read(buf);
+            assertEquals(tst,-1,len);
+        }  
+    }
+    
 
     @Test
     public void testNotUTF8() throws Exception

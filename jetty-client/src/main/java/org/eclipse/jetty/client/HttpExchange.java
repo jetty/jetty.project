@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  *
  * <p>
  * Typically the HttpExchange is passed to the {@link HttpClient#send(HttpExchange)} method, which in turn selects a {@link HttpDestination} and calls its
- * {@link HttpDestination#send(HttpExchange)}, which then creates or selects a {@link HttpConnection} and calls its {@link HttpConnection#send(HttpExchange)}. A
+ * {@link HttpDestination#send(HttpExchange)}, which then creates or selects a {@link AbstractHttpConnection} and calls its {@link AbstractHttpConnection#send(HttpExchange)}. A
  * developer may wish to directly call send on the destination or connection if they wish to bypass some handling provided (eg Cookie handling in the
  * HttpDestination).
  * </p>
@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  */
 public class HttpExchange
 {
-    private static final Logger LOG = Log.getLogger(HttpExchange.class);
+    static final Logger LOG = Log.getLogger(HttpExchange.class);
 
     public static final int STATUS_START = 0;
     public static final int STATUS_WAITING_FOR_CONNECTION = 1;
@@ -98,12 +98,11 @@ public class HttpExchange
     private InputStream _requestContentSource;
 
     private AtomicInteger _status = new AtomicInteger(STATUS_START);
-    private Buffer _requestContentChunk;
     private boolean _retryStatus = false;
     // controls if the exchange will have listeners autoconfigured by the destination
     private boolean _configureListeners = true;
     private HttpEventListener _listener = new Listener();
-    private volatile HttpConnection _connection;
+    private volatile AbstractHttpConnection _connection;
 
     private Address _localAddress = null;
 
@@ -123,9 +122,8 @@ public class HttpExchange
     {
         if (getStatus() < HttpExchange.STATUS_COMPLETED)
             setStatus(HttpExchange.STATUS_EXPIRED);
-
         destination.exchangeExpired(this);
-        HttpConnection connection = _connection;
+        AbstractHttpConnection connection = _connection;
         if (connection != null)
             connection.exchangeExpired(this);
     }
@@ -183,12 +181,18 @@ public class HttpExchange
         }
     }
 
-    void setStatus(int newStatus)
+    /* ------------------------------------------------------------ */
+    /**
+     * @param newStatus
+     * @return True if the status was actually set.
+     */
+    boolean setStatus(int newStatus)
     {
+        boolean set = false;
         try
         {
             int oldStatus = _status.get();
-            boolean set = false;
+            boolean ignored = false;
             if (oldStatus != newStatus)
             {
                 long now = System.currentTimeMillis();
@@ -198,7 +202,7 @@ public class HttpExchange
                 if (newStatus==STATUS_SENDING_REQUEST)
                     _sent=_lastStateChange;
             }
-
+            
             // State machine: from which old status you can go into which new status
             switch (oldStatus)
             {
@@ -315,7 +319,7 @@ public class HttpExchange
                         case STATUS_CANCELLING:
                         case STATUS_EXPIRED:
                             // Don't change the status, it's too late
-                            set = true;
+                            ignored = true;
                             break;
                     }
                     break;
@@ -329,7 +333,7 @@ public class HttpExchange
                             break;
                         default:
                             // Ignore other statuses, we're cancelling
-                            set = true;
+                            ignored = true;
                             break;
                     }
                     break;
@@ -341,8 +345,14 @@ public class HttpExchange
                         case STATUS_START:
                             set = _status.compareAndSet(oldStatus,newStatus);
                             break;
+                            
+                        case STATUS_COMPLETED:
+                            ignored = true;
+                            done();
+                            break; 
+                            
                         default:
-                            set = true;
+                            ignored = true;
                             break;
                     }
                     break;
@@ -351,13 +361,15 @@ public class HttpExchange
                     throw new AssertionError(oldStatus + " => " + newStatus);
             }
 
-            if (!set)
+            if (!set && !ignored)
                 throw new IllegalStateException(toState(oldStatus) + " => " + toState(newStatus));
+            LOG.debug("setStatus {} {}",newStatus,this);
         }
         catch (IOException x)
         {
             LOG.warn(x);
         }
+        return set;
     }
 
     private boolean setStatusExpired(int newStatus, int oldStatus)
@@ -706,25 +718,22 @@ public class HttpExchange
         return _requestContentSource;
     }
 
-    public Buffer getRequestContentChunk() throws IOException
+    public Buffer getRequestContentChunk(Buffer buffer) throws IOException
     {
         synchronized (this)
         {
-            if (_requestContentChunk == null)
-                _requestContentChunk = new ByteArrayBuffer(4096); // TODO configure
-            else
+            if (_requestContentSource!=null)
             {
-                if (_requestContentChunk.hasContent())
-                    throw new IllegalStateException();
-                _requestContentChunk.clear();
-            }
+                if (buffer == null)
+                    buffer = new ByteArrayBuffer(8192); // TODO configure
 
-            int read = _requestContentChunk.capacity();
-            int length = _requestContentSource.read(_requestContentChunk.array(),0,read);
-            if (length >= 0)
-            {
-                _requestContentChunk.setPutIndex(length);
-                return _requestContentChunk;
+                int space = buffer.space();
+                int length = _requestContentSource.read(buffer.array(),buffer.putIndex(),space);
+                if (length >= 0)
+                {
+                    buffer.setPutIndex(buffer.putIndex()+length);
+                    return buffer;
+                }
             }
             return null;
         }
@@ -779,7 +788,7 @@ public class HttpExchange
 
     private void abort()
     {
-        HttpConnection httpConnection = _connection;
+        AbstractHttpConnection httpConnection = _connection;
         if (httpConnection != null)
         {
             try
@@ -799,7 +808,7 @@ public class HttpExchange
         }
     }
 
-    void associate(HttpConnection connection)
+    void associate(AbstractHttpConnection connection)
     {
         if (connection.getEndPoint().getLocalHost() != null)
             _localAddress = new Address(connection.getEndPoint().getLocalHost(),connection.getEndPoint().getLocalPort());
@@ -814,9 +823,9 @@ public class HttpExchange
         return this._connection != null;
     }
 
-    HttpConnection disassociate()
+    AbstractHttpConnection disassociate()
     {
-        HttpConnection result = _connection;
+        AbstractHttpConnection result = _connection;
         this._connection = null;
         if (getStatus() == STATUS_CANCELLING)
             setStatus(STATUS_CANCELLED);

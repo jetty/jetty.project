@@ -10,12 +10,14 @@ import java.util.Random;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.SimpleBuffers;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.util.B64Code;
@@ -205,15 +207,17 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         }
 
         @Override
-        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, final SelectionKey sKey) throws IOException
+        protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, final SelectionKey key) throws IOException
         {
-            return new SelectChannelEndPoint(channel,selectSet,sKey);
+            SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key,channel.socket().getSoTimeout());
+            endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+            return endp;
         }
 
         @Override
-        protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
-            WebSocketClient.WebSocketFuture holder = (WebSocketClient.WebSocketFuture) endpoint.getSelectionKey().attachment();
+            WebSocketClient.WebSocketFuture holder = (WebSocketClient.WebSocketFuture) attachment;
             return new HandshakeConnection(endpoint,holder);
         }
 
@@ -226,13 +230,13 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         @Override
         protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
         {
-            throw new IllegalStateException();
+            LOG.debug("upgrade {} -> {}",oldConnection,endpoint.getConnection());
         }
 
         @Override
         protected void endPointClosed(SelectChannelEndPoint endpoint)
         {
-            endpoint.getConnection().closed();
+            endpoint.getConnection().onClose();
         }
 
         @Override
@@ -255,16 +259,16 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     /** Handshake Connection.
      * Handles the connection until the handshake succeeds or fails.
      */
-    class HandshakeConnection extends AbstractConnection
+    class HandshakeConnection extends AbstractConnection implements AsyncConnection
     {
-        private final SelectChannelEndPoint _endp;
+        private final AsyncEndPoint _endp;
         private final WebSocketClient.WebSocketFuture _future;
         private final String _key;
         private final HttpParser _parser;
         private String _accept;
         private String _error;
 
-        public HandshakeConnection(SelectChannelEndPoint endpoint, WebSocketClient.WebSocketFuture future)
+        public HandshakeConnection(AsyncEndPoint endpoint, WebSocketClient.WebSocketFuture future)
         {
             super(endpoint,System.currentTimeMillis());
             _endp=endpoint;
@@ -315,8 +319,15 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             });
 
             String path=_future.getURI().getPath();
-            if (path==null || path.length()==0)
+            if (path==null || path.length()==0) 
+            {
                 path="/";
+            }
+            
+            if(_future.getURI().getRawQuery() != null)
+            {
+                path += "?" + _future.getURI().getRawQuery();
+            }
 
             String origin = future.getOrigin();
 
@@ -363,22 +374,17 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             {
                 future.handshakeFailed(e);
             }
-
         }
 
         public Connection handle() throws IOException
         {
             while (_endp.isOpen() && !_parser.isComplete())
             {
-                switch (_parser.parseAvailable())
+                if (!_parser.parseAvailable())
                 {
-                    case -1:
+                    if (_endp.isInputShutdown())
                         _future.handshakeFailed(new IOException("Incomplete handshake response"));
-                        return this;
-                    case 0:
-                        return this;
-                    default:
-                        break;
+                    return this;
                 }
             }
             if (_error==null)
@@ -391,7 +397,15 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 {
                     Buffer header=_parser.getHeaderBuffer();
                     MaskGen maskGen=_future.getMaskGen();
-                    WebSocketConnectionD13 connection = new WebSocketConnectionD13(_future.getWebSocket(),_endp,_buffers,System.currentTimeMillis(),_future.getMaxIdleTime(),_future.getProtocol(),null,10,maskGen);
+                    WebSocketConnectionD13 connection = 
+                        new WebSocketConnectionD13(_future.getWebSocket(),
+                            _endp,
+                            _buffers,System.currentTimeMillis(),
+                            _future.getMaxIdleTime(),
+                            _future.getProtocol(),
+                            null,
+                            WebSocketConnectionD13.VERSION,
+                            maskGen);
 
                     if (header.hasContent())
                         connection.fillBuffersFrom(header);
@@ -407,6 +421,11 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             return this;
         }
 
+        public void onInputShutdown() throws IOException
+        {
+            _endp.close();
+        }
+
         public boolean isIdle()
         {
             return false;
@@ -417,12 +436,17 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             return false;
         }
 
-        public void closed()
+        public void onClose()
         {
             if (_error!=null)
                 _future.handshakeFailed(new ProtocolException(_error));
             else
                 _future.handshakeFailed(new EOFException());
+        }
+        
+        public String toString()
+        {
+            return "HS"+super.toString();
         }
     }
 }

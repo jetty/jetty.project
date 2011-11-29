@@ -483,5 +483,15 @@ public class ProxyRule extends PatternRule
     {
         _connectorType = connectorType;
     }
+
+    public String getHostHeader()
+    {
+        return _hostHeader;
+    }
+
+    public void setHostHeader(String hostHeader)
+    {
+        _hostHeader = hostHeader;
+    }
     
 }

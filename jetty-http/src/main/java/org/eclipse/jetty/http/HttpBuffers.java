@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  */
 public class HttpBuffers extends AbstractLifeCycle
 {
-    private int _requestBufferSize=12*1024;
+    private int _requestBufferSize=16*1024;
     private int _requestHeaderSize=6*1024;
     private int _responseBufferSize=32*1024;
     private int _responseHeaderSize=6*1024;

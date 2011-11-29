@@ -13,14 +13,9 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferCache;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  * Cached HTTP Header values.

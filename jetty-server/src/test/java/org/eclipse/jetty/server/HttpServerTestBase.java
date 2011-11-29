@@ -57,7 +57,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static final String REQUEST1=REQUEST1_HEADER+REQUEST1_CONTENT.getBytes().length+"\n\n"+REQUEST1_CONTENT;
 
     /** The expected response. */
-    private static final String RESPONSE1="HTTP/1.1 200 OK\n"+"Connection: close\n"+"Server: Jetty("+Server.getVersion()+")\n"+"\n"+"Hello world\n";
+    private static final String RESPONSE1="HTTP/1.1 200 OK\n"+"Content-Length: 13\n"+"Server: Jetty("+Server.getVersion()+")\n"+"\n"+"Hello world\n";
 
     // Break the request up into three pieces, splitting the header.
     private static final String FRAGMENT1=REQUEST1.substring(0,16);
@@ -65,12 +65,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static final String FRAGMENT3=REQUEST1.substring(34);
 
     /** Second test request. */
-    private static final String REQUEST2_HEADER=
+    protected static final String REQUEST2_HEADER=
         "POST / HTTP/1.0\n"+
         "Host: localhost\n"+
         "Content-Type: text/xml;charset=ISO-8859-1\n"+
         "Content-Length: ";
-    private static final String REQUEST2_CONTENT=
+    protected static final String REQUEST2_CONTENT=
         "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"+
         "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"+
         "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"+
@@ -80,10 +80,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         "        </getJobDetails>\n"+
         "    </request>\n"+
         "</nimbus>";
-    private static final String REQUEST2=REQUEST2_HEADER+REQUEST2_CONTENT.getBytes().length+"\n\n"+REQUEST2_CONTENT;
+    protected static final String REQUEST2=REQUEST2_HEADER+REQUEST2_CONTENT.getBytes().length+"\n\n"+REQUEST2_CONTENT;
 
     /** The second expected response. */
-    private static final String RESPONSE2_CONTENT=
+    protected static final String RESPONSE2_CONTENT=
             "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n"+
             "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"+
             "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"+
@@ -93,7 +93,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             "        </getJobDetails>\n"+
             "    </request>\n"
             +"</nimbus>\n";
-    private static final String RESPONSE2=
+    protected static final String RESPONSE2=
         "HTTP/1.1 200 OK\n"+
         "Content-Type: text/xml;charset=ISO-8859-1\n"+
         "Content-Length: "+RESPONSE2_CONTENT.getBytes().length+"\n"+
@@ -143,19 +143,24 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             OutputStream os=client.getOutputStream();
 
-            os.write(("GET /R2 HTTP/1.1\015\012"+"Host: localhost\015\012"+"Transfer-Encoding: chunked\015\012"+"Content-Type: text/plain\015\012"
-                    +"Connection: close\015\012"+"\015\012").getBytes());
+            os.write(("GET /R2 HTTP/1.1\015\012"+
+                    "Host: localhost\015\012"+
+                    "Transfer-Encoding: chunked\015\012"+
+                    "Content-Type: text/plain\015\012"+
+                    "Connection: close\015\012"+
+                    "\015\012").getBytes());
             os.flush();
             Thread.sleep(PAUSE);
             os.write(("5\015\012").getBytes());
             os.flush();
             Thread.sleep(PAUSE);
-            os.write(("ABCDE\015\012"+"0;\015\012\015\012").getBytes());
+            os.write(("ABCDE\015\012"+
+                      "0;\015\012\015\012").getBytes());
             os.flush();
 
             // Read the response.
             String response=readResponse(client);
-            assertTrue(true); // nothing checked yet.
+            assertTrue (response.indexOf("200")>0);
         }
         finally
         {
@@ -220,6 +225,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 
                 // Check the response
                 assertEquals("response "+i,RESPONSE2,response);
+            }
+            catch(IOException e)
+            {
+                e.printStackTrace();
+                _server.dumpStdErr();
+                throw e;
             }
             finally
             {
@@ -545,8 +556,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             
             // read and check the times are < 999ms
             String[] times=in.readLine().split(",");
-            
-            // Assert.assertTrue(Integer.valueOf(t).intValue()<999);
+            for (String t: times)
+               Assert.assertTrue(Integer.valueOf(t).intValue()<999);
             
             
             // read the EOF chunk
@@ -576,7 +587,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // read and check the times are < 999ms
             times=in.readLine().split(",");
-            //Assert.assertTrue(t,Integer.valueOf(t).intValue()<999);
+            for (String t: times)
+                Assert.assertTrue(t,Integer.valueOf(t).intValue()<999);
             
             // check close
             Assert.assertTrue(in.readLine()==null);
@@ -926,7 +938,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
             OutputStream os=client.getOutputStream();
             InputStream is=client.getInputStream();
 
@@ -954,7 +966,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(false);
             
             if (!client.isClosed())
                 client.close();
@@ -1049,7 +1061,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         AvailableHandler ah=new AvailableHandler();
         configureServer(ah);
 
-        long start=System.currentTimeMillis();
         Socket client=newSocket(HOST,_connector.getLocalPort());
         try
         {
@@ -1136,15 +1147,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      * @return The response string.
      * @throws IOException in case of I/O problems
      */
-    private static String readResponse(Socket client) throws IOException
+    protected static String readResponse(Socket client) throws IOException
     {
         BufferedReader br=null;
 
+        StringBuilder sb=new StringBuilder();
         try
         {
             br=new BufferedReader(new InputStreamReader(client.getInputStream()));
 
-            StringBuilder sb=new StringBuilder();
             String line;
 
             while ((line=br.readLine())!=null)
@@ -1154,6 +1165,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             return sb.toString();
+        }
+        catch(IOException e)
+        {
+            System.err.println(e+" while reading '"+sb+"'");
+            throw e;
         }
         finally
         {

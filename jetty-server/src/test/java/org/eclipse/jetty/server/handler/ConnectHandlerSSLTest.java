@@ -24,10 +24,10 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,6 +40,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     public static void init() throws Exception
     {
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
+        connector.setMaxIdleTime(3600000); // TODO remove
 
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
         SslContextFactory cf = connector.getSslContextFactory();
@@ -60,6 +61,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 "Host: " + hostPort + "\r\n" +
                 "\r\n";
         Socket socket = newSocket();
+        socket.setSoTimeout(3600000); // TODO remove
         try
         {
             OutputStream output = socket.getOutputStream();
@@ -70,6 +72,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
             // Expect 200 OK from the CONNECT request
             Response response = readResponse(input);
+            System.err.println(response);
             assertEquals("200", response.getCode());
 
             // Be sure the buffered input does not have anything buffered
@@ -82,7 +85,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 output = sslSocket.getOutputStream();
                 input = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
 
-                request = "" +
+                request = 
                         "GET /echo HTTP/1.1\r\n" +
                         "Host: " + hostPort + "\r\n" +
                         "\r\n";

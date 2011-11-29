@@ -151,8 +151,7 @@ public class DumpHandler extends AbstractHandler
                 String val=request.getParameter("CookieVal");
                 val=val.replaceAll("[ \n\r=<>]","?");
                 Cookie cookie=
-                    new Cookie(cookie_name.trim(),
-                                    request.getParameter("CookieVal"));
+                    new Cookie(cookie_name.trim(),val);
                 if ("Clear Cookie".equals(cookie_action))
                     cookie.setMaxAge(0);
                 response.addCookie(cookie);
