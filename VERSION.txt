@@ -1,4 +1,32 @@
-jetty-7.6.0-SNAPSHOT
+jetty-7.6.0.RC0 - 29 November 2011
+ + Refactored NIO layer for better half close handling
+ + 349110 fixed bypass chunk handling
+ + 360546 handle set count exceeding max integer
+ + 362111 StdErrLog.isDebugEnabled() returns true too often
+ + 362113 Improve Test Coverage of org.eclipse.jetty.util.log classes
+ + 362407 setTrustStore(Resource) -> setTrustStoreResource(R)
+ + 362447 add setMaxNonceAge() to DigestAuthenticator
+ + 362468 NPE at line org.eclipse.jetty.io.BufferUtil.putHexInt
+ + 362614 NPE in accepting connection
+ + 362626 IllegalStateException thrown when SslContextFactory preconfigured
+   with SSLContext
+ + 362696 expand virtual host configuration options to ContextHandler and add
+   associated test case for new behavior
+ + 362742 improved UTF8 exception reason
+ + 363124 improved websocket close handling
+ + 363381 Throw IllegalStateException if Request uri is null on getServerName
+ + 363408 GzipFilter should not attempt to compress HTTP status 204
+ + 363488 ShutdownHandler use stopper thread
+ + 363718 Setting java.rmi.server.hostname in jetty-jmx.xml
+ + 363757 partial fix
+ + 363785 StdErrLog must use system-dependent EOL.
+ + 363943 ignore null attribute values
+ + 363993 EOFException parsing HEAD response in HttpTester
+ + 364638 SCEP does idle timestamp checking. New setCheckForIdle method
+   controls onIdleExpired callback. 364921 a second onIdleExpired callback will
+   result in close rather than a shutdown output.
+ + 364657 Support HTTP only cookies from standard API
+ + JETTY-1442 add _hostHeader setter for ProxyRule
 
 jetty-7.5.4.v20111024 - 24 October 2011
  + 358263 JDBCSessionIdManager add setDatasource(DataSource) method
