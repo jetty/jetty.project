@@ -1,4 +1,4 @@
-jetty-7.6.5-SNAPSHOT
+jetty-7.6.0-SNAPSHOT
 
 jetty-7.5.4.v20111024 - 24 October 2011
  + 358263 JDBCSessionIdManager add setDatasource(DataSource) method
