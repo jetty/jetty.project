@@ -440,5 +440,4 @@ public class WebAppClassLoader extends URLClassLoader
     {
         return "WebAppClassLoader=" + _name+"@"+Long.toHexString(hashCode());
     }
-
 }

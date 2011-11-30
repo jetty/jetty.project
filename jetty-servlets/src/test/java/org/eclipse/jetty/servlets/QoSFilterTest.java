@@ -17,9 +17,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
+import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -93,7 +94,7 @@ public class QoSFilterTest
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, ""+MAX_QOS);
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",FilterMapping.DEFAULT);
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
 
         for(int i = 0; i < NUM_CONNECTIONS; ++i )
         {
@@ -111,8 +112,7 @@ public class QoSFilterTest
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
         holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, ""+MAX_QOS);
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",FilterMapping.DEFAULT);
-
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         for(int i = 0; i < NUM_CONNECTIONS; ++i )
         {
             new Thread(new Worker2(i)).start();

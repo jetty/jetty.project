@@ -25,12 +25,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletSecurityElement;
 import javax.servlet.SingleThreadModel;
 import javax.servlet.UnavailableException;
 
@@ -38,7 +41,6 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.servlet.api.ServletRegistration;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -72,6 +74,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private transient Servlet _servlet;
     private transient Config _config;
     private transient long _unavailable;
+    private transient boolean _enabled = true;
     private transient UnavailableException _unavailableEx;
     public static final Map<String,String> NO_MAPPED_ROLES = Collections.emptyMap();
 
@@ -80,14 +83,24 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder()
     {
+        super (Source.EMBEDDED);
     }
     
+    
+    /* ---------------------------------------------------------------- */
+    /** Constructor .
+     */
+    public ServletHolder(Holder.Source creator)
+    {
+        super (creator);
+    }
     
     /* ---------------------------------------------------------------- */
     /** Constructor for existing servlet.
      */
     public ServletHolder(Servlet servlet)
     {
+        super (Source.EMBEDDED);
         setServlet(servlet);
     }
 
@@ -96,6 +109,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public ServletHolder(Class<? extends Servlet> servlet)
     {
+        super (Source.EMBEDDED);
         setHeldClass(servlet);
     }
 
@@ -233,11 +247,26 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         _forcedPath = forcedPath;
     }
     
+    public boolean isEnabled()
+    {
+        return _enabled;
+    }
+
+
+    public void setEnabled(boolean enabled)
+    {
+        _enabled = enabled;
+    }
+
+
     /* ------------------------------------------------------------ */
     public void doStart()
         throws Exception
     {
         _unavailable=0;
+        if (!_enabled)
+            return;
+        
         try
         {
             super.doStart();
@@ -583,7 +612,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     public class Registration extends HolderRegistration implements ServletRegistration.Dynamic
-    {         
+    {
+        protected MultipartConfigElement _multipartConfig;       
+        
         public Set<String> addMapping(String... urlPatterns)
         {
             illegalStateIfContextStarted();
@@ -613,22 +644,27 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             ServletMapping[] mappings =_servletHandler.getServletMappings();
             List<String> patterns=new ArrayList<String>();
-            for (ServletMapping mapping : mappings)
+            if (mappings!=null)
             {
-                if (!mapping.getServletName().equals(getName()))
-                    continue;
-                String[] specs=mapping.getPathSpecs();
-                if (specs!=null && specs.length>0)
-                    patterns.addAll(Arrays.asList(specs));
+                for (ServletMapping mapping : mappings)
+                {
+                    if (!mapping.getServletName().equals(getName()))
+                        continue;
+                    String[] specs=mapping.getPathSpecs();
+                    if (specs!=null && specs.length>0)
+                        patterns.addAll(Arrays.asList(specs));
+                }
             }
             return patterns;
         }
 
+        @Override
         public String getRunAsRole() 
         {
             return _runAsRole;
         }
 
+        @Override
         public void setLoadOnStartup(int loadOnStartup)
         {
             illegalStateIfContextStarted();
@@ -639,17 +675,35 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             return ServletHolder.this.getInitOrder();
         }
- 
+
+        @Override
+        public void setMultipartConfig(MultipartConfigElement element) 
+        {
+            _multipartConfig = element;
+        }
+        
+        public MultipartConfigElement getMultipartConfig()
+        {
+            return _multipartConfig;
+        }
+
+        @Override
         public void setRunAsRole(String role) 
         {
             _runAsRole = role;
+        }
+
+        @Override
+        public Set<String> setServletSecurity(ServletSecurityElement securityElement) 
+        {
+            return _servletHandler.setServletSecurity(this, securityElement);
         }
     }
     
     public ServletRegistration.Dynamic getRegistration()
     {
         if (_registration == null)
-            _registration =  new Registration();
+            _registration = new Registration();
         return _registration;
     }
     
@@ -769,8 +823,3 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 }
-
-
-
-
-

@@ -14,7 +14,9 @@ package org.eclipse.jetty.annotations;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.servlet.annotation.WebListener;
 
+@WebListener
 public class ListenerC implements ServletContextListener
 {
 

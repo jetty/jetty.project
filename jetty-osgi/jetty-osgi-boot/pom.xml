@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>7.6.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -14,6 +14,10 @@
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
   </properties>
   <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-annotations</artifactId>
+      </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
@@ -117,6 +121,8 @@
  javax.servlet.http;version="2.5.0",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
+ org.eclipse.jetty.nested;version="8.0.0";resolution:=optional,
+ org.eclipse.jetty.annotations;version="8.0.0";resolution:=optional,
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
@@ -128,12 +134,11 @@
  org.slf4j.helpers;resolution:=optional,
  org.xml.sax,
  org.xml.sax.helpers,
- org.eclipse.jetty.nested;resolution:=optional,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[7.3,8)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[8.0.0,9.0.0)"</DynamicImport-Package>
                         <!--Require-Bundle/-->
-                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment> 
+                        <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment> 
                     </instructions>
                 </configuration>
             </plugin>

@@ -19,8 +19,11 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -253,7 +256,7 @@ public class DispatcherTest
         _contextHandler.addServlet(RogerThatServlet.class, "/*");
         _contextHandler.addServlet(ReserveEchoServlet.class,"/recho/*");
         _contextHandler.addServlet(EchoServlet.class, "/echo/*");
-        _contextHandler.addFilter(ForwardFilter.class, "/*", FilterMapping.REQUEST);
+        _contextHandler.addFilter(ForwardFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         String rogerResponse = _connector.getResponses("GET /context/ HTTP/1.0\n" + "Host: localhost\n\n");
 

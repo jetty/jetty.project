@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.servlets;
 
+import java.util.EnumSet;
+
+import javax.servlet.DispatcherType;
+
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -32,7 +36,7 @@ public class AsyncProxyServer
         ServletHandler handler=new ServletHandler();
         server.setHandler(handler);
         
-        //FilterHolder gzip = handler.addFilterWithMapping("org.eclipse.jetty.servlets.GzipFilter","/*",0);
+        //FilterHolder gzip = handler.addFilterWithMapping("org.eclipse.jetty.servlet.GzipFilter","/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         //gzip.setAsyncSupported(true);
         //gzip.setInitParameter("minGzipSize","256");
         ServletHolder proxy = handler.addServletWithMapping("org.eclipse.jetty.servlets.ProxyServlet","/");

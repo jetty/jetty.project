@@ -19,10 +19,12 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -348,6 +350,22 @@ public class HttpFields
     
     /* -------------------------------------------------------------- */
     /**
+     * Get Collection of header names. 
+     */
+    public Collection<String> getFieldNamesCollection()
+    {
+        final List<String> list = new ArrayList<String>(_fields.size());
+
+	for (Field f : _fields)
+	{
+	    if (f!=null)
+	        list.add(BufferUtil.to8859_1_String(f._name));
+	}
+	return list;
+    }
+    
+    /* -------------------------------------------------------------- */
+    /**
      * Get enumeration of header _names. Returns an enumeration of strings representing the header
      * _names for this request.
      */
@@ -378,7 +396,7 @@ public class HttpFields
     /**
      * Get a Field by index.
      * @return A Field value or null if the Field value has not been set
-     * for this revision of the fields.
+     * 
      */
     public Field getField(int i)
     {
@@ -443,6 +461,30 @@ public class HttpFields
     {
         Field field = getField(name);
         return field==null?null:field._value;
+    }
+
+
+    /* -------------------------------------------------------------- */
+    /**
+     * Get multi headers
+     * 
+     * @return Enumeration of the values, or null if no such header.
+     * @param name the case-insensitive field name
+     */
+    public Collection<String> getValuesCollection(String name)
+    {
+        Field field = getField(name);
+	if (field==null)
+	    return null;
+
+        final List<String> list = new ArrayList<String>();
+
+	while(field!=null)
+	{
+	    list.add(field.getValue());
+	    field=field._next;
+	}
+	return list;
     }
 
     /* -------------------------------------------------------------- */
@@ -1372,5 +1414,4 @@ public class HttpFields
             return ("[" + getName() + "=" + _value + (_next == null ? "" : "->") + "]");
         }
     }
-
 }

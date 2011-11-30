@@ -8,20 +8,29 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.Principal;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.Locale;
 import java.util.Map;
-
+import java.util.Set;
+import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.Part;
+import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
@@ -50,6 +59,98 @@ public class SessionHandlerTest
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionManager(new MockSessionManager()
         {
+ 
+            
+            public SessionCookieConfig getSessionCookieConfig()
+            {
+                return new SessionCookieConfig()
+                {
+
+                    public String getComment()
+                    {
+                        // TODO Auto-generated method stub
+                        return null;
+                    }
+
+                    public String getDomain()
+                    {
+                        // TODO Auto-generated method stub
+                        return null;
+                    }
+
+                    public int getMaxAge()
+                    {
+                        // TODO Auto-generated method stub
+                        return 0;
+                    }
+
+                    public String getName()
+                    {
+                        return cookieName;
+                    }
+
+                    public String getPath()
+                    {
+                        // TODO Auto-generated method stub
+                        return null;
+                    }
+
+                    public boolean isHttpOnly()
+                    {
+                        // TODO Auto-generated method stub
+                        return false;
+                    }
+
+                    public boolean isSecure()
+                    {
+                        // TODO Auto-generated method stub
+                        return false;
+                    }
+
+                    public void setComment(String comment)
+                    {
+                        // TODO Auto-generated method stub
+                        
+                    }
+
+                    public void setDomain(String domain)
+                    {
+                        // TODO Auto-generated method stub
+                        
+                    }
+
+                    public void setHttpOnly(boolean httpOnly)
+                    {
+                        // TODO Auto-generated method stub
+                        
+                    }
+
+                    public void setMaxAge(int maxAge)
+                    {
+                        // TODO Auto-generated method stub
+                        
+                    }
+
+                    public void setName(String name)
+                    {
+                        // TODO Auto-generated method stub
+                        
+                    }
+
+                    public void setPath(String path)
+                    {
+                        // TODO Auto-generated method stub
+                        
+                    }
+
+                    public void setSecure(boolean secure)
+                    {
+                        // TODO Auto-generated method stub
+                        
+                    }
+                    
+                };
+            }
             public boolean isUsingCookies()
             {
                 return true;
@@ -86,7 +187,8 @@ public class SessionHandlerTest
 
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionManager(new MockSessionManager()
-        {
+        {       
+
             @Override
             public String getSessionIdPathParameterName()
             {
@@ -378,6 +480,114 @@ public class SessionHandlerTest
         public void setCharacterEncoding(String env) throws UnsupportedEncodingException
         {
         }
+
+        /** 
+         * @see javax.servlet.http.HttpServletRequest#authenticate(javax.servlet.http.HttpServletResponse)
+         */
+        public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
+        /** 
+         * @see javax.servlet.http.HttpServletRequest#getPart(java.lang.String)
+         */
+        public Part getPart(String name) throws IOException, ServletException
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see javax.servlet.http.HttpServletRequest#getParts()
+         */
+        public Collection<Part> getParts() throws IOException, ServletException
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see javax.servlet.http.HttpServletRequest#login(java.lang.String, java.lang.String)
+         */
+        public void login(String username, String password) throws ServletException
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        /** 
+         * @see javax.servlet.http.HttpServletRequest#logout()
+         */
+        public void logout() throws ServletException
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        /** 
+         * @see javax.servlet.ServletRequest#getAsyncContext()
+         */
+        public AsyncContext getAsyncContext()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see javax.servlet.ServletRequest#getDispatcherType()
+         */
+        public DispatcherType getDispatcherType()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see javax.servlet.ServletRequest#getServletContext()
+         */
+        public ServletContext getServletContext()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see javax.servlet.ServletRequest#isAsyncStarted()
+         */
+        public boolean isAsyncStarted()
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
+        /** 
+         * @see javax.servlet.ServletRequest#isAsyncSupported()
+         */
+        public boolean isAsyncSupported()
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
+        /** 
+         * @see javax.servlet.ServletRequest#startAsync()
+         */
+        public AsyncContext startAsync() throws IllegalStateException
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see javax.servlet.ServletRequest#startAsync(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
+         */
+        public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
     }
 
     /**
@@ -572,6 +782,50 @@ public class SessionHandlerTest
 
         public void stop() throws Exception
         {
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.SessionManager#getDefaultSessionTrackingModes()
+         */
+        public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.SessionManager#getEffectiveSessionTrackingModes()
+         */
+        public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
+        {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.SessionManager#getSessionCookieConfig()
+         */
+        public SessionCookieConfig getSessionCookieConfig()
+        {
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.SessionManager#isUsingURLs()
+         */
+        public boolean isUsingURLs()
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.SessionManager#setSessionTrackingModes(java.util.Set)
+         */
+        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
+        {
+            // TODO Auto-generated method stub
+            
         }
 
         private boolean _checkRemote=false;

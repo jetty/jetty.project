@@ -122,7 +122,6 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      */
     public URL[] getJarsWithTlds(OSGiAppProvider provider, BundleFileLocatorHelper locatorHelper) throws Exception
     {
-    	
     	HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
 
     	//Look for the jstl bundle

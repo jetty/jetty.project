@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,8 +33,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
+import javax.servlet.DispatcherType;
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
@@ -41,7 +48,9 @@ import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.Part;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
@@ -50,6 +59,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
@@ -65,6 +75,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.MultiPartInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -104,6 +115,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Request implements HttpServletRequest
 {
+    public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
     private static final Logger LOG = Log.getLogger(Request.class);
 
     private static final String __ASYNC_FWD="org.eclipse.asyncfwd";
@@ -164,6 +176,8 @@ public class Request implements HttpServletRequest
     private Buffer _timeStampBuffer;
     private HttpURI _uri;
     
+    private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
+    
     /* ------------------------------------------------------------ */
     public Request()
     {
@@ -181,7 +195,9 @@ public class Request implements HttpServletRequest
         if (listener instanceof ServletRequestAttributeListener)
             _requestAttributeListeners= LazyList.add(_requestAttributeListeners, listener);
         if (listener instanceof ContinuationListener)
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(listener.getClass().toString());
+        if (listener instanceof AsyncListener)
+            throw new IllegalArgumentException(listener.getClass().toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -308,7 +324,7 @@ public class Request implements HttpServletRequest
     {
         return _async;
     }
-
+    
     /* ------------------------------------------------------------ */
     /* 
      * @see javax.servlet.ServletRequest#getAttribute(java.lang.String)
@@ -362,7 +378,7 @@ public class Request implements HttpServletRequest
     public String getAuthType()
     {
         if (_authentication instanceof Authentication.Deferred)
-            _authentication = ((Authentication.Deferred)_authentication).authenticate(this);
+            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
         
         if (_authentication instanceof Authentication.User)
             return ((Authentication.User)_authentication).getAuthMethod();
@@ -587,7 +603,6 @@ public class Request implements HttpServletRequest
      */
     public Enumeration getLocales()
     {
-
         Enumeration enm = _connection.getRequestFields().getValues(HttpHeaders.ACCEPT_LANGUAGE, HttpFields.__separators);
         
         // handle no locale
@@ -1393,6 +1408,7 @@ public class Request implements HttpServletRequest
         if (_savedNewSessions!=null)
             _savedNewSessions.clear();
         _savedNewSessions=null;
+        _multiPartInputStream = null;
     }
     
     /* ------------------------------------------------------------ */
@@ -1874,7 +1890,71 @@ public class Request implements HttpServletRequest
     {
         return (_handled?"[":"(")+getMethod()+" "+_uri+(_handled?"]@":")@")+hashCode()+" "+super.toString();
     }
-    
+
+    /* ------------------------------------------------------------ */
+    public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
+    {
+        if (_authentication instanceof Authentication.Deferred)
+        {
+        	setAuthentication(((Authentication.Deferred)_authentication).authenticate(this,response));
+            return !(_authentication instanceof Authentication.ResponseSent);        
+        }
+        response.sendError(HttpStatus.UNAUTHORIZED_401);
+        return false;
+    }
+
+    /* ------------------------------------------------------------ */
+    public Part getPart(String name) throws IOException, ServletException
+    {        
+        if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
+            return null;
+        
+        if (_multiPartInputStream == null)
+        { 
+            _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
+                                                             getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
+                                                             (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+        }
+        return _multiPartInputStream.getPart(name);
+    }
+
+    /* ------------------------------------------------------------ */
+    public Collection<Part> getParts() throws IOException, ServletException
+    {
+        if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
+            return Collections.emptyList();
+        
+        if (_multiPartInputStream == null)
+        {
+            _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
+                                                             getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
+                                                             (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+        }
+        return _multiPartInputStream.getParts();
+    }
+
+    /* ------------------------------------------------------------ */
+    public void login(String username, String password) throws ServletException
+    {
+        if (_authentication instanceof Authentication.Deferred) 
+        {
+            _authentication=((Authentication.Deferred)_authentication).login(username,password);
+            if (_authentication == null)
+                throw new ServletException();
+        } 
+        else 
+        {
+            throw new ServletException("Authenticated as "+_authentication);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public void logout() throws ServletException
+    {
+        if (_authentication instanceof Authentication.User)
+            ((Authentication.User)_authentication).logout();
+        _authentication=Authentication.UNAUTHENTICATED;
+    }
     
     /* ------------------------------------------------------------ */
     /** Merge in a new query string.

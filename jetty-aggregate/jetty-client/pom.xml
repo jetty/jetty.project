@@ -2,9 +2,10 @@
   <parent>
     <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-aggregate-project</artifactId>
-    <version>7.6.0-SNAPSHOT</version>
+    <version>8.1.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-client</artifactId>
   <name>Jetty :: Aggregate :: HTTP Client</name>
 

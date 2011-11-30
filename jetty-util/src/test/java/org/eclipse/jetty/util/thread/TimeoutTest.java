@@ -24,6 +24,8 @@ import org.junit.Test;
 
 public class TimeoutTest
 {
+	private boolean _stress=Boolean.getBoolean("STRESS");
+	
     Object lock = new Object();
     Timeout timeout = new Timeout(null);
     Timeout.Task[] tasks;
@@ -131,6 +133,9 @@ public class TimeoutTest
     @Test
     public void testStress() throws Exception
     {
+    	if ( !_stress )
+    		return;
+    	
         final int LOOP=250;
         final AtomicBoolean running=new AtomicBoolean(true);
         final AtomicIntegerArray count = new AtomicIntegerArray( 4 );

@@ -377,7 +377,7 @@ public class HttpTester
                 cookie.getMaxAge(),
                 cookie.getComment(),
                 cookie.getSecure(),
-                false,
+                cookie.isHttpOnly(),
                 cookie.getVersion());
     }
 

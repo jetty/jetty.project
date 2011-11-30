@@ -152,7 +152,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
         String warFolderRelativePath = (String)dic.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
         if (warFolderRelativePath != null)
         {
-            String contextPath = getWebContextPath(bundle, dic, false);//(String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+            String contextPath = (String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
             if (contextPath == null || !contextPath.startsWith("/"))
             {
             	LOG.warn("The manifest header '" + OSGiWebappConstants.JETTY_WAR_FOLDER_PATH +
@@ -215,7 +215,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             // pointing to files and folders inside WEB-INF. We should
             // filter-out
             // META-INF too
-            String rfc66ContextPath = getWebContextPath(bundle,dic,rfc66Webxml==null);
+            String rfc66ContextPath = getWebContextPath(bundle,dic);
             try
             {
                 JettyBootstrapActivator.registerWebapplication(bundle,".",rfc66ContextPath);
@@ -230,14 +230,11 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
         }
     }
 
-    private String getWebContextPath(Bundle bundle, Dictionary<?, ?> dic, boolean webinfWebxmlExists)
+    private String getWebContextPath(Bundle bundle, Dictionary<?, ?> dic)
     {
         String rfc66ContextPath = (String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
         if (rfc66ContextPath == null)
         {
-        	if (!webinfWebxmlExists) {
-        		return null;
-        	}
             // extract from the last token of the bundle's location:
             // (really ?
             // could consider processing the symbolic name as an alternative
@@ -250,7 +247,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             int lastDot = rfc66ContextPath.lastIndexOf('.');
             if (lastDot != -1)
             {
-            	rfc66ContextPath = rfc66ContextPath.substring(0,lastDot);
+                rfc66ContextPath = rfc66ContextPath.substring(0,lastDot);
             }
         }
         if (!rfc66ContextPath.startsWith("/"))
@@ -259,7 +256,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
         }
         return rfc66ContextPath;
     }
-    
+
     private void unregister(Bundle bundle)
     {
         // nothing to do: when the bundle is stopped, each one of its service

@@ -20,7 +20,13 @@ import static org.junit.Assert.assertNotNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.URL;
+import java.util.EnumSet;
+import java.util.Enumeration;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -40,21 +46,7 @@ public class MultipartFilterTest
     private File _dir;
     private ServletTester tester;
 
-    
-    public static class TestServlet extends DumpServlet
-    {
-
-        @Override
-        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-        {
-            assertNotNull(req.getParameter("fileup"));
-            assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
-            assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
- 
-            super.doPost(req, resp);
-        }
-        
-    }
+  
     @Before
     public void setUp() throws Exception
     {
@@ -67,8 +59,9 @@ public class MultipartFilterTest
         tester=new ServletTester();
         tester.setContextPath("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
-        tester.addServlet(TestServlet.class, "/");
-        FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*",FilterMapping.DEFAULT);
+        tester.addServlet(DumpServlet.class, "/");
+        tester.setAttribute("javax.servlet.context.tempdir", _dir);
+        FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
         tester.start();
     }

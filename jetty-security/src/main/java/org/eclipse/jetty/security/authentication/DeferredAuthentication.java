@@ -16,6 +16,8 @@ package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
 
 import javax.servlet.ServletOutputStream;
@@ -113,7 +115,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             LOG.debug(e);
         }
-        return Authentication.UNAUTHENTICATED;
+        return this;
     }
     
     /* ------------------------------------------------------------ */
@@ -133,7 +135,7 @@ public class DeferredAuthentication implements Authentication.Deferred
         {
             LOG.debug(e);
         }
-        return Authentication.UNAUTHENTICATED;
+        return this;
     }
 
     /* ------------------------------------------------------------ */
@@ -316,6 +318,29 @@ public class DeferredAuthentication implements Authentication.Deferred
         public void setLocale(Locale loc)
         {
         }
+
+	public Collection<String> getHeaderNames()
+	{
+	    return Collections.emptyList();
+	}
+
+	@Override
+	public String getHeader(String arg0)
+	{
+	    return null;
+	}
+
+	@Override
+	public Collection<String> getHeaders(String arg0)
+	{
+            return Collections.emptyList();
+	}
+
+	@Override
+	public int getStatus()
+	{
+	    return 0;
+	}
 
     };
 

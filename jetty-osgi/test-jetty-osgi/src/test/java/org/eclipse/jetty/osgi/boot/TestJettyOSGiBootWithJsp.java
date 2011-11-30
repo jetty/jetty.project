@@ -96,7 +96,7 @@ public class TestJettyOSGiBootWithJsp
         for( Bundle b : bundleContext.getBundles() )
         {
         	bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-        	System.err.println("Got " + b.getSymbolicName() + " " + b.getVersion().toString() + " " + b.getState());
+        	//System.err.println("Got " + b.getSymbolicName());
         }
         
         Bundle osgiBoot = bundlesIndexedBySymbolicName.get("org.eclipse.jetty.osgi.boot");
@@ -105,11 +105,11 @@ public class TestJettyOSGiBootWithJsp
         
         Bundle osgiBootJsp = bundlesIndexedBySymbolicName.get("org.eclipse.jetty.osgi.boot.jsp");
         Assert.assertNotNull("Could not find the org.eclipse.jetty.osgi.boot.jsp bundle", osgiBootJsp);
-        Assert.assertTrue("The fragment jsp is not correctly resolved " + osgiBootJsp.getState(), osgiBootJsp.getState() == Bundle.RESOLVED);
+        Assert.assertTrue("The fragment jsp is not correctly resolved", osgiBootJsp.getState() == Bundle.RESOLVED);
         
         Bundle testWebBundle = bundlesIndexedBySymbolicName.get("org.eclipse.jetty.test-jetty-webapp");
-        Assert.assertNotNull("Could not find the org.eclipse.jetty.test-jetty-webapp bundle", osgiBootJsp);
-        Assert.assertTrue("The bundle org.eclipse.jetty.test-jetty-webapp is not correctly resolved", testWebBundle.getState() == Bundle.ACTIVE);
+        Assert.assertNotNull("Could not find the org.eclipse.jetty.osgi.boot.jsp bundle", osgiBootJsp);
+        Assert.assertTrue("The fragment jsp is not correctly resolved", testWebBundle.getState() == Bundle.ACTIVE);
         
         //now test the jsp/dump.jsp
         HttpClient client = new HttpClient();

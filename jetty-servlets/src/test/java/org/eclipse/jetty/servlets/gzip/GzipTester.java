@@ -15,11 +15,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
 
@@ -348,7 +350,7 @@ public class GzipTester
         servletTester.setResourceBase(testdir.getDir().getCanonicalPath());
         ServletHolder servletHolder = servletTester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
-        FilterHolder holder = servletTester.addFilter(GzipFilter.class,"/*",0);
+        FilterHolder holder = servletTester.addFilter(GzipFilter.class,"/*",EnumSet.allOf(DispatcherType.class));
         return holder;
     }
     

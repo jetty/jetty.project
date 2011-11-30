@@ -16,7 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -388,6 +388,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         boolean error = false;
 
         String threadName=null;
+        Throwable async_exception=null;
         try
         {
             if (LOG.isDebugEnabled())
@@ -441,12 +442,14 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 }
                 catch (EofException e)
                 {
+                    async_exception=e;
                     LOG.debug(e);
                     error=true;
                     _request.setHandled(true);
                 }
                 catch (RuntimeIOException e)
                 {
+                    async_exception=e;
                     LOG.debug(e);
                     error=true;
                     _request.setHandled(true);
@@ -460,6 +463,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 }
                 catch (Throwable e)
                 {
+                    async_exception=e;
                     LOG.warn(String.valueOf(_uri),e);
                     error=true;
                     _request.setHandled(true);
@@ -478,7 +482,8 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
             if (_request._async.isUncompleted())
             {
-                _request._async.doComplete();
+                
+                _request._async.doComplete(async_exception);
 
                 if (_expect100Continue)
                 {

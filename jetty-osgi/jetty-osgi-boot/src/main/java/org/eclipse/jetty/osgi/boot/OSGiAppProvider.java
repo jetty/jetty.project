@@ -69,7 +69,6 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
     private String _defaultsDescriptor;
     private String _tldBundles;
     private String[] _configurationClasses;
-    
     private boolean _autoInstallOSGiBundles = true;
     
     //Keep track of the bundles that were installed and that are waiting for the

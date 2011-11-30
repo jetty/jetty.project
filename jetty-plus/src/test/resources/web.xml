@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app 
+   xmlns="http://java.sun.com/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+   metadata-complete="false"
+   version="3.0"> 
+
+  <display-name>Test  WebApp</display-name>
+
+  <resource-ref>
+    <res-ref-name>jdbc/mydatasource</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+<!--
+    <injection-target>
+      <injection-target-class>com.acme.JNDITest</injection-target-class>
+      <injection-target-name>myDatasource</injection-target-name>
+    </injection-target>
+-->
+  </resource-ref>
+
+</web-app>

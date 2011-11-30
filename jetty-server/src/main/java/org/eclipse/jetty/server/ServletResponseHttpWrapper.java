@@ -1,6 +1,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
@@ -89,6 +90,38 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
 
     public void setStatus(int sc, String sm)
     {        
+    }
+
+    /** 
+     * @see javax.servlet.http.HttpServletResponse#getHeader(java.lang.String)
+     */
+    public String getHeader(String name)
+    {
+        return null;
+    }
+
+    /** 
+     * @see javax.servlet.http.HttpServletResponse#getHeaderNames()
+     */
+    public Collection<String> getHeaderNames()
+    {
+        return null;
+    }
+
+    /** 
+     * @see javax.servlet.http.HttpServletResponse#getHeaders(java.lang.String)
+     */
+    public Collection<String> getHeaders(String name)
+    {
+        return null;
+    }
+
+    /** 
+     * @see javax.servlet.http.HttpServletResponse#getStatus()
+     */
+    public int getStatus()
+    {
+        return 0;
     }
 
 }

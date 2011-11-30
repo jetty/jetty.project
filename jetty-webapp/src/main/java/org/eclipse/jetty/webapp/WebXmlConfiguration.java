@@ -53,6 +53,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (webxml != null) 
         {      
             context.getMetaData().setWebXml(webxml);
+            context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebXml().getMajorVersion());
+            context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebXml().getMinorVersion());
         }
         
         //parse but don't process override-web.xml

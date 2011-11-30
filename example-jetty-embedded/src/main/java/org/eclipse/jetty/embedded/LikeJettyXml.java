@@ -135,7 +135,7 @@ public class LikeJettyXml
         webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
         webapp_provider.setContextXmlDir(jetty_home + "/contexts");
         deployer.addAppProvider(webapp_provider);
-        
+
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
         login.setConfig(jetty_home + "/etc/realm.properties");

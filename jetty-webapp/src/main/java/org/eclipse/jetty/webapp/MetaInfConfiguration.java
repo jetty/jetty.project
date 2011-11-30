@@ -78,6 +78,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
             scanner.scan(null, uris, true);
         }
     }
+    @Override
+    public void configure(WebAppContext context) throws Exception
+    {
+        
+    }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+ 
+    }
 
     @Override
     public void postConfigure(WebAppContext context) throws Exception

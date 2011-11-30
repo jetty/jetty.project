@@ -16,8 +16,11 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -25,14 +28,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletSecurityElement;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,7 +52,7 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.DispatcherType;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
@@ -398,6 +404,9 @@ public class ServletHandler extends ScopedHandler
             {
                 old_scope=baseRequest.getUserIdentityScope();
                 baseRequest.setUserIdentityScope(servlet_holder);
+                
+                //if this servlet supports multipart-mime, configure the request with it
+                baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, ((ServletHolder.Registration)servlet_holder.getRegistration()).getMultipartConfig());
 
                 // start manual inline of nextScope(target,baseRequest,request,response);
                 if (never())
@@ -792,12 +801,13 @@ public class ServletHandler extends ScopedHandler
     /**
      * see also newServletHolder(Class)
      */
-    public ServletHolder newServletHolder()
+    public ServletHolder newServletHolder(Holder.Source source)
     {
-        return new ServletHolder();
+        return new ServletHolder(source);
     }
     
     /* ------------------------------------------------------------ */
+    /** Convenience method to add a servlet Holder.
     public ServletHolder newServletHolder(Class<? extends Servlet> servlet)
     {
         return new ServletHolder(servlet);
@@ -822,7 +832,7 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletHolder addServletWithMapping (Class<? extends Servlet> servlet,String pathSpec)
     {
-        ServletHolder holder = newServletHolder();
+        ServletHolder holder = newServletHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(servlet);
         setServlets((ServletHolder[])LazyList.addToArray(getServlets(), holder, ServletHolder.class));
         addServletWithMapping(holder,pathSpec);
@@ -877,22 +887,22 @@ public class ServletHandler extends ScopedHandler
     {
         setServletMappings((ServletMapping[])LazyList.addToArray(getServletMappings(), mapping, ServletMapping.class));
     }
-    
-    /* ------------------------------------------------------------ */
-    public FilterHolder newFilterHolder(Class<? extends Filter> filter)
-    {
-        return new FilterHolder(filter);
+
+    public Set<String>  setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement) {
+        if (_contextHandler != null) {
+            return _contextHandler.setServletSecurity(registration, servletSecurityElement);
+        }
+        return Collections.emptySet();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** 
      * @see #newFilterHolder(Class)
      */
-    public FilterHolder newFilterHolder()
+    public FilterHolder newFilterHolder(Holder.Source source)
     {
-        return new FilterHolder();
+        return new FilterHolder(source);
     }
-
 
     /* ------------------------------------------------------------ */
     public FilterHolder getFilter(String name)
@@ -910,7 +920,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
-        FilterHolder holder = newFilterHolder();
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
         
@@ -926,7 +936,7 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
-        FilterHolder holder = newFilterHolder();
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
         holder.setName(className+"-"+_filters.length);
         holder.setClassName(className);
         
@@ -969,7 +979,6 @@ public class ServletHandler extends ScopedHandler
             
     }
     
-    
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter.
      * @param filter  class of filter to create
@@ -979,7 +988,8 @@ public class ServletHandler extends ScopedHandler
      */
     public FilterHolder addFilterWithMapping (Class<? extends Filter> filter,String pathSpec,int dispatches)
     {
-        FilterHolder holder = newFilterHolder(filter);
+        FilterHolder holder = newFilterHolder(Holder.Source.EMBEDDED);
+        holder.setHeldClass(filter);
         addFilterWithMapping(holder,pathSpec,dispatches);
         
         return holder;
@@ -1037,14 +1047,13 @@ public class ServletHandler extends ScopedHandler
             
     }
     
-    
     /* ------------------------------------------------------------ */
     /** Convenience method to add a filter with a mapping
      * @param className
      * @param pathSpec
      * @param dispatches
      * @return the filter holder created
-     * @deprecated use {@link #addFilterWithMapping(Class, String, int)} instead
+     * @deprecated use {@link #addFilterWithMapping(Class, String, EnumSet<DispatcherType>)} instead
      */
     public FilterHolder addFilter (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
@@ -1183,7 +1192,7 @@ public class ServletHandler extends ScopedHandler
                 ServletHolder servlet_holder = (ServletHolder)_servletNameMap.get(_servletMappings[i].getServletName());
                 if (servlet_holder==null)
                     throw new IllegalStateException("No such servlet: "+_servletMappings[i].getServletName());
-                else if (_servletMappings[i].getPathSpecs()!=null)
+                else if (servlet_holder.isEnabled() && _servletMappings[i].getPathSpecs()!=null)
                 {
                     String[] pathSpecs = _servletMappings[i].getPathSpecs();
                     for (int j=0;j<pathSpecs.length;j++)
@@ -1292,7 +1301,6 @@ public class ServletHandler extends ScopedHandler
         updateNameMappings();
         invalidateChainsCache();
     }
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */

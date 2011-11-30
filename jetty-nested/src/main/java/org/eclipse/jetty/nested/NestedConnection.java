@@ -15,6 +15,7 @@ package org.eclipse.jetty.nested;
 import java.io.IOException;
 import java.util.Enumeration;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -24,7 +25,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.AbstractHttpConnection;
-import org.eclipse.jetty.server.DispatcherType;
 
 
 public class NestedConnection extends AbstractHttpConnection
