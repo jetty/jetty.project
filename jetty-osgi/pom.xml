@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>8.1.0-SNAPSHOT</version>
+    <version>7.6.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.osgi</groupId>
@@ -15,16 +15,17 @@
     <osgi-services-version>3.2.100.v20100503</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
     <!--equinox-servletbridge-version>1.0.0-v20070523</equinox-servletbridge-version-->
-    <jsp-api-2.2-tomcat-version>7.0.8</jsp-api-2.2-tomcat-version>
-    <el-api-2.2-tomcat-version>7.0.8</el-api-2.2-tomcat-version>
+    <jsp-2.1-glassfish-version>2.1.v20100127</jsp-2.1-glassfish-version>
     <logback-version>0.9.18</logback-version>
     <slf4j-version>1.5.11</slf4j-version>
   </properties>
   <modules>
     <module>jetty-osgi-boot</module>
     <module>jetty-osgi-boot-jsp</module>
+    <module>jetty-osgi-boot-logback</module>
     <module>jetty-osgi-boot-warurl</module>
     <module>jetty-osgi-httpservice</module>
+    <module>jetty-osgi-equinoxtools</module>
     <module>test-jetty-osgi</module>
   </modules>
   <build>
@@ -72,11 +73,6 @@
   </build>
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-annotations</artifactId>
-        <version>${project.version}</version>
-      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-continuation</artifactId>
@@ -142,20 +138,15 @@
         <artifactId>servletbridge</artifactId>
         <version>${equinox-servletbridge-version}</version>
       </dependency-->
-      <!-- not ready <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jsp-impl</artifactId>
-        <version>${jsp-impl-2.2-glassfish-version}</version>
-      </dependency-->
       <dependency>
-        <groupId>org.apache.tomcat</groupId>
-        <artifactId>tomcat-jsp-api</artifactId>
-        <version>${jsp-api-2.2-tomcat-version}</version>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jsp-2.1-glassfish</artifactId>
+        <version>${jsp-2.1-glassfish-version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.tomcat</groupId>
-        <artifactId>tomcat-el-api</artifactId>
-        <version>${el-api-2.2-tomcat-version}</version>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jsp-api-2.1-glassfish</artifactId>
+        <version>${jsp-2.1-glassfish-version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>

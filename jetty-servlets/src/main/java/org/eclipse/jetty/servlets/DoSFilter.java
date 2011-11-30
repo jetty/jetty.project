@@ -335,18 +335,17 @@ public class DoSFilter implements Filter
                     // Reject this request
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","unavailable");
-                    
                     ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                     return;
                 }
                 case 0:
                 {
-                    // fall through to throttle code 
+                    // fall through to throttle code
                     request.setAttribute(__TRACKER,tracker);
                     break;
                 }
                 default:
-                { 
+                {
                     // insert a delay before throttling the request
                     if (_insertHeaders)
                         ((HttpServletResponse)response).addHeader("DoSFilter","delayed");
@@ -354,22 +353,12 @@ public class DoSFilter implements Filter
                     request.setAttribute(__TRACKER,tracker);
                     if (_delayMs > 0)
                         continuation.setTimeout(_delayMs);
-                    continuation.addContinuationListener(new ContinuationListener() 
-                    {
-
-                        public void onComplete(Continuation continuation)
-                        {
-                        }
-
-                        public void onTimeout(Continuation continuation)
-                        {
-                        }
-                    });
                     continuation.suspend();
                     return;
                 }
             }
         }
+
         // Throttle the request
         boolean accepted = false;
         try
@@ -422,10 +411,6 @@ public class DoSFilter implements Filter
         {
             _context.log("DoS",e);
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
         }
         finally
         {

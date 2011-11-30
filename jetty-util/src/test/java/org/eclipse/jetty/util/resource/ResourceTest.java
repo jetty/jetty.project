@@ -105,21 +105,21 @@ public class ResourceTest
     /* ------------------------------------------------------------ */
     @BeforeClass
     public static void setUp()
-    throws Exception
+        throws Exception
     {
         if (data!=null)
             return;
-
+        
         File file = new File(__userDir);
         file=new File(file.getCanonicalPath());
         URI uri = file.toURI();
         __userURL=uri.toURL();
-
+        
         __userURL = new URL(__userURL.toString() + "src/test/java/org/eclipse/jetty/util/resource/");
-        FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
-        __userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
-        __relDir = "src/test/java/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);  
-
+		FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
+		__userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
+		__relDir = "src/test/java/org/eclipse/jetty/util/resource/".replace('/', File.separatorChar);  
+        
         System.err.println("User Dir="+__userDir);
         System.err.println("Rel  Dir="+__relDir);
         System.err.println("User URL="+__userURL);

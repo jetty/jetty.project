@@ -14,18 +14,16 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.EventListener;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
-import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
@@ -39,10 +37,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class SessionHandler extends ScopedHandler
 {
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
-
-    public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,SessionTrackingMode.URL);
-
-  
     
     /* -------------------------------------------------------------- */
     private SessionManager _sessionManager;
@@ -264,10 +258,9 @@ public class SessionHandler extends ScopedHandler
             Cookie[] cookies=request.getCookies();
             if (cookies!=null && cookies.length>0)
             {
-                final String sessionCookie=sessionManager.getSessionCookieConfig().getName();
                 for (int i=0;i<cookies.length;i++)
                 {
-                    if (sessionCookie.equalsIgnoreCase(cookies[i].getName()))
+                    if (sessionManager.getSessionCookie().equalsIgnoreCase(cookies[i].getName()))
                     {
                         requested_session_id=cookies[i].getValue();
                         requested_session_id_from_cookie = true;

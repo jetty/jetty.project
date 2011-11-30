@@ -639,11 +639,10 @@ public class AnnotationParser
         parse(uris, resolver);
     }
 
-    protected void scanClass (InputStream is)
+    private void scanClass (InputStream is)
     throws IOException
     {
         ClassReader reader = new ClassReader(is);
         reader.accept(new MyClassVisitor(), ClassReader.SKIP_CODE|ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES);
     }
 }
-

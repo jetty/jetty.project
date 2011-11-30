@@ -73,7 +73,7 @@ public class IncludableGzipFilterTest
         tester.setContextPath("/context");
         tester.setResourceBase(testdir.getDir().getCanonicalPath());
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        FilterHolder holder = tester.addFilter(IncludableGzipFilter.class,"/*",null);
+        FilterHolder holder = tester.addFilter(IncludableGzipFilter.class,"/*",0);
         holder.setInitParameter("mimeTypes","text/plain");
         tester.start();
     }

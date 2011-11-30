@@ -21,8 +21,6 @@ import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
-import java.util.EnumSet;
-import javax.servlet.DispatcherType;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -55,7 +53,7 @@ public class PutFilterTest
         tester.setContextPath("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
         tester.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        FilterHolder holder = tester.addFilter(PutFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        FilterHolder holder = tester.addFilter(PutFilter.class,"/*",0);
         holder.setInitParameter("delAllowed","true");
         // Bloody Windows does not allow file renaming
         if (!System.getProperty("os.name").toLowerCase().contains("windows"))

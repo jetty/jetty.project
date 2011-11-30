@@ -499,13 +499,6 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         //can pick it up.
         wah.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundle);
 
-        if (wah instanceof WebAppContext)
-        {
-            if (_wrapper.getOSGiAppProvider().getConfigurationClasses() != null)
-            {
-                ((WebAppContext)wah).setConfigurationClasses(_wrapper.getOSGiAppProvider().getConfigurationClasses());
-            }
-        }
         
         Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(contributor);
         if (fragments != null && fragments.length != 0)
@@ -819,4 +812,3 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 
 
 }
-

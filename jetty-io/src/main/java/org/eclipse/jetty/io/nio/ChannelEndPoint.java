@@ -398,12 +398,6 @@ public class ChannelEndPoint implements EndPoint
                     }
                     finally
                     {
-                        // adjust buffer 0 and 1
-                        if (!header.isImmutable())
-                            header.setGetIndex(bbuf0.position());
-                        if (!buffer.isImmutable())
-                            buffer.setGetIndex(bbuf1.position());
-
                         bbuf0.position(0);
                         bbuf1.position(0);
                         bbuf0.limit(bbuf0.capacity());

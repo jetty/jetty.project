@@ -1,11 +1,8 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -41,7 +38,7 @@ public class CrossOriginFilterTest
     @Test
     public void testRequestWithNoOriginArrivesToApplication() throws Exception
     {
-        tester.getContext().addFilter(CrossOriginFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(CrossOriginFilter.class, "/*", FilterMapping.DEFAULT);
 
         final CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -61,7 +58,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://localhost";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, origin);
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -85,7 +82,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://localhost";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, origin);
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -109,7 +106,7 @@ public class CrossOriginFilterTest
         String origin = "http://localhost";
         String otherOrigin = origin.replace("localhost", "127.0.0.1");
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, origin + "," + otherOrigin);
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -132,7 +129,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, "false");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -157,7 +154,7 @@ public class CrossOriginFilterTest
         // will contain the CORS response headers.
 
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -182,7 +179,7 @@ public class CrossOriginFilterTest
         // will contain the CORS response headers.
 
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -204,7 +201,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "PUT");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -243,7 +240,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "GET,HEAD,POST,PUT,DELETE");
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, "X-Requested-With,Content-Type,Accept,Origin,X-Custom");
-        tester.getContext().addFilter(filterHolder, "/*",EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -284,7 +281,7 @@ public class CrossOriginFilterTest
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "GET,HEAD,POST,PUT,DELETE");
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -309,7 +306,7 @@ public class CrossOriginFilterTest
     public void testCrossOriginFilterDisabledForWebSocketUpgrade() throws Exception
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
-        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");

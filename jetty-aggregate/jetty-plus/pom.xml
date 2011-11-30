@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-aggregate-project</artifactId>
-    <version>8.1.0-SNAPSHOT</version>
+    <version>7.6.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-plus</artifactId>
@@ -85,8 +85,8 @@
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-	  <groupId>${servlet.spec.groupId}</groupId>
-	  <artifactId>${servlet.spec.artifactId}</artifactId>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.apache.geronimo.specs</groupId>
@@ -103,10 +103,9 @@
       </exclusions>
     </dependency>
     <dependency>
-       <groupId>${servlet.spec.groupId}</groupId>
-       <artifactId>${servlet.spec.artifactId}</artifactId>
-       <version>${servlet.spec.version}</version>
-       <scope>compile</scope>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>

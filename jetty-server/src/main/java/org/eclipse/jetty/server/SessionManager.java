@@ -14,10 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.util.EventListener;
-import java.util.Set;
 
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -107,6 +104,11 @@ public interface SessionManager extends LifeCycle
      */
     public HttpSession newHttpSession(HttpServletRequest request);
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if session cookies should be secure
+     */
+    public boolean getSecureCookies();
 
     /* ------------------------------------------------------------ */
     /**
@@ -251,6 +253,19 @@ public interface SessionManager extends LifeCycle
     public void complete(HttpSession session);
 
     /**
+     * Sets the session cookie name.
+     * @param cookieName the session cookie name
+     * @see #getSessionCookie()
+     */
+    public void setSessionCookie(String cookieName);
+
+    /**
+     * @return the session cookie name, by default "JSESSIONID".
+     * @see #setSessionCookie(String)
+     */
+    public String getSessionCookie();
+
+    /**
      * Sets the session id URL path parameter name.
      *
      * @param parameterName the URL path parameter name for session id URL rewriting (null or "none" for no rewriting).
@@ -273,22 +288,48 @@ public interface SessionManager extends LifeCycle
     public String getSessionIdPathParameterNamePrefix();
 
     /**
+     * Sets the domain to set on the session cookie
+     * @param domain the domain to set on the session cookie
+     * @see #getSessionDomain()
+     */
+    public void setSessionDomain(String domain);
+
+    /**
+     * @return the domain to set on the session cookie
+     * @see #setSessionDomain(String)
+     */
+    public String getSessionDomain();
+
+    /**
+     * Sets the path to set on the session cookie
+     * @param path the path to set on the session cookie
+     * @see #getSessionPath()
+     */
+    public void setSessionPath(String path);
+
+    /**
+     * @return the path to set on the session cookie
+     * @see #setSessionPath(String)
+     */
+    public String getSessionPath();
+
+    /**
+     * Sets the max age to set on the session cookie, in seconds
+     * @param maxCookieAge the max age to set on the session cookie, in seconds
+     * @see #getMaxCookieAge()
+     */
+    public void setMaxCookieAge(int maxCookieAge);
+
+    /**
+     * @return the max age to set on the session cookie, in seconds
+     * @see #setMaxCookieAge(int)
+     */
+    public int getMaxCookieAge();
+
+    /**
      * @return whether the session management is handled via cookies.
      */
     public boolean isUsingCookies();
-    
-    /**
-     * @return whether the session management is handled via URLs.
-     */
-    public boolean isUsingURLs();
-
-    public Set<SessionTrackingMode> getDefaultSessionTrackingModes();
-
-    public Set<SessionTrackingMode> getEffectiveSessionTrackingModes();
-
-    public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes);
-
-    public SessionCookieConfig getSessionCookieConfig();
     
     /**
      * @return True if absolute URLs are check for remoteness before being session encoded.
@@ -299,4 +340,5 @@ public interface SessionManager extends LifeCycle
      * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */
     public void setCheckingRemoteSessionIdEncoding(boolean remote);
+
 }

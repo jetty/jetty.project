@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>8.1.0-SNAPSHOT</version>
+    <version>7.6.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -31,8 +31,8 @@
       <artifactId>org.eclipse.osgi</artifactId>
     </dependency>
     <dependency>
-      <groupId>${servlet.spec.groupId}</groupId>
-      <artifactId>${servlet.spec.artifactId}</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
     </dependency>
   </dependencies>
 
@@ -45,7 +45,7 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 8.0.0.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
+                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.4.2.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
                 <copy todir="target/classes/contexts">
                     <fileset dir="contexts" />
                 </copy>

@@ -45,8 +45,6 @@ public class AnnotationDecorator implements Decorator
         _introspector.registerHandler(new PostConstructAnnotationHandler(context));
         _introspector.registerHandler(new PreDestroyAnnotationHandler(context));
         _introspector.registerHandler(new DeclareRolesAnnotationHandler(context));
-        _introspector.registerHandler(new MultiPartConfigAnnotationHandler(context));
-        _introspector.registerHandler(new ServletSecurityAnnotationHandler(context));
     }
 
     /* ------------------------------------------------------------ */

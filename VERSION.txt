@@ -1,17 +1,4 @@
-jetty-8.1.0-SNAPSHOT
-
-jetty-8.1.0.RC0 - 30 November 2011
- + 352565 cookie httponly flag ignored
- + 353285 ServletSecurity annotation ignored
- + 357163 jetty 8 ought to proxy jetty8 javadocs
- + 357209 JSP tag listeners not called
- + 360051 SocketConnectionTest.testServerClosedConnection is excluded.
- + 361135 Allow session cookies to NEVER be marked as secure, even on HTTPS
-   requests.
- + 362249 update shell scripts to jetty8
- + 363878 Add ecj compiler to jetty-8 for jsp
- + 364283 can't parse the servlet multipart-config for the web.xml
- + 364430 Support web.xml enabled state for servlets
+jetty-7.6.0-SNAPSHOT
 
 jetty-7.6.0.RC0 - 29 November 2011
  + Refactored NIO layer for better half close handling
@@ -43,22 +30,6 @@ jetty-7.6.0.RC0 - 29 November 2011
  + 364657 Support HTTP only cookies from standard API
  + JETTY-1442 add _hostHeader setter for ProxyRule
 
-jetty-8.0.4.v20111024 - 24 October 2011
- + 358263 JDBCSessionIdManager add setDatasource(DataSource) method
- + 358649 Replace existing StdErrLog system properties for DEBUG/IGNORED with
-   LEVEL instead.
- + 360836 Accept parameters with bad UTF-8. Use replacement character
- + 360912 CrossOriginFilter does not send Access-Control-Allow-Origin on
-   responses. 355103 Make allowCredentials default to true in
-   CrossOriginFilter.
- + 360938 Connections closed after a while.
- + 361135 secure cookies for sessions
- + 361319 Log initialization does not catch correct exceptions on all jvms
- + 361325 359292 Allow KeyStore to be set
- + 361456 release timer task on connection failed
- + 361655 ExecutorThreadPool.isLowOnThreads() returns wrong value.
- + JETTY-1444 start threadpool before selector manager
-
 jetty-7.5.4.v20111024 - 24 October 2011
  + 358263 JDBCSessionIdManager add setDatasource(DataSource) method
  + 358649 Replace existing StdErrLog system properties for DEBUG/IGNORED with
@@ -73,62 +44,6 @@ jetty-7.5.4.v20111024 - 24 October 2011
  + 361456 release timer task on connection failed
  + 361655 ExecutorThreadPool.isLowOnThreads() returns wrong value.
  + JETTY-1444 start threadpool before selector manager
-
-jetty-8.0.3.v20111011 - 11 October 2011
- + 348978 migrate jetty-http-spi
- + 358649 StdErrLog system properties for package/class logging LEVEL.
-
-jetty-8.0.2.v20111006 - 06 October 2011
- + 336443 add missing comma in DigestAuthenticator string
- + 342161 ScannerTest fails intermittently on Mac OS X
- + 346419 testing HttpClient FDs
- + 353267 Request._parameters initialization bug
- + 353509 jetty-client unit tests are running too long
- + 353627 Basic Auth checks that Basic method has been send
- + 356144 Allow SelectorManager thread priority to be set
- + 356274 Start SSL socket factory in call to open()
- + 357163 jetty 8 ought to proxy jetty8 javadocs
- + 357178 websockets draft 14 support
- + 357188 Send content buffer directly
- + 357209 JSP tag listeners not called
- + 357216 Logging via Log4J does not expand braces in format strings
- + 357240 more half close refinements
- + 357338 remove debug
- + 357672 resolve issue with serializing pojos with mongodb session manager,
-   thanks to john simone for the discovery and fix
- + 357959 Include javadoc in distribution
- + 358027 NullPointerException in ResourceHandler with jetty-stylesheet.css
- + 358035 idle time only active if > 0
- + 358147 Add catch for UnknownHostException to fix leaky file descriptor in
-   client
- + 358164 Dispatch from servlet to handler
- + 358263 add method for osgi users to register a driver as Class.forName does
-   not work for them
- + 358649 StdErrLog system properties for package/class logging LEVEL.
- + 358674 Still allows sslv3 for now
- + 358687 Updated jsp does not scan for system tlds Fixed pattern.
- + 358784 JSP broken on Java 1.5
- + 358925 bit more javadoc on usage
- + 358959 File descriptor leak with UnresolvedAddressException
- + 359309 adjust previous test for servletPath to include pathInfo
- + 359673 updated websocket version handling
- + 359675 Principal != String, fix for issue in property file login manager
- + 360051 SocketConnectionTest.testServerClosedConnection is excluded.
- + 360066 jsps referenced in web.xml <jsp-file> elements do not compile
- + JETTY-1130 Access Sessions from HashSessionIdManager
- + JETTY-1277 Fixed sendRedirect encoding of relative locations
- + JETTY-1322 idle sweeper checks for closed endp
- + JETTY-1377 extra logging for busy selector
- + JETTY-1378 new sys property for the latest jsp-impl to force the use of the
-   JDTCompiler when running in OSGi.
- + JETTY-1414 applied to PropertyUserStore
- + JETTY-1415 Start/Stop Server and Client only once in test, code format
- + JETTY-1420 Set Host header for new request in RedirectListener
- + JETTY-1421 Implement RedirectListener.onException,onConnectionFailed
- + JETTY-1423 force connection to be closed returned
- + JETTY-1430 local JNDI contexts don't carry environment
- + JETTY-1434 Add a jsp that exercises jstl.
- + JETTY-1439 space in directory installation path causes classloader problem
 
 jetty-7.5.3.v20111011 - 11 October 2011
  + 348978 migrate jetty-http-spi
@@ -145,7 +60,6 @@ jetty-7.5.2.v20111006 - 06 October 2011
  + 356274 Start SSL socket factory in call to open()
  + 357178 websockets draft 14 support
  + 357188 Send content buffer directly
- + 357209 JSP tag listeners not called
  + 357216 Logging via Log4J does not expand braces in format strings
  + 357240 more half close refinements
  + 357338 remove debug
@@ -185,18 +99,6 @@ jetty-7.5.2.v20111006 - 06 October 2011
  + JETTY-1434 Add a jsp that exercises jstl.
  + JETTY-1439 space in directory installation path causes classloader problem
 
-jetty-8.0.1.v20110908 - 08 September 2011
- + 350634 Added Resource.newResource(File)
- + 356190 fix monodb tests  for changed test api
- + 356428 removed timed waits from test
- + 356693 reduce visibility to webapp of websocket implementations
- + 356695 jetty server jars are provided for websockets
- + 356726 Instead of the sessionDestroyed called sessionCreated after
-   invalidate session
- + 356751 Add null protection to ServletContextHandler.doStop
- + 356823 correctly decode close codes.  Send not utf-8 close code.
- + 357058 Acceptor thread blocking
-
 jetty-7.5.1.v20110908 - 08 September 2011
  + 350634 Added Resource.newResource(File)
  + 356190 fix monodb tests  for changed test api
@@ -208,12 +110,6 @@ jetty-7.5.1.v20110908 - 08 September 2011
  + 356751 Add null protection to ServletContextHandler.doStop
  + 356823 correctly decode close codes.  Send not utf-8 close code.
  + 357058 Acceptor thread blocking
-
-jetty-8.0.0.v20110901 - 01 September 2011
- + 352565 cookie httponly flag ignored
- + 353073 better warnings
- + 353285 ServletSecurity annotation ignored
- + 356421 Upgraded websocket to draft 13 support
 
 jetty-7.5.0.v20110901 - 01 September 2011
  + 356421 Upgraded websocket to draft 13 support
@@ -248,19 +144,6 @@ jetty-7.5.0.RC1 - 19 August 2011
  + JETTY-1410 HTTP client handles CONTINUE 100 response correctly
  + JETTY-1414 HashLoginService doesn't refresh realm if specified config
    filename is not an absolute platform specific value
-
-jetty-8.0.0.RC0 - 16 August 2011
- + Merge from jetty-7.4.3
- + Enable annotations by default
- + 352565 cookie httponly flag ignored
- + 353285 ServletSecurity annotation ignored
-
-jetty-8.0.0.M3 - 27 May 2011
- + 324505 Implement API login
- + 335500 request.getParts() throws a NullPointerException
- + 343472 isUserInRole does not prevent subsequent login call.
- + 346180 jsp-2.2 support
- + Updated to jetty-7.4.2.v20110526
 
 jetty-7.5.0.RC0 - 15 August 2011
  + 298502 Handle 200 Connect responses with no content-length
@@ -444,26 +327,6 @@ jetty-7.4.0.RC0
  + Ensure generated fragment names are unique
  + Added extra session removal test
 
-jetty-8.0.0.M2 - 16 November 2010
- + 320073 Reconsile configuration mechanism
- + 321068 JSF2 fails to initialize
- + 324493 Registration init parameter handling null check, setInitParameters
-   additive
- + 324505 Request.login method must throw ServletException if it cant login
- + 324872 allow disabling listener restriction from using *Registration
-   interfaces
- + 327416 Change meaning of @HandlesTypes in line with latest interpretation by
-   JSR315
- + 327489 Change meaning of @MultipartConfig to match servlet spec 3.0
-   maintenance release 3.0a
- + 328008 Handle update to Servlet Spec 3 Section 8.2.3.h.ii
- + 330188 Reject web-fragment.xml with same <name> as another already loaded
-   one
- + 330208 Support new wording on servlet-mapping and filter-mapping merging
-   from servlet3.0a
- + 330292 request.getParts() returns only one part when the name is the same
- + Update to jetty-7.2.1.v20101111
-
 jetty-7.3.1.v20110307 - 07 March 2011
  + 316382 Support a more strict SSL option with certificates
  + 333481 Handle UCS-4 codepoints in decode and encode
@@ -489,7 +352,9 @@ jetty-7.3.1.v20110307 - 07 March 2011
  + 338068 Leaking ConstraintMappings on redeploy
  + 338092 ProxyServlet leaks memory
  + 338607 Removed managed attributes when context is stopped
- + 338819 Externally control Deployment Manager application lifecycle
+ + 338880 Fixed failing buffer range checks
+ + 338920 Handle non existent real path directories
+ + 338961 AJP packet size
  + JETTY-1304 Allow quoted boundaries in Multipart filter
  + JETTY-1317 More elegent handling of bad URIs in requests
  + JETTY-1331 Allow alternate XML configuration processors (eg spring)
@@ -675,6 +540,7 @@ jetty-7.2.0.RC0 - 01 October 2010
  + JETTY-1245 Do not use direct buffers with NIO SSL
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1250 Parallel start of HandlerCollection
+ + JETTY-1252 Handle more multipart transfer encodings
  + JETTY-1256 annotation and jta jars from Orbit
  + JETTY-1259 NullPointerException in JDBCSessionIdManager when invalidating
    session
@@ -701,15 +567,6 @@ jetty-7.1.6.v20100715
  + JETTY-1248 fix parsing of bad multiparts
  + JETTY-1249 Apply max idle time to all connectors
  + JETTY-1251 Replace then close selector for JVM bugs
-
-jetty-8.0.0.M1 - 12 July 2010
- + 306350 Ensure jars excluded by ordering are not scanned for annotations
- + JETTY-1224 Change jetty-8 merge rules for fragment descriptors and
-   annotations
- + Ensure <absolute-ordering> in web.xml overrides relative <ordering> in
-   fragments
- + Ensure empty <absolute-ordering> implies exclusion of all fragments
- + Ensure servlet-api jar class inheritance hierarchy is scanned
 
 jetty-7.1.5.v20100705
  + Update ecj to 3.6 Helios release drop
@@ -874,9 +731,6 @@ jetty-7.1.0.RC0 - 27 April 2010
  + Fix jetty-plus.xml reference to addLifeCycle
  + JETTY-1200 SSL NIO Endpoint wraps non NIO buffers
  + JETTY-1202 Use platform default algorithm for SecureRandom
- + Merged 7.0.2.v20100331
- + Add NPE protection to ContainerInitializerConfiguration
- + Temporarily remove jetty-osgi module to clarify jsp version compatibility
  + JETTY-1212 handle long content lengths
  + JETTY-1214 avoid ISE when scavenging invalid session
  + JETTY-903 Stop both caches
@@ -1023,18 +877,9 @@ jetty-7.0.2.RC0
  + Added IPAccessHandler
  + Updated Servlet3Continuation to final 3.0.20100224
  + 305997 Coalesce buffers in ChannelEndPoint.flush()
- + 306028 Enable TCP_NODELAY by default in client connectors <<<<<<< HEAD
-
-jetty-8.0.0.M0 - 28 February 2010
- + Updated servlet 3.0 spec 20100224
- + Merged 7.0.1.v20091116
- + Updated to cometd 1.0.1
+ + 306028 Enable TCP_NODELAY by default in client connectors
 
 jetty-7.0.1.v20091125 - 25 November 2009
- + =======
-
-jetty-7.0.1.v20091125 - 25 November 2009
- + >>>>>>> origin/master
  + 274251 DefaultServlet supports exact match mode.
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289027 deobfuscate HttpClient SSL passwords

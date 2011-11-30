@@ -13,7 +13,7 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.Enumeration;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -80,11 +80,11 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
         };
         assertHeaders(headers);
 
-        Iterator<String> e = _response.getHeaders("size").iterator();
+        Enumeration e = _response.getHeaders("size");
         int count = 0;
-        while (e.hasNext())
+        while (e.hasMoreElements())
         {
-            e.next();
+            e.nextElement();
             count++;
         }
 

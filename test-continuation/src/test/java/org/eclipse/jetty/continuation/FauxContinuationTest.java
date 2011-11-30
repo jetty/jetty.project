@@ -15,9 +15,6 @@ package org.eclipse.jetty.continuation;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.EnumSet;
-
-import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.continuation.test.ContinuationBase;
 import org.eclipse.jetty.server.Connector;
@@ -47,7 +44,7 @@ public class FauxContinuationTest extends ContinuationBase
         ServletHolder holder=new ServletHolder(_servlet);
         _servletHandler.addServletWithMapping(holder,"/");
         
-        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",null);
+        _filter=_servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",0);
         _filter.setInitParameter("debug","true");
         _filter.setInitParameter("faux","true");
         _server.start();

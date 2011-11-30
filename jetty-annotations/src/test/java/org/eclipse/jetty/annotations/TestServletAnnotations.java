@@ -1,5 +1,5 @@
 // ========================================================================
-// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
+//Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
@@ -13,19 +13,12 @@
 
 package org.eclipse.jetty.annotations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
 
@@ -36,50 +29,8 @@ import org.junit.Test;
  */
 public class TestServletAnnotations
 {
+   
     @Test
-    public void testServletAnnotation() throws Exception
-    {
-        List<String> classes = new ArrayList<String>();
-        classes.add("org.eclipse.jetty.annotations.ServletC");
-        AnnotationParser parser = new AnnotationParser();
-
-        WebAppContext wac = new WebAppContext();       
-        WebServletAnnotationHandler handler = new WebServletAnnotationHandler(wac);
-        parser.registerAnnotationHandler("javax.servlet.annotation.WebServlet", handler);
-       
-        parser.parse(classes, new ClassNameResolver ()
-        {
-            public boolean isExcluded(String name)
-            {
-                return false;
-            }
-
-            public boolean shouldOverride(String name)
-            {
-                return false;
-            }
-        });
-        
-        assertEquals(1, handler.getAnnotationList().size());
-        assertTrue(handler.getAnnotationList().get(0) instanceof WebServletAnnotation);
-        
-        handler.getAnnotationList().get(0).apply();
-       
-        ServletHolder[] holders = wac.getServletHandler().getServlets();
-        assertNotNull(holders);
-        assertEquals(1, holders.length);
-        assertEquals("CServlet", holders[0].getName());
-        ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
-        assertNotNull(mappings);
-        assertEquals(1, mappings.length);
-        String[] paths = mappings[0].getPathSpecs();
-        assertNotNull(paths);
-        assertEquals(2, paths.length);
-        assertEquals("y", holders[0].getInitParameter("x"));
-        assertEquals(2,holders[0].getInitOrder());
-        assertFalse(holders[0].isAsyncSupported());
-    }
-    
     public void testDeclareRoles ()
     throws Exception
     { 

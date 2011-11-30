@@ -13,12 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.ServletResponseWrapper;
-import javax.servlet.ServletException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,8 +21,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.continuation.ContinuationListener;
+import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -38,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
 
 /* ------------------------------------------------------------ */
-/** Implementation of Continuation and AsyncContext interfaces
+/** Implementation of Continuation and AsyncContext interfaces.
  * 
  */
 public class AsyncContinuation implements AsyncContext, Continuation
@@ -73,10 +67,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
     private static final int __UNCOMPLETED=8;  // Request is completable
     private static final int __COMPLETED=9;    // Request is complete
     
+
     /* ------------------------------------------------------------ */
     protected AbstractHttpConnection _connection;
-    private List<AsyncListener> _lastAsyncListeners;
-    private List<AsyncListener> _asyncListeners;
     private List<ContinuationListener> _continuationListeners;
 
     /* ------------------------------------------------------------ */
@@ -87,8 +80,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     private volatile boolean _responseWrapped;
     private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncEventState _event;
-    private volatile long _expireAt;    
-    private volatile boolean _continuation;
+    private volatile long _expireAt;
     
     /* ------------------------------------------------------------ */
     protected AsyncContinuation()
@@ -103,29 +95,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
         synchronized(this)
         {
             _connection=connection;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void addListener(AsyncListener listener)
-    {
-        synchronized(this)
-        {
-            if (_asyncListeners==null)
-                _asyncListeners=new ArrayList<AsyncListener>();
-            _asyncListeners.add(listener);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void addListener(AsyncListener listener,ServletRequest request, ServletResponse response)
-    {
-        synchronized(this)
-        {
-            // TODO handle the request/response ???
-            if (_asyncListeners==null)
-                _asyncListeners=new ArrayList<AsyncListener>();
-            _asyncListeners.add(listener);
         }
     }
 
@@ -276,7 +245,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            _continuation=false;
             _responseWrapped=false;
             
             switch(_state)
@@ -284,15 +252,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 case __IDLE:
                     _initial=true;
                     _state=__DISPATCHED;
-                    if (_lastAsyncListeners!=null)
-                        _lastAsyncListeners.clear();
-                    if (_asyncListeners!=null)
-                        _asyncListeners.clear();
-                    else
-                    {
-                        _asyncListeners=_lastAsyncListeners;
-                        _lastAsyncListeners=null;
-                    }
                     return true;
                     
                 case __COMPLETING:
@@ -329,7 +288,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     _resumed=false;
                     _expired=false;
 
-                    if (_event==null || request!=_event.getSuppliedRequest() || response != _event.getSuppliedResponse() || context != _event.getServletContext())
+                    if (_event==null || request!=_event.getRequest() || response != _event.getResponse() || context != _event.getServletContext())
                         _event=new AsyncEventState(context,request,response);
                     else
                     {
@@ -338,30 +297,10 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     }
 
                     _state=__ASYNCSTARTED;
-                    List<AsyncListener> recycle=_lastAsyncListeners;
-                    _lastAsyncListeners=_asyncListeners;
-                    _asyncListeners=recycle;
-                    if (_asyncListeners!=null)
-                        _asyncListeners.clear();
                     break;
 
                 default:
                     throw new IllegalStateException(this.getStatusString());
-            }
-        }
-        
-        if (_lastAsyncListeners!=null)
-        {
-            for (AsyncListener listener : _lastAsyncListeners)
-            {
-                try
-                {
-                    listener.onStartAsync(_event);
-                }
-                catch(Exception e)
-                {
-                    LOG.warn(e);
-                }
             }
         }
         
@@ -379,6 +318,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+            List<ContinuationListener> listeners=_continuationListeners;
+            
             switch(_state)
             {
                 case __REDISPATCHED:
@@ -399,7 +340,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     {
                         _state=__UNCOMPLETED;
                         return true;
-                    }         
+                    }
                     _initial=false;
                     _state=__REDISPATCHED;
                     return false; 
@@ -457,43 +398,27 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected void expired()
     {
-        final List<ContinuationListener> cListeners;
-        final List<AsyncListener> aListeners;
+        final List<ContinuationListener> listeners;
         synchronized (this)
         {
             switch(_state)
             {
                 case __ASYNCSTARTED:
                 case __ASYNCWAIT:
-                    cListeners=_continuationListeners;
-                    aListeners=_asyncListeners;
+                    listeners=_continuationListeners;
                     break;
                 default:
-                    cListeners=null;
-                    aListeners=null;
+                    listeners=null;
                     return;
             }
             _expired=true;
         }
         
-        if (aListeners!=null)
+        if (listeners!=null)
         {
-            for (AsyncListener listener : aListeners)
+            for (int i=0;i<listeners.size();i++)
             {
-                try
-                {
-                    listener.onTimeout(_event);
-                }
-                catch(Exception e)
-                {
-                    LOG.warn(e);
-                }
-            }
-        }
-        if (cListeners!=null)
-        {
-            for (ContinuationListener listener : cListeners)
-            {
+                ContinuationListener listener=listeners.get(i);
                 try
                 {
                     listener.onTimeout(this);
@@ -504,8 +429,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 }
             }
         }
-            
-           
         
         synchronized (this)
         {
@@ -513,11 +436,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             {
                 case __ASYNCSTARTED:
                 case __ASYNCWAIT:
-                    if (_continuation) 
-                        dispatch();
-                   else
-                        // TODO maybe error dispatch?
-                        complete();
+                    dispatch();
             }
         }
 
@@ -561,75 +480,36 @@ public class AsyncContinuation implements AsyncContext, Continuation
         }
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException 
-    {
-        try
-        {
-            // TODO inject
-            return clazz.newInstance();
-        }
-        catch(Exception e)
-        {
-            throw new ServletException(e);
-        }
-    }
-
-
+    
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#complete()
      */
-    protected void doComplete(Throwable ex)
+    protected void doComplete()
     {
-        final List<ContinuationListener> cListeners;
-        final List<AsyncListener> aListeners;
+        final List<ContinuationListener> listeners;
         synchronized (this)
         {
             switch(_state)
             {
                 case __UNCOMPLETED:
                     _state=__COMPLETED;
-                    cListeners=_continuationListeners;
-                    aListeners=_asyncListeners;
+                    listeners=_continuationListeners;
                     break;
                     
                 default:
-                    cListeners=null;
-                    aListeners=null;
+                    listeners=null;
                     throw new IllegalStateException(this.getStatusString());
             }
         }
         
-        if (aListeners!=null)
+        if (listeners!=null)
         {
-            for (AsyncListener listener : aListeners)
+            for(int i=0;i<listeners.size();i++)
             {
                 try
                 {
-                    if (ex!=null)
-                    {
-                        _event.getSuppliedRequest().setAttribute(Dispatcher.ERROR_EXCEPTION,ex);
-                        _event.getSuppliedRequest().setAttribute(Dispatcher.ERROR_MESSAGE,ex.getMessage());
-                        listener.onError(_event);
-                    }
-                    else
-                        listener.onComplete(_event);
-                }
-                catch(Exception e)
-                {
-                    LOG.warn(e);
-                }
-            }
-        }
-        if (cListeners!=null)
-        {
-            for (ContinuationListener listener : cListeners)
-            {
-                try
-                {
-                    listener.onComplete(this);
+                    listeners.get(i).onComplete(this);
                 }
                 catch(Exception e)
                 {
@@ -644,6 +524,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+//            _history.append("r\n");
             switch(_state)
             {
                 case __DISPATCHED:
@@ -715,7 +596,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             }
             else
             {
-                ((AsyncEndPoint)endp).scheduleTimeout(_event._timeout,_timeoutMs);
+                ((AsyncEndPoint)endp).scheduleTimeout(_event,_timeoutMs);
             }
         }
     }
@@ -737,7 +618,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
             final AsyncEventState event=_event;
             if (event!=null)
             {
-                ((AsyncEndPoint)endp).cancelTimeout(event._timeout);
+                ((AsyncEndPoint)endp).cancelTimeout(event);
             }
         }
     }
@@ -834,15 +715,15 @@ public class AsyncContinuation implements AsyncContext, Continuation
     public ServletRequest getRequest()
     {
         if (_event!=null)
-            return _event.getSuppliedRequest();
+            return _event.getRequest();
         return _connection.getRequest();
     }
 
     /* ------------------------------------------------------------ */
     public ServletResponse getResponse()
     {
-        if (_responseWrapped && _event!=null && _event.getSuppliedResponse()!=null)
-            return _event.getSuppliedResponse();
+        if (_event!=null)
+            return _event.getResponse();
         return _connection.getResponse();
     }
 
@@ -867,7 +748,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            return (_event!=null && _event.getSuppliedRequest()==_connection._request && _event.getSuppliedResponse()==_connection._response);
+            return (_event!=null && _event.getRequest()==_connection._request && _event.getResponse()==_connection._response);
         }
     }
 
@@ -919,17 +800,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
      */
     public void suspend(ServletResponse response)
     {
-        _continuation=true;
-        if (response instanceof ServletResponseWrapper)
-        {
-            _responseWrapped=true;
-            AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),response);       
-        }
-        else
-        {
-            _responseWrapped=false;
-            AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
-        }
+        _responseWrapped=!(response instanceof Response);
+        AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),response); 
     }
 
     /* ------------------------------------------------------------ */
@@ -939,7 +811,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
     public void suspend()
     {
         _responseWrapped=false;
-        _continuation=true;
         AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
     }
 
@@ -949,8 +820,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
      */
     public ServletResponse getServletResponse()
     {
-        if (_responseWrapped && _event!=null && _event.getSuppliedResponse()!=null)
-            return _event.getSuppliedResponse();
+        if (_responseWrapped && _event!=null && _event.getResponse()!=null)
+            return _event.getResponse();
         return _connection.getResponse();
     }
 
@@ -999,34 +870,19 @@ public class AsyncContinuation implements AsyncContext, Continuation
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class AsyncTimeout extends Timeout.Task implements Runnable
-    {
-            @Override
-            public void expired()
-            {
-                AsyncContinuation.this.expired();
-            }
-
-            @Override
-            public void run()
-            {
-                AsyncContinuation.this.expired();
-            }
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    public class AsyncEventState extends AsyncEvent
+    public class AsyncEventState extends Timeout.Task implements Runnable
     {
         private final ServletContext _suspendedContext;
+        private final ServletRequest _request;
+        private final ServletResponse _response;
         private ServletContext _dispatchContext;
         private String _path;
-        private Timeout.Task _timeout=  new AsyncTimeout();
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
-            super(AsyncContinuation.this, request,response);
             _suspendedContext=context;
+            _request=request;
+            _response=response;
         }
         
         public ServletContext getSuspendedContext()
@@ -1043,10 +899,31 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             return _dispatchContext==null?_suspendedContext:_dispatchContext;
         }
+
+        public ServletRequest getRequest()
+        {
+            return _request;
+        }
+
+        public ServletResponse getResponse()
+        {
+            return _response;
+        }
         
         public String getPath()
         {
             return _path;
+        }
+
+        @Override
+        public void expired()
+        {
+            AsyncContinuation.this.expired();
+        }
+        
+        public void run()
+        {
+            AsyncContinuation.this.expired();  
         }
     }
 }

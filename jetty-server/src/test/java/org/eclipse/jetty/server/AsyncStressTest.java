@@ -22,10 +22,7 @@ import java.net.Socket;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -224,9 +221,10 @@ public class AsyncStressTest
                 if (suspend_for>=0)
                 {
                     final AsyncContext asyncContext = baseRequest.startAsync();
-                    asyncContext.addListener(__asyncListener);
+                    asyncContext.addContinuationListener(__asyncListener);
                     if (suspend_for>0)
                         asyncContext.setTimeout(suspend_for);
+
                     if (complete_after>0)
                     {
                         TimerTask complete = new TimerTask()
@@ -322,31 +320,18 @@ public class AsyncStressTest
             }
         }
     }
-    
-    
-    private static AsyncListener __asyncListener = new AsyncListener()
+
+
+    private static ContinuationListener __asyncListener = new ContinuationListener()
     {
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(Continuation continuation)
         {
         }
 
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
+        public void onTimeout(Continuation continuation)
         {
-            event.getSuppliedRequest().setAttribute("TIMEOUT",Boolean.TRUE);
-            event.getSuppliedRequest().getAsyncContext().dispatch();
-        }
-
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-            
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
+            continuation.setAttribute("TIMEOUT",Boolean.TRUE);
+            continuation.resume();
         }
     };
 }

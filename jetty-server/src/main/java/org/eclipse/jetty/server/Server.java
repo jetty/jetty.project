@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Enumeration;
 
-import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,7 +61,7 @@ public class Server extends HandlerWrapper implements Attributes
              Server.class.getPackage().getImplementationVersion()!=null)
             __version=Server.class.getPackage().getImplementationVersion();
         else
-            __version=System.getProperty("jetty.version","8.0.y.z-SNAPSHOT");
+            __version=System.getProperty("jetty.version","7.x.y-SNAPSHOT");
     }
     
     private final Container _container=new Container();

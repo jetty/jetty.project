@@ -5,8 +5,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.EnumSet;
-import javax.servlet.DispatcherType;
+
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -545,7 +544,7 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: 12", response);
         assertResponseNotContains("Extra Info", response);
 
-        context.addFilter(OutputFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(OutputFilter.class, "/*", 0);
         response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
@@ -554,7 +553,7 @@ public class DefaultServletTest
         context.getServletHandler().setFilterMappings(new FilterMapping[]{});
         context.getServletHandler().setFilters(new FilterHolder[]{});
 
-        context.addFilter(WriterFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(WriterFilter.class, "/*", 0);
         response = connector.getResponses("GET /context/data0.txt HTTP/1.1\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);

@@ -82,8 +82,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.webapp.WebXmlConfiguration",
         "org.eclipse.jetty.webapp.MetaInfConfiguration",
         "org.eclipse.jetty.webapp.FragmentConfiguration",
-        "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"//,
-        //"org.eclipse.jetty.webapp.TagLibConfiguration"
+        "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+        "org.eclipse.jetty.webapp.TagLibConfiguration"
     } ;
 
     // System classes are classes that cannot be replaced by
@@ -150,6 +150,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _configurationsSet=false;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
+
 
     private MetaData _metadata=new MetaData();
 

@@ -13,7 +13,6 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -118,7 +117,7 @@ public class WebSocketParserD06Test
         _in.put((byte)0x84);
         _in.put((byte)11);
         _in.put("Hello World".getBytes(StringUtil.__UTF8));
-        System.err.println("tosend="+TypeUtil.toHexString(_in.asArray()));
+        // System.err.println("tosend="+TypeUtil.toHexString(_in.asArray()));
 
         int filled =_parser.parseNext();
 

@@ -14,11 +14,8 @@
 package org.eclipse.jetty.testing;
 
 import java.net.InetAddress;
-import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
-
-import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.LocalConnector;
@@ -237,7 +234,7 @@ public class ServletTester
      * @return the FilterHolder
      * @see org.eclipse.jetty.servlet.ServletContextHandler#addFilter(java.lang.Class, java.lang.String, int)
      */
-    public FilterHolder addFilter(Class filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
+    public FilterHolder addFilter(Class filterClass, String pathSpec, int dispatches)
     {
         return _context.addFilter(filterClass,pathSpec,dispatches);
     }
@@ -250,7 +247,7 @@ public class ServletTester
      * @return the FilterHolder
      * @see org.eclipse.jetty.servlet.ServletContextHandler#addFilter(java.lang.String, java.lang.String, int)
      */
-    public FilterHolder addFilter(String filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
+    public FilterHolder addFilter(String filterClass, String pathSpec, int dispatches)
     {
         return _context.addFilter(filterClass,pathSpec,dispatches);
     }

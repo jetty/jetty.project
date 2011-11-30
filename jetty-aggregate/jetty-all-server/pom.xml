@@ -2,10 +2,9 @@
     <parent>
         <groupId>org.eclipse.jetty.aggregate</groupId>
         <artifactId>jetty-aggregate-project</artifactId>
-        <version>8.1.0-SNAPSHOT</version>
+        <version>7.6.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-all-server</artifactId>
     <name>Jetty :: Aggregate :: All Server</name>
     <properties>
@@ -136,9 +135,9 @@
           <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>${servlet.spec.groupId}</groupId>
-            <artifactId>${servlet.spec.artifactId}</artifactId>
-            <version>${servlet.spec.version}</version>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>

@@ -21,11 +21,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.Registration;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.api.Registration;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -40,8 +40,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Holder<T> extends AbstractLifeCycle implements Dumpable
 {
-    public enum Source { EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION };
-    final private Source _source;
     private static final Logger LOG = Log.getLogger(Holder.class);
 
     protected transient Class<? extends T> _class;
@@ -56,16 +54,10 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     protected ServletHandler _servletHandler;
 
     /* ---------------------------------------------------------------- */
-    protected Holder(Source source)
+    protected Holder()
     {
-        _source=source;
     }
-    
-    public Source getSource()
-    {
-        return _source;
-    }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return True if this holder was created for a specific instance.
@@ -343,12 +335,6 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         public boolean setInitParameter(String name, String value)
         {
             illegalStateIfContextStarted();
-            if (name == null) {
-                throw new IllegalArgumentException("init parameter name required");
-            }
-            if (value == null) {
-                throw new IllegalArgumentException("non-null value required for init parameter " + name);
-            }
             if (Holder.this.getInitParameter(name)!=null)
                 return false;
             Holder.this.setInitParameter(name,value);
@@ -359,28 +345,20 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
         {
             illegalStateIfContextStarted();
             Set<String> clash=null;
-            for (Map.Entry<String, String> entry : initParameters.entrySet())
+            for (String name : initParameters.keySet())
             {
-                if (entry.getKey() == null) {
-                    throw new IllegalArgumentException("init parameter name required");
-                }
-                if (entry.getValue() == null) {
-                    throw new IllegalArgumentException("non-null value required for init parameter " + entry.getKey());
-                }
-                if (Holder.this.getInitParameter(entry.getKey())!=null)
+                if (Holder.this.getInitParameter(name)!=null)
                 {
                     if (clash==null)
                         clash=new HashSet<String>();
-                    clash.add(entry.getKey());
+                    clash.add(name);
                 }
             }
             if (clash!=null)
                 return clash;
-            Holder.this.getInitParameters().putAll(initParameters);
+            Holder.this.setInitParameters(initParameters);
             return Collections.emptySet();
-        }
-        
-        
+        }; 
     }
 }
 

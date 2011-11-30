@@ -20,25 +20,19 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.EventListener;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.SessionTrackingMode;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
@@ -194,7 +188,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
          */
         if (holder == null)
         {
-            holder = context.getServletHandler().newServletHolder(Holder.Source.DESCRIPTOR);
+            holder = context.getServletHandler().newServletHolder();
             holder.setName(servlet_name);
             context.getServletHandler().addServlet(holder);
         }
@@ -473,136 +467,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
             }
         }
-
-        String async=node.getString("async-supported",false,true);
-        if (async!=null)
-        {
-            boolean val = async.length()==0||Boolean.valueOf(async);
-            Origin o =context.getMetaData().getOrigin(servlet_name+".servlet.async-supported");
-            switch (o)
-            {
-                case NotSet:
-                {
-                    //set it
-                    holder.setAsyncSupported(val);
-                    context.getMetaData().setOrigin(servlet_name+".servlet.async-supported", descriptor);
-                    break;
-                }
-                case WebXml:
-                case WebDefaults:
-                case WebOverride:
-                {
-                    //async-supported set by previous web xml descriptor, only allow override if we're parsing another web descriptor(web.xml/web-override.xml/web-default.xml)
-                    if (!(descriptor instanceof FragmentDescriptor))
-                    {
-                        holder.setAsyncSupported(val);
-                        context.getMetaData().setOrigin(servlet_name+".servlet.async-supported", descriptor);  
-                    }             
-                    break;
-                }
-                case WebFragment:
-                {
-                    //async-supported set by another fragment, this fragment's value must match
-                    if (holder.isAsyncSupported() != val)
-                        throw new IllegalStateException("Conflicting async-supported="+async+" for servlet "+servlet_name+" in "+descriptor.getResource());
-                    break;
-                }
-            }
-        }
-
-        String enabled = node.getString("enabled", false, true);
-        if (enabled!=null)
-        {
-            boolean is_enabled = enabled.length()==0||Boolean.valueOf(enabled);     
-            Origin o = context.getMetaData().getOrigin(servlet_name+".servlet.enabled");
-            switch (o)
-            {
-                case NotSet:
-                {
-                    //hasn't been set yet, so set it                
-                    holder.setEnabled(is_enabled);
-                    context.getMetaData().setOrigin(servlet_name+".servlet.enabled", descriptor);
-                    break;
-                }
-                case WebXml:
-                case WebDefaults:
-                case WebOverride:
-                {
-                    //was set in a web xml descriptor, only allow override from another web xml descriptor
-                    if (!(descriptor instanceof FragmentDescriptor))
-                    {
-                        holder.setEnabled(is_enabled);   
-                        context.getMetaData().setOrigin(servlet_name+".servlet.enabled", descriptor);
-                    }
-                    break;
-                }
-                case WebFragment:
-                {
-                    //was set by another fragment, this fragment's value must match
-                    if (holder.isEnabled() != is_enabled)
-                        throw new IllegalStateException("Conflicting value of servlet enabled for servlet "+servlet_name+" in "+descriptor.getResource());
-                    break;
-                }
-            }
-        }
-        
-        /*
-         * If multipart config not set, then set it and record it was by the web.xml or fragment.
-         * If it was set by web.xml then if this is a fragment, ignore the settings.
-         * If it was set by a fragment, if this is a fragment and the values are different, error!
-         */
-        XmlParser.Node multipart = node.get("multipart-config");
-        if (multipart != null)
-        {
-            String location = multipart.getString("location", false, true);
-            String maxFile = multipart.getString("max-file-size", false, true);
-            String maxRequest = multipart.getString("max-request-size", false, true);
-            String threshold = multipart.getString("file-size-threshold",false,true);
-            MultipartConfigElement element = new MultipartConfigElement(location,
-                                                                        (maxFile==null||"".equals(maxFile)?-1L:Long.parseLong(maxFile)),
-                                                                        (maxRequest==null||"".equals(maxRequest)?-1L:Long.parseLong(maxRequest)),
-                                                                        (threshold==null||"".equals(threshold)?0:Integer.parseInt(threshold)));
-            
-            Origin o = context.getMetaData().getOrigin(servlet_name+".servlet.multipart-config");
-            switch (o)
-            {
-                case NotSet:
-                {
-                    //hasn't been set, so set it
-                    holder.getRegistration().setMultipartConfig(element);
-                    context.getMetaData().setOrigin(servlet_name+".servlet.multipart-config", descriptor);
-                    break;
-                }
-                case WebXml:
-                case WebDefaults:
-                case WebOverride:
-                {
-                    //was set in a web xml, only allow changes if we're parsing another web xml (web.xml/web-default.xml/web-override.xml)
-                    if (!(descriptor instanceof FragmentDescriptor))
-                    {
-                        holder.getRegistration().setMultipartConfig(element);
-                        context.getMetaData().setOrigin(servlet_name+".servlet.multipart-config", descriptor);  
-                    }
-                    break;
-                }
-                case WebFragment:
-                {
-                    //another fragment set the value, this fragment's values must match exactly or it is an error
-                    MultipartConfigElement cfg = ((ServletHolder.Registration)holder.getRegistration()).getMultipartConfig();
-                    
-                    if (cfg.getMaxFileSize() != element.getMaxFileSize())
-                        throw new IllegalStateException("Conflicting multipart-config max-file-size for servlet "+servlet_name+" in "+descriptor.getResource());
-                    if (cfg.getMaxRequestSize() != element.getMaxRequestSize())
-                        throw new IllegalStateException("Conflicting multipart-config max-request-size for servlet "+servlet_name+" in "+descriptor.getResource());
-                    if (cfg.getFileSizeThreshold() != element.getFileSizeThreshold())
-                        throw new IllegalStateException("Conflicting multipart-config file-size-threshold for servlet "+servlet_name+" in "+descriptor.getResource());
-                    if ((cfg.getLocation() != null && (element.getLocation() == null || element.getLocation().length()==0))
-                            || (cfg.getLocation() == null && (element.getLocation()!=null || element.getLocation().length() > 0)))
-                        throw new IllegalStateException("Conflicting multipart-config location for servlet "+servlet_name+" in "+descriptor.getResource());
-                    break;
-                }
-            } 
-        }
     }
     
     
@@ -666,282 +530,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             int timeout = Integer.parseInt(tNode.toString(false, true));
             context.getSessionHandler().getSessionManager().setMaxInactiveInterval(timeout * 60);
-        }
-        
-        //Servlet Spec 3.0 
-        // <tracking-mode>
-        // this is additive across web-fragments
-        Iterator iter = node.iterator("tracking-mode");
-        Set<SessionTrackingMode> modes = new HashSet<SessionTrackingMode>();
-        modes.addAll(context.getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes());
-        while (iter.hasNext())
-        {
-            XmlParser.Node mNode = (XmlParser.Node) iter.next();
-            String trackMode = mNode.toString(false, true);
-            modes.add(SessionTrackingMode.valueOf(trackMode));
-        }
-        context.getSessionHandler().getSessionManager().setSessionTrackingModes(modes);
-        
-        
-        //Servlet Spec 3.0 
-        //<cookie-config>
-        XmlParser.Node cookieConfig = node.get("cookie-config");
-        if (cookieConfig != null)
-        {
-            //  <name>
-            String name = cookieConfig.getString("name", false, true);
-            if (name != null)
-            {
-                Origin o = context.getMetaData().getOrigin("cookie-config.name");
-                switch (o)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><name> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName(name);
-                        context.getMetaData().setOrigin("cookie-config.name", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><name> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName(name);
-                            context.getMetaData().setOrigin("cookie-config.name", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getName().equals(name))                  
-                            throw new IllegalStateException("Conflicting cookie-config name "+name+" in "+descriptor.getResource());
-                        break;
-                    }
-                }
-            }
-            
-            //  <domain>
-            String domain = cookieConfig.getString("domain", false, true);
-            if (domain != null)
-            {
-                Origin o = context.getMetaData().getOrigin("cookie-config.domain");
-                switch (o)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><domain> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setDomain(domain);
-                        context.getMetaData().setOrigin("cookie-config.domain", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><domain> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setDomain(domain);
-                            context.getMetaData().setOrigin("cookie-config.domain", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getDomain().equals(domain))                  
-                            throw new IllegalStateException("Conflicting cookie-config domain "+domain+" in "+descriptor.getResource());
-                        break;
-                    }
-                }
-            }
-            
-            //  <path>
-            String path = cookieConfig.getString("path", false, true);
-            if (path != null)
-            {
-                Origin o = context.getMetaData().getOrigin("cookie-config.path");
-                switch (o)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><domain> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setPath(path);
-                        context.getMetaData().setOrigin("cookie-config.path", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><domain> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setPath(path);
-                            context.getMetaData().setOrigin("cookie-config.path", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getPath().equals(path))                  
-                            throw new IllegalStateException("Conflicting cookie-config path "+path+" in "+descriptor.getResource());
-                        break;
-                    }
-                }
-            }
-            
-            //  <comment>
-            String comment = cookieConfig.getString("comment", false, true);
-            if (comment != null)
-            {
-                Origin o = context.getMetaData().getOrigin("cookie-config.comment");
-                switch (o)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><comment> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setComment(comment);
-                        context.getMetaData().setOrigin("cookie-config.comment", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><comment> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setComment(comment);
-                            context.getMetaData().setOrigin("cookie-config.comment", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (!context.getSessionHandler().getSessionManager().getSessionCookieConfig().getComment().equals(comment))                  
-                            throw new IllegalStateException("Conflicting cookie-config comment "+comment+" in "+descriptor.getResource());
-                        break;
-                    }
-                }
-            }
-            
-            //  <http-only>true/false
-            tNode = cookieConfig.get("http-only");
-            if (tNode != null)
-            {
-                boolean httpOnly = Boolean.parseBoolean(tNode.toString(false,true));           
-                Origin o = context.getMetaData().getOrigin("cookie-config.http-only");
-                switch (o)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><http-only> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setHttpOnly(httpOnly);
-                        context.getMetaData().setOrigin("cookie-config.http-only", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><http-only> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setHttpOnly(httpOnly);
-                            context.getMetaData().setOrigin("cookie-config.http-only", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().isHttpOnly() != httpOnly)       
-                            throw new IllegalStateException("Conflicting cookie-config http-only "+httpOnly+" in "+descriptor.getResource());
-                        break;
-                    }
-                }
-            }
-            
-            //  <secure>true/false
-            tNode = cookieConfig.get("secure");
-            if (tNode != null)
-            {
-                boolean secure = Boolean.parseBoolean(tNode.toString(false,true));
-                Origin o = context.getMetaData().getOrigin("cookie-config.secure");
-                switch (o)
-                {
-                    case NotSet:
-                    {
-                        //no <cookie-config><secure> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setSecure(secure);
-                        context.getMetaData().setOrigin("cookie-config.secure", descriptor);
-                        break;
-                    }                   
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {
-                        //<cookie-config><secure> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setSecure(secure);
-                            context.getMetaData().setOrigin("cookie-config.secure", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().isSecure() != secure)       
-                            throw new IllegalStateException("Conflicting cookie-config secure "+secure+" in "+descriptor.getResource());
-                        break;
-                    }
-                }
-            }
-            
-            //  <max-age>
-            tNode = cookieConfig.get("max-age");
-            if (tNode != null)
-            {
-                int maxAge = Integer.parseInt(tNode.toString(false,true));
-                Origin o = context.getMetaData().getOrigin("cookie-config.max-age");
-                switch (o)
-                {
-                    case NotSet:
-                    { 
-                        //no <cookie-config><max-age> set yet, accept it
-                        context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(maxAge);
-                        context.getMetaData().setOrigin("cookie-config.max-age", descriptor);
-                        break;
-                    }
-                    case WebXml:
-                    case WebDefaults:
-                    case WebOverride:
-                    {   
-                        //<cookie-config><max-age> set in a web xml, only allow web-default/web-override to change
-                        if (!(descriptor instanceof FragmentDescriptor))
-                        {
-                            context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(maxAge);
-                            context.getMetaData().setOrigin("cookie-config.max-age", descriptor);
-                        }
-                        break;
-                    }
-                    case WebFragment:
-                    {
-                        //a web-fragment set the value, all web-fragments must have the same value
-                        if (context.getSessionHandler().getSessionManager().getSessionCookieConfig().getMaxAge() != maxAge)
-                            throw new IllegalStateException("Conflicting cookie-config max-age "+maxAge+" in "+descriptor.getResource());
-                        break;
-                    }
-                }
-            }
         }
     }
     
@@ -1083,7 +671,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     {
                         //a value was set by a web-fragment, all fragments must have the same value
                         if (!encoding.equals(context.getLocaleEncoding(locale)))
-                            throw new IllegalStateException("Conflicting loacle-encoding mapping for locale "+locale+" in "+descriptor.getResource());
+                            throw new IllegalStateException("Conflicting locale-encoding mapping for locale "+locale+" in "+descriptor.getResource());
                         break;                    
                     }
                 }
@@ -1579,7 +1167,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         FilterHolder holder = context.getServletHandler().getFilter(name);
         if (holder == null)
         {
-            holder = context.getServletHandler().newFilterHolder(Holder.Source.DESCRIPTOR);
+            holder = context.getServletHandler().newFilterHolder();
             holder.setName(name);
             context.getServletHandler().addFilter(holder);
         }
@@ -1820,7 +1408,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         try
         {
-            return context.getServletContext().createListener(clazz);
+            return ((ServletContextHandler.Context)context.getServletContext()).createListener(clazz);
         }
         catch (ServletException se)
         {

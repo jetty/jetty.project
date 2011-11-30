@@ -6,21 +6,19 @@
     <version>19</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>8.1.0-SNAPSHOT</version>
+  <version>7.6.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
   <properties>
     <javax-activation-version>1.1</javax-activation-version>
     <javax-mail-version>1.4.1</javax-mail-version>
+    <javax-servlet-jsp-version>2.1.v20100127</javax-servlet-jsp-version>
     <javax-transaction-version>1.1.1</javax-transaction-version>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <junit-version>4.8.1</junit-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>1.6.1</slf4j-version>
-    <servlet.spec.groupId>org.mortbay.jetty</servlet.spec.groupId>
-    <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
-    <servlet.spec.version>3.0.20100224</servlet.spec.version>
     <build-support-version>1.1</build-support-version>
     <jetty.test.helper>1.6</jetty.test.helper>
     <jetty.test.policy>1.2</jetty.test.policy>
@@ -36,8 +34,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
+          <source>1.5</source>
+          <target>1.5</target>
           <verbose>false</verbose>
         </configuration>
       </plugin>
@@ -168,7 +166,7 @@
           </execution>
         </executions>
         <configuration>
-          <targetJdk>1.6</targetJdk>
+          <targetJdk>1.5</targetJdk>
           <rulesets>
             <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
           </rulesets>
@@ -349,7 +347,6 @@
     <module>jetty-start</module>
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
-    <module>jetty-osgi</module>
     <module>jetty-nosql</module>
     <module>jetty-http-spi</module>
     <module>jetty-distribution</module>
@@ -359,15 +356,14 @@
     <module>test-jetty-webapp</module>
     <module>test-jetty-nested</module>
     <module>example-jetty-embedded</module>
-    <module>example-async-rest</module>
     <module>tests</module>
   </modules>
   <dependencyManagement>
     <dependencies>
       <dependency>
-         <groupId>${servlet.spec.groupId}</groupId>
-         <artifactId>${servlet.spec.artifactId}</artifactId>
-         <version>${servlet.spec.version}</version>
+         <groupId>javax.servlet</groupId>
+         <artifactId>servlet-api</artifactId>
+         <version>2.5</version>
        </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
@@ -589,8 +585,8 @@
             <configuration>
               <excludePackageNames>com.acme</excludePackageNames>
               <links>
-                <link>http://java.sun.com/javase/6/docs/api/</link>
-                <link>http://java.sun.com/javaee/6/docs/api</link>
+                <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                <link>http://java.sun.com/javaee/5/docs/api</link>
                 <link>http://junit.sourceforge.net/javadoc/</link>
               </links>
               <tags>

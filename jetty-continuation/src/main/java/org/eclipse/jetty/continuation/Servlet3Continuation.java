@@ -59,7 +59,6 @@ public class Servlet3Continuation implements Continuation
             public void onTimeout(AsyncEvent event) throws IOException
             {
                 _initial=false;
-                System.err.println("Doing dispatch on timed out continuation for "+_request.getAttribute("FOO"));
                 event.getAsyncContext().dispatch();
             }
         });
