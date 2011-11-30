@@ -1,3 +1,5 @@
+jetty-8.1.0-SNAPSHOT
+
 jetty-8.1.0.RC0 - 30 November 2011
  + 352565 cookie httponly flag ignored
  + 353285 ServletSecurity annotation ignored
