@@ -368,9 +368,11 @@ public class ResourceHandler extends AbstractHandler
         if (resource==null || !resource.exists())
         {
             if (target.endsWith("/jetty-dir.css"))
-            {	
-                response.setContentType("text/css");
+            {	                
                 resource = getStylesheet();
+                if (resource==null)
+                    return;
+                response.setContentType("text/css");
             }
             else 
                 return;
