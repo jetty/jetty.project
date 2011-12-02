@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  * @org.apache.xbean.XBean
  */
-public class ResourceHandler extends AbstractHandler
+public class ResourceHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(ResourceHandler.class);
 
@@ -358,6 +358,8 @@ public class ResourceHandler extends AbstractHandler
         {
             if(!HttpMethods.HEAD.equals(request.getMethod()))
             {
+                //try another handler
+                super.handle(target, baseRequest, request, response);
                 return;
             }
             skipContentBody = true;
@@ -373,7 +375,11 @@ public class ResourceHandler extends AbstractHandler
                 resource = getStylesheet();
             }
             else 
+            {
+                //no resource - try other handlers
+                super.handle(target, baseRequest, request, response);
                 return;
+            }
         }
             
         if (!_aliases && resource.getAlias()!=null)
