@@ -26,7 +26,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>javax.servlet*;version="2.5.0",*</Import-Package>
+                <Import-Package>javax.servlet.*;version="2.6.0",*</Import-Package>
               </instructions>
             </configuration>
            </execution>

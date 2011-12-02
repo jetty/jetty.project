@@ -1,4 +1,5 @@
 jetty-8.1.0-SNAPSHOT
+ + 360245 The version of the javax.servlet packages to import is 2.6 instead of 3.0
 
 jetty-8.1.0.RC0 - 30 November 2011
  + 352565 cookie httponly flag ignored
