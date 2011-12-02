@@ -2,4 +2,12 @@
   <localRepository>/tmp/jetty-builds/jetty8/localRepo</localRepository>
   <interactiveMode>true</interactiveMode>
   <offline>false</offline>
+<mirrors>
+  <mirror>
+      <id>central</id>
+      <name>central</name>
+      <url>http://repo2.maven.org/maven2/</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
 </settings>
