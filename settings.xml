@@ -1,0 +1,5 @@
+<settings>
+  <localRepository>/tmp/jetty-builds/jetty8/localRepo</localRepository>
+  <interactiveMode>true</interactiveMode>
+  <offline>false</offline>
+</settings>
