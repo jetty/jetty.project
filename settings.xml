@@ -2,6 +2,14 @@
   <localRepository>/tmp/jetty-builds/jetty8/localRepo</localRepository>
   <interactiveMode>true</interactiveMode>
   <offline>false</offline>
+<proxies>
+   <proxy>
+      <active>true</active>
+      <protocol>http</protocol>
+      <host>proxy.eclipse.org</host>
+      <port>9898</port>
+    </proxy>
+  </proxies>
 <mirrors>
   <mirror>
       <id>central</id>
