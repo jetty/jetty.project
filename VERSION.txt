@@ -1,3 +1,5 @@
+jetty-7.6.0-SNAPSHOT
+
 jetty-7.6.0.RC1 - 04 December 2011
  + 352565 cookie httponly flag ignored
  + 353285 ServletSecurity annotation ignored
