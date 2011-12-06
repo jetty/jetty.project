@@ -16,6 +16,8 @@ package org.eclipse.jetty.osgi.boot;
 
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.*;
+import static org.ops4j.pax.exam.container.def.PaxRunnerOptions.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -60,13 +62,17 @@ public class TestJettyOSGiBootWithJsp
     	ArrayList<Option> options = new ArrayList<Option>();
     	options.addAll(TestJettyOSGiBootCore.provisionCoreJetty());
     	options.addAll(Arrays.asList(options(
+            //workaround: for some reason, despite the fact that everyone of those packages is imported by the jsp fragment
+            //felix complains that it cannot find them
+            bootDelegationPackages("org.xml.sax", "org.xml.sax.helpers", "javax.xml.parsers", "org.w3c.dom", "javax.xml.transform", "org.w3c.dom.ls"),
+
             // install log service using pax runners profile abstraction (there are more profiles, like DS)
             //logProfile(),
             // this is how you set the default log level when using pax logging (logProfile)
             //systemProperty( "org.ops4j.pax.logging.DefaultServiceLog.level" ).value( "INFO" ),
             	
                 // this just adds all what you write here to java vm argumenents of the (new) osgi process.
-//            PaxRunnerOptions.vmOption( "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" ),
+            //PaxRunnerOptions.vmOption( "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" ),
     			
     		PaxRunnerOptions.vmOption("-Djetty.port=9876 -D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
     				"=etc/jetty.xml;" + testrealm.getAbsolutePath()),

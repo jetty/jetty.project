@@ -24,7 +24,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>javax.servlet.*;version="[3.0,4.0)",javax.security.cert,*</Import-Package>
+                <Import-Package>javax.servlet.*;version="2.6.0",javax.security.cert,*</Import-Package>
               </instructions>
             </configuration>
 

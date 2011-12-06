@@ -42,7 +42,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>javax.net.*,*</Import-Package>
+                <Import-Package>javax.servlet.*;version="2.6.0",javax.net.*,*</Import-Package>
               </instructions>
             </configuration>
            </execution>

@@ -400,25 +400,19 @@ public class ServletHandler extends ScopedHandler
         try
         {
             // Do the filter/handling thang
-            if (servlet_holder!=null)
-            {
-                old_scope=baseRequest.getUserIdentityScope();
-                baseRequest.setUserIdentityScope(servlet_holder);
-                
-                //if this servlet supports multipart-mime, configure the request with it
-                baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, ((ServletHolder.Registration)servlet_holder.getRegistration()).getMultipartConfig());
+            old_scope=baseRequest.getUserIdentityScope();
+            baseRequest.setUserIdentityScope(servlet_holder);
 
-                // start manual inline of nextScope(target,baseRequest,request,response);
-                if (never())
-                    nextScope(target,baseRequest,request,response);
-                else if (_nextScope!=null)
-                    _nextScope.doScope(target,baseRequest,request, response);
-                else if (_outerScope!=null)
-                    _outerScope.doHandle(target,baseRequest,request, response);
-                else 
-                    doHandle(target,baseRequest,request, response);
-                // end manual inline (pathentic attempt to reduce stack depth)
-            }
+            // start manual inline of nextScope(target,baseRequest,request,response);
+            if (never())
+                nextScope(target,baseRequest,request,response);
+            else if (_nextScope!=null)
+                _nextScope.doScope(target,baseRequest,request, response);
+            else if (_outerScope!=null)
+                _outerScope.doHandle(target,baseRequest,request, response);
+            else 
+                doHandle(target,baseRequest,request, response);
+            // end manual inline (pathentic attempt to reduce stack depth)
         }
         finally
         {
@@ -469,7 +463,10 @@ public class ServletHandler extends ScopedHandler
         {
             if (servlet_holder==null)
             {
-                notFound(request, response);
+                if (getHandler()==null)
+                    notFound(request, response);
+                else
+                    nextHandle(target,baseRequest,request,response);
             }
             else
             {
@@ -1239,6 +1236,7 @@ public class ServletHandler extends ScopedHandler
                   HttpServletResponse response)
         throws IOException
     {
+        new Throwable().printStackTrace();
         if(LOG.isDebugEnabled())
             LOG.debug("Not Found "+request.getRequestURI());
         response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -1326,7 +1324,9 @@ public class ServletHandler extends ScopedHandler
         /* ------------------------------------------------------------ */
         public void doFilter(ServletRequest request, ServletResponse response) 
             throws IOException, ServletException
-        {
+        {                   
+            final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
+
             // pass to next filter
             if (_filterHolder!=null)
             {
@@ -1337,7 +1337,6 @@ public class ServletHandler extends ScopedHandler
                     filter.doFilter(request, response, _next);
                 else
                 {
-                    final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
                     final boolean suspendable=baseRequest.isAsyncSupported();
                     if (suspendable)
                     {
@@ -1358,15 +1357,20 @@ public class ServletHandler extends ScopedHandler
             }
 
             // Call servlet
+            
+            HttpServletRequest srequest = (HttpServletRequest)request;
             if (_servletHolder != null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("call servlet " + _servletHolder);
-                final Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
                 _servletHolder.handle(baseRequest,request, response);
             }
-            else // Not found
-                notFound((HttpServletRequest)request, (HttpServletResponse)response);
+            else if (getHandler()==null)
+                notFound(srequest, (HttpServletResponse)response);
+            else
+                nextHandle(URIUtil.addPaths(srequest.getServletPath(),srequest.getPathInfo()),
+                           baseRequest,srequest,(HttpServletResponse)response);
+            
         }
         
         public String toString()
@@ -1432,14 +1436,21 @@ public class ServletHandler extends ScopedHandler
             }
 
             // Call servlet
+            HttpServletRequest srequest = (HttpServletRequest)request;
             if (_servletHolder != null)
             {
                 if (LOG.isDebugEnabled()) 
                     LOG.debug("call servlet " + _servletHolder);
                 _servletHolder.handle(_baseRequest,request, response);
             }
-            else // Not found
-                notFound((HttpServletRequest)request, (HttpServletResponse)response);
+            else if (getHandler()==null)
+                notFound(srequest, (HttpServletResponse)response);
+            else
+            {            
+                Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
+                nextHandle(URIUtil.addPaths(srequest.getServletPath(),srequest.getPathInfo()),
+                           baseRequest,srequest,(HttpServletResponse)response);
+            }
         }
 
         /* ------------------------------------------------------------ */

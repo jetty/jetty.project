@@ -1,4 +1,5 @@
 jetty-8.1.0-SNAPSHOT
+ + 360245 The version of the javax.servlet packages to import is 2.6 instead of 3.0
 
 jetty-8.1.0.RC0 - 30 November 2011
  + 352565 cookie httponly flag ignored
@@ -12,6 +13,20 @@ jetty-8.1.0.RC0 - 30 November 2011
  + 363878 Add ecj compiler to jetty-8 for jsp
  + 364283 can't parse the servlet multipart-config for the web.xml
  + 364430 Support web.xml enabled state for servlets
+
+jetty-7.6.0.RC1 - 04 December 2011
+ + 352565 cookie httponly flag ignored
+ + 353285 ServletSecurity annotation ignored
+ + 357163 jetty 8 ought to proxy jetty8 javadocs
+ + 357209 JSP tag listeners not called
+ + 360051 SocketConnectionTest.testServerClosedConnection is excluded.
+ + 361135 Allow session cookies to NEVER be marked as secure, even on HTTPS
+   requests.
+ + 362249 update shell scripts to jetty8
+ + 363878 Add ecj compiler to jetty-8 for jsp
+ + 364283 can't parse the servlet multipart-config for the web.xml
+ + 364430 Support web.xml enabled state for servlets
+ + 365370 ServletHandler can fall through to nested handler
 
 jetty-7.6.0.RC0 - 29 November 2011
  + Refactored NIO layer for better half close handling

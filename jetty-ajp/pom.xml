@@ -21,6 +21,11 @@
             <goals>
               <goal>manifest</goal>
             </goals>
+            <configuration>
+              <instructions>
+                <Import-Package>javax.servlet.*;version="2.6.0",*</Import-Package>
+              </instructions>
+            </configuration>
            </execution>
         </executions>
       </plugin>

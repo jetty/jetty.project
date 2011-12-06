@@ -4,8 +4,8 @@ Bundle-Name: TestIt
 Bundle-SymbolicName: TestIt
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: testit.Activator
-Import-Package: javax.servlet,
- javax.servlet.http,
+Import-Package: javax.servlet;version="2.6",
+ javax.servlet.http;version="2.6",
  javax.servlet.jsp,
  javax.servlet.jsp.tagext
 Require-Bundle: org.eclipse.jetty.client,
