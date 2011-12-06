@@ -19,11 +19,11 @@
     <orbit-javax-annotation-version>1.1.0.v201105051105</orbit-javax-annotation-version>
     <orbit-javax-el-version>2.2.0.v201105051105</orbit-javax-el-version>
     <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
-    <orbit-javax-servlet-version>3.0.0.v201103241727</orbit-javax-servlet-version>
-    <orbit-javax-servlet-jsp-version>2.2.0.v201103241009</orbit-javax-servlet-jsp-version>
-    <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
-    <orbit-com-sun-el-version>2.2.0.v201105051105</orbit-com-sun-el-version>
-    <orbit-org-apache-jasper-version>2.1.0.v201007080150</orbit-org-apache-jasper-version>
+    <orbit-javax-servlet-version>3.0.0.v201112011016</orbit-javax-servlet-version>
+    <orbit-javax-servlet-jsp-version>2.2.0.v201112011158</orbit-javax-servlet-jsp-version>
+    <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201105211821</orbit-javax-servlet-jsp-jstl-version>
+    <orbit-com-sun-el-version>2.2.0.v201108011116</orbit-com-sun-el-version>
+    <orbit-org-apache-jasper-version>2.2.2.v201112011158</orbit-org-apache-jasper-version>
     <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
     <orbit-org-objectweb-asm-version>3.3.1.v201101071600</orbit-org-objectweb-asm-version>
     <orbit-javax-transaction-version>1.1.1.v201004190952</orbit-javax-transaction-version>
