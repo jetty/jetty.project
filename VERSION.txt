@@ -1,3 +1,5 @@
+jetty-8.1.0-SNAPSHOT
+
 jetty-8.1.0.RC1 - 06 December 2011
  + 360245 The version of the javax.servlet packages to import is 2.6 instead of
    3.0
