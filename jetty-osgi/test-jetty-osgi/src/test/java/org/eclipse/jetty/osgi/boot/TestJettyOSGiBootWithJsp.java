@@ -64,7 +64,7 @@ public class TestJettyOSGiBootWithJsp
     	options.addAll(Arrays.asList(options(
             //workaround: for some reason, despite the fact that everyone of those packages is imported by the jsp fragment
             //felix complains that it cannot find them
-            //bootDelegationPackages("org.xml.sax", "org.xml.sax.helpers", "javax.xml.parsers", "org.w3c.dom", "javax.xml.transform", "org.w3c.dom.ls"),
+            bootDelegationPackages("org.xml.sax", "org.xml.sax.helpers", "javax.xml.parsers", "org.w3c.dom", "javax.xml.transform", "org.w3c.dom.ls"),
 
             // install log service using pax runners profile abstraction (there are more profiles, like DS)
             //logProfile(),
@@ -72,7 +72,7 @@ public class TestJettyOSGiBootWithJsp
             //systemProperty( "org.ops4j.pax.logging.DefaultServiceLog.level" ).value( "INFO" ),
             	
                 // this just adds all what you write here to java vm argumenents of the (new) osgi process.
-            PaxRunnerOptions.vmOption( "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" ),
+            //PaxRunnerOptions.vmOption( "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5006" ),
     			
     		PaxRunnerOptions.vmOption("-Djetty.port=9876 -D" + OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS + 
     				"=etc/jetty.xml;" + testrealm.getAbsolutePath()),
