@@ -92,6 +92,24 @@
                     <onlyAnalyze>org.eclipse.jetty.websocket.*</onlyAnalyze>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                  <execution>
+                    <id>make-aggregate-jar</id>
+                    <goals>
+                      <goal>shade</goal>
+                    </goals>
+                    <configuration>
+                      <shadedClassifierName>aggregate</shadedClassifierName>
+                      <shadedArtifactAttached>true</shadedArtifactAttached>
+                      <createDependencyReducedPom>false</createDependencyReducedPom>
+                    </configuration>
+                  </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
