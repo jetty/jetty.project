@@ -1,10 +1,6 @@
 package org.eclipse.jetty.servlets.gzip;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -36,6 +32,7 @@ import org.junit.Assert;
 
 public class GzipTester
 {
+    private Class<? extends GzipFilter> gzipFilterClass = GzipFilter.class;
     private String encoding = "ISO8859_1";
     private ServletTester servletTester;
     private TestingDir testdir;
@@ -333,6 +330,20 @@ public class GzipTester
             IO.close(fos);
         }
     }
+    
+    /**
+     * Copy a src/test/resource file into the server tree for eventual serving.
+     * 
+     * @param filename
+     *            the filename to look for in src/test/resources
+     */
+    public void copyTestServerFile(String filename) throws IOException
+    {
+        File srcFile = MavenTestingUtils.getTestResourceFile(filename);
+        File testFile = testdir.getFile(filename);
+        
+        IO.copy(srcFile,testFile);
+    }
 
     /**
      * Set the servlet that provides content for the GzipFilter in being tested.
@@ -348,11 +359,19 @@ public class GzipTester
         servletTester.setResourceBase(testdir.getDir().getCanonicalPath());
         ServletHolder servletHolder = servletTester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
-        FilterHolder holder = servletTester.addFilter(GzipFilter.class,"/*",0);
+        FilterHolder holder = servletTester.addFilter(gzipFilterClass,"/*",0);
         return holder;
     }
-    
-  
+
+    public Class<? extends GzipFilter> getGzipFilterClass()
+    {
+        return gzipFilterClass;
+    }
+
+    public void setGzipFilterClass(Class<? extends GzipFilter> gzipFilterClass)
+    {
+        this.gzipFilterClass = gzipFilterClass;
+    }
 
     public void setEncoding(String encoding)
     {
