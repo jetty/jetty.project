@@ -1787,7 +1787,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 URL url = getResource(path);
                 if (url == null)
                     return null;
-                return url.openStream();
+                Resource r = Resource.newResource(url);
+                return r.getInputStream();
             }
             catch (Exception e)
             {
