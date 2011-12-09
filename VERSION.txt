@@ -1,4 +1,6 @@
 jetty-8.1.0-SNAPSHOT
+ + 359329 jetty-jaspi must exports its packages. jetty-plus must import
+   javax.security
 
 jetty-8.1.0.RC1 - 06 December 2011
  + 360245 The version of the javax.servlet packages to import is 2.6 instead of
