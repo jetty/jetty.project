@@ -41,6 +41,7 @@ import javax.servlet.http.HttpServletResponse;
  * that a websocket may be accept before closing.
  * 
  */
+@SuppressWarnings("serial")
 public abstract class WebSocketServlet extends HttpServlet implements WebSocketFactory.Acceptor
 {
     WebSocketFactory _webSocketFactory;

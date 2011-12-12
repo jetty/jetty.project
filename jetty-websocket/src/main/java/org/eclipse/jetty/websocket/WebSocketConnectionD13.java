@@ -19,9 +19,6 @@ import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
@@ -106,12 +103,12 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     }
 
     private final static byte[] MAGIC;
-    private final List<Extension> _extensions;
+    protected final List<Extension> _extensions;
     private final WebSocketParserD13 _parser;
     private final WebSocketGeneratorD13 _generator;
     private final WebSocketGenerator _outbound;
-    private final WebSocket _webSocket;
-    private final OnFrame _onFrame;
+    protected final WebSocket _webSocket;
+    protected final OnFrame _onFrame;
     private final OnBinaryMessage _onBinaryMessage;
     private final OnTextMessage _onTextMessage;
     private final OnControl _onControl;
@@ -137,7 +134,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         }
     }
 
-    private final WebSocket.FrameConnection _connection = new WSFrameConnection();
+    protected final WebSocket.FrameConnection _connection = new WSFrameConnection();
 
 
     /* ------------------------------------------------------------ */
@@ -918,27 +915,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         }
     }
     
-    /* ------------------------------------------------------------ */
-    public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
-    {
-        String key = request.getHeader("Sec-WebSocket-Key");
-
-        response.setHeader("Upgrade","WebSocket");
-        response.addHeader("Connection","Upgrade");
-        response.addHeader("Sec-WebSocket-Accept",hashKey(key));
-        if (subprotocol!=null)
-            response.addHeader("Sec-WebSocket-Protocol",subprotocol);
-
-        for(Extension ext : _extensions)
-            response.addHeader("Sec-WebSocket-Extensions",ext.getParameterizedName());
-
-        response.sendError(101);
-
-        if (_onFrame!=null)
-            _onFrame.onHandshake(_connection);
-        _webSocket.onOpen(_connection);
-    }
-
     /* ------------------------------------------------------------ */
     public static String hashKey(String key)
     {
