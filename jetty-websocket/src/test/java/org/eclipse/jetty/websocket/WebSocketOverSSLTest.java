@@ -2,6 +2,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
@@ -120,5 +121,64 @@ public class WebSocketOverSSLTest
 
         Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testManyMessages() throws Exception
+    {
+        startServer(new WebSocket.OnTextMessage()
+        {
+            private Connection connection;
+
+            public void onOpen(Connection connection)
+            {
+                this.connection = connection;
+            }
+
+            public void onMessage(String data)
+            {
+                try
+                {
+                    connection.sendMessage(data);
+                }
+                catch (IOException x)
+                {
+                    x.printStackTrace();
+                }
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+            }
+        });
+        int count = 1000;
+        final CountDownLatch clientLatch = new CountDownLatch(count);
+        startClient(new WebSocket.OnTextMessage()
+        {
+            public void onOpen(Connection connection)
+            {
+            }
+
+            public void onMessage(String data)
+            {
+                clientLatch.countDown();
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+            }
+        });
+
+        char[] chars = new char[256];
+        Arrays.fill(chars, 'x');
+        String message = new String(chars);
+        for (int i = 0; i < count; ++i)
+            _connection.sendMessage(message);
+
+        Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+
+        // While messages may have all arrived, the SSL close alert
+        // may be in the way so give some time for it to be processed.
+        TimeUnit.SECONDS.sleep(1);
     }
 }
