@@ -54,6 +54,7 @@ public interface Connection
     
     /**
      * Called when the connection idle timeout expires
+     * @param idleForMs TODO
      */
-    void onIdleExpired();
+    void onIdleExpired(long idleForMs);
 }

@@ -35,11 +35,11 @@ public abstract class AbstractConnection implements Connection
         return _endp;
     }
 
-    public void onIdleExpired()
+    public void onIdleExpired(long idleForMs)
     {
         try
         {
-            LOG.debug("onIdleExpired {} {}",this,_endp);
+            LOG.debug("onIdleExpired {}ms {} {}",idleForMs,this,_endp);
             if (_endp.isInputShutdown() || _endp.isOutputShutdown())
                 _endp.close();
             else

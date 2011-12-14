@@ -246,10 +246,9 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void onIdleExpired()
+    public void onIdleExpired(long idleForMs)
     {
-        long idle = System.currentTimeMillis()-((SelectChannelEndPoint)_endp).getIdleTimestamp();
-        closeOut(WebSocketConnectionD08.CLOSE_NORMAL,"Idle for "+idle+"ms > "+_endp.getMaxIdleTime()+"ms");
+        closeOut(WebSocketConnectionD08.CLOSE_NORMAL,"Idle for "+idleForMs+"ms > "+_endp.getMaxIdleTime()+"ms");
     }
 
     /* ------------------------------------------------------------ */

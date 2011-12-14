@@ -667,7 +667,7 @@ public class ConnectHandler extends HandlerWrapper
             _endPoint.shutdownOutput();
         }
 
-        public void onIdleExpired()
+        public void onIdleExpired(long idleForMs)
         {
             try
             {
@@ -834,7 +834,7 @@ public class ConnectHandler extends HandlerWrapper
             _endPoint.shutdownOutput();
         }
 
-        public void onIdleExpired()
+        public void onIdleExpired(long idleForMs)
         {
             try
             {
