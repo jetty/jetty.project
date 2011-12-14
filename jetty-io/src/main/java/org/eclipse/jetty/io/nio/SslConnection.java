@@ -16,7 +16,6 @@ package org.eclipse.jetty.io.nio;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -381,9 +380,10 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 }
 
                 // pass on ishut/oshut state
-                if (!_inbound.hasContent() && _endp.isInputShutdown())
+                if (_endp.isOpen() && _endp.isInputShutdown() && !_inbound.hasContent())
                     _engine.closeInbound();
-                if (!_outbound.hasContent() && _engine.isOutboundDone())
+
+                if (_endp.isOpen() && _engine.isOutboundDone() && !_outbound.hasContent())
                     _endp.shutdownOutput();
 
                 some_progress|=progress;
@@ -570,11 +570,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
     public String toString()
     {
-        Buffer i=_inbound;
-        Buffer o=_outbound;
-        Buffer u=_unwrapBuf;
-
-        return super.toString()+"|"+_engine.getHandshakeStatus()+" i/u/o="+(i==null?0:i.length())+"/"+(u==null?0:u.length())+"/"+(o==null?0:o.length());
+        return String.format("%s | %s", super.toString(), _sslEndPoint);
     }
 
     /* ------------------------------------------------------------ */
