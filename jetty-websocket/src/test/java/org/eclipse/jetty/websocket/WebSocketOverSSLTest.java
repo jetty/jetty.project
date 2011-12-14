@@ -175,7 +175,7 @@ public class WebSocketOverSSLTest
         for (int i = 0; i < count; ++i)
             _connection.sendMessage(message);
 
-        Assert.assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(clientLatch.await(20, TimeUnit.SECONDS));
 
         // While messages may have all arrived, the SSL close alert
         // may be in the way so give some time for it to be processed.

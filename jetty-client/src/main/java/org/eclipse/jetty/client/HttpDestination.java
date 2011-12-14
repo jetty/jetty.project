@@ -439,7 +439,9 @@ public class HttpDestination implements Dumpable
 
     public void returnIdleConnection(AbstractHttpConnection connection)
     {
-        connection.onIdleExpired();
+        // TODO work out the real idle time;
+        long idleForMs=connection!=null&&connection.getEndPoint()!=null?connection.getEndPoint().getMaxIdleTime():-1;
+        connection.onIdleExpired(idleForMs);
 
         boolean startConnection = false;
         synchronized (this)

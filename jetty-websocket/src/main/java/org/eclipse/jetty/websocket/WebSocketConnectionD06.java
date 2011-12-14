@@ -192,7 +192,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void onIdleExpired()
+    public void onIdleExpired(long idleForMs)
     {
         closeOut(WebSocketConnectionD06.CLOSE_NORMAL,"Idle");
     }

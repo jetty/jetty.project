@@ -237,16 +237,17 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
     /* ------------------------------------------------------------ */
     @Override
-    public void onIdleExpired()
+    public void onIdleExpired(long idleForMs)
     {
         try
         {
+            LOG.debug("onIdleExpired {}ms on {}",idleForMs,this);
             _sslEndPoint.shutdownOutput();
         }
         catch (IOException e)
         {
             LOG.warn(e);
-            super.onIdleExpired();
+            super.onIdleExpired(idleForMs);
         }
     }
 
@@ -700,9 +701,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             _aEndp.scheduleWrite();
         }
 
-        public void onIdleExpired()
+        public void onIdleExpired(long idleForMs)
         {
-            _aEndp.onIdleExpired();
+            _aEndp.onIdleExpired(idleForMs);
         }
 
         public void setCheckForIdle(boolean check)
