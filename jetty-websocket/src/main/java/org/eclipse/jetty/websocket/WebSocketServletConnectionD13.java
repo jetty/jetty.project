@@ -35,18 +35,14 @@ public class WebSocketServletConnectionD13 extends WebSocketConnectionD13 implem
             response.addHeader("Sec-WebSocket-Protocol",subprotocol);
         }
 
-        for (Extension ext : _extensions)
+        for (Extension ext : getExtensions())
         {
             response.addHeader("Sec-WebSocket-Extensions",ext.getParameterizedName());
         }
 
         response.sendError(101);
 
-        if (_onFrame != null)
-        {
-            _onFrame.onHandshake(_connection);
-        }
-
-        _webSocket.onOpen(_connection);
+        onFrameHandshake();
+        onWebSocketOpen();
     }
 }

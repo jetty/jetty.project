@@ -70,12 +70,11 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
     }
 
-
     private final static byte[] MAGIC;
     private final WebSocketParser _parser;
     private final WebSocketGenerator _generator;
-    protected final WebSocket _webSocket;
-    protected final OnFrame _onFrame;
+    private final WebSocket _webSocket;
+    private final OnFrame _onFrame;
     private final OnBinaryMessage _onBinaryMessage;
     private final OnTextMessage _onTextMessage;
     private final OnControl _onControl;
@@ -98,7 +97,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     private final WebSocketParser.FrameHandler _frameHandler= new FrameHandlerD06();
-    protected final WebSocket.FrameConnection _connection = new FrameConnectionD06();
+    private final WebSocket.FrameConnection _connection = new FrameConnectionD06();
 
 
     /* ------------------------------------------------------------ */
@@ -280,9 +279,20 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     {
         return Collections.emptyList();
     }
+    
+    protected void onFrameHandshake()
+    {
+        if (_onFrame!=null)
+        {
+            _onFrame.onHandshake(_connection);
+        }
+    }
+    
+    protected void onWebSocketOpen()
+    {
+        _webSocket.onOpen(_connection);
+    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class FrameConnectionD06 implements WebSocket.FrameConnection
     {

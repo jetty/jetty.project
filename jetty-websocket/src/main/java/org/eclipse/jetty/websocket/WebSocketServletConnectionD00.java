@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.websocket.WebSocket.OnFrame;
 
 public class WebSocketServletConnectionD00 extends WebSocketConnectionD00 implements WebSocketServletConnection
 {
@@ -71,11 +70,9 @@ public class WebSocketServletConnectionD00 extends WebSocketConnectionD00 implem
             }
             response.sendError(101,"Web Socket Protocol Handshake");
             response.flushBuffer();
-            if (_websocket instanceof OnFrame)
-            {
-                ((OnFrame)_websocket).onHandshake(this);
-            }
-            _websocket.onOpen(this);
+            
+            onFrameHandshake();
+            onWebsocketOpen();
         }
     }
 }

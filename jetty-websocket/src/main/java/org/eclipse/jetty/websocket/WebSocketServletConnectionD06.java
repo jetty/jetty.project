@@ -30,10 +30,7 @@ public class WebSocketServletConnectionD06 extends WebSocketConnectionD06 implem
         
         response.sendError(101);
 
-        if (_onFrame!=null)
-        {
-            _onFrame.onHandshake(_connection);
-        }
-        _webSocket.onOpen(_connection);
+        onFrameHandshake();
+        onWebSocketOpen();
     }
 }

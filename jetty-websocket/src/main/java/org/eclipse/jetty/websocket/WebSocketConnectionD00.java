@@ -38,13 +38,13 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     public final static byte LENGTH_FRAME=(byte)0x80;
     public final static byte SENTINEL_FRAME=(byte)0x00;
 
-    final WebSocketParser _parser;
-    final WebSocketGenerator _generator;
-    final WebSocket _websocket;
-    final String _protocol;
-    String _key1;
-    String _key2;
-    ByteArrayBuffer _hixieBytes;
+    private final WebSocketParser _parser;
+    private final WebSocketGenerator _generator;
+    private final WebSocket _websocket;
+    private final String _protocol;
+    private String _key1;
+    private String _key2;
+    private ByteArrayBuffer _hixieBytes;
 
     public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
         throws IOException
@@ -373,6 +373,19 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     public String getProtocol()
     {
         return _protocol;
+    }
+    
+    protected void onFrameHandshake()
+    {
+        if (_websocket instanceof OnFrame)
+        {
+            ((OnFrame)_websocket).onHandshake(this);
+        }
+    }
+
+    protected void onWebsocketOpen()
+    {
+        _websocket.onOpen(this);
     }
 
     static class FrameHandlerD00 implements WebSocketParser.FrameHandler

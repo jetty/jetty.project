@@ -25,7 +25,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -74,13 +73,13 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     }
 
     private final static byte[] MAGIC;
-    protected final List<Extension> _extensions;
+    private final List<Extension> _extensions;
     private final WebSocketParserD08 _parser;
     private final WebSocketParser.FrameHandler _inbound;
     private final WebSocketGeneratorD08 _generator;
     private final WebSocketGenerator _outbound;
-    protected final WebSocket _webSocket;
-    protected final OnFrame _onFrame;
+    private final WebSocket _webSocket;
+    private final OnFrame _onFrame;
     private final OnBinaryMessage _onBinaryMessage;
     private final OnTextMessage _onTextMessage;
     private final OnControl _onControl;
@@ -107,7 +106,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     }
 
     private final WebSocketParser.FrameHandler _frameHandler= new WSFrameHandler();
-    protected final WebSocket.FrameConnection _connection = new WSFrameConnection();
+    private final WebSocket.FrameConnection _connection = new WSFrameConnection();
 
 
     /* ------------------------------------------------------------ */
@@ -370,9 +369,20 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
             ((AsyncEndPoint)_endp).scheduleWrite();
         }
     }
+    
+    protected void onFrameHandshake()
+    {
+        if (_onFrame != null)
+        {
+            _onFrame.onHandshake(_connection);
+        }
+    }
+    
+    protected void onWebSocketOpen()
+    {
+        _webSocket.onOpen(_connection);
+    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class WSFrameConnection implements WebSocket.FrameConnection
     {
