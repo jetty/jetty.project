@@ -13,16 +13,14 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
 import org.eclipse.jetty.client.helperClasses.SslServerAndClientCreator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -72,9 +70,6 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     @Override
     public void testPerf() throws Exception
     {
-        // TODO needs to be further investigated
-        Assume.assumeTrue(!OS.IS_OSX || Stress.isEnabled());
-        
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
         IgnoreTestOnBuggyIBM();
         super.testPerf();

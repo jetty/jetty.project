@@ -198,7 +198,8 @@ public class WebDescriptor extends Descriptor
                 _metaDataComplete = Boolean.valueOf(s).booleanValue()?MetaDataComplete.True:MetaDataComplete.False;
         }
             
-        LOG.debug(_xml.toString()+": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);     
+        if (LOG.isDebugEnabled())
+            LOG.debug(_xml.toString()+": Calculated metadatacomplete = " + _metaDataComplete + " with version=" + version);     
     }
     
     public void processOrdering ()

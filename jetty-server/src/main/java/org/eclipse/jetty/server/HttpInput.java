@@ -22,11 +22,11 @@ import org.eclipse.jetty.io.Buffer;
 
 public class HttpInput extends ServletInputStream
 {
-    protected final HttpConnection _connection;
+    protected final AbstractHttpConnection _connection;
     protected final HttpParser _parser;
     
     /* ------------------------------------------------------------ */
-    public HttpInput(HttpConnection connection)
+    public HttpInput(AbstractHttpConnection connection)
     {
         _connection=connection;
         _parser=(HttpParser)connection.getParser();

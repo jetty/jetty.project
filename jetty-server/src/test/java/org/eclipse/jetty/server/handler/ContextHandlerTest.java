@@ -233,6 +233,37 @@ public class ContextHandlerTest
     }
 
     @Test
+    public void testVirtualHostManagement() throws Exception
+    {
+        ContextHandler context = new ContextHandler("/");
+
+        // test singular
+        context.setVirtualHosts(new String[] { "www.example.com"} );     
+        Assert.assertEquals(1,context.getVirtualHosts().length);
+        
+        // test adding two more
+        context.addVirtualHosts(new String[] { "www.example2.com", "www.example3.com"});
+        Assert.assertEquals(3,context.getVirtualHosts().length);
+        
+        // test adding existing context
+        context.addVirtualHosts(new String[] { "www.example.com" });
+        Assert.assertEquals(3,context.getVirtualHosts().length);
+        
+        // test removing existing
+        context.removeVirtualHosts(new String[] { "www.example3.com" });
+        Assert.assertEquals(2,context.getVirtualHosts().length);
+        
+        // test removing non-existent
+        context.removeVirtualHosts(new String[] { "www.example3.com" });
+        Assert.assertEquals(2,context.getVirtualHosts().length);
+        
+        // test removing all remaining and resets to null
+        context.removeVirtualHosts(new String[] { "www.example.com", "www.example2.com" });
+        Assert.assertEquals(null,context.getVirtualHosts());       
+        
+    }
+    
+    @Test
     public void testAttributes() throws Exception
     {
         ContextHandler handler = new ContextHandler();
@@ -306,6 +337,7 @@ public class ContextHandlerTest
     public void testUncheckedPrintWriter() throws Exception
     {
         Server server = new Server();
+        server.setUncheckedPrintWriter(true);
         LocalConnector connector = new LocalConnector();
         server.setConnectors(new Connector[] { connector });
         ContextHandler context = new ContextHandler("/");
@@ -391,7 +423,10 @@ public class ContextHandlerTest
                 writer.write("Goodbye cruel world\n");
                 writer.close();
                 response.flushBuffer();
-                writer.write("speaking from the dead");
+                //writer.write("speaking from the dead");
+                writer.write("give the printwriter a chance"); //should create an error
+                if (writer.checkError())
+                    writer.write("didn't take the chance, will throw now"); //write after an error
             }
             catch(Throwable th)
             {

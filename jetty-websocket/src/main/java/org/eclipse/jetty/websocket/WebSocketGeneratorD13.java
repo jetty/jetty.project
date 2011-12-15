@@ -36,6 +36,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
     private int _m;
     private boolean _opsent;
     private final MaskGen _maskGen;
+    private boolean _closed;
 
     public WebSocketGeneratorD13(WebSocketBuffers buffers, EndPoint endp)
     {
@@ -60,6 +61,11 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
     {
         // System.err.printf("<< %s %s %s\n",TypeUtil.toHexString(flags),TypeUtil.toHexString(opcode),length);
 
+        if (_closed)
+            throw new EofException("Closed");
+        if (opcode==WebSocketConnectionD13.OP_CLOSE)
+            _closed=true;
+        
         boolean mask=_maskGen!=null;
 
         if (_buffer==null)
@@ -131,7 +137,6 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
                 _buffer.put(_mask);
             }
 
-
             // write payload
             int remaining = payload;
             while (remaining > 0)
@@ -183,7 +188,12 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
             throw new EofException();
 
         if (_buffer!=null)
-            return _endp.flush(_buffer);
+        {
+            int flushed=_buffer.hasContent()?_endp.flush(_buffer):0;
+            if (_closed&&_buffer.length()==0)
+                _endp.shutdownOutput();
+            return flushed;
+        }
 
         return 0;
     }

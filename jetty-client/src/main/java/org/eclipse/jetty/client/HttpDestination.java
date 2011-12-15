@@ -15,7 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.net.ConnectException;
+import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,9 +48,9 @@ public class HttpDestination implements Dumpable
     private static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final List<HttpExchange> _queue = new LinkedList<HttpExchange>();
-    private final List<HttpConnection> _connections = new LinkedList<HttpConnection>();
+    private final List<AbstractHttpConnection> _connections = new LinkedList<AbstractHttpConnection>();
     private final BlockingQueue<Object> _newQueue = new ArrayBlockingQueue<Object>(10, true);
-    private final List<HttpConnection> _idle = new ArrayList<HttpConnection>();
+    private final List<AbstractHttpConnection> _idle = new ArrayList<AbstractHttpConnection>();
     private final HttpClient _client;
     private final Address _address;
     private final boolean _ssl;
@@ -65,7 +65,7 @@ public class HttpDestination implements Dumpable
     private List<HttpCookie> _cookies;
 
 
-    
+
     HttpDestination(HttpClient client, Address address, boolean ssl)
     {
         _client = client;
@@ -168,9 +168,9 @@ public class HttpDestination implements Dumpable
      * @return a HttpConnection for this destination
      * @throws IOException if an I/O error occurs
      */
-    private HttpConnection getConnection(long timeout) throws IOException
+    private AbstractHttpConnection getConnection(long timeout) throws IOException
     {
-        HttpConnection connection = null;
+        AbstractHttpConnection connection = null;
 
         while ((connection == null) && (connection = getIdleConnection()) == null && timeout > 0)
         {
@@ -191,9 +191,9 @@ public class HttpDestination implements Dumpable
                 try
                 {
                     Object o = _newQueue.take();
-                    if (o instanceof HttpConnection)
+                    if (o instanceof AbstractHttpConnection)
                     {
-                        connection = (HttpConnection)o;
+                        connection = (AbstractHttpConnection)o;
                     }
                     else
                         throw (IOException)o;
@@ -220,17 +220,17 @@ public class HttpDestination implements Dumpable
         return connection;
     }
 
-    public HttpConnection reserveConnection(long timeout) throws IOException
+    public AbstractHttpConnection reserveConnection(long timeout) throws IOException
     {
-        HttpConnection connection = getConnection(timeout);
+        AbstractHttpConnection connection = getConnection(timeout);
         if (connection != null)
             connection.setReserved(true);
         return connection;
     }
 
-    public HttpConnection getIdleConnection() throws IOException
+    public AbstractHttpConnection getIdleConnection() throws IOException
     {
-        HttpConnection connection = null;
+        AbstractHttpConnection connection = null;
         while (true)
         {
             synchronized (this)
@@ -246,12 +246,16 @@ public class HttpDestination implements Dumpable
             }
 
             if (connection == null)
+            {
                 return null;
-
+            }
+            
             // Check if the connection was idle,
             // but it expired just a moment ago
             if (connection.cancelIdleTimeout())
+            {
                 return connection;
+            }
         }
     }
 
@@ -290,8 +294,8 @@ public class HttpDestination implements Dumpable
             else if (_queue.size() > 0)
             {
                 HttpExchange ex = _queue.remove(0);
-                ex.setStatus(HttpExchange.STATUS_EXCEPTED);
-                ex.getEventListener().onConnectionFailed(throwable);
+                if (ex.setStatus(HttpExchange.STATUS_EXCEPTED))
+                    ex.getEventListener().onConnectionFailed(throwable);
 
                 // Since an existing connection had failed, we need to create a
                 // connection if the  queue is not empty and client is running.
@@ -324,13 +328,13 @@ public class HttpDestination implements Dumpable
             if (_queue.size() > 0)
             {
                 HttpExchange ex = _queue.remove(0);
-                ex.setStatus(HttpExchange.STATUS_EXCEPTED);
-                ex.getEventListener().onException(throwable);
+                if(ex.setStatus(HttpExchange.STATUS_EXCEPTED))
+                    ex.getEventListener().onException(throwable);
             }
         }
     }
 
-    public void onNewConnection(final HttpConnection connection) throws IOException
+    public void onNewConnection(final AbstractHttpConnection connection) throws IOException
     {
         Connection q_connection = null;
 
@@ -352,9 +356,9 @@ public class HttpDestination implements Dumpable
             else
             {
                 EndPoint endPoint = connection.getEndPoint();
-                if (isProxied() && endPoint instanceof SelectConnector.ProxySelectChannelEndPoint)
+                if (isProxied() && endPoint instanceof SelectConnector.UpgradableEndPoint)
                 {
-                    SelectConnector.ProxySelectChannelEndPoint proxyEndPoint = (SelectConnector.ProxySelectChannelEndPoint)endPoint;
+                    SelectConnector.UpgradableEndPoint proxyEndPoint = (SelectConnector.UpgradableEndPoint)endPoint;
                     HttpExchange exchange = _queue.get(0);
                     ConnectExchange connect = new ConnectExchange(getAddress(), proxyEndPoint, exchange);
                     connect.setAddress(getProxy());
@@ -381,7 +385,7 @@ public class HttpDestination implements Dumpable
         }
     }
 
-    public void returnConnection(HttpConnection connection, boolean close) throws IOException
+    public void returnConnection(AbstractHttpConnection connection, boolean close) throws IOException
     {
         if (connection.isReserved())
             connection.setReserved(false);
@@ -433,16 +437,11 @@ public class HttpDestination implements Dumpable
         }
     }
 
-    public void returnIdleConnection(HttpConnection connection)
+    public void returnIdleConnection(AbstractHttpConnection connection)
     {
-        try
-        {
-            connection.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-        }
+        // TODO work out the real idle time;
+        long idleForMs=connection!=null&&connection.getEndPoint()!=null?connection.getEndPoint().getMaxIdleTime():-1;
+        connection.onIdleExpired(idleForMs);
 
         boolean startConnection = false;
         synchronized (this)
@@ -524,7 +523,7 @@ public class HttpDestination implements Dumpable
         // Add any known authorizations
         if (_authorizations != null)
         {
-            Authentication auth = (Authentication)_authorizations.match(ex.getURI());
+            Authentication auth = (Authentication)_authorizations.match(ex.getRequestURI());
             if (auth != null)
                 (auth).setCredentials(ex);
         }
@@ -533,7 +532,7 @@ public class HttpDestination implements Dumpable
         // so that we count also the queue time in the timeout
         ex.scheduleTimeout(this);
 
-        HttpConnection connection = getIdleConnection();
+        AbstractHttpConnection connection = getIdleConnection();
         if (connection != null)
         {
             send(connection, ex);
@@ -566,7 +565,7 @@ public class HttpDestination implements Dumpable
         }
     }
 
-    protected void send(HttpConnection connection, HttpExchange exchange) throws IOException
+    protected void send(AbstractHttpConnection connection, HttpExchange exchange) throws IOException
     {
         synchronized (this)
         {
@@ -594,7 +593,7 @@ public class HttpDestination implements Dumpable
         b.append('\n');
         synchronized (this)
         {
-            for (HttpConnection connection : _connections)
+            for (AbstractHttpConnection connection : _connections)
             {
                 b.append(connection.toDetailString());
                 if (_idle.contains(connection))
@@ -637,7 +636,7 @@ public class HttpDestination implements Dumpable
     {
         synchronized (this)
         {
-            for (HttpConnection connection : _connections)
+            for (AbstractHttpConnection connection : _connections)
             {
                 connection.close();
             }
@@ -665,13 +664,13 @@ public class HttpDestination implements Dumpable
             AggregateLifeCycle.dump(out,indent,_connections);
         }
     }
-    
+
     private class ConnectExchange extends ContentExchange
     {
-        private final SelectConnector.ProxySelectChannelEndPoint proxyEndPoint;
+        private final SelectConnector.UpgradableEndPoint proxyEndPoint;
         private final HttpExchange exchange;
 
-        public ConnectExchange(Address serverAddress, SelectConnector.ProxySelectChannelEndPoint proxyEndPoint, HttpExchange exchange)
+        public ConnectExchange(Address serverAddress, SelectConnector.UpgradableEndPoint proxyEndPoint, HttpExchange exchange)
         {
             this.proxyEndPoint = proxyEndPoint;
             this.exchange = exchange;
@@ -687,13 +686,18 @@ public class HttpDestination implements Dumpable
         @Override
         protected void onResponseComplete() throws IOException
         {
-            if (getResponseStatus() == HttpStatus.OK_200)
+            int responseStatus = getResponseStatus();
+            if (responseStatus == HttpStatus.OK_200)
             {
                 proxyEndPoint.upgrade();
             }
+            else if(responseStatus == HttpStatus.GATEWAY_TIMEOUT_504)
+            {
+                onExpire();
+            }
             else
             {
-                onConnectionFailed(new ConnectException(exchange.getAddress().toString()));
+                onException(new ProtocolException("Proxy: " + proxyEndPoint.getRemoteAddr() +":" + proxyEndPoint.getRemotePort() + " didn't return http return code 200, but " + responseStatus + " while trying to request: " + exchange.getAddress().toString()));
             }
         }
 
@@ -702,5 +706,22 @@ public class HttpDestination implements Dumpable
         {
             HttpDestination.this.onConnectionFailed(x);
         }
+
+        @Override
+        protected void onException(Throwable x)
+        {
+            _queue.remove(exchange);
+            if (exchange.setStatus(STATUS_EXCEPTED))
+                exchange.getEventListener().onException(x);
+        }
+
+        @Override
+        protected void onExpire()
+        {
+            _queue.remove(exchange);
+            if (exchange.setStatus(STATUS_EXPIRED))
+                exchange.getEventListener().onExpire();
+        }
+
     }
 }

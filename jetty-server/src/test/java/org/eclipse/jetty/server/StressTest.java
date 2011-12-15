@@ -365,7 +365,6 @@ public class StressTest
             if (__tests.length!=bodies)
                 System.err.println("responses=\n"+response+"\n---");
             assertEquals(name,__tests.length,bodies);
-            bodies = count(response,"HTTP/1.1 200 OK");
 
             long bind=connected-start;
             long flush=(written-connected)/__tests.length;
@@ -461,7 +460,6 @@ public class StressTest
             response.setStatus(200);
             response.getOutputStream().print("DATA "+request.getPathInfo()+"\n\n");
             baseRequest.setHandled(true);
-            long end=System.currentTimeMillis();
 
             _latencies[4].add(new Long(System.currentTimeMillis()-start));
 

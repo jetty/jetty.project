@@ -23,7 +23,7 @@ public class Jetty6Continuation implements ContinuationFilter.FilteredContinuati
     // Exception reused for all continuations
     // Turn on debug in ContinuationFilter to see real stack trace.
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
-    
+
     private final ServletRequest _request;
     private ServletResponse _response;
     private final org.mortbay.util.ajax.Continuation _j6Continuation;
@@ -66,7 +66,7 @@ public class Jetty6Continuation implements ContinuationFilter.FilteredContinuati
                 _j6Continuation.resume();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.continuation.Continuation#getAttribute(java.lang.String)
@@ -233,8 +233,6 @@ public class Jetty6Continuation implements ContinuationFilter.FilteredContinuati
 
         Throwable th=_retry;
         _retry=null;
-        if (th instanceof ThreadDeath)
-            throw (ThreadDeath)th;
         if (th instanceof Error)
             throw (Error)th;
         if (th instanceof RuntimeException)
@@ -245,7 +243,7 @@ public class Jetty6Continuation implements ContinuationFilter.FilteredContinuati
             for (ContinuationListener l: _listeners)
                 l.onComplete(this);
         }
-        
+
         return true;
     }
 }

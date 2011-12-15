@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -76,7 +77,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     }
 
     private final static byte[] MAGIC;
-    private final IdleCheck _idle;
     private final List<Extension> _extensions;
     private final WebSocketParserD08 _parser;
     private final WebSocketParser.FrameHandler _inbound;
@@ -129,9 +129,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
 
         _context=Thread.currentThread().getContextClassLoader();
 
-        if (endpoint instanceof AsyncEndPoint)
-            ((AsyncEndPoint)endpoint).cancelIdle();
-
         _draft=draft;
         _endp.setMaxIdleTime(maxIdleTime);
 
@@ -163,27 +160,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
 
         _protocol=protocol;
 
-        if (_endp instanceof SelectChannelEndPoint)
-        {
-            final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
-            scep.cancelIdle();
-            _idle=new IdleCheck()
-            {
-                public void access(EndPoint endp)
-                {
-                    scep.scheduleIdle();
-                }
-            };
-            scep.scheduleIdle();
-        }
-        else
-        {
-            _idle = new IdleCheck()
-            {
-                public void access(EndPoint endp)
-                {}
-            };
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -245,7 +221,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
             _generator.returnBuffer();
             if (_endp.isOpen())
             {
-                _idle.access(_endp);
                 if (_closedIn && _closedOut && _outbound.isBufferEmpty())
                     _endp.close();
                 else if (_endp.isInputShutdown() && !_closedIn)
@@ -258,6 +233,12 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public void onInputShutdown() throws IOException
+    {
+        // TODO
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return _parser.isBufferEmpty() && _outbound.isBufferEmpty();
@@ -265,10 +246,9 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void idleExpired()
+    public void onIdleExpired(long idleForMs)
     {
-        long idle = System.currentTimeMillis()-((SelectChannelEndPoint)_endp).getIdleTimestamp();
-        closeOut(WebSocketConnectionD08.CLOSE_NORMAL,"Idle for "+idle+"ms > "+_endp.getMaxIdleTime()+"ms");
+        closeOut(WebSocketConnectionD08.CLOSE_NORMAL,"Idle for "+idleForMs+"ms > "+_endp.getMaxIdleTime()+"ms");
     }
 
     /* ------------------------------------------------------------ */
@@ -278,7 +258,7 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         final boolean closed;
         synchronized (this)
@@ -410,7 +390,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
             byte[] data = content.getBytes(StringUtil.__UTF8);
             _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD08.OP_TEXT,data,0,data.length);
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -420,7 +399,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD08.OP_BINARY,content,offset,length);
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -430,7 +408,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             _outbound.addFrame(flags,opcode,content,offset,length);
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -440,7 +417,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             _outbound.addFrame((byte)FLAG_FIN,ctrl,data,offset,length);
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -581,6 +557,12 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
 
         /* ------------------------------------------------------------ */
         public void disconnect()
+        {
+            close();
+        }
+
+        /* ------------------------------------------------------------ */
+        public void close()
         {
             close(CLOSE_NORMAL,null);
         }
@@ -773,10 +755,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
                     }
                 }
             }
-            catch(ThreadDeath th)
-            {
-                throw th;
-            }
             catch(Throwable th)
             {
                 LOG.warn(th);
@@ -819,12 +797,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         {
             return WebSocketConnectionD08.this.toString()+"FH";
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    private interface IdleCheck
-    {
-        void access(EndPoint endp);
     }
 
     /* ------------------------------------------------------------ */

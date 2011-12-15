@@ -15,13 +15,13 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.http.security.Credential;
 import org.eclipse.jetty.security.PropertyUserStore.UserListener;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.Credential;
 
 /* ------------------------------------------------------------ */
 /**
@@ -135,9 +135,8 @@ public class HashLoginService extends MappedLoginService implements UserListener
         if (_propertyUserStore == null)
         {
             if(LOG.isDebugEnabled())
-            {
                 LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " refreshInterval: " + _refreshInterval);
-            }
+            
             _propertyUserStore = new PropertyUserStore();
             _propertyUserStore.setRefreshInterval(_refreshInterval);
             _propertyUserStore.setConfig(_config);

@@ -569,29 +569,23 @@ public class WebSocketMessageD08Test
         
         
         // Send enough messages to fill receive buffer
-        long max=0;
         long start=System.currentTimeMillis();
         String mesg="How Now Brown Cow";
         for (int i=0;i<count;i++)
         {
             __serverWebSocket.connection.sendMessage(mesg);
             if (i%100==0)
-            {
                 output.flush();
-                
-                long now=System.currentTimeMillis();
-                long duration=now-start;
-                start=now;
-                if (max<duration)
-                    max=duration;
-            }
         }
+        long duration=System.currentTimeMillis()-start;
         
         while(totalB.get()<(count*(mesg.length()+2)))
             Thread.sleep(100);
         
         assertEquals(count*(mesg.length()+2),totalB.get()); // all messages
-        assertTrue(max>1000); // was blocked
+        // if (duration<1500)
+            System.err.println("max="+duration);
+        assertTrue(duration>1500); // was blocked
     }
 
     @Test

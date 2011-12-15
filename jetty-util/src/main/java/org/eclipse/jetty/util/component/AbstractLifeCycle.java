@@ -188,7 +188,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private void setStopped()
     {
         _state = __STOPPED;
-        LOG.debug(STOPPED+" {}",this);
+        LOG.debug("{} {}",STOPPED,this);
         for (Listener listener : _listeners)
             listener.lifeCycleStopped(this);
     }

@@ -373,7 +373,7 @@ public class JSON
     @Deprecated
     public void appendJSON(final StringBuffer buffer, Convertible converter)
     {
-        appendJSON((StringBuffer)buffer,converter);
+        appendJSON((Appendable)buffer,converter);
     }
 
     /* ------------------------------------------------------------ */

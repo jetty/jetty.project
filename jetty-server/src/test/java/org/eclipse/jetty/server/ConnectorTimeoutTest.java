@@ -54,8 +54,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         OutputStream os=client.getOutputStream();
         InputStream is=client.getInputStream();
 
-        String content="Wibble";
-        byte[] contentB=content.getBytes("utf-8");
         os.write((
                 "GET / HTTP/1.0\r\n"+
                 "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
@@ -64,7 +62,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         os.flush();
 
         long start = System.currentTimeMillis();
-        String in = IO.toString(is);
+        IO.toString(is);
          
         Thread.sleep(300);
         assertEquals(-1, is.read());
@@ -97,7 +95,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         os.flush();
 
         long start = System.currentTimeMillis();
-        String in = IO.toString(is);
+        IO.toString(is);
          
         Thread.sleep(300);
         assertEquals(-1, is.read());

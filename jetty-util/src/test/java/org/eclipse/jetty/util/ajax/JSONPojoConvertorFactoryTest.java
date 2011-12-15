@@ -113,7 +113,7 @@ public class JSONPojoConvertorFactoryTest
         Map<String,Object> bz = (Map<String,Object>)br.get("baz");
         
         Map<String,Object> f = (Map<String,Object>)bz.get("foo");
-        
+        assertTrue(f != null);
         Object[] bazs = (Object[])br.get("bazs");
         assertTrue(bazs.length==2);
         assertEquals(((Map)bazs[0]).get("message"), "baz0");

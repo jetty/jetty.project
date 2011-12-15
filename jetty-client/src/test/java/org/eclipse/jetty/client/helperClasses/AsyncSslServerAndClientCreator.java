@@ -1,7 +1,5 @@
 package org.eclipse.jetty.client.helperClasses;
 
-import java.io.FileInputStream;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 
@@ -16,9 +14,9 @@ public class AsyncSslServerAndClientCreator extends AbstractSslServerAndClientCr
         httpClient.setMaxConnectionsPerAddress(2);
 
         String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        httpClient.setKeyStoreInputStream(new FileInputStream(keystore));
-        httpClient.setKeyStorePassword("storepwd");
-        httpClient.setKeyManagerPassword("keypwd");
+        httpClient.getSslContextFactory().setKeyStorePath(keystore);
+        httpClient.getSslContextFactory().setKeyStorePassword("storepwd");
+        httpClient.getSslContextFactory().setKeyManagerPassword("keypwd");
         httpClient.start();
         return httpClient;
     }

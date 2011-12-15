@@ -1,5 +1,7 @@
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.Matchers.greaterThan;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +28,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class WebSocketClientTest
@@ -419,6 +420,7 @@ public class WebSocketClientTest
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch _latch = new CountDownLatch(1);
         final BlockingQueue<String> queue = new BlockingArrayQueue<String>();
+        final StringBuilder closeMessage = new StringBuilder();
         Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket.OnTextMessage()
         {
             public void onOpen(Connection connection)
@@ -429,6 +431,7 @@ public class WebSocketClientTest
             public void onClose(int closeCode, String message)
             {
                 close.set(closeCode);
+                closeMessage.append(message);
                 _latch.countDown();
             }
 
@@ -477,8 +480,8 @@ public class WebSocketClientTest
 
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
-        Assert.assertEquals(1111,close.get());
-
+        Assert.assertEquals(1002,close.get());
+        Assert.assertEquals("Invalid close code 1111", closeMessage.toString());
     }
 
 
@@ -517,16 +520,18 @@ public class WebSocketClientTest
         Assert.assertTrue(open.get());
         Assert.assertEquals(0,close.get());
 
-        final int messages=20000;
+        final int messages=200000;
         final AtomicLong totalB=new AtomicLong();
 
         Thread consumer = new Thread()
         {
+            @Override
             public void run()
             {
+                // Thread.sleep is for artificially poor performance reader needed for this testcase.
                 try
                 {
-                    Thread.sleep(2000);
+                    Thread.sleep(200);
                     byte[] recv = new byte[32*1024];
 
                     int len=0;
@@ -550,26 +555,23 @@ public class WebSocketClientTest
         consumer.start();
 
         // Send lots of messages client to server
-        long max=0;
         long start=System.currentTimeMillis();
         String mesg="This is a test message to send";
         for (int i=0;i<messages;i++)
         {
-            connection.sendMessage("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-            if (i%100==0)
-            {
-                long now=System.currentTimeMillis();
-                long duration=now-start;
-                start=now;
-                if (duration>max)
-                    max=duration;
-            }
+            connection.sendMessage(mesg);
         }
 
+        // Duration for the write phase
+        long writeDur = (System.currentTimeMillis() - start);
+
         // wait for consumer to complete
-        while (totalB.get()<messages*(mesg.length()+6L))
+        while (totalB.get()<messages*(mesg.length()+6L)) 
+        {
             Thread.sleep(10);
-        Assert.assertTrue(max>1000); // writing was blocked
+        }
+        
+        Assert.assertThat("write duration", writeDur, greaterThan(1000L)); // writing was blocked
         Assert.assertEquals(messages*(mesg.length()+6L),totalB.get());
 
         consumer.interrupt();
@@ -585,6 +587,7 @@ public class WebSocketClientTest
         final AtomicBoolean open = new AtomicBoolean();
         final AtomicInteger close = new AtomicInteger();
         final CountDownLatch _latch = new CountDownLatch(1);
+        final StringBuilder closeMessage = new StringBuilder();
         final Exchanger<String> exchanger = new Exchanger<String>();
         Future<WebSocket.Connection> future=client.open(new URI("ws://127.0.0.1:"+_serverPort+"/"),new WebSocket.OnTextMessage()
         {
@@ -595,8 +598,8 @@ public class WebSocketClientTest
 
             public void onClose(int closeCode, String message)
             {
-                //System.err.println("CLOSE "+closeCode+" "+message);
                 close.set(closeCode);
+                closeMessage.append(message);
                 _latch.countDown();
             }
 
@@ -632,18 +635,28 @@ public class WebSocketClientTest
         // Set up a consumer of received messages that waits a while before consuming
         Thread consumer = new Thread()
         {
+            @Override
             public void run()
             {
                 try
                 {
-                    Thread.sleep(2000);
-                    while(m.get()<messages)
+                    Thread.sleep(200);
+                    while (m.get() < messages)
                     {
-                       String msg =exchanger.exchange(null);
-                       if ("Hello".equals(msg))
-                           m.incrementAndGet();
-                       else
-                           throw new IllegalStateException("exchanged "+msg);
+                        String msg = exchanger.exchange(null);
+                        if ("Hello".equals(msg))
+                        {
+                            m.incrementAndGet();
+                        }
+                        else
+                        {
+                            throw new IllegalStateException("exchanged " + msg);
+                        }
+                        if (m.get() % 1000 == 0)
+                        {
+                            // Artificially slow reader
+                            Thread.sleep(10);
+                        }
                     }
                 }
                 catch(InterruptedException e)
@@ -658,28 +671,22 @@ public class WebSocketClientTest
         };
         consumer.start();
 
-
-        long max=0;
         long start=System.currentTimeMillis();
         for (int i=0;i<messages;i++)
         {
             socket.getOutputStream().write(send,0,send.length);
             socket.getOutputStream().flush();
-            if (i%100==0)
-            {
-                long now=System.currentTimeMillis();
-                long duration=now-start;
-                start=now;
-                if (duration>max)
-                    max=duration;
-            }
         }
-
-        while(consumer.isAlive())
+        
+        while(consumer.isAlive()) 
+        {
             Thread.sleep(10);
+        }
+        
+        // Duration of the read operation.
+        long readDur = (System.currentTimeMillis() - start);
 
-
-        Assert.assertTrue(max>1000); // writing was blocked
+        Assert.assertThat("read duration", readDur, greaterThan(1000L)); // reading was blocked
         Assert.assertEquals(m.get(),messages);
 
         // Close with code
@@ -689,8 +696,8 @@ public class WebSocketClientTest
 
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
-        Assert.assertEquals(1111,close.get());
-
+        Assert.assertEquals(1002,close.get());
+        Assert.assertEquals("Invalid close code 1111", closeMessage.toString());
     }
 
     private void respondToClient(Socket connection, String serverResponse) throws IOException

@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.servlet.Servlet;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -104,7 +105,7 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed(filename,filesize);
+            tester.assertIsResponseNotGzipCompressed(filename,filesize,HttpStatus.OK_200);
         }
         finally
         {

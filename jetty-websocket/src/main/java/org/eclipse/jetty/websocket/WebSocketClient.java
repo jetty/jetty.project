@@ -320,8 +320,6 @@ public class WebSocketClient
         String scheme=uri.getScheme();
         if (!("ws".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme)))
             throw new IllegalArgumentException("Bad WebSocket scheme '"+scheme+"'");
-        if ("wss".equalsIgnoreCase(scheme))
-            throw new IOException("wss not supported");
 
         SocketChannel channel = SocketChannel.open();
         if (_bindAddress != null)
@@ -334,7 +332,7 @@ public class WebSocketClient
 
         channel.configureBlocking(false);
         channel.connect(address);
-        _factory.getSelectorManager().register( channel, holder);
+        _factory.getSelectorManager().register(channel, holder);
 
         return holder;
     }

@@ -17,9 +17,6 @@ import java.security.Principal;
 
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.http.security.Credential;
-import org.eclipse.jetty.security.MappedLoginService.KnownUser;
-import org.eclipse.jetty.security.MappedLoginService.RolePrincipal;
 import org.eclipse.jetty.server.UserIdentity;
 
 

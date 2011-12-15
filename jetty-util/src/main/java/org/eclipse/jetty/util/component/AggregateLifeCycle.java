@@ -6,8 +6,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.log.Log;
@@ -144,7 +142,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
                     t=(T)o;
             }
         }
-        if (count>1)
+        if (count>1 && LOG.isDebugEnabled())
             LOG.debug("getBean({}) 1 of {}",clazz.getName(),count);
         
         return t;

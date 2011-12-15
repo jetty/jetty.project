@@ -2,7 +2,7 @@ package org.eclipse.jetty.security;
 
 import java.security.Principal;
 
-import org.eclipse.jetty.http.security.B64Code;
+import org.eclipse.jetty.util.security.B64Code;
 
 public class SpnegoUserPrincipal implements Principal
 {

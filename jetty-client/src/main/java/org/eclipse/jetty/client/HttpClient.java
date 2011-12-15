@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Set;
@@ -29,13 +30,13 @@ import org.eclipse.jetty.client.security.RealmResolver;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -52,11 +53,11 @@ import org.eclipse.jetty.util.thread.Timeout;
  * The an instance of {@link HttpExchange} is passed to the {@link #send(HttpExchange)} method
  * to send a request.  The exchange contains both the headers and content (source) of the request
  * plus the callbacks to handle responses.   A HttpClient can have many exchanges outstanding
- * and they may be queued on the {@link HttpDestination} waiting for a {@link HttpConnection},
- * queued in the {@link HttpConnection} waiting to be transmitted or pipelined on the actual
+ * and they may be queued on the {@link HttpDestination} waiting for a {@link AbstractHttpConnection},
+ * queued in the {@link AbstractHttpConnection} waiting to be transmitted or pipelined on the actual
  * TCP/IP connection waiting for a response.
  * <p/>
- * The {@link HttpDestination} class is an aggregation of {@link HttpConnection}s for the
+ * The {@link HttpDestination} class is an aggregation of {@link AbstractHttpConnection}s for the
  * same host, port and protocol.   A destination may limit the number of connections
  * open and they provide a pool of open connections that may be reused.   Connections may also
  * be allocated from a destination, so that multiple request sources are not multiplexed
@@ -164,7 +165,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     public void dump(Appendable out, String indent) throws IOException
     {
         out.append(String.valueOf(this)).append("\n");
-        AggregateLifeCycle.dump(out,indent,_destinations.values());
+        AggregateLifeCycle.dump(out,indent,Arrays.asList(_threadPool,_connector),_destinations.values());
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -190,7 +191,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
             pool.setName("HttpClient");
             _threadPool = pool;
         }
-            
+
         return _threadPool;
     }
 
@@ -526,7 +527,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the period in milliseconds a {@link HttpConnection} can be idle for before it is closed.
+     * @return the period in milliseconds a {@link AbstractHttpConnection} can be idle for before it is closed.
      */
     public long getIdleTimeout()
     {
@@ -535,7 +536,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
 
     /* ------------------------------------------------------------ */
     /**
-     * @param ms the period in milliseconds a {@link HttpConnection} can be idle for before it is closed.
+     * @param ms the period in milliseconds a {@link AbstractHttpConnection} can be idle for before it is closed.
      */
     public void setIdleTimeout(long ms)
     {

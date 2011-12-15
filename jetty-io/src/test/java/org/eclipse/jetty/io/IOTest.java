@@ -14,15 +14,17 @@
 package org.eclipse.jetty.io;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.Reader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.IO;
 import org.junit.Test;
@@ -50,14 +52,12 @@ public class IOTest
     }
     
     @Test
-    public void testHalfCloses() throws Exception
+    public void testHalfClose() throws Exception
     {
         ServerSocket connector = new ServerSocket(0);
         
         Socket client = new Socket("localhost",connector.getLocalPort());
-        System.err.println(client);
         Socket server = connector.accept();
-        System.err.println(server);
         
         // we can write both ways
         client.getOutputStream().write(1);
@@ -76,7 +76,7 @@ public class IOTest
         assertEquals(-1,server.getInputStream().read());
 
         // but cannot write
-        try { client.getOutputStream().write(1); assertTrue(false); } catch (SocketException e) {}
+        try { client.getOutputStream().write(1); fail("exception expected"); } catch (SocketException e) {}
    
         // but can still write in opposite direction.
         server.getOutputStream().write(1);
@@ -87,7 +87,7 @@ public class IOTest
         server.shutdownInput();
         
         // now we EOF instead of reading -1
-        try { server.getInputStream().read(); assertTrue(false); } catch (SocketException e) {}
+        try { server.getInputStream().read(); fail("exception expected"); } catch (SocketException e) {}
         
 
         // but can still write in opposite direction.
@@ -98,7 +98,7 @@ public class IOTest
         client.shutdownInput();
 
         // now we EOF instead of reading -1
-        try { client.getInputStream().read(); assertTrue(false); } catch (SocketException e) {}        
+        try { client.getInputStream().read(); fail("exception expected"); } catch (SocketException e) {}        
         
         // But we can still write at the server (data which will never be read) 
         server.getOutputStream().write(1);
@@ -110,7 +110,7 @@ public class IOTest
         server.shutdownOutput();
         
         // and now we can't write
-        try { server.getOutputStream().write(1); assertTrue(false); } catch (SocketException e) {}
+        try { server.getOutputStream().write(1); fail("exception expected"); } catch (SocketException e) {}
         
         // but the sockets are still open
         assertFalse(client.isClosed());
@@ -128,8 +128,114 @@ public class IOTest
         // which has to be closed explictly
         server.close();
         assertTrue(server.isClosed());
-        
-        
-        
+            
     }
+
+    
+    @Test
+    public void testHalfCloseClientServer() throws Exception
+    {
+        ServerSocketChannel connector = ServerSocketChannel.open();
+        connector.socket().bind(null);
+        
+        Socket client = SocketChannel.open(connector.socket().getLocalSocketAddress()).socket();
+        client.setSoTimeout(1000);
+        client.setSoLinger(false,-1);
+        Socket server = connector.accept().socket();
+        server.setSoTimeout(1000);
+        server.setSoLinger(false,-1);
+        
+        // Write from client to server
+        client.getOutputStream().write(1);
+        
+        // Server reads 
+        assertEquals(1,server.getInputStream().read());
+
+        // Write from server to client with oshut
+        server.getOutputStream().write(1);
+        System.err.println("OSHUT "+server);
+        server.shutdownOutput();
+
+        // Client reads response
+        assertEquals(1,client.getInputStream().read());
+
+        try
+        {
+            // Client reads -1 and does ishut
+            assertEquals(-1,client.getInputStream().read());
+            assertFalse(client.isInputShutdown());
+            System.err.println("ISHUT "+client);
+            client.shutdownInput();
+
+            // Client ???
+            System.err.println("OSHUT "+client);
+            client.shutdownOutput();
+            System.err.println("CLOSE "+client);
+            client.close();
+
+            // Server reads -1, does ishut and then close
+            assertEquals(-1,server.getInputStream().read());
+            assertFalse(server.isInputShutdown());
+            System.err.println("ISHUT "+server);
+
+            try
+            {
+                server.shutdownInput();
+            }
+            catch(SocketException e)
+            {
+                System.err.println(e);
+            }
+            System.err.println("CLOSE "+server);
+            server.close();
+
+        }
+        catch(Exception e)
+        {
+            // Dang OSX!
+            System.err.println(e);
+        }
+    }
+
+    @Test
+    public void testReset() throws Exception
+    {
+        ServerSocket connector;
+        Socket client;
+        Socket server;
+       
+        connector = new ServerSocket(9123);
+        client = new Socket("127.0.0.1",connector.getLocalPort());
+        server = connector.accept();
+        client.setTcpNoDelay(true);
+        client.setSoLinger(true,0);
+        server.setTcpNoDelay(true);
+        server.setSoLinger(true,0);
+       
+        client.getOutputStream().write(1);
+        assertEquals(1,server.getInputStream().read());
+        server.getOutputStream().write(1);
+        assertEquals(1,client.getInputStream().read());
+       
+        // Server generator shutdowns output after non persistent sending response.
+        server.shutdownOutput();
+       
+        // client endpoint reads EOF and shutdown input as result
+        assertEquals(-1,client.getInputStream().read());
+        client.shutdownInput();
+       
+        // client connection see's EOF and shutsdown output as no more requests to be sent.
+        client.shutdownOutput();
+       
+        // Since input already shutdown, client also closes socket.
+        client.close();
+       
+        // Server reads the EOF from client oshut and shut's down it's input
+        assertEquals(-1,server.getInputStream().read());
+        server.shutdownInput();
+       
+        // Since output was already shutdown, server closes
+        server.close();
+    }
+
 }

@@ -216,7 +216,10 @@ public class Ajp13Connection extends BlockingHttpConnection
 
         public void parsedRequestAttribute(String key, Buffer value) throws IOException
         {
-            _request.setAttribute(key, value.toString());
+            if (value==null)
+                _request.removeAttribute(key);
+            else
+                _request.setAttribute(key,value.toString());
         }
         
         public void parsedRequestAttribute(String key, int value) throws IOException

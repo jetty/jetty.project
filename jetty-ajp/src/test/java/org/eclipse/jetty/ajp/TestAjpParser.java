@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.ajp;
 
+import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 
 import org.eclipse.jetty.io.Buffer;
@@ -22,9 +25,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Test;
-
-import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class TestAjpParser
 {

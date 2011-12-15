@@ -16,7 +16,7 @@ package org.eclipse.jetty.plus.jaas.spi;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http.security.Credential;
+import org.eclipse.jetty.util.security.Credential;
 
 /**
  * UserInfo

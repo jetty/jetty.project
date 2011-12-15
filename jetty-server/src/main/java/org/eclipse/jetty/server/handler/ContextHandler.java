@@ -48,11 +48,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
@@ -64,7 +64,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -264,6 +263,85 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /** Either set virtual hosts or add to an existing set of virtual hosts.
+     *  
+     * @param virtualHosts
+     *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
+     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
+     */
+    public void addVirtualHosts(String[] virtualHosts)
+    {
+        if (virtualHosts == null)  // since this is add, we don't null the old ones
+        {
+            return;
+        }
+        else
+        {
+            List<String> currentVirtualHosts = null;
+            if (_vhosts != null)
+            {
+                currentVirtualHosts = new ArrayList<String>(Arrays.asList(_vhosts));
+            }
+            else
+            {
+                currentVirtualHosts = new ArrayList<String>();
+            }
+            
+            for (int i = 0; i < virtualHosts.length; i++)
+            {
+                String normVhost = normalizeHostname(virtualHosts[i]);
+                if (!currentVirtualHosts.contains(normVhost))
+                {
+                    currentVirtualHosts.add(normVhost);
+                }
+            }
+            _vhosts = currentVirtualHosts.toArray(new String[0]);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Removes an array of virtual host entries, if this removes all entries the _vhosts will be set to null
+     * 
+     *  @param virtualHosts
+     *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
+     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
+     */
+    public void removeVirtualHosts(String[] virtualHosts)
+    {
+        if (virtualHosts == null)
+        {
+            return; // do nothing
+        }
+        else if ( _vhosts == null || _vhosts.length == 0)
+        {
+            return; // do nothing
+        }
+        else
+        {
+            List<String> existingVirtualHosts = new ArrayList<String>(Arrays.asList(_vhosts));
+            
+            for (int i = 0; i < virtualHosts.length; i++)
+            {
+                String toRemoveVirtualHost = normalizeHostname(virtualHosts[i]);
+                if (existingVirtualHosts.contains(toRemoveVirtualHost))
+                {
+                    existingVirtualHosts.remove(toRemoveVirtualHost);
+                }
+            }
+            
+            if (existingVirtualHosts.isEmpty())
+            {
+                _vhosts = null; // if we ended up removing them all, just null out _vhosts
+            }
+            else
+            {
+                _vhosts = existingVirtualHosts.toArray(new String[0]);
+            }
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Get the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
@@ -498,7 +576,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isShutdown()
     {
-        return !_shutdown;
+        synchronized (this)
+        {
+            return !_shutdown;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -524,7 +605,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isAvailable()
     {
-        return _available;
+        synchronized (this)
+        {
+            return _available;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -588,7 +672,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             // defers the calling of super.doStart()
             startContext();
 
-            _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
+            synchronized(this)
+            {
+                _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
+            }
         }
         finally
         {
@@ -755,7 +842,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         // Check the connector
         if (_connectors != null && _connectors.size() > 0)
         {
-            String connector = HttpConnection.getCurrentConnection().getConnector().getName();
+            String connector = AbstractHttpConnection.getCurrentConnection().getConnector().getName();
             if (connector == null || !_connectors.contains(connector))
                 return false;
         }
@@ -793,7 +880,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        LOG.debug("scope {} @ {}",baseRequest.getContextPath() + "|" + baseRequest.getServletPath() + "|" + baseRequest.getPathInfo(),this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("scope {}|{}|{} @ {}",baseRequest.getContextPath(),baseRequest.getServletPath(),baseRequest.getPathInfo(),this);
 
         Context old_context = null;
         String old_context_path = null;
@@ -865,7 +953,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("context={} @ {}",baseRequest.getContextPath() + "|" + baseRequest.getServletPath() + "|" + baseRequest.getPathInfo(),this);
+                LOG.debug("context={}|{}|{} @ {}",baseRequest.getContextPath(),baseRequest.getServletPath(), baseRequest.getPathInfo(),this);
 
             // start manual inline of nextScope(target,baseRequest,request,response);
             if (never())
@@ -1699,7 +1787,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 URL url = getResource(path);
                 if (url == null)
                     return null;
-                return url.openStream();
+                Resource r = Resource.newResource(url);
+                return r.getInputStream();
             }
             catch (Exception e)
             {
