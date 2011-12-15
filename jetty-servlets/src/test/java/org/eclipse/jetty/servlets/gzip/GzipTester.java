@@ -1,8 +1,11 @@
 package org.eclipse.jetty.servlets.gzip;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -41,7 +44,7 @@ public class GzipTester
     {
         this.testdir = testingdir;
         // Make sure we start with a clean testing directory.
-        this.testdir.ensureEmpty();
+        // DOES NOT WORK IN WINDOWS - this.testdir.ensureEmpty();
     }
 
     public void assertIsResponseGzipCompressed(String filename) throws Exception
@@ -309,24 +312,29 @@ public class GzipTester
      * @param filesize
      *            the file size to create (Note: this isn't suitable for creating large multi-megabyte files)
      */
-    public void prepareServerFile(String filename, int filesize) throws IOException
+    public File prepareServerFile(String filename, int filesize) throws IOException
     {
-        File testFile = testdir.getFile(filename);
+        File dir = testdir.getDir();
+        File testFile = new File(dir,filename);
+        // Make sure we have a uniq filename (to work around windows File.delete bug)
+        int i = 0;
+        while (testFile.exists())
+        {
+            testFile = new File(dir,(i++) + "-" + filename);
+        }
 
         FileOutputStream fos = null;
-        BufferedOutputStream out = null;
         ByteArrayInputStream in = null;
         try
         {
             fos = new FileOutputStream(testFile,false);
-            out = new BufferedOutputStream(fos);
             in = new ByteArrayInputStream(generateContent(filesize).getBytes(encoding));
-            IO.copy(in,out);
+            IO.copy(in,fos);
+            return testFile;
         }
         finally
         {
             IO.close(in);
-            IO.close(out);
             IO.close(fos);
         }
     }

@@ -1,5 +1,6 @@
 package org.eclipse.jetty.servlets;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -7,7 +8,6 @@ import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
-import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
@@ -49,7 +49,6 @@ public class GzipFilterContentLengthTest
     {
         return Arrays.asList(new Object[][]
         {
-        { DefaultServlet.class },
         { TestServletLengthStreamTypeWrite.class },
         { TestServletLengthTypeStreamWrite.class },
         { TestServletStreamLengthTypeWrite.class },
@@ -76,8 +75,8 @@ public class GzipFilterContentLengthTest
     private void assertIsGzipCompressed(String filename, int filesize) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir);
-
-        tester.prepareServerFile(filename,filesize);
+        
+        File testfile = tester.prepareServerFile(testServlet.getSimpleName() + "-" + filename,filesize);
 
         FilterHolder holder = tester.setContentServlet(testServlet);
         holder.setInitParameter("mimeTypes","text/plain");
@@ -85,7 +84,7 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseGzipCompressed(filename);
+            tester.assertIsResponseGzipCompressed(testfile.getName());
         }
         finally
         {
@@ -97,7 +96,7 @@ public class GzipFilterContentLengthTest
     {
         GzipTester tester = new GzipTester(testingdir);
 
-        tester.prepareServerFile(filename,filesize);
+        File testfile = tester.prepareServerFile(testServlet.getSimpleName() + "-" + filename,filesize);
 
         FilterHolder holder = tester.setContentServlet(testServlet);
         holder.setInitParameter("mimeTypes","text/plain");
@@ -105,21 +104,21 @@ public class GzipFilterContentLengthTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed(filename,filesize,HttpStatus.OK_200);
+            tester.assertIsResponseNotGzipCompressed(testfile.getName(),filesize,HttpStatus.OK_200);
         }
         finally
         {
             tester.stop();
         }
     }
-
+    
     /**
      * Tests gzip compression of a small size file
      */
     @Test
     public void testIsGzipCompressedSmall() throws Exception
     {
-        assertIsGzipCompressed("file.txt",SMALL);
+        assertIsGzipCompressed("file-small.txt",SMALL);
     }
 
     /**
@@ -128,7 +127,7 @@ public class GzipFilterContentLengthTest
     @Test
     public void testIsGzipCompressedMedium() throws Exception
     {
-        assertIsGzipCompressed("file.txt",MEDIUM);
+        assertIsGzipCompressed("file-med.txt",MEDIUM);
     }
 
     /**
@@ -137,7 +136,7 @@ public class GzipFilterContentLengthTest
     @Test
     public void testIsGzipCompressedLarge() throws Exception
     {
-        assertIsGzipCompressed("file.txt",LARGE);
+        assertIsGzipCompressed("file-large.txt",LARGE);
     }
 
     /**
@@ -149,7 +148,7 @@ public class GzipFilterContentLengthTest
     @Test
     public void testIsNotGzipCompressedTiny() throws Exception
     {
-        assertIsNotGzipCompressed("file.txt",TINY);
+        assertIsNotGzipCompressed("file-tiny.txt",TINY);
     }
 
     /**
@@ -161,7 +160,7 @@ public class GzipFilterContentLengthTest
     @Test
     public void testIsNotGzipCompressedSmall() throws Exception
     {
-        assertIsNotGzipCompressed("file.mp3",SMALL);
+        assertIsNotGzipCompressed("file-small.mp3",SMALL);
     }
 
     /**
@@ -173,7 +172,7 @@ public class GzipFilterContentLengthTest
     @Test
     public void testIsNotGzipCompressedMedium() throws Exception
     {
-        assertIsNotGzipCompressed("file.mp3",MEDIUM);
+        assertIsNotGzipCompressed("file-medium.mp3",MEDIUM);
     }
 
     /**
@@ -185,6 +184,6 @@ public class GzipFilterContentLengthTest
     @Test
     public void testIsNotGzipCompressedLarge() throws Exception
     {
-        assertIsNotGzipCompressed("file.mp3",LARGE);
+        assertIsNotGzipCompressed("file-large.mp3",LARGE);
     }
 }
