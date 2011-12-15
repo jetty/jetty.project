@@ -356,7 +356,27 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         if (_writer==null)
         {
             _writer=new OutputWriter();
-            _printWriter=new UncheckedPrintWriter(_writer);
+            if (_server.isUncheckedPrintWriter())
+                _printWriter=new UncheckedPrintWriter(_writer);
+            else
+                _printWriter = new PrintWriter(_writer)
+                {
+                    public void close()
+                    {
+                        synchronized (lock)
+                        {
+                            try
+                            {
+                                out.close();
+                            }
+                            catch (IOException e)
+                            {
+                                setError();
+                            }
+                        }
+                    }
+                };
+
         }
         _writer.setCharacterEncoding(encoding);
         return _printWriter;

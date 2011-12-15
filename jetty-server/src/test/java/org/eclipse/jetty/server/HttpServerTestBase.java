@@ -741,6 +741,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             IO.copy(is,bout);
             byte[] b=bout.toByteArray();
 
+            System.err.println("OUTPUT: "+new String(b));
             int i=0;
             while (b[i]!='Z')
                 i++;

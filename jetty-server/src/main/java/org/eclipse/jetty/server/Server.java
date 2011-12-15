@@ -76,6 +76,7 @@ public class Server extends HandlerWrapper implements Attributes
     private int _maxCookieVersion=1;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private boolean _uncheckedPrintWriter=false;
     
 
     /* ------------------------------------------------------------ */
@@ -614,6 +615,20 @@ public class Server extends HandlerWrapper implements Attributes
         dumpThis(out);
         dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),TypeUtil.asList(_connectors));    
     }
+
+
+    /* ------------------------------------------------------------ */
+    public boolean isUncheckedPrintWriter()
+    {
+        return _uncheckedPrintWriter;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setUncheckedPrintWriter(boolean unchecked)
+    {
+        _uncheckedPrintWriter=unchecked;
+    }
+
     
     /* ------------------------------------------------------------ */
     /* A handler that can be gracefully shutdown.

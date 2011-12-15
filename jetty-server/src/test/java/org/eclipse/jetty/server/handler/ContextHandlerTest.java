@@ -337,6 +337,7 @@ public class ContextHandlerTest
     public void testUncheckedPrintWriter() throws Exception
     {
         Server server = new Server();
+        server.setUncheckedPrintWriter(true);
         LocalConnector connector = new LocalConnector();
         server.setConnectors(new Connector[] { connector });
         ContextHandler context = new ContextHandler("/");
@@ -422,7 +423,10 @@ public class ContextHandlerTest
                 writer.write("Goodbye cruel world\n");
                 writer.close();
                 response.flushBuffer();
-                writer.write("speaking from the dead");
+                //writer.write("speaking from the dead");
+                writer.write("give the printwriter a chance"); //should create an error
+                if (writer.checkError())
+                    writer.write("didn't take the chance, will throw now"); //write after an error
             }
             catch(Throwable th)
             {
