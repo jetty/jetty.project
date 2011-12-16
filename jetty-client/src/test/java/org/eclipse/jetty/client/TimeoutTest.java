@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.After;
@@ -43,7 +45,7 @@ public class TimeoutTest
     private ExecutorService threadPool;
     private Server server;
     private int serverPort;
-    
+
     @Before
     public void init() throws Exception
     {
@@ -53,14 +55,14 @@ public class TimeoutTest
         SelectChannelConnector connector = new SelectChannelConnector()
         {
             @Override
-            protected AsyncConnection newConnection(SocketChannel channel,final AsyncEndPoint endPoint)
+            protected AsyncConnection newConnection(SocketChannel channel, final AsyncEndPoint endPoint)
             {
-                return new org.eclipse.jetty.server.AsyncHttpConnection(this, endPoint, getServer())
+                return new org.eclipse.jetty.server.AsyncHttpConnection(this,endPoint,getServer())
                 {
                     @Override
                     protected HttpParser newHttpParser(Buffers requestBuffers, EndPoint endPoint, HttpParser.EventHandler requestHandler)
                     {
-                        return new HttpParser(requestBuffers, endPoint, requestHandler)
+                        return new HttpParser(requestBuffers,endPoint,requestHandler)
                         {
                             @Override
                             public int parseNext() throws IOException
@@ -76,13 +78,14 @@ public class TimeoutTest
         };
         connector.setMaxIdleTime(2000);
 
-//        connector.setPort(5870);
+        //        connector.setPort(5870);
         connector.setPort(0);
 
         server.addConnector(connector);
         server.setHandler(new AbstractHandler()
         {
-            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException,
+                    ServletException
             {
                 request.setHandled(true);
                 String contentLength = request.getHeader("Content-Length");
@@ -98,7 +101,7 @@ public class TimeoutTest
         server.start();
         serverPort = connector.getLocalPort();
 
-        logger.debug(" => :{}", serverPort);
+        logger.debug(" => :{}",serverPort);
     }
 
     @After
@@ -112,59 +115,96 @@ public class TimeoutTest
 
     private Socket newClient() throws IOException, InterruptedException
     {
-        Socket client = new Socket("localhost", serverPort);
+        Socket client = new Socket("localhost",serverPort);
         return client;
     }
-    
-    @Test
+
+    /**
+     * Test that performs a seemingly normal http POST request, but with
+     * a client that issues "connection: close", waits 100 seconds to
+     * do anything with the connection (at all), and then attempts to
+     * write a second POST request.
+     * <p>
+     * The connection should be closed by the server, and/or be closed
+     * due to a timeout on the socket.
+     */
     @Ignore
+    @Test
     public void testServerCloseClientDoesNotClose() throws Exception
     {
+        // Log.getLogger("").setDebugEnabled(true);
         final Socket client = newClient();
         final OutputStream clientOutput = client.getOutputStream();
 
         byte[] data = new byte[3 * 1024];
-        Arrays.fill(data, (byte)'Y');
-        String content = new String(data, "UTF-8");
-        clientOutput.write(("" +
-                "POST / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: text/plain\r\n" +
-                "Content-Length: " + content.length() + "\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                content).getBytes("UTF-8"));
+        Arrays.fill(data,(byte)'Y');
+        String content = new String(data,"UTF-8");
+        
+        // The request section
+        StringBuilder req = new StringBuilder();
+        req.append("POST / HTTP/1.1\r\n");
+        req.append("Host: localhost\r\n");
+        req.append("Content-Type: text/plain\r\n");
+        req.append("Content-Length: ").append(content.length()).append("\r\n");
+        req.append("Connection: close\r\n");
+        req.append("\r\n");
+        // and now, the POST content section.
+        req.append(content);
+
+        // Send request to server
+        clientOutput.write(req.toString().getBytes("UTF-8"));
         clientOutput.flush();
-        
-        System.out.println("Client output flushed");
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
-        String line = reader.readLine();
-        Assert.assertNotNull(line);
-        Assert.assertThat(line,startsWith("HTTP/1.1 200 "));
-        while ((line = reader.readLine()) != null)
+        System.out.println("Client request #1 flushed");
+
+        InputStream in = null;
+        InputStreamReader isr = null;
+        BufferedReader reader = null;
+        try
         {
-            if (line.trim().length() == 0)
+            in = client.getInputStream();
+            isr = new InputStreamReader(in);
+            reader = new BufferedReader(isr);
+
+            // Read the response header
+            String line = reader.readLine();
+            Assert.assertNotNull(line);
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 "));
+            while ((line = reader.readLine()) != null)
             {
-                break;
+                if (line.trim().length() == 0)
+                {
+                    break;
+                }
             }
+
+            System.out.println("Got response header");
+
+            // Check that we did not spin
+            int httpParseCount = httpParses.get();
+            System.out.printf("Got %d http parses%n",httpParseCount);
+            Assert.assertThat(httpParseCount,lessThan(50));
+
+            // TODO: instead of sleeping, we should expect the connection being closed by the idle timeout
+            // TODO: mechanism; unfortunately this now is not working, and this test fails because the idle
+            // TODO: timeout will not trigger.
+            TimeUnit.SECONDS.sleep(100);
+            
+            // Try to write another request (to prove that stream is closed)
+            clientOutput.write(req.toString().getBytes("UTF-8"));
+            clientOutput.flush();
+
+            Assert.fail("Should not have been able to send a second POST request (connection: close)");
         }
-        
-        System.out.println("Got response header");
-
-        // Check that we did not spin
-        int httpParseCount = httpParses.get();
-        System.out.printf("Got %d http parses%n", httpParseCount);
-        Assert.assertThat(httpParseCount, lessThan(50));
-        
-        // TODO: instead of sleeping, we should expect the connection being closed by the idle timeout
-        // TODO: mechanism; unfortunately this now is not working, and this test fails because the idle
-        // TODO: timeout will not trigger.
-        TimeUnit.SECONDS.sleep(100);
-
-        closeClient(client);
+        finally
+        {
+            IO.close(reader);
+            IO.close(isr);
+            IO.close(in);
+            closeClient(client);
+        }
     }
-    
+
     private void closeClient(Socket client) throws IOException
     {
         client.close();
