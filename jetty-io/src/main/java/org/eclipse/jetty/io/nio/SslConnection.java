@@ -571,7 +571,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
     public String toString()
     {
-        return String.format("%s | %s", super.toString(), _sslEndPoint);
+        return String.format("%s %s", super.toString(), _sslEndPoint);
     }
 
     /* ------------------------------------------------------------ */
@@ -793,20 +793,20 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public String toString()
         {
-            int i;
-            int o;
-            int u;
-            synchronized(SslConnection.this)
-            {
-                i=_inbound==null?-1:_inbound.length();
-                o=_outbound==null?-1:_outbound.length();
-                u=_unwrapBuf==null?-1:_unwrapBuf.length();
-            }
-            return String.format("SSL:%s %s i/u/o=%d/%d/%d ishut=%b oshut=%b",
-                    _endp,
+            // Do NOT use synchronized (SslConnection.this)
+            // because it's very easy to deadlock when debugging is enabled.
+            // We do a best effort to print the right toString() and that's it.
+            Buffer inbound = _inbound;
+            Buffer outbound = _outbound;
+            Buffer unwrap = _unwrapBuf;
+            int i = inbound == null? -1 : inbound.length();
+            int o = outbound == null ? -1 : outbound.length();
+            int u = unwrap == null ? -1 : unwrap.length();
+            return String.format("SSL %s i/o/u=%d/%d/%d ishut=%b oshut=%b {%s}",
                     _engine.getHandshakeStatus(),
-                    i, u, o,
-                    _ishut, _oshut);
+                    i, o, u,
+                    _ishut, _oshut,
+                    _connection);
         }
     }
 }

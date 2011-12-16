@@ -18,7 +18,6 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -28,7 +27,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -840,6 +838,6 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
     @Override
     public String toString()
     {
-         return "WS/D"+_draft+"-"+_endp;
+        return String.format("WS/D%d p=%s g=%s", _draft, _parser, _generator);
     }
 }
