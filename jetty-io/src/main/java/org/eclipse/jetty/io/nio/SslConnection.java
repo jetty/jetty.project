@@ -190,9 +190,10 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         _connection=next;
                         progress=true;
                     }
+                    // TODO: consider moving here hasProgressed() - it's only used in SSL
                 }
 
-                LOG.debug("{} handle {} progress=",_session,this, progress);
+                LOG.debug("{} handle {} progress={}", _session, this, progress);
             }
         }
         finally
@@ -322,12 +323,12 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
                     case NOT_HANDSHAKING:
                     {
-                        // Try wrapping some application data
-                        if (toFlush.hasContent() && _outbound.space()>0 && wrap(toFlush))
-                            progress=true;
-
                         // Try unwrapping some application data
                         if (toFill.space()>0 && _inbound.hasContent() && unwrap(toFill))
+                            progress=true;
+
+                        // Try wrapping some application data
+                        if (toFlush.hasContent() && _outbound.space()>0 && wrap(toFlush))
                             progress=true;
                     }
                     break;
@@ -389,6 +390,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
                 some_progress|=progress;
             }
+
+            if (toFill.hasContent())
+                _aEndp.asyncDispatch();
         }
         finally
         {
@@ -628,7 +632,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         public int fill(Buffer buffer) throws IOException
         {
             int size=buffer.length();
-            process(buffer,null);
+            process(buffer, null);
 
             int filled=buffer.length()-size;
 
@@ -688,7 +692,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public void flush() throws IOException
         {
-            process(null,null);
+            process(null, null);
         }
 
         public void asyncDispatch()
