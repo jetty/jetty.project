@@ -19,10 +19,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
@@ -30,7 +26,6 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,13 +38,13 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     public final static byte LENGTH_FRAME=(byte)0x80;
     public final static byte SENTINEL_FRAME=(byte)0x00;
 
-    final WebSocketParser _parser;
-    final WebSocketGenerator _generator;
-    final WebSocket _websocket;
-    final String _protocol;
-    String _key1;
-    String _key2;
-    ByteArrayBuffer _hixieBytes;
+    private final WebSocketParser _parser;
+    private final WebSocketGenerator _generator;
+    private final WebSocket _websocket;
+    private final String _protocol;
+    private String _key1;
+    private String _key2;
+    private ByteArrayBuffer _hixieBytes;
 
     public WebSocketConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
         throws IOException
@@ -340,54 +335,6 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
     }
 
-    public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
-    {
-        String uri=request.getRequestURI();
-        String query=request.getQueryString();
-        if (query!=null && query.length()>0)
-            uri+="?"+query;
-        uri=new HttpURI(uri).toString();
-        String host=request.getHeader("Host");
-
-        String origin=request.getHeader("Sec-WebSocket-Origin");
-        if (origin==null)
-            origin=request.getHeader("Origin");
-        if (origin!=null)
-            origin= QuotedStringTokenizer.quoteIfNeeded(origin, "\r\n");
-
-
-        String key1 = request.getHeader("Sec-WebSocket-Key1");
-
-        if (key1!=null)
-        {
-            String key2 = request.getHeader("Sec-WebSocket-Key2");
-            setHixieKeys(key1,key2);
-
-            response.setHeader("Upgrade","WebSocket");
-            response.addHeader("Connection","Upgrade");
-            if (origin!=null)
-                response.addHeader("Sec-WebSocket-Origin",origin);
-            response.addHeader("Sec-WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
-            if (subprotocol!=null)
-                response.addHeader("Sec-WebSocket-Protocol",subprotocol);
-            response.sendError(101,"WebSocket Protocol Handshake");
-        }
-        else
-        {
-            response.setHeader("Upgrade","WebSocket");
-            response.addHeader("Connection","Upgrade");
-            response.addHeader("WebSocket-Origin",origin);
-            response.addHeader("WebSocket-Location",(request.isSecure()?"wss://":"ws://")+host+uri);
-            if (subprotocol!=null)
-                response.addHeader("WebSocket-Protocol",subprotocol);
-            response.sendError(101,"Web Socket Protocol Handshake");
-            response.flushBuffer();
-            if (_websocket instanceof OnFrame)
-                ((OnFrame)_websocket).onHandshake(this);
-            _websocket.onOpen(this);
-        }
-    }
-
     public void setMaxTextMessageSize(int size)
     {
     }
@@ -426,6 +373,19 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     public String getProtocol()
     {
         return _protocol;
+    }
+    
+    protected void onFrameHandshake()
+    {
+        if (_websocket instanceof OnFrame)
+        {
+            ((OnFrame)_websocket).onHandshake(this);
+        }
+    }
+
+    protected void onWebsocketOpen()
+    {
+        _websocket.onOpen(this);
     }
 
     static class FrameHandlerD00 implements WebSocketParser.FrameHandler

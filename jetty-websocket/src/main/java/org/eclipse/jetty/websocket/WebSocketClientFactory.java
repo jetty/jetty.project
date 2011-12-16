@@ -141,7 +141,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return the shared mask generator, or null if no shared mask generator is used
-     * @see {@link WebSocketClient#getMaskGen()}
+     * @see WebSocketClient#getMaskGen()
      */
     public MaskGen getMaskGen()
     {
@@ -151,7 +151,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @param maskGen the shared mask generator, or null if no shared mask generator is used
-     * @see {@link WebSocketClient#setMaskGen(MaskGen)}
+     * @see WebSocketClient#setMaskGen(MaskGen)
      */
     public void setMaskGen(MaskGen maskGen)
     {

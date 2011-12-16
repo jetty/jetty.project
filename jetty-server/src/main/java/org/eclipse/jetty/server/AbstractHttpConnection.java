@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -356,7 +355,27 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         if (_writer==null)
         {
             _writer=new OutputWriter();
-            _printWriter=new UncheckedPrintWriter(_writer);
+            if (_server.isUncheckedPrintWriter())
+                _printWriter=new UncheckedPrintWriter(_writer);
+            else
+                _printWriter = new PrintWriter(_writer)
+                {
+                    public void close()
+                    {
+                        synchronized (lock)
+                        {
+                            try
+                            {
+                                out.close();
+                            }
+                            catch (IOException e)
+                            {
+                                setError();
+                            }
+                        }
+                    }
+                };
+
         }
         _writer.setCharacterEncoding(encoding);
         return _printWriter;

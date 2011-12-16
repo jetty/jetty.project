@@ -1,12 +1,10 @@
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -17,6 +15,9 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.AfterClass;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -91,11 +92,21 @@ public abstract class AbstractConnectHandlerTest
         StringBuilder body = new StringBuilder();
         if (headers.containsKey("content-length"))
         {
+            int readLen = 0;
             int length = Integer.parseInt(headers.get("content-length"));
-            for (int i = 0; i < length; ++i)
+            try
             {
-                char c = (char)reader.read();
-                body.append(c);
+                for (int i = 0; i < length; ++i)
+                {
+                    char c = (char)reader.read();
+                    body.append(c);
+                    readLen++;
+                }
+            }
+            catch (SocketTimeoutException e)
+            {
+                System.err.printf("Read %,d bytes (out of an expected %,d bytes)%n",readLen,length);
+                throw e;
             }
         }
         else if ("chunked".equals(headers.get("transfer-encoding")))
@@ -126,7 +137,7 @@ public abstract class AbstractConnectHandlerTest
     protected Socket newSocket() throws IOException
     {
         Socket socket = new Socket("localhost", proxyConnector.getLocalPort());
-        socket.setSoTimeout(5000);
+        socket.setSoTimeout(10000);
         return socket;
     }
 

@@ -18,8 +18,6 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -395,8 +393,19 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+    protected void onFrameHandshake()
+    {
+        if (_onFrame != null)
+        {
+            _onFrame.onHandshake(_connection);
+        }
+    }
+
+    protected void onWebSocketOpen()
+    {
+        _webSocket.onOpen(_connection);
+    }
+
     /* ------------------------------------------------------------ */
     private class WSFrameConnection implements WebSocket.FrameConnection
     {
@@ -913,27 +922,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         {
             return WebSocketConnectionD13.this.toString()+"FH";
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
-    {
-        String key = request.getHeader("Sec-WebSocket-Key");
-
-        response.setHeader("Upgrade","WebSocket");
-        response.addHeader("Connection","Upgrade");
-        response.addHeader("Sec-WebSocket-Accept",hashKey(key));
-        if (subprotocol!=null)
-            response.addHeader("Sec-WebSocket-Protocol",subprotocol);
-
-        for(Extension ext : _extensions)
-            response.addHeader("Sec-WebSocket-Extensions",ext.getParameterizedName());
-
-        response.sendError(101);
-
-        if (_onFrame!=null)
-            _onFrame.onHandshake(_connection);
-        _webSocket.onOpen(_connection);
     }
 
     /* ------------------------------------------------------------ */
