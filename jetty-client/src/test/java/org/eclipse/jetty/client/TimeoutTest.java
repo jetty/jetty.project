@@ -8,12 +8,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -42,9 +44,11 @@ public class TimeoutTest
 {
     private static final Logger logger = Log.getLogger(TimeoutTest.class);
     private final AtomicInteger httpParses = new AtomicInteger();
+    private final AtomicInteger httpRequests = new AtomicInteger();
     private ExecutorService threadPool;
     private Server server;
     private int serverPort;
+    private final AtomicReference<EndPoint> serverEndPoint = new AtomicReference<EndPoint>();
 
     @Before
     public void init() throws Exception
@@ -57,6 +61,7 @@ public class TimeoutTest
             @Override
             protected AsyncConnection newConnection(SocketChannel channel, final AsyncEndPoint endPoint)
             {
+                serverEndPoint.set(endPoint);
                 return new org.eclipse.jetty.server.AsyncHttpConnection(this,endPoint,getServer())
                 {
                     @Override
@@ -67,7 +72,6 @@ public class TimeoutTest
                             @Override
                             public int parseNext() throws IOException
                             {
-                                System.out.print(".");
                                 httpParses.incrementAndGet();
                                 return super.parseNext();
                             }
@@ -87,6 +91,7 @@ public class TimeoutTest
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException,
                     ServletException
             {
+                httpRequests.incrementAndGet();
                 request.setHandled(true);
                 String contentLength = request.getHeader("Content-Length");
                 if (contentLength != null)
@@ -101,6 +106,7 @@ public class TimeoutTest
         server.start();
         serverPort = connector.getLocalPort();
 
+        httpRequests.set(0);
         logger.debug(" => :{}",serverPort);
     }
 
@@ -120,15 +126,196 @@ public class TimeoutTest
     }
 
     /**
+     * Test that performs a normal http POST request, with connection:close.
+     * Check that shutdownOutput is sufficient to close the server connection.
+     */
+    @Test
+    public void testServerCloseClientDoesClose() throws Exception
+    {
+        // Log.getLogger("").setDebugEnabled(true);
+        final Socket client = newClient();
+        final OutputStream clientOutput = client.getOutputStream();
+
+        byte[] data = new byte[3 * 1024];
+        Arrays.fill(data,(byte)'Y');
+        String content = new String(data,"UTF-8");
+        
+        // The request section
+        StringBuilder req = new StringBuilder();
+        req.append("POST / HTTP/1.1\r\n");
+        req.append("Host: localhost\r\n");
+        req.append("Content-Type: text/plain\r\n");
+        req.append("Content-Length: ").append(content.length()).append("\r\n");
+        req.append("Connection: close\r\n");
+        req.append("\r\n");
+        // and now, the POST content section.
+        req.append(content);
+
+        // Send request to server
+        clientOutput.write(req.toString().getBytes("UTF-8"));
+        clientOutput.flush();
+
+        InputStream in = null;
+        InputStreamReader isr = null;
+        BufferedReader reader = null;
+        try
+        {
+            in = client.getInputStream();
+            isr = new InputStreamReader(in);
+            reader = new BufferedReader(isr);
+
+            // Read the response header
+            String line = reader.readLine();
+            Assert.assertNotNull(line);
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 "));
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.trim().length() == 0)
+                {
+                    break;
+                }
+            }
+            Assert.assertEquals("one request handled",1,httpRequests.get());
+
+            Assert.assertEquals("EOF received",-1,client.getInputStream().read());
+            
+            // shutdown the output
+            client.shutdownOutput();
+
+            // Check that we did not spin
+            int httpParseCount = httpParses.get();
+            Assert.assertThat(httpParseCount,lessThan(50));
+            
+            // Try to write another request (to prove that stream is closed)
+            try
+            {
+                clientOutput.write(req.toString().getBytes("UTF-8"));
+                clientOutput.flush();
+
+                Assert.fail("Should not have been able to send a second POST request (connection: close)");
+            }
+            catch(SocketException e)
+            {
+            }
+            
+            Assert.assertEquals("one request handled",1,httpRequests.get());
+        }
+        finally
+        {
+            IO.close(reader);
+            IO.close(isr);
+            IO.close(in);
+            closeClient(client);
+        }
+    }
+    
+    /**
      * Test that performs a seemingly normal http POST request, but with
-     * a client that issues "connection: close", waits 100 seconds to
-     * do anything with the connection (at all), and then attempts to
+     * a client that issues "connection: close", and then attempts to
      * write a second POST request.
      * <p>
-     * The connection should be closed by the server, and/or be closed
-     * due to a timeout on the socket.
+     * The connection should be closed by the server
      */
-    @Ignore
+    @Test
+    public void testServerCloseClientMoreDataSent() throws Exception
+    {
+        // Log.getLogger("").setDebugEnabled(true);
+        final Socket client = newClient();
+        final OutputStream clientOutput = client.getOutputStream();
+
+        byte[] data = new byte[3 * 1024];
+        Arrays.fill(data,(byte)'Y');
+        String content = new String(data,"UTF-8");
+        
+        // The request section
+        StringBuilder req = new StringBuilder();
+        req.append("POST / HTTP/1.1\r\n");
+        req.append("Host: localhost\r\n");
+        req.append("Content-Type: text/plain\r\n");
+        req.append("Content-Length: ").append(content.length()).append("\r\n");
+        req.append("Connection: close\r\n");
+        req.append("\r\n");
+        // and now, the POST content section.
+        req.append(content);
+
+        // Send request to server
+        clientOutput.write(req.toString().getBytes("UTF-8"));
+        clientOutput.flush();
+
+        InputStream in = null;
+        InputStreamReader isr = null;
+        BufferedReader reader = null;
+        try
+        {
+            in = client.getInputStream();
+            isr = new InputStreamReader(in);
+            reader = new BufferedReader(isr);
+
+            // Read the response header
+            String line = reader.readLine();
+            Assert.assertNotNull(line);
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 "));
+            while ((line = reader.readLine()) != null)
+            {
+                if (line.trim().length() == 0)
+                {
+                    break;
+                }
+            }
+
+            Assert.assertEquals("EOF received",-1,client.getInputStream().read());
+            Assert.assertEquals("one request handled",1,httpRequests.get());
+            
+            // Don't shutdown the output
+            // client.shutdownOutput();
+            
+            // server side seeking EOF
+            Assert.assertTrue("is open",serverEndPoint.get().isOpen());
+            Assert.assertTrue("close sent",serverEndPoint.get().isOutputShutdown());
+            Assert.assertFalse("close not received",serverEndPoint.get().isInputShutdown());
+            
+
+            // Check that we did not spin
+            TimeUnit.SECONDS.sleep(1);
+            int httpParseCount = httpParses.get();
+            Assert.assertThat(httpParseCount,lessThan(50));
+            
+
+            // Write another request (which is ignored as the stream is closing), which causes real close.
+            clientOutput.write(req.toString().getBytes("UTF-8"));
+            clientOutput.flush();
+
+            // Check that we did not spin
+            TimeUnit.SECONDS.sleep(1);
+            httpParseCount = httpParses.get();
+            Assert.assertThat(httpParseCount,lessThan(50));
+            
+
+            // server side is closed
+            Assert.assertFalse("is open",serverEndPoint.get().isOpen());
+            Assert.assertTrue("close sent",serverEndPoint.get().isOutputShutdown());
+            Assert.assertTrue("close not received",serverEndPoint.get().isInputShutdown());
+            
+            Assert.assertEquals("one request handled",1,httpRequests.get());
+
+        }
+        finally
+        {
+            IO.close(reader);
+            IO.close(isr);
+            IO.close(in);
+            closeClient(client);
+        }
+    }
+    
+    
+    /**
+     * Test that performs a seemingly normal http POST request, but with
+     * a client that issues "connection: close", and then does not close 
+     * the connection after reading the response.
+     * <p>
+     * The connection should be closed by the server after a timeout.
+     */
     @Test
     public void testServerCloseClientDoesNotClose() throws Exception
     {
@@ -155,8 +342,6 @@ public class TimeoutTest
         clientOutput.write(req.toString().getBytes("UTF-8"));
         clientOutput.flush();
 
-        System.out.println("Client request #1 flushed");
-
         InputStream in = null;
         InputStreamReader isr = null;
         BufferedReader reader = null;
@@ -178,23 +363,30 @@ public class TimeoutTest
                 }
             }
 
-            System.out.println("Got response header");
+            Assert.assertEquals("EOF received",-1,client.getInputStream().read());
+            Assert.assertEquals("one request handled",1,httpRequests.get());
+            
+            // Don't shutdown the output
+            // client.shutdownOutput();
+            
+            // server side seeking EOF
+            Assert.assertTrue("is open",serverEndPoint.get().isOpen());
+            Assert.assertTrue("close sent",serverEndPoint.get().isOutputShutdown());
+            Assert.assertFalse("close not received",serverEndPoint.get().isInputShutdown());
+            
 
-            // Check that we did not spin
+            // Wait for the server idle timeout
+            TimeUnit.SECONDS.sleep(3);
             int httpParseCount = httpParses.get();
-            System.out.printf("Got %d http parses%n",httpParseCount);
             Assert.assertThat(httpParseCount,lessThan(50));
 
-            // TODO: instead of sleeping, we should expect the connection being closed by the idle timeout
-            // TODO: mechanism; unfortunately this now is not working, and this test fails because the idle
-            // TODO: timeout will not trigger.
-            TimeUnit.SECONDS.sleep(100);
+            // server side is closed
+            Assert.assertFalse("is open",serverEndPoint.get().isOpen());
+            Assert.assertTrue("close sent",serverEndPoint.get().isOutputShutdown());
+            Assert.assertTrue("close not received",serverEndPoint.get().isInputShutdown());
             
-            // Try to write another request (to prove that stream is closed)
-            clientOutput.write(req.toString().getBytes("UTF-8"));
-            clientOutput.flush();
+            Assert.assertEquals("one request handled",1,httpRequests.get());
 
-            Assert.fail("Should not have been able to send a second POST request (connection: close)");
         }
         finally
         {

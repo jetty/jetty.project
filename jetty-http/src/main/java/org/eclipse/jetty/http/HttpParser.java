@@ -969,9 +969,14 @@ public class HttpParser implements Parser
 
                     case STATE_SEEKING_EOF:
                     {
-                        // Skip all data
+                        System.err.println("Seeking EOF read "+_buffer);
+                        ch=_buffer.get();
+                        if (Character.isWhitespace(ch))
+                            break;
+                        
+                        // rubbish data sent, so let's close the connection
                         _buffer.clear();
-                        break;
+                        _endp.close();
                     }
                 }
 
