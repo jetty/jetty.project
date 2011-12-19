@@ -157,7 +157,7 @@ public class WebSocketServletRFCTest
 
             // Read response
             String respHeader = readResponseHeader(in);
-            System.out.println("RESPONSE: " + respHeader);
+            // System.out.println("RESPONSE: " + respHeader);
 
             Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 400 Unsupported websocket version specification"));
             Assert.assertThat("Response Header Versions",respHeader,containsString("Sec-WebSocket-Version: 13, 8, 6, 0\r\n"));
