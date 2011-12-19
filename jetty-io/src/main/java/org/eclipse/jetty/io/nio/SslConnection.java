@@ -190,9 +190,10 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         _connection=next;
                         progress=true;
                     }
+                    // TODO: consider moving here hasProgressed() - it's only used in SSL
                 }
 
-                LOG.debug("{} handle {} progress=",_session,this, progress);
+                LOG.debug("{} handle {} progress={}", _session, this, progress);
             }
         }
         finally
@@ -322,12 +323,12 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
                     case NOT_HANDSHAKING:
                     {
-                        // Try wrapping some application data
-                        if (toFlush.hasContent() && _outbound.space()>0 && wrap(toFlush))
-                            progress=true;
-
                         // Try unwrapping some application data
                         if (toFill.space()>0 && _inbound.hasContent() && unwrap(toFill))
+                            progress=true;
+
+                        // Try wrapping some application data
+                        if (toFlush.hasContent() && _outbound.space()>0 && wrap(toFlush))
                             progress=true;
                     }
                     break;
@@ -389,6 +390,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
                 some_progress|=progress;
             }
+
+            if (toFill.hasContent())
+                _aEndp.asyncDispatch();
         }
         finally
         {
@@ -571,7 +575,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
     public String toString()
     {
-        return String.format("%s | %s", super.toString(), _sslEndPoint);
+        return String.format("%s %s", super.toString(), _sslEndPoint);
     }
 
     /* ------------------------------------------------------------ */
@@ -628,7 +632,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         public int fill(Buffer buffer) throws IOException
         {
             int size=buffer.length();
-            process(buffer,null);
+            process(buffer, null);
 
             int filled=buffer.length()-size;
 
@@ -688,7 +692,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public void flush() throws IOException
         {
-            process(null,null);
+            process(null, null);
         }
 
         public void asyncDispatch()
@@ -793,20 +797,20 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public String toString()
         {
-            int i;
-            int o;
-            int u;
-            synchronized(SslConnection.this)
-            {
-                i=_inbound==null?-1:_inbound.length();
-                o=_outbound==null?-1:_outbound.length();
-                u=_unwrapBuf==null?-1:_unwrapBuf.length();
-            }
-            return String.format("SSL:%s %s i/u/o=%d/%d/%d ishut=%b oshut=%b",
-                    _endp,
+            // Do NOT use synchronized (SslConnection.this)
+            // because it's very easy to deadlock when debugging is enabled.
+            // We do a best effort to print the right toString() and that's it.
+            Buffer inbound = _inbound;
+            Buffer outbound = _outbound;
+            Buffer unwrap = _unwrapBuf;
+            int i = inbound == null? -1 : inbound.length();
+            int o = outbound == null ? -1 : outbound.length();
+            int u = unwrap == null ? -1 : unwrap.length();
+            return String.format("SSL %s i/o/u=%d/%d/%d ishut=%b oshut=%b {%s}",
                     _engine.getHandshakeStatus(),
-                    i, u, o,
-                    _ishut, _oshut);
+                    i, o, u,
+                    _ishut, _oshut,
+                    _connection);
         }
     }
 }

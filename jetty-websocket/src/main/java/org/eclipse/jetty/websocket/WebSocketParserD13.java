@@ -125,7 +125,7 @@ public class WebSocketParserD13 implements WebSocketParser
     {
         if (_buffer==null)
             _buffer=_buffers.getBuffer();
-        
+
         boolean progress=false;
         int filled=-1;
 
@@ -189,7 +189,7 @@ public class WebSocketParserD13 implements WebSocketParser
             // Did we get enough?
             if (available<(_state==State.SKIP?1:_bytesNeeded))
                 break;
-            
+
             // if we are here, then we have sufficient bytes to process the current state.
             // Parse the buffer byte by byte (unless it is STATE_DATA)
             byte b;
@@ -307,7 +307,7 @@ public class WebSocketParserD13 implements WebSocketParser
                         if (_bytesNeeded==0)
                             _state=State.START;
                         break;
-                        
+
                     case SEEK_EOF:
                         progress=true;
                         _buffer.skip(available);
@@ -349,7 +349,7 @@ public class WebSocketParserD13 implements WebSocketParser
                 break;
             }
         }
-        
+
         return progress?1:filled;
     }
 
@@ -380,8 +380,10 @@ public class WebSocketParserD13 implements WebSocketParser
     @Override
     public String toString()
     {
-        Buffer buffer=_buffer;
-        return WebSocketParserD13.class.getSimpleName()+"@"+ Integer.toHexString(hashCode())+"|"+_state+"|"+(buffer==null?"<>":buffer.toDetailString());
+        return String.format("%s@%x state=%s buffer=%s",
+                getClass().getSimpleName(),
+                hashCode(),
+                _state,
+                _buffer);
     }
-
 }

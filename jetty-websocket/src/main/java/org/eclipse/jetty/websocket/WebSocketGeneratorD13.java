@@ -65,7 +65,7 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
             throw new EofException("Closed");
         if (opcode==WebSocketConnectionD13.OP_CLOSE)
             _closed=true;
-        
+
         boolean mask=_maskGen!=null;
 
         if (_buffer==null)
@@ -240,4 +240,17 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
         }
     }
 
+    @Override
+    public String toString()
+    {
+        // Do NOT use synchronized (this)
+        // because it's very easy to deadlock when debugging is enabled.
+        // We do a best effort to print the right toString() and that's it.
+        Buffer buffer = _buffer;
+        return String.format("%s@%x closed=%b buffer=%d",
+                getClass().getSimpleName(),
+                hashCode(),
+                _closed,
+                buffer == null ? -1 : buffer.length());
+    }
 }

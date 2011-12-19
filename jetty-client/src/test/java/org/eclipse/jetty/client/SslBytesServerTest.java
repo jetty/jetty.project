@@ -1,7 +1,6 @@
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -100,6 +99,7 @@ public class SslBytesServerTest extends SslBytesTest
                 };
             }
         };
+        connector.setMaxIdleTime(2000);
 
 //        connector.setPort(5870);
         connector.setPort(0);
@@ -1177,6 +1177,54 @@ public class SslBytesServerTest extends SslBytesTest
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(100));
+
+        closeClient(client);
+    }
+
+    @Ignore
+    @Test
+    public void testServerCloseClientDoesNotClose() throws Exception
+    {
+        final SSLSocket client = newClient();
+        final OutputStream clientOutput = client.getOutputStream();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        byte[] data = new byte[3 * 1024];
+        Arrays.fill(data, (byte)'Y');
+        String content = new String(data, "UTF-8");
+        automaticProxyFlow = proxy.startAutomaticFlow();
+        clientOutput.write(("" +
+                "POST / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + content.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                content).getBytes("UTF-8"));
+        clientOutput.flush();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        String line = reader.readLine();
+        Assert.assertNotNull(line);
+        Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
+        while ((line = reader.readLine()) != null)
+        {
+            if (line.trim().length() == 0)
+                break;
+        }
+
+        // Check that we did not spin
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        // TODO: instead of sleeping, we should expect the connection being closed by the idle timeout
+        // TODO: mechanism; unfortunately this now is not working, and this test fails because the idle
+        // TODO: timeout will not trigger.
+        TimeUnit.SECONDS.sleep(100);
 
         closeClient(client);
     }

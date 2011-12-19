@@ -62,12 +62,6 @@ public abstract class AbstractConnection implements Connection
 
     public String toString()
     {
-        return String.format("%s@%x//%s:%d<->%s:%d",
-                getClass().getSimpleName(),
-                hashCode(),
-                _endp.getLocalAddr(),
-                _endp.getLocalPort(),
-                _endp.getRemoteAddr(),
-                _endp.getRemotePort());
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 }
