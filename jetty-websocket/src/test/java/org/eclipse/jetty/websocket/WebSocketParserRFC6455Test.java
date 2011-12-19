@@ -20,7 +20,7 @@ import org.junit.Test;
 /**
  * @version $Revision$ $Date$
  */
-public class WebSocketParserD13Test
+public class WebSocketParserRFC6455Test
 {
     private ByteArrayEndPoint _endPoint;
     private MaskedByteArrayBuffer _in;
@@ -269,7 +269,7 @@ public class WebSocketParserD13Test
         int progress =_parser.parseNext();
 
         assertTrue(progress>0);
-        assertEquals(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,_handler._code);
+        assertEquals(WebSocketConnectionRFC6455.CLOSE_POLICY_VIOLATION,_handler._code);
         
         
         for (int i=0;i<2048;i++)
@@ -313,7 +313,7 @@ public class WebSocketParserD13Test
         assertTrue(progress>0);
 
         assertEquals(2,_handler._frames);
-        assertEquals(WebSocketConnectionD13.OP_CONTINUATION,_handler._opcode);
+        assertEquals(WebSocketConnectionRFC6455.OP_CONTINUATION,_handler._opcode);
         assertEquals(1,_handler._data.size());
         String mesg=_handler._data.remove(0);
 

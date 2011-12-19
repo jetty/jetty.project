@@ -20,6 +20,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -192,8 +193,10 @@ public class WebSocketFactory
             throw new IllegalStateException("!HTTP/1.1");
 
         int draft = request.getIntHeader("Sec-WebSocket-Version");
-        if (draft < 0)
+        if (draft < 0) {
+            // Old pre-RFC version specifications (header not present in RFC-6455)
             draft = request.getIntHeader("Sec-WebSocket-Draft");
+        }
         AbstractHttpConnection http = AbstractHttpConnection.getCurrentConnection();
         if (http instanceof BlockingHttpConnection)
             throw new IllegalStateException("Websockets not supported on blocking connectors");
@@ -215,8 +218,8 @@ public class WebSocketFactory
         final List<Extension> extensions;
         switch (draft)
         {
-            case -1:
-            case 0:
+            case -1: // unspecified draft/version
+            case 0: // Old school draft/version
                 extensions=Collections.emptyList();
                 connection = new WebSocketServletConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
@@ -234,13 +237,15 @@ public class WebSocketFactory
                 extensions= initExtensions(extensions_requested,8-WebSocketConnectionD08.OP_EXT_DATA, 16-WebSocketConnectionD08.OP_EXT_CTRL,3);
                 connection = new WebSocketServletConnectionD08(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
-            case 13:
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD13.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
-                connection = new WebSocketServletConnectionD13(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+            case WebSocketConnectionRFC6455.VERSION: // RFC 6455 Version
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionRFC6455.OP_EXT_DATA, 16-WebSocketConnectionRFC6455.OP_EXT_CTRL,3);
+                connection = new WebSocketServletConnectionRFC6455(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
                 LOG.warn("Unsupported Websocket version: "+draft);
-                response.setHeader("Sec-WebSocket-Version","0,6,8,13");
+                // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
+                // Using the examples as outlined
+                response.setHeader("Sec-WebSocket-Version","13, 8, 6, 0");
                 throw new HttpException(400, "Unsupported draft specification: " + draft);
         }
 

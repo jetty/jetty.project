@@ -161,9 +161,9 @@ public class WebSocketParserD13 implements WebSocketParser
                         // System.err.printf("%s %s %s >>\n",TypeUtil.toHexString(_flags),TypeUtil.toHexString(_opcode),data.length());
                         _bytesNeeded-=data.length();
                         progress=true;
-                        _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionD13.FLAG_FIN)), _opcode, data);
+                        _handler.onFrame((byte)(_flags&(0xff^WebSocketConnectionRFC6455.FLAG_FIN)), _opcode, data);
 
-                        _opcode=WebSocketConnectionD13.OP_CONTINUATION;
+                        _opcode=WebSocketConnectionRFC6455.OP_CONTINUATION;
                     }
 
                     if (_buffer.space() == 0)
@@ -199,7 +199,7 @@ public class WebSocketParserD13 implements WebSocketParser
                 {
                     case START:
                         _skip=false;
-                        _state=_opcode==WebSocketConnectionD13.OP_CLOSE?State.SEEK_EOF:State.OPCODE;
+                        _state=_opcode==WebSocketConnectionRFC6455.OP_CLOSE?State.SEEK_EOF:State.OPCODE;
                         _bytesNeeded=_state.getNeeds();
                         continue;
 
@@ -209,10 +209,10 @@ public class WebSocketParserD13 implements WebSocketParser
                         _opcode=(byte)(b&0xf);
                         _flags=(byte)(0xf&(b>>4));
 
-                        if (WebSocketConnectionD13.isControlFrame(_opcode)&&!WebSocketConnectionD13.isLastFrame(_flags))
+                        if (WebSocketConnectionRFC6455.isControlFrame(_opcode)&&!WebSocketConnectionRFC6455.isLastFrame(_flags))
                         {
                             LOG.warn("Fragmented Control from "+_endp);
-                            _handler.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Fragmented control");
+                            _handler.close(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Fragmented control");
                             progress=true;
                             _skip=true;
                         }
@@ -254,7 +254,7 @@ public class WebSocketParserD13 implements WebSocketParser
                             if (_length>_buffer.capacity() && !_fragmentFrames)
                             {
                                 progress=true;
-                                _handler.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionRFC6455.CLOSE_POLICY_VIOLATION,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -273,7 +273,7 @@ public class WebSocketParserD13 implements WebSocketParser
                             if (_length>=_buffer.capacity() && !_fragmentFrames)
                             {
                                 progress=true;
-                                _handler.close(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"frame size "+_length+">"+_buffer.capacity());
+                                _handler.close(WebSocketConnectionRFC6455.CLOSE_POLICY_VIOLATION,"frame size "+_length+">"+_buffer.capacity());
                                 _skip=true;
                             }
 
@@ -323,7 +323,7 @@ public class WebSocketParserD13 implements WebSocketParser
                     _buffer.skip(_bytesNeeded);
                     _state=State.START;
                     progress=true;
-                    _handler.close(WebSocketConnectionD13.CLOSE_PROTOCOL,"Not masked");
+                    _handler.close(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Not masked");
                 }
                 else
                 {

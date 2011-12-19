@@ -142,7 +142,7 @@ public class WebSocketLoadD13Test
         private final int iterations;
         private final CountDownLatch latch;
         private final SocketEndPoint _endp;
-        private final WebSocketGeneratorD13 _generator;
+        private final WebSocketGeneratorRFC6455 _generator;
         private final WebSocketParserD13 _parser;
         private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
         {
@@ -167,7 +167,7 @@ public class WebSocketLoadD13Test
             this.iterations = iterations;
             
             _endp=new SocketEndPoint(socket);
-            _generator = new WebSocketGeneratorD13(new WebSocketBuffers(32*1024),_endp,new FixedMaskGen());
+            _generator = new WebSocketGeneratorRFC6455(new WebSocketBuffers(32*1024),_endp,new FixedMaskGen());
             _parser = new WebSocketParserD13(new WebSocketBuffers(32*1024),_endp,_handler,false);
             
         }
@@ -202,7 +202,7 @@ public class WebSocketLoadD13Test
                 for (int i = 0; i < iterations; ++i)
                 {
                     byte[] data = message.getBytes(StringUtil.__UTF8);
-                    _generator.addFrame((byte)0x8,WebSocketConnectionD13.OP_TEXT,data,0,data.length);
+                    _generator.addFrame((byte)0x8,WebSocketConnectionRFC6455.OP_TEXT,data,0,data.length);
                     _generator.flush();
                     
                     //System.err.println("-> "+message);

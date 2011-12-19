@@ -207,7 +207,7 @@ public class TestServer extends Server
                         {
                             System.err.println("Ping "+connection);
                             byte[] data = { (byte)1, (byte) 2, (byte) 3 };
-                            connection.sendControl(WebSocketConnectionD13.OP_PING,data,0,data.length);
+                            connection.sendControl(WebSocketConnectionRFC6455.OP_PING,data,0,data.length);
                         }
                     }
                     catch (Exception e)
@@ -223,7 +223,7 @@ public class TestServer extends Server
         @Override
         public boolean onControl(byte controlCode, byte[] data, int offset, int length)
         {
-            if (controlCode==WebSocketConnectionD13.OP_PONG)
+            if (controlCode==WebSocketConnectionRFC6455.OP_PONG)
                 System.err.println("Pong "+getConnection());
             return super.onControl(controlCode,data,offset,length);
         }
