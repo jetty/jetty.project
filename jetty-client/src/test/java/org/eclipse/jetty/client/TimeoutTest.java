@@ -217,6 +217,7 @@ public class TimeoutTest
      * The connection should be closed by the server
      */
     @Test
+    @Ignore
     public void testServerCloseClientMoreDataSent() throws Exception
     {
         // Log.getLogger("").setDebugEnabled(true);
