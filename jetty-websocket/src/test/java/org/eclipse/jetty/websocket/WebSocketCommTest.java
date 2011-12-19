@@ -24,13 +24,12 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.helper.CaptureSocket;
 import org.eclipse.jetty.websocket.helper.MessageSender;
 import org.eclipse.jetty.websocket.helper.WebSocketCaptureServlet;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -42,14 +41,6 @@ public class WebSocketCommTest
     private Server server;
     private WebSocketCaptureServlet servlet;
     private URI serverUri;
-
-    @BeforeClass
-    public static void initLogging()
-    {
-        // Configure Logging
-        System.setProperty("org.eclipse.jetty.util.log.class",StdErrLog.class.getName());
-        System.setProperty("org.eclipse.jetty.LEVEL","DEBUG");
-    }
 
     @Before
     public void startServer() throws Exception
@@ -79,6 +70,19 @@ public class WebSocketCommTest
         System.out.printf("Server URI: %s%n",serverUri);
     }
 
+    @After
+    public void stopServer()
+    {
+        try
+        {
+            server.stop();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace(System.err);
+        }
+    }
+
     @Test
     public void testSendTextMessages() throws Exception
     {
@@ -105,10 +109,11 @@ public class WebSocketCommTest
 
             CaptureSocket socket = servlet.captures.get(0);
             Assert.assertThat("CaptureSocket",socket,notNullValue());
-            Assert.assertThat("CaptureSocket.isConnected", socket.isConnected(), is(true));
+            Assert.assertThat("CaptureSocket.isConnected",socket.isConnected(),is(true));
 
             // Give servlet 500 millisecond to process messages
-            threadSleep(500,TimeUnit.MILLISECONDS);
+            TimeUnit.MILLISECONDS.sleep(500);
+            
             // Should have captured 5 messages.
             Assert.assertThat("CaptureSocket.messages.size",socket.messages.size(),is(5));
         }
@@ -117,11 +122,5 @@ public class WebSocketCommTest
             System.out.println("Closing client socket");
             sender.close();
         }
-    }
-
-    public static void threadSleep(int dur, TimeUnit unit) throws InterruptedException
-    {
-        long ms = TimeUnit.MILLISECONDS.convert(dur,unit);
-        Thread.sleep(ms);
     }
 }

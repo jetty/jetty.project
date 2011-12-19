@@ -25,6 +25,8 @@ public class MessageSender implements WebSocket
 {
     private Connection conn;
     private CountDownLatch connectLatch = new CountDownLatch(1);
+    private int closeCode = -1;
+    private String closeMessage = null;
 
     public void onOpen(Connection connection)
     {
@@ -35,6 +37,8 @@ public class MessageSender implements WebSocket
     public void onClose(int closeCode, String message)
     {
         this.conn = null;
+        this.closeCode = closeCode;
+        this.closeMessage = message;
     }
 
     public boolean isConnected()
@@ -44,6 +48,16 @@ public class MessageSender implements WebSocket
             return false;
         }
         return this.conn.isOpen();
+    }
+    
+    public int getCloseCode()
+    {
+        return closeCode;
+    }
+    
+    public String getCloseMessage()
+    {
+        return closeMessage;
     }
 
     public void sendMessage(String format, Object... args) throws IOException

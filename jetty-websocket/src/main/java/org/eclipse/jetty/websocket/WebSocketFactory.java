@@ -261,7 +261,7 @@ public class WebSocketFactory
                 // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
                 // Using the examples as outlined
                 response.setHeader("Sec-WebSocket-Version","13, 8, 6, 0");
-                throw new HttpException(400, "Unsupported draft specification: " + draft);
+                throw new HttpException(400, "Unsupported websocket version specification: " + draft);
         }
 
         // Set the defaults

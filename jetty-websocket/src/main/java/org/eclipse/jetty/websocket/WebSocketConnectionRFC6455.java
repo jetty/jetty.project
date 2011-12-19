@@ -101,6 +101,8 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
     final static int CLOSE_POLICY_VIOLATION=1008;
     final static int CLOSE_MESSAGE_TOO_LARGE=1009;
     final static int CLOSE_REQUIRED_EXTENSION=1010;
+    final static int CLOSE_SERVER_ERROR=1011;
+    final static int CLOSE_FAILED_TLS_HANDSHAKE=1015;
 
     final static int FLAG_FIN=0x8;
 
@@ -372,13 +374,18 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
             {
                 if (!closed_out)
                 {
-                    // Close code 1005/1006 are never to be sent as a status over
+                    // Close code 1005/1006/1015 are never to be sent as a status over
                     // a Close control frame. Code<-1 also means no node.
 
-                    if (code<0 || (code == WebSocketConnectionRFC6455.CLOSE_NO_CODE) || code==WebSocketConnectionRFC6455.CLOSE_NO_CLOSE)
-                        code=-1;
-                    else if (code==0)
-                        code=WebSocketConnectionRFC6455.CLOSE_NORMAL;
+                    if (code < 0 || (code == WebSocketConnectionRFC6455.CLOSE_NO_CODE) || (code == WebSocketConnectionRFC6455.CLOSE_NO_CLOSE)
+                            || (code == WebSocketConnectionRFC6455.CLOSE_FAILED_TLS_HANDSHAKE))
+                    {
+                        code = -1;
+                    }
+                    else if (code == 0)
+                    {
+                        code = WebSocketConnectionRFC6455.CLOSE_NORMAL;
+                    }
 
                     byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                     bytes[0]=(byte)(code/0x100);
@@ -769,7 +776,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
                                 code == WebSocketConnectionRFC6455.CLOSE_UNDEFINED ||
                                 code == WebSocketConnectionRFC6455.CLOSE_NO_CLOSE ||
                                 code == WebSocketConnectionRFC6455.CLOSE_NO_CODE ||
-                                ( code > 1010 && code <= 2999 ) ||
+                                ( code > 1011 && code <= 2999 ) ||
                                 code >= 5000 )
                             {
                                 errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Invalid close code " + code);
@@ -874,15 +881,15 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
             }
             catch(Utf8Appendable.NotUtf8Exception notUtf8)
             {
-                LOG.warn("{} for {}",notUtf8,_endp);
+                LOG.warn("NOTUTF8 - {} for {}",notUtf8,_endp, notUtf8);
                 LOG.debug(notUtf8);
                 errorClose(WebSocketConnectionRFC6455.CLOSE_BAD_PAYLOAD,"Invalid UTF-8");
             }
-            catch(Throwable probablyNotUtf8)
+            catch(Throwable e)
             {
-                LOG.warn("{} for {}",probablyNotUtf8,_endp);
-                LOG.debug(probablyNotUtf8);
-                errorClose(WebSocketConnectionRFC6455.CLOSE_BAD_PAYLOAD,"Invalid Payload: "+probablyNotUtf8);
+                LOG.warn("{} for {}",e,_endp, e);
+                LOG.debug(e);
+                errorClose(WebSocketConnectionRFC6455.CLOSE_SERVER_ERROR,"Internal Server Error: "+e);
             }
         }
 
