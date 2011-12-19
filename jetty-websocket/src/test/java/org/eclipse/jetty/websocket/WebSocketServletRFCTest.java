@@ -2,10 +2,15 @@ package org.eclipse.jetty.websocket;
 
 import static org.hamcrest.Matchers.*;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.HttpURLConnection;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.URI;
-import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
@@ -14,6 +19,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.helper.MessageSender;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -88,7 +94,7 @@ public class WebSocketServletRFCTest
         server.setHandler(context);
 
         // Serve capture servlet
-        context.addServlet(new ServletHolder(new RFCServlet()),"/");
+        context.addServlet(new ServletHolder(new RFCServlet()),"/*");
 
         // Start Server
         server.start();
@@ -123,21 +129,66 @@ public class WebSocketServletRFCTest
     @Test
     public void testResponseOnInvalidVersion() throws Exception
     {
-        // Using straight HttpUrlConnection to accomplish this as jetty's WebSocketClient
+        // Using straight Socket to accomplish this as jetty's WebSocketClient
         // doesn't allow the use of invalid versions. (obviously)
 
-        URL url = new URL("http://" + serverUri.getHost() + ":" + serverUri.getPort() + "/");
-        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-        conn.setRequestProperty("Upgrade","WebSocket");
-        conn.setRequestProperty("Connection","Upgrade");
-        conn.setRequestProperty("Sec-WebSocket-Version","29");
-        conn.connect();
+        Socket socket = new Socket();
+        SocketAddress endpoint = new InetSocketAddress(serverUri.getHost(),serverUri.getPort());
+        socket.connect(endpoint);
 
-        Assert.assertEquals("Response Code",400,conn.getResponseCode());
-        Assert.assertThat("Response Message",conn.getResponseMessage(),containsString("Unsupported websocket version specification"));
-        Assert.assertThat("Response Header Versions",conn.getHeaderField("Sec-WebSocket-Version"),is("13, 8, 6, 0"));
+        StringBuilder req = new StringBuilder();
+        req.append("GET / HTTP/1.1\r\n");
+        req.append(String.format("Host: %s:%d\r\n",serverUri.getHost(),serverUri.getPort()));
+        req.append("Upgrade: WebSocket\r\n");
+        req.append("Connection: Upgrade\r\n");
+        req.append("Sec-WebSocket-Version: 29\r\n"); // bad version
+        req.append("\r\n");
 
-        conn.disconnect();
+        OutputStream out = null;
+        InputStream in = null;
+        try
+        {
+            out = socket.getOutputStream();
+            in = socket.getInputStream();
+
+            // Write request
+            out.write(req.toString().getBytes());
+            out.flush();
+
+            // Read response
+            String respHeader = readResponseHeader(in);
+            System.out.println("RESPONSE: " + respHeader);
+
+            Assert.assertThat("Response Code",respHeader,startsWith("HTTP/1.1 400 Unsupported websocket version specification"));
+            Assert.assertThat("Response Header Versions",respHeader,containsString("Sec-WebSocket-Version: 13, 8, 6, 0\r\n"));
+        }
+        finally
+        {
+            IO.close(in);
+            IO.close(out);
+            socket.close();
+        }
+    }
+
+    private String readResponseHeader(InputStream in) throws IOException
+    {
+        InputStreamReader isr = new InputStreamReader(in);
+        BufferedReader reader = new BufferedReader(isr);
+        StringBuilder header = new StringBuilder();
+        // Read the response header
+        String line = reader.readLine();
+        Assert.assertNotNull(line);
+        Assert.assertThat(line,startsWith("HTTP/1.1 "));
+        header.append(line).append("\r\n");
+        while ((line = reader.readLine()) != null)
+        {
+            if (line.trim().length() == 0)
+            {
+                break;
+            }
+            header.append(line).append("\r\n");
+        }
+        return header.toString();
     }
 
     /**
@@ -162,9 +213,9 @@ public class WebSocketServletRFCTest
 
             // Give servlet 500 millisecond to process messages
             TimeUnit.MILLISECONDS.sleep(500);
-            
-            Assert.assertThat("WebSocket should be closed", sender.isConnected(), is(false));
-            Assert.assertThat("WebSocket close clode", sender.getCloseCode(), is(1011));
+
+            Assert.assertThat("WebSocket should be closed",sender.isConnected(),is(false));
+            Assert.assertThat("WebSocket close clode",sender.getCloseCode(),is(1011));
         }
         finally
         {
