@@ -217,7 +217,6 @@ public class TimeoutTest
      * The connection should be closed by the server
      */
     @Test
-    @Ignore
     public void testServerCloseClientMoreDataSent() throws Exception
     {
         // Log.getLogger("").setDebugEnabled(true);
@@ -387,6 +386,22 @@ public class TimeoutTest
             Assert.assertTrue("close not received",serverEndPoint.get().isInputShutdown());
             
             Assert.assertEquals("one request handled",1,httpRequests.get());
+            
+            
+            // client will eventually get broken pipe if it keeps writing
+            try
+            {
+                for (int i=0;i<1000;i++)
+                {
+                    clientOutput.write(req.toString().getBytes("UTF-8"));
+                    clientOutput.flush(); 
+                }
+                Assert.fail("Client should have seen a broken pipe");
+            }
+            catch(IOException e)
+            {
+                // expected broken pipe
+            }
 
         }
         finally

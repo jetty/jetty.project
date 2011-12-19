@@ -968,24 +968,27 @@ public class HttpParser implements Parser
                     }
 
                     case STATE_SEEKING_EOF:
-                    {
-                        _buffer.clear();
-                        break;
-                        
-                        /*
-                        System.err.println("Seeking EOF read "+_buffer);
-                        if (_buffer!=null)
+                    {                        
+                        // Close if there is more data than CRLF
+                        if (_buffer.length()>2)
                         {
-                            ch=_buffer.get();
-                            if (Character.isWhitespace(ch))
-                                break;
-
-                            // rubbish data sent, so let's close the connection
-                            _buffer.clear();
+                            _state=STATE_END;
                             _endp.close();
                         }
+                        else  
+                        {
+                            // or if the data is not white space
+                            while (_buffer.length()>0)
+                                if (!Character.isWhitespace(_buffer.get()))
+                                {
+                                    _state=STATE_END;
+                                    _endp.close();
+                                    _buffer.clear();
+                                }
+                        }
+                        
+                        _buffer.clear();
                         break;
-                        */
                     }
                 }
 

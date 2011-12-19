@@ -233,9 +233,13 @@ public abstract class ContinuationBase extends TestCase
         request+=" HTTP/1.1\r\n"+
         "Host: localhost\r\n"+
         "Connection: close\r\n";
-        if (content!=null)
+        if (content==null)
+            request+="\r\n";
+        else
+        {
             request+="Content-Length: "+content.length()+"\r\n";
-        request+="\r\n" + content;
+            request+="\r\n" + content;
+        }
         
         int port=_port;
         String response=null;
