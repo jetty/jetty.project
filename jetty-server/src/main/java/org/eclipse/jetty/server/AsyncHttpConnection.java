@@ -64,7 +64,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     // Handle resumed request
                     if (_request._async.isAsync())
                     { 
-                       if ( _request._async.isDispatchable())
+                       if (_request._async.isDispatchable())
                            handleRequest();
                     }
                     // else Parse more input
