@@ -150,11 +150,10 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
 
                 progress = flushed>0 || filled>0;
 
-                if (filled<0 || flushed<0)
-                {
-                    _endp.close();
-                    break;
-                }
+                _endp.flush();
+
+                if (_endp instanceof AsyncEndPoint && ((AsyncEndPoint)_endp).hasProgressed())
+                    progress=true;
             }
         }
         catch(IOException e)
@@ -162,7 +161,8 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             LOG.debug(e);
             try
             {
-                _endp.close();
+                if (_endp.isOpen())
+                    _endp.close();
             }
             catch(IOException e2)
             {

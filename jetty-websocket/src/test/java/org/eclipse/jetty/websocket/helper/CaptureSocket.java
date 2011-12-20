@@ -41,7 +41,7 @@ public class CaptureSocket implements WebSocket, WebSocket.OnTextMessage
 
     public void onMessage(String data)
     {
-        System.out.printf("Received Message \"%s\" [size %d]%n", data, data.length());
+        // System.out.printf("Received Message \"%s\" [size %d]%n", data, data.length());
         messages.add(data);
     }
 

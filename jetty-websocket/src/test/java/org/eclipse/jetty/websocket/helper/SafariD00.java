@@ -80,7 +80,7 @@ public class SafariD00
         req.append("Sec-WebSocket-Key2: 3? C;7~0 8   \" 3 2105 6  `_ {\r\n");
         req.append("\r\n");
 
-        System.out.printf("--- Request ---%n%s",req);
+        // System.out.printf("--- Request ---%n%s",req);
 
         byte reqBytes[] = req.toString().getBytes("UTF-8");
         byte hixieBytes[] = TypeUtil.fromHexString("e739617916c9daf3");
@@ -101,7 +101,7 @@ public class SafariD00
         while (!foundEnd)
         {
             line = br.readLine();
-            System.out.printf("RESP: %s%n",line);
+            // System.out.printf("RESP: %s%n",line);
             if (line.length() == 0)
             {
                 foundEnd = true;

@@ -235,7 +235,6 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
                 int filled=_parser.parseNext();
 
                 progress = flushed>0 || filled>0;
-
                 _endp.flush();
 
                 if (_endp instanceof AsyncEndPoint && ((AsyncEndPoint)_endp).hasProgressed())
