@@ -332,18 +332,23 @@ public class WebSocketClient
     {
         if (!_factory.isStarted())
             throw new IllegalStateException("Factory !started");
-        String scheme=uri.getScheme();
+        String scheme = uri.getScheme();
         if (!("ws".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme)))
-            throw new IllegalArgumentException("Bad WebSocket scheme '"+scheme+"'");
+            throw new IllegalArgumentException("Bad WebSocket scheme: " + scheme);
+        int port = uri.getPort();
+        if (port == 0)
+            throw new IllegalArgumentException("Bad WebSocket port: " + port);
+        if (port < 0)
+            port = "ws".equals(scheme) ? 80 : 443;
 
         SocketChannel channel = SocketChannel.open();
         if (_bindAddress != null)
             channel.socket().bind(_bindAddress);
         channel.socket().setTcpNoDelay(true);
 
-        InetSocketAddress address=new InetSocketAddress(uri.getHost(),uri.getPort());
+        InetSocketAddress address = new InetSocketAddress(uri.getHost(), port);
 
-        final WebSocketFuture holder=new WebSocketFuture(websocket,uri,this,channel);
+        WebSocketFuture holder = new WebSocketFuture(websocket, uri, this, channel);
 
         channel.configureBlocking(false);
         channel.connect(address);

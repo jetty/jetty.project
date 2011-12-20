@@ -15,8 +15,6 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import static org.hamcrest.Matchers.greaterThan;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,6 +42,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
 
 public class WebSocketClientTest
 {
@@ -148,7 +148,6 @@ public class WebSocketClientTest
         Assert.assertFalse(open.get());
     }
 
-
     @Test
     public void testAsyncConnectionRefused() throws Exception
     {
@@ -186,8 +185,6 @@ public class WebSocketClientTest
         Assert.assertTrue(error instanceof ConnectException);
 
     }
-
-
 
     @Test
     public void testConnectionNotAccepted() throws Exception
@@ -265,7 +262,6 @@ public class WebSocketClientTest
         Assert.assertTrue(error instanceof TimeoutException);
 
     }
-
 
     @Test
     public void testBadHandshake() throws Exception
@@ -424,7 +420,6 @@ public class WebSocketClientTest
         Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NORMAL,close.get());
     }
 
-
     @Test
     public void testNotIdle() throws Exception
     {
@@ -498,7 +493,6 @@ public class WebSocketClientTest
         Assert.assertEquals(1002,close.get());
         Assert.assertEquals("Invalid close code 1111", closeMessage.toString());
     }
-
 
     @Test
     public void testBlockSending() throws Exception
@@ -581,17 +575,16 @@ public class WebSocketClientTest
         long writeDur = (System.currentTimeMillis() - start);
 
         // wait for consumer to complete
-        while (totalB.get()<messages*(mesg.length()+6L)) 
+        while (totalB.get()<messages*(mesg.length()+6L))
         {
             Thread.sleep(10);
         }
-        
+
         Assert.assertThat("write duration", writeDur, greaterThan(1000L)); // writing was blocked
         Assert.assertEquals(messages*(mesg.length()+6L),totalB.get());
 
         consumer.interrupt();
     }
-
 
     @Test
     public void testBlockReceiving() throws Exception
@@ -692,12 +685,12 @@ public class WebSocketClientTest
             socket.getOutputStream().write(send,0,send.length);
             socket.getOutputStream().flush();
         }
-        
-        while(consumer.isAlive()) 
+
+        while(consumer.isAlive())
         {
             Thread.sleep(10);
         }
-        
+
         // Duration of the read operation.
         long readDur = (System.currentTimeMillis() - start);
 
@@ -713,6 +706,49 @@ public class WebSocketClientTest
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
         Assert.assertEquals(1002,close.get());
         Assert.assertEquals("Invalid close code 1111", closeMessage.toString());
+    }
+
+    @Test
+    public void testURIWithDefaultPort() throws Exception
+    {
+        WebSocketClient client = new WebSocketClient(_factory);
+
+        try
+        {
+            client.open(new URI("ws://localhost"), new WebSocket()
+            {
+                public void onOpen(Connection connection)
+                {
+                }
+
+                public void onClose(int closeCode, String message)
+                {
+                    System.out.println("closeCode = " + closeCode);
+                }
+            }).get(5, TimeUnit.SECONDS);
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertTrue(x.getCause() instanceof ConnectException);
+        }
+
+        try
+        {
+            client.open(new URI("wss://localhost"), new WebSocket()
+            {
+                public void onOpen(Connection connection)
+                {
+                }
+
+                public void onClose(int closeCode, String message)
+                {
+                }
+            }).get(5, TimeUnit.SECONDS);
+        }
+        catch (ExecutionException x)
+        {
+            Assert.assertTrue(x.getCause() instanceof ConnectException);
+        }
     }
 
     private void respondToClient(Socket connection, String serverResponse) throws IOException
