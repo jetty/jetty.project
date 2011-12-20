@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
 import java.io.EOFException;
@@ -379,7 +394,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             if (origin != null)
                 request.append("Origin: ").append(origin).append("\r\n");
 
-            request.append("Sec-WebSocket-Version: ").append(WebSocketConnectionD13.VERSION).append("\r\n");
+            request.append("Sec-WebSocket-Version: ").append(WebSocketConnectionRFC6455.VERSION).append("\r\n");
 
             if (_future.getProtocol() != null)
                 request.append("Sec-WebSocket-Protocol: ").append(_future.getProtocol()).append("\r\n");
@@ -436,7 +451,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 {
                     _error = "No Sec-WebSocket-Accept";
                 }
-                else if (!WebSocketConnectionD13.hashKey(_key).equals(_accept))
+                else if (!WebSocketConnectionRFC6455.hashKey(_key).equals(_accept))
                 {
                     _error = "Bad Sec-WebSocket-Accept";
                 }
@@ -444,14 +459,14 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 {
                     Buffer header = _parser.getHeaderBuffer();
                     MaskGen maskGen = _future.getMaskGen();
-                    WebSocketConnectionD13 connection =
-                            new WebSocketConnectionD13(_future.getWebSocket(),
+                    WebSocketConnectionRFC6455 connection =
+                            new WebSocketConnectionRFC6455(_future.getWebSocket(),
                                     _endp,
                                     _buffers, System.currentTimeMillis(),
                                     _future.getMaxIdleTime(),
                                     _future.getProtocol(),
                                     null,
-                                    WebSocketConnectionD13.VERSION,
+                                    WebSocketConnectionRFC6455.VERSION,
                                     maskGen);
 
                     if (header.hasContent())

@@ -1,6 +1,21 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -8,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
@@ -133,7 +149,6 @@ public class WebSocketClientTest
         Assert.assertFalse(open.get());
     }
 
-
     @Test
     public void testAsyncConnectionRefused() throws Exception
     {
@@ -167,12 +182,10 @@ public class WebSocketClientTest
         }
 
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD13.CLOSE_NO_CLOSE,close.get());
+        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,close.get());
         Assert.assertTrue(error instanceof ConnectException);
 
     }
-
-
 
     @Test
     public void testConnectionNotAccepted() throws Exception
@@ -207,7 +220,7 @@ public class WebSocketClientTest
         }
 
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD13.CLOSE_NO_CLOSE,close.get());
+        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,close.get());
         Assert.assertTrue(error instanceof TimeoutException);
 
     }
@@ -246,11 +259,10 @@ public class WebSocketClientTest
         }
 
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD13.CLOSE_NO_CLOSE,close.get());
+        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,close.get());
         Assert.assertTrue(error instanceof TimeoutException);
 
     }
-
 
     @Test
     public void testBadHandshake() throws Exception
@@ -287,7 +299,7 @@ public class WebSocketClientTest
         }
 
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD13.CLOSE_PROTOCOL,close.get());
+        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,close.get());
         Assert.assertTrue(error instanceof IOException);
         Assert.assertTrue(error.getMessage().indexOf("404 NOT FOUND")>0);
 
@@ -330,7 +342,7 @@ public class WebSocketClientTest
             error=e.getCause();
         }
         Assert.assertFalse(open.get());
-        Assert.assertEquals(WebSocketConnectionD13.CLOSE_PROTOCOL,close.get());
+        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,close.get());
         Assert.assertTrue(error instanceof IOException);
         Assert.assertTrue(error.getMessage().indexOf("Bad Sec-WebSocket-Accept")>=0);
     }
@@ -368,7 +380,7 @@ public class WebSocketClientTest
         socket.close();
         _latch.await(10,TimeUnit.SECONDS);
 
-        Assert.assertEquals(WebSocketConnectionD13.CLOSE_NO_CLOSE,close.get());
+        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,close.get());
 
     }
 
@@ -406,9 +418,8 @@ public class WebSocketClientTest
         long start=System.currentTimeMillis();
         _latch.await(10,TimeUnit.SECONDS);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
-        Assert.assertEquals(WebSocketConnectionD13.CLOSE_NORMAL,close.get());
+        Assert.assertEquals(WebSocketConnectionRFC6455.CLOSE_NORMAL,close.get());
     }
-
 
     @Test
     public void testNotIdle() throws Exception
@@ -483,7 +494,6 @@ public class WebSocketClientTest
         Assert.assertEquals(1002,close.get());
         Assert.assertEquals("Invalid close code 1111", closeMessage.toString());
     }
-
 
     @Test
     public void testBlockSending() throws Exception
@@ -566,17 +576,16 @@ public class WebSocketClientTest
         long writeDur = (System.currentTimeMillis() - start);
 
         // wait for consumer to complete
-        while (totalB.get()<messages*(mesg.length()+6L)) 
+        while (totalB.get()<messages*(mesg.length()+6L))
         {
             Thread.sleep(10);
         }
-        
+
         Assert.assertThat("write duration", writeDur, greaterThan(1000L)); // writing was blocked
         Assert.assertEquals(messages*(mesg.length()+6L),totalB.get());
 
         consumer.interrupt();
     }
-
 
     @Test
     public void testBlockReceiving() throws Exception
@@ -677,12 +686,12 @@ public class WebSocketClientTest
             socket.getOutputStream().write(send,0,send.length);
             socket.getOutputStream().flush();
         }
-        
-        while(consumer.isAlive()) 
+
+        while(consumer.isAlive())
         {
             Thread.sleep(10);
         }
-        
+
         // Duration of the read operation.
         long readDur = (System.currentTimeMillis() - start);
 
@@ -698,6 +707,24 @@ public class WebSocketClientTest
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
         Assert.assertEquals(1002,close.get());
         Assert.assertEquals("Invalid close code 1111", closeMessage.toString());
+    }
+
+    @Test
+    public void testURIWithDefaultPort() throws Exception
+    {
+        URI uri = new URI("ws://localhost");
+        InetSocketAddress addr = WebSocketClient.toSocketAddress(uri);
+        Assert.assertThat("URI (" + uri + ").host", addr.getHostName(), is("localhost"));
+        Assert.assertThat("URI (" + uri + ").port", addr.getPort(), is(80));
+    }
+  
+    @Test
+    public void testURIWithDefaultWSSPort() throws Exception
+    {
+        URI uri = new URI("wss://localhost");
+        InetSocketAddress addr = WebSocketClient.toSocketAddress(uri);
+        Assert.assertThat("URI (" + uri + ").host", addr.getHostName(), is("localhost"));
+        Assert.assertThat("URI (" + uri + ").port", addr.getPort(), is(443));
     }
 
     private void respondToClient(Socket connection, String serverResponse) throws IOException
@@ -748,7 +775,7 @@ public class WebSocketClientTest
         }
         connection.getOutputStream().write((
                 "HTTP/1.1 101 Upgrade\r\n" +
-                "Sec-WebSocket-Accept: "+ WebSocketConnectionD13.hashKey(key) +"\r\n" +
+                "Sec-WebSocket-Accept: "+ WebSocketConnectionRFC6455.hashKey(key) +"\r\n" +
                 "\r\n").getBytes());
     }
 }

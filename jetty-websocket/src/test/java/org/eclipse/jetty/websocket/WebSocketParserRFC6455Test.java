@@ -1,8 +1,21 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,10 +30,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- * @version $Revision$ $Date$
- */
-public class WebSocketParserD13Test
+public class WebSocketParserRFC6455Test
 {
     private ByteArrayEndPoint _endPoint;
     private MaskedByteArrayBuffer _in;
@@ -269,7 +279,7 @@ public class WebSocketParserD13Test
         int progress =_parser.parseNext();
 
         assertTrue(progress>0);
-        assertEquals(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,_handler._code);
+        assertEquals(WebSocketConnectionRFC6455.CLOSE_POLICY_VIOLATION,_handler._code);
         
         
         for (int i=0;i<2048;i++)
@@ -313,7 +323,7 @@ public class WebSocketParserD13Test
         assertTrue(progress>0);
 
         assertEquals(2,_handler._frames);
-        assertEquals(WebSocketConnectionD13.OP_CONTINUATION,_handler._opcode);
+        assertEquals(WebSocketConnectionRFC6455.OP_CONTINUATION,_handler._opcode);
         assertEquals(1,_handler._data.size());
         String mesg=_handler._data.remove(0);
 

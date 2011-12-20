@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -60,9 +75,9 @@ import org.eclipse.jetty.websocket.WebSocket.OnTextMessage;
  *   +---------------------------------------------------------------+
  * </pre>
  */
-public class WebSocketConnectionD13 extends AbstractConnection implements WebSocketConnection
+public class WebSocketConnectionRFC6455 extends AbstractConnection implements WebSocketConnection
 {
-    private static final Logger LOG = Log.getLogger(WebSocketConnectionD13.class);
+    private static final Logger LOG = Log.getLogger(WebSocketConnectionRFC6455.class);
 
     final static byte OP_CONTINUATION = 0x00;
     final static byte OP_TEXT = 0x01;
@@ -86,9 +101,12 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     final static int CLOSE_POLICY_VIOLATION=1008;
     final static int CLOSE_MESSAGE_TOO_LARGE=1009;
     final static int CLOSE_REQUIRED_EXTENSION=1010;
+    final static int CLOSE_SERVER_ERROR=1011;
+    final static int CLOSE_FAILED_TLS_HANDSHAKE=1015;
 
     final static int FLAG_FIN=0x8;
 
+    // Per RFC 6455, section 1.3 - Opening Handshake - this version is "13"
     final static int VERSION=13;
 
     static boolean isLastFrame(byte flags)
@@ -104,7 +122,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     private final static byte[] MAGIC;
     private final List<Extension> _extensions;
     private final WebSocketParserD13 _parser;
-    private final WebSocketGeneratorD13 _generator;
+    private final WebSocketGeneratorRFC6455 _generator;
     private final WebSocketGenerator _outbound;
     private final WebSocket _webSocket;
     private final OnFrame _onFrame;
@@ -137,14 +155,14 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
 
     /* ------------------------------------------------------------ */
-    public WebSocketConnectionD13(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions,int draft)
+    public WebSocketConnectionRFC6455(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions,int draft)
         throws IOException
     {
         this(websocket,endpoint,buffers,timestamp,maxIdleTime,protocol,extensions,draft,null);
     }
 
     /* ------------------------------------------------------------ */
-    public WebSocketConnectionD13(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions,int draft, MaskGen maskgen)
+    public WebSocketConnectionRFC6455(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol, List<Extension> extensions,int draft, MaskGen maskgen)
         throws IOException
     {
         super(endpoint,timestamp);
@@ -159,7 +177,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         _onTextMessage=_webSocket instanceof OnTextMessage ? (OnTextMessage)_webSocket : null;
         _onBinaryMessage=_webSocket instanceof OnBinaryMessage ? (OnBinaryMessage)_webSocket : null;
         _onControl=_webSocket instanceof OnControl ? (OnControl)_webSocket : null;
-        _generator = new WebSocketGeneratorD13(buffers, _endp,maskgen);
+        _generator = new WebSocketGeneratorRFC6455(buffers, _endp,maskgen);
 
         _extensions=extensions;
         WebSocketParser.FrameHandler frameHandler = new WSFrameHandler();
@@ -217,7 +235,6 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                 int filled=_parser.parseNext();
 
                 progress = flushed>0 || filled>0;
-
                 _endp.flush();
 
                 if (_endp instanceof AsyncEndPoint && ((AsyncEndPoint)_endp).hasProgressed())
@@ -272,7 +289,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
     @Override
     public void onIdleExpired(long idleForMs)
     {
-        closeOut(WebSocketConnectionD13.CLOSE_NORMAL,"Idle for "+idleForMs+"ms > "+_endp.getMaxIdleTime()+"ms");
+        closeOut(WebSocketConnectionRFC6455.CLOSE_NORMAL,"Idle for "+idleForMs+"ms > "+_endp.getMaxIdleTime()+"ms");
     }
 
     /* ------------------------------------------------------------ */
@@ -289,10 +306,10 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         {
             closed=_closeCode==0;
             if (closed)
-                _closeCode=WebSocketConnectionD13.CLOSE_NO_CLOSE;
+                _closeCode=WebSocketConnectionRFC6455.CLOSE_NO_CLOSE;
         }
         if (closed)
-            _webSocket.onClose(WebSocketConnectionD13.CLOSE_NO_CLOSE,"closed");
+            _webSocket.onClose(WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,"closed");
     }
 
     /* ------------------------------------------------------------ */
@@ -356,18 +373,23 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             {
                 if (!closed_out)
                 {
-                    // Close code 1005/1006 are never to be sent as a status over
+                    // Close code 1005/1006/1015 are never to be sent as a status over
                     // a Close control frame. Code<-1 also means no node.
 
-                    if (code<0 || (code == WebSocketConnectionD13.CLOSE_NO_CODE) || code==WebSocketConnectionD13.CLOSE_NO_CLOSE)
-                        code=-1;
-                    else if (code==0)
-                        code=WebSocketConnectionD13.CLOSE_NORMAL;
+                    if (code < 0 || (code == WebSocketConnectionRFC6455.CLOSE_NO_CODE) || (code == WebSocketConnectionRFC6455.CLOSE_NO_CLOSE)
+                            || (code == WebSocketConnectionRFC6455.CLOSE_FAILED_TLS_HANDSHAKE))
+                    {
+                        code = -1;
+                    }
+                    else if (code == 0)
+                    {
+                        code = WebSocketConnectionRFC6455.CLOSE_NORMAL;
+                    }
 
                     byte[] bytes = ("xx"+(message==null?"":message)).getBytes(StringUtil.__ISO_8859_1);
                     bytes[0]=(byte)(code/0x100);
                     bytes[1]=(byte)(code%0x100);
-                    _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD13.OP_CLOSE,bytes,0,code>0?bytes.length:0);
+                    _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionRFC6455.OP_CLOSE,bytes,0,code>0?bytes.length:0);
                     _outbound.flush();
                 }
             }
@@ -417,7 +439,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             if (_closedOut)
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
             byte[] data = content.getBytes(StringUtil.__UTF8);
-            _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD13.OP_TEXT,data,0,data.length);
+            _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionRFC6455.OP_TEXT,data,0,data.length);
             checkWriteable();
         }
 
@@ -426,7 +448,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         {
             if (_closedOut)
                 throw new IOException("closedOut "+_closeCode+":"+_closeMessage);
-            _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionD13.OP_BINARY,content,offset,length);
+            _outbound.addFrame((byte)FLAG_FIN,WebSocketConnectionRFC6455.OP_BINARY,content,offset,length);
             checkWriteable();
         }
 
@@ -467,7 +489,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             if (_disconnecting)
                 return;
             _disconnecting=true;
-            WebSocketConnectionD13.this.closeOut(code,message);
+            WebSocketConnectionRFC6455.this.closeOut(code,message);
         }
 
         /* ------------------------------------------------------------ */
@@ -631,7 +653,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         {
             boolean lastFrame = isLastFrame(flags);
 
-            synchronized(WebSocketConnectionD13.this)
+            synchronized(WebSocketConnectionRFC6455.this)
             {
                 // Ignore incoming after a close
                 if (_closedIn)
@@ -643,14 +665,14 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                 if (isControlFrame(opcode) && buffer.length()>MAX_CONTROL_FRAME_PAYLOAD)
                 {
-                    errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Control frame too large: " + buffer.length() + " > " + MAX_CONTROL_FRAME_PAYLOAD);
+                    errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Control frame too large: " + buffer.length() + " > " + MAX_CONTROL_FRAME_PAYLOAD);
                     return;
                 }
 
                 // TODO: check extensions for RSV bit(s) meanings
                 if ((flags&0x7)!=0)
                 {
-                    errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
+                    errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"RSV bits set 0x"+Integer.toHexString(flags));
                     return;
                 }
 
@@ -675,16 +697,16 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
 
                 switch(opcode)
                 {
-                    case WebSocketConnectionD13.OP_CONTINUATION:
+                    case WebSocketConnectionRFC6455.OP_CONTINUATION:
                     {
                         if (_opcode==-1)
                         {
-                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad Continuation");
+                            errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Bad Continuation");
                             return;
                         }
 
                         // If text, append to the message buffer
-                        if (_onTextMessage!=null && _opcode==WebSocketConnectionD13.OP_TEXT)
+                        if (_onTextMessage!=null && _opcode==WebSocketConnectionRFC6455.OP_TEXT)
                         {
                             if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
                             {
@@ -724,39 +746,39 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         }
                         break;
                     }
-                    case WebSocketConnectionD13.OP_PING:
+                    case WebSocketConnectionRFC6455.OP_PING:
                     {
                         LOG.debug("PING {}",this);
                         if (!_closedOut)
                         {
-                            _connection.sendControl(WebSocketConnectionD13.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
+                            _connection.sendControl(WebSocketConnectionRFC6455.OP_PONG,buffer.array(),buffer.getIndex(),buffer.length());
                         }
                         break;
                     }
 
-                    case WebSocketConnectionD13.OP_PONG:
+                    case WebSocketConnectionRFC6455.OP_PONG:
                     {
                         LOG.debug("PONG {}",this);
                         break;
                     }
 
-                    case WebSocketConnectionD13.OP_CLOSE:
+                    case WebSocketConnectionRFC6455.OP_CLOSE:
                     {
-                        int code=WebSocketConnectionD13.CLOSE_NO_CODE;
+                        int code=WebSocketConnectionRFC6455.CLOSE_NO_CODE;
                         String message=null;
                         if (buffer.length()>=2)
                         {
                             code=(0xff&buffer.array()[buffer.getIndex()])*0x100+(0xff&buffer.array()[buffer.getIndex()+1]);
 
                             // Validate close status codes.
-                            if (code < WebSocketConnectionD13.CLOSE_NORMAL ||
-                                code == WebSocketConnectionD13.CLOSE_UNDEFINED ||
-                                code == WebSocketConnectionD13.CLOSE_NO_CLOSE ||
-                                code == WebSocketConnectionD13.CLOSE_NO_CODE ||
-                                ( code > 1010 && code <= 2999 ) ||
+                            if (code < WebSocketConnectionRFC6455.CLOSE_NORMAL ||
+                                code == WebSocketConnectionRFC6455.CLOSE_UNDEFINED ||
+                                code == WebSocketConnectionRFC6455.CLOSE_NO_CLOSE ||
+                                code == WebSocketConnectionRFC6455.CLOSE_NO_CODE ||
+                                ( code > 1011 && code <= 2999 ) ||
                                 code >= 5000 )
                             {
-                                errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid close code " + code);
+                                errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Invalid close code " + code);
                                 return;
                             }
 
@@ -772,18 +794,18 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         else if(buffer.length() == 1)
                         {
                             // Invalid length. use status code 1002 (Protocol error)
-                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Invalid payload length of 1");
+                            errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Invalid payload length of 1");
                             return;
                         }
                         closeIn(code,message);
                         break;
                     }
 
-                    case WebSocketConnectionD13.OP_TEXT:
+                    case WebSocketConnectionRFC6455.OP_TEXT:
                     {
                         if (_opcode!=-1)
                         {
-                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
+                            errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
                             return;
                         }
 
@@ -797,7 +819,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                                 else
                                 {
                                     LOG.warn("Frame discarded. Text aggregation disabled for {}",_endp);
-                                    errorClose(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"Text frame aggregation disabled");
+                                    errorClose(WebSocketConnectionRFC6455.CLOSE_POLICY_VIOLATION,"Text frame aggregation disabled");
                                 }
                             }
                             // append bytes to message buffer (if they fit)
@@ -811,7 +833,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                                 }
                                 else
                                 {
-                                    _opcode=WebSocketConnectionD13.OP_TEXT;
+                                    _opcode=WebSocketConnectionRFC6455.OP_TEXT;
                                 }
                             }
                             else
@@ -820,11 +842,11 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                         break;
                     }
 
-                    case WebSocketConnectionD13.OP_BINARY:
+                    case WebSocketConnectionRFC6455.OP_BINARY:
                     {
                         if (_opcode!=-1)
                         {
-                            errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
+                            errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
                             return;
                         }
 
@@ -845,28 +867,28 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
                             else
                             {
                                 LOG.warn("Frame discarded. Binary aggregation disabed for {}",_endp);
-                                errorClose(WebSocketConnectionD13.CLOSE_POLICY_VIOLATION,"Binary frame aggregation disabled");
+                                errorClose(WebSocketConnectionRFC6455.CLOSE_POLICY_VIOLATION,"Binary frame aggregation disabled");
                             }
                         }
                         break;
                     }
 
                     default:
-                        errorClose(WebSocketConnectionD13.CLOSE_PROTOCOL,"Bad opcode 0x"+Integer.toHexString(opcode));
+                        errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Bad opcode 0x"+Integer.toHexString(opcode));
                         break;
                 }
             }
             catch(Utf8Appendable.NotUtf8Exception notUtf8)
             {
-                LOG.warn("{} for {}",notUtf8,_endp);
+                LOG.warn("NOTUTF8 - {} for {}",notUtf8,_endp, notUtf8);
                 LOG.debug(notUtf8);
-                errorClose(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,"Invalid UTF-8");
+                errorClose(WebSocketConnectionRFC6455.CLOSE_BAD_PAYLOAD,"Invalid UTF-8");
             }
-            catch(Throwable probablyNotUtf8)
+            catch(Throwable e)
             {
-                LOG.warn("{} for {}",probablyNotUtf8,_endp);
-                LOG.debug(probablyNotUtf8);
-                errorClose(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,"Invalid Payload: "+probablyNotUtf8);
+                LOG.warn("{} for {}",e,_endp, e);
+                LOG.debug(e);
+                errorClose(WebSocketConnectionRFC6455.CLOSE_SERVER_ERROR,"Internal Server Error: "+e);
             }
         }
 
@@ -892,7 +914,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
             if (max>0 && (bufferLen+length)>max)
             {
                 LOG.warn("Binary message too large > {}B for {}",_connection.getMaxBinaryMessageSize(),_endp);
-                _connection.close(WebSocketConnectionD13.CLOSE_MESSAGE_TOO_LARGE,"Message size > "+_connection.getMaxBinaryMessageSize());
+                _connection.close(WebSocketConnectionRFC6455.CLOSE_MESSAGE_TOO_LARGE,"Message size > "+_connection.getMaxBinaryMessageSize());
                 _opcode=-1;
                 if (_aggregate!=null)
                     _aggregate.clear();
@@ -904,7 +926,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         private void textMessageTooLarge()
         {
             LOG.warn("Text message too large > {} chars for {}",_connection.getMaxTextMessageSize(),_endp);
-            _connection.close(WebSocketConnectionD13.CLOSE_MESSAGE_TOO_LARGE,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
+            _connection.close(WebSocketConnectionRFC6455.CLOSE_MESSAGE_TOO_LARGE,"Text message size > "+_connection.getMaxTextMessageSize()+" chars");
 
             _opcode=-1;
             _utf8.reset();
@@ -920,7 +942,7 @@ public class WebSocketConnectionD13 extends AbstractConnection implements WebSoc
         @Override
         public String toString()
         {
-            return WebSocketConnectionD13.this.toString()+"FH";
+            return WebSocketConnectionRFC6455.this.toString()+"FH";
         }
     }
 
