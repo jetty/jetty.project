@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public class WebSocketParserD00Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(13,filled);
+        assertThat(filled,greaterThan(0));
         assertEquals("Hello World",_handler._data.get(0));
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
@@ -79,14 +80,14 @@ public class WebSocketParserD00Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(30,filled);
+        assertThat(filled,greaterThan(0));
         assertEquals("Hello World",_handler._data.get(0));
         assertFalse(_parser.isBufferEmpty());
         assertFalse(_parser.getBuffer()==null);
 
         filled =_parser.parseNext();
 
-        assertEquals(0,filled);
+        assertThat(filled,greaterThan(0));
         assertEquals("Hell\uFF4f W\uFF4Frld",_handler._data.get(1));
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
@@ -101,7 +102,7 @@ public class WebSocketParserD00Test
 
         int filled =_parser.parseNext();
 
-        assertEquals(13,filled);
+        assertThat(filled,greaterThan(0));
         assertEquals("Hello World",_handler._data.get(0));
         assertTrue(_parser.isBufferEmpty());
         assertTrue(_parser.getBuffer()==null);
@@ -123,15 +124,14 @@ public class WebSocketParserD00Test
         _in.put((byte)(data.length&0x7f));
         _in.put(data);
 
-
         int filled =_parser.parseNext();
-        assertEquals(13+3+data.length,filled);
+        assertThat(filled,greaterThan(0));
         assertEquals("Hello World",_handler._data.get(0));
         assertFalse(_parser.isBufferEmpty());
         assertFalse(_parser.getBuffer()==null);
 
         filled =_parser.parseNext();
-        assertEquals(0,filled);
+        assertThat(filled,greaterThan(0));
         String got=_handler._data.get(1);
         assertEquals(data.length,got.length());
         assertTrue(got.startsWith("012345678901234567890123"));
