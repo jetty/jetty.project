@@ -199,7 +199,12 @@ public abstract class SslBytesTest
             return new TLSRecord(type, bytes);
         }
 
-        public void flushToServer(TLSRecord record) throws IOException
+        public void flushToServer(TLSRecord record) throws Exception
+        {
+            flushToServer(record, 100);
+        }
+
+        public void flushToServer(TLSRecord record, long sleep) throws Exception
         {
             if (record == null)
             {
@@ -212,20 +217,22 @@ public abstract class SslBytesTest
             }
             else
             {
-                flush(server, record.getBytes());
+                flush(sleep, server, record.getBytes());
             }
         }
 
-        public void flushToServer(byte... bytes) throws IOException
+        public void flushToServer(long sleep, byte... bytes) throws Exception
         {
-            flush(server, bytes);
+            flush(sleep, server, bytes);
         }
 
-        private void flush(Socket socket, byte... bytes) throws IOException
+        private void flush(long sleep, Socket socket, byte... bytes) throws Exception
         {
             OutputStream output = socket.getOutputStream();
             output.write(bytes);
             output.flush();
+            if (sleep > 0)
+                TimeUnit.MILLISECONDS.sleep(sleep);
         }
 
         public TLSRecord readFromServer() throws IOException
@@ -235,7 +242,7 @@ public abstract class SslBytesTest
             return record;
         }
 
-        public void flushToClient(TLSRecord record) throws IOException
+        public void flushToClient(TLSRecord record) throws Exception
         {
             if (record == null)
             {
@@ -248,7 +255,7 @@ public abstract class SslBytesTest
             }
             else
             {
-                flush(client, record.getBytes());
+                flush(0, client, record.getBytes());
             }
         }
 
@@ -266,7 +273,7 @@ public abstract class SslBytesTest
                     {
                         while (true)
                         {
-                            flushToServer(readFromClient());
+                            flushToServer(readFromClient(), 0);
                         }
                     }
                     catch (InterruptedIOException x)
@@ -311,6 +318,15 @@ public abstract class SslBytesTest
         public boolean awaitClient(int time, TimeUnit unit) throws InterruptedException
         {
             return latch.await(time, unit);
+        }
+
+        public void resetServer() throws IOException
+        {
+            // Calling setSoLinger(true, 0) causes close()
+            // to send a RST instead of a FIN, causing an
+            // exception to be thrown on the other end
+            server.setSoLinger(true, 0);
+            server.close();
         }
 
         public class AutomaticFlow

@@ -50,7 +50,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     private final SSLEngine _engine;
     private final SSLSession _session;
     private AsyncConnection _connection;
-    private final SslEndPoint _sslEndPoint = new SslEndPoint();
+    private final SslEndPoint _sslEndPoint;
     private int _allocations;
     private SslBuffers _buffers;
     private NIOBuffer _inbound;
@@ -93,6 +93,12 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         _engine=engine;
         _session=_engine.getSession();
         _aEndp=(AsyncEndPoint)endp;
+        _sslEndPoint = newSslEndPoint();
+    }
+
+    protected SslEndPoint newSslEndPoint()
+    {
+        return new SslEndPoint();
     }
 
     /* ------------------------------------------------------------ */
@@ -308,12 +314,15 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     if (_outbound.hasContent() && (flushed=_endp.flush(_outbound))>0)
                         progress = true;
                 }
-                catch (Exception e)
+                catch (IOException e)
                 {
-                    LOG.debug(e.toString());
-                    LOG.ignore(e);
+                    _endp.close();
+                    throw e;
                 }
-                LOG.debug("{} {} {} filled={}/{} flushed={}/{}",_session,this,_engine.getHandshakeStatus(),filled,_inbound.length(),flushed,_outbound.length());
+                finally
+                {
+                    LOG.debug("{} {} {} filled={}/{} flushed={}/{}",_session,this,_engine.getHandshakeStatus(),filled,_inbound.length(),flushed,_outbound.length());
+                }
 
                 // handle the current hand share status
                 switch(_engine.getHandshakeStatus())
@@ -435,7 +444,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 }
                 catch(SSLException e)
                 {
-                    LOG.warn(_endp+":",e);
+                    LOG.warn(String.valueOf(_endp), e);
                     _endp.close();
                     throw e;
                 }
@@ -511,10 +520,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 }
                 catch(SSLException e)
                 {
-                    LOG.warn(_endp+":"+e);
-                    LOG.debug(e);
-                    if (_endp.isOpen())
-                        _endp.close();
+                    LOG.warn(String.valueOf(_endp), e);
+                    _endp.close();
                     throw e;
                 }
                 finally
