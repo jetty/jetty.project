@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -14,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
@@ -51,6 +53,8 @@ import static org.hamcrest.Matchers.lessThan;
 
 public class SslBytesServerTest extends SslBytesTest
 {
+    private final static int MAX_IDLE_TIME=5000;
+    
     private final AtomicInteger sslHandles = new AtomicInteger();
     private final AtomicInteger sslFlushes = new AtomicInteger();
     private final AtomicInteger httpParses = new AtomicInteger();
@@ -58,7 +62,8 @@ public class SslBytesServerTest extends SslBytesTest
     private Server server;
     private SSLContext sslContext;
     private SimpleProxy proxy;
-
+    private final AtomicReference<SslConnection> sslConnection = new AtomicReference<SslConnection>();
+    
     @Before
     public void init() throws Exception
     {
@@ -70,7 +75,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             protected SslConnection newSslConnection(AsyncEndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(engine, endPoint)
+                SslConnection connection = new SslConnection(engine, endPoint)
                 {
                     @Override
                     public Connection handle() throws IOException
@@ -93,6 +98,8 @@ public class SslBytesServerTest extends SslBytesTest
                         };
                     }
                 };
+                sslConnection.set(connection);
+                return connection;
             }
 
             @Override
@@ -116,7 +123,7 @@ public class SslBytesServerTest extends SslBytesTest
                 };
             }
         };
-        connector.setMaxIdleTime(5000);
+        connector.setMaxIdleTime(MAX_IDLE_TIME);
 
 //        connector.setPort(5870);
         connector.setPort(0);
@@ -1237,7 +1244,6 @@ public class SslBytesServerTest extends SslBytesTest
         closeClient(client);
     }
 
-    @Ignore
     @Test
     public void testServerCloseClientDoesNotClose() throws Exception
     {
@@ -1273,16 +1279,51 @@ public class SslBytesServerTest extends SslBytesTest
                 break;
         }
 
+        // Check client is at EOF
+        Assert.assertEquals(-1,client.getInputStream().read());
+        
+        // Client should close the socket, but let's hold it open.
+
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(100);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
-
-        // TODO: instead of sleeping, we should expect the connection being closed by the idle timeout
-        // TODO: mechanism; unfortunately this now is not working, and this test fails because the idle
-        // TODO: timeout will not trigger.
-        TimeUnit.SECONDS.sleep(100);
-
-        closeClient(client);
+        
+        // Check it is still half closed on the server.
+        Assert.assertTrue(((AsyncEndPoint)sslConnection.get().getEndPoint()).isOpen());
+        Assert.assertTrue(((AsyncEndPoint)sslConnection.get().getEndPoint()).isOutputShutdown());
+        Assert.assertFalse(((AsyncEndPoint)sslConnection.get().getEndPoint()).isInputShutdown());
+        
+        // wait for a bit more than MAX_IDLE_TIME
+        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+1000);
+        
+        // Server should have closed the endpoint
+        Assert.assertFalse(((AsyncEndPoint)sslConnection.get().getEndPoint()).isOpen());
+        Assert.assertTrue(((AsyncEndPoint)sslConnection.get().getEndPoint()).isOutputShutdown());
+        Assert.assertTrue(((AsyncEndPoint)sslConnection.get().getEndPoint()).isInputShutdown());
+        
+        
+        // writing to client will eventually get broken pipe exception or similar
+        try
+        {
+            for (int i=0;i<100;i++)
+            {
+                clientOutput.write(("" +
+                        "POST / HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Content-Type: text/plain\r\n" +
+                        "Content-Length: " + content.length() + "\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n" +
+                        content).getBytes("UTF-8"));
+                clientOutput.flush();
+            }
+            Assert.fail("Client should have seen server close");
+        }
+        catch(SocketException e)
+        {
+            // this was expected.
+        }
     }
 
     private void assumeJavaVersionSupportsTLSRenegotiations()
