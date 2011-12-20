@@ -332,6 +332,25 @@ public class WebSocketClient
     {
         if (!_factory.isStarted())
             throw new IllegalStateException("Factory !started");
+
+        InetSocketAddress address = toSocketAddress(uri);
+
+        SocketChannel channel = SocketChannel.open();
+        if (_bindAddress != null)
+            channel.socket().bind(_bindAddress);
+        channel.socket().setTcpNoDelay(true);
+
+        WebSocketFuture holder = new WebSocketFuture(websocket, uri, this, channel);
+
+        channel.configureBlocking(false);
+        channel.connect(address);
+        _factory.getSelectorManager().register(channel, holder);
+
+        return holder;
+    }
+    
+    public static final InetSocketAddress toSocketAddress(URI uri)
+    {
         String scheme = uri.getScheme();
         if (!("ws".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme)))
             throw new IllegalArgumentException("Bad WebSocket scheme: " + scheme);
@@ -341,20 +360,8 @@ public class WebSocketClient
         if (port < 0)
             port = "ws".equals(scheme) ? 80 : 443;
 
-        SocketChannel channel = SocketChannel.open();
-        if (_bindAddress != null)
-            channel.socket().bind(_bindAddress);
-        channel.socket().setTcpNoDelay(true);
-
         InetSocketAddress address = new InetSocketAddress(uri.getHost(), port);
-
-        WebSocketFuture holder = new WebSocketFuture(websocket, uri, this, channel);
-
-        channel.configureBlocking(false);
-        channel.connect(address);
-        _factory.getSelectorManager().register(channel, holder);
-
-        return holder;
+        return address;
     }
 
     /* ------------------------------------------------------------ */
@@ -486,6 +493,7 @@ public class WebSocketClient
             return _maskGen;
         }
 
+        @Override
         public String toString()
         {
             return "[" + _uri + ","+_websocket+"]@"+hashCode();

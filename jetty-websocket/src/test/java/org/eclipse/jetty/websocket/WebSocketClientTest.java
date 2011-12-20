@@ -15,12 +15,15 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
@@ -42,8 +45,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
 
 public class WebSocketClientTest
 {
@@ -711,44 +712,19 @@ public class WebSocketClientTest
     @Test
     public void testURIWithDefaultPort() throws Exception
     {
-        WebSocketClient client = new WebSocketClient(_factory);
-
-        try
-        {
-            client.open(new URI("ws://localhost"), new WebSocket()
-            {
-                public void onOpen(Connection connection)
-                {
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                    System.out.println("closeCode = " + closeCode);
-                }
-            }).get(5, TimeUnit.SECONDS);
-        }
-        catch (ExecutionException x)
-        {
-            Assert.assertTrue(x.getCause() instanceof ConnectException);
-        }
-
-        try
-        {
-            client.open(new URI("wss://localhost"), new WebSocket()
-            {
-                public void onOpen(Connection connection)
-                {
-                }
-
-                public void onClose(int closeCode, String message)
-                {
-                }
-            }).get(5, TimeUnit.SECONDS);
-        }
-        catch (ExecutionException x)
-        {
-            Assert.assertTrue(x.getCause() instanceof ConnectException);
-        }
+        URI uri = new URI("ws://localhost");
+        InetSocketAddress addr = WebSocketClient.toSocketAddress(uri);
+        Assert.assertThat("URI (" + uri + ").host", addr.getHostName(), is("localhost"));
+        Assert.assertThat("URI (" + uri + ").port", addr.getPort(), is(80));
+    }
+  
+    @Test
+    public void testURIWithDefaultWSSPort() throws Exception
+    {
+        URI uri = new URI("wss://localhost");
+        InetSocketAddress addr = WebSocketClient.toSocketAddress(uri);
+        Assert.assertThat("URI (" + uri + ").host", addr.getHostName(), is("localhost"));
+        Assert.assertThat("URI (" + uri + ").port", addr.getPort(), is(443));
     }
 
     private void respondToClient(Socket connection, String serverResponse) throws IOException
