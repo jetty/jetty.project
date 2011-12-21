@@ -1,13 +1,11 @@
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -17,19 +15,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -48,15 +48,22 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
+
 public class SslBytesServerTest extends SslBytesTest
 {
+    private final static int MAX_IDLE_TIME=5000;
+    
     private final AtomicInteger sslHandles = new AtomicInteger();
+    private final AtomicInteger sslFlushes = new AtomicInteger();
     private final AtomicInteger httpParses = new AtomicInteger();
     private ExecutorService threadPool;
     private Server server;
     private SSLContext sslContext;
     private SimpleProxy proxy;
-
+    private final AtomicReference<SslConnection> sslConnection = new AtomicReference<SslConnection>();
+    
     @Before
     public void init() throws Exception
     {
@@ -68,7 +75,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             protected SslConnection newSslConnection(AsyncEndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(engine, endPoint)
+                SslConnection connection = new SslConnection(engine, endPoint)
                 {
                     @Override
                     public Connection handle() throws IOException
@@ -76,7 +83,23 @@ public class SslBytesServerTest extends SslBytesTest
                         sslHandles.incrementAndGet();
                         return super.handle();
                     }
+
+                    @Override
+                    protected SslEndPoint newSslEndPoint()
+                    {
+                        return new SslEndPoint()
+                        {
+                            @Override
+                            public int flush(Buffer buffer) throws IOException
+                            {
+                                sslFlushes.incrementAndGet();
+                                return super.flush(buffer);
+                            }
+                        };
+                    }
                 };
+                sslConnection.set(connection);
+                return connection;
             }
 
             @Override
@@ -100,6 +123,7 @@ public class SslBytesServerTest extends SslBytesTest
                 };
             }
         };
+        connector.setMaxIdleTime(MAX_IDLE_TIME);
 
 //        connector.setPort(5870);
         connector.setPort(0);
@@ -119,9 +143,15 @@ public class SslBytesServerTest extends SslBytesTest
                 if (contentLength != null)
                 {
                     int length = Integer.parseInt(contentLength);
-                    ServletInputStream input = request.getInputStream();
+                    ServletInputStream input = httpRequest.getInputStream();
+                    ServletOutputStream output = httpResponse.getOutputStream();
+                    byte[] buffer = new byte[32 * 1024];
                     for (int i = 0; i < length; ++i)
-                        input.read();
+                    {
+                        int read = input.read(buffer);
+                        if ("/echo".equals(target))
+                            output.write(buffer, 0, read);
+                    }
                 }
             }
         });
@@ -199,6 +229,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
@@ -225,10 +256,8 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
         byte[] chunk2 = new byte[bytes.length - chunk1.length];
         System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk1);
-        TimeUnit.MILLISECONDS.sleep(100);
-        proxy.flushToServer(chunk2);
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
+        proxy.flushToServer(100, chunk2);
 
         // Server Hello + Certificate + Server Done
         record = proxy.readFromServer();
@@ -241,10 +270,8 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
         chunk2 = new byte[bytes.length - chunk1.length];
         System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk1);
-        TimeUnit.MILLISECONDS.sleep(100);
-        proxy.flushToServer(chunk2);
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
+        proxy.flushToServer(100, chunk2);
 
         // Change Cipher Spec
         record = proxy.readFromClient();
@@ -253,10 +280,8 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
         chunk2 = new byte[bytes.length - chunk1.length];
         System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk1);
-        TimeUnit.MILLISECONDS.sleep(100);
-        proxy.flushToServer(chunk2);
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
+        proxy.flushToServer(100, chunk2);
 
         // Client Done
         record = proxy.readFromClient();
@@ -265,10 +290,8 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
         chunk2 = new byte[bytes.length - chunk1.length];
         System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk1);
-        TimeUnit.MILLISECONDS.sleep(100);
-        proxy.flushToServer(chunk2);
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
+        proxy.flushToServer(100, chunk2);
 
         // Change Cipher Spec
         record = proxy.readFromServer();
@@ -284,6 +307,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         client.close();
@@ -295,10 +319,8 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
         chunk2 = new byte[bytes.length - chunk1.length];
         System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk1);
-        TimeUnit.MILLISECONDS.sleep(100);
-        proxy.flushToServer(chunk2);
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
+        proxy.flushToServer(100, chunk2);
         // Socket close
         record = proxy.readFromClient();
         Assert.assertNull(String.valueOf(record), record);
@@ -358,6 +380,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
@@ -380,10 +403,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Client Hello
         TLSRecord record = proxy.readFromClient();
         for (byte b : record.getBytes())
-        {
-            proxy.flushToServer(b);
-            TimeUnit.MILLISECONDS.sleep(50);
-        }
+            proxy.flushToServer(50, b);
 
         // Server Hello + Certificate + Server Done
         record = proxy.readFromServer();
@@ -392,26 +412,17 @@ public class SslBytesServerTest extends SslBytesTest
         // Client Key Exchange
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-        {
-            proxy.flushToServer(b);
-            TimeUnit.MILLISECONDS.sleep(50);
-        }
+            proxy.flushToServer(50, b);
 
         // Change Cipher Spec
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-        {
-            proxy.flushToServer(b);
-            TimeUnit.MILLISECONDS.sleep(50);
-        }
+            proxy.flushToServer(50, b);
 
         // Client Done
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-        {
-            proxy.flushToServer(b);
-            TimeUnit.MILLISECONDS.sleep(50);
-        }
+            proxy.flushToServer(50, b);
 
         // Change Cipher Spec
         record = proxy.readFromServer();
@@ -440,10 +451,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Application data
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-        {
-            proxy.flushToServer(b);
-            TimeUnit.MILLISECONDS.sleep(50);
-        }
+            proxy.flushToServer(50, b);
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
 
         // Application data
@@ -463,6 +471,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(750));
+        Assert.assertThat(sslFlushes.get(), lessThan(750));
         Assert.assertThat(httpParses.get(), lessThan(150));
 
         client.close();
@@ -470,10 +479,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Close Alert
         record = proxy.readFromClient();
         for (byte b : record.getBytes())
-        {
-            proxy.flushToServer(b);
-            TimeUnit.MILLISECONDS.sleep(50);
-        }
+            proxy.flushToServer(50, b);
         // Socket close
         record = proxy.readFromClient();
         Assert.assertNull(String.valueOf(record), record);
@@ -587,6 +593,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Application data
         TLSRecord record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
         proxy.flushToServer(record);
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
 
@@ -594,6 +601,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Close Alert
         record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         proxy.flushToServer(record);
 
         // Do not close the raw socket yet
@@ -614,6 +622,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         // Socket close
@@ -652,6 +661,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Application data
         TLSRecord record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
         proxy.flushToServer(record);
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
 
@@ -670,6 +680,64 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        client.close();
+    }
+
+    @Test
+    public void testRequestWithBigContentWriteBlockedAndResetException() throws Exception
+    {
+        final SSLSocket client = newClient();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        byte[] data = new byte[128 * 1024];
+        Arrays.fill(data, (byte)'X');
+        final String content = new String(data, "UTF-8");
+        Future<Object> request = threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                OutputStream clientOutput = client.getOutputStream();
+                clientOutput.write(("" +
+                        "GET /echo HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Content-Length: " + content.length() + "\r\n" +
+                        "\r\n" +
+                        content).getBytes("UTF-8"));
+                clientOutput.flush();
+                return null;
+            }
+        });
+
+        // Nine TLSRecords will be generated for the request
+        for (int i = 0; i < 9; ++i)
+        {
+            // Application data
+            TLSRecord record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+            proxy.flushToServer(record, 0);
+        }
+        Assert.assertNull(request.get(5, TimeUnit.SECONDS));
+
+        // We asked the server to echo back the data we sent
+        // but we do not read it, thus causing a write interest
+        // on the server.
+        // However, we then simulate that the client resets the
+        // connection, and this will cause an exception in the
+        // server that is trying to write the data
+
+        proxy.resetServer();
+
+        // Wait a while to detect spinning
+        TimeUnit.SECONDS.sleep(1);
+
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         client.close();
@@ -713,13 +781,11 @@ public class SslBytesServerTest extends SslBytesTest
         byte[] bytes = new byte[dataBytes.length + closeBytes.length / 2];
         System.arraycopy(dataBytes, 0, bytes, 0, dataBytes.length);
         System.arraycopy(closeBytes, 0, bytes, dataBytes.length, closeBytes.length / 2);
-        proxy.flushToServer(bytes);
-
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, bytes);
 
         bytes = new byte[closeBytes.length - closeBytes.length / 2];
         System.arraycopy(closeBytes, closeBytes.length / 2, bytes, 0, bytes.length);
-        proxy.flushToServer(bytes);
+        proxy.flushToServer(100, bytes);
 
         // Do not close the raw socket yet
 
@@ -739,6 +805,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         // Socket close
@@ -785,13 +852,11 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
         byte[] chunk1 = new byte[2 * record.getBytes().length / 3];
         System.arraycopy(record.getBytes(), 0, chunk1, 0, chunk1.length);
-        proxy.flushToServer(chunk1);
-
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
 
         byte[] chunk2 = new byte[record.getBytes().length - chunk1.length];
         System.arraycopy(record.getBytes(), chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk2);
+        proxy.flushToServer(100, chunk2);
 
         record = proxy.readFromServer();
         Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
@@ -809,6 +874,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
@@ -855,14 +921,13 @@ public class SslBytesServerTest extends SslBytesTest
             System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
             byte[] chunk2 = new byte[bytes.length - chunk1.length];
             System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-            proxy.flushToServer(chunk1);
-            TimeUnit.MILLISECONDS.sleep(100);
-            proxy.flushToServer(chunk2);
-            TimeUnit.MILLISECONDS.sleep(100);
+            proxy.flushToServer(100, chunk1);
+            proxy.flushToServer(100, chunk2);
         }
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(150));
 
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
@@ -883,6 +948,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(150));
 
         closeClient(client);
@@ -1013,6 +1079,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
         closeClient(client);
@@ -1068,10 +1135,8 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
         byte[] chunk2 = new byte[bytes.length - chunk1.length];
         System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk1);
-        TimeUnit.MILLISECONDS.sleep(100);
-        proxy.flushToServer(chunk2);
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
+        proxy.flushToServer(100, chunk2);
 
         // Renegotiation Handshake
         record = proxy.readFromServer();
@@ -1108,10 +1173,8 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
         chunk2 = new byte[bytes.length - chunk1.length];
         System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk1);
-        TimeUnit.MILLISECONDS.sleep(100);
-        proxy.flushToServer(chunk2);
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
+        proxy.flushToServer(100, chunk2);
 
         // Renegotiation Handshake
         record = proxy.readFromClient();
@@ -1121,8 +1184,7 @@ public class SslBytesServerTest extends SslBytesTest
         System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
         chunk2 = new byte[bytes.length - chunk1.length];
         System.arraycopy(bytes, chunk1.length, chunk2, 0, chunk2.length);
-        proxy.flushToServer(chunk1);
-        TimeUnit.MILLISECONDS.sleep(100);
+        proxy.flushToServer(100, chunk1);
         // Do not write the second chunk now, but merge it with content, see below
 
         Assert.assertNull(renegotiation.get(5, TimeUnit.SECONDS));
@@ -1146,7 +1208,7 @@ public class SslBytesServerTest extends SslBytesTest
         byte[] mergedBytes = new byte[chunk2.length + dataBytes.length];
         System.arraycopy(chunk2, 0, mergedBytes, 0, chunk2.length);
         System.arraycopy(dataBytes, 0, mergedBytes, chunk2.length, dataBytes.length);
-        proxy.flushToServer(mergedBytes);
+        proxy.flushToServer(100, mergedBytes);
         // Write the remaining 2 TLS records
         for (int i = 0; i < 2; ++i)
         {
@@ -1176,9 +1238,92 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(100));
 
         closeClient(client);
+    }
+
+    @Test
+    public void testServerCloseClientDoesNotClose() throws Exception
+    {
+        final SSLSocket client = newClient();
+        final OutputStream clientOutput = client.getOutputStream();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        byte[] data = new byte[3 * 1024];
+        Arrays.fill(data, (byte)'Y');
+        String content = new String(data, "UTF-8");
+        automaticProxyFlow = proxy.startAutomaticFlow();
+        clientOutput.write(("" +
+                "POST / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + content.length() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                content).getBytes("UTF-8"));
+        clientOutput.flush();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+        String line = reader.readLine();
+        Assert.assertNotNull(line);
+        Assert.assertTrue(line.startsWith("HTTP/1.1 200 "));
+        while ((line = reader.readLine()) != null)
+        {
+            if (line.trim().length() == 0)
+                break;
+        }
+
+        // Check client is at EOF
+        Assert.assertEquals(-1,client.getInputStream().read());
+        
+        // Client should close the socket, but let's hold it open.
+
+        // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(100);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+        
+        // Check it is still half closed on the server.
+        Assert.assertTrue(((AsyncEndPoint)sslConnection.get().getEndPoint()).isOpen());
+        Assert.assertTrue(((AsyncEndPoint)sslConnection.get().getEndPoint()).isOutputShutdown());
+        Assert.assertFalse(((AsyncEndPoint)sslConnection.get().getEndPoint()).isInputShutdown());
+        
+        // wait for a bit more than MAX_IDLE_TIME
+        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+1000);
+        
+        // Server should have closed the endpoint
+        Assert.assertFalse(((AsyncEndPoint)sslConnection.get().getEndPoint()).isOpen());
+        Assert.assertTrue(((AsyncEndPoint)sslConnection.get().getEndPoint()).isOutputShutdown());
+        Assert.assertTrue(((AsyncEndPoint)sslConnection.get().getEndPoint()).isInputShutdown());
+        
+        
+        // writing to client will eventually get broken pipe exception or similar
+        try
+        {
+            for (int i=0;i<100;i++)
+            {
+                clientOutput.write(("" +
+                        "POST / HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Content-Type: text/plain\r\n" +
+                        "Content-Length: " + content.length() + "\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n" +
+                        content).getBytes("UTF-8"));
+                clientOutput.flush();
+            }
+            Assert.fail("Client should have seen server close");
+        }
+        catch(SocketException e)
+        {
+            // this was expected.
+        }
     }
 
     private void assumeJavaVersionSupportsTLSRenegotiations()
@@ -1203,7 +1348,7 @@ public class SslBytesServerTest extends SslBytesTest
         return client;
     }
 
-    private void closeClient(SSLSocket client) throws IOException
+    private void closeClient(SSLSocket client) throws Exception
     {
         client.close();
 
@@ -1223,5 +1368,4 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
     }
-
 }

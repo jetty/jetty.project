@@ -1,7 +1,21 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.*;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
@@ -11,9 +25,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * @version $Revision$ $Date$
  */
-public class WebSocketGeneratorD13Test
+public class WebSocketGeneratorRFC6455Test
 {
     private ByteArrayBuffer _out;
     private WebSocketGenerator _generator;
@@ -44,7 +57,7 @@ public class WebSocketGeneratorD13Test
     @Test
     public void testOneString() throws Exception
     {
-        _generator = new WebSocketGeneratorD13(_buffers, _endPoint,null);
+        _generator = new WebSocketGeneratorRFC6455(_buffers, _endPoint,null);
 
         byte[] data = "Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
         _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length);
@@ -71,7 +84,7 @@ public class WebSocketGeneratorD13Test
     @Test
     public void testOneBuffer() throws Exception
     {
-        _generator = new WebSocketGeneratorD13(_buffers, _endPoint,null);
+        _generator = new WebSocketGeneratorRFC6455(_buffers, _endPoint,null);
         
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
@@ -99,7 +112,7 @@ public class WebSocketGeneratorD13Test
     @Test
     public void testOneLongBuffer() throws Exception
     {
-        _generator = new WebSocketGeneratorD13(_buffers, _endPoint,null);
+        _generator = new WebSocketGeneratorRFC6455(_buffers, _endPoint,null);
         
         byte[] b=new byte[150];
         for (int i=0;i<b.length;i++)
@@ -120,7 +133,7 @@ public class WebSocketGeneratorD13Test
     @Test
     public void testOneStringMasked() throws Exception
     {
-        _generator = new WebSocketGeneratorD13(_buffers, _endPoint,_maskGen);
+        _generator = new WebSocketGeneratorRFC6455(_buffers, _endPoint,_maskGen);
 
         byte[] data = "Hell\uFF4F W\uFF4Frld".getBytes(StringUtil.__UTF8);
         _generator.addFrame((byte)0x8,(byte)0x04,data,0,data.length);
@@ -149,7 +162,7 @@ public class WebSocketGeneratorD13Test
     @Test
     public void testOneBufferMasked() throws Exception
     {
-        _generator = new WebSocketGeneratorD13(_buffers, _endPoint,_maskGen);
+        _generator = new WebSocketGeneratorRFC6455(_buffers, _endPoint,_maskGen);
         
         String string = "Hell\uFF4F W\uFF4Frld";
         byte[] bytes=string.getBytes(StringUtil.__UTF8);
@@ -179,7 +192,7 @@ public class WebSocketGeneratorD13Test
     @Test
     public void testOneLongBufferMasked() throws Exception
     {
-        _generator = new WebSocketGeneratorD13(_buffers, _endPoint,_maskGen);
+        _generator = new WebSocketGeneratorRFC6455(_buffers, _endPoint,_maskGen);
         
         byte[] b=new byte[150];
         for (int i=0;i<b.length;i++)
@@ -203,7 +216,7 @@ public class WebSocketGeneratorD13Test
     @Test
     public void testClose() throws Exception
     {
-        _generator = new WebSocketGeneratorD13(_buffers, _endPoint,null);
+        _generator = new WebSocketGeneratorRFC6455(_buffers, _endPoint,null);
 
         byte[] data = "xxGame Over".getBytes(StringUtil.__UTF8);
         data[0]=(byte)(1000/0x100);

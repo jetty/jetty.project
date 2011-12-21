@@ -62,8 +62,11 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 try
                 {
                     // Handle resumed request
-                    if (_request._async.isAsync() && !_request._async.isComplete())
-                        handleRequest();
+                    if (_request._async.isAsync())
+                    { 
+                       if (_request._async.isDispatchable())
+                           handleRequest();
+                    }
                     // else Parse more input
                     else if (!_parser.isComplete() && _parser.parseAvailable())
                         progress=true;

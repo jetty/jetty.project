@@ -510,6 +510,36 @@ public class HttpParserTest
         assertTrue(messageCompleted);
     }
     
+    @Test
+    public void testSeekEOF() throws Exception
+    {
+        StringEndPoint io=new StringEndPoint();
+        io.setInput(
+        "HTTP/1.1 200 OK\015\012"
+        + "Content-Length: 0\015\012"
+        + "Connection: close\015\012"
+        + "\015\012"
+        + "\015\012" // extra CRLF ignored
+        + "HTTP/1.1 400 OK\015\012");  // extra data causes close
+        
+        
+        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser(buffers,io, handler);
+        
+        parser.parse();
+        assertEquals("HTTP/1.1", f0);
+        assertEquals("200", f1);
+        assertEquals("OK", f2);
+        assertEquals(null,_content);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
+        
+        
+    }
+    
     private String _content;
     private String f0;
     private String f1;

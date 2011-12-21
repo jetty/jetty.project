@@ -8,7 +8,7 @@
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
@@ -57,14 +57,14 @@ public class Server extends HandlerWrapper implements Attributes
     private static final String __version;
     static
     {
-        if (Server.class.getPackage()!=null && 
+        if (Server.class.getPackage()!=null &&
             "Eclipse.org - Jetty".equals(Server.class.getPackage().getImplementationVendor()) &&
              Server.class.getPackage().getImplementationVersion()!=null)
             __version=Server.class.getPackage().getImplementationVersion();
         else
             __version=System.getProperty("jetty.version","8.0.y.z-SNAPSHOT");
     }
-    
+
     private final Container _container=new Container();
     private final AttributesMap _attributes = new AttributesMap();
     private ThreadPool _threadPool;
@@ -77,14 +77,15 @@ public class Server extends HandlerWrapper implements Attributes
     private int _maxCookieVersion=1;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
-    
+    private boolean _uncheckedPrintWriter=false;
+
 
     /* ------------------------------------------------------------ */
     public Server()
     {
-        setServer(this); 
+        setServer(this);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience constructor
      * Creates server and a {@link SelectChannelConnector} at the passed port.
@@ -97,7 +98,7 @@ public class Server extends HandlerWrapper implements Attributes
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Convenience constructor
      * Creates server and a {@link SelectChannelConnector} at the passed address.
@@ -118,7 +119,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return __version;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the container.
@@ -133,7 +134,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _stopAtShutdown;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setStopAtShutdown(boolean stop)
     {
@@ -143,7 +144,7 @@ public class Server extends HandlerWrapper implements Attributes
         else
             ShutdownThread.deregister(this);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the connectors.
@@ -161,7 +162,7 @@ public class Server extends HandlerWrapper implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * Conveniance method which calls {@link #getConnectors()} and {@link #setConnectors(Connector[])} to 
+     * Conveniance method which calls {@link #getConnectors()} and {@link #setConnectors(Connector[])} to
      * remove a connector.
      * @param connector The connector to remove.
      */
@@ -181,7 +182,7 @@ public class Server extends HandlerWrapper implements Attributes
             for (int i=0;i<connectors.length;i++)
                 connectors[i].setServer(this);
         }
-        
+
         _container.update(this, _connectors, connectors, "connector");
         _connectors = connectors;
     }
@@ -194,7 +195,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _threadPool;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param threadPool The threadPool to set.
@@ -240,32 +241,32 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _dumpBeforeStop = dumpBeforeStop;
     }
-    
-    
-  
+
+
+
     /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
         if (getStopAtShutdown())
             ShutdownThread.register(this);
-        
+
         LOG.info("jetty-"+__version);
         HttpGenerator.setServerVersion(__version);
         MultiException mex=new MultiException();
-        
+
         if (_threadPool==null)
             setThreadPool(new QueuedThreadPool());
-        
-        try 
-        { 
-            super.doStart(); 
-        } 
-        catch(Throwable e) 
-        { 
+
+        try
+        {
+            super.doStart();
+        }
+        catch(Throwable e)
+        {
             mex.add(e);
         }
-        
+
         if (_connectors!=null)
         {
             for (int i=0;i<_connectors.length;i++)
@@ -277,10 +278,10 @@ public class Server extends HandlerWrapper implements Attributes
                 }
             }
         }
-        
+
         if (isDumpAfterStart())
             dumpStdErr();
-        
+
         mex.ifExceptionThrow();
     }
 
@@ -290,9 +291,9 @@ public class Server extends HandlerWrapper implements Attributes
     {
         if (isDumpBeforeStop())
             dumpStdErr();
-        
+
         MultiException mex=new MultiException();
-        
+
         if (_graceful>0)
         {
             if (_connectors!=null)
@@ -303,7 +304,7 @@ public class Server extends HandlerWrapper implements Attributes
                     try{_connectors[i].close();}catch(Throwable e){mex.add(e);}
                 }
             }
-            
+
             Handler[] contexts = getChildHandlersByClass(Graceful.class);
             for (int c=0;c<contexts.length;c++)
             {
@@ -313,7 +314,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
             Thread.sleep(_graceful);
         }
-        
+
         if (_connectors!=null)
         {
             for (int i=_connectors.length;i-->0;)
@@ -321,7 +322,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         try {super.doStop(); } catch(Throwable e) { mex.add(e);}
-       
+
         mex.ifExceptionThrow();
 
         if (getStopAtShutdown())
@@ -339,7 +340,7 @@ public class Server extends HandlerWrapper implements Attributes
         final String target=connection.getRequest().getPathInfo();
         final Request request=connection.getRequest();
         final Response response=connection.getResponse();
-        
+
         if (LOG.isDebugEnabled())
         {
             LOG.debug("REQUEST "+target+" on "+connection);
@@ -349,7 +350,7 @@ public class Server extends HandlerWrapper implements Attributes
         else
             handle(target, request, request, response);
     }
-    
+
     /* ------------------------------------------------------------ */
     /* Handle a request from a connection.
      * Called to handle a request on the connection when either the header has been received,
@@ -378,7 +379,7 @@ public class Server extends HandlerWrapper implements Attributes
             baseRequest.setRequestURI(null);
             baseRequest.setPathInfo(baseRequest.getRequestURI());
             if (uri.getQuery()!=null)
-                baseRequest.mergeQueryString(uri.getQuery());    
+                baseRequest.mergeQueryString(uri.getQuery());
         }
 
         final String target=baseRequest.getPathInfo();
@@ -395,10 +396,10 @@ public class Server extends HandlerWrapper implements Attributes
             handle(target, baseRequest, request, response);
 
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
-    public void join() throws InterruptedException 
+    public void join() throws InterruptedException
     {
         getThreadPool().join();
     }
@@ -490,8 +491,8 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * Add an associated bean.
      * The bean will be added to the servers {@link Container}
-     * and if it is a {@link LifeCycle} instance, it will be 
-     * started/stopped along with the Server. Any beans that are also 
+     * and if it is a {@link LifeCycle} instance, it will be
+     * started/stopped along with the Server. Any beans that are also
      * {@link Destroyable}, will be destroyed with the server.
      * @param o the bean object to add
      */
@@ -507,7 +508,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /**
-     * Remove a LifeCycle object to be started/stopped 
+     * Remove a LifeCycle object to be started/stopped
      * along with the Server
      * @deprecated Use {@link #removeBean(Object)}
      */
@@ -516,7 +517,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         removeBean(c);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Remove an associated bean.
@@ -533,7 +534,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.util.AttributesMap#clearAttributes()
      */
     public void clearAttributes()
@@ -542,7 +543,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.util.AttributesMap#getAttribute(java.lang.String)
      */
     public Object getAttribute(String name)
@@ -551,7 +552,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.util.AttributesMap#getAttributeNames()
      */
     public Enumeration getAttributeNames()
@@ -560,7 +561,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.util.AttributesMap#removeAttribute(java.lang.String)
      */
     public void removeAttribute(String name)
@@ -569,7 +570,7 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.util.AttributesMap#setAttribute(java.lang.String, java.lang.Object)
      */
     public void setAttribute(String name, Object attribute)
@@ -588,13 +589,13 @@ public class Server extends HandlerWrapper implements Attributes
 
     /* ------------------------------------------------------------ */
     /**
-     * Set graceful shutdown timeout.  If set, the internal <code>doStop()</code> method will not immediately stop the 
+     * Set graceful shutdown timeout.  If set, the internal <code>doStop()</code> method will not immediately stop the
      * server. Instead, all {@link Connector}s will be closed so that new connections will not be accepted
      * and all handlers that implement {@link Graceful} will be put into the shutdown mode so that no new requests
-     * will be accepted, but existing requests can complete.  The server will then wait the configured timeout 
+     * will be accepted, but existing requests can complete.  The server will then wait the configured timeout
      * before stopping.
      * @param timeoutMS the milliseconds to wait for existing request to complete before stopping the server.
-     * 
+     *
      */
     public void setGracefulShutdown(int timeoutMS)
     {
@@ -613,9 +614,23 @@ public class Server extends HandlerWrapper implements Attributes
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpThis(out);
-        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),TypeUtil.asList(_connectors));    
+        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),TypeUtil.asList(_connectors));
     }
-    
+
+
+    /* ------------------------------------------------------------ */
+    public boolean isUncheckedPrintWriter()
+    {
+        return _uncheckedPrintWriter;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setUncheckedPrintWriter(boolean unchecked)
+    {
+        _uncheckedPrintWriter=unchecked;
+    }
+
+
     /* ------------------------------------------------------------ */
     /* A handler that can be gracefully shutdown.
      * Called by doStop if a {@link #setGracefulShutdown} period is set.

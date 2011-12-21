@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -193,53 +208,60 @@ public class WebSocketFactory
             throw new IllegalStateException("!HTTP/1.1");
 
         int draft = request.getIntHeader("Sec-WebSocket-Version");
-        if (draft < 0)
+        if (draft < 0) {
+            // Old pre-RFC version specifications (header not present in RFC-6455)
             draft = request.getIntHeader("Sec-WebSocket-Draft");
+        }
         AbstractHttpConnection http = AbstractHttpConnection.getCurrentConnection();
         if (http instanceof BlockingHttpConnection)
             throw new IllegalStateException("Websockets not supported on blocking connectors");
         ConnectedEndPoint endp = (ConnectedEndPoint)http.getEndPoint();
 
         List<String> extensions_requested = new ArrayList<String>();
-        for (Enumeration e=request.getHeaders("Sec-WebSocket-Extensions");e.hasMoreElements();)
+        @SuppressWarnings("unchecked")
+        Enumeration<String> e = request.getHeaders("Sec-WebSocket-Extensions");
+        while (e.hasMoreElements())
         {
-            QuotedStringTokenizer tok = new QuotedStringTokenizer((String)e.nextElement(),",");
+            QuotedStringTokenizer tok = new QuotedStringTokenizer(e.nextElement(),",");
             while (tok.hasMoreTokens())
+            {
                 extensions_requested.add(tok.nextToken());
+            }
         }
 
-        
-        final WebSocketConnection connection;
+        final WebSocketServletConnection connection;
         final List<Extension> extensions;
         switch (draft)
         {
-            case -1:
-            case 0:
+            case -1: // unspecified draft/version
+            case 0: // Old school draft/version
                 extensions=Collections.emptyList();
-                connection = new WebSocketConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
+                connection = new WebSocketServletConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
             case 1:
             case 2:
             case 3:
             case 4:
             case 5:
-            case 6: 
+            case 6:
                 extensions=Collections.emptyList();
-                connection = new WebSocketConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
+                connection = new WebSocketServletConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
             case 7:
             case 8:
                 extensions= initExtensions(extensions_requested,8-WebSocketConnectionD08.OP_EXT_DATA, 16-WebSocketConnectionD08.OP_EXT_CTRL,3);
-                connection = new WebSocketConnectionD08(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+                connection = new WebSocketServletConnectionD08(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
-            case 13:
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD13.OP_EXT_DATA, 16-WebSocketConnectionD13.OP_EXT_CTRL,3);
-                connection = new WebSocketConnectionD13(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+            case WebSocketConnectionRFC6455.VERSION: // RFC 6455 Version
+                extensions= initExtensions(extensions_requested,8-WebSocketConnectionRFC6455.OP_EXT_DATA, 16-WebSocketConnectionRFC6455.OP_EXT_CTRL,3);
+                connection = new WebSocketServletConnectionRFC6455(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
                 break;
             default:
                 LOG.warn("Unsupported Websocket version: "+draft);
-                response.setHeader("Sec-WebSocket-Version","0,6,8,13");
-                throw new HttpException(400, "Unsupported draft specification: " + draft);
+                // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
+                // Using the examples as outlined
+                response.setHeader("Sec-WebSocket-Version","13, 8, 6, 0");
+                throw new HttpException(400, "Unsupported websocket version specification: " + draft);
         }
 
         // Set the defaults
@@ -292,7 +314,8 @@ public class WebSocketFactory
 
             // Try each requested protocol
             WebSocket websocket = null;
-            
+
+            @SuppressWarnings("unchecked")
             Enumeration<String> protocols = request.getHeaders("Sec-WebSocket-Protocol");
             String protocol=null;
             while (protocol==null && protocols!=null && protocols.hasMoreElements())
@@ -314,7 +337,7 @@ public class WebSocketFactory
             {
                 // Try with no protocol
                 websocket = _acceptor.doWebSocketConnect(request, null);
-                
+
                 if (websocket==null)
                 {
                     response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);

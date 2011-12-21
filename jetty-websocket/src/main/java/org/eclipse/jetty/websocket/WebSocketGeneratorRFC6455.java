@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -27,7 +42,7 @@ import org.eclipse.jetty.io.EofException;
  * threads will call the addMessage methods while other
  * threads are flushing the generator.
  */
-public class WebSocketGeneratorD13 implements WebSocketGenerator
+public class WebSocketGeneratorRFC6455 implements WebSocketGenerator
 {
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
@@ -38,14 +53,14 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
     private final MaskGen _maskGen;
     private boolean _closed;
 
-    public WebSocketGeneratorD13(WebSocketBuffers buffers, EndPoint endp)
+    public WebSocketGeneratorRFC6455(WebSocketBuffers buffers, EndPoint endp)
     {
         _buffers=buffers;
         _endp=endp;
         _maskGen=null;
     }
 
-    public WebSocketGeneratorD13(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
+    public WebSocketGeneratorRFC6455(WebSocketBuffers buffers, EndPoint endp, MaskGen maskGen)
     {
         _buffers=buffers;
         _endp=endp;
@@ -63,21 +78,21 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
 
         if (_closed)
             throw new EofException("Closed");
-        if (opcode==WebSocketConnectionD13.OP_CLOSE)
+        if (opcode==WebSocketConnectionRFC6455.OP_CLOSE)
             _closed=true;
-        
+
         boolean mask=_maskGen!=null;
 
         if (_buffer==null)
             _buffer=mask?_buffers.getBuffer():_buffers.getDirectBuffer();
 
-        boolean last=WebSocketConnectionD13.isLastFrame(flags);
+        boolean last=WebSocketConnectionRFC6455.isLastFrame(flags);
 
         int space=mask?14:10;
 
         do
         {
-            opcode = _opsent?WebSocketConnectionD13.OP_CONTINUATION:opcode;
+            opcode = _opsent?WebSocketConnectionRFC6455.OP_CONTINUATION:opcode;
             opcode=(byte)(((0xf&flags)<<4)+(0xf&opcode));
             _opsent=true;
 
@@ -240,4 +255,17 @@ public class WebSocketGeneratorD13 implements WebSocketGenerator
         }
     }
 
+    @Override
+    public String toString()
+    {
+        // Do NOT use synchronized (this)
+        // because it's very easy to deadlock when debugging is enabled.
+        // We do a best effort to print the right toString() and that's it.
+        Buffer buffer = _buffer;
+        return String.format("%s@%x closed=%b buffer=%d",
+                getClass().getSimpleName(),
+                hashCode(),
+                _closed,
+                buffer == null ? -1 : buffer.length());
+    }
 }

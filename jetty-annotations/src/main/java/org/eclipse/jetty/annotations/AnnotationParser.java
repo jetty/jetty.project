@@ -454,7 +454,10 @@ public class AnnotationParser
                 className = className.replace('.', '/')+".class";
                 URL resource = Loader.getResource(this.getClass(), className, false);
                 if (resource!= null)
-                    scanClass(resource.openStream());
+                {
+                    Resource r = Resource.newResource(resource);
+                    scanClass(r.getInputStream());
+                }
             }
         }
     }
@@ -472,7 +475,10 @@ public class AnnotationParser
                     String nameAsResource = cz.getName().replace('.', '/')+".class";
                     URL resource = Loader.getResource(this.getClass(), nameAsResource, false);
                     if (resource!= null)
-                        scanClass(resource.openStream());
+                    {
+                        Resource r = Resource.newResource(resource);
+                        scanClass(r.getInputStream());
+                    }
                 }
             }
             if (visitSuperClasses)
@@ -501,7 +507,10 @@ public class AnnotationParser
                 s = s.replace('.', '/')+".class"; 
                 URL resource = Loader.getResource(this.getClass(), s, false);
                 if (resource!= null)
-                    scanClass(resource.openStream());
+                {
+                    Resource r = Resource.newResource(resource);
+                    scanClass(r.getInputStream());
+                }
             }
         }
     }
@@ -525,7 +534,10 @@ public class AnnotationParser
                 if (name.endsWith(".class"))
                 {
                     if ((resolver == null)|| (!resolver.isExcluded(name) && (!isParsed(name) || resolver.shouldOverride(name))))
-                        scanClass(res.getURL().openStream());
+                    {
+                        Resource r = Resource.newResource(res.getURL());
+                        scanClass(r.getInputStream());
+                    }
 
                 }
             }

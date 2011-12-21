@@ -257,40 +257,54 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         getSelectSet().scheduleTimeout(task,timeoutMs);
     }
 
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isOutputShutdown()
+    {
+        setCheckForIdle(true);
+        return super.isOutputShutdown();
+    }
+
     /* ------------------------------------------------------------ */
     public void setCheckForIdle(boolean check)
     {
         _idleTimestamp=check?System.currentTimeMillis():0;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isCheckForIdle()
     {
         return _idleTimestamp!=0;
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void notIdle()
     {
         if (_idleTimestamp!=0)
             _idleTimestamp=System.currentTimeMillis();
     }
-    
+
     /* ------------------------------------------------------------ */
     public void checkIdleTimestamp(long now)
     {
         long idleTimestamp=_idleTimestamp;
-        if (!getChannel().isOpen() || idleTimestamp!=0 && _maxIdleTime>0 && now>(idleTimestamp+_maxIdleTime))
+        
+        if (idleTimestamp!=0 && _maxIdleTime>0)
         {
-            onIdleExpired();
-            _idleTimestamp=now;
+            long idleForMs=now-idleTimestamp;
+            if (idleForMs>_maxIdleTime)
+            {
+                onIdleExpired(idleForMs);
+                _idleTimestamp=now;
+            }
         }
     }
 
     /* ------------------------------------------------------------ */
-    public void onIdleExpired()
+    public void onIdleExpired(long idleForMs)
     {
-        _connection.onIdleExpired();
+        _connection.onIdleExpired(idleForMs);
     }
 
     /* ------------------------------------------------------------ */
@@ -704,24 +718,43 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     @Override
     public String toString()
     {
-        synchronized(this)
+        // Do NOT use synchronized (this)
+        // because it's very easy to deadlock when debugging is enabled.
+        // We do a best effort to print the right toString() and that's it.
+        SelectionKey key = _key;
+        String keyString = "";
+        if (key != null)
         {
-            return String.format("SCEP@%x{%s->%s,d=%b,open=%b,ishut=%b,oshut=%b,rb=%b,wb=%b,w=%b,i=%d%s%s%s}",
-                    hashCode(),
-                    _socket.getRemoteSocketAddress(),
-                    _socket.getLocalSocketAddress(),
-                    _dispatched,
-                    isOpen(),
-                    isInputShutdown(),
-                    isOutputShutdown(),
-                    _readBlocked,
-                    _writeBlocked,
-                    _writable,
-                    _interestOps,
-                    _key != null && _key.isValid() ? "" : "!",
-                    _key != null && _key.isValid() && _key.isReadable() ? "r" : "",
-                    _key != null && _key.isValid() && _key.isWritable() ? "w" : "");
+            if (key.isValid())
+            {
+                if (key.isReadable())
+                    keyString += "r";
+                if (key.isWritable())
+                    keyString += "w";
+            }
+            else
+            {
+                keyString += "!";
+            }
         }
+        else
+        {
+            keyString += "-";
+        }
+        return String.format("SCEP@%x{l(%s)<->r(%s),d=%b,open=%b,ishut=%b,oshut=%b,rb=%b,wb=%b,w=%b,i=%d%s}-{%s}",
+                hashCode(),
+                _socket.getRemoteSocketAddress(),
+                _socket.getLocalSocketAddress(),
+                _dispatched,
+                isOpen(),
+                isInputShutdown(),
+                isOutputShutdown(),
+                _readBlocked,
+                _writeBlocked,
+                _writable,
+                _interestOps,
+                keyString,
+                _connection);
     }
 
     /* ------------------------------------------------------------ */

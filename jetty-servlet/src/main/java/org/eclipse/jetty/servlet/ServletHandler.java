@@ -1236,7 +1236,6 @@ public class ServletHandler extends ScopedHandler
                   HttpServletResponse response)
         throws IOException
     {
-        new Throwable().printStackTrace();
         if(LOG.isDebugEnabled())
             LOG.debug("Not Found "+request.getRequestURI());
         response.sendError(HttpServletResponse.SC_NOT_FOUND);
