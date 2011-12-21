@@ -311,6 +311,7 @@
       </plugin>
     </plugins>
   </reporting>
+<!--
   <repositories>
     <repository>
       <snapshots>
@@ -321,6 +322,7 @@
       <url>http://oss.sonatype.org/content/groups/jetty</url>
     </repository>
   </repositories>
+-->
   <modules>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
