@@ -599,7 +599,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public void shutdownOutput() throws IOException
         {
-            System.err.println("OSHUT SSL");
             synchronized (SslConnection.this)
             {
                 LOG.debug("{} ssl endp.oshut {}",_session,this);
