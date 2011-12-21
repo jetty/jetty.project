@@ -15,8 +15,6 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,6 +43,9 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 
 public class WebSocketClientTest
 {
@@ -717,7 +718,7 @@ public class WebSocketClientTest
         Assert.assertThat("URI (" + uri + ").host", addr.getHostName(), is("localhost"));
         Assert.assertThat("URI (" + uri + ").port", addr.getPort(), is(80));
     }
-  
+
     @Test
     public void testURIWithDefaultWSSPort() throws Exception
     {
