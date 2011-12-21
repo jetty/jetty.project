@@ -1381,14 +1381,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
         StringBuilder b = new StringBuilder();
 
-        String p = getClass().getPackage().getName();
-        if (p != null && p.length() > 0)
+        Package pkg = getClass().getPackage();
+        if (pkg != null)
         {
-            String[] ss = p.split("\\.");
-            for (String s : ss)
-                b.append(s.charAt(0)).append('.');
+            String p = pkg.getName();
+            if (p != null && p.length() > 0)
+            {
+                String[] ss = p.split("\\.");
+                for (String s : ss)
+                    b.append(s.charAt(0)).append('.');
+            }
         }
-
         b.append(getClass().getSimpleName());
         b.append('{').append(getContextPath()).append(',').append(getBaseResource());
 
