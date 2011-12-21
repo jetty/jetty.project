@@ -15,21 +15,23 @@ package org.eclipse.jetty.server;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
-
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.junit.Assert;
 import org.junit.Test;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
@@ -102,6 +104,101 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         Assert.assertTrue(System.currentTimeMillis()-start>200);
         Assert.assertTrue(System.currentTimeMillis()-start<5000);
+    }
+
+    @Test
+    public void testMaxIdleWithRequest10NoClientClose() throws Exception
+    {  
+        configureServer(new HelloWorldHandler());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        client.setSoTimeout(10000);
+
+        assertFalse(client.isClosed());
+        
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        os.write((
+                "GET / HTTP/1.0\r\n"+
+                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "connection: close\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+
+        String result=IO.toString(is);
+        Assert.assertThat("OK",result,containsString("200 OK"));
+        assertEquals(-1, is.read());
+        
+        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME);
+        
+        // further writes will get broken pipe or similar
+        try
+        {
+            for (int i=0;i<100;i++)
+            {
+                os.write((
+                        "GET / HTTP/1.0\r\n"+
+                        "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                        "connection: keep-alive\r\n"+
+                "\r\n").getBytes("utf-8"));
+                os.flush();
+            }
+            Assert.fail("half close should have timed out");
+        }
+        catch(SocketException e)
+        {
+            // expected
+        }
+    }
+
+    @Test
+    public void testMaxIdleWithRequest11NoClientClose() throws Exception
+    {  
+        configureServer(new EchoHandler());
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        client.setSoTimeout(10000);
+
+        assertFalse(client.isClosed());
+        
+        OutputStream os=client.getOutputStream();
+        InputStream is=client.getInputStream();
+
+        String content="Wibble";
+        byte[] contentB=content.getBytes("utf-8");
+        os.write((
+                "POST /echo HTTP/1.1\r\n"+
+                "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                "content-type: text/plain; charset=utf-8\r\n"+
+                "content-length: "+contentB.length+"\r\n"+
+                "connection: close\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.write(contentB);
+        os.flush();
+
+        IO.toString(is);
+         
+        assertEquals(-1, is.read());
+
+        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME);
+        
+        // further writes will get broken pipe or similar
+        try
+        {
+            for (int i=0;i<100;i++)
+            {
+                os.write((
+                        "GET / HTTP/1.0\r\n"+
+                        "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                        "connection: keep-alive\r\n"+
+                "\r\n").getBytes("utf-8"));
+                os.flush();
+            }
+            Assert.fail("half close should have timed out");
+        }
+        catch(SocketException e)
+        {
+            // expected
+        }
     }
     
 
