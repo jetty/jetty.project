@@ -1241,7 +1241,6 @@ public class SslBytesServerTest extends SslBytesTest
         closeClient(client);
     }
 
-    @Ignore // TODO: currently not passing
     @Test
     public void testServerShutdownOutputClientDoesNotCloseServerCloses() throws Exception
     {
@@ -1291,11 +1290,9 @@ public class SslBytesServerTest extends SslBytesTest
         // The server has shutdown the output since the client sent a Connection: close
         // but the client does not close, so the server must idle timeout the endPoint.
 
-        TimeUnit.MILLISECONDS.sleep(idleTimeout + idleTimeout / 2);
+        TimeUnit.MILLISECONDS.sleep(idleTimeout + idleTimeout/2);
 
         Assert.assertFalse(serverEndPoint.get().isOpen());
-
-        closeClient(client);
     }
 
     private void assumeJavaVersionSupportsTLSRenegotiations()
