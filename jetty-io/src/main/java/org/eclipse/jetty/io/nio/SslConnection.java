@@ -249,7 +249,10 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         try
         {
             LOG.debug("onIdleExpired {}ms on {}",idleForMs,this);
-            _sslEndPoint.shutdownOutput();
+            if (_endp.isOutputShutdown())
+                _sslEndPoint.close();
+            else
+                _sslEndPoint.shutdownOutput();
         }
         catch (IOException e)
         {

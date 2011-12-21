@@ -56,7 +56,7 @@ public class SslBytesServerTest extends SslBytesTest
     private final AtomicInteger sslFlushes = new AtomicInteger();
     private final AtomicInteger httpParses = new AtomicInteger();
     private final AtomicReference<EndPoint> serverEndPoint = new AtomicReference<EndPoint>();
-    private final int idleTimeout = 5000;
+    private final int idleTimeout = 2000;
     private ExecutorService threadPool;
     private Server server;
     private SSLContext sslContext;
@@ -1277,7 +1277,13 @@ public class SslBytesServerTest extends SslBytesTest
         }
         Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
+        // Check client is at EOF
+        Assert.assertEquals(-1,client.getInputStream().read());
+
+        // Client should close the socket, but let's hold it open.
+
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(100);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
