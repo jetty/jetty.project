@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
@@ -144,15 +145,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // Get the server side endpoint
         EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
+        if (endp instanceof SslConnection.SslEndPoint)
+            endp=((SslConnection.SslEndPoint)endp).getEndpoint();
 
         // read the response
         String result=IO.toString(is);
         Assert.assertThat("OK",result,containsString("200 OK"));
         
-        // check the server side is open and oshut and that client reads EOF
-        Assert.assertTrue(endp.isOpen());
-        Assert.assertTrue(endp.isOutputShutdown());
-        Assert.assertFalse(endp.isInputShutdown());
+        // check client reads EOF
         assertEquals(-1, is.read());
 
         // wait for idle timeout
@@ -227,10 +227,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // read the response
         IO.toString(is);
 
-        // check the server side is open and oshut and that client reads EOF
-        Assert.assertTrue(endp.isOpen());
-        Assert.assertTrue(endp.isOutputShutdown());
-        Assert.assertFalse(endp.isInputShutdown());
+        // check client reads EOF
         assertEquals(-1, is.read());
 
         TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
