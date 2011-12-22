@@ -1,8 +1,21 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -32,10 +45,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * @version $Revision$ $Date$
- */
-public class WebSocketMessageD13Test
+public class WebSocketMessageRFC6455Test
 {
     private static Server __server;
     private static Connector __connector;
@@ -82,7 +92,7 @@ public class WebSocketMessageD13Test
     @Test
     public void testHash()
     {
-        assertEquals("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",WebSocketConnectionD13.hashKey("dGhlIHNhbXBsZSBub25jZQ=="));
+        assertEquals("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",WebSocketConnectionRFC6455.hashKey("dGhlIHNhbXBsZSBub25jZQ=="));
     }
     
     @Test
@@ -98,7 +108,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: chat, superchat\r\n"+
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -123,7 +133,7 @@ public class WebSocketMessageD13Test
         String data=message.toString();
         __serverWebSocket.connection.sendMessage(data);
 
-        assertEquals(WebSocketConnectionD13.OP_TEXT,input.read());
+        assertEquals(WebSocketConnectionRFC6455.OP_TEXT,input.read());
         assertEquals(0x7e,input.read());
         assertEquals(0x1f,input.read());
         assertEquals(0xf6,input.read());
@@ -146,7 +156,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: onConnect\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -181,7 +191,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: onConnect\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "Sec-WebSocket-Extensions: identity;param=0\r\n"+
                  "Sec-WebSocket-Extensions: identity;param=1, identity ; param = '2' ; other = ' some = value ' \r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
@@ -224,7 +234,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: onConnect\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "Sec-WebSocket-Extensions: fragment;maxLength=4;minFragments=7\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
@@ -278,7 +288,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: echo\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "Sec-WebSocket-Extensions: x-deflate-frame;minLength=64\r\n"+
                  "Sec-WebSocket-Extensions: fragment;minFragments=2\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
@@ -329,7 +339,7 @@ public class WebSocketMessageD13Test
         output.write(buf,0,l+3);
         output.flush();
         
-        assertEquals(0x40+WebSocketConnectionD13.OP_TEXT,input.read());
+        assertEquals(0x40+WebSocketConnectionRFC6455.OP_TEXT,input.read());
         assertEquals(0x20+3,input.read());
         assertEquals(0x7e,input.read());
         assertEquals(0x02,input.read());
@@ -376,7 +386,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: echo\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
         output.write(0x84);
@@ -415,7 +425,7 @@ public class WebSocketMessageD13Test
 
         byte[] bytes="This is a long message of text that we will send again and again".getBytes(StringUtil.__ISO_8859_1);
         byte[] mesg=new byte[bytes.length+6];
-        mesg[0]=(byte)(0x80+WebSocketConnectionD13.OP_TEXT);
+        mesg[0]=(byte)(0x80+WebSocketConnectionRFC6455.OP_TEXT);
         mesg[1]=(byte)(0x80+bytes.length);
         mesg[2]=(byte)0xff;
         mesg[3]=(byte)0xff;
@@ -434,7 +444,7 @@ public class WebSocketMessageD13Test
                         "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                         "Sec-WebSocket-Origin: http://example.com\r\n"+
                         "Sec-WebSocket-Protocol: latch\r\n" +
-                        "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                        "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                 "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -522,7 +532,7 @@ public class WebSocketMessageD13Test
                         "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                         "Sec-WebSocket-Origin: http://example.com\r\n"+
                         "Sec-WebSocket-Protocol: latch\r\n" +
-                        "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                        "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                 "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -610,7 +620,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: echo\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
         output.write(0x89);
@@ -649,7 +659,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: other\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -681,10 +691,10 @@ public class WebSocketMessageD13Test
         output.flush();
         
 
-        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(33,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(WebSocketConnectionD13.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(WebSocketConnectionRFC6455.CLOSE_MESSAGE_TOO_LARGE,code);
         lookFor("Text message size > 10240 chars",input);
     }
 
@@ -701,7 +711,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: other\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -739,10 +749,10 @@ public class WebSocketMessageD13Test
             output.write(bytes[i]^0xff);
         output.flush();
 
-        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(30,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(WebSocketConnectionD13.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(WebSocketConnectionRFC6455.CLOSE_MESSAGE_TOO_LARGE,code);
         lookFor("Text message size > 15 chars",input);
     }
 
@@ -760,7 +770,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: other\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -790,10 +800,10 @@ public class WebSocketMessageD13Test
         
         
         
-        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(30,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(WebSocketConnectionD13.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(WebSocketConnectionRFC6455.CLOSE_MESSAGE_TOO_LARGE,code);
         lookFor("Text message size > 15 chars",input);
     }
 
@@ -810,7 +820,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: aggregate\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -826,7 +836,7 @@ public class WebSocketMessageD13Test
         assertNotNull(__serverWebSocket.connection);
         __serverWebSocket.getConnection().setMaxBinaryMessageSize(1024);
         
-        output.write(WebSocketConnectionD13.OP_BINARY);
+        output.write(WebSocketConnectionRFC6455.OP_BINARY);
         output.write(0x8a);
         output.write(0xff);
         output.write(0xff);
@@ -847,7 +857,7 @@ public class WebSocketMessageD13Test
             output.write(bytes[i]^0xff);
         output.flush();
         
-        assertEquals(0x80+WebSocketConnectionD13.OP_BINARY,input.read());
+        assertEquals(0x80+WebSocketConnectionRFC6455.OP_BINARY,input.read());
         assertEquals(20,input.read());
         lookFor("01234567890123456789",input);
     }
@@ -865,7 +875,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: other\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -904,10 +914,10 @@ public class WebSocketMessageD13Test
         output.flush();
 
         
-        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(19,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(WebSocketConnectionD13.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(WebSocketConnectionRFC6455.CLOSE_MESSAGE_TOO_LARGE,code);
         lookFor("Message size > 15",input);
     }
     
@@ -977,7 +987,7 @@ public class WebSocketMessageD13Test
                             "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                             "Sec-WebSocket-Origin: http://example.com\r\n"+
                             "Sec-WebSocket-Protocol: chat\r\n" +
-                            "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                            "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                     "\r\n").getBytes("ISO-8859-1"));
             output.flush();
 
@@ -1088,7 +1098,7 @@ public class WebSocketMessageD13Test
                             "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                             "Sec-WebSocket-Origin: http://example.com\r\n"+
                             "Sec-WebSocket-Protocol: chat\r\n" +
-                            "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                            "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                     "\r\n").getBytes("ISO-8859-1"));
             output.flush();
 
@@ -1159,7 +1169,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: chat\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -1186,10 +1196,10 @@ public class WebSocketMessageD13Test
         output.write(0x28);
         output.flush();
 
-        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(15,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(WebSocketConnectionD13.CLOSE_BAD_PAYLOAD,code);
+        assertEquals(WebSocketConnectionRFC6455.CLOSE_BAD_PAYLOAD,code);
         lookFor("Invalid UTF-8",input);
     }
 
@@ -1206,7 +1216,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: other\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -1234,10 +1244,10 @@ public class WebSocketMessageD13Test
             output.write(bytes[i]^0xff);
         output.flush();
         
-        assertEquals(0x80|WebSocketConnectionD13.OP_CLOSE,input.read());
+        assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(19,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
-        assertEquals(WebSocketConnectionD13.CLOSE_MESSAGE_TOO_LARGE,code);
+        assertEquals(WebSocketConnectionRFC6455.CLOSE_MESSAGE_TOO_LARGE,code);
         lookFor("Message size > 15",input);
     }
 
@@ -1254,7 +1264,7 @@ public class WebSocketMessageD13Test
                  "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                  "Sec-WebSocket-Origin: http://example.com\r\n"+
                  "Sec-WebSocket-Protocol: onConnect\r\n" +
-                 "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                 "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                  "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -1316,7 +1326,7 @@ public class WebSocketMessageD13Test
                         "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
                         "Sec-WebSocket-Origin: http://example.com\r\n"+
                         "Sec-WebSocket-Protocol: onConnect\r\n" +
-                        "Sec-WebSocket-Version: "+WebSocketConnectionD13.VERSION+"\r\n"+
+                        "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
                 "\r\n").getBytes("ISO-8859-1"));
         output.flush();
 
@@ -1360,7 +1370,7 @@ public class WebSocketMessageD13Test
         final AtomicReference<String> received = new AtomicReference<String>();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
         
-        WebSocketGeneratorD13 gen = new WebSocketGeneratorD13(new WebSocketBuffers(8096),endp,null);
+        WebSocketGeneratorRFC6455 gen = new WebSocketGeneratorRFC6455(new WebSocketBuffers(8096),endp,null);
         
         byte[] data = message.getBytes(StringUtil.__UTF8);
         gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length);
@@ -1394,7 +1404,7 @@ public class WebSocketMessageD13Test
 
         MaskGen maskGen = new RandomMaskGen();
         
-        WebSocketGeneratorD13 gen = new WebSocketGeneratorD13(new WebSocketBuffers(8096),endp,maskGen);
+        WebSocketGeneratorRFC6455 gen = new WebSocketGeneratorRFC6455(new WebSocketBuffers(8096),endp,maskGen);
         byte[] data = message.getBytes(StringUtil.__UTF8);
         gen.addFrame((byte)0x8,(byte)0x1,data,0,data.length);
         
@@ -1524,9 +1534,9 @@ public class WebSocketMessageD13Test
             {
                 switch(opcode)
                 {
-                    case WebSocketConnectionD13.OP_CLOSE:
-                    case WebSocketConnectionD13.OP_PING:
-                    case WebSocketConnectionD13.OP_PONG:
+                    case WebSocketConnectionRFC6455.OP_CLOSE:
+                    case WebSocketConnectionRFC6455.OP_PING:
+                    case WebSocketConnectionRFC6455.OP_PONG:
                         break;
                         
                     default:

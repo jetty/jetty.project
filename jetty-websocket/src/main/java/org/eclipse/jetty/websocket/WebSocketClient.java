@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
@@ -317,26 +332,36 @@ public class WebSocketClient
     {
         if (!_factory.isStarted())
             throw new IllegalStateException("Factory !started");
-        String scheme=uri.getScheme();
-        if (!("ws".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme)))
-            throw new IllegalArgumentException("Bad WebSocket scheme '"+scheme+"'");
-        if ("wss".equalsIgnoreCase(scheme))
-            throw new IOException("wss not supported");
+
+        InetSocketAddress address = toSocketAddress(uri);
 
         SocketChannel channel = SocketChannel.open();
         if (_bindAddress != null)
             channel.socket().bind(_bindAddress);
         channel.socket().setTcpNoDelay(true);
 
-        InetSocketAddress address=new InetSocketAddress(uri.getHost(),uri.getPort());
-
-        final WebSocketFuture holder=new WebSocketFuture(websocket,uri,this,channel);
+        WebSocketFuture holder = new WebSocketFuture(websocket, uri, this, channel);
 
         channel.configureBlocking(false);
         channel.connect(address);
-        _factory.getSelectorManager().register( channel, holder);
+        _factory.getSelectorManager().register(channel, holder);
 
         return holder;
+    }
+    
+    public static final InetSocketAddress toSocketAddress(URI uri)
+    {
+        String scheme = uri.getScheme();
+        if (!("ws".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme)))
+            throw new IllegalArgumentException("Bad WebSocket scheme: " + scheme);
+        int port = uri.getPort();
+        if (port == 0)
+            throw new IllegalArgumentException("Bad WebSocket port: " + port);
+        if (port < 0)
+            port = "ws".equals(scheme) ? 80 : 443;
+
+        InetSocketAddress address = new InetSocketAddress(uri.getHost(), port);
+        return address;
     }
 
     /* ------------------------------------------------------------ */
@@ -422,9 +447,9 @@ public class WebSocketClient
                 if (channel!=null)
                 {
                     if (ex instanceof ProtocolException)
-                        closeChannel(channel,WebSocketConnectionD13.CLOSE_PROTOCOL,ex.getMessage());
+                        closeChannel(channel,WebSocketConnectionRFC6455.CLOSE_PROTOCOL,ex.getMessage());
                     else
-                        closeChannel(channel,WebSocketConnectionD13.CLOSE_NO_CLOSE,ex.getMessage());
+                        closeChannel(channel,WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,ex.getMessage());
                 }
             }
             finally
@@ -468,6 +493,7 @@ public class WebSocketClient
             return _maskGen;
         }
 
+        @Override
         public String toString()
         {
             return "[" + _uri + ","+_websocket+"]@"+hashCode();
@@ -489,7 +515,7 @@ public class WebSocketClient
 
                 if (channel!=null)
                 {
-                    closeChannel(channel,WebSocketConnectionD13.CLOSE_NO_CLOSE,"cancelled");
+                    closeChannel(channel,WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,"cancelled");
                     return true;
                 }
                 return false;
@@ -549,7 +575,7 @@ public class WebSocketClient
             }
 
             if (channel!=null)
-                closeChannel(channel,WebSocketConnectionD13.CLOSE_NO_CLOSE,"timeout");
+                closeChannel(channel,WebSocketConnectionRFC6455.CLOSE_NO_CLOSE,"timeout");
             if (exception!=null)
                 throw new ExecutionException(exception);
             if (connection!=null)

@@ -25,6 +25,7 @@
             <configuration>
               <instructions>
                 <Import-Package>javax.servlet.*;version="2.6.0",*</Import-Package>
+                <Export-Package>org.eclipse.jetty.security.jaspi.*;version="${parsedVersion.osgiVersion}"</Export-Package>
               </instructions>
             </configuration>
           </execution>

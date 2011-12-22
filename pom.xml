@@ -313,6 +313,7 @@
       </plugin>
     </plugins>
   </reporting>
+<!--
   <repositories>
     <repository>
       <snapshots>
@@ -323,6 +324,7 @@
       <url>http://oss.sonatype.org/content/groups/jetty</url>
     </repository>
   </repositories>
+-->
   <modules>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
@@ -354,7 +356,7 @@
     <module>jetty-http-spi</module>
     <module>jetty-distribution</module>
     <module>test-continuation</module>
-    <module>test-continuation-jetty6</module>
+    <!--module>test-continuation-jetty6</module-->
     <module>test-jetty-servlet</module>
     <module>test-jetty-webapp</module>
     <module>test-jetty-nested</module>

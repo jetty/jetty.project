@@ -234,6 +234,25 @@ public class AsyncContinuation implements AsyncContext, Continuation
             }
         }
     }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isDispatchable()
+    {
+        synchronized(this)
+        {
+            switch(_state)
+            {
+                case __REDISPATCH:
+                case __REDISPATCHED:
+                case __REDISPATCHING:
+                case __COMPLETING:
+                    return true;
+                    
+                default:
+                    return false;   
+            }
+        }
+    }
 
     /* ------------------------------------------------------------ */
     @Override

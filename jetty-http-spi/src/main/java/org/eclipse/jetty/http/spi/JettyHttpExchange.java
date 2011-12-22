@@ -1,27 +1,23 @@
-package org.eclipse.jetty.http.spi;
+// ========================================================================
+// Copyright (c) 2009-2009 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at 
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses. 
+// ========================================================================
 
-//========================================================================
-//Copyright (c) 2004-2009 Mort Bay Consulting Pty. Ltd.
-//------------------------------------------------------------------------
-//All rights reserved. This program and the accompanying materials
-//are made available under the terms of the Eclipse Public License v1.0
-//and Apache License v2.0 which accompanies this distribution.
-//The Eclipse Public License is available at 
-//http://www.eclipse.org/legal/epl-v10.html
-//The Apache License v2.0 is available at
-//http://www.opensource.org/licenses/apache2.0.php
-//You may elect to redistribute this code under either of these licenses. 
-//========================================================================
+package org.eclipse.jetty.http.spi;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,197 +27,226 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
 
+/* ------------------------------------------------------------ */
 /**
- * Jetty implementation of {@link com.sun.net.httpserver.HttpExchange}
  */
-public class JettyHttpExchange extends HttpExchange
+public class JettyHttpExchange extends HttpExchange implements JettyExchange
 {
+    private JettyHttpExchangeDelegate _delegate;
 
-    private HttpContext _httpContext;
-
-    private HttpServletRequest _req;
-
-    private HttpServletResponse _resp;
-
-    private Headers _responseHeaders = new Headers();
-
-    private int _responseCode = 0;
-
-    private InputStream _is;
-
-    private OutputStream _os;
-
-	private HttpPrincipal _httpPrincipal;
-
-
-    public JettyHttpExchange(HttpContext jaxWsContext , HttpServletRequest req,
-            HttpServletResponse resp)
+    public JettyHttpExchange(HttpContext jaxWsContext, HttpServletRequest req, HttpServletResponse resp)
     {
-        this._httpContext = jaxWsContext;
-        this._req = req;
-        this._resp = resp;
-        try
-        {
-            this._is = req.getInputStream();
-            this._os = resp.getOutputStream();
-        }
-        catch (IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        super();
+        _delegate = new JettyHttpExchangeDelegate(jaxWsContext,req,resp);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#hashCode()
+     */
+    @Override
+    public int hashCode()
+    {
+        return _delegate.hashCode();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getRequestHeaders()
+     */
     @Override
     public Headers getRequestHeaders()
     {
-        Headers headers = new Headers();
-        Enumeration<?> en = _req.getHeaderNames();
-        while (en.hasMoreElements())
-        {
-            String name = (String) en.nextElement();
-            Enumeration<?> en2 = _req.getHeaders(name);
-            while (en2.hasMoreElements())
-            {
-                String value = (String) en2.nextElement();
-                headers.add(name, value);
-            }
-        }
-        return headers;
+        return _delegate.getRequestHeaders();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getResponseHeaders()
+     */
     @Override
     public Headers getResponseHeaders()
     {
-        return _responseHeaders;
+        return _delegate.getResponseHeaders();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getRequestURI()
+     */
     @Override
     public URI getRequestURI()
     {
-        try
-        {
-        	String uriAsString = _req.getRequestURI();
-        	if (_req.getQueryString() != null)
-        		uriAsString += "?" + _req.getQueryString();
-        	
-            return new URI(uriAsString);
-        }
-        catch (URISyntaxException ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        return _delegate.getRequestURI();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getRequestMethod()
+     */
     @Override
     public String getRequestMethod()
     {
-        return _req.getMethod();
+        return _delegate.getRequestMethod();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getHttpContext()
+     */
     @Override
     public HttpContext getHttpContext()
     {
-        return _httpContext;
+        return _delegate.getHttpContext();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#close()
+     */
     @Override
     public void close()
     {
-        try
-        {
-            _resp.getOutputStream().close();
-        }
-        catch (IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        _delegate.close();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#equals(java.lang.Object)
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+        return _delegate.equals(obj);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getRequestBody()
+     */
     @Override
     public InputStream getRequestBody()
     {
-        return _is;
+        return _delegate.getRequestBody();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getResponseBody()
+     */
     @Override
     public OutputStream getResponseBody()
     {
-        return _os;
+        return _delegate.getResponseBody();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#sendResponseHeaders(int, long)
+     */
     @Override
-    public void sendResponseHeaders(int rCode, long responseLength)
-            throws IOException
+    public void sendResponseHeaders(int rCode, long responseLength) throws IOException
     {
-        this._responseCode = rCode;
-
-        for (Map.Entry<String, List<String>> stringListEntry : _responseHeaders.entrySet())
-        {
-            String name = stringListEntry.getKey();
-            List<String> values = stringListEntry.getValue();
-
-            for (String value : values)
-            {
-                _resp.setHeader(name, value);
-            }
-        }
-        if (responseLength > 0)
-            _resp.setHeader("content-length", "" + responseLength);
-        _resp.setStatus(rCode);
+        _delegate.sendResponseHeaders(rCode,responseLength);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getRemoteAddress()
+     */
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return new InetSocketAddress(_req.getRemoteAddr(), _req.getRemotePort());
+        return _delegate.getRemoteAddress();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getResponseCode()
+     */
     @Override
     public int getResponseCode()
     {
-        return _responseCode;
+        return _delegate.getResponseCode();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getLocalAddress()
+     */
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return new InetSocketAddress(_req.getLocalAddr(), _req.getLocalPort());
+        return _delegate.getLocalAddress();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getProtocol()
+     */
     @Override
     public String getProtocol()
     {
-        return _req.getProtocol();
+        return _delegate.getProtocol();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getAttribute(java.lang.String)
+     */
     @Override
     public Object getAttribute(String name)
     {
-        return _req.getAttribute(name);
+        return _delegate.getAttribute(name);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#setAttribute(java.lang.String, java.lang.Object)
+     */
     @Override
     public void setAttribute(String name, Object value)
     {
-        _req.setAttribute(name, value);
+        _delegate.setAttribute(name,value);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#setStreams(java.io.InputStream, java.io.OutputStream)
+     */
     @Override
     public void setStreams(InputStream i, OutputStream o)
     {
-        _is = i;
-        _os = o;
+        _delegate.setStreams(i,o);
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#getPrincipal()
+     */
     @Override
     public HttpPrincipal getPrincipal()
     {
-    	return _httpPrincipal;
+        return _delegate.getPrincipal();
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#setPrincipal(com.sun.net.httpserver.HttpPrincipal)
+     */
     public void setPrincipal(HttpPrincipal principal)
     {
-    	this._httpPrincipal = principal;
+        _delegate.setPrincipal(principal);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.spi.JettyExchange#toString()
+     */
+    @Override
+    public String toString()
+    {
+        return _delegate.toString();
     }
 
 }

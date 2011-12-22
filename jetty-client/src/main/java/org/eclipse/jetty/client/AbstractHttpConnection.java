@@ -355,9 +355,8 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
     @Override
     public String toString()
     {
-        return String.format("%s@%x//%s,g=%s,p=%s",
-                getClass().getSimpleName(),
-                hashCode(),
+        return String.format("%s %s g=%s p=%s",
+                super.toString(),
                 _destination == null ? "?.?.?.?:??" : _destination.getAddress(),
                 _generator,
                 _parser);

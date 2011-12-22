@@ -376,7 +376,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             URL contextURL = contributor.getEntry(contextFileRelativePath);
             if (contextURL != null)
             {
-                return registerContext(contributor,contextFileRelativePath,contextURL.openStream(),extraClasspath,overrideBundleInstallLocation,requireTldBundle,handler);
+                Resource r = Resource.newResource(contextURL);              
+                return registerContext(contributor,contextFileRelativePath,r.getInputStream(),extraClasspath,overrideBundleInstallLocation,requireTldBundle,handler);
             }
             throw new IllegalArgumentException("Could not find the context " + "file " + contextFileRelativePath + " for the bundle "
                     + contributor.getSymbolicName() + (overrideBundleInstallLocation != null?" using the install location " + overrideBundleInstallLocation:""));

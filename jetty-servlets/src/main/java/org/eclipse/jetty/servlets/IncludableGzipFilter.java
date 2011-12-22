@@ -67,10 +67,10 @@ public class IncludableGzipFilter extends GzipFilter
         public IncludableResponseWrapper(HttpServletRequest request, HttpServletResponse response)
         {
             super(request,response);
-
-            _mimeTypes = IncludableGzipFilter.this._mimeTypes;
-            _bufferSize = IncludableGzipFilter.this._bufferSize;
-            _minGzipSize = IncludableGzipFilter.this._minGzipSize;
+            
+            super.setMimeTypes(IncludableGzipFilter.this._mimeTypes);
+            super.setBufferSize(IncludableGzipFilter.this._bufferSize);
+            super.setMinGzipSize(IncludableGzipFilter.this._minGzipSize);
         }
 
         @Override

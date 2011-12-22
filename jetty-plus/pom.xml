@@ -28,7 +28,7 @@
             <configuration>
               <instructions>
                <_versionpolicy> </_versionpolicy>
-               <Import-Package>!javax.sql.*;!javax.security.*;!javax.naming.*;javax.servlet.*;version="2.6.0",javax.transaction.*;version="[1.1,1.2)",*</Import-Package>
+               <Import-Package>javax.sql.*,javax.security.*,javax.naming.*,javax.servlet.*;version="2.6.0",javax.transaction.*;version="[1.1,1.2)",*</Import-Package>
               </instructions>
             </configuration>
           </execution>

@@ -35,7 +35,8 @@ public class UncheckedPrintWriter extends PrintWriter
     private static final Logger LOG = Log.getLogger(UncheckedPrintWriter.class);
 
     private boolean _autoFlush = false;
-    private boolean _throwUnchecked=true;
+    private IOException _ioException;
+    private boolean _isClosed = false;
 
     /* ------------------------------------------------------------ */
     /**
@@ -102,38 +103,45 @@ public class UncheckedPrintWriter extends PrintWriter
         this(new BufferedWriter(new OutputStreamWriter(out)),autoFlush);
     }
     
+    
     /* ------------------------------------------------------------ */
-    private void setError(Throwable th)
+    public boolean checkError()
     {
-        setError();
-        if (_throwUnchecked)
-            throw new RuntimeIOException(th);
-        LOG.debug(th);
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Are unchecked exceptions thrown.
-     * @return True if {@link RuntimeIOException}s are thrown
-     */
-    public boolean isUncheckedPrintWriter()
-    {
-        return _throwUnchecked;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Set if unchecked exceptions are thrown
-     * @param uncheckedPrintWriter True if {@link RuntimeIOException}s are to be thrown
-     */
-    public void setUncheckedPrintWriter(boolean uncheckedPrintWriter)
-    {
-        _throwUnchecked = uncheckedPrintWriter;
+        return _ioException!=null || super.checkError();
     }
     
     /* ------------------------------------------------------------ */
+    private void setError(Throwable th)
+    {
+      
+        super.setError();
+
+        if (th instanceof IOException)
+            _ioException=(IOException)th;
+        else
+        {
+            _ioException=new IOException(String.valueOf(th));
+            _ioException.initCause(th);
+        }
+
+        LOG.debug(th);
+    }
+
+
+    @Override
+    protected void setError()
+    {
+        setError(new IOException());
+    }
+
+    /* ------------------------------------------------------------ */
     /** Check to make sure that the stream has not been closed */
     private void isOpen() throws IOException
-    {
-        if (super.out == null)
+    {       
+        if (_ioException!=null)
+            throw new RuntimeIOException(_ioException); 
+        
+        if (_isClosed)
             throw new IOException("Stream closed");
     }
 
@@ -170,6 +178,7 @@ public class UncheckedPrintWriter extends PrintWriter
             synchronized (lock)
             {
                 out.close();
+                _isClosed = true;
             }
         }
         catch (IOException ex)
@@ -248,7 +257,7 @@ public class UncheckedPrintWriter extends PrintWriter
      */
     @Override
     public void write(char buf[])
-    {
+    { 
         this.write(buf,0,buf.length);
     }
 

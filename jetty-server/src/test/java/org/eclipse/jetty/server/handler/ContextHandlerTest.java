@@ -14,29 +14,27 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$
@@ -122,22 +120,22 @@ public class ContextHandlerTest
         server.setConnectors(new Connector[] { connector });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-        
+
         ContextHandler rootA = new ContextHandler(contexts,"/");
         ContextHandler fooA = new ContextHandler(contexts,"/foo");
         ContextHandler foobarA = new ContextHandler(contexts,"/foo/bar");
-        
+
         server.start();
-        
+
         // System.err.println(server.dump());
-        
+
         Assert.assertEquals(rootA._scontext,rootA._scontext.getContext("/"));
         Assert.assertEquals(fooA._scontext,rootA._scontext.getContext("/foo"));
         Assert.assertEquals(foobarA._scontext,rootA._scontext.getContext("/foo/bar"));
         Assert.assertEquals(foobarA._scontext,rootA._scontext.getContext("/foo/bar/bob.jsp"));
         Assert.assertEquals(rootA._scontext,rootA._scontext.getContext("/other"));
         Assert.assertEquals(fooA._scontext,rootA._scontext.getContext("/foo/other"));
-        
+
         Assert.assertEquals(rootA._scontext,foobarA._scontext.getContext("/"));
         Assert.assertEquals(fooA._scontext,foobarA._scontext.getContext("/foo"));
         Assert.assertEquals(foobarA._scontext,foobarA._scontext.getContext("/foo/bar"));
@@ -145,7 +143,7 @@ public class ContextHandlerTest
         Assert.assertEquals(rootA._scontext,foobarA._scontext.getContext("/other"));
         Assert.assertEquals(fooA._scontext,foobarA._scontext.getContext("/foo/other"));
     }
-    
+
     @Test
     public void testContextVirtualGetContext() throws Exception
     {
@@ -154,45 +152,45 @@ public class ContextHandlerTest
         server.setConnectors(new Connector[] { connector });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-        
+
         ContextHandler rootA = new ContextHandler(contexts,"/");
         rootA.setVirtualHosts(new String[] {"a.com"});
-        
+
         ContextHandler rootB = new ContextHandler(contexts,"/");
         rootB.setVirtualHosts(new String[] {"b.com"});
-        
+
         ContextHandler rootC = new ContextHandler(contexts,"/");
         rootC.setVirtualHosts(new String[] {"c.com"});
-        
-        
+
+
         ContextHandler fooA = new ContextHandler(contexts,"/foo");
         fooA.setVirtualHosts(new String[] {"a.com"});
-        
+
         ContextHandler fooB = new ContextHandler(contexts,"/foo");
         fooB.setVirtualHosts(new String[] {"b.com"});
 
 
         ContextHandler foobarA = new ContextHandler(contexts,"/foo/bar");
         foobarA.setVirtualHosts(new String[] {"a.com"});
-        
+
         server.start();
-        
+
         // System.err.println(server.dump());
-        
+
         Assert.assertEquals(rootA._scontext,rootA._scontext.getContext("/"));
         Assert.assertEquals(fooA._scontext,rootA._scontext.getContext("/foo"));
         Assert.assertEquals(foobarA._scontext,rootA._scontext.getContext("/foo/bar"));
         Assert.assertEquals(foobarA._scontext,rootA._scontext.getContext("/foo/bar/bob"));
-        
+
         Assert.assertEquals(rootA._scontext,rootA._scontext.getContext("/other"));
         Assert.assertEquals(rootB._scontext,rootB._scontext.getContext("/other"));
         Assert.assertEquals(rootC._scontext,rootC._scontext.getContext("/other"));
-        
+
         Assert.assertEquals(fooB._scontext,rootB._scontext.getContext("/foo/other"));
         Assert.assertEquals(rootC._scontext,rootC._scontext.getContext("/foo/other"));
     }
-    
-    
+
+
     @Test
     public void testVirtualHostWildcard() throws Exception
     {
@@ -238,31 +236,31 @@ public class ContextHandlerTest
         ContextHandler context = new ContextHandler("/");
 
         // test singular
-        context.setVirtualHosts(new String[] { "www.example.com"} );     
+        context.setVirtualHosts(new String[] { "www.example.com"} );
         Assert.assertEquals(1,context.getVirtualHosts().length);
-        
+
         // test adding two more
         context.addVirtualHosts(new String[] { "www.example2.com", "www.example3.com"});
         Assert.assertEquals(3,context.getVirtualHosts().length);
-        
+
         // test adding existing context
         context.addVirtualHosts(new String[] { "www.example.com" });
         Assert.assertEquals(3,context.getVirtualHosts().length);
-        
+
         // test removing existing
         context.removeVirtualHosts(new String[] { "www.example3.com" });
         Assert.assertEquals(2,context.getVirtualHosts().length);
-        
+
         // test removing non-existent
         context.removeVirtualHosts(new String[] { "www.example3.com" });
         Assert.assertEquals(2,context.getVirtualHosts().length);
-        
+
         // test removing all remaining and resets to null
         context.removeVirtualHosts(new String[] { "www.example.com", "www.example2.com" });
-        Assert.assertEquals(null,context.getVirtualHosts());       
-        
+        Assert.assertEquals(null,context.getVirtualHosts());
+
     }
-    
+
     @Test
     public void testAttributes() throws Exception
     {
@@ -332,11 +330,12 @@ public class ContextHandlerTest
 
         return root;
     }
-    
+
     @Test
     public void testUncheckedPrintWriter() throws Exception
     {
         Server server = new Server();
+        server.setUncheckedPrintWriter(true);
         LocalConnector connector = new LocalConnector();
         server.setConnectors(new Connector[] { connector });
         ContextHandler context = new ContextHandler("/");
@@ -347,7 +346,7 @@ public class ContextHandlerTest
         try
         {
             server.start();
-            
+
             String response = connector.getResponses("GET / HTTP/1.1\n" + "Host: www.example.com.\n\n");
 
             Assert.assertTrue(response.indexOf("Goodbye")>0);
@@ -400,7 +399,7 @@ public class ContextHandlerTest
             handled = false;
         }
     }
-    
+
     private static final class WriterHandler extends AbstractHandler
     {
         boolean error;
@@ -422,7 +421,10 @@ public class ContextHandlerTest
                 writer.write("Goodbye cruel world\n");
                 writer.close();
                 response.flushBuffer();
-                writer.write("speaking from the dead");
+                //writer.write("speaking from the dead");
+                writer.write("give the printwriter a chance"); //should create an error
+                if (writer.checkError())
+                    writer.write("didn't take the chance, will throw now"); //write after an error
             }
             catch(Throwable th)
             {

@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -18,9 +33,6 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -73,7 +85,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
     }
 
-
     private final static byte[] MAGIC;
     private final WebSocketParser _parser;
     private final WebSocketGenerator _generator;
@@ -101,10 +112,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     private final WebSocketParser.FrameHandler _frameHandler= new FrameHandlerD06();
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private final WebSocket.FrameConnection _connection = new FrameConnectionD06();
 
 
@@ -199,7 +206,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void onIdleExpired()
+    public void onIdleExpired(long idleForMs)
     {
         closeOut(WebSocketConnectionD06.CLOSE_NORMAL,"Idle");
     }
@@ -287,9 +294,20 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     {
         return Collections.emptyList();
     }
+    
+    protected void onFrameHandshake()
+    {
+        if (_onFrame!=null)
+        {
+            _onFrame.onHandshake(_connection);
+        }
+    }
+    
+    protected void onWebSocketOpen()
+    {
+        _webSocket.onOpen(_connection);
+    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class FrameConnectionD06 implements WebSocket.FrameConnection
     {
@@ -487,6 +505,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
@@ -693,27 +712,11 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _connection.close(code,message);
         }
 
+        @Override
         public String toString()
         {
             return WebSocketConnectionD06.this.toString()+"FH";
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
-    {
-        String key = request.getHeader("Sec-WebSocket-Key");
-
-        response.setHeader("Upgrade","WebSocket");
-        response.addHeader("Connection","Upgrade");
-        response.addHeader("Sec-WebSocket-Accept",hashKey(key));
-        if (subprotocol!=null)
-            response.addHeader("Sec-WebSocket-Protocol",subprotocol);
-        response.sendError(101);
-
-        if (_onFrame!=null)
-            _onFrame.onHandshake(_connection);
-        _webSocket.onOpen(_connection);
     }
 
     /* ------------------------------------------------------------ */
