@@ -2295,9 +2295,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         @Override
         public JspConfigDescriptor getJspConfigDescriptor()
         {
+            LOG.warn(__unimplmented);
             return null;
         }
 
+        public void setJspConfigDescriptor(JspConfigDescriptor d)
+        {
+            
+        }
+        
         @Override
         public void declareRoles(String... roleNames)
         {
