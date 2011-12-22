@@ -15,6 +15,7 @@ package org.eclipse.jetty.servlet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
@@ -38,6 +39,8 @@ import javax.servlet.ServletSecurityElement;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
+import javax.servlet.descriptor.JspPropertyGroupDescriptor;
+import javax.servlet.descriptor.TaglibDescriptor;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -496,6 +499,290 @@ public class ServletContextHandler extends ContextHandler
     }
     
     /* ------------------------------------------------------------ */
+    public static class JspPropertyGroup implements JspPropertyGroupDescriptor
+    {
+        private List<String> _urlPatterns = new ArrayList<String>();
+        private String _elIgnored;
+        private String _pageEncoding;
+        private String _scriptingInvalid;
+        private String _isXml;
+        private List<String> _includePreludes = new ArrayList<String>();
+        private List<String> _includeCodas = new ArrayList<String>();
+        private String _deferredSyntaxAllowedAsLiteral;
+        private String _trimDirectiveWhitespaces;
+        private String _defaultContentType;
+        private String _buffer;
+        private String _errorOnUndeclaredNamespace;
+        
+        
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getUrlPatterns()
+         */
+        public Collection<String> getUrlPatterns()
+        {
+            return new ArrayList<String>(_urlPatterns); // spec says must be a copy
+        }
+        
+        public void addUrlPattern (String s)
+        {
+            if (!_urlPatterns.contains(s))
+                _urlPatterns.add(s);
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getElIgnored()
+         */
+        public String getElIgnored()
+        {
+            return _elIgnored;
+        }
+        
+        public void setElIgnored (String s)
+        {
+            _elIgnored = s;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getPageEncoding()
+         */
+        public String getPageEncoding()
+        {
+            return _pageEncoding;
+        }
+        
+        public void setPageEncoding(String pageEncoding)
+        {
+            _pageEncoding = pageEncoding;
+        }
+
+        public void setScriptingInvalid(String scriptingInvalid)
+        {
+            _scriptingInvalid = scriptingInvalid;
+        }
+
+        public void setIsXml(String isXml)
+        {
+            _isXml = isXml;
+        }
+
+        public void setDeferredSyntaxAllowedAsLiteral(String deferredSyntaxAllowedAsLiteral)
+        {
+            _deferredSyntaxAllowedAsLiteral = deferredSyntaxAllowedAsLiteral;
+        }
+
+        public void setTrimDirectiveWhitespaces(String trimDirectiveWhitespaces)
+        {
+            _trimDirectiveWhitespaces = trimDirectiveWhitespaces;
+        }
+
+        public void setDefaultContentType(String defaultContentType)
+        {
+            _defaultContentType = defaultContentType;
+        }
+
+        public void setBuffer(String buffer)
+        {
+            _buffer = buffer;
+        }
+
+        public void setErrorOnUndeclaredNamespace(String errorOnUndeclaredNamespace)
+        {
+            _errorOnUndeclaredNamespace = errorOnUndeclaredNamespace;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getScriptingInvalid()
+         */
+        public String getScriptingInvalid()
+        {
+            return _scriptingInvalid;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIsXml()
+         */
+        public String getIsXml()
+        {
+            return _isXml;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIncludePreludes()
+         */
+        public Collection<String> getIncludePreludes()
+        {
+            return new ArrayList<String>(_includePreludes); //must be a copy
+        }
+        
+        public void addIncludePrelude(String prelude)
+        {
+            if (!_includePreludes.contains(prelude))
+                _includePreludes.add(prelude);
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIncludeCodas()
+         */
+        public Collection<String> getIncludeCodas()
+        {
+            return new ArrayList<String>(_includeCodas); //must be a copy
+        }
+
+        public void addIncludeCoda (String coda)
+        {
+            if (!_includeCodas.contains(coda))
+                _includeCodas.add(coda);
+        }
+        
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getDeferredSyntaxAllowedAsLiteral()
+         */
+        public String getDeferredSyntaxAllowedAsLiteral()
+        {
+            return _deferredSyntaxAllowedAsLiteral;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getTrimDirectiveWhitespaces()
+         */
+        public String getTrimDirectiveWhitespaces()
+        {
+            return _trimDirectiveWhitespaces;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getDefaultContentType()
+         */
+        public String getDefaultContentType()
+        {
+            return _defaultContentType;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getBuffer()
+         */
+        public String getBuffer()
+        {
+            return _buffer;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getErrorOnUndeclaredNamespace()
+         */
+        public String getErrorOnUndeclaredNamespace()
+        {
+            return _errorOnUndeclaredNamespace;
+        }
+        
+        public String toString ()
+        {
+            StringBuffer sb = new StringBuffer();
+            sb.append("JspPropertyGroupDescriptor:");
+            sb.append(" el-ignored="+_elIgnored);
+            sb.append(" is-xml="+_isXml);
+            sb.append(" page-encoding="+_pageEncoding);
+            sb.append(" scripting-invalid="+_scriptingInvalid);
+            sb.append(" deferred-syntax-allowed-as-literal="+_deferredSyntaxAllowedAsLiteral);
+            sb.append(" trim-directive-whitespaces"+_trimDirectiveWhitespaces);
+            sb.append(" default-content-type="+_defaultContentType);
+            sb.append(" buffer="+_buffer);
+            sb.append(" error-on-undeclared-namespace="+_errorOnUndeclaredNamespace);
+            for (String prelude:_includePreludes)
+                sb.append(" include-prelude="+prelude);
+            for (String coda:_includeCodas)
+                sb.append(" include-coda="+coda);
+            return sb.toString();
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public static class TagLib implements TaglibDescriptor
+    {
+        private String _uri;
+        private String _location;
+
+        /** 
+         * @see javax.servlet.descriptor.TaglibDescriptor#getTaglibURI()
+         */
+        public String getTaglibURI()
+        {
+           return _uri;
+        }
+        
+        public void setTaglibURI(String uri)
+        {
+            _uri = uri;
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.TaglibDescriptor#getTaglibLocation()
+         */
+        public String getTaglibLocation()
+        {
+            return _location;
+        }
+        
+        public void setTaglibLocation(String location)
+        {
+            _location = location;
+        }
+    
+        public String toString()
+        {
+            return ("TagLibDescriptor: taglib-uri="+_uri+" location="+_location);
+        }
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    public static class JspConfig implements JspConfigDescriptor
+    {
+        private List<TaglibDescriptor> _taglibs = new ArrayList<TaglibDescriptor>();
+        private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<JspPropertyGroupDescriptor>();
+        
+        public JspConfig() {}
+
+        /** 
+         * @see javax.servlet.descriptor.JspConfigDescriptor#getTaglibs()
+         */
+        public Collection<TaglibDescriptor> getTaglibs()
+        {
+            return new ArrayList<TaglibDescriptor>(_taglibs);
+        }
+        
+        public void addTaglibDescriptor (TaglibDescriptor d)
+        {
+            _taglibs.add(d);
+        }
+
+        /** 
+         * @see javax.servlet.descriptor.JspConfigDescriptor#getJspPropertyGroups()
+         */
+        public Collection<JspPropertyGroupDescriptor> getJspPropertyGroups()
+        {
+           return new ArrayList<JspPropertyGroupDescriptor>(_jspPropertyGroups);
+        }
+        
+        public void addJspPropertyGroup(JspPropertyGroupDescriptor g)
+        {
+            _jspPropertyGroups.add(g);
+        }
+        
+        public String toString()
+        {
+            StringBuffer sb = new StringBuffer();
+            sb.append("JspConfigDescriptor: \n");
+            for (TaglibDescriptor taglib:_taglibs)
+                sb.append(taglib+"\n");
+            for (JspPropertyGroupDescriptor jpg:_jspPropertyGroups)
+                sb.append(jpg+"\n");
+            return sb.toString();
+        }
+    }
+    
+    
+    /* ------------------------------------------------------------ */
     public class Context extends ContextHandler.Context
     {
         /* ------------------------------------------------------------ */
@@ -862,6 +1149,13 @@ public class ServletContextHandler extends ContextHandler
         {
             return _jspConfig;
         }
+        
+        @Override
+        public void setJspConfigDescriptor(JspConfigDescriptor d)
+        {
+            _jspConfig = d;
+        }
+        
         
         @Override
         public void declareRoles(String... roleNames)

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.HashSet;
@@ -31,6 +32,9 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 import javax.servlet.SessionTrackingMode;
+import javax.servlet.descriptor.JspConfigDescriptor;
+import javax.servlet.descriptor.JspPropertyGroupDescriptor;
+import javax.servlet.descriptor.TaglibDescriptor;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -40,6 +44,9 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
+import org.eclipse.jetty.servlet.ServletContextHandler.JspPropertyGroup;
+import org.eclipse.jetty.servlet.ServletContextHandler.TagLib;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.LazyList;
@@ -1246,6 +1253,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String location = node.getString("taglib-location", false, true);
 
         context.setResourceAlias(uri, location);
+        
+        JspConfig config = (JspConfig)context.getServletHandler().getServletContext().getJspConfigDescriptor();
+        if (config == null)
+        {
+            config = new JspConfig();
+            context.getServletContext().setJspConfigDescriptor(config);
+        }
+        
+        TagLib tl = new TagLib();
+        tl.setTaglibLocation(location);
+        tl.setTaglibURI(uri);
+        config.addTaglibDescriptor(tl);
     }
     
     /**
@@ -1254,7 +1273,16 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node
      */
     protected void visitJspConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-    {  
+    {   
+        //Additive across web.xml and web-fragment.xml
+        JspConfig config = (JspConfig)context.getServletContext().getJspConfigDescriptor();
+        if (config == null)
+        {
+           config = new JspConfig();
+           context.getServletContext().setJspConfigDescriptor(config);
+        }
+        
+        
         for (int i = 0; i < node.size(); i++)
         {
             Object o = node.get(i);
@@ -1263,19 +1291,51 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
 
         // Map URLs from jsp property groups to JSP servlet.
-        // this is more JSP stupidness creaping into the servlet spec
+        // this is more JSP stupidness creeping into the servlet spec
         Iterator<XmlParser.Node> iter = node.iterator("jsp-property-group");
         List<String> paths = new ArrayList<String>();
         while (iter.hasNext())
         {
+            JspPropertyGroup jpg = new JspPropertyGroup();
+            config.addJspPropertyGroup(jpg);
             XmlParser.Node group = iter.next();
+            
+            //url-patterns
             Iterator<XmlParser.Node> iter2 = group.iterator("url-pattern");
             while (iter2.hasNext())
             {
                 String url = iter2.next().toString(false, true);
                 url = normalizePattern(url);
                 paths.add( url);
+                jpg.addUrlPattern(url);
             }
+            
+            jpg.setElIgnored(group.getString("el-ignored", false, true));
+            jpg.setPageEncoding(group.getString("page-encoding", false, true));
+            jpg.setScriptingInvalid(group.getString("scripting-invalid", false, true));
+            jpg.setIsXml(group.getString("is-xml", false, true));
+            jpg.setDeferredSyntaxAllowedAsLiteral(group.getString("deferred-syntax-allowed-as-literal", false, true));
+            jpg.setTrimDirectiveWhitespaces(group.getString("trim-directive-whitespaces", false, true));
+            jpg.setDefaultContentType(group.getString("defaultContentType", false, true));
+            jpg.setBuffer(group.getString("buffer", false, true));
+            jpg.setErrorOnUndeclaredNamespace(group.getString("error-on-undeclared-namespace", false, true));
+            
+            //preludes
+            Iterator<XmlParser.Node> preludes = group.iterator("include-prelude");
+            while (preludes.hasNext())
+            {
+                String prelude = preludes.next().toString(false, true);
+                jpg.addIncludePrelude(prelude);
+            }
+            //codas
+            Iterator<XmlParser.Node> codas = group.iterator("include-coda");
+            while (codas.hasNext())
+            {
+                String coda = codas.next().toString(false, true);
+                jpg.addIncludeCoda(coda);
+            }
+            
+            if (LOG.isDebugEnabled()) LOG.debug(config.toString());
         }
 
         if (paths.size() > 0)
