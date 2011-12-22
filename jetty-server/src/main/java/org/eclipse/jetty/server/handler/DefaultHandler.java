@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 
 
 /* ------------------------------------------------------------ */
@@ -60,7 +61,10 @@ public class DefaultHandler extends AbstractHandler
         {
             URL fav = this.getClass().getClassLoader().getResource("org/eclipse/jetty/favicon.ico");
             if (fav!=null)
-            _favicon=IO.readBytes(fav.openStream());
+            {
+                Resource r = Resource.newResource(fav);
+                _favicon=IO.readBytes(r.getInputStream());
+            }
         }
         catch(Exception e)
         {

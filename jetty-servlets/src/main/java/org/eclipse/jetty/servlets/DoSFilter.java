@@ -14,7 +14,9 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Queue;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,8 +34,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
@@ -908,13 +912,14 @@ public class DoSFilter implements Filter
      * A RateTracker is associated with a connection, and stores request rate
      * data.
      */
-    class RateTracker extends Timeout.Task implements HttpSessionBindingListener
+    class RateTracker extends Timeout.Task implements HttpSessionBindingListener, HttpSessionActivationListener
     {
-        protected final String _id;
-        protected final int _type;
-        protected final long[] _timestamps;
-        protected int _next;
-
+        transient protected final String _id;
+        transient protected final int _type;
+        transient protected final long[] _timestamps;
+        transient protected int _next;
+       
+        
         public RateTracker(String id, int type,int maxRequestsPerSecond)
         {
             _id = id;
@@ -953,25 +958,49 @@ public class DoSFilter implements Filter
 
 
         public void valueBound(HttpSessionBindingEvent event)
-        {
+        { 
+            if (LOG.isDebugEnabled())
+                LOG.debug("Value bound:"+_id);
         }
 
         public void valueUnbound(HttpSessionBindingEvent event)
         {
-            _rateTrackers.remove(_id);
+            //take the tracker out of the list of trackers
+            if (_rateTrackers != null)
+                _rateTrackers.remove(_id); 
+           if (LOG.isDebugEnabled()) LOG.debug("Tracker removed: "+_id);
         }
 
+        public void sessionWillPassivate(HttpSessionEvent se)
+        {
+            //take the tracker of the list of trackers (if its still there)
+            //and ensure that we take ourselves out of the session so we are not saved
+            if (_rateTrackers != null)
+                _rateTrackers.remove(_id);
+            se.getSession().removeAttribute(__TRACKER);
+            if (LOG.isDebugEnabled()) LOG.debug("Value removed: "+_id);
+        }
+
+        public void sessionDidActivate(HttpSessionEvent se)
+        {
+            LOG.warn("Unexpected session activation");
+        }
+        
+        
         public void expired()
         {
-            long now = _trackerTimeoutQ.getNow();
-            int latestIndex = _next == 0 ? 3 : (_next - 1 ) % _timestamps.length;
-            long last=_timestamps[latestIndex];
-            boolean hasRecentRequest = last != 0 && (now-last)<1000L;
+            if (_rateTrackers != null && _trackerTimeoutQ != null)
+            {
+                long now = _trackerTimeoutQ.getNow();
+                int latestIndex = _next == 0 ? 3 : (_next - 1 ) % _timestamps.length;
+                long last=_timestamps[latestIndex];
+                boolean hasRecentRequest = last != 0 && (now-last)<1000L;
 
-            if (hasRecentRequest)
-                reschedule();
-            else
-                _rateTrackers.remove(_id);
+                if (hasRecentRequest)
+                    reschedule();
+                else
+                    _rateTrackers.remove(_id);
+            }
         }
 
         @Override
@@ -979,6 +1008,8 @@ public class DoSFilter implements Filter
         {
             return "RateTracker/"+_id+"/"+_type;
         }
+
+    
     }
 
     class FixedRateTracker extends RateTracker

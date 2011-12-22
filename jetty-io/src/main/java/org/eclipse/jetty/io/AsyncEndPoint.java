@@ -35,8 +35,9 @@ public interface AsyncEndPoint extends ConnectedEndPoint
     /** Callback when idle.
      * <p>An endpoint is idle if there has been no IO activity for 
      * {@link #getMaxIdleTime()} and {@link #isCheckForIdle()} is true.
+     * @param idleForMs TODO
      */
-    public void onIdleExpired();
+    public void onIdleExpired(long idleForMs);
 
     /* ------------------------------------------------------------ */
     /** Set if the endpoint should be checked for idleness

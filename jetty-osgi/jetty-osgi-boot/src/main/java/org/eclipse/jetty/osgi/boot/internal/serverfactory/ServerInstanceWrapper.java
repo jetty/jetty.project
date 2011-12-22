@@ -271,7 +271,8 @@ public class ServerInstanceWrapper {
             try
             {
                 // Execute a Jetty configuration file
-                is = jettyConfiguration.openStream();
+                Resource r = Resource.newResource(jettyConfiguration);
+                is = r.getInputStream();
                 XmlConfiguration config = new XmlConfiguration(is);
                 config.getIdMap().putAll(id_map);
                 

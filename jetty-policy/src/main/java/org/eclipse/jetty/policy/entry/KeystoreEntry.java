@@ -21,6 +21,7 @@ import java.security.KeyStore;
 
 import org.eclipse.jetty.policy.PolicyContext;
 import org.eclipse.jetty.policy.PolicyException;
+import org.eclipse.jetty.util.resource.Resource;
 
 public class KeystoreEntry extends AbstractEntry
 {
@@ -49,7 +50,8 @@ public class KeystoreEntry extends AbstractEntry
             keystore = KeyStore.getInstance( type );
             
             URL keyStoreLocation = new URL ( url );
-            InputStream istream = keyStoreLocation.openStream();
+            Resource r = Resource.newResource(keyStoreLocation);
+            InputStream istream = r.getInputStream();
             
             keystore.load( istream, null );
             

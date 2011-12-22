@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
@@ -207,7 +222,7 @@ public class TestServer extends Server
                         {
                             System.err.println("Ping "+connection);
                             byte[] data = { (byte)1, (byte) 2, (byte) 3 };
-                            connection.sendControl(WebSocketConnectionD13.OP_PING,data,0,data.length);
+                            connection.sendControl(WebSocketConnectionRFC6455.OP_PING,data,0,data.length);
                         }
                     }
                     catch (Exception e)
@@ -223,7 +238,7 @@ public class TestServer extends Server
         @Override
         public boolean onControl(byte controlCode, byte[] data, int offset, int length)
         {
-            if (controlCode==WebSocketConnectionD13.OP_PONG)
+            if (controlCode==WebSocketConnectionRFC6455.OP_PONG)
                 System.err.println("Pong "+getConnection());
             return super.onControl(controlCode,data,offset,length);
         }

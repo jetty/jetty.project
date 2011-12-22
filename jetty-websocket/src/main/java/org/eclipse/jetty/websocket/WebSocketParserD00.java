@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -18,6 +33,7 @@ import java.io.IOException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -86,7 +102,7 @@ public class WebSocketParserD00 implements WebSocketParser
         if (_buffer==null)
             _buffer=_buffers.getBuffer();
 
-        int total_filled=0;
+        int progress=0;
 
         // Loop until an datagram call back or can't fill anymore
         while(true)
@@ -108,14 +124,14 @@ public class WebSocketParserD00 implements WebSocketParser
                 {
                     int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
                     if (filled<=0)
-                        return total_filled;
-                    total_filled+=filled;
+                        return progress;
+                    progress+=filled;
                     length=_buffer.length();
                 }
                 catch(IOException e)
                 {
                     LOG.debug(e);
-                    return total_filled>0?total_filled:-1;
+                    return progress>0?progress:-1;
                 }
             }
 
@@ -147,6 +163,7 @@ public class WebSocketParserD00 implements WebSocketParser
                         {
                             _state=STATE_START;
                             int l=_buffer.getIndex()-_buffer.markIndex()-1;
+                            progress++;
                             _handler.onFrame((byte)0,_opcode,_buffer.sliceFromMark(l));
                             _buffer.setMarkIndex(-1);
                             if (_buffer.length()==0)
@@ -154,7 +171,7 @@ public class WebSocketParserD00 implements WebSocketParser
                                 _buffers.returnBuffer(_buffer);
                                 _buffer=null;
                             }
-                            return total_filled;
+                            return progress;
                         }
                         continue;
 
@@ -175,6 +192,7 @@ public class WebSocketParserD00 implements WebSocketParser
                         Buffer data=_buffer.sliceFromMark(_length);
                         _buffer.skip(_length);
                         _state=STATE_START;
+                        progress++;
                         _handler.onFrame((byte)0, _opcode, data);
 
                         if (_buffer.length()==0)
@@ -183,7 +201,7 @@ public class WebSocketParserD00 implements WebSocketParser
                             _buffer=null;
                         }
 
-                        return total_filled;
+                        return progress;
                 }
             }
         }
