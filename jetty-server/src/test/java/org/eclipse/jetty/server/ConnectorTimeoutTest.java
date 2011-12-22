@@ -158,8 +158,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // wait for idle timeout
         TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
 
-        // check the server side is closed
-        Assert.assertFalse(endp.isOpen());
         
         // further writes will get broken pipe or similar
         try
@@ -179,6 +177,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             // expected
         }
+        // check the server side is closed
+        Assert.assertFalse(endp.isOpen());
     }
 
     @Test
@@ -232,8 +232,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
 
-        // check the server side is closed
-        Assert.assertFalse(endp.isOpen());
         
         // further writes will get broken pipe or similar
         try
@@ -253,6 +251,9 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             // expected
         }
+        
+        // check the server side is closed
+        Assert.assertFalse(endp.isOpen());
     }
 
 
