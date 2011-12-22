@@ -96,6 +96,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         _sslEndPoint = newSslEndPoint();
     }
 
+    /* ------------------------------------------------------------ */
     protected SslEndPoint newSslEndPoint()
     {
         return new SslEndPoint();
@@ -583,6 +584,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         return _sslEndPoint;
     }
 
+    /* ------------------------------------------------------------ */
     public String toString()
     {
         return String.format("%s %s", super.toString(), _sslEndPoint);
@@ -595,6 +597,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         public SSLEngine getSslEngine()
         {
             return _engine;
+        }
+        
+        public AsyncEndPoint getEndpoint()
+        {
+            return _aEndp;
         }
 
         public void shutdownOutput() throws IOException
@@ -822,5 +829,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     _ishut, _oshut,
                     _connection);
         }
+
     }
 }
