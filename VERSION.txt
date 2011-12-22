@@ -1,6 +1,28 @@
 jetty-8.1.0-SNAPSHOT
+
+jetty-8.1.0.RC2 - 22 December 2011
  + 359329 jetty-jaspi must exports its packages. jetty-plus must import
    javax.security
+ + 364638 HttpParser closes if data received while seeking EOF. Tests fixed to
+   cope
+ + 364921 Made test less time sensitive
+ + 364936 use Resource for opening URL streams
+ + 365267 NullPointerException in bad Address
+ + 365375 ResourceHandler should be a HandlerWrapper
+ + 365750 Support WebSocket over SSL, aka wss://
+ + 365932 Produce jetty-websocket aggregate jar for android use
+ + 365947 Set headers for Auth failure and retry in http-spi
+ + 366316 Superfluous printStackTrace on 404
+ + 366342 Dont persist DosFilter trackers in http session
+ + 366730 pass the time idle to onIdleExpire
+ + 367048 test harness for guard on suspended requests
+ + 367175 SSL 100% CPU spin in case of blocked write and RST.
+ + 367219 WebSocketClient.open() fails when URI uses default ports.
+ + 367383 jsp-config element must be returned for
+   ServletContext.getJspConfigDescriptor
+ + JETTY-1460 suppress PrintWriter exceptions
+ + JETTY-1463 websocket D0 parser should return progress even if no fill done
+ + JETTY-1465 NPE in ContextHandler.toString
 
 jetty-8.1.0.RC1 - 06 December 2011
  + 360245 The version of the javax.servlet packages to import is 2.6 instead of
