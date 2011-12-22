@@ -18,12 +18,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
@@ -108,7 +110,23 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithRequest10NoClientClose() throws Exception
     {
-        configureServer(new HelloWorldHandler());
+        final Exchanger<EndPoint> endpoint = new Exchanger<EndPoint>();
+        configureServer(new HelloWorldHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+                    ServletException
+            {
+                try
+                {
+                    endpoint.exchange(baseRequest.getConnection().getEndPoint());
+                }
+                catch(Exception e)
+                {}
+                super.handle(target,baseRequest,request,response);
+            }
+            
+        });
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
 
@@ -124,16 +142,29 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         "\r\n").getBytes("utf-8"));
         os.flush();
 
+        // Get the server side endpoint
+        EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
+
+        // read the response
         String result=IO.toString(is);
         Assert.assertThat("OK",result,containsString("200 OK"));
+        
+        // check the server side is open and oshut and that client reads EOF
+        Assert.assertTrue(endp.isOpen());
+        Assert.assertTrue(endp.isOutputShutdown());
+        Assert.assertFalse(endp.isInputShutdown());
         assertEquals(-1, is.read());
 
-        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME);
+        // wait for idle timeout
+        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
 
+        // check the server side is closed
+        Assert.assertFalse(endp.isOpen());
+        
         // further writes will get broken pipe or similar
         try
         {
-            for (int i=0;i<100;i++)
+            for (int i=0;i<1000;i++)
             {
                 os.write((
                         "GET / HTTP/1.0\r\n"+
@@ -153,7 +184,23 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithRequest11NoClientClose() throws Exception
     {
-        configureServer(new EchoHandler());
+        final Exchanger<EndPoint> endpoint = new Exchanger<EndPoint>();
+        configureServer(new EchoHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+                    ServletException
+            {
+                try
+                {
+                    endpoint.exchange(baseRequest.getConnection().getEndPoint());
+                }
+                catch(Exception e)
+                {}
+                super.handle(target,baseRequest,request,response);
+            }
+            
+        });
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
 
@@ -173,17 +220,28 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         "\r\n").getBytes("utf-8"));
         os.write(contentB);
         os.flush();
-
+        
+        // Get the server side endpoint
+        EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
+        
+        // read the response
         IO.toString(is);
 
+        // check the server side is open and oshut and that client reads EOF
+        Assert.assertTrue(endp.isOpen());
+        Assert.assertTrue(endp.isOutputShutdown());
+        Assert.assertFalse(endp.isInputShutdown());
         assertEquals(-1, is.read());
 
-        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME);
+        TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
 
+        // check the server side is closed
+        Assert.assertFalse(endp.isOpen());
+        
         // further writes will get broken pipe or similar
         try
         {
-            for (int i=0;i<100;i++)
+            for (int i=0;i<1000;i++)
             {
                 os.write((
                         "GET / HTTP/1.0\r\n"+
