@@ -126,4 +126,51 @@ public class WebSocketRedeployTest
 
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testStoppingClientFactoryClosesConnections() throws Exception
+    {
+        final CountDownLatch openLatch = new CountDownLatch(2);
+        final CountDownLatch closeLatch = new CountDownLatch(2);
+        init(new WebSocket.OnTextMessage()
+        {
+            public void onOpen(Connection connection)
+            {
+                openLatch.countDown();
+            }
+
+            public void onMessage(String data)
+            {
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+                closeLatch.countDown();
+            }
+        });
+
+        WebSocketClient client = wsFactory.newWebSocketClient();
+        client.open(new URI(uri), new WebSocket.OnTextMessage()
+        {
+            public void onOpen(Connection connection)
+            {
+                openLatch.countDown();
+            }
+
+            public void onMessage(String data)
+            {
+            }
+
+            public void onClose(int closeCode, String message)
+            {
+                closeLatch.countDown();
+            }
+        }, 5, TimeUnit.SECONDS);
+
+        Assert.assertTrue(openLatch.await(5, TimeUnit.SECONDS));
+
+        wsFactory.stop();
+
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    }
 }

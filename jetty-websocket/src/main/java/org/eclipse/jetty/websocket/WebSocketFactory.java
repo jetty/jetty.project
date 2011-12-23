@@ -273,11 +273,11 @@ public class WebSocketFactory extends AbstractLifeCycle
             }
         }
 
+        addConnection(connection);
+
         // Set the defaults
         connection.getConnection().setMaxBinaryMessageSize(_maxBinaryMessageSize);
         connection.getConnection().setMaxTextMessageSize(_maxTextMessageSize);
-
-        addConnection(connection);
 
         // Let the connection finish processing the handshake
         connection.handshake(request, response, protocol);
