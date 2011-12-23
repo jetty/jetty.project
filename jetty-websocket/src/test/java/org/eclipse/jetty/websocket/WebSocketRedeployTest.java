@@ -41,7 +41,7 @@ public class WebSocketRedeployTest
     {
         server = new Server();
         SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setPort(8080);
+//        connector.setPort(8080);
         server.addConnector(connector);
 
         HandlerCollection handlers = new HandlerCollection();
