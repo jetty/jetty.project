@@ -14,15 +14,8 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -36,18 +29,22 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  */
 public abstract class AbstractHttpExchangeCancelTest
 {
-    private static final Logger LOG = Log.getLogger(AbstractHttpExchangeCancelTest.TestHttpExchange.class);
-    
     private Server server;
     private Connector connector;
 
@@ -362,13 +359,33 @@ public abstract class AbstractHttpExchangeCancelTest
 
         int status = exchange.waitForDone();
         long end = System.currentTimeMillis();
-        
+
         assertTrue(HttpExchange.STATUS_EXPIRED==status||HttpExchange.STATUS_EXCEPTED==status);
         assertFalse(exchange.isResponseCompleted());
         assertTrue(end-start<4000);
         assertTrue(exchange.isExpired());
         assertFalse(exchange.isFailed());
         assertFalse(exchange.isAssociated());
+    }
+
+    @Test
+    public void testHttpExchangeCancelReturnsConnection() throws Exception
+    {
+        TestHttpExchange exchange = new TestHttpExchange();
+        Address address = newAddress();
+        exchange.setAddress(address);
+        long delay = 5000;
+        exchange.setRequestURI("/?action=wait" + delay);
+
+        HttpClient httpClient = getHttpClient();
+        HttpDestination destination = httpClient.getDestination(address, false);
+        int connections = destination.getConnections();
+        httpClient.send(exchange);
+        Thread.sleep(delay / 2);
+        Assert.assertEquals(connections + 1, destination.getConnections());
+
+        exchange.cancel();
+        Assert.assertEquals(connections, destination.getConnections());
     }
 
     /* ------------------------------------------------------------ */
