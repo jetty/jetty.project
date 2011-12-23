@@ -92,6 +92,11 @@ public class WebSocketFactory extends AbstractLifeCycle
     private int _maxTextMessageSize = 16 * 1024;
     private int _maxBinaryMessageSize = -1;
 
+    public WebSocketFactory(Acceptor acceptor)
+    {
+        this(acceptor, 64 * 1024);
+    }
+
     public WebSocketFactory(Acceptor acceptor, int bufferSize)
     {
         _buffers = new WebSocketBuffers(bufferSize);
