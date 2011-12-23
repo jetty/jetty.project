@@ -293,6 +293,11 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
         }
     }
 
+    public void shutdown()
+    {
+        close();
+    }
+
     /* ------------------------------------------------------------ */
     public void fillBuffersFrom(Buffer buffer)
     {
@@ -389,7 +394,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     {
         return _protocol;
     }
-    
+
     protected void onFrameHandshake()
     {
         if (_websocket instanceof OnFrame)

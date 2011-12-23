@@ -30,12 +30,12 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -45,15 +45,17 @@ import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.BlockingHttpConnection;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketFactory
+public class WebSocketFactory extends AbstractLifeCycle
 {
     private static final Logger LOG = Log.getLogger(WebSocketFactory.class);
+    private final Queue<WebSocketServletConnection> connections = new ConcurrentLinkedQueue<WebSocketServletConnection>();
 
     public interface Acceptor
     {
@@ -87,20 +89,14 @@ public class WebSocketFactory
     private final Acceptor _acceptor;
     private WebSocketBuffers _buffers;
     private int _maxIdleTime = 300000;
-    private int _maxTextMessageSize = 16*1024;
+    private int _maxTextMessageSize = 16 * 1024;
     private int _maxBinaryMessageSize = -1;
-
-    public WebSocketFactory(Acceptor acceptor)
-    {
-        this(acceptor, 64 * 1024);
-    }
 
     public WebSocketFactory(Acceptor acceptor, int bufferSize)
     {
         _buffers = new WebSocketBuffers(bufferSize);
         _acceptor = acceptor;
     }
-
 
     /**
      * @return A modifiable map of extension name to extension class
@@ -187,6 +183,12 @@ public class WebSocketFactory
         _maxBinaryMessageSize = maxBinaryMessageSize;
     }
 
+    @Override
+    protected void doStop() throws Exception
+    {
+        closeConnections();
+    }
+
     /**
      * Upgrade the request/response to a WebSocket Connection.
      * <p>This method will not normally return, but will instead throw a
@@ -230,43 +232,52 @@ public class WebSocketFactory
         }
 
         final WebSocketServletConnection connection;
-        final List<Extension> extensions;
         switch (draft)
         {
             case -1: // unspecified draft/version
             case 0: // Old school draft/version
-                extensions=Collections.emptyList();
-                connection = new WebSocketServletConnectionD00(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
+            {
+                connection = new WebSocketServletConnectionD00(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
+            }
             case 1:
             case 2:
             case 3:
             case 4:
             case 5:
             case 6:
-                extensions=Collections.emptyList();
-                connection = new WebSocketServletConnectionD06(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
+            {
+                connection = new WebSocketServletConnectionD06(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol);
                 break;
+            }
             case 7:
             case 8:
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionD08.OP_EXT_DATA, 16-WebSocketConnectionD08.OP_EXT_CTRL,3);
-                connection = new WebSocketServletConnectionD08(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+            {
+                List<Extension> extensions = initExtensions(extensions_requested, 8 - WebSocketConnectionD08.OP_EXT_DATA, 16 - WebSocketConnectionD08.OP_EXT_CTRL, 3);
+                connection = new WebSocketServletConnectionD08(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol, extensions, draft);
                 break;
+            }
             case WebSocketConnectionRFC6455.VERSION: // RFC 6455 Version
-                extensions= initExtensions(extensions_requested,8-WebSocketConnectionRFC6455.OP_EXT_DATA, 16-WebSocketConnectionRFC6455.OP_EXT_CTRL,3);
-                connection = new WebSocketServletConnectionRFC6455(websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol,extensions,draft);
+            {
+                List<Extension> extensions = initExtensions(extensions_requested, 8 - WebSocketConnectionRFC6455.OP_EXT_DATA, 16 - WebSocketConnectionRFC6455.OP_EXT_CTRL, 3);
+                connection = new WebSocketServletConnectionRFC6455(this, websocket, endp, _buffers, http.getTimeStamp(), _maxIdleTime, protocol, extensions, draft);
                 break;
+            }
             default:
-                LOG.warn("Unsupported Websocket version: "+draft);
+            {
+                LOG.warn("Unsupported Websocket version: " + draft);
                 // Per RFC 6455 - 4.4 - Supporting Multiple Versions of WebSocket Protocol
                 // Using the examples as outlined
-                response.setHeader("Sec-WebSocket-Version","13, 8, 6, 0");
+                response.setHeader("Sec-WebSocket-Version", "13, 8, 6, 0");
                 throw new HttpException(400, "Unsupported websocket version specification: " + draft);
+            }
         }
 
         // Set the defaults
         connection.getConnection().setMaxBinaryMessageSize(_maxBinaryMessageSize);
         connection.getConnection().setMaxTextMessageSize(_maxTextMessageSize);
+
+        addConnection(connection);
 
         // Let the connection finish processing the handshake
         connection.handshake(request, response, protocol);
@@ -281,8 +292,6 @@ public class WebSocketFactory
         request.setAttribute("org.eclipse.jetty.io.Connection", connection);
     }
 
-    /**
-     */
     protected String[] parseProtocols(String protocol)
     {
         if (protocol == null)
@@ -296,8 +305,6 @@ public class WebSocketFactory
         return protocols;
     }
 
-    /**
-     */
     public boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response)
             throws IOException
     {
@@ -353,8 +360,6 @@ public class WebSocketFactory
         return false;
     }
 
-    /**
-     */
     public List<Extension> initExtensions(List<String> requested,int maxDataOpcodes,int maxControlOpcodes,int maxReservedBits)
     {
         List<Extension> extensions = new ArrayList<Extension>();
@@ -386,8 +391,6 @@ public class WebSocketFactory
         return extensions;
     }
 
-    /**
-     */
     private Extension newExtension(String name)
     {
         try
@@ -402,5 +405,21 @@ public class WebSocketFactory
         }
 
         return null;
+    }
+
+    protected boolean addConnection(WebSocketServletConnection connection)
+    {
+        return isRunning() && connections.add(connection);
+    }
+
+    protected boolean removeConnection(WebSocketServletConnection connection)
+    {
+        return connections.remove(connection);
+    }
+
+    protected void closeConnections()
+    {
+        for (WebSocketServletConnection connection : connections)
+            connection.shutdown();
     }
 }

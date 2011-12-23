@@ -24,8 +24,10 @@ import org.eclipse.jetty.io.nio.AsyncConnection;
 public interface WebSocketConnection extends AsyncConnection
 {
     void fillBuffersFrom(Buffer buffer);
-    
+
     List<Extension> getExtensions();
-    
+
     WebSocket.Connection getConnection();
+
+    void shutdown();
 }
