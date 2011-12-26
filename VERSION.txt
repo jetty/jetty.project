@@ -1,4 +1,5 @@
 jetty-8.1.0-SNAPSHOT
+ + 367548 jetty-osgi-boot must not import the nested package twice
 
 jetty-8.1.0.RC2 - 22 December 2011
  + 359329 jetty-jaspi must exports its packages. jetty-plus must import
