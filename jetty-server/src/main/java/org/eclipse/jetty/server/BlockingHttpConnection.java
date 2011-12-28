@@ -110,6 +110,13 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                             _endp.shutdownOutput();
                         }
                     }
+                    
+                    // If we don't have a committed response and we are not suspended
+                    if (_endp.isInputShutdown() && _generator.isIdle() && !_request.getAsyncContinuation().isSuspended())
+                    {
+                        // then no more can happen, so close.
+                        _endp.close();
+                    }
                 }
             }
 
