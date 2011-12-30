@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +32,8 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import javax.servlet.http.HttpServletRequest;
+
+import junit.framework.Assert;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
@@ -1314,7 +1317,7 @@ public class WebSocketMessageRFC6455Test
     }
 
     @Test
-    public void testClose() throws Exception
+    public void testTCPClose() throws Exception
     {
         Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
@@ -1350,7 +1353,6 @@ public class WebSocketMessageRFC6455Test
         socket.close();
         
         assertTrue(__serverWebSocket.awaitDisconnected(500));
-        
 
         try
         {
@@ -1362,6 +1364,64 @@ public class WebSocketMessageRFC6455Test
             assertTrue(true);
         }    
     }
+
+    @Test
+    public void testTCPHalfClose() throws Exception
+    {
+        Socket socket = new Socket("localhost", __connector.getLocalPort());
+        OutputStream output = socket.getOutputStream();
+        output.write(
+                ("GET /chat HTTP/1.1\r\n"+
+                        "Host: server.example.com\r\n"+
+                        "Upgrade: websocket\r\n"+
+                        "Connection: Upgrade\r\n"+
+                        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"+
+                        "Sec-WebSocket-Origin: http://example.com\r\n"+
+                        "Sec-WebSocket-Protocol: onConnect\r\n" +
+                        "Sec-WebSocket-Version: "+WebSocketConnectionRFC6455.VERSION+"\r\n"+
+                "\r\n").getBytes("ISO-8859-1"));
+        output.flush();
+
+        // Make sure the read times out if there are problems with the implementation
+        socket.setSoTimeout(1000);
+
+        InputStream input = socket.getInputStream();
+
+        lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
+        skipTo("Sec-WebSocket-Accept: ",input);
+        lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
+        skipTo("\r\n\r\n",input);
+
+
+        assertTrue(__serverWebSocket.awaitConnected(1000));
+        assertNotNull(__serverWebSocket.connection);
+        
+        assertEquals(0x81,input.read());
+        assertEquals(0x0f,input.read());
+        lookFor("sent on connect",input);
+        
+        socket.shutdownOutput();
+        
+        assertTrue(__serverWebSocket.awaitDisconnected(500));
+
+        assertEquals(0x88,input.read());
+        assertEquals(0x00,input.read());
+        assertEquals(-1,input.read());
+        
+        // look for broken pipe
+        try
+        {
+            for (int i=0;i<1000;i++)
+                output.write(0);
+            Assert.fail();
+        }
+        catch(SocketException e)
+        {
+            // expected
+        }
+    }
+    
+    
     
     @Test
     public void testParserAndGenerator() throws Exception
