@@ -19,12 +19,16 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -34,9 +38,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -740,6 +746,56 @@ public class RequestTest
         assertEquals(null,cookie[1]);
     }
 
+
+    @Test
+    public void testHashDOS() throws Exception
+    {
+        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
+        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
+        
+        // This file is not distributed - as it is dangerous
+        File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
+        if (!evil_keys.exists())
+        {
+            Log.info("testHashDOS skipped");
+            return;
+        }
+        
+        BufferedReader in = new BufferedReader(new FileReader(evil_keys));
+        StringBuilder buf = new StringBuilder(4000000);
+        
+        String key=null;
+        buf.append("a=b");
+        while((key=in.readLine())!=null)
+        {
+            buf.append("&").append(key).append("=").append("x");
+        }
+        buf.append("&c=d");
+        
+        _handler._checker = new RequestTester()
+        {
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+            }
+        };
+
+        String request="POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: "+MimeTypes.FORM_ENCODED+"\r\n"+
+        "Content-Length: "+buf.length()+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        buf;
+        
+        long start=System.currentTimeMillis();
+        String response = _connector.getResponses(request);
+        assertTrue(response.contains("200 OK"));
+        long now=System.currentTimeMillis();
+        assertTrue((now-start)<5000);
+    }
+    
+    
     interface RequestTester
     {
         boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException;
@@ -754,13 +810,15 @@ public class RequestTest
         {
             ((Request)request).setHandled(true);
 
-            if (request.getContentLength()>0)
+            if (request.getContentLength()>0 && !MimeTypes.FORM_ENCODED.equals(request.getContentType()))
                 _content=IO.toString(request.getInputStream());
-
+            
             if (_checker!=null && _checker.check(request,response))
                 response.setStatus(200);
             else
                 response.sendError(500);
+            
+
         }
     }
 }

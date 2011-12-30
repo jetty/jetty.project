@@ -120,6 +120,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private EventListener[] _eventListeners;
     private Logger _logger;
     private boolean _allowNullPathInfo;
+    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",1000).intValue();
     private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",200000).intValue();
     private boolean _compactPath = false;
     private boolean _aliases = false;
@@ -1348,9 +1349,29 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Set the maximum size of a form post, to protect against DOS attacks from large forms.
+     * @param maxSize
+     */
     public void setMaxFormContentSize(int maxSize)
     {
         _maxFormContentSize = maxSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getMaxFormKeys()
+    {
+        return _maxFormKeys;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the maximum number of form Keys to protect against DOS attack from crafted hash keys.
+     * @param max
+     */
+    public void setMaxFormKeys(int max)
+    {
+        _maxFormKeys = max;
     }
 
     /* ------------------------------------------------------------ */
