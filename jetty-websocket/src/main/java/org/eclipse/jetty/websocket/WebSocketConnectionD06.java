@@ -274,6 +274,13 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
     }
 
+    public void shutdown()
+    {
+        final WebSocket.Connection connection = _connection;
+        if (connection != null)
+            connection.close(CLOSE_SHUTDOWN, null);
+    }
+
     /* ------------------------------------------------------------ */
     public void fillBuffersFrom(Buffer buffer)
     {
@@ -294,7 +301,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     {
         return Collections.emptyList();
     }
-    
+
     protected void onFrameHandshake()
     {
         if (_onFrame!=null)
@@ -302,7 +309,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _onFrame.onHandshake(_connection);
         }
     }
-    
+
     protected void onWebSocketOpen()
     {
         _webSocket.onOpen(_connection);

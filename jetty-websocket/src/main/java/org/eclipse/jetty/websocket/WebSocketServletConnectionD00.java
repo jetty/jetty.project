@@ -25,10 +25,13 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 
 public class WebSocketServletConnectionD00 extends WebSocketConnectionD00 implements WebSocketServletConnection
 {
-    public WebSocketServletConnectionD00(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
+    private final WebSocketFactory factory;
+
+    public WebSocketServletConnectionD00(WebSocketFactory factory, WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
             throws IOException
     {
         super(websocket,endpoint,buffers,timestamp,maxIdleTime,protocol);
+        this.factory = factory;
     }
 
     public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
@@ -70,7 +73,7 @@ public class WebSocketServletConnectionD00 extends WebSocketConnectionD00 implem
             {
                 response.addHeader("Sec-WebSocket-Protocol",subprotocol);
             }
-            response.sendError(101,"WebSocket Protocol Handshake");
+            response.sendError(101, "WebSocket Protocol Handshake");
         }
         else
         {
@@ -88,5 +91,12 @@ public class WebSocketServletConnectionD00 extends WebSocketConnectionD00 implem
             onFrameHandshake();
             onWebsocketOpen();
         }
+    }
+
+    @Override
+    public void onClose()
+    {
+        super.onClose();
+        factory.removeConnection(this);
     }
 }

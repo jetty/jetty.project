@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.ByteChannel;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
@@ -341,5 +342,20 @@ public class BlockingChannelConnector extends AbstractNIOConnector
                 }
             }
         }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public String toString()
+        {
+            return String.format("BCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b}-{%s}",
+                    hashCode(),
+                    _socket.getRemoteSocketAddress(),
+                    _socket.getLocalSocketAddress(),
+                    isOpen(),
+                    isInputShutdown(),
+                    isOutputShutdown(),
+                    _connection);
+        }
+
     }
 }

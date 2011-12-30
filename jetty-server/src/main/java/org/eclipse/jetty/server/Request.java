@@ -112,6 +112,14 @@ import org.eclipse.jetty.util.log.Logger;
  * to avoid reparsing headers and cookies that are likely to be the same for 
  * requests from the same connection.
  * 
+ * <p>
+ * The form content that a request can process is limited to protect from Denial of Service 
+ * attacks. The size in bytes is limited by {@link ContextHandler#getMaxFormContentSize()} or if there is no 
+ * context then the "org.eclipse.jetty.server.Request.maxFormContentSize" {@link Server} attribute.  
+ * The number of parameters keys is limited by {@link ContextHandler#getMaxFormKeys()} or if there is no
+ * context then the "org.eclipse.jetty.server.Request.maxFormKeys" {@link Server} attribute. 
+ * 
+ * 
  */
 public class Request implements HttpServletRequest
 {
@@ -247,7 +255,7 @@ public class Request implements HttpServletRequest
             if (content_type != null && content_type.length() > 0)
             {
                 content_type = HttpFields.valueParameters(content_type, null);
-
+                
                 if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(content_type) && _inputState==__NONE &&
                         (HttpMethods.POST.equals(getMethod()) || HttpMethods.PUT.equals(getMethod())))
                 {
@@ -257,16 +265,21 @@ public class Request implements HttpServletRequest
                         try
                         {
                             int maxFormContentSize=-1;
+                            int maxFormKeys=-1;
 
                             if (_context!=null)
+                            {
                                 maxFormContentSize=_context.getContextHandler().getMaxFormContentSize();
+                                maxFormKeys=_context.getContextHandler().getMaxFormKeys();
+                            }
                             else
                             {
-                                Integer size = (Integer)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                                if (size!=null)
-                                    maxFormContentSize =size.intValue();
+                                Number size = (Number)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
+                                maxFormContentSize=size==null?200000:size.intValue();
+                                Number keys = (Number)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
+                                maxFormKeys =keys==null?1000:keys.intValue();
                             }
-
+                            
                             if (content_length>maxFormContentSize && maxFormContentSize > 0)
                             {
                                 throw new IllegalStateException("Form too large"+content_length+">"+maxFormContentSize);
@@ -274,7 +287,7 @@ public class Request implements HttpServletRequest
                             InputStream in = getInputStream();
 
                             // Add form params to query params
-                            UrlEncoded.decodeTo(in, _baseParameters, encoding,content_length<0?maxFormContentSize:-1);
+                            UrlEncoded.decodeTo(in, _baseParameters, encoding,content_length<0?maxFormContentSize:-1,maxFormKeys);
                         }
                         catch (IOException e)
                         {

@@ -116,8 +116,11 @@ Available Configurations:
 Defaults:
   A start.ini file may be used to specify default arguments to start.jar,
   which are used if no command line arguments are provided and override 
-  the defaults in the start.config file. If --ini options are provided on 
-  the command line, then start.ini will no be read. The current start.ini 
-  arguments are:
+  the defaults in the start.config file. If the directory start.d exists,
+  then multiple *.ini files will be read from that directory in alphabetical
+  order. If --ini options are provided on  the command line, then start.ini 
+  and start.d will not be read. 
+  
+  The current start.ini arguments are:
 
     @STARTINI@

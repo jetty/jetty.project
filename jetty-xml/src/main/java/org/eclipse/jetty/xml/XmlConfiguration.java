@@ -110,20 +110,22 @@ public class XmlConfiguration
         __parser = new XmlParser();
         try
         {
-            URL configURL = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd",true);
-            __parser.redirectEntity("configure.dtd",configURL);
-            __parser.redirectEntity("configure_1_0.dtd",configURL);
-            __parser.redirectEntity("configure_1_1.dtd",configURL);
-            __parser.redirectEntity("configure_1_2.dtd",configURL);
-            __parser.redirectEntity("configure_1_3.dtd",configURL);
-            __parser.redirectEntity("configure_6_0.dtd",configURL);
+            URL config60 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_6_0.dtd",true);
+            URL config71 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_1.dtd",true);
+            __parser.redirectEntity("configure.dtd",config71);
+            __parser.redirectEntity("configure_1_0.dtd",config60);
+            __parser.redirectEntity("configure_1_1.dtd",config60);
+            __parser.redirectEntity("configure_1_2.dtd",config60);
+            __parser.redirectEntity("configure_1_3.dtd",config60);
+            __parser.redirectEntity("configure_6_0.dtd",config60);
+            __parser.redirectEntity("configure_7_1.dtd",config71);
 
-            __parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",configURL);
-            __parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",configURL);
-            __parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",configURL);
+            __parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config71);
+            __parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config71);
+            __parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config71);
 
-            __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",configURL);
-            __parser.redirectEntity("-//Jetty//Configure//EN",configURL);
+            __parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config71);
+            __parser.redirectEntity("-//Jetty//Configure//EN",config71);
         }
         catch (ClassNotFoundException e)
         {
@@ -902,7 +904,7 @@ public class XmlConfiguration
 
         /* ------------------------------------------------------------ */
         /*
-         * Create a new value object.
+         * Get a Property.
          *
          * @param obj @param node @return @exception Exception
          */
@@ -922,6 +924,7 @@ public class XmlConfiguration
                 configure(prop,node,0);
             return prop;
         }
+        
 
         /* ------------------------------------------------------------ */
         /*
@@ -1090,6 +1093,14 @@ public class XmlConfiguration
                 String name = node.getAttribute("name");
                 String defaultValue = node.getAttribute("default");
                 return System.getProperty(name,defaultValue);
+            }
+            
+            if ("Env".equals(tag))
+            {
+                String name = node.getAttribute("name");
+                String defaultValue = node.getAttribute("default");
+                String value=System.getenv(name);
+                return value==null?defaultValue:value;
             }
 
             LOG.warn("Unknown value tag: " + node,new Throwable());
