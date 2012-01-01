@@ -24,16 +24,13 @@ import org.eclipse.jetty.io.EndPoint;
 
 public class WebSocketServletConnectionRFC6455 extends WebSocketConnectionRFC6455 implements WebSocketServletConnection
 {
-    public WebSocketServletConnectionRFC6455(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol,
-            List<Extension> extensions, int draft, MaskGen maskgen) throws IOException
-    {
-        super(websocket,endpoint,buffers,timestamp,maxIdleTime,protocol,extensions,draft,maskgen);
-    }
+    private final WebSocketFactory factory;
 
-    public WebSocketServletConnectionRFC6455(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol,
+    public WebSocketServletConnectionRFC6455(WebSocketFactory factory, WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol,
             List<Extension> extensions, int draft) throws IOException
     {
         super(websocket,endpoint,buffers,timestamp,maxIdleTime,protocol,extensions,draft);
+        this.factory = factory;
     }
 
     /* ------------------------------------------------------------ */
@@ -58,5 +55,12 @@ public class WebSocketServletConnectionRFC6455 extends WebSocketConnectionRFC645
 
         onFrameHandshake();
         onWebSocketOpen();
+    }
+
+    @Override
+    public void onClose()
+    {
+        super.onClose();
+        factory.removeConnection(this);
     }
 }

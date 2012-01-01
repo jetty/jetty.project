@@ -400,6 +400,13 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         }
     }
 
+    public void shutdown()
+    {
+        final WebSocket.Connection connection = _connection;
+        if (connection != null)
+            connection.close(CLOSE_SHUTDOWN, null);
+    }
+
     /* ------------------------------------------------------------ */
     public void fillBuffersFrom(Buffer buffer)
     {
@@ -431,7 +438,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
     /* ------------------------------------------------------------ */
     private class WSFrameConnection implements WebSocket.FrameConnection
     {
-        volatile boolean _disconnecting;
+        private volatile boolean _disconnecting;
 
         /* ------------------------------------------------------------ */
         public void sendMessage(String content) throws IOException

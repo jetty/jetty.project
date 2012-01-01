@@ -20,8 +20,11 @@ import java.io.IOException;
 import java.net.ProtocolException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -33,6 +36,7 @@ import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
@@ -60,8 +64,8 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 {
     private final static Logger __log = org.eclipse.jetty.util.log.Log.getLogger(WebSocketClientFactory.class.getName());
     private final static ByteArrayBuffer __ACCEPT = new ByteArrayBuffer.CaseInsensitive("Sec-WebSocket-Accept");
-
-    private SslContextFactory _sslContextFactory = new SslContextFactory();
+    private final Queue<WebSocketConnection> connections = new ConcurrentLinkedQueue<WebSocketConnection>();
+    private final SslContextFactory _sslContextFactory = new SslContextFactory();
     private final ThreadPool _threadPool;
     private final WebSocketClientSelector _selector;
     private MaskGen _maskGen;
@@ -200,6 +204,12 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         return _buffers.getBufferSize();
     }
 
+    @Override
+    protected void doStop() throws Exception
+    {
+        closeConnections();
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * <p>Creates and returns a new instance of a {@link WebSocketClient}, configured with this
@@ -229,6 +239,22 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         sslEngine.beginHandshake();
 
         return sslEngine;
+    }
+
+    protected boolean addConnection(WebSocketConnection connection)
+    {
+        return isRunning() && connections.add(connection);
+    }
+
+    protected boolean removeConnection(WebSocketConnection connection)
+    {
+        return connections.remove(connection);
+    }
+
+    protected void closeConnections()
+    {
+        for (WebSocketConnection connection : connections)
+            connection.shutdown();
     }
 
     /* ------------------------------------------------------------ */
@@ -457,18 +483,9 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 }
                 else
                 {
-                    Buffer header = _parser.getHeaderBuffer();
-                    MaskGen maskGen = _future.getMaskGen();
-                    WebSocketConnectionRFC6455 connection =
-                            new WebSocketConnectionRFC6455(_future.getWebSocket(),
-                                    _endp,
-                                    _buffers, System.currentTimeMillis(),
-                                    _future.getMaxIdleTime(),
-                                    _future.getProtocol(),
-                                    null,
-                                    WebSocketConnectionRFC6455.VERSION,
-                                    maskGen);
+                    WebSocketConnection connection = newWebSocketConnection();
 
+                    Buffer header = _parser.getHeaderBuffer();
                     if (header.hasContent())
                         connection.fillBuffersFrom(header);
                     _buffers.returnBuffer(header);
@@ -481,6 +498,21 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
             _endp.close();
             return this;
+        }
+
+        private WebSocketConnection newWebSocketConnection() throws IOException
+        {
+            return new WebSocketClientConnection(
+                    _future._client.getFactory(),
+                    _future.getWebSocket(),
+                    _endp,
+                    _buffers,
+                    System.currentTimeMillis(),
+                    _future.getMaxIdleTime(),
+                    _future.getProtocol(),
+                    null,
+                    WebSocketConnectionRFC6455.VERSION,
+                    _future.getMaskGen());
         }
 
         public void onInputShutdown() throws IOException
@@ -504,6 +536,24 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 _future.handshakeFailed(new ProtocolException(_error));
             else
                 _future.handshakeFailed(new EOFException());
+        }
+    }
+
+    private static class WebSocketClientConnection extends WebSocketConnectionRFC6455
+    {
+        private final WebSocketClientFactory factory;
+
+        public WebSocketClientConnection(WebSocketClientFactory factory, WebSocket webSocket, EndPoint endPoint, WebSocketBuffers buffers, long timeStamp, int maxIdleTime, String protocol, List<Extension> extensions, int draftVersion, MaskGen maskGen) throws IOException
+        {
+            super(webSocket, endPoint, buffers, timeStamp, maxIdleTime, protocol, extensions, draftVersion, maskGen);
+            this.factory = factory;
+        }
+
+        @Override
+        public void onClose()
+        {
+            super.onClose();
+            factory.removeConnection(this);
         }
     }
 }

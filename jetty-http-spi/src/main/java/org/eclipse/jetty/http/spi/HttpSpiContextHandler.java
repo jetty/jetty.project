@@ -15,6 +15,8 @@ package org.eclipse.jetty.http.spi;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -25,6 +27,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 
 import com.sun.net.httpserver.Authenticator;
 import com.sun.net.httpserver.Authenticator.Result;
+import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -108,12 +111,23 @@ public class HttpSpiContextHandler extends ContextHandler
         if (result instanceof Authenticator.Failure)
         {
             int rc = ((Authenticator.Failure)result).getResponseCode();
+            for (Map.Entry<String,List<String>> header : httpExchange.getResponseHeaders().entrySet())
+            {
+                for (String value : header.getValue())
+                    resp.addHeader(header.getKey(),value);
+            }
             resp.sendError(rc);
         }
         else if (result instanceof Authenticator.Retry)
         {
             int rc = ((Authenticator.Retry)result).getResponseCode();
-            resp.sendError(rc);
+            for (Map.Entry<String,List<String>> header : httpExchange.getResponseHeaders().entrySet())
+            {
+                for (String value : header.getValue())
+                    resp.addHeader(header.getKey(),value);
+            }
+            resp.setStatus(rc);
+            resp.flushBuffer();
         }
         else if (result instanceof Authenticator.Success)
         {

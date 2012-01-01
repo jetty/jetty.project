@@ -257,15 +257,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         getSelectSet().scheduleTimeout(task,timeoutMs);
     }
 
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isOutputShutdown()
-    {
-        setCheckForIdle(true);
-        return super.isOutputShutdown();
-    }
-
     /* ------------------------------------------------------------ */
     public void setCheckForIdle(boolean check)
     {
@@ -289,10 +280,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public void checkIdleTimestamp(long now)
     {
         long idleTimestamp=_idleTimestamp;
-        
+                
         if (idleTimestamp!=0 && _maxIdleTime>0)
         {
             long idleForMs=now-idleTimestamp;
+
             if (idleForMs>_maxIdleTime)
             {
                 onIdleExpired(idleForMs);

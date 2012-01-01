@@ -179,7 +179,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             _generator.setVersion(_exchange.getVersion());
 
             String method=_exchange.getMethod();
-            String uri = _exchange.getURI();
+            String uri = _exchange.getRequestURI();
             if (_destination.isProxied() && !HttpMethods.CONNECT.equals(method) && uri.startsWith("/"))
             {
                 boolean secure = _destination.isSecure();
@@ -394,7 +394,11 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             }
         }
 
-        _endp.close();
+        if (_endp.isOpen())
+        {
+            _endp.close();
+            _destination.returnConnection(this, true);
+        }
     }
 
     public void setIdleTimeout()

@@ -370,6 +370,13 @@ public class WebSocketConnectionD08 extends AbstractConnection implements WebSoc
         }
     }
 
+    public void shutdown()
+    {
+        final WebSocket.Connection connection = _connection;
+        if (connection != null)
+            connection.close(CLOSE_SHUTDOWN, null);
+    }
+
     /* ------------------------------------------------------------ */
     public void fillBuffersFrom(Buffer buffer)
     {
