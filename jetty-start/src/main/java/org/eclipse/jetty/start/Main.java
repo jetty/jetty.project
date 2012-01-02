@@ -123,29 +123,34 @@ public class Main
         // if no non-option inis, add the start.ini and start.d
         if (!ini)
         {
-            List<String> ini_args=new ArrayList<String>();
-            File start_ini = new File(_jettyHome,"start.ini");
-            if (start_ini.exists())
-                ini_args.addAll(loadStartIni(start_ini));
-
-            File start_d = new File(_jettyHome,"start.d");
-            if (start_d.isDirectory())
-            {
-                File[] inis = start_d.listFiles(new FilenameFilter()
-                {
-                    public boolean accept(File dir, String name)
-                    {
-                        return name.toLowerCase().endsWith(".ini");
-                    }
-                });
-                Arrays.sort(inis);
-                for (File i : inis)
-                    ini_args.addAll(loadStartIni(i));
-            }
-            arguments.addAll(0,ini_args);
+            arguments.addAll(0,parseStartIniFiles());
         }
 
         return arguments;
+    }
+
+    List<String> parseStartIniFiles()
+    {
+        List<String> ini_args=new ArrayList<String>();
+        File start_ini = new File(_jettyHome,"start.ini");
+        if (start_ini.exists())
+            ini_args.addAll(loadStartIni(start_ini));
+
+        File start_d = new File(_jettyHome,"start.d");
+        if (start_d.isDirectory())
+        {
+            File[] inis = start_d.listFiles(new FilenameFilter()
+            {
+                public boolean accept(File dir, String name)
+                {
+                    return name.toLowerCase().endsWith(".ini");
+                }
+            });
+            Arrays.sort(inis);
+            for (File i : inis)
+                ini_args.addAll(loadStartIni(i));
+        }
+        return ini_args;
     }
     
     public List<String> processCommandLine(List<String> arguments) throws Exception

@@ -15,7 +15,7 @@ package org.eclipse.jetty.start;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
@@ -39,15 +39,18 @@ public class MainTest
 
     /**
      * Test method for {@link org.eclipse.jetty.start.StartIniParser#loadStartIni(java.lang.String)}.
+     * @throws IOException 
      */
     @Test
-    public void testLoadStartIni()
+    public void testLoadStartIni() throws IOException
     {
-        URL startIni = this.getClass().getResource("/jetty.home/start.ini");
-        String startIniFileName = startIni.getFile();
-        List<String> args = Main.loadStartIni(new File(startIniFileName));
-        assertEquals("Expected 5 uncommented lines in start.ini",5,args.size());
+        URL startIni = this.getClass().getResource("/jetty.home/");
+        System.setProperty("jetty.home",startIni.getFile());
+        Main main = new Main();
+        List<String> args = main.parseStartIniFiles();
+        assertEquals("Expected 5 uncommented lines in start.ini",9,args.size());
         assertEquals("First uncommented line in start.ini doesn't match expected result","OPTIONS=Server,jsp,resources,websocket,ext",args.get(0));
+        assertEquals("Last uncommented line in start.ini doesn't match expected result","etc/jetty-testrealm.xml",args.get(8));
     }
 
     @Test
