@@ -17,12 +17,14 @@ package org.eclipse.jetty.websocket.helper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.WebSocket;
 
-public class CaptureSocket implements WebSocket, WebSocket.OnTextMessage
+public class CaptureSocket implements WebSocket.OnTextMessage
 {
-    private Connection conn;
+    private final CountDownLatch latch = new CountDownLatch(1);
     public List<String> messages;
 
     public CaptureSocket()
@@ -30,13 +32,9 @@ public class CaptureSocket implements WebSocket, WebSocket.OnTextMessage
         messages = new ArrayList<String>();
     }
 
-    public boolean isConnected()
+    public boolean awaitConnected(long timeout) throws InterruptedException
     {
-        if (conn == null)
-        {
-            return false;
-        }
-        return conn.isOpen();
+        return latch.await(timeout, TimeUnit.MILLISECONDS);
     }
 
     public void onMessage(String data)
@@ -47,11 +45,10 @@ public class CaptureSocket implements WebSocket, WebSocket.OnTextMessage
 
     public void onOpen(Connection connection)
     {
-        this.conn = connection;
+        latch.countDown();
     }
 
     public void onClose(int closeCode, String message)
     {
-        this.conn = null;
     }
 }
