@@ -56,7 +56,8 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
             setCurrentConnection(this);
             
             // don't check for idle while dispatched (unless blocking IO is done).
-            _asyncEndp.setCheckForIdle(false);
+            if(!_request.isAsyncCompleted())
+                _asyncEndp.setCheckForIdle(false);
             
 
             // While progress and the connection has not changed
@@ -144,11 +145,13 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 // return buffers
                 _parser.returnBuffers();
                 _generator.returnBuffers();
-                
-                // resuming checking for idle
+            }
+            
+            if (_request.isAsyncCompleted() || _request.isAsyncInitial())
+            {
                 _asyncEndp.setCheckForIdle(true);
             }
-
+            
             // Safety net to catch spinning
             if (some_progress)
                 _total_no_progress=0;

@@ -1266,6 +1266,18 @@ public class Request implements HttpServletRequest
     }
     
     /* ------------------------------------------------------------ */
+    public boolean isAsyncInitial()
+    {
+        return _async.isInitial();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isAsyncCompleted()
+    {
+        return _async.isComplete();
+    }
+    
+    /* ------------------------------------------------------------ */
     public boolean isAsyncSupported()
     {
         return _asyncSupported;
