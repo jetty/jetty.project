@@ -308,10 +308,11 @@ public class Request implements HttpServletRequest
         }
     }
 
+    
     /* ------------------------------------------------------------ */
     public AsyncContext getAsyncContext()
     {
-        if (_async.isInitial() && !isAsyncStarted())
+        if (_async.isInitial() && !_async.isAsyncStarted())
             throw new IllegalStateException(_async.getStatusString());
         return _async;
     }
@@ -1260,33 +1261,15 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isAsyncStarted()
+    public boolean isHandled()
     {
-        return _async.isAsyncStarted();
+        return _handled;
     }
-    
-    /* ------------------------------------------------------------ */
-    public boolean isAsyncInitial()
-    {
-        return _async.isInitial();
-    }
-    
-    /* ------------------------------------------------------------ */
-    public boolean isAsyncCompleted()
-    {
-        return _async.isComplete();
-    }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isAsyncSupported()
     {
         return _asyncSupported;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isHandled()
-    {
-        return _handled;
     }
     
     /* ------------------------------------------------------------ */

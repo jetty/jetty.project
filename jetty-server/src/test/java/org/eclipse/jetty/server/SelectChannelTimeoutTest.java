@@ -13,9 +13,13 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
-import java.net.SocketException;
 
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -34,7 +38,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         startServer(connector);
     }
 
-    @Test(expected=SocketException.class)
+    @Test
     public void testIdleTimeoutAfterSuspend() throws Exception
     {
         SuspendHandler _handler = new SuspendHandler();
@@ -46,10 +50,10 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 
         _handler.setSuspendFor(100);
         _handler.setResumeAfter(25);
-         process(null);
+         assertTrue(process(null).toUpperCase().contains("RESUMED"));
     }
     
-    @Test(expected=SocketException.class)
+    @Test
     public void testIdleTimeoutAfterTimeout() throws Exception
     {
         SuspendHandler _handler = new SuspendHandler();
@@ -60,11 +64,11 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         _server.start();
         
         _handler.setSuspendFor(50);
-        System.out.println(process(null));
+        assertTrue(process(null).toUpperCase().contains("TIMEOUT"));
     }
     
-    @Test(expected=SocketException.class)
-    public void testIdleTimeoutAfterComplete() throws Exception
+    @Test
+    public void testIdleTimeoutAfterComplete() throws Exception 
     {
         SuspendHandler _handler = new SuspendHandler();
         _server.stop();
@@ -75,11 +79,10 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         
         _handler.setSuspendFor(100);
         _handler.setCompleteAfter(25);
-        System.out.println(process(null));
+        assertTrue(process(null).toUpperCase().contains("COMPLETED"));
     }
 
-    // TODO: remove code duplication to LocalAsyncContextTest.java
-    private synchronized String process(String content) throws Exception
+    private synchronized String process(String content) throws UnsupportedEncodingException, IOException, InterruptedException 
     {
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n";
 
@@ -90,15 +93,16 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         return getResponse(request);
     }
 
-    protected String getResponse(String request) throws Exception
+    private String getResponse(String request) throws UnsupportedEncodingException, IOException, InterruptedException
     {
         SelectChannelConnector connector = (SelectChannelConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
         socket.getOutputStream().write(request.getBytes("UTF-8"));
         InputStream inputStream = socket.getInputStream();
+        String response = IO.toString(inputStream);
         Thread.sleep(500);
-        socket.getOutputStream().write(10);
-        return IO.toString(inputStream);
+        assertEquals("Socket should be closed and return -1 on reading",-1,socket.getInputStream().read());
+        return response;
     }
 
 }
