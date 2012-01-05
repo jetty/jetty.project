@@ -1,5 +1,16 @@
 jetty-7.6.0-SNAPSHOT
 
+jetty-7.6.0.RC3 - 05 January 2012
+ + 367433 added tests to investigate
+ + 367435 improved D00 test harness
+ + 367485 HttpExchange canceled before response do not release connection.
+ + 367502 WebSocket connections should be closed when application context is
+   stopped.
+ + 367591 corrected configuration.xml version to 7.6
+ + 367635 Added support for start.d directory
+ + 637638 limit number of form parameters to avoid DOS
+ + JETTY-1467 close half closed when idle
+
 jetty-7.6.0.RC2 - 22 December 2011
  + 364638 HttpParser closes if data received while seeking EOF. Tests fixed to
    cope
