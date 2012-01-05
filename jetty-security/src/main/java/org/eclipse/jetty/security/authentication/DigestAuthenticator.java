@@ -15,6 +15,12 @@ package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -22,37 +28,48 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.http.security.Credential;
-import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  * 
- * The nonce max age can be set with the {@link SecurityHandler#setInitParameter(String, String)} 
+ * The nonce max age in ms can be set with the {@link SecurityHandler#setInitParameter(String, String)} 
  * using the name "maxNonceAge"
  */
 public class DigestAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(DigestAuthenticator.class);
+    SecureRandom _random = new SecureRandom();
+    private long _maxNonceAgeMs = 60*1000;
+    private ConcurrentMap<String, Nonce> _nonceCount = new ConcurrentHashMap<String, Nonce>();
+    private Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<Nonce>();
+    private static class Nonce
+    {
+        final String _nonce;
+        final long _ts;
+        AtomicInteger _nc=new AtomicInteger();
+        public Nonce(String nonce, long ts)
+        {
+            _nonce=nonce;
+            _ts=ts;
+        }
+    }
 
-    protected long _maxNonceAge = 0;
-    protected long _nonceSecret = this.hashCode() ^ System.currentTimeMillis();
-    protected boolean _useStale = false;
-
+    /* ------------------------------------------------------------ */
     public DigestAuthenticator()
     {
         super();
@@ -69,19 +86,33 @@ public class DigestAuthenticator extends LoginAuthenticator
         
         String mna=configuration.getInitParameter("maxNonceAge");
         if (mna!=null)
-            _maxNonceAge=Long.valueOf(mna);
+        {
+            synchronized (this)
+            {
+                _maxNonceAgeMs=Long.valueOf(mna);
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    public synchronized void setMaxNonceAge(long maxNonceAgeInMillis)
+    {
+        _maxNonceAgeMs = maxNonceAgeInMillis;
     }
 
+    /* ------------------------------------------------------------ */
     public String getAuthMethod()
     {
         return Constraint.__DIGEST_AUTH;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
 
+    /* ------------------------------------------------------------ */
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
@@ -96,7 +127,8 @@ public class DigestAuthenticator extends LoginAuthenticator
             boolean stale = false;
             if (credentials != null)
             {
-                if (LOG.isDebugEnabled()) LOG.debug("Credentials: " + credentials);
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("Credentials: " + credentials);
                 QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
                 final Digest digest = new Digest(request.getMethod());
                 String last = null;
@@ -115,6 +147,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                             break;
                         case ',':
                             name = null;
+                            break;
                         case ' ':
                             break;
 
@@ -143,7 +176,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     }
                 }
 
-                int n = checkNonce(digest.nonce, (Request)request);
+                int n = checkNonce(digest,(Request)request);
 
                 if (n > 0)
                 {
@@ -169,8 +202,8 @@ public class DigestAuthenticator extends LoginAuthenticator
                         + domain
                         + "\", nonce=\""
                         + newNonce((Request)request)
-                        + "\", algorithm=MD5, qop=\"auth\""
-                        + (_useStale ? (" stale=" + stale) : ""));
+                        + "\", algorithm=MD5, qop=\"auth\","
+                        + " stale=" + stale);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
                 return Authentication.SEND_CONTINUE;
@@ -185,87 +218,63 @@ public class DigestAuthenticator extends LoginAuthenticator
 
     }
 
+    /* ------------------------------------------------------------ */
     public String newNonce(Request request)
     {
-        long ts=request.getTimeStamp();
-        long sk = _nonceSecret;
-
-        byte[] nounce = new byte[24];
-        for (int i = 0; i < 8; i++)
+        Nonce nonce;
+        
+        do
         {
-            nounce[i] = (byte) (ts & 0xff);
-            ts = ts >> 8;
-            nounce[8 + i] = (byte) (sk & 0xff);
-            sk = sk >> 8;
-        }
+            byte[] nounce = new byte[24];
+            _random.nextBytes(nounce);
 
-        byte[] hash = null;
-        try
-        {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            md.reset();
-            md.update(nounce, 0, 16);
-            hash = md.digest();
+            nonce = new Nonce(new String(B64Code.encode(nounce)),request.getTimeStamp());
         }
-        catch (Exception e)
-        {
-            LOG.warn(e);
-        }
-
-        for (int i = 0; i < hash.length; i++)
-        {
-            nounce[8 + i] = hash[i];
-            if (i == 23) break;
-        }
-
-        return new String(B64Code.encode(nounce));
+        while (_nonceCount.putIfAbsent(nonce._nonce,nonce)!=null);
+        _nonceQueue.add(nonce);
+               
+        return nonce._nonce;
     }
 
     /**
-     * @param nonce nonce to check
+     * @param nstring nonce to check
      * @param request
      * @return -1 for a bad nonce, 0 for a stale none, 1 for a good nonce
      */
     /* ------------------------------------------------------------ */
-    private int checkNonce(String nonce, Request request)
+    private int checkNonce(Digest digest, Request request)
     {
+        // firstly let's expire old nonces
+        long expired;
+        synchronized (this)
+        {
+            expired = request.getTimeStamp()-_maxNonceAgeMs;
+        }
+        
+        Nonce nonce=_nonceQueue.peek();
+        while (nonce!=null && nonce._ts<expired)
+        {
+            _nonceQueue.remove();
+            _nonceCount.remove(nonce._nonce);
+            nonce=_nonceQueue.peek();
+        }
+        
+       
         try
         {
-            byte[] n = B64Code.decode(nonce.toCharArray());
-            if (n.length != 24) return -1;
-
-            long ts = 0;
-            long sk = _nonceSecret;
-            byte[] n2 = new byte[16];
-            System.arraycopy(n, 0, n2, 0, 8);
-            for (int i = 0; i < 8; i++)
-            {
-                n2[8 + i] = (byte) (sk & 0xff);
-                sk = sk >> 8;
-                ts = (ts << 8) + (0xff & (long) n[7 - i]);
-            }
-
-            long age = request.getTimeStamp() - ts;
-            if (LOG.isDebugEnabled()) LOG.debug("age=" + age);
-
-            byte[] hash = null;
-            try
-            {
-                MessageDigest md = MessageDigest.getInstance("MD5");
-                md.reset();
-                md.update(n2, 0, 16);
-                hash = md.digest();
-            }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-
-            for (int i = 0; i < 16; i++)
-                if (n[i + 8] != hash[i]) return -1;
-
-            if (_maxNonceAge > 0 && (age < 0 || age > _maxNonceAge)) return 0; // stale
-
+            nonce = _nonceCount.get(digest.nonce);
+            if (nonce==null)
+                return 0;
+            
+            long count = Long.parseLong(digest.nc,16);
+            if (count>Integer.MAX_VALUE)
+                return 0;
+            int old=nonce._nc.get();
+            while (!nonce._nc.compareAndSet(old,(int)count))
+                old=nonce._nc.get();
+            if (count<=old)
+                return -1;
+ 
             return 1;
         }
         catch (Exception e)
@@ -275,18 +284,21 @@ public class DigestAuthenticator extends LoginAuthenticator
         return -1;
     }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     private static class Digest extends Credential
     {
         private static final long serialVersionUID = -2484639019549527724L;
-        String method = null;
-        String username = null;
-        String realm = null;
-        String nonce = null;
-        String nc = null;
-        String cnonce = null;
-        String qop = null;
-        String uri = null;
-        String response = null;
+        final String method;
+        String username = "";
+        String realm = "";
+        String nonce = "";
+        String nc = "";
+        String cnonce = "";
+        String qop = "";
+        String uri = "";
+        String response = "";
 
         /* ------------------------------------------------------------ */
         Digest(String m)

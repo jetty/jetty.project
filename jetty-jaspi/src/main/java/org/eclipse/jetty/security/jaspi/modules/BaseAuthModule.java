@@ -32,8 +32,8 @@ import javax.security.auth.message.module.ServerAuthModule;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.security.Credential;
-import org.eclipse.jetty.http.security.Password;
+import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.util.security.Password;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.jaspi.JaspiMessageInfo;
 import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
@@ -90,12 +90,12 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
     public AuthStatus secureResponse(MessageInfo messageInfo, Subject serviceSubject) throws AuthException
     {
         // servlets do not need secured responses
-        return AuthStatus.SUCCESS;
+        return AuthStatus.SEND_SUCCESS;
     }
 
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
-        return AuthStatus.FAILURE;
+        return AuthStatus.SEND_FAILURE;
     }
 
     /**
@@ -131,6 +131,7 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
         if (credValidationCallback.getResult())
         {
             Set<LoginCallbackImpl> loginCallbacks = clientSubject.getPrivateCredentials(LoginCallbackImpl.class);
+            System.err.println("LoginCallbackImpls.isEmpty="+loginCallbacks.isEmpty());
             if (!loginCallbacks.isEmpty())
             {
                 LoginCallbackImpl loginCallback = loginCallbacks.iterator().next();

@@ -18,20 +18,23 @@ import java.net.Socket;
 import java.security.KeyStore;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.ConnectorTimeoutTest;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 
 public class SslSocketTimeoutTest extends ConnectorTimeoutTest
 {
-    static SSLContext _sslContext;
+    static SSLContext __sslContext;
     
     @Override
     protected Socket newSocket(String host, int port) throws Exception
     {
-        return _sslContext.getSocketFactory().createSocket(host,port);
+        SSLSocket socket = (SSLSocket)__sslContext.getSocketFactory().createSocket(host,port);
+        socket.setEnabledProtocols(new String[] {"TLSv1"});
+        return socket;
     }
 
     @BeforeClass
@@ -41,7 +44,7 @@ public class SslSocketTimeoutTest extends ConnectorTimeoutTest
         connector.setMaxIdleTime(MAX_IDLE_TIME); //250 msec max idle
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystorePath);
+        cf.setKeyStorePath(keystorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStore(keystorePath);
@@ -53,8 +56,8 @@ public class SslSocketTimeoutTest extends ConnectorTimeoutTest
         keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
-        _sslContext = SSLContext.getInstance("SSL");
-        _sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+        __sslContext = SSLContext.getInstance("TLSv1");
+        __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
        
     }
 

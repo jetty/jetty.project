@@ -13,6 +13,7 @@
 package org.eclipse.jetty.servlet;
 
 import junit.framework.AssertionFailedError;
+
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.StatisticsHandler;

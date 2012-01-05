@@ -63,6 +63,8 @@ public class XmlConfigurationTest
         assertEquals( "ObjectsWhiteString", "-1\n  String",tc.get("ObjectsWhiteString"));
 
         assertEquals( "SystemProperty", System.getProperty("user.dir")+"/stuff",tc.get("SystemProperty"));
+        assertEquals( "Env", System.getenv("HOME"),tc.get("Env"));
+       
         assertEquals( "Property", "xxx", tc.get("Property"));
 
 

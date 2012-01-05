@@ -12,6 +12,7 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -51,7 +52,7 @@ public class HttpWriterTest
             }
 
             @Override
-            public long flushBuffer() throws IOException
+            public int flushBuffer() throws IOException
             {
                 return 0;
             }
@@ -75,7 +76,17 @@ public class HttpWriterTest
 
         };
 
-        HttpOutput httpOut = new HttpOutput(generator,60000);
+        AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,generator,null)
+        {
+            @Override
+            public Connection handle() throws IOException
+            {
+                return null;
+            }
+        };
+        endp.setMaxIdleTime(60000);
+   
+        HttpOutput httpOut = new HttpOutput(connection);
         _writer = new HttpWriter(httpOut);
     }
 
@@ -158,7 +169,17 @@ public class HttpWriterTest
 
         hb.setResponse(200,"OK");
 
-        HttpOutput output = new HttpOutput(hb,10000);
+        AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,hb,null)
+        {
+            @Override
+            public Connection handle() throws IOException
+            {
+                return null;
+            }
+        };
+        endp.setMaxIdleTime(10000);
+        hb.setSendServerVersion(false);
+        HttpOutput output = new HttpOutput(connection);
         HttpWriter writer = new HttpWriter(output);
         writer.setCharacterEncoding(StringUtil.__UTF8);
 

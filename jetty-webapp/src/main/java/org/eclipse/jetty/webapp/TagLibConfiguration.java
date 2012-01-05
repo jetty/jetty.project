@@ -14,13 +14,16 @@
 package org.eclipse.jetty.webapp;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EventListener;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.Servlet;
@@ -58,6 +61,7 @@ public class TagLibConfiguration extends AbstractConfiguration
 
     public static final String TLD_RESOURCES = "org.eclipse.jetty.tlds";
     
+  
     /**
      * TagLibListener
      *
@@ -96,7 +100,37 @@ public class TagLibConfiguration extends AbstractConfiguration
 
         public void contextInitialized(ServletContextEvent sce)
         {
-            try {
+            try 
+            {
+                //For jasper 2.1: 
+                //Get the system classpath tlds and tell jasper about them, if jasper is on the classpath
+                try
+                {
+                    Class clazz = getClass().getClassLoader().loadClass("org.apache.jasper.compiler.TldLocationsCache");
+                    Collection<Resource> tld_resources = (Collection<Resource>)_context.getAttribute(TLD_RESOURCES);
+                   
+                    Map<URI, List<String>> tldMap = new HashMap<URI, List<String>>();
+                    
+                    if (tld_resources != null)
+                    {
+                        //get the jar file names of the files
+                        for (Resource r:tld_resources)
+                        {
+                            Resource jarResource = extractJarResource(r);
+                            //jasper is happy with an empty list of tlds
+                            if (!tldMap.containsKey(jarResource.getURI()))
+                                tldMap.put(jarResource.getURI(), null);
+
+                        }
+                        //set the magic context attribute that tells jasper about the system tlds
+                        sce.getServletContext().setAttribute("com.sun.appserv.tld.map", tldMap);
+                    }
+                }
+                catch (ClassNotFoundException e)
+                {
+                    LOG.ignore(e);
+                }
+               
                 //find the tld files and parse them to get out their
                 //listeners
                 Set<Resource> tlds = findTldResources();
@@ -117,12 +151,37 @@ public class TagLibConfiguration extends AbstractConfiguration
                     }
                 }
                 
-            } catch (Exception e) {
+            } 
+            catch (Exception e) {
                 LOG.warn(e);
             }
         }
 
+
         
+        
+        private Resource extractJarResource (Resource r)
+        {
+            if (r == null)
+                return null;
+            
+            try
+            {
+                String url = r.getURI().toURL().toString();
+                int idx = url.lastIndexOf("!/");
+                if (idx >= 0)
+                    url = url.substring(0, idx);
+                if (url.startsWith("jar:"))
+                    url = url.substring(4);
+                return Resource.newResource(url);
+            }
+            catch (IOException e)
+            {
+                LOG.warn(e);
+                return null;
+            }
+        }
+    
         /**
          * Find all the locations that can harbour tld files that may contain
          * a listener which the web container is supposed to instantiate and
@@ -378,7 +437,8 @@ public class TagLibConfiguration extends AbstractConfiguration
         public void visitListener (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
         {     
             String className=node.getString("listener-class",false,true);
-            if (LOG.isDebugEnabled()) LOG.debug("listener="+className);
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("listener="+className);
 
             try
             {

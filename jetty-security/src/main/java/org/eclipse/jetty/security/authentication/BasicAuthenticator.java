@@ -21,14 +21,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.Authentication.User;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.security.Constraint;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
@@ -65,20 +65,28 @@ public class BasicAuthenticator extends LoginAuthenticator
                 return _deferred;
                 
             if (credentials != null)
-            {                  
-                credentials = credentials.substring(credentials.indexOf(' ')+1);
-                credentials = B64Code.decode(credentials,StringUtil.__ISO_8859_1);
-                int i = credentials.indexOf(':');
-                if (i>0)
+            {                 
+                int space=credentials.indexOf(' ');
+                if (space>0)
                 {
-                    String username = credentials.substring(0,i);
-                    String password = credentials.substring(i+1);
-
-                    UserIdentity user = _loginService.login(username,password);
-                    if (user!=null)
+                    String method=credentials.substring(0,space);
+                    if ("basic".equalsIgnoreCase(method))
                     {
-                        renewSessionOnAuthentication(request,response);
-                        return new UserAuthentication(getAuthMethod(),user);
+                        credentials = credentials.substring(space+1);
+                        credentials = B64Code.decode(credentials,StringUtil.__ISO_8859_1);
+                        int i = credentials.indexOf(':');
+                        if (i>0)
+                        {
+                            String username = credentials.substring(0,i);
+                            String password = credentials.substring(i+1);
+
+                            UserIdentity user = _loginService.login(username,password);
+                            if (user!=null)
+                            {
+                                renewSessionOnAuthentication(request,response);
+                                return new UserAuthentication(getAuthMethod(),user);
+                            }
+                        }
                     }
                 }
             }

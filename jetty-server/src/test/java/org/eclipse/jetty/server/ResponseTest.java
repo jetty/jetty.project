@@ -29,6 +29,7 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
@@ -80,7 +81,7 @@ public class ResponseTest
     @Test
     public void testContentType() throws Exception
     {
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = connection.getResponse();
 
         assertEquals(null,response.getContentType());
@@ -134,7 +135,7 @@ public class ResponseTest
     public void testLocale() throws Exception
     {
 
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Request request = connection.getRequest();
         Response response = connection.getResponse();
         ContextHandler context = new ContextHandler();
@@ -158,9 +159,8 @@ public class ResponseTest
     @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {
-        HttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection = new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
 
-        Request request = connection.getRequest();
         Response response = connection.getResponse();
 
 
@@ -332,7 +332,7 @@ public class ResponseTest
     public void testEncodeRedirect()
         throws Exception
     {
-        HttpConnection connection=new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
+        AbstractHttpConnection connection=new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer());
         Response response = new Response(connection);
         Request request = connection.getRequest();
         request.setServerName("myhost");
@@ -381,31 +381,45 @@ public class ResponseTest
     public void testSendRedirect()
         throws Exception
     {
-        ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
-        HttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
-        Response response = new Response(connection);
-        Request request = connection.getRequest();
-        request.setServerName("myhost");
-        request.setServerPort(8888);
-        request.setUri(new HttpURI("/path/info;param;jsessionid=12345?query=0&more=1#target"));
-        request.setContextPath("/path");
-        request.setRequestedSessionId("12345");
-        request.setRequestedSessionIdFromCookie(false);
-        AbstractSessionManager manager=new HashSessionManager();
-        manager.setSessionIdManager(new HashSessionIdManager());
-        request.setSessionManager(manager);
-        request.setSession(new TestSession(manager,"12345"));
-        manager.setCheckingRemoteSessionIdEncoding(false);
+        String[][] tests={
+                {"/other/location?name=value","http://myhost:8888/other/location;jsessionid=12345?name=value"},
+                {"/other/location","http://myhost:8888/other/location"},
+                {"/other/l%20cation","http://myhost:8888/other/l%20cation"},
+                {"location","http://myhost:8888/path/location"},
+                {"./location","http://myhost:8888/path/location"},
+                {"../location","http://myhost:8888/location"},
+                {"/other/l%20cation","http://myhost:8888/other/l%20cation"},
+                {"l%20cation","http://myhost:8888/path/l%20cation"},
+                {"./l%20cation","http://myhost:8888/path/l%20cation"},
+                {"../l%20cation","http://myhost:8888/l%20cation"},
+        };
+        
+        for (int i=1;i<tests.length;i++)
+        {
+            ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
+            AbstractHttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
+            Response response = new Response(connection);
+            Request request = connection.getRequest();
+            request.setServerName("myhost");
+            request.setServerPort(8888);
+            request.setUri(new HttpURI("/path/info;param;jsessionid=12345?query=0&more=1#target"));
+            request.setContextPath("/path");
+            request.setRequestedSessionId("12345");
+            request.setRequestedSessionIdFromCookie(i>0);
+            AbstractSessionManager manager=new HashSessionManager();
+            manager.setSessionIdManager(new HashSessionIdManager());
+            request.setSessionManager(manager);
+            request.setSession(new TestSession(manager,"12345"));
+            manager.setCheckingRemoteSessionIdEncoding(false);
 
-        response.sendRedirect("/other/location");
-        
-        String location = out.getOut().toString();
-        int l=location.indexOf("Location: ");
-        int e=location.indexOf('\n',l);
-        location=location.substring(l+10,e).trim();
-        
-        assertEquals("http://myhost:8888/other/location;jsessionid=12345",location);
-        
+            response.sendRedirect(tests[i][0]);
+
+            String location = out.getOut().toString();
+            int l=location.indexOf("Location: ");
+            int e=location.indexOf('\n',l);
+            location=location.substring(l+10,e).trim();
+            assertEquals(tests[i][0],tests[i][1],location);
+        }
     }
 
     @Test
@@ -472,14 +486,32 @@ public class ResponseTest
         }
     }
 
+    @Test
+    public void testAddCookie() throws Exception
+    {
+        Response response = new Response(new TestHttpConnection(connector,new ByteArrayEndPoint(), connector.getServer()));
+
+        Cookie cookie=new Cookie("name","value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY__");
+        
+        response.addCookie(cookie);
+        
+        String set = response.getHttpFields().getStringField("Set-Cookie");
+        
+        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly",set);
+    }
+
     private Response newResponse()
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         endPoint.setOut(new ByteArrayBuffer(1024));
         endPoint.setGrowOutput(true);
-        HttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
-        connection.getGenerator().reset(false);
-        HttpConnection.setCurrentConnection(connection);
+        AbstractHttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
+        connection.getGenerator().reset();
+        AbstractHttpConnection.setCurrentConnection(connection);
         Response response = connection.getResponse();
         connection.getRequest().setRequestURI("/test");
         return response;
@@ -579,7 +611,7 @@ public class ResponseTest
         }
     }
     
-    static class TestHttpConnection extends HttpConnection
+    static class TestHttpConnection extends AbstractHttpConnection
     {
         
         public TestHttpConnection(Connector connector, EndPoint endpoint, Server server)

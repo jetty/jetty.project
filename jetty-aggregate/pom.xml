@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.5.0-SNAPSHOT</version>
+    <version>7.6.0-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-aggregate-project</artifactId>
@@ -35,6 +35,7 @@
     <module>jetty-client</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
+    <module>jetty-websocket</module>
     <module>jetty-plus</module>
     <module>jetty-all-server</module>
     <module>jetty-all</module>

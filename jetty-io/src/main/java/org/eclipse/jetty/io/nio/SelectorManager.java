@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.io.nio;
@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -49,30 +49,25 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * The Selector Manager manages and number of SelectSets to allow
  * NIO scheduling to scale to large numbers of connections.
  * <p>
- * This class works around a number of know JVM bugs. For details
- * see http://wiki.eclipse.org/Jetty/Feature/JVM_NIO_Bug
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
     public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
-    
-    // TODO Tune these by approx system speed.
-    private static final int __JVMBUG_THRESHHOLD=Integer.getInteger("org.eclipse.jetty.io.nio.JVMBUG_THRESHHOLD",0).intValue();
+
     private static final int __MONITOR_PERIOD=Integer.getInteger("org.eclipse.jetty.io.nio.MONITOR_PERIOD",1000).intValue();
-    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",25000).intValue();
+    private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",100000).intValue();
     private static final int __BUSY_PAUSE=Integer.getInteger("org.eclipse.jetty.io.nio.BUSY_PAUSE",50).intValue();
-    private static final int __BUSY_KEY=Integer.getInteger("org.eclipse.jetty.io.nio.BUSY_KEY",-1).intValue();
     private static final int __IDLE_TICK=Integer.getInteger("org.eclipse.jetty.io.nio.IDLE_TICK",400).intValue();
-    
+
     private int _maxIdleTime;
     private int _lowResourcesMaxIdleTime;
     private long _lowResourcesConnections;
     private SelectSet[] _selectSet;
     private int _selectSets=1;
-    private volatile int _set;
+    private volatile int _set=0;
     private boolean _deferringInterestedOps0=true;
     private int _selectorPriorityDelta=0;
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param maxIdleTime The maximum period in milli seconds that a connection may be idle before it is closed.
@@ -82,18 +77,18 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         _maxIdleTime=(int)maxIdleTime;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param selectSets number of select sets to create
      */
     public void setSelectSets(int selectSets)
     {
-        long lrc = _lowResourcesConnections * _selectSets; 
+        long lrc = _lowResourcesConnections * _selectSets;
         _selectSets=selectSets;
         _lowResourcesConnections=lrc/_selectSets;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return the max idle time
@@ -102,7 +97,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         return _maxIdleTime;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return the number of select sets in use
@@ -114,14 +109,14 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     /* ------------------------------------------------------------ */
     /**
-     * @param i 
+     * @param i
      * @return The select set
      */
     public SelectSet getSelectSet(int i)
     {
         return _selectSet[i];
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Register a channel
      * @param channel
@@ -132,8 +127,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         // The ++ increment here is not atomic, but it does not matter.
         // so long as the value changes sometimes, then connections will
         // be distributed over the available sets.
-        
-        int s=_set++; 
+
+        int s=_set++;
+        if (s<0)
+            s=-s;
         s=s%_selectSets;
         SelectSet[] sets=_selectSet;
         if (sets!=null)
@@ -144,7 +141,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
     }
 
-    
+
     /* ------------------------------------------------------------ */
     /** Register a channel
      * @param channel
@@ -154,8 +151,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         // The ++ increment here is not atomic, but it does not matter.
         // so long as the value changes sometimes, then connections will
         // be distributed over the available sets.
-        
-        int s=_set++; 
+
+        int s=_set++;
+        if (s<0)
+            s=-s;
         s=s%_selectSets;
         SelectSet[] sets=_selectSet;
         if (sets!=null)
@@ -165,14 +164,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             set.wakeup();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Register a {@link ServerSocketChannel}
      * @param acceptChannel
      */
     public void register(ServerSocketChannel acceptChannel)
     {
-        int s=_set++; 
+        int s=_set++;
+        if (s<0)
+            s=-s;
         s=s%_selectSets;
         SelectSet set=_selectSet[s];
         set.addChange(acceptChannel);
@@ -196,8 +197,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         _selectorPriorityDelta=delta;
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /**
      * @return the lowResourcesConnections
@@ -237,7 +238,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         _lowResourcesMaxIdleTime=(int)lowResourcesMaxIdleTime;
     }
-    
+
 
     /* ------------------------------------------------------------------------------- */
     public abstract boolean dispatch(Runnable task);
@@ -254,7 +255,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             _selectSet[i]= new SelectSet(i);
 
         super.doStart();
-        
+
         // start a thread to Select
         for (int i=0;i<getSelectSets();i++)
         {
@@ -271,7 +272,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         if (sets==null)
                             return;
                         SelectSet set=sets[id];
-                        
+
                         Thread.currentThread().setName(name+" Selector"+id);
                         if (getSelectorPriorityDelta()!=0)
                             Thread.currentThread().setPriority(Thread.currentThread().getPriority()+getSelectorPriorityDelta());
@@ -281,10 +282,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             try
                             {
                                 set.doSelect();
-                            }
-                            catch(ThreadDeath e)
-                            {
-                                throw e;
                             }
                             catch(IOException e)
                             {
@@ -343,7 +340,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected abstract void endPointUpgraded(ConnectedEndPoint endpoint,Connection oldConnection);
 
     /* ------------------------------------------------------------------------------- */
-    protected abstract Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint);
+    public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment);
 
     /* ------------------------------------------------------------ */
     /**
@@ -362,7 +359,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         LOG.warn(ex+","+channel+","+attachment);
         LOG.debug(ex);
     }
-    
+
     /* ------------------------------------------------------------ */
     public String dump()
     {
@@ -375,8 +372,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         out.append(String.valueOf(this)).append("\n");
         AggregateLifeCycle.dump(out,indent,TypeUtil.asList(_selectSet));
     }
-    
-    
+
+
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
     /* ------------------------------------------------------------------------------- */
@@ -384,27 +381,19 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         private final int _setID;
         private final Timeout _timeout;
-        
+
         private final ConcurrentLinkedQueue<Object> _changes = new ConcurrentLinkedQueue<Object>();
-        
-        private Selector _selector;
-        
+
+        private volatile Selector _selector;
+
         private volatile Thread _selecting;
-        private int _jvmBug;
-        private int _selects;
-        private long _monitorStart;
+        private int _busySelects;
         private long _monitorNext;
         private boolean _pausing;
-        private SelectionKey _busyKey;
-        private int _busyKeyCount;
-        private long _log;
-        private int _paused;
-        private int _jvmFix0;
-        private int _jvmFix1;
-        private int _jvmFix2;
+        private boolean _paused;
         private volatile long _idleTick;
         private ConcurrentMap<SelectChannelEndPoint,Object> _endPoints = new ConcurrentHashMap<SelectChannelEndPoint, Object>();
-        
+
         /* ------------------------------------------------------------ */
         SelectSet(int acceptorID) throws Exception
         {
@@ -416,11 +405,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
             // create a selector;
             _selector = Selector.open();
-            _monitorStart=System.currentTimeMillis();
-            _monitorNext=_monitorStart+__MONITOR_PERIOD;
-            _log=_monitorStart+60000;
+            _monitorNext=System.currentTimeMillis()+__MONITOR_PERIOD;
         }
-        
+
         /* ------------------------------------------------------------ */
         public void addChange(Object change)
         {
@@ -429,7 +416,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         /* ------------------------------------------------------------ */
         public void addChange(SelectableChannel channel, Object att)
-        {   
+        {
             if (att==null)
                 addChange(channel);
             else if (att instanceof EndPoint)
@@ -437,11 +424,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             else
                 addChange(new ChannelAndAttachment(channel,att));
         }
-        
+
         /* ------------------------------------------------------------ */
         /**
          * Select and dispatch tasks found from changes and the selector.
-         * 
+         *
          * @throws IOException
          */
         public void doSelect() throws IOException
@@ -450,6 +437,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 _selecting=Thread.currentThread();
                 final Selector selector=_selector;
+                // Stopped concurrently ?
+                if (selector == null)
+                    return;
 
                 // Make any key changes required
                 Object change;
@@ -458,7 +448,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     Channel ch=null;
                     SelectionKey key=null;
-                    
+
                     try
                     {
                         if (change instanceof EndPoint)
@@ -475,7 +465,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             final SelectableChannel channel=asc._channel;
                             ch=channel;
                             final Object att = asc._attachment;
-                            
+
                             if ((channel instanceof SocketChannel) && ((SocketChannel)channel).isConnected())
                             {
                                 key = channel.register(selector,SelectionKey.OP_READ,att);
@@ -515,9 +505,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     }
                     catch (Throwable e)
                     {
-                        if (e instanceof ThreadDeath)
-                            throw (ThreadDeath)e;
-                        
                         if (isRunning())
                             LOG.warn(e);
                         else
@@ -525,7 +512,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
                         try
                         {
-                            ch.close();
+                            if (ch!=null)
+                                ch.close();
                         }
                         catch(IOException e2)
                         {
@@ -537,10 +525,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
                 // Do and instant select to see if any connections can be handled.
                 int selected=selector.selectNow();
-                _selects++;
 
                 long now=System.currentTimeMillis();
-                
+
                 // if no immediate things to do
                 if (selected==0 && selector.selectedKeys().isEmpty())
                 {
@@ -562,7 +549,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     _timeout.setNow(now);
                     long to_next_timeout=_timeout.getTimeToNext();
 
-                    long wait = _changes.size()==0?__IDLE_TICK:0L;  
+                    long wait = _changes.size()==0?__IDLE_TICK:0L;
                     if (wait > 0 && to_next_timeout >= 0 && wait > to_next_timeout)
                         wait = to_next_timeout;
 
@@ -571,24 +558,40 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     {
                         long before=now;
                         selected=selector.select(wait);
-                        _selects++;
                         now = System.currentTimeMillis();
                         _timeout.setNow(now);
-                        
-                        if (__JVMBUG_THRESHHOLD>0)
-                            checkJvmBugs(before, now, wait, selected);
+
+                        // If we are monitoring for busy selector
+                        // and this select did not wait more than 1ms
+                        if (__MONITOR_PERIOD>0 && now-before <=1)
+                        {
+                            // count this as a busy select and if there have been too many this monitor cycle
+                            if (++_busySelects>__MAX_SELECTS)
+                            {
+                                // Start injecting pauses
+                                _pausing=true;
+
+                                // if this is the first pause
+                                if (!_paused)
+                                {
+                                    // Log and dump some status
+                                    _paused=true;
+                                    LOG.warn("Selector {} is too busy, pausing!",this);
+                                }
+                            }
+                        }
                     }
                 }
-                
+
                 // have we been destroyed while sleeping
                 if (_selector==null || !selector.isOpen())
                     return;
 
                 // Look for things to do
                 for (SelectionKey key: selector.selectedKeys())
-                {   
+                {
                     SocketChannel channel=null;
-                    
+
                     try
                     {
                         if (!key.isValid())
@@ -641,7 +644,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
                             if (key.isReadable())
-                                endpoint.schedule();  
+                                endpoint.schedule();
                         }
                         key = null;
                     }
@@ -665,15 +668,15 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         {
                             LOG.debug(e2);
                         }
-                        
+
                         if (key != null && !(key.channel() instanceof ServerSocketChannel) && key.isValid())
                             key.cancel();
                     }
                 }
-                
+
                 // Everything always handled
                 selector.selectedKeys().clear();
-                
+
                 now=System.currentTimeMillis();
                 _timeout.setNow(now);
                 Task task = _timeout.expired();
@@ -688,11 +691,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (now-_idleTick>__IDLE_TICK)
                 {
                     _idleTick=now;
-                    
+
                     final long idle_now=((_lowResourcesConnections>0 && selector.keys().size()>_lowResourcesConnections))
                         ?(now+_maxIdleTime-_lowResourcesMaxIdleTime)
                         :now;
-                        
+
                     dispatch(new Runnable()
                     {
                         public void run()
@@ -702,7 +705,18 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                 endp.checkIdleTimestamp(idle_now);
                             }
                         }
+                        public String toString() {return "Idle-"+super.toString();}
                     });
+
+                }
+
+                // Reset busy select monitor counts
+                if (__MONITOR_PERIOD>0 && now>_monitorNext)
+                {
+                    _busySelects=0;
+                    _pausing=false;
+                    _monitorNext=now+__MONITOR_PERIOD;
+
                 }
             }
             catch (ClosedSelectorException e)
@@ -721,130 +735,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 _selecting=null;
             }
         }
-        
+
+
         /* ------------------------------------------------------------ */
-        private void checkJvmBugs(long before, long now, long wait, int selected)
-            throws IOException
-        {
-            Selector selector = _selector;
-            if (selector==null)
-                return;
-                
-            // Look for JVM bugs over a monitor period.
-            // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6403933
-            // http://bugs.sun.com/view_bug.do?bug_id=6693490
-            if (now>_monitorNext)
-            {
-                _selects=(int)(_selects*__MONITOR_PERIOD/(now-_monitorStart));
-                _pausing=_selects>__MAX_SELECTS;
-                if (_pausing)
-                    _paused++;
-
-                _selects=0;
-                _jvmBug=0;
-                _monitorStart=now;
-                _monitorNext=now+__MONITOR_PERIOD;
-            }
-
-            if (now>_log)
-            {
-                if (_paused>0)  
-                    LOG.debug(this+" Busy selector - injecting delay "+_paused+" times");
-
-                if (_jvmFix2>0)
-                    LOG.debug(this+" JVM BUG(s) - injecting delay"+_jvmFix2+" times");
-
-                if (_jvmFix1>0)
-                    LOG.debug(this+" JVM BUG(s) - recreating selector "+_jvmFix1+" times, cancelled keys "+_jvmFix0+" times");
-
-                else if(LOG.isDebugEnabled() && _jvmFix0>0)
-                    LOG.debug(this+" JVM BUG(s) - cancelled keys "+_jvmFix0+" times");
-                _paused=0;
-                _jvmFix2=0;
-                _jvmFix1=0;
-                _jvmFix0=0;
-                _log=now+60000;
-            }
-
-            // If we see signature of possible JVM bug, increment count.
-            if (selected==0 && wait>10 && (now-before)<(wait/2))
-            {
-                // Increment bug count and try a work around
-                _jvmBug++;
-                if (_jvmBug>(__JVMBUG_THRESHHOLD))
-                {
-                    try
-                    {
-                        if (_jvmBug==__JVMBUG_THRESHHOLD+1)
-                            _jvmFix2++;
-
-                        Thread.sleep(__BUSY_PAUSE); // pause to avoid busy loop
-                    }
-                    catch(InterruptedException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                }
-                else if (_jvmBug==__JVMBUG_THRESHHOLD)
-                {
-                    renewSelector();
-                }
-                else if (_jvmBug%32==31) // heuristic attempt to cancel key 31,63,95,... loops
-                {
-                    // Cancel keys with 0 interested ops
-                    int cancelled=0;
-                    for (SelectionKey k: selector.keys())
-                    {
-                        if (k.isValid()&&k.interestOps()==0)
-                        {
-                            k.cancel();
-                            cancelled++;
-                        }
-                    }
-                    if (cancelled>0)
-                        _jvmFix0++;
-
-                    return;
-                }
-            }
-            else if (__BUSY_KEY>0 && selected==1 && _selects>__MAX_SELECTS)
-            {
-                // Look for busy key
-                SelectionKey busy = selector.selectedKeys().iterator().next();
-                if (busy==_busyKey)
-                {
-                    if (++_busyKeyCount>__BUSY_KEY && !(busy.channel() instanceof ServerSocketChannel))
-                    {
-                        final SelectChannelEndPoint endpoint = (SelectChannelEndPoint)busy.attachment();
-                        LOG.warn("Busy Key "+busy.channel()+" "+endpoint);
-                        busy.cancel();
-                        if (endpoint!=null)
-                        {
-                            dispatch(new Runnable()
-                            {
-                                public void run()
-                                {
-                                    try
-                                    {
-                                        endpoint.close();
-                                    }
-                                    catch (IOException e)
-                                    {
-                                        LOG.ignore(e);
-                                    }
-                                }
-                            });
-                        }
-                    }
-                }
-                else
-                    _busyKeyCount=0;
-                _busyKey=busy;
-            }
-        }
-        
-        /* ------------------------------------------------------------ */
-        private void renewSelector() 
+        private void renewSelector()
         {
             try
             {
@@ -876,7 +770,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 throw new RuntimeException("recreating selector",e);
             }
         }
-        
+
         /* ------------------------------------------------------------ */
         public SelectorManager getManager()
         {
@@ -891,9 +785,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
         /* ------------------------------------------------------------ */
         /**
-         * @param task The task to timeout. If it implements Runnable, then 
+         * @param task The task to timeout. If it implements Runnable, then
          * expired will be called from a dispatched thread.
-         * 
+         *
          * @param timeoutMs
          */
         public void scheduleTimeout(Timeout.Task task, long timeoutMs)
@@ -902,7 +796,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 throw new IllegalArgumentException("!Runnable");
             _timeout.schedule(task, timeoutMs);
         }
-        
+
         /* ------------------------------------------------------------ */
         public void cancelTimeout(Timeout.Task task)
         {
@@ -927,23 +821,25 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         renewSelector();
                     }
                 });
-                
+
                 renewSelector();
             }
         }
-        
+
         /* ------------------------------------------------------------ */
         private SelectChannelEndPoint createEndPoint(SocketChannel channel, SelectionKey sKey) throws IOException
         {
             SelectChannelEndPoint endp = newEndPoint(channel,this,sKey);
-            endPointOpened(endp); 
+            LOG.debug("created {}",endp);
+            endPointOpened(endp);
             _endPoints.put(endp,this);
             return endp;
         }
-        
+
         /* ------------------------------------------------------------ */
         public void destroyEndPoint(SelectChannelEndPoint endp)
         {
+            LOG.debug("destroyEndPoint {}",endp);
             _endPoints.remove(endp);
             endPointClosed(endp);
         }
@@ -953,11 +849,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             return _selector;
         }
-        
+
         /* ------------------------------------------------------------ */
         void stop() throws Exception
         {
-            // Spin for a while waiting for selector to complete 
+            // Spin for a while waiting for selector to complete
             // to avoid unneccessary closed channel exceptions
             try
             {
@@ -975,7 +871,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             // close endpoints and selector
             synchronized (this)
             {
-                for (SelectionKey key:_selector.keys())
+                Selector selector=_selector;
+                for (SelectionKey key:selector.keys())
                 {
                     if (key==null)
                         continue;
@@ -993,18 +890,19 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         }
                     }
                 }
-            
-            
+
+
                 _timeout.cancelAll();
                 try
                 {
-                    if (_selector != null)
-                        _selector.close();
+                    selector=_selector;
+                    if (selector != null)
+                        selector.close();
                 }
                 catch (IOException e)
                 {
                     LOG.ignore(e);
-                } 
+                }
                 _selector=null;
             }
         }
@@ -1019,9 +917,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void dump(Appendable out, String indent) throws IOException
         {
             out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_setID)).append("\n");
-            
+
             Thread selecting = _selecting;
-            
+
             Object where = "not selecting";
             StackTraceElement[] trace =selecting==null?null:selecting.getStackTrace();
             if (trace!=null)
@@ -1035,28 +933,32 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
 
             Selector selector=_selector;
-            final ArrayList<Object> dump = new ArrayList<Object>(selector.keys().size()*2);
-            dump.add(where);
-            
-            final CountDownLatch latch = new CountDownLatch(1);
-            
-            addChange(new Runnable(){
-                public void run()
+            if (selector!=null)
+            {
+                final ArrayList<Object> dump = new ArrayList<Object>(selector.keys().size()*2);
+                dump.add(where);
+
+                final CountDownLatch latch = new CountDownLatch(1);
+
+                addChange(new ChangeTask()
                 {
-                    dumpKeyState(dump);
-                    latch.countDown();
+                    public void run()
+                    {
+                        dumpKeyState(dump);
+                        latch.countDown();
+                    }
+                });
+
+                try
+                {
+                    latch.await(5,TimeUnit.SECONDS);
                 }
-            });
-            
-            try
-            {
-                latch.await(5,TimeUnit.SECONDS);
+                catch(InterruptedException e)
+                {
+                    LOG.ignore(e);
+                }
+                AggregateLifeCycle.dump(out,indent,dump);
             }
-            catch(InterruptedException e)
-            {
-                LOG.ignore(e);
-            }
-            AggregateLifeCycle.dump(out,indent,dump);
         }
 
         /* ------------------------------------------------------------ */
@@ -1067,10 +969,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             for (SelectionKey key: selector.keys())
             {
                 if (key.isValid())
-                    dumpto.add(key.attachment()+" "+key.interestOps()+" "+key.readyOps());
+                    dumpto.add(key.attachment()+" iOps="+key.interestOps()+" rOps="+key.readyOps());
                 else
-                    dumpto.add(key.attachment()+" - - ");
+                    dumpto.add(key.attachment()+" iOps=-1 rOps=-1");
             }
+        }
+
+        /* ------------------------------------------------------------ */
+        public String toString()
+        {
+            Selector selector=_selector;
+            return String.format("%s %s keys=%d selected=%d",
+                    super.toString(),
+                    SelectorManager.this.getState(),
+                    selector != null && selector.isOpen() ? selector.keys().size() : -1,
+                    selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
         }
     }
 
@@ -1079,7 +992,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         final SelectableChannel _channel;
         final Object _attachment;
-        
+
         public ChannelAndAttachment(SelectableChannel channel, Object attachment)
         {
             super();
@@ -1099,12 +1012,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         _deferringInterestedOps0 = deferringInterestedOps0;
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private interface ChangeTask extends Runnable
     {}
-    
+
 }

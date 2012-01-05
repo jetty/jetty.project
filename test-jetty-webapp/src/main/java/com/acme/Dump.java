@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -64,6 +66,7 @@ public class Dump extends HttpServlet
     private static final Logger LOG = Log.getLogger(Dump.class);
 
     boolean fixed;
+    Timer _timer;
     
     /* ------------------------------------------------------------ */
     @Override
@@ -77,6 +80,8 @@ public class Dump extends HttpServlet
     	    fixed=true;
     	    throw new UnavailableException("Unavailable test",Integer.parseInt(config.getInitParameter("unavailable")));
     	}
+    	
+    	_timer=new Timer(true);
     }
 
     /* ------------------------------------------------------------ */
@@ -168,40 +173,26 @@ public class Dump extends HttpServlet
             request.setAttribute("RESUME",Boolean.TRUE);
 
             final long resume=Long.parseLong(request.getParameter("resume"));
-            new Thread(new Runnable()
+            final Continuation continuation = ContinuationSupport.getContinuation(request);
+            _timer.schedule(new TimerTask()
             {
+                @Override
                 public void run()
                 {
-                    try
-                    {
-                        Thread.sleep(resume);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        e.printStackTrace();
-                    }
-                    Continuation continuation = ContinuationSupport.getContinuation(request);
                     continuation.resume();
                 }
-                
-            }).start();
+            },resume);
+  
         }
 
         if (request.getParameter("complete")!=null)
         {
             final long complete=Long.parseLong(request.getParameter("complete"));
-            new Thread(new Runnable()
+            _timer.schedule(new TimerTask()
             {
+                @Override
                 public void run()
                 {
-                    try
-                    {
-                        Thread.sleep(complete);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        e.printStackTrace();
-                    }
                     try
                     {
                         response.setContentType("text/html");
@@ -209,13 +200,12 @@ public class Dump extends HttpServlet
                         Continuation continuation = ContinuationSupport.getContinuation(request);
                         continuation.complete();
                     }
-                    catch (IOException e)
+                    catch(Exception e)
                     {
                         e.printStackTrace();
                     }
                 }
-
-            }).start();
+            },complete);
         }
         
         if (request.getParameter("suspend")!=null && request.getAttribute("SUSPEND")!=Boolean.TRUE)
@@ -796,7 +786,7 @@ public class Dump extends HttpServlet
         }
         catch (Exception e)
         {
-            getServletContext().log("dump", e);
+            getServletContext().log("dump "+e);
         }
         
         String lines= request.getParameter("lines");
@@ -839,6 +829,7 @@ public class Dump extends HttpServlet
     @Override
     public synchronized void destroy()
     {
+        _timer.cancel();
     }
 
     /* ------------------------------------------------------------ */

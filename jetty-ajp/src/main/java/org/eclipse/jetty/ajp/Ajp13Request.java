@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ajp;
 
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 
 public class Ajp13Request extends Request
@@ -24,7 +24,7 @@ public class Ajp13Request extends Request
     protected boolean _sslSecure;
 
     /* ------------------------------------------------------------ */
-    public Ajp13Request(HttpConnection connection)
+    public Ajp13Request(AbstractHttpConnection connection)
     {
         super(connection);     
     }

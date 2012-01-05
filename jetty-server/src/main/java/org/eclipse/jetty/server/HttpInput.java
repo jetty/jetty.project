@@ -22,14 +22,14 @@ import org.eclipse.jetty.io.Buffer;
 
 public class HttpInput extends ServletInputStream
 {
+    protected final AbstractHttpConnection _connection;
     protected final HttpParser _parser;
-    protected final long _maxIdleTime;
     
     /* ------------------------------------------------------------ */
-    public HttpInput(HttpParser parser, long maxIdleTime)
+    public HttpInput(AbstractHttpConnection connection)
     {
-        _parser=parser;
-        _maxIdleTime=maxIdleTime;
+        _connection=connection;
+        _parser=(HttpParser)connection.getParser();
     }
     
     /* ------------------------------------------------------------ */
@@ -40,7 +40,7 @@ public class HttpInput extends ServletInputStream
     public int read() throws IOException
     {
         int c=-1;
-        Buffer content=_parser.blockForContent(_maxIdleTime);
+        Buffer content=_parser.blockForContent(_connection.getMaxIdleTime());
         if (content!=null)
             c= 0xff & content.get();
         return c;
@@ -54,7 +54,7 @@ public class HttpInput extends ServletInputStream
     public int read(byte[] b, int off, int len) throws IOException
     {
         int l=-1;
-        Buffer content=_parser.blockForContent(_maxIdleTime);
+        Buffer content=_parser.blockForContent(_connection.getMaxIdleTime());
         if (content!=null)
             l= content.get(b, off, len);
         return l;

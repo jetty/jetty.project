@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -39,9 +40,9 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
 import org.eclipse.jetty.server.ResourceCache;
@@ -280,7 +281,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             if (h.getServletInstance()==this)
                 _defaultHolder=h;
 
-        if (LOG.isDebugEnabled()) LOG.debug("resource base = "+_resourceBase);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("resource base = "+_resourceBase);
     }
 
     /**
@@ -770,7 +772,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         else
         {
-            Connector connector = HttpConnection.getCurrentConnection().getConnector();
+            Connector connector = AbstractHttpConnection.getCurrentConnection().getConnector();
             direct=connector instanceof NIOConnector && ((NIOConnector)connector).getUseDirectBuffers() && !(connector instanceof SslConnector);
             content_length=content.getContentLength();
         }
@@ -786,7 +788,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             // has a filter already written to the response?
             written = out instanceof HttpOutput 
                 ? ((HttpOutput)out).isWritten() 
-                : HttpConnection.getCurrentConnection().getGenerator().isWritten();
+                : AbstractHttpConnection.getCurrentConnection().getGenerator().isWritten();
         }
         catch(IllegalStateException e) 
         {
@@ -809,7 +811,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     if (response instanceof Response)
                     {
                         writeOptionHeaders(((Response)response).getHttpFields());
-                        ((HttpConnection.Output)out).sendContent(content);
+                        ((AbstractHttpConnection.Output)out).sendContent(content);
                     }
                     else 
                     {
@@ -817,7 +819,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         if (buffer!=null)
                         {
                             writeHeaders(response,content,content_length);
-                            ((HttpConnection.Output)out).sendContent(buffer);
+                            ((AbstractHttpConnection.Output)out).sendContent(buffer);
                         }
                         else
                         {

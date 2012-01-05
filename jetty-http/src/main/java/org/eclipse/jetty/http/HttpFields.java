@@ -38,7 +38,6 @@ import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.BufferDateCache;
 import org.eclipse.jetty.io.BufferUtil;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
@@ -334,7 +333,9 @@ public class HttpFields
             {
                 if (__cache.size()>__cacheSize)
                     __cache.clear();
-                __cache.putIfAbsent(value,buffer);
+                Buffer b=__cache.putIfAbsent(value,buffer);
+                if (b!=null)
+                    buffer=b;
             }
             
             return buffer;

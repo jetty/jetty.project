@@ -19,7 +19,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -179,7 +178,7 @@ public class URLEncodedTest
         {
             ByteArrayInputStream in = new ByteArrayInputStream("name\n=value+%30&name1=&name2&n\u00e3me3=value+3".getBytes(charsets[i][0]));
             MultiMap m = new MultiMap();
-            UrlEncoded.decodeTo(in, m, charsets[i][1], -1);
+            UrlEncoded.decodeTo(in, m, charsets[i][1], -1,-1);
             System.err.println(m);
             assertEquals(i+" stream length",4,m.size());
             assertEquals(i+" stream name\\n","value 0",m.getString("name\n"));
@@ -193,7 +192,7 @@ public class URLEncodedTest
         {
             ByteArrayInputStream in2 = new ByteArrayInputStream ("name=%83e%83X%83g".getBytes());
             MultiMap m2 = new MultiMap();
-            UrlEncoded.decodeTo(in2, m2, "Shift_JIS", -1);
+            UrlEncoded.decodeTo(in2, m2, "Shift_JIS", -1,-1);
             assertEquals("stream length",1,m2.size());
             assertEquals("stream name","\u30c6\u30b9\u30c8",m2.getString("name"));
         }

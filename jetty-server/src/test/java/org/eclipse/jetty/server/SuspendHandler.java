@@ -1,0 +1,153 @@
+package org.eclipse.jetty.server;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.handler.HandlerWrapper;
+
+class SuspendHandler extends HandlerWrapper
+{
+    private int _read;
+    private long _suspendFor=-1;
+    private long _resumeAfter=-1;
+    private long _completeAfter=-1;
+
+    public SuspendHandler()
+    {
+    }
+
+    public int getRead()
+    {
+        return _read;
+    }
+
+    public void setRead(int read)
+    {
+        _read = read;
+    }
+
+    public long getSuspendFor()
+    {
+        return _suspendFor;
+    }
+
+    public void setSuspendFor(long suspendFor)
+    {
+        _suspendFor = suspendFor;
+    }
+
+    public long getResumeAfter()
+    {
+        return _resumeAfter;
+    }
+
+    public void setResumeAfter(long resumeAfter)
+    {
+        _resumeAfter = resumeAfter;
+    }
+
+    public long getCompleteAfter()
+    {
+        return _completeAfter;
+    }
+
+    public void setCompleteAfter(long completeAfter)
+    {
+        _completeAfter = completeAfter;
+    }
+    
+    @Override
+    public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+    {
+        if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
+        {
+            if (_read>0)
+            {
+                byte[] buf=new byte[_read];
+                request.getInputStream().read(buf);
+            }
+            else if (_read<0)
+            {
+                InputStream in = request.getInputStream();
+                int b=in.read();
+                while(b!=-1)
+                    b=in.read();
+            }
+
+            final AsyncContext asyncContext = baseRequest.startAsync();
+            asyncContext.addContinuationListener(LocalAsyncContextTest.__asyncListener);
+            if (_suspendFor>0)
+                asyncContext.setTimeout(_suspendFor);
+
+            if (_completeAfter>0)
+            {
+                new Thread() {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            Thread.sleep(_completeAfter);
+                            response.getOutputStream().print("COMPLETED");
+                            response.setStatus(200);
+                            baseRequest.setHandled(true);
+                            asyncContext.complete();
+                        }
+                        catch(Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }.start();
+            }
+            else if (_completeAfter==0)
+            {
+                response.getOutputStream().print("COMPLETED");
+                response.setStatus(200);
+                baseRequest.setHandled(true);
+                asyncContext.complete();
+            }
+
+            if (_resumeAfter>0)
+            {
+                new Thread() {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            Thread.sleep(_resumeAfter);
+                            if(((HttpServletRequest)asyncContext.getRequest()).getSession(true).getId()!=null)
+                                asyncContext.dispatch();
+                        }
+                        catch(Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }.start();
+            }
+            else if (_resumeAfter==0)
+            {
+                asyncContext.dispatch();
+            }
+        }
+        else if (request.getAttribute("TIMEOUT")!=null)
+        {
+            response.setStatus(200);
+            response.getOutputStream().print("TIMEOUT");
+            baseRequest.setHandled(true);
+        }
+        else
+        {
+            response.setStatus(200);
+            response.getOutputStream().print("RESUMED");
+            baseRequest.setHandled(true);
+        }
+    }
+
+}

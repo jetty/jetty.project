@@ -16,10 +16,14 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** Handles coding of MIME  "x-www-form-urlencoded".
@@ -40,9 +44,9 @@ import java.util.Map;
  *
  * @see java.net.URLEncoder
  */
-public class UrlEncoded extends MultiMap
+public class UrlEncoded extends MultiMap implements Cloneable
 {
-    // private static final Logger LOG = Log.getLogger(UrlEncoded.class);
+    private static final Logger LOG = Log.getLogger(UrlEncoded.class);
 
     public static final String ENCODING = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset",StringUtil.__UTF8);
 
@@ -75,13 +79,13 @@ public class UrlEncoded extends MultiMap
     /* ----------------------------------------------------------------- */
     public void decode(String query)
     {
-        decodeTo(query,this,ENCODING);
+        decodeTo(query,this,ENCODING,-1);
     }
     
     /* ----------------------------------------------------------------- */
     public void decode(String query,String charset)
     {
-        decodeTo(query,this,charset);
+        decodeTo(query,this,charset,-1);
     }
     
     /* -------------------------------------------------------------- */
@@ -175,6 +179,15 @@ public class UrlEncoded extends MultiMap
      */
     public static void decodeTo(String content, MultiMap map, String charset)
     {
+        decodeTo(content,map,charset,-1);
+    }
+    
+    /* -------------------------------------------------------------- */
+    /** Decoded parameters to Map.
+     * @param content the string containing the encoded parameters
+     */
+    public static void decodeTo(String content, MultiMap map, String charset, int maxKeys)
+    {
         if (charset==null)
             charset=ENCODING;
 
@@ -205,6 +218,11 @@ public class UrlEncoded extends MultiMap
                       }
                       key = null;
                       value=null;
+                      if (maxKeys>0 && map.size()>maxKeys)
+                      {
+                          LOG.warn("maxFormKeys limit exceeded keys>{}",maxKeys);
+                          return;
+                      }
                       break;
                   case '=':
                       if (key!=null)
@@ -267,50 +285,59 @@ public class UrlEncoded extends MultiMap
         {
             String key = null;
             String value = null;
-            
+
             // TODO cache of parameter names ???
             int end=offset+length;
             for (int i=offset;i<end;i++)
             {
                 byte b=raw[i];
-                switch ((char)(0xff&b))
+                try
                 {
-                    case '&':
-                        value = buffer.length()==0?"":buffer.toString();
-                        buffer.reset();
-                        if (key != null)
-                        {
-                            map.add(key,value);
-                        }
-                        else if (value!=null&&value.length()>0)
-                        {
-                            map.add(value,"");
-                        }
-                        key = null;
-                        value=null;
-                        break;
-                        
-                    case '=':
-                        if (key!=null)
-                        {
+                    switch ((char)(0xff&b))
+                    {
+                        case '&':
+                            value = buffer.length()==0?"":buffer.toString();
+                            buffer.reset();
+                            if (key != null)
+                            {
+                                map.add(key,value);
+                            }
+                            else if (value!=null&&value.length()>0)
+                            {
+                                map.add(value,"");
+                            }
+                            key = null;
+                            value=null;
+                            break;
+
+                        case '=':
+                            if (key!=null)
+                            {
+                                buffer.append(b);
+                                break;
+                            }
+                            key = buffer.toString();
+                            buffer.reset();
+                            break;
+
+                        case '+':
+                            buffer.append((byte)' ');
+                            break;
+
+                        case '%':
+                            if (i+2<end)
+                                buffer.append((byte)((TypeUtil.convertHexDigit(raw[++i])<<4) + TypeUtil.convertHexDigit(raw[++i])));
+                            break;
+                            
+                        default:
                             buffer.append(b);
                             break;
-                        }
-                        key = buffer.toString();
-                        buffer.reset();
-                        break;
-                        
-                    case '+':
-                        buffer.append((byte)' ');
-                        break;
-                        
-                    case '%':
-                        if (i+2<end)
-                            buffer.append((byte)((TypeUtil.convertHexDigit(raw[++i])<<4) + TypeUtil.convertHexDigit(raw[++i])));
-                        break;
-                    default:
-                        buffer.append(b);
-                    break;
+                    }
+                }
+                catch(NotUtf8Exception e)
+                {
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
                 }
             }
             
@@ -331,9 +358,10 @@ public class UrlEncoded extends MultiMap
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of content to read 0r -1 for no limit
+     * @param maxLength maximum length of content to read or -1 for no limit
+     * @param maxLength maximum number of keys to read or -1 for no limit
      */
-    public static void decode88591To(InputStream in, MultiMap map, int maxLength)
+    public static void decode88591To(InputStream in, MultiMap map, int maxLength, int maxKeys)
     throws IOException
     {
         synchronized(map)
@@ -363,6 +391,11 @@ public class UrlEncoded extends MultiMap
                         }
                         key = null;
                         value=null;
+                        if (maxKeys>0 && map.size()>maxKeys)
+                        {
+                            LOG.warn("maxFormKeys limit exceeded keys>{}",maxKeys);
+                            return;
+                        }
                         break;
                         
                     case '=':
@@ -411,9 +444,10 @@ public class UrlEncoded extends MultiMap
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of content to read 0r -1 for no limit
+     * @param maxLength maximum length of content to read or -1 for no limit
+     * @param maxLength maximum number of keys to read or -1 for no limit
      */
-    public static void decodeUtf8To(InputStream in, MultiMap map, int maxLength)
+    public static void decodeUtf8To(InputStream in, MultiMap map, int maxLength, int maxKeys)
     throws IOException
     {
         synchronized(map)
@@ -443,6 +477,11 @@ public class UrlEncoded extends MultiMap
                         }
                         key = null;
                         value=null;
+                        if (maxKeys>0 && map.size()>maxKeys)
+                        {
+                            LOG.warn("maxFormKeys limit exceeded keys>{}",maxKeys);
+                            return;
+                        }
                         break;
                         
                     case '=':
@@ -488,25 +527,20 @@ public class UrlEncoded extends MultiMap
     }
     
     /* -------------------------------------------------------------- */
-    public static void decodeUtf16To(InputStream in, MultiMap map, int maxLength) throws IOException
+    public static void decodeUtf16To(InputStream in, MultiMap map, int maxLength, int maxKeys) throws IOException
     {
         InputStreamReader input = new InputStreamReader(in,StringUtil.__UTF16);
-        StringBuffer buf = new StringBuffer();
-
-        int c;
-        int length=0;
-        if (maxLength<0)
-            maxLength=Integer.MAX_VALUE;
-        while ((c=input.read())>0 && length++<maxLength)
-            buf.append((char)c);
-        decodeTo(buf.toString(),map,ENCODING);
+        StringWriter buf = new StringWriter(8192);
+        IO.copy(input,buf,maxLength);
+        
+        decodeTo(buf.getBuffer().toString(),map,ENCODING,maxKeys);
     }
     
     /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
      * @param in the stream containing the encoded parameters
      */
-    public static void decodeTo(InputStream in, MultiMap map, String charset, int maxLength)
+    public static void decodeTo(InputStream in, MultiMap map, String charset, int maxLength, int maxKeys)
     throws IOException
     {
         //no charset present, use the configured default
@@ -515,22 +549,21 @@ public class UrlEncoded extends MultiMap
            charset=ENCODING;
         }
             
-            
         if (StringUtil.__UTF8.equalsIgnoreCase(charset))
         {
-            decodeUtf8To(in,map,maxLength);
+            decodeUtf8To(in,map,maxLength,maxKeys);
             return;
         }
         
         if (StringUtil.__ISO_8859_1.equals(charset))
         {
-            decode88591To(in,map,maxLength);
+            decode88591To(in,map,maxLength,maxKeys);
             return;
         }
 
         if (StringUtil.__UTF16.equalsIgnoreCase(charset)) // Should be all 2 byte encodings
         {
-            decodeUtf16To(in,map,maxLength);
+            decodeUtf16To(in,map,maxLength,maxKeys);
             return;
         }
         

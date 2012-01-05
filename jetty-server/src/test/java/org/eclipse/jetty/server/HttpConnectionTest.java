@@ -33,7 +33,6 @@ import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
@@ -124,7 +123,7 @@ public class HttpConnectionTest
 
         int offset=0;
         offset = checkContains(response,offset,"HTTP/1.1 200");
-        offset = checkContains(response,offset,"/R1");
+        checkContains(response,offset,"/R1");
     }
     
     @Test
@@ -155,7 +154,7 @@ public class HttpConnectionTest
     {
         try
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
 
             String response;
             
@@ -177,7 +176,7 @@ public class HttpConnectionTest
             response=connector.getResponses("GET /foo/bar%c0%00 HTTP/1.1\n"+
                     "Host: localhost\n"+
             "\015\012");
-            checkContains(response,0,"pathInfo=/foo/bar?");
+            checkContains(response,0,"HTTP/1.1 400");
 
             response=connector.getResponses("GET /bad/utf8%c1 HTTP/1.1\n"+
                     "Host: localhost\n"+
@@ -186,7 +185,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(false);
         }
     }
 
@@ -336,7 +335,7 @@ public class HttpConnectionTest
         Logger logger=null;
         try
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");
             offset = checkContains(response,offset,"Connection: close");
@@ -344,7 +343,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(false);
         }
     }
 
@@ -366,7 +365,7 @@ public class HttpConnectionTest
                                            "5;\015\012"+
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
-            offset = checkContains(response,offset,"Connection: close");
+            checkContains(response,offset,"Connection: close");
         }
         catch (Exception e)
         {
@@ -395,7 +394,7 @@ public class HttpConnectionTest
                 "Cookie: "+cookie+"\n"+
                 "\015\012"
              );
-            offset = checkContains(response, offset, "HTTP/1.1 413");
+            checkContains(response, offset, "HTTP/1.1 413");
         }
         catch(Exception e)
         {
@@ -424,14 +423,14 @@ public class HttpConnectionTest
         request.append("\015\012");
         
         response = connector.getResponses(request.toString());
-        offset = checkContains(response, offset, "HTTP/1.1 413");
+        checkContains(response, offset, "HTTP/1.1 413");
     }
 
     @Test
     public void testOversizedResponse() throws Exception
     {
-        String str = "thisisastringthatshouldreachover1kbytes";
-        for (int i=0;i<400;i++)
+        String str = "thisisastringthatshouldreachover1kbytes-";
+        for (int i=0;i<500;i++)
             str+="xxxxxxxxxxxx";
         final String longstr = str;
         
@@ -470,7 +469,7 @@ public class HttpConnectionTest
                 "\015\012"
              );
 
-            offset = checkContains(response, offset, "HTTP/1.1 500");
+            checkContains(response, offset, "HTTP/1.1 500");
         }
         catch(Exception e)
         {
@@ -549,7 +548,7 @@ public class HttpConnectionTest
             response=connector.getResponses("CONNECT www.webtide.com:8080 HTTP/1.1\n"+
                                            "Host: myproxy:8888\015\012"+
                                            "\015\012");
-            offset = checkContains(response,offset,"HTTP/1.1 200");
+            checkContains(response,offset,"HTTP/1.1 200");
 
         }
         catch (Exception e)

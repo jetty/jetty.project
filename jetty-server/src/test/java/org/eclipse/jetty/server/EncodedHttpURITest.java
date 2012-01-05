@@ -28,7 +28,7 @@ public class EncodedHttpURITest
     {
         String url = "http://www.foo.com/ma\u00F1ana";
         byte[] asISO = url.getBytes("ISO-8859-1");
-        String str = new String(asISO, "ISO-8859-1");
+        new String(asISO, "ISO-8859-1");
 
         //use a non UTF-8 charset as the encoding and url-escape as per
         //http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars

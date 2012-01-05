@@ -19,7 +19,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jetty.client.security.Realm;
-import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.security.Constraint;
 
 public class SecuredContentExchangeTest
     extends ContentExchangeTest

@@ -1,142 +1,189 @@
+// ========================================================================
+// Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
 
+/* ------------------------------------------------------------ */
+/**
+ * Utf8 Appendable abstract base class
+ *
+ * This abstract class wraps a standard {@link java.lang.Appendable} and provides methods to append UTF-8 encoded bytes, that are converted into characters.
+ *
+ * This class is stateful and up to 4 calls to {@link #append(byte)} may be needed before state a character is appended to the string buffer.
+ *
+ * The UTF-8 decoding is done by this class and no additional buffers or Readers are used. The UTF-8 code was inspired by
+ * http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
+ *
+ * License information for Bjoern Hoehrmann's code:
+ *
+ * Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ **/
 public abstract class Utf8Appendable
 {
+    private final char REPLACEMENT = '\ufffd';
+    private static final int UTF8_ACCEPT = 0;
+    private static final int UTF8_REJECT = 12;
+
     protected final Appendable _appendable;
-    protected int _more;
-    protected int _bits;
+    protected int _state = UTF8_ACCEPT;
+
+    private static final byte[] BYTE_TABLE =
+    {
+        // The first part of the table maps bytes to character classes that
+        // to reduce the size of the transition table and create bitmasks.
+         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,  9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,
+         7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,  7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+         8,8,2,2,2,2,2,2,2,2,2,2,2,2,2,2,  2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+        10,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3, 11,6,6,6,5,8,8,8,8,8,8,8,8,8,8,8
+    };
+
+    private static final byte[] TRANS_TABLE =
+    {
+        // The second part is a transition table that maps a combination
+        // of a state of the automaton and a character class to a state.
+         0,12,24,36,60,96,84,12,12,12,48,72, 12,12,12,12,12,12,12,12,12,12,12,12,
+        12, 0,12,12,12,12,12, 0,12, 0,12,12, 12,24,12,12,12,12,12,24,12,24,12,12,
+        12,12,12,12,12,12,12,24,12,12,12,12, 12,24,12,12,12,12,12,12,12,24,12,12,
+        12,12,12,12,12,12,12,36,12,36,12,12, 12,36,12,12,12,12,12,36,12,36,12,12,
+        12,36,12,12,12,12,12,12,12,12,12,12
+    };
+
+    private int _codep;
 
     public Utf8Appendable(Appendable appendable)
     {
-        _appendable=appendable;
+        _appendable = appendable;
     }
 
     public abstract int length();
-    
+
+    protected void reset()
+    {
+        _state = UTF8_ACCEPT;
+    }
+
     public void append(byte b)
     {
         try
         {
             appendByte(b);
         }
-        catch(IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-    
-    public void append(byte[] b,int offset, int length)
-    {
-        try
-        {
-            int end=offset+length;
-            for (int i=offset; i<end;i++)
-                appendByte(b[i]);
-        }
-        catch(IOException e)
+        catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
 
-    public boolean append(byte[] b,int offset, int length, int maxChars)
+    public void append(byte[] b, int offset, int length)
     {
         try
         {
-            int end=offset+length;
-            for (int i=offset; i<end;i++)
+            int end = offset + length;
+            for (int i = offset; i < end; i++)
+                appendByte(b[i]);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean append(byte[] b, int offset, int length, int maxChars)
+    {
+        try
+        {
+            int end = offset + length;
+            for (int i = offset; i < end; i++)
             {
-                if (length()>maxChars)
+                if (length() > maxChars)
                     return false;
                 appendByte(b[i]);
             }
             return true;
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
-    
+
     protected void appendByte(byte b) throws IOException
     {
-        if (b>=0)
+
+        if (b > 0 && _state == UTF8_ACCEPT)
         {
-            if (_more>0)
-            {
-                _appendable.append('?');
-                _more=0;
-                _bits=0;
-            }
-            else
-                _appendable.append((char)(0x7f&b));
-        }
-        else if (_more==0)
-        {
-            if ((b&0xc0)!=0xc0)
-            {
-                // 10xxxxxx
-                _appendable.append('?');
-                _more=0;
-                _bits=0;
-            }
-            else
-            { 
-                if ((b & 0xe0) == 0xc0)
-                {
-                    //110xxxxx
-                    _more=1;
-                    _bits=b&0x1f;
-                }
-                else if ((b & 0xf0) == 0xe0)
-                {
-                    //1110xxxx
-                    _more=2;
-                    _bits=b&0x0f;
-                }
-                else if ((b & 0xf8) == 0xf0)
-                {
-                    //11110xxx
-                    _more=3;
-                    _bits=b&0x07;
-                }
-                else if ((b & 0xfc) == 0xf8)
-                {
-                    //111110xx
-                    _more=4;
-                    _bits=b&0x03;
-                }
-                else if ((b & 0xfe) == 0xfc) 
-                {
-                    //1111110x
-                    _more=5;
-                    _bits=b&0x01;
-                }
-                else
-                {
-                    throw new IllegalArgumentException("!utf8");
-                }
-            }
+            _appendable.append((char)(b & 0xFF));
         }
         else
         {
-            if ((b&0xc0)==0xc0)
-            {    // 11??????
-                _appendable.append('?');
-                _more=0;
-                _bits=0;
-                throw new IllegalArgumentException("!utf8");
-            }
-            else
+            int i = b & 0xFF;
+            int type = BYTE_TABLE[i];
+            _codep = _state == UTF8_ACCEPT ? (0xFF >> type) & i : (i & 0x3F) | (_codep << 6);
+            int next = TRANS_TABLE[_state + type];
+
+            switch(next)
             {
-                // 10xxxxxx
-                _bits=(_bits<<6)|(b&0x3f);
-                if (--_more==0)
-                    _appendable.append(new String(Character.toChars(_bits)));
+                case UTF8_ACCEPT:
+                    _state=next;
+                    if (_codep < Character.MIN_HIGH_SURROGATE)
+                    {
+                        _appendable.append((char)_codep);
+                    }
+                    else
+                    {
+                        for (char c : Character.toChars(_codep))
+                            _appendable.append(c);
+                    }
+                    break;
+                    
+                case UTF8_REJECT:
+                    String reason = "byte "+TypeUtil.toHexString(b)+" in state "+(_state/12);
+                    _codep=0;
+                    _state = UTF8_ACCEPT;
+                    _appendable.append(REPLACEMENT);
+                    throw new NotUtf8Exception(reason);
+                    
+                default:
+                    _state=next;
+                    
             }
         }
     }
 
+    public boolean isUtf8SequenceComplete()
+    {
+        return _state == UTF8_ACCEPT;
+    }
+
+    public static class NotUtf8Exception extends IllegalArgumentException
+    {
+        public NotUtf8Exception(String reason)
+        {
+            super("Not valid UTF8! "+reason);
+        }
+    }
 }

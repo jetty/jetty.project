@@ -22,7 +22,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.Set;
 
 import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
@@ -35,8 +34,8 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class GzipResponseWrapper extends HttpServletResponseWrapper
 {
-    public static int DEFAULT_BUFFER_SIZE = 8192;
-    public static int DEFAULT_MIN_GZIP_SIZE = 256;
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
+    public static final int DEFAULT_MIN_GZIP_SIZE = 256;
     
     private HttpServletRequest _request;
     private Set<String> _mimeTypes;
@@ -121,7 +120,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     public void setStatus(int sc, String sm)
     {
         super.setStatus(sc,sm);
-        if (sc<200||sc>=300)
+        if (sc<200 || sc==204 || sc==205 || sc>=300)
             noGzip();
     }
 
@@ -132,7 +131,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     public void setStatus(int sc)
     {
         super.setStatus(sc);
-        if (sc<200||sc>=300)
+        if (sc<200 || sc==204 || sc==205 ||sc>=300)
             noGzip();
     }
 

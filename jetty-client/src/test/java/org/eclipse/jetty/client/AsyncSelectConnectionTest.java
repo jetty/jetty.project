@@ -13,6 +13,13 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.BeforeClass;
+
 public class AsyncSelectConnectionTest extends AbstractConnectionTest
 {
     protected HttpClient newHttpClient()
@@ -22,4 +29,40 @@ public class AsyncSelectConnectionTest extends AbstractConnectionTest
         httpClient.setConnectBlocking(false);
         return httpClient;
     }
+
+    static SslContextFactory ctx = new SslContextFactory(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
+
+    @BeforeClass
+    public static void initKS() throws Exception
+    {
+        ctx.setKeyStorePassword("storepwd");
+        ctx.setKeyManagerPassword("keypwd");
+        ctx.start();
+    }
+
+    @Override
+    protected String getScheme()
+    {
+        return "https";
+    }
+    
+    @Override
+    protected ServerSocket newServerSocket() throws IOException
+    {
+        return ctx.newSslServerSocket(null,0,100);
+    }
+
+    @Override
+    public void testServerHalfClosedIncomplete() throws Exception
+    {
+        // SSL doesn't do half closes
+    }
+    
+    @Override
+    public void testServerClosedIncomplete() throws Exception
+    {
+        super.testServerClosedIncomplete();
+    }
+
+    
 }

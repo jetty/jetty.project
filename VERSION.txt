@@ -1,4 +1,152 @@
-jetty-7.5.0.v20110901 01 September 2011
+jetty-7.6.0-SNAPSHOT
+
+jetty-7.6.0.RC2 - 22 December 2011
+ + 364638 HttpParser closes if data received while seeking EOF. Tests fixed to
+   cope
+ + 364921 Made test less time sensitive for ssl
+ + 364936 use Resource for opening URL streams
+ + 365267 NullPointerException in bad Address
+ + 365375 ResourceHandler should be a HandlerWrapper
+ + 365750 Support WebSocket over SSL, aka wss://
+ + 365932 Produce jetty-websocket aggregate jar for android use
+ + 365947 Set headers for Auth failure and retry in http-spi
+ + 366316 Superfluous printStackTrace on 404
+ + 366342 Dont persist DosFilter trackers in http session
+ + 366730 pass the time idle to onIdleExpire
+ + 367048 test harness for guard on suspended requests
+ + 367175 SSL 100% CPU spin in case of blocked write and RST.
+ + 367219 WebSocketClient.open() fails when URI uses default ports.
+ + JETTY-1460 suppress PrintWriter exceptions
+ + JETTY-1463 websocket D0 parser should return progress even if no fill done
+ + JETTY-1465 NPE in ContextHandler.toString
+
+jetty-7.6.0.RC1 - 04 December 2011
+ + 352565 cookie httponly flag ignored
+ + 353285 ServletSecurity annotation ignored
+ + 357163 jetty 8 ought to proxy jetty8 javadocs
+ + 357209 JSP tag listeners not called
+ + 360051 SocketConnectionTest.testServerClosedConnection is excluded.
+ + 361135 Allow session cookies to NEVER be marked as secure, even on HTTPS
+   requests.
+ + 362249 update shell scripts to jetty8
+ + 363878 Add ecj compiler to jetty-8 for jsp
+ + 364283 can't parse the servlet multipart-config for the web.xml
+ + 364430 Support web.xml enabled state for servlets
+ + 365370 ServletHandler can fall through to nested handler
+
+jetty-7.6.0.RC0 - 29 November 2011
+ + Refactored NIO layer for better half close handling
+ + 349110 fixed bypass chunk handling
+ + 360546 handle set count exceeding max integer
+ + 362111 StdErrLog.isDebugEnabled() returns true too often
+ + 362113 Improve Test Coverage of org.eclipse.jetty.util.log classes
+ + 362407 setTrustStore(Resource) -> setTrustStoreResource(R)
+ + 362447 add setMaxNonceAge() to DigestAuthenticator
+ + 362468 NPE at line org.eclipse.jetty.io.BufferUtil.putHexInt
+ + 362614 NPE in accepting connection
+ + 362626 IllegalStateException thrown when SslContextFactory preconfigured
+   with SSLContext
+ + 362696 expand virtual host configuration options to ContextHandler and add
+   associated test case for new behavior
+ + 362742 improved UTF8 exception reason
+ + 363124 improved websocket close handling
+ + 363381 Throw IllegalStateException if Request uri is null on getServerName
+ + 363408 GzipFilter should not attempt to compress HTTP status 204
+ + 363488 ShutdownHandler use stopper thread
+ + 363718 Setting java.rmi.server.hostname in jetty-jmx.xml
+ + 363757 partial fix
+ + 363785 StdErrLog must use system-dependent EOL.
+ + 363943 ignore null attribute values
+ + 363993 EOFException parsing HEAD response in HttpTester
+ + 364638 SCEP does idle timestamp checking. New setCheckForIdle method
+   controls onIdleExpired callback. 364921 a second onIdleExpired callback will
+   result in close rather than a shutdown output.
+ + 364657 Support HTTP only cookies from standard API
+ + JETTY-1442 add _hostHeader setter for ProxyRule
+
+jetty-7.5.4.v20111024 - 24 October 2011
+ + 358263 JDBCSessionIdManager add setDatasource(DataSource) method
+ + 358649 Replace existing StdErrLog system properties for DEBUG/IGNORED with
+   LEVEL instead.
+ + 360836 Accept parameters with bad UTF-8. Use replacement character
+ + 360912 CrossOriginFilter does not send Access-Control-Allow-Origin on
+   responses. 355103 Make allowCredentials default to true in
+   CrossOriginFilter.
+ + 360938 Connections closed after a while.
+ + 361319 Log initialization does not catch correct exceptions on all jvms
+ + 361325 359292 Allow KeyStore to be set
+ + 361456 release timer task on connection failed
+ + 361655 ExecutorThreadPool.isLowOnThreads() returns wrong value.
+ + JETTY-1444 start threadpool before selector manager
+
+jetty-7.5.3.v20111011 - 11 October 2011
+ + 348978 migrate jetty-http-spi
+ + 358649 StdErrLog system properties for package/class logging LEVEL.
+
+jetty-7.5.2.v20111006 - 06 October 2011
+ + 336443 check nonce count is increasing
+ + 342161 ScannerTest fails intermittently on Mac OS X
+ + 346419 testing HttpClient FDs
+ + 353267 Request._parameters initialization bug
+ + 353509 jetty-client unit tests are running too long
+ + 353627 Basic Auth checks that Basic method has been send
+ + 356144 Allow SelectorManager thread priority to be set
+ + 356274 Start SSL socket factory in call to open()
+ + 357178 websockets draft 14 support
+ + 357188 Send content buffer directly
+ + 357216 Logging via Log4J does not expand braces in format strings
+ + 357240 more half close refinements
+ + 357338 remove debug
+ + 357672 resolve issue with serializing pojos with mongodb session manager,
+   thanks to john simone for the discovery and fix
+ + 357959 Include javadoc in distribution
+ + 358027 NullPointerException in ResourceHandler with jetty-stylesheet.css
+ + 358035 idle time only active if > 0
+ + 358147 Add catch for UnknownHostException to fix leaky file descriptor in
+   client
+ + 358164 Dispatch from servlet to handler
+ + 358263 add method for osgi users to register a driver as Class.forName does
+   not work for them
+ + 358649 StdErrLog system properties for package/class logging LEVEL.
+ + 358674 Still allows sslv3 for now
+ + 358687 Updated jsp does not scan for system tlds Fixed pattern.
+ + 358784 JSP broken on Java 1.5
+ + 358925 bit more javadoc on usage
+ + 358959 File descriptor leak with UnresolvedAddressException
+ + 359309 adjust previous test for servletPath to include pathInfo
+ + 359673 updated websocket version handling
+ + 359675 Principal != String, fix for issue in property file login manager
+ + 360051 SocketConnectionTest.testServerClosedConnection is excluded.
+ + 360066 jsps referenced in web.xml <jsp-file> elements do not compile
+ + JETTY-1130 Access Sessions from HashSessionIdManager
+ + JETTY-1277 Fixed sendRedirect encoding of relative locations
+ + JETTY-1322 idle sweeper checks for closed endp
+ + JETTY-1377 extra logging for busy selector
+ + JETTY-1378 new sys property for the latest jsp-impl to force the use of the
+   JDTCompiler when running in OSGi.
+ + JETTY-1414 applied to PropertyUserStore
+ + JETTY-1415 Start/Stop Server and Client only once in test, code format
+ + JETTY-1420 Set Host header for new request in RedirectListener
+ + JETTY-1421 Implement RedirectListener.onException,onConnectionFailed
+ + JETTY-1423 force connection to be closed returned
+ + JETTY-1430 local JNDI contexts don't carry environment
+ + JETTY-1434 Add a jsp that exercises jstl.
+ + JETTY-1439 space in directory installation path causes classloader problem
+
+jetty-7.5.1.v20110908 - 08 September 2011
+ + 350634 Added Resource.newResource(File)
+ + 356190 fix monodb tests  for changed test api
+ + 356428 removed timed waits from test
+ + 356693 reduce visibility to webapp of websocket implementations
+ + 356695 jetty server jars are provided for websockets
+ + 356726 Instead of the sessionDestroyed called sessionCreated after
+   invalidate session
+ + 356751 Add null protection to ServletContextHandler.doStop
+ + 356823 correctly decode close codes.  Send not utf-8 close code.
+ + 357058 Acceptor thread blocking
+
+jetty-7.5.0.v20110901 - 01 September 2011
+ + 356421 Upgraded websocket to draft 13 support
  + 353073 better warnings
 
 jetty-7.5.0.RC2 - 30 August 2011
@@ -56,6 +204,12 @@ jetty-7.5.0.RC0 - 15 August 2011
  + 354204 Charset encodings property file not used
  + 354397 RewriteRegexRule handles special characters in regex group
  + 354466 Typo in example config of jetty-plus.xml
+
+jetty-7.4.5.v20110725 - 25 July 2011
+ + 347484 / - > ${/} in some paths in grant codebases
+ + 352133 resolve some 1.5isms
+ + 352421 HttpURI paths beginning with '.'
+ + 352786 GzipFilter fails to pass parameters to GzipResponseWrapper
 
 jetty-7.4.4.v20110707 - 07 July 2011
  + 308851 Converted all jetty-client module tests to JUnit 4

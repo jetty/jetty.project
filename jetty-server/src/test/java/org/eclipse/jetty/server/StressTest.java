@@ -91,7 +91,7 @@ public class StressTest
         _server.setThreadPool(_threads);
 
         _connector = new SelectChannelConnector();
-        _connector.setAcceptors(Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
+        _connector.setAcceptors(1);
         _connector.setAcceptQueueSize(5000);
         _connector.setMaxIdleTime(30000);
         _server.addConnector(_connector);
@@ -123,7 +123,7 @@ public class StressTest
         // TODO needs to be further investigated
         assumeTrue(!OS.IS_OSX || Stress.isEnabled());
     	
-        doThreads(10,100,false);
+        doThreads(10,10,false);
         if (Stress.isEnabled())
         {
             Thread.sleep(1000);
@@ -139,7 +139,7 @@ public class StressTest
         // TODO needs to be further investigated
         assumeTrue(!OS.IS_OSX || Stress.isEnabled());
     	
-        doThreads(20,100,true);
+        doThreads(20,10,true);
         if (Stress.isEnabled())
         {
             Thread.sleep(1000);
@@ -365,7 +365,6 @@ public class StressTest
             if (__tests.length!=bodies)
                 System.err.println("responses=\n"+response+"\n---");
             assertEquals(name,__tests.length,bodies);
-            bodies = count(response,"HTTP/1.1 200 OK");
 
             long bind=connected-start;
             long flush=(written-connected)/__tests.length;
@@ -461,7 +460,6 @@ public class StressTest
             response.setStatus(200);
             response.getOutputStream().print("DATA "+request.getPathInfo()+"\n\n");
             baseRequest.setHandled(true);
-            long end=System.currentTimeMillis();
 
             _latencies[4].add(new Long(System.currentTimeMillis()-start));
 

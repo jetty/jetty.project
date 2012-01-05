@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpOutput extends ServletOutputStream 
 {
+    protected final AbstractHttpConnection _connection;
     protected final AbstractGenerator _generator;
-    protected final long _maxIdleTime;
     private boolean _closed;
     
     // These are held here for reuse by Writer
@@ -45,15 +45,20 @@ public class HttpOutput extends ServletOutputStream
     Writer _converter;
     char[] _chars;
     ByteArrayOutputStream2 _bytes;
-    
 
     /* ------------------------------------------------------------ */
-    public HttpOutput(AbstractGenerator generator, long maxIdleTime)
+    public HttpOutput(AbstractHttpConnection connection)
     {
-        _generator=generator;
-        _maxIdleTime=maxIdleTime;
+        _connection=connection;
+        _generator=(AbstractGenerator)connection.getGenerator();
     }
 
+    /* ------------------------------------------------------------ */
+    public int getMaxIdleTime()
+    {
+        return _connection.getMaxIdleTime();
+    }
+    
     /* ------------------------------------------------------------ */
     public boolean isWritten()
     {
@@ -86,7 +91,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void flush() throws IOException
     {
-        _generator.flush(_maxIdleTime);
+        _generator.flush(getMaxIdleTime());
     }
 
     /* ------------------------------------------------------------ */
@@ -121,7 +126,7 @@ public class HttpOutput extends ServletOutputStream
         // Block until we can add _content.
         while (_generator.isBufferFull())
         {
-            _generator.blockForOutput(_maxIdleTime);
+            _generator.blockForOutput(getMaxIdleTime());
             if (_closed)
                 throw new IOException("Closed");
             if (!_generator.isOpen())
@@ -151,7 +156,7 @@ public class HttpOutput extends ServletOutputStream
         // Block until we can add _content.
         while (_generator.isBufferFull())
         {
-            _generator.blockForOutput(_maxIdleTime);
+            _generator.blockForOutput(getMaxIdleTime());
             if (_closed)
                 throw new IOException("Closed");
             if (!_generator.isOpen())
@@ -174,7 +179,7 @@ public class HttpOutput extends ServletOutputStream
         // Block until our buffer is free
         while (buffer.length() > 0 && _generator.isOpen())
         {
-            _generator.blockForOutput(_maxIdleTime);
+            _generator.blockForOutput(getMaxIdleTime());
         }
     }
 

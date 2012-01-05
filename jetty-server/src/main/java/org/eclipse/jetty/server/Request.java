@@ -96,10 +96,18 @@ import org.eclipse.jetty.util.log.Logger;
  * against the servlet URL patterns and {@link Request#setServletPath(String)} called as a result.</li>
  * </ul>
  * 
- * A request instance is created for each {@link HttpConnection} accepted by the server 
+ * A request instance is created for each {@link AbstractHttpConnection} accepted by the server 
  * and recycled for each HTTP request received via that connection. An effort is made
  * to avoid reparsing headers and cookies that are likely to be the same for 
  * requests from the same connection.
+ * 
+ * <p>
+ * The form content that a request can process is limited to protect from Denial of Service 
+ * attacks. The size in bytes is limited by {@link ContextHandler#getMaxFormContentSize()} or if there is no 
+ * context then the "org.eclipse.jetty.server.Request.maxFormContentSize" {@link Server} attribute.  
+ * The number of parameters keys is limited by {@link ContextHandler#getMaxFormKeys()} or if there is no
+ * context then the "org.eclipse.jetty.server.Request.maxFormKeys" {@link Server} attribute. 
+ * 
  * 
  */
 public class Request implements HttpServletRequest
@@ -116,7 +124,7 @@ public class Request implements HttpServletRequest
         if (request instanceof Request)
             return (Request) request;
 
-        return HttpConnection.getCurrentConnection().getRequest();
+        return AbstractHttpConnection.getCurrentConnection().getRequest();
     }
     protected final AsyncContinuation _async = new AsyncContinuation();
     private boolean _asyncSupported=true;
@@ -124,7 +132,7 @@ public class Request implements HttpServletRequest
     private Authentication _authentication;
     private MultiMap<String> _baseParameters;
     private String _characterEncoding;
-    protected HttpConnection _connection;
+    protected AbstractHttpConnection _connection;
     private ContextHandler.Context _context;
     private boolean _newContext;
     private String _contextPath;
@@ -170,7 +178,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public Request(HttpConnection connection)
+    public Request(AbstractHttpConnection connection)
     {
         setConnection(connection);
     }
@@ -186,79 +194,36 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * Extract Paramters from query string and/or form _content.
+     * Extract Parameters from query string and/or form _content.
      */
     public void extractParameters()
     {
         if (_baseParameters == null) 
             _baseParameters = new MultiMap(16);
-        
+
         if (_paramsExtracted) 
         {
             if (_parameters==null)
                 _parameters=_baseParameters;
             return;
         }
-        
+
         _paramsExtracted = true;
 
-        // Handle query string
-        if (_uri!=null && _uri.hasQuery())
+        try
         {
-            if (_queryEncoding==null)
-                _uri.decodeQueryTo(_baseParameters);
-            else
+            // Handle query string
+            if (_uri!=null && _uri.hasQuery())
             {
-                try
-                {
-                    _uri.decodeQueryTo(_baseParameters,_queryEncoding);
-                }
-                catch (UnsupportedEncodingException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.warn(e);
-                    else
-                        LOG.warn(e.toString());
-                }
-            }
-        }
-
-        // handle any _content.
-        String encoding = getCharacterEncoding();
-        String content_type = getContentType();
-        if (content_type != null && content_type.length() > 0)
-        {
-            content_type = HttpFields.valueParameters(content_type, null);
-            
-            if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(content_type) && _inputState==__NONE &&
-                    (HttpMethods.POST.equals(getMethod()) || HttpMethods.PUT.equals(getMethod())))
-            {
-                int content_length = getContentLength();
-                if (content_length != 0)
+                if (_queryEncoding==null)
+                    _uri.decodeQueryTo(_baseParameters);
+                else
                 {
                     try
                     {
-                        int maxFormContentSize=-1;
-                        
-                        if (_context!=null)
-                            maxFormContentSize=_context.getContextHandler().getMaxFormContentSize();
-                        else
-                        {
-                            Integer size = (Integer)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
-                            if (size!=null)
-                                maxFormContentSize =size.intValue();
-                        }
-                        
-                        if (content_length>maxFormContentSize && maxFormContentSize > 0)
-                        {
-                            throw new IllegalStateException("Form too large"+content_length+">"+maxFormContentSize);
-                        }
-                        InputStream in = getInputStream();
-                       
-                        // Add form params to query params
-                        UrlEncoded.decodeTo(in, _baseParameters, encoding,content_length<0?maxFormContentSize:-1);
+                        _uri.decodeQueryTo(_baseParameters,_queryEncoding);
                     }
-                    catch (IOException e)
+                    catch (UnsupportedEncodingException e)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.warn(e);
@@ -267,29 +232,87 @@ public class Request implements HttpServletRequest
                     }
                 }
             }
-        }
-        
-        if (_parameters==null)
-            _parameters=_baseParameters;
-        else if (_parameters!=_baseParameters)
-        {
-            // Merge parameters (needed if parameters extracted after a forward).
-            Iterator iter = _baseParameters.entrySet().iterator();
-            while (iter.hasNext())
+
+            // handle any _content.
+            String encoding = getCharacterEncoding();
+            String content_type = getContentType();
+            if (content_type != null && content_type.length() > 0)
             {
-                Map.Entry entry = (Map.Entry)iter.next();
-                String name=(String)entry.getKey();
-                Object values=entry.getValue();
-                for (int i=0;i<LazyList.size(values);i++)
-                    _parameters.add(name, LazyList.get(values, i));
+                content_type = HttpFields.valueParameters(content_type, null);
+                
+                if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(content_type) && _inputState==__NONE &&
+                        (HttpMethods.POST.equals(getMethod()) || HttpMethods.PUT.equals(getMethod())))
+                {
+                    int content_length = getContentLength();
+                    if (content_length != 0)
+                    {
+                        try
+                        {
+                            int maxFormContentSize=-1;
+                            int maxFormKeys=-1;
+
+                            if (_context!=null)
+                            {
+                                maxFormContentSize=_context.getContextHandler().getMaxFormContentSize();
+                                maxFormKeys=_context.getContextHandler().getMaxFormKeys();
+                            }
+                            else
+                            {
+                                Number size = (Number)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
+                                maxFormContentSize=size==null?200000:size.intValue();
+                                Number keys = (Number)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
+                                maxFormKeys =keys==null?1000:keys.intValue();
+                            }
+                            
+                            if (content_length>maxFormContentSize && maxFormContentSize > 0)
+                            {
+                                throw new IllegalStateException("Form too large"+content_length+">"+maxFormContentSize);
+                            }
+                            InputStream in = getInputStream();
+
+                            // Add form params to query params
+                            UrlEncoded.decodeTo(in, _baseParameters, encoding,content_length<0?maxFormContentSize:-1,maxFormKeys);
+                        }
+                        catch (IOException e)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.warn(e);
+                            else
+                                LOG.warn(e.toString());
+                        }
+                    }
+                }
             }
-        }   
+
+            if (_parameters==null)
+                _parameters=_baseParameters;
+            else if (_parameters!=_baseParameters)
+            {
+                // Merge parameters (needed if parameters extracted after a forward).
+                Iterator iter = _baseParameters.entrySet().iterator();
+                while (iter.hasNext())
+                {
+                    Map.Entry entry = (Map.Entry)iter.next();
+                    String name=(String)entry.getKey();
+                    Object values=entry.getValue();
+                    for (int i=0;i<LazyList.size(values);i++)
+                        _parameters.add(name, LazyList.get(values, i));
+                }
+            }   
+        }
+        finally
+        {
+            //ensure params always set (even if empty) after extraction
+            if (_parameters==null)
+                _parameters=_baseParameters;
+        }
     }
 
+    
     /* ------------------------------------------------------------ */
     public AsyncContext getAsyncContext()
     {
-        if (_async.isInitial() && !isAsyncStarted())
+        if (_async.isInitial() && !_async.isAsyncStarted())
             throw new IllegalStateException(_async.getStatusString());
         return _async;
     }
@@ -373,7 +396,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the connection.
      */
-    public HttpConnection getConnection()
+    public AbstractHttpConnection getConnection()
     {
         return _connection;
     }
@@ -979,6 +1002,9 @@ public class Request implements HttpServletRequest
         // Return already determined host
         if (_serverName != null) 
             return _serverName;
+        
+        if (_uri == null)
+            throw new IllegalStateException("No uri");
 
         // Return host from absolute URI
         _serverName = _uri.getHost();
@@ -1235,21 +1261,15 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isAsyncStarted()
+    public boolean isHandled()
     {
-        return _async.isAsyncStarted();
+        return _handled;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isAsyncSupported()
     {
         return _asyncSupported;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isHandled()
-    {
-        return _handled;
     }
     
     /* ------------------------------------------------------------ */
@@ -1457,7 +1477,7 @@ public class Request implements HttpServletRequest
             {
                 try 
                 {
-                    ((HttpConnection.Output)getServletResponse().getOutputStream()).sendContent(value); 
+                    ((AbstractHttpConnection.Output)getServletResponse().getOutputStream()).sendContent(value); 
                 } 
                 catch (IOException e)
                 {
@@ -1474,7 +1494,7 @@ public class Request implements HttpServletRequest
                         NIOBuffer buffer = byteBuffer.isDirect()
                         ?new DirectNIOBuffer(byteBuffer,true)
                         :new IndirectNIOBuffer(byteBuffer,true);
-                        ((HttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
+                        ((AbstractHttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
                     }
                 }
                 catch (IOException e)
@@ -1570,7 +1590,7 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     //final so we can safely call this from constructor
-    protected final void setConnection(HttpConnection connection)
+    protected final void setConnection(AbstractHttpConnection connection)
     {
         _connection=connection;
     	_async.setConnection(connection);

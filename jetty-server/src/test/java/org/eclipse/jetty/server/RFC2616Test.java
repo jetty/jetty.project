@@ -29,8 +29,6 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -723,7 +721,7 @@ public class RFC2616Test
             "GET /R2 HTTP/1.0\n"+"Host: localhost\n"+"Connection: close\n"+"\n"+
 
             "GET /R3 HTTP/1.0\n"+"Host: localhost\n"+"Connection: close\n"+"\n");
-
+            
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","19.6.2 Keep-alive 1")+1;
             offset=checkContains(response,offset,"Connection: keep-alive","19.6.2 Keep-alive 1")+1;
 
@@ -732,7 +730,6 @@ public class RFC2616Test
             offset=checkContains(response,offset,"/R1","19.6.2 Keep-alive 1")+1;
 
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","19.6.2 Keep-alive 2")+11;
-            offset=checkContains(response,offset,"Connection: close","19.6.2 Keep-alive close")+1;
             offset=checkContains(response,offset,"/R2","19.6.2 Keep-alive close")+3;
 
             assertEquals("19.6.2 closed",-1,response.indexOf("/R3"));
@@ -756,7 +753,6 @@ public class RFC2616Test
             offset=checkContains(response,offset,"ABCDEFGHIJ","19.6.2 Keep-alive 1")+1;
 
             offset=checkContains(response,offset,"HTTP/1.1 200 OK\015\012","19.6.2 Keep-alive 2")+11;
-            offset=checkContains(response,offset,"Connection: close","19.6.2 Keep-alive close")+1;
             offset=checkContains(response,offset,"/R2","19.6.2 Keep-alive close")+3;
 
             assertEquals("19.6.2 closed",-1,response.indexOf("/R3"));

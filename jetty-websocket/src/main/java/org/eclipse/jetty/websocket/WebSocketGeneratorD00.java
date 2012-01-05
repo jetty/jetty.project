@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -149,8 +164,6 @@ public class WebSocketGeneratorD00 implements WebSocketGenerator
         {
             while (_buffer.space()==0)
             {
-                // TODO: in case the I/O system signals write ready, but when we attempt to write we cannot
-                // TODO: we should decrease the blockFor timeout instead of waiting again the whole timeout
                 boolean ready = _endp.blockWritable(blockFor);
                 if (!ready)
                     throw new IOException("Write timeout");

@@ -100,12 +100,6 @@ public class MovedContextHandler extends ContextHandler
         {
             if (_newContextURL==null)
                 return;
-                        
-            String url = _newContextURL;
-            if (!_discardPathInfo && request.getPathInfo()!=null)
-                url=URIUtil.addPaths(url, request.getPathInfo());
-            if (!_discardQuery && request.getQueryString()!=null)
-                url+="?"+request.getQueryString();
 
             String path=_newContextURL;
             if (!_discardPathInfo && request.getPathInfo()!=null)
@@ -117,7 +111,9 @@ public class MovedContextHandler extends ContextHandler
             if (!_discardQuery && request.getQueryString()!=null)
             {
                 location.append('?');
-                location.append(request.getQueryString());
+                String q=request.getQueryString();
+                q=q.replaceAll("\r\n?&=","!");
+                location.append(q);
             }
             
             response.setHeader(HttpHeaders.LOCATION,location.toString());

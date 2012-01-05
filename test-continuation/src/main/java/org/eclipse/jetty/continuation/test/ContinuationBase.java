@@ -233,15 +233,20 @@ public abstract class ContinuationBase extends TestCase
         request+=" HTTP/1.1\r\n"+
         "Host: localhost\r\n"+
         "Connection: close\r\n";
-        if (content!=null)
+        if (content==null)
+            request+="\r\n";
+        else
+        {
             request+="Content-Length: "+content.length()+"\r\n";
-        request+="\r\n" + content;
+            request+="\r\n" + content;
+        }
         
         int port=_port;
         String response=null;
         try
         {
             Socket socket = new Socket("localhost",port);
+            socket.setSoTimeout(10000);
             socket.getOutputStream().write(request.getBytes("UTF-8"));
 
             response = toString(socket.getInputStream());

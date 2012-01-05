@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
@@ -11,6 +26,9 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * @TODO Implement proposed deflate frame draft
+ */
 public class DeflateFrameExtension extends AbstractExtension
 {
     private static final Logger LOG = Log.getLogger(DeflateFrameExtension.class);
@@ -18,7 +36,7 @@ public class DeflateFrameExtension extends AbstractExtension
     private int _minLength=8;
     private Deflater _deflater;
     private Inflater _inflater;
-    
+
     public DeflateFrameExtension()
     {
         super("x-deflate-frame");
@@ -32,10 +50,10 @@ public class DeflateFrameExtension extends AbstractExtension
         if(super.init(parameters))
         {
             _minLength=getInitParameter("minLength",_minLength);
-            
+
             _deflater=new Deflater();
             _inflater=new Inflater();
-            
+
             return true;
         }
         return false;
@@ -46,7 +64,7 @@ public class DeflateFrameExtension extends AbstractExtension
      */
     @Override
     public void onFrame(byte flags, byte opcode, Buffer buffer)
-    {        
+    {
         if (getConnection().isControl(opcode) || !isFlag(flags,1))
         {
             super.onFrame(flags,opcode,buffer);
@@ -55,7 +73,7 @@ public class DeflateFrameExtension extends AbstractExtension
 
         if (buffer.array()==null)
             buffer=buffer.asMutableBuffer();
-        
+
         int length=0xff&buffer.get();
         if (length>=0x7e)
         {
@@ -63,10 +81,10 @@ public class DeflateFrameExtension extends AbstractExtension
             length=0;
             while(b-->0)
                 length=0x100*length+(0xff&buffer.get());
-        }    
-        
+        }
+
         // TODO check a max framesize
-        
+
         _inflater.setInput(buffer.array(),buffer.getIndex(),buffer.length());
         ByteArrayBuffer buf = new ByteArrayBuffer(length);
         try
@@ -84,7 +102,7 @@ public class DeflateFrameExtension extends AbstractExtension
         catch(DataFormatException e)
         {
             LOG.warn(e);
-            getConnection().close(WebSocketConnectionD12.CLOSE_PROTOCOL,e.toString());
+            getConnection().close(WebSocketConnectionRFC6455.CLOSE_BAD_PAYLOAD,e.toString());
         }
     }
 
@@ -99,12 +117,12 @@ public class DeflateFrameExtension extends AbstractExtension
             super.addFrame(clearFlag(flags,1),opcode,content,offset,length);
             return;
         }
-        
+
         // prepare the uncompressed input
         _deflater.reset();
         _deflater.setInput(content,offset,length);
         _deflater.finish();
-        
+
         // prepare the output buffer
         byte[] out= new byte[length];
         int out_offset=0;
@@ -113,10 +131,10 @@ public class DeflateFrameExtension extends AbstractExtension
         if (length>0xffff)
         {
             out[out_offset++]=0x7f;
-            out[out_offset++]=(byte)((length>>56)&0x7f);
-            out[out_offset++]=(byte)((length>>48)&0xff);
-            out[out_offset++]=(byte)((length>>40)&0xff);
-            out[out_offset++]=(byte)((length>>32)&0xff);
+            out[out_offset++]=(byte)0;
+            out[out_offset++]=(byte)0;
+            out[out_offset++]=(byte)0;
+            out[out_offset++]=(byte)0;
             out[out_offset++]=(byte)((length>>24)&0xff);
             out[out_offset++]=(byte)((length>>16)&0xff);
             out[out_offset++]=(byte)((length>>8)&0xff);
@@ -125,7 +143,7 @@ public class DeflateFrameExtension extends AbstractExtension
         else if (length >=0x7e)
         {
             out[out_offset++]=0x7e;
-            out[out_offset++]=(byte)(byte)(length>>8);
+            out[out_offset++]=(byte)(length>>8);
             out[out_offset++]=(byte)(length&0xff);
         }
         else
@@ -134,7 +152,7 @@ public class DeflateFrameExtension extends AbstractExtension
         }
 
         int l = _deflater.deflate(out,out_offset,length-out_offset);
-        
+
         if (_deflater.finished())
             super.addFrame(setFlag(flags,1),opcode,out,0,l+out_offset);
         else

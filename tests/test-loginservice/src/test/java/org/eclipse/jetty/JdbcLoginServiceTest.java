@@ -44,7 +44,7 @@ import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.security.Constraint;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;

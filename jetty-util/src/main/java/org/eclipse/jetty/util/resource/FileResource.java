@@ -114,9 +114,9 @@ public class FileResource extends URLResource
             if (_urlString.endsWith("/"))
                 _urlString=_urlString.substring(0,_urlString.length()-1);
         }
-            
+
     }
-    
+
     /* -------------------------------------------------------- */
     FileResource(URL url, URLConnection connection, File file)
     {

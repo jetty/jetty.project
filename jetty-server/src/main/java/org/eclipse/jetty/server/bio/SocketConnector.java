@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpException;
@@ -29,9 +29,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.BlockingHttpConnection;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -81,7 +82,7 @@ public class SocketConnector extends AbstractConnector
         _localPort=_serverSocket.getLocalPort();
         if (_localPort<=0)
             throw new IllegalStateException("port not allocated for "+this);
-            
+
     }
 
     /* ------------------------------------------------------------ */
@@ -155,19 +156,28 @@ public class SocketConnector extends AbstractConnector
     protected void doStop() throws Exception
     {
         super.doStop();
-        Set set=null;
-
+        Set<EndPoint> set = new HashSet<EndPoint>();
         synchronized(_connections)
         {
-            set= new HashSet(_connections);
+            set.addAll(_connections);
         }
-
-        Iterator iter=set.iterator();
-        while(iter.hasNext())
+        for (EndPoint endPoint : set)
         {
-            ConnectorEndPoint connection = (ConnectorEndPoint)iter.next();
+            ConnectorEndPoint connection = (ConnectorEndPoint)endPoint;
             connection.close();
         }
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        super.dump(out, indent);
+        Set<EndPoint> connections = new HashSet<EndPoint>();
+        synchronized (_connections)
+        {
+            connections.addAll(_connections);
+        }
+        AggregateLifeCycle.dump(out, indent, connections);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -175,7 +185,6 @@ public class SocketConnector extends AbstractConnector
     /* ------------------------------------------------------------------------------- */
     protected class ConnectorEndPoint extends SocketEndPoint implements Runnable, ConnectedEndPoint
     {
-        boolean _dispatched=false;
         volatile Connection _connection;
         protected final Socket _socket;
 
@@ -193,7 +202,7 @@ public class SocketConnector extends AbstractConnector
 
         public void setConnection(Connection connection)
         {
-            if (_connection!=connection)
+            if (_connection!=connection && _connection!=null)
                 connectionUpgraded(_connection,connection);
             _connection=connection;
         }
@@ -219,8 +228,8 @@ public class SocketConnector extends AbstractConnector
         @Override
         public void close() throws IOException
         {
-            if (_connection instanceof HttpConnection)
-                ((HttpConnection)_connection).getRequest().getAsyncContinuation().cancel();
+            if (_connection instanceof AbstractHttpConnection)
+                ((AbstractHttpConnection)_connection).getRequest().getAsyncContinuation().cancel();
             super.close();
         }
 
@@ -246,6 +255,12 @@ public class SocketConnector extends AbstractConnector
                 }
             }
             catch (EofException e)
+            {
+                LOG.debug("EOF", e);
+                try{close();}
+                catch(IOException e2){LOG.ignore(e2);}
+            }
+            catch (SocketException e)
             {
                 LOG.debug("EOF", e);
                 try{close();}
@@ -277,7 +292,7 @@ public class SocketConnector extends AbstractConnector
                     if (!_socket.isClosed())
                     {
                         long timestamp=System.currentTimeMillis();
-                        int max_idle=getMaxIdleTime(); 
+                        int max_idle=getMaxIdleTime();
 
                         _socket.setSoTimeout(getMaxIdleTime());
                         int c=0;

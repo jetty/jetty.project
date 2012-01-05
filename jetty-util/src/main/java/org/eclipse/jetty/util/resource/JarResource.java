@@ -130,7 +130,8 @@ public class JarResource extends URLResource
         if (!exists())
             return;
         
-        if(LOG.isDebugEnabled())LOG.debug("Extract "+this+" to "+directory);
+        if(LOG.isDebugEnabled())
+            LOG.debug("Extract "+this+" to "+directory);
         
         String urlString = this.getURL().toExternalForm().trim();
         int endOfJarUrl = urlString.indexOf("!/");
@@ -143,13 +144,13 @@ public class JarResource extends URLResource
         String subEntryName = (endOfJarUrl+2 < urlString.length() ? urlString.substring(endOfJarUrl + 2) : null);
         boolean subEntryIsDir = (subEntryName != null && subEntryName.endsWith("/")?true:false);
       
-        if (LOG.isDebugEnabled()) LOG.debug("Extracting entry = "+subEntryName+" from jar "+jarFileURL);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("Extracting entry = "+subEntryName+" from jar "+jarFileURL);
         
         InputStream is = jarFileURL.openConnection().getInputStream();
         JarInputStream jin = new JarInputStream(is);
         JarEntry entry;
         boolean shouldExtract;
-        String directoryCanonicalPath = directory.getCanonicalPath()+"/";
         while((entry=jin.getNextJarEntry())!=null)
         {
             String entryName = entry.getName();
@@ -194,7 +195,8 @@ public class JarResource extends URLResource
             
             if (!shouldExtract)
             {
-                if (LOG.isDebugEnabled()) LOG.debug("Skipping entry: "+entryName);
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("Skipping entry: "+entryName);
                 continue;
             }
                 
@@ -202,7 +204,8 @@ public class JarResource extends URLResource
             dotCheck = URIUtil.canonicalPath(dotCheck);
             if (dotCheck == null)
             {
-                if (LOG.isDebugEnabled()) LOG.debug("Invalid entry: "+entryName);
+                if (LOG.isDebugEnabled()) 
+                    LOG.debug("Invalid entry: "+entryName);
                 continue;
             }
 

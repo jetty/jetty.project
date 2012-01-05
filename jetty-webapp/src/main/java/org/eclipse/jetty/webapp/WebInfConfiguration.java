@@ -125,7 +125,8 @@ public class WebInfConfiguration extends AbstractConfiguration
         //cannot configure if the context is already started
         if (context.isStarted())
         {
-            if (LOG.isDebugEnabled()){LOG.debug("Cannot configure webapp "+context+" after it is started");}
+            if (LOG.isDebugEnabled())
+                LOG.debug("Cannot configure webapp "+context+" after it is started");
             return;
         }
 

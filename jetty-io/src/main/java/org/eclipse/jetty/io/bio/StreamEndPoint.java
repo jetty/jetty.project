@@ -22,17 +22,13 @@ import java.net.SocketTimeoutException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.EndPoint;
 
-/**
- *
- *
- * To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Generation - Code and Comments
- */
 public class StreamEndPoint implements EndPoint
 {
     InputStream _in;
     OutputStream _out;
     int _maxIdleTime;
+    boolean _ishut;
+    boolean _oshut;
 
     /**
      *
@@ -75,23 +71,29 @@ public class StreamEndPoint implements EndPoint
     }
 
     public void shutdownOutput() throws IOException
-    {    
+    {
+        _oshut = true;
+        if (_ishut && _out!=null)
+            _out.close();
     }
-    
+
     public boolean isInputShutdown()
     {
-        return !isOpen();
+        return _ishut;
     }
 
     public void shutdownInput() throws IOException
-    {    
+    {
+        _ishut = true;
+        if (_oshut&&_in!=null)
+            _in.close();
     }
-    
+
     public boolean isOutputShutdown()
     {
-        return !isOpen();
+        return _oshut;
     }
-    
+
     /*
      * @see org.eclipse.io.BufferIO#close()
      */
@@ -107,35 +109,40 @@ public class StreamEndPoint implements EndPoint
 
     protected void idleExpired() throws IOException
     {
-        _in.close();
+        if (_in!=null)
+            _in.close();
     }
-    
+
     /* (non-Javadoc)
      * @see org.eclipse.io.BufferIO#fill(org.eclipse.io.Buffer)
      */
     public int fill(Buffer buffer) throws IOException
     {
-        // TODO handle null array()
+        if (_ishut)
+            return -1;
         if (_in==null)
             return 0;
 
-    	int space=buffer.space();
-    	if (space<=0)
-    	{
-    	    if (buffer.hasContent())
-    	        return 0;
-    	    throw new IOException("FULL");
-    	}
+        int space=buffer.space();
+        if (space<=0)
+        {
+            if (buffer.hasContent())
+                return 0;
+            throw new IOException("FULL");
+        }
 
-    	try
-    	{
-    	    return buffer.readFrom(_in,space);
-    	}
-    	catch(SocketTimeoutException e)
-    	{
-    	    idleExpired();
-    	    return -1;
-    	}
+        try
+        {
+            int filled=buffer.readFrom(_in, space);
+            if (filled<0)
+                shutdownInput();
+            return filled;
+        }
+        catch(SocketTimeoutException e)
+        {
+            idleExpired();
+            return -1;
+        }
     }
 
     /* (non-Javadoc)
@@ -143,9 +150,10 @@ public class StreamEndPoint implements EndPoint
      */
     public int flush(Buffer buffer) throws IOException
     {
-        // TODO handle null array()
-        if (_out==null)
+        if (_oshut)
             return -1;
+        if (_out==null)
+            return 0;
         int length=buffer.length();
         if (length>0)
             buffer.writeTo(_out);
@@ -298,29 +306,11 @@ public class StreamEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isBufferingInput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingOutput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferred()
-    {
-        return false;
-    }
-    
-    /* ------------------------------------------------------------ */
     public int getMaxIdleTime()
     {
         return _maxIdleTime;
     }
-    
+
     /* ------------------------------------------------------------ */
     public void setMaxIdleTime(int timeMs) throws IOException
     {

@@ -166,8 +166,7 @@ public abstract class Resource implements ResourceFactory
                     
                     URLConnection connection=url.openConnection();
                     connection.setUseCaches(useCaches);
-                    FileResource fileResource= new FileResource(url,connection,file);
-                    return fileResource;
+                    return new FileResource(url,connection,file);
                 }
                 catch(Exception e2)
                 {
@@ -197,6 +196,18 @@ public abstract class Resource implements ResourceFactory
             }
         }
         return newResource(url);
+    }
+
+    /* ------------------------------------------------------------ */
+    public static Resource newResource (File file)
+    throws MalformedURLException, IOException
+    {
+        file = file.getCanonicalFile();
+        URL url = Resource.toURL(file);
+
+        URLConnection connection = url.openConnection();
+        FileResource fileResource = new FileResource(url, connection, file);
+        return fileResource;
     }
 
     /* ------------------------------------------------------------ */

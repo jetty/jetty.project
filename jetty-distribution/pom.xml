@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.5.0-SNAPSHOT</version>
+    <version>7.6.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
@@ -20,8 +20,7 @@
     <orbit-javax-servlet-jsp-version>2.1.0.v201004190952</orbit-javax-servlet-jsp-version>
     <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
     <orbit-com-sun-el-version>1.0.0.v201004190952</orbit-com-sun-el-version>
-    <!-- orbit-org-apache-jasper-version>2.1.0.v201007080150</orbit-org-apache-jasper-version -->
-    <central-jsp-version>2.1.3-b10</central-jsp-version>
+    <orbit-org-apache-jasper-version>2.1.0.v201110031002</orbit-org-apache-jasper-version>
     <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
     <orbit-org-objectweb-asm-version>3.1.0.v200803061910</orbit-org-objectweb-asm-version>
     <orbit-javax-transaction-version>1.1.1.v201004190952</orbit-javax-transaction-version>
@@ -77,7 +76,7 @@
                   <url url="${jetty-orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
                   <url url="${jetty-orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
-                  <!-- url url="${jetty-orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" / -->
+                  <url url="${jetty-orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
                   <url url="${jetty-orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
                   <url url="${jetty-orbit-url}/org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.transaction_${orbit-javax-transaction-version}.jar" />
@@ -159,147 +158,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>unpack</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-rewrite</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-ajp</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>test-jetty-webapp</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-jmx</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-util</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-webapp</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-deploy</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-plus</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-server</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-security</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-policy</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-monitor</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-overlay-deployer</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-          <execution>
             <id>copy</id>
             <phase>generate-resources</phase>
             <goals>
@@ -316,187 +174,6 @@
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/</outputDirectory>
                   <destFileName>VERSION.txt</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-util</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-io</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-http</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-server</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-security</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-servlet</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-servlets</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-xml</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-webapp</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <!-- Jetty Deploy -->
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-deploy</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-jmx</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-rewrite</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-ajp</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-annotations</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-client</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-jndi</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-policy</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-monitor</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib/monitor</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-plus</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-continuation</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
@@ -518,43 +195,62 @@
                   <outputDirectory>${assembly-directory}</outputDirectory>
                   <destFileName>start.jar</destFileName>
                 </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-websocket</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-overlay-deployer</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-jsp-2.1</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.glassfish.web</groupId>
-                  <artifactId>jsp-impl</artifactId>
-                  <version>${central-jsp-version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
-                </artifactItem>
               </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <excludeArtifactIds>jetty-start,jetty-monitor</excludeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-monitor-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeArtifactIds>jetty-monitor</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <excludeTransitive>true</excludeTransitive>
+              <outputDirectory>${assembly-directory}/lib/monitor</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-config-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <classifier>config</classifier>
+              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-javadoc</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <!-- Use already generated javadoc, don't bother regenerating again -->
+              <includeGroupIds>org.eclipse.jetty.aggregate</includeGroupIds>
+              <includeArtifactIds>jetty-all</includeArtifactIds>
+              <includeClassifier>javadoc</includeClassifier>
+              <excludeTransitive>true</excludeTransitive>
+              <outputDirectory>${assembly-directory}/javadoc</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -660,6 +356,16 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlets</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-monitor</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-websocket</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -669,14 +375,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jsp-2.1</artifactId>
+      <groupId>org.eclipse.jetty.aggregate</groupId>
+      <artifactId>jetty-all</artifactId>
+      <classifier>javadoc</classifier>
+      <type>jar</type>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish.web</groupId>
-      <artifactId>jsp-impl</artifactId>
-      <version>${central-jsp-version}</version>
     </dependency>
   </dependencies>
 </project>

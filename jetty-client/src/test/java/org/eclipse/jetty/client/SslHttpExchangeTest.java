@@ -16,64 +16,31 @@ package org.eclipse.jetty.client;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
+import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
+import org.eclipse.jetty.client.helperClasses.SslServerAndClientCreator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.OS;
-import org.eclipse.jetty.toolchain.test.Stress;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
  * Functional testing for HttpExchange.
- * 
- * 
- * 
  */
 public class SslHttpExchangeTest extends HttpExchangeTest
 {
+    protected static ServerAndClientCreator serverAndClientCreator = new SslServerAndClientCreator();
+    
     /* ------------------------------------------------------------ */
     @Before
-    @Override
-    public void setUp() throws Exception
+    public void setUpOnce() throws Exception
     {
         _scheme="https";
-        startServer();
-        _httpClient=new HttpClient();
-        _httpClient.setIdleTimeout(2000);
-        _httpClient.setTimeout(2500);
-        _httpClient.setConnectTimeout(1000);
-        _httpClient.setConnectorType(HttpClient.CONNECTOR_SELECT_CHANNEL);
-        _httpClient.setConnectorType(HttpClient.CONNECTOR_SOCKET);
-        _httpClient.setMaxConnectionsPerAddress(2);
-        _httpClient.start();
+        _server = serverAndClientCreator.createServer();
+        _httpClient = serverAndClientCreator.createClient(3000L,3500L,2000);
+        Connector[] connectors = _server.getConnectors();
+        _port = connectors[0].getLocalPort();
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void newServer()
-    {
-        _server = new Server();
-        //SslSelectChannelConnector connector = new SslSelectChannelConnector();
-        SslSocketConnector connector = new SslSocketConnector();
-
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-
-        connector.setPort(0);
-        SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystore);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
-	connector.setAllowRenegotiate(true);
-
-        _server.setConnectors(new Connector[]
-        { connector });
-        _connector=connector;
-    }
-    
     /* ------------------------------------------------------------ */
     private void IgnoreTestOnBuggyIBM()
     {
@@ -103,9 +70,6 @@ public class SslHttpExchangeTest extends HttpExchangeTest
     @Override
     public void testPerf() throws Exception
     {
-        // TODO needs to be further investigated
-        Assume.assumeTrue(!OS.IS_OSX || Stress.isEnabled());
-        
         // TODO Resolve problems on IBM JVM https://bugs.eclipse.org/bugs/show_bug.cgi?id=304532
         IgnoreTestOnBuggyIBM();
         super.testPerf();

@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.util;
@@ -16,72 +16,86 @@ package org.eclipse.jetty.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
+import java.io.UnsupportedEncodingException;
 
+import org.junit.Test;
 
 public class Utf8StringBufferTest
 {
-    public void testUtfStringBuffer()
-        throws Exception
+    @Test
+    public void testUtfStringBuffer() throws Exception
     {
-        String source="abcd012345\n\r\u0000\u00a4\u10fb\ufffdjetty";
+        String source = "abcd012345\n\r\u0000\u00a4\u10fb\ufffdjetty";
         byte[] bytes = source.getBytes(StringUtil.__UTF8);
         Utf8StringBuffer buffer = new Utf8StringBuffer();
-        for (int i=0;i<bytes.length;i++)
+        for (byte aByte : bytes)
+            buffer.append(aByte);
+        assertEquals(source,buffer.toString());
+        assertTrue(buffer.toString().endsWith("jetty"));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testUtf8WithMissingByte() throws Exception
+    {
+        String source = "abc\u10fb";
+        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        Utf8StringBuffer buffer = new Utf8StringBuffer();
+        for (int i = 0; i < bytes.length - 1; i++)
             buffer.append(bytes[i]);
-        assertEquals(source, buffer.toString());
-        assertTrue(buffer.toString().endsWith("jetty")); 
+        buffer.toString();
+    }
+
+    @Test(expected = Utf8Appendable.NotUtf8Exception.class)
+    public void testUtf8WithAdditionalByte() throws Exception
+    {
+        String source = "abcXX";
+        byte[] bytes = source.getBytes(StringUtil.__UTF8);
+        bytes[3] = (byte)0xc0;
+        bytes[4] = (byte)0x00;
+
+        Utf8StringBuffer buffer = new Utf8StringBuffer();
+        for (byte aByte : bytes)
+            buffer.append(aByte);
     }
 
 
     @Test
-    public void testShort()
-    throws Exception
+    public void testUTF32codes() throws Exception
     {
-        String source="abc\u10fb";
-        byte[] bytes = source.getBytes(StringUtil.__UTF8);
-        Utf8StringBuffer buffer = new Utf8StringBuffer();
-        for (int i=0;i<bytes.length-1;i++)
-            buffer.append(bytes[i]);
-        try
-        {
-            buffer.toString();
-            assertTrue(false);
-        }
-        catch(IllegalStateException e)
-        {
-            assertTrue(e.toString().indexOf("!utf8")>=0);
-        }
-    }
-    
-    @Test
-    public void testLong()
-    throws Exception
-    {
-        String source="abcXX";
-        byte[] bytes = source.getBytes(StringUtil.__UTF8);
-        bytes[3]=(byte)0xc0;
-        bytes[4]=(byte)0x00;
+        String source = "\uD842\uDF9F";
+        byte[] bytes = source.getBytes("UTF-8");
 
-        Utf8StringBuffer buffer = new Utf8StringBuffer();
-        for (int i=0;i<bytes.length;i++)
-            buffer.append(bytes[i]);
-        assertEquals("abc?",buffer.toString());
-    }
-    
-    @Test 
-    public void testUTF32codes()
-    throws Exception
-    {
-        String source="\uD842\uDF9F";
-        byte[] bytes=source.getBytes("UTF-8");
-        
         String jvmcheck = new String(bytes,0,bytes.length,"UTF-8");
         assertEquals(source,jvmcheck);
-        
+
         Utf8StringBuffer buffer = new Utf8StringBuffer();
         buffer.append(bytes,0,bytes.length);
-        String result=buffer.toString();
+        String result = buffer.toString();
         assertEquals(source,result);
+    }
+    @Test
+    public void testGermanUmlauts() throws Exception
+    {
+        byte[] bytes = new byte[6];
+        bytes[0] = (byte)0xC3;
+        bytes[1] = (byte)0xBC;
+        bytes[2] = (byte)0xC3;
+        bytes[3] = (byte)0xB6;
+        bytes[4] = (byte)0xC3;
+        bytes[5] = (byte)0xA4;
+
+        Utf8StringBuffer buffer = new Utf8StringBuffer();
+        for (int i = 0; i < bytes.length; i++)
+            buffer.append(bytes[i]);
+
+        assertEquals("\u00FC\u00F6\u00E4",buffer.toString());
+    }
+
+    @Test(expected = Utf8Appendable.NotUtf8Exception.class)
+    public void testInvalidUTF8() throws UnsupportedEncodingException
+    {
+        Utf8StringBuffer buffer = new Utf8StringBuffer();
+        buffer.append((byte)0xC2);
+        buffer.append((byte)0xC2);
     }
 }

@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IPAddressMap;
 import org.eclipse.jetty.util.log.Log;
@@ -179,7 +179,7 @@ public class IPAccessHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
-        HttpConnection connection = baseRequest.getConnection();
+        AbstractHttpConnection connection = baseRequest.getConnection();
         if (connection!=null)
         {
             EndPoint endp=connection.getEndPoint();

@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
@@ -48,11 +47,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
@@ -65,19 +64,18 @@ import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
 /**
  * ContextHandler.
- * 
+ *
  * This handler wraps a call to handle by setting the context and servlet path, plus setting the context classloader.
- * 
+ *
  * <p>
  * If the context init parameter "org.eclipse.jetty.server.context.ManagedAttributes" is set to a comma separated list of names, then they are treated as
  * context attribute names, which if set as attributes are passed to the servers Container so that they may be managed with JMX.
- * 
+ *
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful
@@ -96,7 +94,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Get the current ServletContext implementation.
-     * 
+     *
      * @return ServletContext implementation
      */
     public static Context getCurrentContext()
@@ -122,6 +120,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     private EventListener[] _eventListeners;
     private Logger _logger;
     private boolean _allowNullPathInfo;
+    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",1000).intValue();
     private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",200000).intValue();
     private boolean _compactPath = false;
     private boolean _aliases = false;
@@ -245,7 +244,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * Set the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
      * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
      * matching virtual host name.
-     * 
+     *
      * @param vhosts
      *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
      *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
@@ -265,11 +264,90 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    /** Either set virtual hosts or add to an existing set of virtual hosts.
+     *
+     * @param virtualHosts
+     *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
+     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
+     */
+    public void addVirtualHosts(String[] virtualHosts)
+    {
+        if (virtualHosts == null)  // since this is add, we don't null the old ones
+        {
+            return;
+        }
+        else
+        {
+            List<String> currentVirtualHosts = null;
+            if (_vhosts != null)
+            {
+                currentVirtualHosts = new ArrayList<String>(Arrays.asList(_vhosts));
+            }
+            else
+            {
+                currentVirtualHosts = new ArrayList<String>();
+            }
+
+            for (int i = 0; i < virtualHosts.length; i++)
+            {
+                String normVhost = normalizeHostname(virtualHosts[i]);
+                if (!currentVirtualHosts.contains(normVhost))
+                {
+                    currentVirtualHosts.add(normVhost);
+                }
+            }
+            _vhosts = currentVirtualHosts.toArray(new String[0]);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Removes an array of virtual host entries, if this removes all entries the _vhosts will be set to null
+     *
+     *  @param virtualHosts
+     *            Array of virtual hosts that this context responds to. A null host name or null/empty array means any hostname is acceptable. Host names may be
+     *            String representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
+     */
+    public void removeVirtualHosts(String[] virtualHosts)
+    {
+        if (virtualHosts == null)
+        {
+            return; // do nothing
+        }
+        else if ( _vhosts == null || _vhosts.length == 0)
+        {
+            return; // do nothing
+        }
+        else
+        {
+            List<String> existingVirtualHosts = new ArrayList<String>(Arrays.asList(_vhosts));
+
+            for (int i = 0; i < virtualHosts.length; i++)
+            {
+                String toRemoveVirtualHost = normalizeHostname(virtualHosts[i]);
+                if (existingVirtualHosts.contains(toRemoveVirtualHost))
+                {
+                    existingVirtualHosts.remove(toRemoveVirtualHost);
+                }
+            }
+
+            if (existingVirtualHosts.isEmpty())
+            {
+                _vhosts = null; // if we ended up removing them all, just null out _vhosts
+            }
+            else
+            {
+                _vhosts = existingVirtualHosts.toArray(new String[0]);
+            }
+        }
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Get the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
      * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
      * matching virtual host name.
-     * 
+     *
      * @return Array of virtual hosts that this context responds to. A null host name or empty array means any hostname is acceptable. Host names may be String
      *         representation of IP addresses. Host names may start with '*.' to wildcard one level of names.
      */
@@ -293,9 +371,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Set the names of accepted connectors.
-     * 
+     *
      * Names are either "host:port" or a specific configured name for a connector.
-     * 
+     *
      * @param connectors
      *            If non null, an array of connector names that this context will accept a request from.
      */
@@ -347,7 +425,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Make best effort to extract a file classpath from the context classloader
-     * 
+     *
      * @return Returns the classLoader.
      */
     public String getClassPath()
@@ -443,7 +521,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Set the context event listeners.
-     * 
+     *
      * @param eventListeners
      *            the event listeners
      * @see ServletContextListener
@@ -481,7 +559,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Add a context event listeners.
-     * 
+     *
      * @see ServletContextListener
      * @see ServletContextAttributeListener
      * @see ServletRequestListener
@@ -498,14 +576,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isShutdown()
     {
-        return !_shutdown;
+        synchronized (this)
+        {
+            return !_shutdown;
+        }
     }
 
     /* ------------------------------------------------------------ */
     /**
      * Set shutdown status. This field allows for graceful shutdown of a context. A started context may be put into non accepting state so that existing
      * requests can complete, but no new requests are accepted.
-     * 
+     *
      * @param shutdown
      *            true if this context is (not?) accepting new requests
      */
@@ -524,7 +605,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public boolean isAvailable()
     {
-        return _available;
+        synchronized (this)
+        {
+            return _available;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -588,7 +672,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             // defers the calling of super.doStart()
             startContext();
 
-            _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
+            synchronized(this)
+            {
+                _availability = _shutdown?__SHUTDOWN:_available?__AVAILABLE:__UNAVAILABLE;
+            }
         }
         finally
         {
@@ -607,7 +694,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * Extensible startContext. this method is called from {@link ContextHandler#doStart()} instead of a call to super.doStart(). This allows derived classes to
      * insert additional handling (Eg configuration) before the call to super.doStart by this method will start contained handlers.
-     * 
+     *
      * @see org.eclipse.jetty.server.handler.ContextHandler.Context
      */
     protected void startContext() throws Exception
@@ -755,7 +842,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         // Check the connector
         if (_connectors != null && _connectors.size() > 0)
         {
-            String connector = HttpConnection.getCurrentConnection().getConnector().getName();
+            String connector = AbstractHttpConnection.getCurrentConnection().getConnector().getName();
             if (connector == null || !_connectors.contains(connector))
                 return false;
         }
@@ -793,7 +880,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        LOG.debug("scope {} @ {}",baseRequest.getContextPath() + "|" + baseRequest.getServletPath() + "|" + baseRequest.getPathInfo(),this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("scope {}|{}|{} @ {}",baseRequest.getContextPath(),baseRequest.getServletPath(),baseRequest.getPathInfo(),this);
 
         Context old_context = null;
         String old_context_path = null;
@@ -801,7 +889,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         String old_path_info = null;
         ClassLoader old_classloader = null;
         Thread current_thread = null;
-        String pathInfo = null;
+        String pathInfo = target;
 
         DispatcherType dispatch = baseRequest.getDispatcherType();
 
@@ -865,7 +953,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("context={} @ {}",baseRequest.getContextPath() + "|" + baseRequest.getServletPath() + "|" + baseRequest.getPathInfo(),this);
+                LOG.debug("context={}|{}|{} @ {}",baseRequest.getContextPath(),baseRequest.getServletPath(), baseRequest.getPathInfo(),this);
 
             // start manual inline of nextScope(target,baseRequest,request,response);
             if (never())
@@ -1028,7 +1116,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /*
      * Set a context attribute. Attributes set via this API cannot be overriden by the ServletContext.setAttribute API. Their lifecycle spans the stop/start of
      * a context. No attribute listener events are triggered by this API.
-     * 
+     *
      * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
      */
     public void setAttribute(String name, Object value)
@@ -1261,9 +1349,29 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Set the maximum size of a form post, to protect against DOS attacks from large forms.
+     * @param maxSize
+     */
     public void setMaxFormContentSize(int maxSize)
     {
         _maxFormContentSize = maxSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getMaxFormKeys()
+    {
+        return _maxFormKeys;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the maximum number of form Keys to protect against DOS attack from crafted hash keys.
+     * @param max
+     */
+    public void setMaxFormKeys(int max)
+    {
+        _maxFormKeys = max;
     }
 
     /* ------------------------------------------------------------ */
@@ -1293,14 +1401,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
 
         StringBuilder b = new StringBuilder();
 
-        String p = getClass().getPackage().getName();
-        if (p != null && p.length() > 0)
+        Package pkg = getClass().getPackage();
+        if (pkg != null)
         {
-            String[] ss = p.split("\\.");
-            for (String s : ss)
-                b.append(s.charAt(0)).append('.');
+            String p = pkg.getName();
+            if (p != null && p.length() > 0)
+            {
+                String[] ss = p.split("\\.");
+                for (String s : ss)
+                    b.append(s.charAt(0)).append('.');
+            }
         }
-
         b.append(getClass().getSimpleName());
         b.append('{').append(getContextPath()).append(',').append(getBaseResource());
 
@@ -1343,7 +1454,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /**
      * Get the character encoding for a locale. The full locale name is first looked up in the map of encodings. If no encoding is found, then the locale
      * language is looked up.
-     * 
+     *
      * @param locale
      *            a <code>Locale</code> value
      * @return a <code>String</code> representing the character encoding for the locale or null if none found.
@@ -1407,7 +1518,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
     /* ------------------------------------------------------------ */
     /**
      * Convert a URL or path to a Resource. The default implementation is a wrapper for {@link Resource#newResource(String)}.
-     * 
+     *
      * @param urlOrPath
      *            The URL or path to convert
      * @return The Resource for the URL/path
@@ -1469,8 +1580,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      * <p>
      * A partial implementation of {@link javax.servlet.ServletContext}. A complete implementation is provided by the derived {@link ContextHandler}.
      * </p>
-     * 
-     * 
+     *
+     *
      */
     public class Context implements ServletContext
     {
@@ -1699,7 +1810,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 URL url = getResource(path);
                 if (url == null)
                     return null;
-                return url.openStream();
+                Resource r = Resource.newResource(url);
+                return r.getInputStream();
             }
             catch (Exception e)
             {

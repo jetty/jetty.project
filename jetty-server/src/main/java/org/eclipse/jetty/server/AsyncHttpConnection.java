@@ -1,3 +1,16 @@
+// ========================================================================
+// Copyright (c) 2006-2011 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
+
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
@@ -7,52 +20,72 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.AsyncConnection;
+import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class AsyncHttpConnection extends HttpConnection
+
+/* ------------------------------------------------------------ */
+/** Asychronous Server HTTP connection
+ *
+ */
+public class AsyncHttpConnection extends AbstractHttpConnection implements AsyncConnection
 {
+    private final static int NO_PROGRESS_INFO = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_INFO",100);
+    private final static int NO_PROGRESS_CLOSE = Integer.getInteger("org.mortbay.jetty.NO_PROGRESS_CLOSE",200);
+
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
+    private int _total_no_progress;
+    private final AsyncEndPoint _asyncEndp;
 
     public AsyncHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(connector,endpoint,server);
+        _asyncEndp=(AsyncEndPoint)endpoint;
     }
 
     public Connection handle() throws IOException
     {
         Connection connection = this;
-        
-        // Loop while more in buffer
+        boolean some_progress=false;
+        boolean progress=true;
+
         try
         {
             setCurrentConnection(this);
-
-            boolean progress=true; 
-            boolean more_in_buffer =false;
             
-            while (_endp.isOpen() && (more_in_buffer || progress))
+            // don't check for idle while dispatched (unless blocking IO is done).
+            _asyncEndp.setCheckForIdle(false);
+            
+
+            // While progress and the connection has not changed
+            while (progress && connection==this)
             {
                 progress=false;
                 try
                 {
-                    LOG.debug("async request",_request);
-                    
                     // Handle resumed request
-                    if (_request._async.isAsync() && !_request._async.isComplete())
-                        handleRequest();
-                    
+                    if (_request._async.isAsync())
+                    { 
+                       if (_request._async.isDispatchable())
+                           handleRequest();
+                    }
                     // else Parse more input
-                    else if (!_parser.isComplete() && _parser.parseAvailable()>0)
+                    else if (!_parser.isComplete() && _parser.parseAvailable())
                         progress=true;
 
                     // Generate more output
-                    if (_generator.isCommitted() && !_generator.isComplete() && _generator.flushBuffer()>0)
+                    if (_generator.isCommitted() && !_generator.isComplete() && !_endp.isOutputShutdown())
+                        if (_generator.flushBuffer()>0)
+                            progress=true;
+
+                    // Flush output
+                    _endp.flush();
+
+                    // Has any IO been done by the endpoint itself since last loop
+                    if (_asyncEndp.hasProgressed())
                         progress=true;
-                    
-                    // Flush output from buffering endpoint
-                    if (_endp.isBufferingOutput())
-                        _endp.flush();
                 }
                 catch (HttpException e)
                 {
@@ -62,67 +95,89 @@ public class AsyncHttpConnection extends HttpConnection
                         LOG.debug("fields="+_requestFields);
                         LOG.debug(e);
                     }
+                    progress=true;
                     _generator.sendError(e.getStatus(), e.getReason(), null, true);
-                    _parser.reset();
-                    _endp.close();
                 }
                 finally
                 {
-                    // Do we need to complete a half close?
-                    if (_endp.isInputShutdown() && (_parser.isIdle() || _parser.isComplete()))
+                    some_progress|=progress;
+                    //  Is this request/response round complete and are fully flushed?
+                    if (_parser.isComplete() && _generator.isComplete())
                     {
-                        LOG.debug("complete half close {}",this);
-                        more_in_buffer=false;
-                        _endp.close();
-                        reset(true);
-                    }
-                    
-                    // else Is this request/response round complete?
-                    else if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
-                    {
+                        // Reset the parser/generator
+                        progress=true;
+
                         // look for a switched connection instance?
                         if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
                             Connection switched=(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
-                            {
-                                _parser.reset();
-                                _generator.reset(true);
-                                return switched;
-                            }
+                                connection=switched;
                         }
-                        
-                        // Reset the parser/generator
-                        // keep the buffers as we will cycle 
-                        progress=true;
-                        reset(false);
-                        more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-                    }
 
-                    // else Are we suspended?
-                    else if (_request.isAsyncStarted())
-                    {
-                        LOG.debug("suspended {}",this);
-                        more_in_buffer=false;
-                        progress=false;
+                        reset();
+
+                        // TODO Is this still required?
+                        if (!_generator.isPersistent() && !_endp.isOutputShutdown())
+                        {
+                            LOG.warn("Safety net oshut!!!  IF YOU SEE THIS, PLEASE RAISE BUGZILLA");
+                            _endp.shutdownOutput();
+                        }
                     }
-                    else
-                        more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
+                    else if (_request.getAsyncContinuation().isAsyncStarted())
+                    {
+                        // The request is suspended, so even though progress has been made, break the while loop
+                        LOG.debug("suspended {}",this);
+                        // TODO: breaking inside finally blocks is bad: rethink how we should exit from here
+                        break;
+                    }
                 }
             }
         }
         finally
         {
             setCurrentConnection(null);
-            _parser.returnBuffers();
-
-            // Are we write blocked
-            if (_generator.isCommitted() && !_generator.isComplete())
-                ((AsyncEndPoint)_endp).scheduleWrite();
-            else
+            
+            // If we are not suspended
+            if (!_request.getAsyncContinuation().isAsyncStarted())
+            {
+                // return buffers
+                _parser.returnBuffers();
                 _generator.returnBuffers();
+            }
+            
+            if (_request.getAsyncContinuation().isComplete() || _request.getAsyncContinuation().isInitial())
+            {
+                _asyncEndp.setCheckForIdle(true);
+            }
+            
+            // Safety net to catch spinning
+            if (some_progress)
+                _total_no_progress=0;
+            else
+            {
+                _total_no_progress++;
+                if (NO_PROGRESS_INFO>0 && _total_no_progress%NO_PROGRESS_INFO==0 && (NO_PROGRESS_CLOSE<=0 || _total_no_progress< NO_PROGRESS_CLOSE))
+                    LOG.info("EndPoint making no progress: "+_total_no_progress+" "+_endp+" "+this);
+                if (NO_PROGRESS_CLOSE>0 && _total_no_progress==NO_PROGRESS_CLOSE)
+                {
+                    LOG.warn("Closing EndPoint making no progress: "+_total_no_progress+" "+_endp+" "+this);
+                    if (_endp instanceof SelectChannelEndPoint)
+                        ((SelectChannelEndPoint)_endp).getChannel().close();
+                }
+            }
         }
         return connection;
+    }
+
+    public void onInputShutdown() throws IOException
+    {
+        // If we don't have a committed response and we are not suspended
+        if (_generator.isIdle() && !_request.getAsyncContinuation().isSuspended())
+        {
+            // then no more can happen, so close.
+            _endp.close();
+        }
     }
 
 }

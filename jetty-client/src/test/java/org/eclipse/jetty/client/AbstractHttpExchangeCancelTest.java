@@ -14,39 +14,37 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 /**
- * @version $Revision$ $Date$
  */
 public abstract class AbstractHttpExchangeCancelTest
 {
-    private static final Logger LOG = Log.getLogger(AbstractHttpExchangeCancelTest.class);
-
     private Server server;
     private Connector connector;
 
@@ -78,13 +76,13 @@ public abstract class AbstractHttpExchangeCancelTest
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
-            void setStatus(int status)
+            boolean setStatus(int status)
             {
                 // Cancel before setting the new status
                 if (getStatus() == HttpExchange.STATUS_START &&
                     status == STATUS_WAITING_FOR_CONNECTION)
                     cancel();
-                super.setStatus(status);
+                return super.setStatus(status);
             }
         };
         exchange.setAddress(newAddress());
@@ -115,14 +113,15 @@ public abstract class AbstractHttpExchangeCancelTest
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
-            void setStatus(int status)
+            boolean setStatus(int status)
             {
                 // Cancel after setting the new status
                 int oldStatus = getStatus();
-                super.setStatus(status);
+                boolean set = super.setStatus(status);
                 if (oldStatus == STATUS_START &&
                     getStatus() == HttpExchange.STATUS_WAITING_FOR_CONNECTION)
                     cancel();
+                return set;
             }
         };
         exchange.setAddress(newAddress());
@@ -186,10 +185,10 @@ public abstract class AbstractHttpExchangeCancelTest
         getHttpClient().send(exchange);
 
         int status = exchange.waitForDone();
-        assertEquals(HttpExchange.STATUS_CANCELLED, status);
-        assertFalse(exchange.isResponseCompleted());
-        assertFalse(exchange.isFailed());
-        assertFalse(exchange.isAssociated());
+        assertThat("Exchange Status", status, is(HttpExchange.STATUS_CANCELLED));
+        assertThat("Exchange.isResponseCompleted", exchange.isResponseCompleted(), is(false));
+        assertThat("Exchange.isFailed", exchange.isFailed(), is(false));
+        assertThat("Exchange.isAssociated", exchange.isAssociated(), is(false));
     }
 
     /* ------------------------------------------------------------ */
@@ -323,7 +322,7 @@ public abstract class AbstractHttpExchangeCancelTest
     {
         try
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
             TestHttpExchange exchange = new TestHttpExchange();
             exchange.setAddress(newAddress());
             exchange.setRequestURI("/?action=throw");
@@ -338,7 +337,7 @@ public abstract class AbstractHttpExchangeCancelTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(false);
         }
     }
 
@@ -360,13 +359,33 @@ public abstract class AbstractHttpExchangeCancelTest
 
         int status = exchange.waitForDone();
         long end = System.currentTimeMillis();
-        
+
         assertTrue(HttpExchange.STATUS_EXPIRED==status||HttpExchange.STATUS_EXCEPTED==status);
         assertFalse(exchange.isResponseCompleted());
         assertTrue(end-start<4000);
         assertTrue(exchange.isExpired());
         assertFalse(exchange.isFailed());
         assertFalse(exchange.isAssociated());
+    }
+
+    @Test
+    public void testHttpExchangeCancelReturnsConnection() throws Exception
+    {
+        TestHttpExchange exchange = new TestHttpExchange();
+        Address address = newAddress();
+        exchange.setAddress(address);
+        long delay = 5000;
+        exchange.setRequestURI("/?action=wait" + delay);
+
+        HttpClient httpClient = getHttpClient();
+        HttpDestination destination = httpClient.getDestination(address, false);
+        int connections = destination.getConnections();
+        httpClient.send(exchange);
+        Thread.sleep(delay / 2);
+        Assert.assertEquals(connections + 1, destination.getConnections());
+
+        exchange.cancel();
+        Assert.assertEquals(connections, destination.getConnections());
     }
 
     /* ------------------------------------------------------------ */
@@ -447,6 +466,7 @@ public abstract class AbstractHttpExchangeCancelTest
         @Override
         protected synchronized void onException(Throwable ex)
         {
+            LOG.debug(ex);
             if (ex instanceof SocketTimeoutException ||
                 ex.getCause() instanceof SocketTimeoutException)
                 expired=true;

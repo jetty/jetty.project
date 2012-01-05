@@ -26,7 +26,6 @@ import java.util.Map;
 
 import javax.servlet.ServletException;
 
-import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlParser;
 
 /**
@@ -147,7 +147,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
         }
-        if (LOG.isDebugEnabled()) LOG.debug("ContextParam: " + name + "=" + value);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("ContextParam: " + name + "=" + value);
 
     }
     
@@ -271,11 +272,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
             }
 
-            // TODO is this too soon?
             /* Set the webapp's classpath for Jasper */
             context.setAttribute("org.apache.catalina.jsp_classpath", context.getClassPath());
+
             /* Set the system classpath for Jasper */
-            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context));        
+            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
         }
         
         //Set the servlet-class
@@ -321,6 +322,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             holder.setForcedPath(jsp_file);
             holder.setClassName(jspServletClass);
+            //set the system classpath explicitly for the holder that will represent the JspServlet instance
+            holder.setInitParameter("com.sun.appserv.jsp.classpath", getSystemClassPath(context)); 
         }
 
         // handle load-on-startup 

@@ -34,6 +34,8 @@ public abstract class AbstractTestServer
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
 
+    
+    
     public AbstractTestServer(int port)
     {
         this(port, 30, 10);
@@ -41,15 +43,22 @@ public abstract class AbstractTestServer
 
     public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod)
     {
+        this (port, maxInactivePeriod, scavengePeriod, null);
+    }
+    
+    public AbstractTestServer(int port, int maxInactivePeriod, int scavengePeriod, String sessionIdMgrConfig)
+    {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
         _scavengePeriod = scavengePeriod;
         _contexts = new ContextHandlerCollection();
-        _sessionIdManager = newSessionIdManager();
+        _sessionIdManager = newSessionIdManager(sessionIdMgrConfig);
+        _server.setSessionIdManager(_sessionIdManager);
     }
+    
+    
 
-
-    public abstract SessionIdManager newSessionIdManager();
+    public abstract SessionIdManager newSessionIdManager(String config);
     public abstract SessionManager newSessionManager();
     public abstract SessionHandler newSessionHandler(SessionManager sessionManager);
 

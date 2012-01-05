@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.5.0-SNAPSHOT</version>
+    <version>7.6.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-util</artifactId>
@@ -29,7 +29,7 @@
             </configuration>
            </execution>
         </executions>
-      </plugin>     
+      </plugin>
       <plugin>
         <!--
         Required for OSGI
@@ -37,7 +37,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
-          <archive>               
+          <archive>
             <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
@@ -70,15 +70,26 @@
   </build>
   <dependencies>
     <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-test-helper</artifactId>
-        <scope>test</scope>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <scope>provided</scope>
       <optional>true</optional>
+    </dependency>
+    <!--
+      This dependency is used to test Slf4jLog.
+      Due to the introduction of src/test/resource/jetty-logging.properties (and the Log.static{} block)
+      the default Log implementation is still StdErrLog during testing. 
+     -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <version>${slf4j-version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

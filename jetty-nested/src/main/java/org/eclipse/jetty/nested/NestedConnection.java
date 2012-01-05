@@ -15,7 +15,6 @@ package org.eclipse.jetty.nested;
 import java.io.IOException;
 import java.util.Enumeration;
 
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -24,14 +23,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.DispatcherType;
-import org.eclipse.jetty.server.HttpConnection;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
 
 
-public class NestedConnection extends HttpConnection
+public class NestedConnection extends AbstractHttpConnection
 {
     protected NestedConnection(final NestedConnector connector, final NestedEndPoint endp, final HttpServletRequest outerRequest, HttpServletResponse outerResponse,String nestedIn)
         throws IOException
@@ -88,7 +84,8 @@ public class NestedConnection extends HttpConnection
         {
             getServer().handle(this);
             completeResponse();
-            _generator.flushBuffer();
+            while (!_generator.isComplete() && _endp.isOpen())
+                _generator.flushBuffer();
             _endp.flush();
         }
         finally

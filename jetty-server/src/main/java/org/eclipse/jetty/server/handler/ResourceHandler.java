@@ -29,7 +29,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -45,12 +46,12 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  * This handle will serve static content and handle If-Modified-Since headers.
  * No caching is done.
- * Requests that cannot be handled are let pass (Eg no 404's)
+ * Requests for resources that do not exist are let pass (Eg no 404's).
  *
  *
  * @org.apache.xbean.XBean
  */
-public class ResourceHandler extends AbstractHandler
+public class ResourceHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(ResourceHandler.class);
 
@@ -205,7 +206,7 @@ public class ResourceHandler extends AbstractHandler
     	    {
     	        try
     	        {
-    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-default.css"));
+    	            _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
     	        }
     	        catch(IOException e)
     	        {
@@ -292,10 +293,28 @@ public class ResourceHandler extends AbstractHandler
     /* ------------------------------------------------------------ */
     protected Resource getResource(HttpServletRequest request) throws MalformedURLException
     {
-        String path_info=request.getPathInfo();
-        if (path_info==null)
-            return null;
-        return getResource(path_info);
+        String servletPath;
+        String pathInfo;
+        Boolean included = request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI) != null;
+        if (included != null && included.booleanValue())
+        {
+            servletPath = (String)request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH);
+            pathInfo = (String)request.getAttribute(Dispatcher.INCLUDE_PATH_INFO);
+ 
+            if (servletPath == null && pathInfo == null)
+            {
+                servletPath = request.getServletPath();
+                pathInfo = request.getPathInfo();
+            }
+        }
+        else
+        {
+            servletPath = request.getServletPath();
+            pathInfo = request.getPathInfo();
+        }
+        
+        String pathInContext=URIUtil.addPaths(servletPath,pathInfo);
+        return getResource(pathInContext);
     }
 
 
@@ -326,7 +345,7 @@ public class ResourceHandler extends AbstractHandler
 
     /* ------------------------------------------------------------ */
     /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
+     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -334,23 +353,35 @@ public class ResourceHandler extends AbstractHandler
             return;
 
         boolean skipContentBody = false;
+
         if(!HttpMethods.GET.equals(request.getMethod()))
         {
             if(!HttpMethods.HEAD.equals(request.getMethod()))
+            {
+                //try another handler
+                super.handle(target, baseRequest, request, response);
                 return;
+            }
             skipContentBody = true;
         }
         
         Resource resource = getResource(request);
+        
         if (resource==null || !resource.exists())
         {
-            if (target.endsWith("/jetty-stylesheet.css"))
-            {	
-                response.setContentType("text/css");
+            if (target.endsWith("/jetty-dir.css"))
+            {	                
                 resource = getStylesheet();
+                if (resource==null)
+                    return;
+                response.setContentType("text/css");
             }
             else 
+            {
+                //no resource - try other handlers
+                super.handle(target, baseRequest, request, response);
                 return;
+            }
         }
             
         if (!_aliases && resource.getAlias()!=null)
@@ -359,7 +390,7 @@ public class ResourceHandler extends AbstractHandler
             return;
         }
 
-        // We are going to server something
+        // We are going to serve something
         baseRequest.setHandled(true);
 
         if (resource.isDirectory())
@@ -408,10 +439,10 @@ public class ResourceHandler extends AbstractHandler
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
 
         // See if a short direct method can be used?
-        if (out instanceof HttpConnection.Output)
+        if (out instanceof AbstractHttpConnection.Output)
         {
             // TODO file mapped buffers
-            ((HttpConnection.Output)out).sendContent(resource.getInputStream());
+            ((AbstractHttpConnection.Output)out).sendContent(resource.getInputStream());
         }
         else
         {

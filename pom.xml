@@ -3,11 +3,10 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>18</version>
+    <version>19</version>
   </parent>
-  <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>7.5.0-SNAPSHOT</version>
+  <version>7.6.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -186,7 +185,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>1.0.3</version>
+          <version>1.0.7</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -245,7 +244,6 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
-          <version>2.3.2</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <xmlOutput>true</xmlOutput>
@@ -260,28 +258,29 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jxr-plugin</artifactId>
-          <version>2.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.8</version>
+          <configuration>
+            <docfilessubdirs>true</docfilessubdirs>
+            <detectLinks>true</detectLinks>
+            <detectJavaApiLink>true</detectJavaApiLink>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>2.5</version>
         </plugin>
       </plugins>
     </pluginManagement>
   </build>
-  <reporting>
-
+  <reporting>   
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jxr-plugin</artifactId>
-        <version>2.2</version>
+        <version>2.1</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -312,6 +311,7 @@
       </plugin>
     </plugins>
   </reporting>
+<!--
   <repositories>
     <repository>
       <snapshots>
@@ -322,6 +322,7 @@
       <url>http://oss.sonatype.org/content/groups/jetty</url>
     </repository>
   </repositories>
+-->
   <modules>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
@@ -337,7 +338,6 @@
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-servlets</module>
-    <module>jetty-jsp-2.1</module>
     <module>jetty-deploy</module>
     <module>jetty-ajp</module>
     <module>jetty-jndi</module>
@@ -350,9 +350,10 @@
     <module>jetty-nested</module>
     <module>jetty-overlay-deployer</module>
     <module>jetty-nosql</module>
+    <module>jetty-http-spi</module>
     <module>jetty-distribution</module>
     <module>test-continuation</module>
-    <module>test-continuation-jetty6</module>
+    <!--module>test-continuation-jetty6</module-->
     <module>test-jetty-servlet</module>
     <module>test-jetty-webapp</module>
     <module>test-jetty-nested</module>
@@ -410,6 +411,11 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${junit-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>1.8.5</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -469,7 +475,7 @@
                 <id>gen-versiontxt</id>
                 <phase>generate-resources</phase>
                 <goals>
-                  <goal>gen-version-text</goal>
+                  <goal>update-version-text</goal>
                 </goals>
                 <configuration>
                   <refreshTags>true</refreshTags>

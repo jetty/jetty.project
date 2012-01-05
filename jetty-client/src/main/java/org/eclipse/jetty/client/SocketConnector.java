@@ -17,7 +17,6 @@ import java.io.InterruptedIOException;
 import java.net.Socket;
 
 import javax.net.SocketFactory;
-import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -45,18 +44,9 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
 
     public void startConnection(final HttpDestination destination) throws IOException
     {
-        Socket socket=null;
-
-        if ( destination.isSecure() )
-        {
-            SSLContext sslContext = _httpClient.getSSLContext();
-            socket = sslContext.getSocketFactory().createSocket();
-        }
-        else
-        {
-            LOG.debug("Using Regular Socket");
-            socket = SocketFactory.getDefault().createSocket();
-        }
+        Socket socket= destination.isSecure()
+            ?_httpClient.getSslContextFactory().newSslSocket()
+            :SocketFactory.getDefault().createSocket();
 
         socket.setSoTimeout(0);
         socket.setTcpNoDelay(true);
@@ -64,9 +54,9 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
         Address address = destination.isProxied() ? destination.getProxy() : destination.getAddress();
         socket.connect(address.toSocketAddress(), _httpClient.getConnectTimeout());
 
-        EndPoint endpoint=new SocketEndPoint(socket);
+        final EndPoint endpoint=new SocketEndPoint(socket);
 
-        final HttpConnection connection=new HttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
+        final AbstractHttpConnection connection=new BlockingHttpConnection(_httpClient.getRequestBuffers(),_httpClient.getResponseBuffers(),endpoint);
         connection.setDestination(destination);
         destination.onNewConnection(connection);
         _httpClient.getThreadPool().dispatch(new Runnable()
@@ -95,6 +85,17 @@ class SocketConnector extends AbstractLifeCycle implements HttpClient.Connector
                     {
                         LOG.debug(e);
                         destination.onException(e);
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        destination.returnConnection(connection,true);
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.debug(e);
                     }
                 }
             }

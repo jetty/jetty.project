@@ -24,7 +24,7 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
-import org.eclipse.jetty.http.security.Credential;
+import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

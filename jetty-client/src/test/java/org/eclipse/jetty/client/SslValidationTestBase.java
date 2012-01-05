@@ -6,7 +6,6 @@ import java.security.KeyStore;
 import java.security.cert.CRL;
 import java.util.Collection;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -16,6 +15,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.security.CertificateUtils;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public abstract class SslValidationTestBase extends ContentExchangeTest
 {
@@ -52,7 +52,7 @@ public abstract class SslValidationTestBase extends ContentExchangeTest
         srvFactory.setCrlPath(_crlpath);
         srvFactory.setNeedClientAuth(true);
 
-        srvFactory.setKeyStore(_keypath);
+        srvFactory.setKeyStorePath(_keypath);
         srvFactory.setKeyStorePassword(_password);
         srvFactory.setKeyManagerPassword(_password);
         
@@ -88,7 +88,7 @@ public abstract class SslValidationTestBase extends ContentExchangeTest
         cf.setValidateCerts(true);
         cf.setCrlPath(_crlpath);
         
-        cf.setKeyStore(_clientpath);
+        cf.setKeyStorePath(_clientpath);
         cf.setKeyStorePassword(_password);
         cf.setKeyManagerPassword(_password);
         

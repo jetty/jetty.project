@@ -17,19 +17,19 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.http.security.Constraint;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.security.Constraint;
 
 public class SecuredHelloHandler
 {
     public static void main(String[] args) throws Exception
     {
-        Server server = new Server(0);
+        Server server = new Server(8080);
         
         LoginService loginService = new HashLoginService("MyRealm","src/test/resources/realm.properties");
         server.addBean(loginService); 

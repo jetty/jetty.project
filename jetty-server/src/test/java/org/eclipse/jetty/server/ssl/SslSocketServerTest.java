@@ -17,10 +17,11 @@ import java.net.Socket;
 import java.security.KeyStore;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,7 +38,9 @@ public class SslSocketServerTest extends HttpServerTestBase
     @Override
     protected Socket newSocket(String host, int port) throws Exception
     {
-        return __sslContext.getSocketFactory().createSocket(host,port);
+        SSLSocket socket = (SSLSocket)__sslContext.getSocketFactory().createSocket(host,port);
+        socket.setEnabledProtocols(new String[] {"TLSv1"});
+        return socket;
     }
     
 
@@ -47,7 +50,7 @@ public class SslSocketServerTest extends HttpServerTestBase
         SslSocketConnector connector = new SslSocketConnector();
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystorePath);
+        cf.setKeyStorePath(keystorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStore(keystorePath);
@@ -59,7 +62,7 @@ public class SslSocketServerTest extends HttpServerTestBase
         keystore.load(new FileInputStream(connector.getKeystore()), "storepwd".toCharArray());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keystore);
-        __sslContext = SSLContext.getInstance("SSL");
+        __sslContext = SSLContext.getInstance("TLSv1");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
         
 

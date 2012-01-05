@@ -36,5 +36,21 @@ public class HttpTesterTest extends TestCase
         assertEquals("utf-8",tester.getCharacterEncoding());
         assertEquals("123456789\uA74A",tester.getContent());
     }
+    
+    
+    public void testHead() throws Exception
+    {      
+        String headResponse = "HTTP/1.1 200 OK\r\n"+
+        "Content-Type: text/html\r\n"+
+        "Content-Length: 22\r\n"+
+        "\r\n";
+        
+        HttpTester tester = new HttpTester();
+        tester.parse(headResponse, true);
+        assertEquals(200, tester.getStatus());
+        assertEquals("22", tester.getHeader("Content-Length"));
+        assertEquals("text/html",tester.getContentType());
+        System.err.println(tester.getContent());
+    }
 
 }

@@ -1,14 +1,29 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.websocket;
@@ -18,6 +33,7 @@ import java.io.IOException;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -51,8 +67,8 @@ public class WebSocketParserD00 implements WebSocketParser
      * @param buffers The buffers to use for parsing.  Only the {@link Buffers#getBuffer()} is used.
      * This should be a direct buffer if binary data is mostly used or an indirect buffer if utf-8 data
      * is mostly used.
-     * @param endp
-     * @param handler
+     * @param endp the endpoint
+     * @param handler the handler to notify when a parse event occurs
      */
     public WebSocketParserD00(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler)
     {
@@ -86,10 +102,9 @@ public class WebSocketParserD00 implements WebSocketParser
         if (_buffer==null)
             _buffer=_buffers.getBuffer();
 
-        int total_filled=0;
+        int progress=0;
 
         // Loop until an datagram call back or can't fill anymore
-        boolean progress=true;
         while(true)
         {
             int length=_buffer.length();
@@ -109,14 +124,14 @@ public class WebSocketParserD00 implements WebSocketParser
                 {
                     int filled=_endp.isOpen()?_endp.fill(_buffer):-1;
                     if (filled<=0)
-                        return total_filled;
-                    total_filled+=filled;
+                        return progress;
+                    progress+=filled;
                     length=_buffer.length();
                 }
                 catch(IOException e)
                 {
                     LOG.debug(e);
-                    return total_filled>0?total_filled:-1;
+                    return progress>0?progress:-1;
                 }
             }
 
@@ -148,6 +163,7 @@ public class WebSocketParserD00 implements WebSocketParser
                         {
                             _state=STATE_START;
                             int l=_buffer.getIndex()-_buffer.markIndex()-1;
+                            progress++;
                             _handler.onFrame((byte)0,_opcode,_buffer.sliceFromMark(l));
                             _buffer.setMarkIndex(-1);
                             if (_buffer.length()==0)
@@ -155,7 +171,7 @@ public class WebSocketParserD00 implements WebSocketParser
                                 _buffers.returnBuffer(_buffer);
                                 _buffer=null;
                             }
-                            return total_filled;
+                            return progress;
                         }
                         continue;
 
@@ -176,6 +192,7 @@ public class WebSocketParserD00 implements WebSocketParser
                         Buffer data=_buffer.sliceFromMark(_length);
                         _buffer.skip(_length);
                         _state=STATE_START;
+                        progress++;
                         _handler.onFrame((byte)0, _opcode, data);
 
                         if (_buffer.length()==0)
@@ -184,7 +201,7 @@ public class WebSocketParserD00 implements WebSocketParser
                             _buffer=null;
                         }
 
-                        return total_filled;
+                        return progress;
                 }
             }
         }
