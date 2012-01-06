@@ -180,9 +180,10 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
 
             String method=_exchange.getMethod();
             String uri = _exchange.getRequestURI();
-            if (_destination.isProxied()) 
+            if (_destination.isProxied())
             {
-                if(!HttpMethods.CONNECT.equals(method) && uri.startsWith("/")){
+                if (!HttpMethods.CONNECT.equals(method) && uri.startsWith("/"))
+                {
                     boolean secure = _destination.isSecure();
                     String host = _destination.getAddress().getHost();
                     int port = _destination.getAddress().getPort();
