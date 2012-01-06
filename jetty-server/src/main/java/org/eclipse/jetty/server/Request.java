@@ -46,10 +46,12 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
@@ -1016,7 +1018,23 @@ public class Request implements HttpServletRequest
 
                     case ':':
                         _serverName = BufferUtil.to8859_1_String(hostPort.peek(hostPort.getIndex(),i - hostPort.getIndex()));
-                        _port = BufferUtil.toInt(hostPort.peek(i + 1,hostPort.putIndex() - i - 1));
+                        try
+                        {
+                            _port = BufferUtil.toInt(hostPort.peek(i + 1,hostPort.putIndex() - i - 1));
+                        }
+                        catch (NumberFormatException e)
+                        {
+                            try
+                            {
+                                if (_connection != null)
+                                    _connection._generator.sendError(HttpStatus.BAD_REQUEST_400,"Port couldn't be parsed from Host header: " + hostPort,null,
+                                            true);
+                            }
+                            catch (IOException e1)
+                            {
+                                throw new IllegalArgumentException("IOException caught while trying to send error due to invalid host header: " + hostPort,e1);
+                            }
+                        }
                         return _serverName;
                 }
             }

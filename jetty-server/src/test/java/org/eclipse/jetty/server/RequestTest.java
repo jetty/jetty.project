@@ -40,6 +40,7 @@ import junit.framework.Assert;
 
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -78,7 +79,7 @@ public class RequestTest
         _server.stop();
         _server.join();
     }
-    
+
     @Test
     public void testParamExtraction() throws Exception
     {
@@ -101,27 +102,27 @@ public class RequestTest
                     System.err.println(map);
                     assertFalse(map == null);
                     assertTrue(map.isEmpty());
-                    
+
                     Enumeration names = request.getParameterNames();
                     assertFalse(names.hasMoreElements());
                 }
-               
+
                 return true;
             }
         };
-        
+
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
         String request="GET /?param=%ZZaaa HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
         "\n";
-        
+
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
-        
+
     }
-    
+
     @Test
     public void testBadUtf8ParamExtraction() throws Exception
     {
@@ -133,20 +134,40 @@ public class RequestTest
                 return value.startsWith("aaa") && value.endsWith("bb");
             }
         };
-        
+
         //Send a request with query string with illegal hex code to cause
         //an exception parsing the params
         String request="GET /?param=aaa%E7bbb HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
         "Content-Type: text/html;charset=utf8\n"+
         "\n";
-        
+
         String responses=_connector.getResponses(request);
-        assertTrue(responses.startsWith("HTTP/1.1 200"));        
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
 
-    
-    
+    @Test
+    public void testInvalidHostHeader() throws Exception
+    {
+        // Use a contextHandler with vhosts to force call to Request.getServerName()
+        ContextHandler handler = new ContextHandler();
+        handler.addVirtualHosts(new String[1]);
+        _server.stop();
+        _server.setHandler(handler);
+        _server.start();
+
+        // Request with illegal Host header
+        String request="GET / HTTP/1.1\r\n"+
+        "Host: whatever.com:\r\n"+
+        "Content-Type: text/html;charset=utf8\n"+
+        "\n";
+
+        String responses=_connector.getResponses(request);
+        assertTrue("400 Bad Request response expected",responses.startsWith("HTTP/1.1 400"));
+    }
+
+
+
     @Test
     public void testContentTypeEncoding() throws Exception
     {
@@ -196,7 +217,7 @@ public class RequestTest
         assertTrue(results.get(i++).startsWith("text/html"));
         assertEquals(" x=z; ",results.get(i++));
     }
-    
+
     @Test
     public void testHostPort() throws Exception
     {
@@ -369,7 +390,7 @@ public class RequestTest
                 Reader reader=request.getReader();
                 String in = IO.toString(reader);
                 String param = request.getParameter("param");
-                
+
                 byte[] b=("read='"+in+"' param="+param+"\n").getBytes(StringUtil.__UTF8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
@@ -389,11 +410,11 @@ public class RequestTest
         "param=wrong\r\n";
 
         String responses = _connector.getResponses(request);
-        
+
         assertTrue(responses.indexOf("read='param=wrong' param=right")>0);
-        
+
     }
-    
+
     @Test
     public void testPartialInput() throws Exception
     {
@@ -752,7 +773,7 @@ public class RequestTest
     {
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",-1);
         _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
-        
+
         // This file is not distributed - as it is dangerous
         File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
         if (!evil_keys.exists())
@@ -760,10 +781,10 @@ public class RequestTest
             Log.info("testHashDOS skipped");
             return;
         }
-        
+
         BufferedReader in = new BufferedReader(new FileReader(evil_keys));
         StringBuilder buf = new StringBuilder(4000000);
-        
+
         String key=null;
         buf.append("a=b");
         while((key=in.readLine())!=null)
@@ -771,7 +792,7 @@ public class RequestTest
             buf.append("&").append(key).append("=").append("x");
         }
         buf.append("&c=d");
-        
+
         _handler._checker = new RequestTester()
         {
             public boolean check(HttpServletRequest request,HttpServletResponse response)
@@ -787,15 +808,15 @@ public class RequestTest
         "Connection: close\r\n"+
         "\r\n"+
         buf;
-        
+
         long start=System.currentTimeMillis();
         String response = _connector.getResponses(request);
         assertTrue(response.contains("200 OK"));
         long now=System.currentTimeMillis();
         assertTrue((now-start)<5000);
     }
-    
-    
+
+
     interface RequestTester
     {
         boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException;
@@ -812,12 +833,12 @@ public class RequestTest
 
             if (request.getContentLength()>0 && !MimeTypes.FORM_ENCODED.equals(request.getContentType()))
                 _content=IO.toString(request.getInputStream());
-            
+
             if (_checker!=null && _checker.check(request,response))
                 response.setStatus(200);
             else
                 response.sendError(500);
-            
+
 
         }
     }

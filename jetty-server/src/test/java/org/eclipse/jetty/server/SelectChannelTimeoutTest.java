@@ -24,14 +24,14 @@ import java.net.Socket;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.IO;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 {
-    
-    @Before
-    public void init() throws Exception
+
+    @BeforeClass
+    public static void init() throws Exception
     {
         SelectChannelConnector connector = new SelectChannelConnector();
         connector.setMaxIdleTime(MAX_IDLE_TIME); // 250 msec max idle
@@ -52,7 +52,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         _handler.setResumeAfter(25);
          assertTrue(process(null).toUpperCase().contains("RESUMED"));
     }
-    
+
     @Test
     public void testIdleTimeoutAfterTimeout() throws Exception
     {
@@ -62,13 +62,13 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         session.setHandler(_handler);
         _server.setHandler(session);
         _server.start();
-        
+
         _handler.setSuspendFor(50);
         assertTrue(process(null).toUpperCase().contains("TIMEOUT"));
     }
-    
+
     @Test
-    public void testIdleTimeoutAfterComplete() throws Exception 
+    public void testIdleTimeoutAfterComplete() throws Exception
     {
         SuspendHandler _handler = new SuspendHandler();
         _server.stop();
@@ -76,13 +76,13 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         session.setHandler(_handler);
         _server.setHandler(session);
         _server.start();
-        
+
         _handler.setSuspendFor(100);
         _handler.setCompleteAfter(25);
         assertTrue(process(null).toUpperCase().contains("COMPLETED"));
     }
 
-    private synchronized String process(String content) throws UnsupportedEncodingException, IOException, InterruptedException 
+    private synchronized String process(String content) throws UnsupportedEncodingException, IOException, InterruptedException
     {
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n";
 
