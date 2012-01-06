@@ -39,6 +39,9 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
     protected static final int MAX_IDLE_TIME=250;
+    private int sleepTime = MAX_IDLE_TIME + MAX_IDLE_TIME/5;
+    private int minimumTestRuntime = MAX_IDLE_TIME-MAX_IDLE_TIME/5;
+    private int maximumTestRuntime = MAX_IDLE_TIME*10;
 
     static
     {
@@ -68,11 +71,11 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         long start = System.currentTimeMillis();
         IO.toString(is);
 
-        Thread.sleep(300);
+        Thread.sleep(sleepTime);
         assertEquals(-1, is.read());
 
-        Assert.assertTrue(System.currentTimeMillis()-start>200);
-        Assert.assertTrue(System.currentTimeMillis()-start<5000);
+        Assert.assertTrue(System.currentTimeMillis()-start>minimumTestRuntime);
+        Assert.assertTrue(System.currentTimeMillis()-start<maximumTestRuntime);
     }
 
     @Test
@@ -101,11 +104,11 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         long start = System.currentTimeMillis();
         IO.toString(is);
 
-        Thread.sleep(300);
+        Thread.sleep(sleepTime);
         assertEquals(-1, is.read());
 
-        Assert.assertTrue(System.currentTimeMillis()-start>200);
-        Assert.assertTrue(System.currentTimeMillis()-start<5000);
+        Assert.assertTrue(System.currentTimeMillis()-start>minimumTestRuntime);
+        Assert.assertTrue(System.currentTimeMillis()-start<maximumTestRuntime);
     }
 
     @Test
@@ -126,7 +129,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 {}
                 super.handle(target,baseRequest,request,response);
             }
-            
+
         });
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
@@ -151,14 +154,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         // read the response
         String result=IO.toString(is);
         Assert.assertThat("OK",result,containsString("200 OK"));
-        
+
         // check client reads EOF
         assertEquals(-1, is.read());
 
         // wait for idle timeout
         TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
 
-        
+
         // further writes will get broken pipe or similar
         try
         {
@@ -199,7 +202,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 {}
                 super.handle(target,baseRequest,request,response);
             }
-            
+
         });
         Socket client=newSocket(HOST,_connector.getLocalPort());
         client.setSoTimeout(10000);
@@ -220,10 +223,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         "\r\n").getBytes("utf-8"));
         os.write(contentB);
         os.flush();
-        
+
         // Get the server side endpoint
         EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
-        
+
         // read the response
         IO.toString(is);
 
@@ -232,7 +235,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         TimeUnit.MILLISECONDS.sleep(MAX_IDLE_TIME+MAX_IDLE_TIME/2);
 
-        
+
         // further writes will get broken pipe or similar
         try
         {
@@ -251,7 +254,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             // expected
         }
-        
+
         // check the server side is closed
         Assert.assertFalse(endp.isOpen());
     }
@@ -266,7 +269,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         InputStream is=client.getInputStream();
         assertFalse(client.isClosed());
 
-        Thread.sleep(500);
+        Thread.sleep(sleepTime);
         long start = System.currentTimeMillis();
         try
         {
@@ -281,7 +284,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         {
             e.printStackTrace();
         }
-        Assert.assertTrue(System.currentTimeMillis()-start<5000);
+        Assert.assertTrue(System.currentTimeMillis()-start<maximumTestRuntime);
 
     }
 
