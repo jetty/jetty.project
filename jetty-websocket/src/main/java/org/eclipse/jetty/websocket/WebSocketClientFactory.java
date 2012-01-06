@@ -208,6 +208,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     protected void doStop() throws Exception
     {
         closeConnections();
+        super.doStop();
     }
 
     /* ------------------------------------------------------------ */
