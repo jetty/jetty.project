@@ -126,10 +126,10 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     }
                     else if (_request.getAsyncContinuation().isAsyncStarted())
                     {
-                        // The request is suspended, so even though progress has been made, break the while loop
+                        // The request is suspended, so even though progress has been made, 
+                        // exit the while loop by setting progress to false
                         LOG.debug("suspended {}",this);
-                        // TODO: breaking inside finally blocks is bad: rethink how we should exit from here
-                        break;
+                        progress=false;
                     }
                 }
             }
