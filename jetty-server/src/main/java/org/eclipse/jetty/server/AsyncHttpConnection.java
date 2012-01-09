@@ -146,7 +146,8 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 _generator.returnBuffers();
             }
             
-            if (_request.getAsyncContinuation().isComplete() || _request.getAsyncContinuation().isInitial())
+            // reenable idle checking unless request is suspended
+            if(!_request.getAsyncContinuation().isAsyncStarted())
             {
                 _asyncEndp.setCheckForIdle(true);
             }
