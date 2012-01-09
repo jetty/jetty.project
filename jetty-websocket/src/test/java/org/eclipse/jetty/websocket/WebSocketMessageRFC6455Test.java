@@ -15,8 +15,6 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
-import static org.junit.Assert.*;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,11 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-
 import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.Assert;
-
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -47,6 +43,10 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class WebSocketMessageRFC6455Test
 {
@@ -78,7 +78,7 @@ public class WebSocketMessageRFC6455Test
             }
         };
         wsHandler.getWebSocketFactory().setBufferSize(8192);
-        wsHandler.getWebSocketFactory().setMaxIdleTime(1000); 
+        wsHandler.getWebSocketFactory().setMaxIdleTime(1000);
         wsHandler.setHandler(new DefaultHandler());
         __server.setHandler(wsHandler);
         __server.start();
@@ -91,13 +91,13 @@ public class WebSocketMessageRFC6455Test
         __server.join();
     }
 
-    
+
     @Test
     public void testHash()
     {
         assertEquals("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",WebSocketConnectionRFC6455.hashKey("dGhlIHNhbXBsZSBub25jZQ=="));
     }
-    
+
     @Test
     public void testServerSendBigStringMessage() throws Exception
     {
@@ -119,7 +119,7 @@ public class WebSocketMessageRFC6455Test
         socket.setSoTimeout(1000);
 
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -127,7 +127,7 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         // Server sends a big message
         StringBuilder message = new StringBuilder();
         String text = "0123456789ABCDEF";
@@ -167,7 +167,7 @@ public class WebSocketMessageRFC6455Test
         socket.setSoTimeout(1000);
 
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -175,7 +175,7 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         assertEquals(0x81,input.read());
         assertEquals(0x0f,input.read());
         lookFor("sent on connect",input);
@@ -312,8 +312,8 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
-        
+
+
         // Server sends a big message
         String text = "0123456789ABCDEF ";
         text=text+text+text+text;
@@ -324,15 +324,15 @@ public class WebSocketMessageRFC6455Test
         deflater.setInput(data);
         deflater.finish();
         byte[] buf=new byte[data.length];
-        
+
         buf[0]=(byte)((byte)0x7e);
         buf[1]=(byte)(data.length>>8);
         buf[2]=(byte)(data.length&0xff);
-        
+
         int l=deflater.deflate(buf,3,buf.length-3);
 
         assertTrue(deflater.finished());
-        
+
         output.write(0xC1);
         output.write((byte)(0x80|(0xff&(l+3))));
         output.write(0x00);
@@ -341,41 +341,41 @@ public class WebSocketMessageRFC6455Test
         output.write(0x00);
         output.write(buf,0,l+3);
         output.flush();
-        
+
         assertEquals(0x40+WebSocketConnectionRFC6455.OP_TEXT,input.read());
         assertEquals(0x20+3,input.read());
         assertEquals(0x7e,input.read());
         assertEquals(0x02,input.read());
         assertEquals(0x20,input.read());
-        
+
         byte[] raw = new byte[32];
         assertEquals(32,input.read(raw));
-        
+
         Inflater inflater = new Inflater();
         inflater.setInput(raw);
-        
+
         byte[] result = new byte[544];
         assertEquals(544,inflater.inflate(result));
         assertEquals(TypeUtil.toHexString(data,0,544),TypeUtil.toHexString(result));
-        
+
 
         assertEquals((byte)0xC0,(byte)input.read());
         assertEquals(0x21+3,input.read());
         assertEquals(0x7e,input.read());
         assertEquals(0x02,input.read());
         assertEquals(0x21,input.read());
-        
+
         assertEquals(32,input.read(raw));
-        
+
         inflater.reset();
         inflater.setInput(raw);
         result = new byte[545];
         assertEquals(545,inflater.inflate(result));
         assertEquals(TypeUtil.toHexString(data,544,545),TypeUtil.toHexString(result));
-        
+
 
     }
-    
+
     @Test
     public void testServerEcho() throws Exception
     {
@@ -403,10 +403,10 @@ public class WebSocketMessageRFC6455Test
             output.write(bytes[i]^0xff);
         output.flush();
         // Make sure the read times out if there are problems with the implementation
-        socket.setSoTimeout(1000); 
+        socket.setSoTimeout(1000);
 
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -414,12 +414,12 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         assertEquals(0x84,input.read());
         assertEquals(0x0f,input.read());
         lookFor("this is an echo",input);
     }
-    
+
     @Test
     public void testBlockedConsumer() throws Exception
     {
@@ -436,7 +436,7 @@ public class WebSocketMessageRFC6455Test
         mesg[5]=(byte)0xff;
         for (int i=0;i<bytes.length;i++)
             mesg[6+i]=(byte)(bytes[i]^0xff);
-        
+
         final int count = 100000;
 
         output.write(
@@ -489,7 +489,7 @@ public class WebSocketMessageRFC6455Test
                 }
             }
         }.start();
-        
+
         // Send enough messages to fill receive buffer
         long max=0;
         long start=System.currentTimeMillis();
@@ -500,7 +500,7 @@ public class WebSocketMessageRFC6455Test
             {
                 // System.err.println(">>> "+i);
                 output.flush();
-                
+
                 long now=System.currentTimeMillis();
                 long duration=now-start;
                 start=now;
@@ -518,13 +518,13 @@ public class WebSocketMessageRFC6455Test
         assertEquals(count+1,__textCount.get()); // all messages
         assertTrue(max>2000); // was blocked
     }
-    
+
     @Test
     public void testBlockedProducer() throws Exception
     {
         final Socket socket = new Socket("localhost", __connector.getLocalPort());
         OutputStream output = socket.getOutputStream();
-        
+
         final int count = 100000;
 
         output.write(
@@ -581,8 +581,8 @@ public class WebSocketMessageRFC6455Test
                 }
             }
         }.start();
-        
-        
+
+
         // Send enough messages to fill receive buffer
         long max=0;
         long start=System.currentTimeMillis();
@@ -593,7 +593,7 @@ public class WebSocketMessageRFC6455Test
             if (i%100==0)
             {
                 output.flush();
-                
+
                 long now=System.currentTimeMillis();
                 long duration=now-start;
                 start=now;
@@ -601,10 +601,10 @@ public class WebSocketMessageRFC6455Test
                     max=duration;
             }
         }
-        
+
         while(totalB.get()<(count*(mesg.length()+2)))
             Thread.sleep(100);
-        
+
         assertEquals(count*(mesg.length()+2),totalB.get()); // all messages
         assertTrue(max>1000); // was blocked
     }
@@ -635,7 +635,7 @@ public class WebSocketMessageRFC6455Test
         output.flush();
 
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -668,7 +668,7 @@ public class WebSocketMessageRFC6455Test
 
         socket.setSoTimeout(1000);
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -676,10 +676,10 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         __serverWebSocket.getConnection().setMaxTextMessageSize(10*1024);
         __serverWebSocket.getConnection().setAllowFrameFragmentation(true);
-        
+
         output.write(0x81);
         output.write(0x80|0x7E);
         output.write((byte)((16*1024)>>8));
@@ -692,7 +692,7 @@ public class WebSocketMessageRFC6455Test
         for (int i=0;i<(16*1024);i++)
             output.write('X');
         output.flush();
-        
+
 
         assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(33,input.read());
@@ -720,7 +720,7 @@ public class WebSocketMessageRFC6455Test
 
         socket.setSoTimeout(1000);
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -728,9 +728,9 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         __serverWebSocket.getConnection().setMaxTextMessageSize(15);
-        
+
         output.write(0x01);
         output.write(0x8a);
         output.write(0xff);
@@ -779,7 +779,7 @@ public class WebSocketMessageRFC6455Test
 
         socket.setSoTimeout(100000);
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -787,9 +787,9 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         __serverWebSocket.getConnection().setMaxTextMessageSize(15);
-        
+
         output.write(0x01);
         output.write(0x94);
         output.write(0xff);
@@ -800,9 +800,9 @@ public class WebSocketMessageRFC6455Test
         for (int i=0;i<bytes.length;i++)
             output.write(bytes[i]^0xff);
         output.flush();
-        
-        
-        
+
+
+
         assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(30,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
@@ -829,7 +829,7 @@ public class WebSocketMessageRFC6455Test
 
         socket.setSoTimeout(1000);
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -838,7 +838,7 @@ public class WebSocketMessageRFC6455Test
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
         __serverWebSocket.getConnection().setMaxBinaryMessageSize(1024);
-        
+
         output.write(WebSocketConnectionRFC6455.OP_BINARY);
         output.write(0x8a);
         output.write(0xff);
@@ -859,12 +859,12 @@ public class WebSocketMessageRFC6455Test
         for (int i=0;i<bytes.length;i++)
             output.write(bytes[i]^0xff);
         output.flush();
-        
+
         assertEquals(0x80+WebSocketConnectionRFC6455.OP_BINARY,input.read());
         assertEquals(20,input.read());
         lookFor("01234567890123456789",input);
     }
-    
+
     @Test
     public void testMaxBinarySize() throws Exception
     {
@@ -884,7 +884,7 @@ public class WebSocketMessageRFC6455Test
 
         socket.setSoTimeout(100000);
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -892,9 +892,9 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
-        
+
         output.write(0x02);
         output.write(0x8a);
         output.write(0xff);
@@ -916,20 +916,20 @@ public class WebSocketMessageRFC6455Test
             output.write(bytes[i]^0xff);
         output.flush();
 
-        
+
         assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(19,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
         assertEquals(WebSocketConnectionRFC6455.CLOSE_MESSAGE_TOO_LARGE,code);
         lookFor("Message size > 15",input);
     }
-    
-    
+
+
 
     @Test
     public void testCloseIn() throws Exception
     {
-        int[][] tests = 
+        int[][] tests =
         {
                 {-1,0,-1},
                 {-1,0,-1},
@@ -960,7 +960,7 @@ public class WebSocketMessageRFC6455Test
                 "",
                 "mesg"
         };
-        
+
         String[] resp =
         {
                 "",
@@ -1007,14 +1007,14 @@ public class WebSocketMessageRFC6455Test
 
             int code=tests[t][0];
             String m=mesg[t];
-            
+
             output.write(0x88);
             output.write(0x80 + (code<=0?0:(2+m.length())));
             output.write(0x00);
             output.write(0x00);
             output.write(0x00);
             output.write(0x00);
-            
+
             if (code>0)
             {
                 output.write(code/0x100);
@@ -1022,12 +1022,12 @@ public class WebSocketMessageRFC6455Test
                 output.write(m.getBytes());
             }
             output.flush();
-            
+
             __serverWebSocket.awaitDisconnected(1000);
 
             byte[] buf = new byte[128];
             int len = input.read(buf);
-                        
+
             assertEquals(tst,2+tests[t][1],len);
             assertEquals(tst,(byte)0x88,buf[0]);
 
@@ -1035,7 +1035,7 @@ public class WebSocketMessageRFC6455Test
             {
                 code=(0xff&buf[2])*0x100+(0xff&buf[3]);
                 assertEquals(tst,tests[t][2],code);
-                
+
                 if (len>4)
                 {
                     m = new String(buf,4,len-4,"UTF-8");
@@ -1044,19 +1044,19 @@ public class WebSocketMessageRFC6455Test
             }
             else
                 assertEquals(tst,tests[t][2],-1);
-            
+
 
             len = input.read(buf);
             assertEquals(tst,-1,len);
         }
     }
-    
+
 
 
     @Test
     public void testCloseOut() throws Exception
     {
-        int[][] tests = 
+        int[][] tests =
         {
                 {-1,0,-1},
                 {-1,0,-1},
@@ -1127,7 +1127,7 @@ public class WebSocketMessageRFC6455Test
             {
                 int code=(0xff&buf[2])*0x100+(0xff&buf[3]);
                 assertEquals(tst,tests[t][2],code);
-                
+
                 if (len>4)
                 {
                     String m = new String(buf,4,len-4,"UTF-8");
@@ -1136,7 +1136,7 @@ public class WebSocketMessageRFC6455Test
             }
             else
                 assertEquals(tst,tests[t][2],-1);
-            
+
             try
             {
                 output.write(0x88);
@@ -1152,12 +1152,12 @@ public class WebSocketMessageRFC6455Test
                 System.err.println("socket "+socket);
                 throw e;
             }
-            
+
             len = input.read(buf);
             assertEquals(tst,-1,len);
-        }  
+        }
     }
-    
+
 
     @Test
     public void testNotUTF8() throws Exception
@@ -1225,7 +1225,7 @@ public class WebSocketMessageRFC6455Test
 
         socket.setSoTimeout(100000);
         InputStream input = socket.getInputStream();
-        
+
         lookFor("HTTP/1.1 101 Switching Protocols\r\n",input);
         skipTo("Sec-WebSocket-Accept: ",input);
         lookFor("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",input);
@@ -1233,9 +1233,9 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         __serverWebSocket.getConnection().setMaxBinaryMessageSize(15);
-        
+
         output.write(0x02);
         output.write(0x94);
         output.write(0xff);
@@ -1246,7 +1246,7 @@ public class WebSocketMessageRFC6455Test
         for (int i=0;i<bytes.length;i++)
             output.write(bytes[i]^0xff);
         output.flush();
-        
+
         assertEquals(0x80|WebSocketConnectionRFC6455.OP_CLOSE,input.read());
         assertEquals(19,input.read());
         int code=(0xff&input.read())*0x100+(0xff&input.read());
@@ -1283,7 +1283,7 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         assertEquals(0x81,input.read());
         assertEquals(0x0f,input.read());
         lookFor("sent on connect",input);
@@ -1302,8 +1302,8 @@ public class WebSocketMessageRFC6455Test
         output.write(0xff);
         output.write(0xff);
         output.flush();
-        
-        
+
+
         assertTrue(__serverWebSocket.awaitDisconnected(5000));
         try
         {
@@ -1346,12 +1346,12 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         assertEquals(0x81,input.read());
         assertEquals(0x0f,input.read());
         lookFor("sent on connect",input);
         socket.close();
-        
+
         assertTrue(__serverWebSocket.awaitDisconnected(500));
 
         try
@@ -1362,7 +1362,7 @@ public class WebSocketMessageRFC6455Test
         catch(IOException e)
         {
             assertTrue(true);
-        }    
+        }
     }
 
     @Test
@@ -1395,19 +1395,19 @@ public class WebSocketMessageRFC6455Test
 
         assertTrue(__serverWebSocket.awaitConnected(1000));
         assertNotNull(__serverWebSocket.connection);
-        
+
         assertEquals(0x81,input.read());
         assertEquals(0x0f,input.read());
         lookFor("sent on connect",input);
-        
+
         socket.shutdownOutput();
-        
+
         assertTrue(__serverWebSocket.awaitDisconnected(500));
 
         assertEquals(0x88,input.read());
         assertEquals(0x00,input.read());
         assertEquals(-1,input.read());
-        
+
         // look for broken pipe
         try
         {
@@ -1420,24 +1420,24 @@ public class WebSocketMessageRFC6455Test
             // expected
         }
     }
-    
-    
-    
+
+
+
     @Test
     public void testParserAndGenerator() throws Exception
     {
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
         final AtomicReference<String> received = new AtomicReference<String>();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        
+
         WebSocketGeneratorRFC6455 gen = new WebSocketGeneratorRFC6455(new WebSocketBuffers(8096),endp,null);
-        
+
         byte[] data = message.getBytes(StringUtil.__UTF8);
         gen.addFrame((byte)0x8,(byte)0x4,data,0,data.length);
-        
+
         endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
-                
-        WebSocketParserD13 parser = new WebSocketParserD13(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
+
+        WebSocketParserRFC6455 parser = new WebSocketParserRFC6455(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
         {
             public void onFrame(byte flags, byte opcode, Buffer buffer)
             {
@@ -1449,12 +1449,12 @@ public class WebSocketMessageRFC6455Test
             }
 
         },false);
-        
+
         parser.parseNext();
-        
+
         assertEquals(message,received.get());
     }
-    
+
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
@@ -1463,14 +1463,14 @@ public class WebSocketMessageRFC6455Test
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
 
         MaskGen maskGen = new RandomMaskGen();
-        
+
         WebSocketGeneratorRFC6455 gen = new WebSocketGeneratorRFC6455(new WebSocketBuffers(8096),endp,maskGen);
         byte[] data = message.getBytes(StringUtil.__UTF8);
         gen.addFrame((byte)0x8,(byte)0x1,data,0,data.length);
-        
+
         endp = new ByteArrayEndPoint(endp.getOut().asArray(),4096);
-                
-        WebSocketParserD13 parser = new WebSocketParserD13(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
+
+        WebSocketParserRFC6455 parser = new WebSocketParserRFC6455(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
         {
             public void onFrame(byte flags, byte opcode, Buffer buffer)
             {
@@ -1481,13 +1481,13 @@ public class WebSocketMessageRFC6455Test
             {
             }
         },true);
-        
+
         parser.parseNext();
-        
+
         assertEquals(message,received.get());
     }
-    
-    
+
+
     private void lookFor(String string,InputStream in)
         throws IOException
     {
@@ -1535,7 +1535,7 @@ public class WebSocketMessageRFC6455Test
                 state=0;
         }
     }
-    
+
 
     private static class TestWebSocket implements WebSocket.OnFrame, WebSocket.OnBinaryMessage, WebSocket.OnTextMessage
     {
@@ -1556,7 +1556,7 @@ public class WebSocketMessageRFC6455Test
         {
             this.connection = connection;
         }
-        
+
         public void onOpen(Connection connection)
         {
             if (_onConnect)
@@ -1582,14 +1582,14 @@ public class WebSocketMessageRFC6455Test
         {
             return disconnected.await(time, TimeUnit.MILLISECONDS);
         }
-        
+
         public void onClose(int code,String message)
         {
             disconnected.countDown();
         }
 
         public boolean onFrame(byte flags, byte opcode, byte[] data, int offset, int length)
-        {            
+        {
             if (_echo)
             {
                 switch(opcode)
@@ -1598,7 +1598,7 @@ public class WebSocketMessageRFC6455Test
                     case WebSocketConnectionRFC6455.OP_PING:
                     case WebSocketConnectionRFC6455.OP_PONG:
                         break;
-                        
+
                     default:
                         try
                         {
@@ -1642,7 +1642,7 @@ public class WebSocketMessageRFC6455Test
                     e.printStackTrace();
                 }
             }
-            
+
             if (_aggregate)
             {
                 try
