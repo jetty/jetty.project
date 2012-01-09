@@ -6,7 +6,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-boot-logback</artifactId>
   <name>Jetty :: OSGi :: Boot Logback</name>
   <description>Jetty OSGi Boot Logback bundle</description>
