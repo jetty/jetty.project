@@ -1027,12 +1027,11 @@ public class Request implements HttpServletRequest
                             try
                             {
                                 if (_connection != null)
-                                    _connection._generator.sendError(HttpStatus.BAD_REQUEST_400,"Port couldn't be parsed from Host header: " + hostPort,null,
-                                            true);
+                                    _connection._generator.sendError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null,true);
                             }
                             catch (IOException e1)
                             {
-                                throw new IllegalArgumentException("IOException caught while trying to send error due to invalid host header: " + hostPort,e1);
+                                throw new RuntimeException(e1);
                             }
                         }
                         return _serverName;
