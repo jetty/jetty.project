@@ -1080,7 +1080,7 @@ public class Main
         }
         catch (IOException e)
         {
-            // usageExit(e,ERR_UNKNOWN);
+            usageExit(e,ERR_UNKNOWN);
         }
         finally
         {
