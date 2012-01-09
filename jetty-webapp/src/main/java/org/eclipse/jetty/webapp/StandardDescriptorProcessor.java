@@ -1254,7 +1254,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         context.setResourceAlias(uri, location);
         
-        JspConfig config = (JspConfig)context.getServletHandler().getServletContext().getJspConfigDescriptor();
+        JspConfig config = (JspConfig)context.getServletContext().getJspConfigDescriptor();
         if (config == null)
         {
             config = new JspConfig();
