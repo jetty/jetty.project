@@ -31,7 +31,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,8 +87,7 @@ public class ProxyRuleTest
     @Test
     public void testProxy() throws Exception
     {
-        Log.getLogger("org.eclipse.jetty.client").setDebugEnabled(true);
-        
+
         ContentExchange exchange = new ContentExchange(true);
         exchange.setMethod(HttpMethods.GET);
         String body = "BODY";

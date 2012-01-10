@@ -188,7 +188,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         {
             LifeCycle l=(LifeCycle)o;
 
-            if (joined && isRunning())
+            if (joined && isStarted())
             {
                 try
                 {

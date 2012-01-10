@@ -35,13 +35,14 @@ import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Timeout;
 import org.eclipse.jetty.util.thread.Timeout.Task;
 
-class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector, Dumpable
+class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector, Dumpable
 {
     private static final Logger LOG = Log.getLogger(SelectConnector.class);
 
@@ -49,39 +50,15 @@ class SelectConnector extends AbstractLifeCycle implements HttpClient.Connector,
     private final Manager _selectorManager=new Manager();
     private final Map<SocketChannel, Timeout.Task> _connectingChannels = new ConcurrentHashMap<SocketChannel, Timeout.Task>();
 
+    /* ------------------------------------------------------------ */
     /**
      * @param httpClient the HttpClient this connector is associated to
      */
     SelectConnector(HttpClient httpClient)
     {
         _httpClient = httpClient;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-
-        _selectorManager.start();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStop() throws Exception
-    {
-        _selectorManager.stop();
-    }
-
-    public String dump()
-    {
-        return AggregateLifeCycle.dump(this);
-    }
-
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(String.valueOf(this)).append("\n");
-        AggregateLifeCycle.dump(out, indent, Arrays.asList(_selectorManager));
+        addBean(_httpClient,false);
+        addBean(_selectorManager,true);
     }
 
     /* ------------------------------------------------------------ */

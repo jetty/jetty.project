@@ -938,7 +938,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 final ArrayList<Object> dump = new ArrayList<Object>(selector.keys().size()*2);
                 dump.add(where);
 
-                /*
                 final CountDownLatch latch = new CountDownLatch(1);
 
                 addChange(new ChangeTask()
@@ -958,7 +957,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     LOG.ignore(e);
                 }
-                */
                 
                 AggregateLifeCycle.dump(out,indent,dump);
             }
