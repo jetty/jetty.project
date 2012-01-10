@@ -321,7 +321,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
             _acceptorThread = new Thread[getAcceptors()];
 
             for (int i = 0; i < _acceptorThread.length; i++)
-                _threadPool.dispatch(new Acceptor(i));
+                if (!_threadPool.dispatch(new Acceptor(i)))
+                    throw new IllegalStateException("!accepting");
             if (_threadPool.isLowOnThreads())
                 LOG.warn("insufficient threads configured for {}",this);
         }
