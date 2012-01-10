@@ -45,7 +45,6 @@ import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -68,7 +67,6 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     private final Queue<WebSocketConnection> connections = new ConcurrentLinkedQueue<WebSocketConnection>();
     private final SslContextFactory _sslContextFactory = new SslContextFactory();
     private final ThreadPool _threadPool;
-    private final boolean _shutdownThreadPool;
     private final WebSocketClientSelector _selector;
     private MaskGen _maskGen;
     private WebSocketBuffers _buffers;
@@ -117,16 +115,9 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     public WebSocketClientFactory(ThreadPool threadPool, MaskGen maskGen, int bufferSize)
     {
         if (threadPool == null)
-        {
-            _threadPool = new QueuedThreadPool();
-            addBean(_threadPool);
-            _shutdownThreadPool = true;
-        }
-        else
-        {
-            _threadPool = threadPool;
-            _shutdownThreadPool = false;
-        }
+            threadPool = new QueuedThreadPool();
+        _threadPool = threadPool;
+        addBean(_threadPool);
 
         _buffers = new WebSocketBuffers(bufferSize);
         addBean(_buffers);
@@ -224,8 +215,6 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     {
         closeConnections();
         super.doStop();
-        if (_shutdownThreadPool && _threadPool instanceof LifeCycle)
-            ((LifeCycle)_threadPool).stop();
     }
 
     /* ------------------------------------------------------------ */
