@@ -453,7 +453,10 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
         super.doStop();
 
         if (_threadPool instanceof LocalQueuedThreadPool)
+        {
             removeBean(_threadPool);
+            _threadPool = null;
+        }
 
         removeBean(_connector);
     }
