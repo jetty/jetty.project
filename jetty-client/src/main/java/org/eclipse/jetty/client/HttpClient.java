@@ -16,13 +16,11 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.client.security.Authentication;
@@ -99,7 +97,7 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
 
     private AttributesMap _attributes=new AttributesMap();
 
-    private final HttpBuffersImpl _buffers= new HttpBuffersImpl(); 
+    private final HttpBuffersImpl _buffers= new HttpBuffersImpl();
 
     /* ------------------------------------------------------------------------------- */
     private void setBufferTypes()
@@ -133,7 +131,6 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
         _sslContextFactory = sslContextFactory;
         addBean(_sslContextFactory);
         addBean(_buffers);
-        setBufferTypes();
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -169,16 +166,6 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
      */
     public ThreadPool getThreadPool()
     {
-        if (_threadPool==null)
-        {
-            QueuedThreadPool pool = new QueuedThreadPool();
-            pool.setMaxThreads(16);
-            pool.setDaemon(true);
-            pool.setName("HttpClient");
-            _threadPool = pool;
-            addBean(_threadPool,true);
-        }
-
         return _threadPool;
     }
 
@@ -418,15 +405,21 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
         _idleTimeoutQ.setDuration(_idleTimeout);
         _idleTimeoutQ.setNow();
 
-        if (_threadPool == null)
-            getThreadPool();
+        if (_threadPool==null)
+        {
+            QueuedThreadPool pool = new LocalQueuedThreadPool();
+            pool.setMaxThreads(16);
+            pool.setDaemon(true);
+            pool.setName("HttpClient");
+            _threadPool = pool;
+            addBean(_threadPool,true);
+        }
 
-        
         _connector=(_connectorType == CONNECTOR_SELECT_CHANNEL)?new SelectConnector(this):new SocketConnector(this);
         addBean(_connector,true);
-        
+
         super.doStart();
-        
+
         _threadPool.dispatch(new Runnable()
         {
             public void run()
@@ -439,7 +432,7 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
                     {
                         Thread.sleep(200);
                     }
-                    catch (InterruptedException e)
+                    catch (InterruptedException ignored)
                     {
                     }
                 }
@@ -448,24 +441,20 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     }
 
     /* ------------------------------------------------------------ */
-    long getNow()
-    {
-        return _timeoutQ.getNow();
-    }
-
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
         for (HttpDestination destination : _destinations.values())
-        {
             destination.close();
-        }
 
         _timeoutQ.cancelAll();
         _idleTimeoutQ.cancelAll();
+
         super.doStop();
-        _connector = null;
+
+        if (_threadPool instanceof LocalQueuedThreadPool)
+            removeBean(_threadPool);
+
         removeBean(_connector);
     }
 
@@ -638,8 +627,6 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
         _maxRedirects = redirects;
     }
 
-    
-    
     public int getRequestBufferSize()
     {
         return _buffers.getRequestBufferSize();
@@ -901,5 +888,9 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     public void setSecureRandomAlgorithm(String secureRandomAlgorithm)
     {
         _sslContextFactory.setSecureRandomAlgorithm(secureRandomAlgorithm);
+    }
+
+    private static class LocalQueuedThreadPool extends QueuedThreadPool
+    {
     }
 }
