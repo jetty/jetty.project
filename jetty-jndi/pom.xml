@@ -66,7 +66,6 @@
     <dependency>
       <groupId>javax.mail</groupId>
       <artifactId>mail</artifactId>
-      <version>${javax-mail-version}</version>
 	  <exclusions>
 	    <exclusion>
 		  <groupId>javax.activation</groupId>
