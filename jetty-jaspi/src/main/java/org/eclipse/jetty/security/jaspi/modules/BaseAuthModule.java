@@ -131,7 +131,6 @@ public class BaseAuthModule implements ServerAuthModule, ServerAuthContext
         if (credValidationCallback.getResult())
         {
             Set<LoginCallbackImpl> loginCallbacks = clientSubject.getPrivateCredentials(LoginCallbackImpl.class);
-            System.err.println("LoginCallbackImpls.isEmpty="+loginCallbacks.isEmpty());
             if (!loginCallbacks.isEmpty())
             {
                 LoginCallbackImpl loginCallback = loginCallbacks.iterator().next();
