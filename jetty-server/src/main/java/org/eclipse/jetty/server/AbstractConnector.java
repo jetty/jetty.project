@@ -18,7 +18,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HttpBuffers;
@@ -34,7 +33,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -87,7 +85,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     protected int _lowResourceMaxIdleTime = -1;
     protected int _soLingerTime = -1;
 
-    private transient Thread[] _acceptorThread;
+    private transient Thread[] _acceptorThreads;
 
     private final AtomicLong _statsStartedAt = new AtomicLong(-1L);
 
@@ -99,7 +97,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     private final SampleStatistic _connectionDurationStats = new SampleStatistic();
 
     protected final HttpBuffersImpl _buffers = new HttpBuffersImpl();
-    
+
     /* ------------------------------------------------------------ */
     /**
      */
@@ -312,15 +310,15 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
             _threadPool = _server.getThreadPool();
             addBean(_threadPool,false);
         }
-        
+
         super.doStart();
 
         // Start selector thread
         synchronized (this)
         {
-            _acceptorThread = new Thread[getAcceptors()];
+            _acceptorThreads = new Thread[getAcceptors()];
 
-            for (int i = 0; i < _acceptorThread.length; i++)
+            for (int i = 0; i < _acceptorThreads.length; i++)
                 if (!_threadPool.dispatch(new Acceptor(i)))
                     throw new IllegalStateException("!accepting");
             if (_threadPool.isLowOnThreads())
@@ -345,17 +343,16 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
 
         super.doStop();
 
-        Thread[] acceptors = null;
+        Thread[] acceptors;
         synchronized (this)
         {
-            acceptors = _acceptorThread;
-            _acceptorThread = null;
+            acceptors = _acceptorThreads;
+            _acceptorThreads = null;
         }
         if (acceptors != null)
         {
-            for (int i = 0; i < acceptors.length; i++)
+            for (Thread thread : acceptors)
             {
-                Thread thread = acceptors[i];
                 if (thread != null)
                     thread.interrupt();
             }
@@ -368,12 +365,12 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         Thread[] threads;
         synchronized(this)
         {
-            threads= _acceptorThread;
+            threads=_acceptorThreads;
         }
         if (threads != null)
-            for (int i = 0; i < threads.length; i++)
-                if (threads[i] != null)
-                    threads[i].join();
+            for (Thread thread : threads)
+                if (thread != null)
+                    thread.join();
     }
 
     /* ------------------------------------------------------------ */
@@ -792,8 +789,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     {
         _forwardedSslSessionIdHeader = forwardedSslSessionId;
     }
-    
-    
 
     public int getRequestBufferSize()
     {
@@ -889,13 +884,11 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     @Override
     public String toString()
     {
-        String name = this.getClass().getName();
-        int dot = name.lastIndexOf('.');
-        if (dot > 0)
-            name = name.substring(dot + 1);
-
-        return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort()) + " "
-                + AbstractLifeCycle.getState(this);
+        return String.format("%s@%s:%d %s",
+                getClass().getSimpleName(),
+                getHost()==null?"0.0.0.0":getHost(),
+                getLocalPort()<=0?getPort():getLocalPort(),
+                AbstractLifeCycle.getState(this));
     }
 
     /* ------------------------------------------------------------ */
@@ -917,11 +910,11 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
             String name;
             synchronized (AbstractConnector.this)
             {
-                if (_acceptorThread == null)
+                if (_acceptorThreads == null)
                     return;
 
-                _acceptorThread[_acceptor] = current;
-                name = _acceptorThread[_acceptor].getName();
+                _acceptorThreads[_acceptor] = current;
+                name = _acceptorThreads[_acceptor].getName();
                 current.setName(name + " Acceptor" + _acceptor + " " + AbstractConnector.this);
             }
             int old_priority = current.getPriority();
@@ -961,8 +954,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
 
                 synchronized (AbstractConnector.this)
                 {
-                    if (_acceptorThread != null)
-                        _acceptorThread[_acceptor] = null;
+                    if (_acceptorThreads != null)
+                        _acceptorThreads[_acceptor] = null;
                 }
             }
         }

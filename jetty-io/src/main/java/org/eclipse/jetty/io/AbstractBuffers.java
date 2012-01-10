@@ -2,7 +2,6 @@ package org.eclipse.jetty.io;
 
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
-import org.omg.stub.java.rmi._Remote_Stub;
 
 public abstract class AbstractBuffers implements Buffers
 {
@@ -59,7 +58,7 @@ public abstract class AbstractBuffers implements Buffers
         }
         throw new IllegalStateException();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Create a new content Buffer
@@ -78,7 +77,7 @@ public abstract class AbstractBuffers implements Buffers
        }
        throw new IllegalStateException();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Create a new content Buffer
@@ -142,10 +141,10 @@ public abstract class AbstractBuffers implements Buffers
         }
         return false;
     }
-    
+
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return this.getClass().getSimpleName()+"["+_headerSize+","+_bufferSize+"]";
+        return String.format("%s [%d,%d]", getClass().getSimpleName(), _headerSize, _bufferSize);
     }
 }
