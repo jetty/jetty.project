@@ -18,10 +18,8 @@ import java.net.SocketTimeoutException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.UnresolvedAddressException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -32,10 +30,8 @@ import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslConnection;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -428,11 +424,10 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
         {
             return _endp.isCheckForIdle();
         }
-        
+
         public String toString()
         {
             return "Upgradable:"+_endp.toString();
         }
-
     }
 }
