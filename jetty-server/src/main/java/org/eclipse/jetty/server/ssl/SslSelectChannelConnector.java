@@ -57,6 +57,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     public SslSelectChannelConnector(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
+        addBean(_sslContextFactory);
         setUseDirectBuffers(false);
         setSoLingerTime(30000);
     }
@@ -597,7 +598,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     protected void doStart() throws Exception
     {
         _sslContextFactory.checkKeyStore();
-
         _sslContextFactory.start();
 
         SSLEngine sslEngine = _sslContextFactory.newSslEngine();
@@ -627,7 +627,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected void doStop() throws Exception
     {
-        _sslContextFactory.stop();
         _sslBuffers=null;
         super.doStop();
     }

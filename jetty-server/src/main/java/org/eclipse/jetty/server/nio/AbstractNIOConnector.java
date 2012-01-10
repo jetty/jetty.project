@@ -27,10 +27,10 @@ import org.eclipse.jetty.server.AbstractConnector;
 public abstract class AbstractNIOConnector extends AbstractConnector implements NIOConnector
 {
     {
-        setRequestBufferType(Type.DIRECT);
-        setRequestHeaderType(Type.INDIRECT);
-        setResponseBufferType(Type.DIRECT);
-        setResponseHeaderType(Type.INDIRECT);
+        _buffers.setRequestBufferType(Type.DIRECT);
+        _buffers.setRequestHeaderType(Type.INDIRECT);
+        _buffers.setResponseBufferType(Type.DIRECT);
+        _buffers.setResponseHeaderType(Type.INDIRECT);
     }
  
     /* ------------------------------------------------------------------------------- */
@@ -46,8 +46,8 @@ public abstract class AbstractNIOConnector extends AbstractConnector implements 
      */
     public void setUseDirectBuffers(boolean direct)
     {
-        setRequestBufferType(direct?Type.DIRECT:Type.INDIRECT);
-        setResponseBufferType(direct?Type.DIRECT:Type.INDIRECT);
+        _buffers.setRequestBufferType(direct?Type.DIRECT:Type.INDIRECT);
+        _buffers.setResponseBufferType(direct?Type.DIRECT:Type.INDIRECT);
     }
 
 }

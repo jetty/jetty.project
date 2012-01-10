@@ -1521,5 +1521,11 @@ public class SslContextFactory extends AbstractLifeCycle
         
         sslEngine.setEnabledProtocols(selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols()));
     }
-    
+
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return this.getClass().getSimpleName()+"@"+Integer.toHexString(hashCode())+
+        "("+_keyStorePath+","+_trustStorePath+")#"+getState();
+    }
 }

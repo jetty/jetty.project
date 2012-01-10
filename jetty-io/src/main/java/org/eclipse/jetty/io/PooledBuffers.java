@@ -92,4 +92,13 @@ public class PooledBuffers extends AbstractBuffers
                 _others.add(buffer);    
         }
     }
+    
+    public String toString()
+    {
+        return this.getClass().getSimpleName()+
+        "["+
+        _headers.size()+"/"+_maxSize+"@"+_headerSize+","+
+        _buffers.size()+"/"+_maxSize+"@"+_bufferSize+","+
+        _others.size()+"/"+_maxSize+"@-]";
+    }
 }

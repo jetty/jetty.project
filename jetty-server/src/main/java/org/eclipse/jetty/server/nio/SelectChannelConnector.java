@@ -82,6 +82,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     public SelectChannelConnector()
     {
         _manager.setMaxIdleTime(getMaxIdleTime());
+        addBean(_manager,true);
         setAcceptors(Math.max(1,(Runtime.getRuntime().availableProcessors()+3)/4));
     }
 
@@ -111,7 +112,11 @@ public class SelectChannelConnector extends AbstractNIOConnector
         synchronized(this)
         {
             if (_acceptChannel != null)
-                _acceptChannel.close();
+            {
+                removeBean(_acceptChannel);
+                if (_acceptChannel.isOpen())
+                    _acceptChannel.close();
+            }
             _acceptChannel = null;
             _localPort=-2;
         }
@@ -177,6 +182,8 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 _localPort=_acceptChannel.socket().getLocalPort();
                 if (_localPort<=0)
                     throw new IOException("Server channel not bound");
+                
+                addBean(_acceptChannel);
 
             }
         }
@@ -250,7 +257,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
 
         super.doStart();
-        _manager.start();
     }
 
     /* ------------------------------------------------------------ */
@@ -260,20 +266,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     protected void doStop() throws Exception
     {
-        synchronized(this)
-        {
-            if(_manager.isRunning())
-            {
-                try
-                {
-                    _manager.stop();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
-            }
-        }
+        close();
         super.doStop();
     }
 
@@ -297,20 +290,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
         return new AsyncHttpConnection(SelectChannelConnector.this,endpoint,getServer());
     }
 
-    /* ------------------------------------------------------------ */
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        super.dump(out, indent);
-        ServerSocketChannel channel;
-        synchronized (this)
-        {
-            channel=_acceptChannel;
-        }
-        if (channel==null)
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(null,"CLOSED",_manager));
-        else
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(channel,channel.isOpen()?"OPEN":"CLOSED",_manager));
-    }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
