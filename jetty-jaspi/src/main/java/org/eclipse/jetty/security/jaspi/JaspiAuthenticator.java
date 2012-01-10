@@ -81,13 +81,6 @@ public class JaspiAuthenticator implements Authenticator
 
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {
-        System.err.println("\nJaspiAuthenticator.validateRequest, uri=" + ((javax.servlet.http.HttpServletRequest) request).getRequestURI()
-                           + " lazy="
-                           + _allowLazyAuthentication
-                           + " mandatory="
-                           + mandatory);
-        new Throwable().printStackTrace();
-  
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
         request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
 
@@ -96,16 +89,12 @@ public class JaspiAuthenticator implements Authenticator
         //if its not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
         if (_allowLazyAuthentication && !info.isAuthMandatory() && a == Authentication.UNAUTHENTICATED)
             a =_deferred;
-        
-        System.err.println("JaspiAuthenticator.validateRequest returning "+a);
         return a;
     }
 
     // most likely validatedUser is not needed here.
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
-        System.err.println("JaspiAuthenticator.secureResponse uri=" + ((javax.servlet.http.HttpServletRequest) req).getRequestURI());
-
         JaspiMessageInfo info = (JaspiMessageInfo) req.getAttribute("org.eclipse.jetty.security.jaspi.info");
         if (info == null) throw new NullPointerException("MessageInfo from request missing: " + req);
         return secureResponse(info, validatedUser);
@@ -116,14 +105,11 @@ public class JaspiAuthenticator implements Authenticator
     {
         try
         {
-            System.err.println("jaspAuthenticator.validateRequest(info)");
             String authContextId = _authConfig.getAuthContextID(messageInfo);
             ServerAuthContext authContext = _authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
             Subject clientSubject = new Subject();
 
             AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
-            // String authMethod =
-            // (String)messageInfo.getMap().get(JaspiMessageInfo.AUTH_METHOD_KEY);
 
             if (authStatus == AuthStatus.SEND_CONTINUE) return Authentication.SEND_CONTINUE;
             if (authStatus == AuthStatus.SEND_FAILURE) return Authentication.SEND_FAILURE;
@@ -188,8 +174,6 @@ public class JaspiAuthenticator implements Authenticator
         }
         catch (AuthException e)
         {
-            System.err.println("Error in JaspiAuthenticator.secureResponse");
-            e.printStackTrace();
             throw new ServerAuthException(e);
         }
     }

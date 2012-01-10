@@ -97,14 +97,10 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 
             Subject serviceSubject=findServiceSubject(server);
             String serverName=findServerName(server,serviceSubject);
-            
-            System.err.println("authconfigfactory="+authConfigFactory+" serviceSubject="+serviceSubject+" serverName="+serverName);
-            
             String appContext = serverName + " " + context.getContextPath();
             
-            System.err.println("appcontext="+appContext);
             AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER,appContext,listener);
-            System.err.println("authconfigProvider="+authConfigProvider);
+  
             if (authConfigProvider != null)
             {
                 ServletCallbackHandler servletCallbackHandler = new ServletCallbackHandler(loginService);

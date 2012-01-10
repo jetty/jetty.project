@@ -318,13 +318,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (!_loginServiceShared && _loginService instanceof LifeCycle)
             ((LifeCycle)_loginService).start();        
         
-        System.err.println("authenticator="+_authenticator+" authenticatorFactory="+_authenticatorFactory+" identityService="+_identityService);
         if (_authenticator==null && _authenticatorFactory!=null && _identityService!=null)
         {
             _authenticator=_authenticatorFactory.getAuthenticator(getServer(),ContextHandler.getCurrentContext(),this, _identityService, _loginService);
             if (_authenticator!=null)
                 _authMethod=_authenticator.getAuthMethod();
-            System.err.println("Called auth factory, authenticator="+_authenticator);
         }
 
         if (_authenticator==null)
@@ -479,7 +477,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     deferred.setIdentityService(_identityService);
                     deferred.setLoginService(_loginService);
                     baseRequest.setAuthentication(authentication);
-System.err.println("uri="+baseRequest.getUri()+" Auth is deferred");
+
                     try
                     {
                         handler.handle(pathInContext, baseRequest, request, response);
@@ -489,7 +487,7 @@ System.err.println("uri="+baseRequest.getUri()+" Auth is deferred");
                         previousIdentity = deferred.getPreviousAssociation();
                         deferred.setIdentityService(null);
                     }
-                    System.err.println("Securityhandler calling secureResponse, for Authentication.User");
+                   
                     Authentication auth=baseRequest.getAuthentication();
                     if (auth instanceof Authentication.User)
                     {
