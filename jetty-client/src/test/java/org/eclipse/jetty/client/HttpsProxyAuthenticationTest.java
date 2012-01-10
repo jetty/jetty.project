@@ -48,7 +48,8 @@ public class HttpsProxyAuthenticationTest
             @Override
             protected boolean handleAuthentication(HttpServletRequest request, HttpServletResponse response, String address) throws ServletException, IOException
             {
-                if (!request.getHeader("Authorization").isEmpty())
+                String authHeader = request.getHeader("Authorization");
+                if (authHeader != null && authHeader.length() > 0)
                     authHandlerSend = true;
                 return super.handleAuthentication(request,response,address);
             }

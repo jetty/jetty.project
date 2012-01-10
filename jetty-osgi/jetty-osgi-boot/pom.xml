@@ -6,7 +6,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-osgi-boot</artifactId>
   <name>Jetty :: OSGi :: Boot</name>
   <description>Jetty OSGi Boot bundle</description>

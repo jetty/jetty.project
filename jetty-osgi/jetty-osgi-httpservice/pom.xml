@@ -6,7 +6,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>jetty-httpservice</artifactId>
   <name>Jetty :: OSGi :: HttpService</name>
   <description>Jetty OSGi HttpService bundle</description>

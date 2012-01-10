@@ -35,6 +35,8 @@ public class WebSocketOverSSLTest
 {
     private Server _server;
     private int _port;
+    private QueuedThreadPool _threadPool;
+    private WebSocketClientFactory _wsFactory;
     private WebSocket.Connection _connection;
 
     private void startServer(final WebSocket webSocket) throws Exception
@@ -61,13 +63,18 @@ public class WebSocketOverSSLTest
     {
         Assert.assertTrue(_server.isStarted());
 
-        WebSocketClientFactory factory = new WebSocketClientFactory(new QueuedThreadPool(), new ZeroMaskGen());
-        SslContextFactory cf = factory.getSslContextFactory();
+        _threadPool = new QueuedThreadPool();
+        _threadPool.setName("wsc-" + _threadPool.getName());
+        _threadPool.start();
+
+        _wsFactory = new WebSocketClientFactory(_threadPool, new ZeroMaskGen());
+        SslContextFactory cf = _wsFactory.getSslContextFactory();
         cf.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        factory.start();
-        WebSocketClient client = new WebSocketClient(factory);
+        _wsFactory.start();
+
+        WebSocketClient client = new WebSocketClient(_wsFactory);
         _connection = client.open(new URI("wss://localhost:" + _port), webSocket).get(5, TimeUnit.SECONDS);
     }
 
@@ -76,6 +83,13 @@ public class WebSocketOverSSLTest
     {
         if (_connection != null)
             _connection.close();
+
+        if (_wsFactory != null)
+            _wsFactory.stop();
+
+        if (_threadPool != null)
+            _threadPool.stop();
+
         if (_server != null)
         {
             _server.stop();
