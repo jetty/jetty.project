@@ -19,7 +19,6 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -32,9 +31,6 @@ import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /* ------------------------------------------------------------------------------- */
@@ -65,8 +61,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class SelectChannelConnector extends AbstractNIOConnector
 {
-    private static final Logger LOG = Log.getLogger(SelectChannelConnector.class);
-
     protected ServerSocketChannel _acceptChannel;
     private int _lowResourcesConnections;
     private int _lowResourcesMaxIdleTime;
@@ -126,7 +120,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
-        AsyncEndPoint aEndp = ((AsyncEndPoint)endpoint);
         request.setTimeStamp(System.currentTimeMillis());
         endpoint.setMaxIdleTime(_maxIdleTime);
         super.customize(endpoint, request);
@@ -182,9 +175,8 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 _localPort=_acceptChannel.socket().getLocalPort();
                 if (_localPort<=0)
                     throw new IOException("Server channel not bound");
-                
-                addBean(_acceptChannel);
 
+                addBean(_acceptChannel);
             }
         }
     }
@@ -260,17 +252,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.AbstractConnector#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        close();
-        super.doStop();
-    }
-
-    /* ------------------------------------------------------------ */
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
         SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
@@ -336,5 +317,4 @@ public class SelectChannelConnector extends AbstractNIOConnector
             return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
         }
     }
-
 }
