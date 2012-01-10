@@ -74,8 +74,10 @@ public class WebSocketClientTest
     @Test
     public void testMessageBiggerThanBufferSize() throws Exception
     {
+        QueuedThreadPool threadPool = new QueuedThreadPool();
         int bufferSize = 512;
-        WebSocketClientFactory factory = new WebSocketClientFactory(new QueuedThreadPool(), new ZeroMaskGen(), bufferSize);
+        WebSocketClientFactory factory = new WebSocketClientFactory(threadPool, new ZeroMaskGen(), bufferSize);
+        threadPool.start();
         factory.start();
         WebSocketClient client = new WebSocketClient(factory);
 
@@ -118,6 +120,7 @@ public class WebSocketClientTest
         Assert.assertTrue(dataLatch.await(1000, TimeUnit.SECONDS));
 
         factory.stop();
+        threadPool.stop();
     }
 
     @Test

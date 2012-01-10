@@ -36,7 +36,9 @@ import javax.servlet.http.HttpSessionBindingListener;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.eclipse.jetty.security.CrossContextPsuedoSession;
+import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -146,37 +148,50 @@ public class FormAuthModule extends BaseAuthModule
     @Override
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
+       
         HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
-        HttpSession session = request.getSession(isMandatory(messageInfo));
-        String uri = request.getPathInfo();
-        // not mandatory and not authenticated
-        if (session == null || isLoginOrErrorPage(uri)) return AuthStatus.SUCCESS;
+        String uri = request.getRequestURI();
+        if (uri==null)
+            uri=URIUtil.SLASH;
+        
+        boolean mandatory = isMandatory(messageInfo);  
+        mandatory |= isJSecurityCheck(uri);
+        HttpSession session = request.getSession(mandatory);
+       
+        System.err.println("FormAuthModule.validateRequest(info,subject,serviceSubject) for uri="+uri+" mandatory="+mandatory+" isLoginOrError="+isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())));
+        
+        // not mandatory or its the login or login error page don't authenticate
+        if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) return AuthStatus.SUCCESS;
 
         try
         {
             // Handle a request for authentication.
-            // TODO perhaps j_securitycheck can be uri suffix?
-            if (uri.endsWith(__J_SECURITY_CHECK))
+            if (isJSecurityCheck(uri))
             {
-
                 final String username = request.getParameter(__J_USERNAME);
                 final String password = request.getParameter(__J_PASSWORD);
+                System.err.println("Try login username="+username+" password="+password);
                 boolean success = tryLogin(messageInfo, clientSubject, response, session, username, new Password(password));
                 if (success)
                 {
-                    // Redirect to original request
-                    String nuri = (String) session.getAttribute(__J_URI);
+                    // Redirect to original request                    
+                    String nuri=null;
+                    synchronized(session)
+                    {
+                        nuri = (String) session.getAttribute(__J_URI);
+                    }
+                    
                     if (nuri == null || nuri.length() == 0)
                     {
                         nuri = request.getContextPath();
-                        if (nuri.length() == 0) nuri = URIUtil.SLASH;
+                        if (nuri.length() == 0) 
+                            nuri = URIUtil.SLASH;
                     }
-                    session.removeAttribute(__J_URI); // Remove popped return
-                                                        // URI.
-                    response.setContentLength(0);
+                   
+                    System.err.println("FormAuthModule succesful login, sending redirect to "+nuri);
+                    response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
-
                     return AuthStatus.SEND_CONTINUE;
                 }
                 // not authenticated
@@ -194,95 +209,18 @@ public class FormAuthModule extends BaseAuthModule
                 // that occur?
                 return AuthStatus.SEND_FAILURE;
             }
+            
+            
             // Check if the session is already authenticated.
             FormCredential form_cred = (FormCredential) session.getAttribute(__J_AUTHENTICATED);
-
             if (form_cred != null)
             {
+                System.err.println("Form cred: form.username="+form_cred._jUserName+" form.pwd="+new String(form_cred._jPassword));
+                
+                //TODO: we would like the form auth module to be able to invoke the loginservice.validate() method to check the previously authed user
+                
                 boolean success = tryLogin(messageInfo, clientSubject, response, session, form_cred._jUserName, new Password(new String(form_cred._jPassword)));
                 if (success) { return AuthStatus.SUCCESS; }
-                // CallbackHandler loginCallbackHandler = new
-                // UserPasswordCallbackHandler(form_cred._jUserName,
-                // form_cred._jPassword);
-                // LoginResult loginResult = loginService.login(clientSubject,
-                // loginCallbackHandler);
-                // //TODO what should happen if !isMandatory but credentials
-                // exist and are wrong?
-                // if (loginResult.isSuccess())
-                // {
-                // callbackHandler.handle(new
-                // Callback[]{loginResult.getCallerPrincipalCallback(),
-                // loginResult.getGroupPrincipalCallback()});
-                // messageInfo.getMap().put(JettyMessageInfo.AUTH_METHOD_KEY,
-                // Constraint.__FORM_AUTH);
-                //
-                // form_cred = new FormCredential(form_cred._jUserName,
-                // form_cred._jPassword,
-                // loginResult.getCallerPrincipalCallback().getPrincipal());
-                //
-                // session.setAttribute(__J_AUTHENTICATED, form_cred);
-                // if (ssoSource != null && ssoSource.fetch(request) == null)
-                // {
-                // UserInfo userInfo = new UserInfo(form_cred._jUserName,
-                // form_cred._jPassword);
-                // ssoSource.store(userInfo, response);
-                // }
-                // messageInfo.getMap().put(JettyMessageInfo.AUTH_METHOD_KEY,
-                // Constraint.__FORM_AUTH);
-                // return AuthStatus.SUCCESS;
-                // }
-
-                // // We have a form credential. Has it been distributed?
-                // if (form_cred._userPrincipal==null)
-                // {
-                // // This form_cred appears to have been distributed. Need to
-                // reauth
-                // form_cred.authenticate(realm, request);
-                //
-                // // Sign-on to SSO mechanism
-                // if (form_cred._userPrincipal!=null && realm instanceof
-                // SSORealm)
-                // ((SSORealm)realm).setSingleSignOn(request,response,form_cred._userPrincipal,new
-                // Password(form_cred._jPassword));
-                //
-                // }
-                // else if (!realm.reauthenticate(form_cred._userPrincipal))
-                // // Else check that it is still authenticated.
-                // form_cred._userPrincipal=null;
-                //
-                // // If this credential is still authenticated
-                // if (form_cred._userPrincipal!=null)
-                // {
-                // if(LOG.isDebugEnabled())LOG.debug("FORM Authenticated for
-                // "+form_cred._userPrincipal.getName());
-                // request.setAuthType(Constraint.__FORM_AUTH);
-                // //jaspi
-                // // request.setUserPrincipal(form_cred._userPrincipal);
-                // return form_cred._userPrincipal;
-                // }
-                // else
-                // session.setAttribute(__J_AUTHENTICATED,null);
-                // }
-                // else if (realm instanceof SSORealm)
-                // {
-                // // Try a single sign on.
-                // Credential cred =
-                // ((SSORealm)realm).getSingleSignOn(request,response);
-                //
-                // if (request.getUserPrincipal()!=null)
-                // {
-                // form_cred=new FormCredential();
-                // form_cred._userPrincipal=request.getUserPrincipal();
-                // form_cred._jUserName=form_cred._userPrincipal.getName();
-                // if (cred!=null)
-                // form_cred._jPassword=cred.toString();
-                // if(LOG.isDebugEnabled())LOG.debug("SSO for
-                // "+form_cred._userPrincipal);
-                //
-                // request.setAuthType(Constraint.__FORM_AUTH);
-                // session.setAttribute(__J_AUTHENTICATED,form_cred);
-                // return form_cred._userPrincipal;
-                // }
             }
             else if (ssoSource != null)
             {
@@ -293,19 +231,25 @@ public class FormAuthModule extends BaseAuthModule
                     if (success) { return AuthStatus.SUCCESS; }
                 }
             }
+            
+           
 
-            // Don't authenticate authform or errorpage
-            if (!isMandatory(messageInfo) || isLoginOrErrorPage(uri))
-            // TODO verify this is correct action
-                return AuthStatus.SUCCESS;
+            // if we can't send challenge
+            if (DeferredAuthentication.isDeferred(response))
+                return AuthStatus.SUCCESS; 
+            
 
-            // redirect to login page
-            if (request.getQueryString() != null) uri += "?" + request.getQueryString();
-            session.setAttribute(__J_URI, request.getScheme() + "://"
-                                          + request.getServerName()
-                                          + ":"
-                                          + request.getServerPort()
-                                          + URIUtil.addPaths(request.getContextPath(), uri));
+            // redirect to login page  
+            StringBuffer buf = request.getRequestURL();
+            if (request.getQueryString() != null)
+                buf.append("?").append(request.getQueryString());
+
+            synchronized (session)
+            {
+                session.setAttribute(__J_URI, buf.toString());
+            }
+            
+            System.err.println("Redirecting to login page "+_formLoginPage+" and remembering juri="+buf.toString());
             response.setContentLength(0);
             response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)));
             return AuthStatus.SEND_CONTINUE;
@@ -320,6 +264,20 @@ public class FormAuthModule extends BaseAuthModule
         }
 
     }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isJSecurityCheck(String uri)
+    {
+        int jsc = uri.indexOf(__J_SECURITY_CHECK);
+        
+        if (jsc<0)
+            return false;
+        int e=jsc+__J_SECURITY_CHECK.length();
+        if (e==uri.length())
+            return true;
+        char c = uri.charAt(e);
+        return c==';'||c=='#'||c=='/'||c=='?';
+    }
 
     private boolean tryLogin(MessageInfo messageInfo, Subject clientSubject, 
                              HttpServletResponse response, HttpSession session, 
@@ -330,10 +288,11 @@ public class FormAuthModule extends BaseAuthModule
         {
             char[] pwdChars = password.toString().toCharArray();
             Set<LoginCallbackImpl> loginCallbacks = clientSubject.getPrivateCredentials(LoginCallbackImpl.class);
+            System.err.println("FormAuthModule, LoginCallbackImpl.isEmpty="+loginCallbacks.isEmpty());
             if (!loginCallbacks.isEmpty())
             {
                 LoginCallbackImpl loginCallback = loginCallbacks.iterator().next();
-                FormCredential form_cred = new FormCredential(username, pwdChars, loginCallback.getUserPrincipal());
+                FormCredential form_cred = new FormCredential(username, pwdChars, loginCallback.getUserPrincipal(), loginCallback.getSubject());
 
                 session.setAttribute(__J_AUTHENTICATED, form_cred);
             }
@@ -347,38 +306,11 @@ public class FormAuthModule extends BaseAuthModule
             return true;
         }
         return false;
-        // LoginCallback loginCallback = new LoginCallback(clientSubject,
-        // username, password);
-        // loginService.login(loginCallback);
-        // if (loginCallback.isSuccess())
-        // {
-        // CallerPrincipalCallback callerPrincipalCallback = new
-        // CallerPrincipalCallback(clientSubject,
-        // loginCallback.getUserPrincipal());
-        // GroupPrincipalCallback groupPrincipalCallback = new
-        // GroupPrincipalCallback(clientSubject,
-        // loginCallback.getGroups().toArray(new
-        // String[loginCallback.getGroups().size()]));
-        // callbackHandler.handle(new Callback[] {callerPrincipalCallback,
-        // groupPrincipalCallback});
-        // messageInfo.getMap().put(JettyMessageInfo.AUTH_METHOD_KEY,
-        // Constraint.__FORM_AUTH);
-        // FormCredential form_cred = new FormCredential(username, password,
-        // loginCallback.getUserPrincipal());
-        //
-        // session.setAttribute(__J_AUTHENTICATED, form_cred);
-        // // Sign-on to SSO mechanism
-        // if (ssoSource != null)
-        // {
-        // UserInfo userInfo = new UserInfo(username, password);
-        // ssoSource.store(userInfo, response);
-        // }
-        // }
-        // return loginCallback.isSuccess();
     }
 
     public boolean isLoginOrErrorPage(String pathInContext)
     {
+        System.err.println("ISLOGINORERRORPAGE? "+pathInContext+" error: "+_formErrorPath+" login:"+_formLoginPath);
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
 
@@ -393,12 +325,15 @@ public class FormAuthModule extends BaseAuthModule
         char[] _jPassword;
 
         transient Principal _userPrincipal;
+        
+        transient Subject _subject;
 
-        private FormCredential(String _jUserName, char[] _jPassword, Principal _userPrincipal)
+        private FormCredential(String _jUserName, char[] _jPassword, Principal _userPrincipal, Subject subject)
         {
             this._jUserName = _jUserName;
             this._jPassword = _jPassword;
             this._userPrincipal = _userPrincipal;
+            this._subject = subject;
         }
 
         public void valueBound(HttpSessionBindingEvent event)

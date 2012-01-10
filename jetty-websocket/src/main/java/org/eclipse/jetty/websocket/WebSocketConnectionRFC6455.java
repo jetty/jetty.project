@@ -121,7 +121,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
 
     private final static byte[] MAGIC;
     private final List<Extension> _extensions;
-    private final WebSocketParserD13 _parser;
+    private final WebSocketParserRFC6455 _parser;
     private final WebSocketGeneratorRFC6455 _generator;
     private final WebSocketGenerator _outbound;
     private final WebSocket _webSocket;
@@ -197,7 +197,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         _outbound=(_extensions==null||_extensions.size()==0)?_generator:extensions.get(extensions.size()-1);
         WebSocketParser.FrameHandler inbound = (_extensions == null || _extensions.size() == 0) ? frameHandler : extensions.get(0);
 
-        _parser = new WebSocketParserD13(buffers, endpoint, inbound,maskgen==null);
+        _parser = new WebSocketParserRFC6455(buffers, endpoint, inbound,maskgen==null);
 
         _protocol=protocol;
 
@@ -642,7 +642,13 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         @Override
         public String toString()
         {
-            return this.getClass().getSimpleName()+"D13@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
+            return String.format("%s@%x l(%s:%d)<->r(%s:%d)",
+                    getClass().getSimpleName(),
+                    hashCode(),
+                    _endp.getLocalAddr(),
+                    _endp.getLocalPort(),
+                    _endp.getRemoteAddr(),
+                    _endp.getRemotePort());
         }
     }
 
@@ -973,6 +979,6 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
     @Override
     public String toString()
     {
-        return String.format("WS/D%d p=%s g=%s", _draft, _parser, _generator);
+        return String.format("%s p=%s g=%s", getClass().getSimpleName(), _parser, _generator);
     }
 }

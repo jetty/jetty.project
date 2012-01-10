@@ -102,7 +102,10 @@ public class Log
                 while (systemKeyEnum.hasMoreElements())
                 {
                     String key = systemKeyEnum.nextElement();
-                    __props.setProperty(key,System.getProperty(key));
+                    String val = System.getProperty(key);
+                    //protect against application code insertion of non-String values (returned as null)
+                    if (val != null)
+                        __props.setProperty(key,val);
                 }
 
                 /* Now use the configuration properties to configure the Log statics

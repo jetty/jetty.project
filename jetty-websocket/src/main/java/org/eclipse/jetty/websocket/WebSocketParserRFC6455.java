@@ -43,9 +43,9 @@ import org.eclipse.jetty.util.log.Logger;
  * Parser the WebSocket protocol.
  *
  */
-public class WebSocketParserD13 implements WebSocketParser
+public class WebSocketParserRFC6455 implements WebSocketParser
 {
-    private static final Logger LOG = Log.getLogger(WebSocketParserD13.class);
+    private static final Logger LOG = Log.getLogger(WebSocketParserRFC6455.class);
 
     public enum State {
 
@@ -89,7 +89,7 @@ public class WebSocketParserD13 implements WebSocketParser
      * @param handler the handler to notify when a parse event occurs
      * @param shouldBeMasked whether masking should be handled
      */
-    public WebSocketParserD13(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean shouldBeMasked)
+    public WebSocketParserRFC6455(WebSocketBuffers buffers, EndPoint endp, FrameHandler handler, boolean shouldBeMasked)
     {
         _buffers=buffers;
         _endp=endp;

@@ -6,7 +6,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>test-jetty-osgi</artifactId>
   <name>Jetty :: OSGi :: Test</name>
   <description>Jetty OSGi Integration test</description>
