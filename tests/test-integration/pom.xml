@@ -53,12 +53,6 @@
               <outputDirectory>${project.build.directory}/webapps</outputDirectory>
             </configuration>
           </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
           <execution>
             <id>unpack-jetty-distro</id>
             <phase>process-test-resources</phase>
