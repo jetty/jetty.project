@@ -320,7 +320,7 @@ public abstract class SslBytesTest
             return latch.await(time, unit);
         }
 
-        public void resetServer() throws IOException
+        public void sendRSTToServer() throws IOException
         {
             // Calling setSoLinger(true, 0) causes close()
             // to send a RST instead of a FIN, causing an
