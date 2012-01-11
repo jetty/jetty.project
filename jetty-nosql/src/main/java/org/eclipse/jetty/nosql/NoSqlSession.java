@@ -79,7 +79,7 @@ public class NoSqlSession extends AbstractSession
         __log.debug("NoSqlSession:access:active "+_active);
         if (_active.incrementAndGet()==1)
         {
-            int period=_manager.getStalePeriod()*1000;
+            long period=_manager.getStalePeriod()*1000L;
             if (period==0)
                 refresh();
             else if (period>0)

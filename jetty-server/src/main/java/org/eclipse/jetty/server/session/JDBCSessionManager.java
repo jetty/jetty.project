@@ -277,11 +277,11 @@ public class JDBCSessionManager extends AbstractSessionManager
             super(JDBCSessionManager.this,request);
             _data = new SessionData(getClusterId(),_jdbcAttributes);
             if (_dftMaxIdleSecs>0)
-                _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
+                _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
             _data.setCanonicalContext(canonicalize(_context.getContextPath()));
             _data.setVirtualHost(getVirtualHost(_context));
             int maxInterval=getMaxInactiveInterval();
-            _data.setExpiryTime(maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000));
+            _data.setExpiryTime(maxInterval <= 0 ? 0 : (System.currentTimeMillis() + maxInterval*1000L));
         }
 
         /**
@@ -293,7 +293,7 @@ public class JDBCSessionManager extends AbstractSessionManager
              super(JDBCSessionManager.this,data.getCreated(), accessed, data.getId());
              _data=data;
              if (_dftMaxIdleSecs>0)
-                 _data.setMaxIdleMs(_dftMaxIdleSecs*1000);
+                 _data.setMaxIdleMs(_dftMaxIdleSecs*1000L);
              _jdbcAttributes.putAll(_data.getAttributeMap());
              _data.setAttributeMap(_jdbcAttributes);
          }
@@ -333,7 +333,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                 _data.setAccessed(time);
 
                 int maxInterval=getMaxInactiveInterval();
-                _data.setExpiryTime(maxInterval <= 0 ? 0 : (time + maxInterval*1000));
+                _data.setExpiryTime(maxInterval <= 0 ? 0 : (time + maxInterval*1000L));
                 return true;
             }
             return false;
@@ -357,7 +357,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                     updateSession(_data);
                     didActivate();
                 }
-                else if ((_data._accessed - _data._lastSaved) >= (getSaveInterval() * 1000))
+                else if ((_data._accessed - _data._lastSaved) >= (getSaveInterval() * 1000L))
                 {
                     updateSessionAccessTime(_data);
                 }
@@ -506,23 +506,23 @@ public class JDBCSessionManager extends AbstractSessionManager
                         LOG.debug("getSession("+idInCluster+"): not in session map,"+
                                 " now="+now+
                                 " lastSaved="+(session==null?0:session._data._lastSaved)+
-                                " interval="+(_saveIntervalSec * 1000));
+                                " interval="+(_saveIntervalSec * 1000L));
                     else
                         LOG.debug("getSession("+idInCluster+"): in session map, "+
                                 " now="+now+
                                 " lastSaved="+(session==null?0:session._data._lastSaved)+
-                                " interval="+(_saveIntervalSec * 1000)+
+                                " interval="+(_saveIntervalSec * 1000L)+
                                 " lastNode="+session._data.getLastNode()+
                                 " thisNode="+getSessionIdManager().getWorkerName()+
                                 " difference="+(now - session._data._lastSaved));
                 }
 
-                if (session==null || ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000)))
+                if (session==null || ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000L)))
                 {
                     LOG.debug("getSession("+idInCluster+"): no session in session map or stale session. Reloading session data from db.");
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
-                else if ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000))
+                else if ((now - session._data._lastSaved) >= (_saveIntervalSec * 1000L))
                 {
                     LOG.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
                     data = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
