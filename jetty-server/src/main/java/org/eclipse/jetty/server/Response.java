@@ -466,7 +466,6 @@ public class Response implements HttpServletResponse
             }
         }
         
-        location=encodeRedirectURL(location);
         resetBuffer();
         setHeader(HttpHeaders.LOCATION,location);
         setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
