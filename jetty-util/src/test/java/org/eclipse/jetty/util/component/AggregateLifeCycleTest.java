@@ -149,7 +149,7 @@ public class AggregateLifeCycleTest
         
         // Now add it
         a0.addBean(a1);
-        Assert.assertFalse(a0.isJoined(a1));
+        Assert.assertFalse(a0.isManaged(a1));
         
         a0.start();
         Assert.assertEquals(1,started.get());
@@ -176,8 +176,8 @@ public class AggregateLifeCycleTest
         Assert.assertEquals(1,stopped.get());
         Assert.assertEquals(0,destroyed.get());
         
-        a0.join(a1);
-        Assert.assertTrue(a0.isJoined(a1));
+        a0.manage(a1);
+        Assert.assertTrue(a0.isManaged(a1));
 
         a0.stop();
         Assert.assertEquals(1,started.get());
@@ -196,8 +196,8 @@ public class AggregateLifeCycleTest
         Assert.assertEquals(0,destroyed.get());
         
 
-        a0.disjoin(a1);
-        Assert.assertFalse(a0.isJoined(a1));
+        a0.unmanage(a1);
+        Assert.assertFalse(a0.isManaged(a1));
         
         a0.destroy();
         Assert.assertEquals(2,started.get());
@@ -262,8 +262,8 @@ public class AggregateLifeCycleTest
         a0.dumpStdErr(); 
 
         System.err.println("--");
-        a0.disjoin(aa);
-        a2.disjoin(aa0);
+        a0.unmanage(aa);
+        a2.unmanage(aa0);
         a0.dumpStdErr(); 
         
     }

@@ -127,6 +127,11 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
+    /** Set the ThreadPool.
+     * The threadpool passed is added via {@link #addBean(Object)} so that 
+     * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
+     * @param threadPool the threadPool to set
+     */
     public void setThreadPool(ThreadPool pool)
     {
         removeBean(_threadPool);

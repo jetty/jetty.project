@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */
@@ -54,6 +55,11 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     }
 
     /* ------------------------------------------------------------ */
+    /** Construct with explicit SslContextFactory.
+     * The SslContextFactory passed is added via {@link #addBean(Object)} so that 
+     * it's lifecycle may be managed with {@link AggregateLifeCycle}.
+     * @param sslContextFactory
+     */
     public SslSelectChannelConnector(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;

@@ -14,18 +14,22 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * An AggregateLifeCycle is an {@link LifeCycle} implementation for a collection of contained beans.
  * <p>
- * Beans can be added the AggregateLifeCycle either as joined beans, as disjoint beans.  A joined bean is started, stopped and destroyed with the aggregate.  
- * A disjointed bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
+ * Beans can be added the AggregateLifeCycle either as managed beans or as unmanaged beans.  A managed bean is started, stopped and destroyed with the aggregate.  
+ * An umanaged bean is associated with the aggregate for the purposes of {@link #dump()}, but it's lifecycle must be managed externally.
  * <p>
- * When a bean is added, if it is a {@link LifeCycle} and it is already started, then it is assumed to be a disjoined bean.  
- * Otherwise the methods {@link #addBean(LifeCycle, boolean)}, {@link #join(LifeCycle)} and {@link #disjoin(LifeCycle)} can be used to 
+ * When a bean is added, if it is a {@link LifeCycle} and it is already started, then it is assumed to be an unmanaged bean.  
+ * Otherwise the methods {@link #addBean(LifeCycle, boolean)}, {@link #manage(LifeCycle)} and {@link #unmanage(LifeCycle)} can be used to 
  * explicitly control the life cycle relationship.
+ * <p>
+ * If adding a bean that is shared between multiple {@link AggregateLifeCycle} instances, then it should be started before being added, so it is unmanged, or 
+ * the API must be used to explicitly set it as unmanaged.
  * <p>
  */
 public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(AggregateLifeCycle.class);
     private final List<Bean> _beans=new CopyOnWriteArrayList<Bean>();
+    private boolean _started=false;
 
     private class Bean
     {
@@ -34,12 +38,12 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
             _bean=b;
         }
         final Object _bean;
-        volatile boolean _joined=true;
+        volatile boolean _managed=true;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * Start the joined lifecycle beans in the order they were added.
+     * Start the managed lifecycle beans in the order they were added.
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
     @Override
@@ -47,13 +51,15 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     {
         for (Bean b:_beans)
         {
-            if (b._joined && b._bean instanceof LifeCycle)
+            if (b._managed && b._bean instanceof LifeCycle)
             {
                 LifeCycle l=(LifeCycle)b._bean;
                 if (!l.isRunning())
                     l.start();
             }
         }
+        // indicate that we are started, so that addBean will start other beans added.
+        _started=true;
         super.doStart();
     }
     
@@ -65,12 +71,13 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     @Override
     protected void doStop() throws Exception
     {
+        _started=false;
         super.doStop();
         List<Bean> reverse = new ArrayList<Bean>(_beans);
         Collections.reverse(reverse);
         for (Bean b:reverse)
         {
-            if (b._joined && b._bean instanceof LifeCycle)
+            if (b._managed && b._bean instanceof LifeCycle)
             {
                 LifeCycle l=(LifeCycle)b._bean;
                 if (l.isRunning())
@@ -91,7 +98,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         Collections.reverse(reverse);
         for (Bean b:reverse)
         {
-            if (b._bean instanceof Destroyable && b._joined)
+            if (b._bean instanceof Destroyable && b._managed)
             {
                 Destroyable d=(Destroyable)b._bean;
                 d.destroy();
@@ -119,76 +126,51 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
      * @param bean
      * @return True if the aggregate contains the bean and it is joined
      */
-    public boolean isJoined(Object bean)
+    public boolean isManaged(Object bean)
     {
         for (Bean b:_beans)
             if (b._bean==bean)
-                return b._joined;
+                return b._managed;
         return false;
     }
     
     /* ------------------------------------------------------------ */
     /**
      * Add an associated bean.
-     * If the bean is a {@link LifeCycle}, it is added as neither joined or disjoint and 
-     * that status will be determined when the Aggregate bean is started.
+     * If the bean is a {@link LifeCycle}, then it will be managed if it is not 
+     * already started and umanaged if it is already started. The {@link #addBean(Object, boolean)}
+     * method should be used if this is not correct, or the {@link #manage(Object)} and {@link #unmanage(Object)}
+     * methods may be used after an add to change the status.
      * @param o the bean object to add
      * @return true if the bean was added or false if it has already been added.
      */
     public boolean addBean(Object o)
     {
-        if (contains(o))
-            return false;
-        
-        Bean b = new Bean(o);
-        _beans.add(b);
-        
-        // extra LifeCycle handling
-        if (o instanceof LifeCycle)
-        {
-            LifeCycle l=(LifeCycle)o;
-
-            // If it is  running, then assume it is disjoint
-            if (l.isRunning())
-                b._joined=false;
-
-            // else if we are running, then start the bean
-            else if (isRunning())
-            {
-                try
-                {
-                    l.start();
-                }
-                catch(Exception e)
-                {
-                    throw new RuntimeException (e);
-                }
-            }
-        }
-        
-        return true;
+        // beans are joined unless they are started lifecycles
+        return addBean(o,!((o instanceof LifeCycle)&&((LifeCycle)o).isStarted()));
     }
     
     /* ------------------------------------------------------------ */
     /** Add an associated lifecycle.
      * @param o The lifecycle to add
-     * @param joined True if the LifeCycle is to be joined, otherwise it will be disjoint.
+     * @param managed True if the LifeCycle is to be joined, otherwise it will be disjoint.
      * @return
      */
-    public boolean addBean(Object o, boolean joined)
+    public boolean addBean(Object o, boolean managed)
     {
         if (contains(o))
             return false;
         
         Bean b = new Bean(o);
-        b._joined=joined;
+        b._managed=managed;
         _beans.add(b);
         
         if (o instanceof LifeCycle)
         {
             LifeCycle l=(LifeCycle)o;
 
-            if (joined && isStarted())
+            // Start the bean if we are started
+            if (managed && _started)
             {
                 try
                 {
@@ -205,17 +187,17 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     
     /* ------------------------------------------------------------ */
     /**
-     * Join a  bean to this aggregate, so that it is started/stopped/destroyed with the 
+     * Manage a bean by this aggregate, so that it is started/stopped/destroyed with the 
      * aggregate lifecycle.  
-     * @param bean The bean to join (must already have been added).
+     * @param bean The bean to manage (must already have been added).
      */
-    public void join(Object bean)
+    public void manage(Object bean)
     {    
         for (Bean b :_beans)
         {
             if (b._bean==bean)
             {
-                b._joined=true;
+                b._managed=true;
                 return;
             }
         }
@@ -224,17 +206,17 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
 
     /* ------------------------------------------------------------ */
     /**
-     * Disjoin a bean to this aggregate, so that it is not started/stopped/destroyed with the 
+     * Unmanage a bean by this aggregate, so that it is not started/stopped/destroyed with the 
      * aggregate lifecycle.  
-     * @param bean The bean to join (must already have been added).
+     * @param bean The bean to manage (must already have been added).
      */
-    public void disjoin(Object bean)
+    public void unmanage(Object bean)
     {
         for (Bean b :_beans)
         {
             if (b._bean==bean)
             {
-                b._joined=false;
+                b._managed=false;
                 return;
             }
         }
@@ -372,7 +354,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         {
             i++;
             
-            if (b._joined)
+            if (b._managed)
             {
                 out.append(indent).append(" +- ");
                 if (b._bean instanceof Dumpable)
