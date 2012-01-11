@@ -20,6 +20,8 @@ import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.util.IO;
@@ -58,6 +60,8 @@ public class Log
      * Legacy flag indicating if {@link Log#ignore(Throwable)} methods produce any output in the {@link Logger}s
      */
     public static boolean __ignored;
+
+    public static Map<String, Logger> __loggers = new HashMap<String, Logger>();
 
     static
     {
@@ -418,6 +422,26 @@ public class Log
         if (!initialized())
             return null;
 
-        return name == null ? LOG : LOG.getLogger(name);
+        if(name==null)
+            return LOG;
+
+        Logger logger = __loggers.get(name);
+        if(logger==null)
+        {
+            logger = LOG.getLogger(name);
+            __loggers.put(name,logger);
+        }
+
+        return logger;
+    }
+
+    /**
+     * Get a map of all configured {@link Logger} instances.
+     *
+     * @return a map of all configured {@link Logger} instances
+     */
+    public static Map<String, Logger> getLoggers()
+    {
+        return __loggers;
     }
 }
