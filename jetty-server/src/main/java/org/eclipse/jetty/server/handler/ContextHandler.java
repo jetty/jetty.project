@@ -85,7 +85,10 @@ import org.eclipse.jetty.util.resource.Resource;
  * <p>
  * If the context init parameter "org.eclipse.jetty.server.context.ManagedAttributes" is set to a comma separated list of names, then they are treated as
  * context attribute names, which if set as attributes are passed to the servers Container so that they may be managed with JMX.
- *
+ * <p>
+ * The maximum size of a form that can be processed by this context is controlled by the system properties org.eclipse.jetty.server.Request.maxFormKeys
+ * and org.eclipse.jetty.server.Request.maxFormContentSize.  These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
+ * 
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
 public class ContextHandler extends ScopedHandler implements Attributes, Server.Graceful

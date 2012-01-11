@@ -60,7 +60,7 @@ public class HashedSession extends AbstractSession
     public void setMaxInactiveInterval(int secs)
     {
         super.setMaxInactiveInterval(secs);
-        if (getMaxInactiveInterval()>0&&(getMaxInactiveInterval()*1000/10)<_hashSessionManager._scavengePeriodMs)
+        if (getMaxInactiveInterval()>0&&(getMaxInactiveInterval()*1000L/10)<_hashSessionManager._scavengePeriodMs)
             _hashSessionManager.setScavengePeriod((secs+9)/10);
     }
 

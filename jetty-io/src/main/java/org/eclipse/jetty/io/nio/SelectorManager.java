@@ -260,7 +260,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         for (int i=0;i<getSelectSets();i++)
         {
             final int id=i;
-            dispatch(new Runnable()
+            boolean selecting=dispatch(new Runnable()
             {
                 public void run()
                 {
@@ -303,6 +303,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
 
             });
+            
+            if (!selecting)
+                throw new IllegalStateException("!Selecting");
         }
     }
 
@@ -957,6 +960,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     LOG.ignore(e);
                 }
+                
                 AggregateLifeCycle.dump(out,indent,dump);
             }
         }

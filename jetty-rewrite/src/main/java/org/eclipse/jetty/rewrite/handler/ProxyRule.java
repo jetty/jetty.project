@@ -55,7 +55,7 @@ public class ProxyRule extends PatternRule
     private String _hostHeader;
     private String _proxyTo;
     
-    private int _connectorType = 2;
+    private int _connectorType = HttpClient.CONNECTOR_SELECT_CHANNEL;
     private String _maxThreads;
     private String _maxConnections;
     private String _timeout;
