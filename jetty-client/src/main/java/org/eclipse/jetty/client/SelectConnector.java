@@ -48,7 +48,8 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
 
     /* ------------------------------------------------------------ */
     /**
-     * @param httpClient the HttpClient this connector is associated to
+     * @param httpClient the HttpClient this connector is associated to. It is 
+     * added via the {@link #addBean(Object, boolean)} as an unmanaged bean.
      */
     SelectConnector(HttpClient httpClient)
     {
