@@ -36,6 +36,7 @@ public class PathMapTest extends TestCase
         p.put("*.gz", "7");
         p.put("/", "8");
         p.put("/XXX:/YYY", "9");
+        p.put("", "10");
 
         String[][] tests = {
                         { "/abs/path", "1"},
@@ -68,7 +69,7 @@ public class PathMapTest extends TestCase
         assertEquals("Dir matches", "[/animal/fish/*=4, /animal/*=5, /=8]", p.getMatches("/animal/fish/").toString());
         assertEquals("Dir matches", "[/animal/fish/*=4, /animal/*=5, /=8]", p.getMatches("/animal/fish").toString());
         assertEquals("Dir matches", "[/=8]", p.getMatches("/").toString());
-        assertEquals("Dir matches", "[/=8]", p.getMatches("").toString());
+        assertEquals("Dir matches", "[=10, /=8]", p.getMatches("").toString());
 
         assertEquals("pathMatch exact", "/Foo/bar", PathMap.pathMatch("/Foo/bar", "/Foo/bar"));
         assertEquals("pathMatch prefix", "/Foo", PathMap.pathMatch("/Foo/*", "/Foo/bar"));
@@ -125,6 +126,8 @@ public class PathMapTest extends TestCase
         assertTrue("!match /foo/*", !PathMap.match("/foo/*", "/bar/anything"));
         assertTrue("match *.foo", PathMap.match("*.foo", "anything.foo"));
         assertTrue("!match *.foo", !PathMap.match("*.foo", "anything.bar"));
+
+        assertEquals("match / with ''", "10", p.getMatch("/").getValue());
     }
 
     /**
