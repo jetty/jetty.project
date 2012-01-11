@@ -95,10 +95,11 @@ public class SafariWebsocketDraft0Test
 
             CaptureSocket socket = servlet.captures.get(0);
             Assert.assertThat("CaptureSocket",socket,notNullValue());
-            Assert.assertThat("CaptureSocket.isConnected", socket.awaitConnected(1000), is(true));
+            Assert.assertThat("CaptureSocket.isConnected", socket.awaitConnected(10000), is(true));
 
             // Give servlet time to process messages
-            threadSleep(1,TimeUnit.SECONDS);
+            for (int i=0;i<100 && socket.messages.size()<5;i++)
+                threadSleep(100,TimeUnit.MILLISECONDS);
 
             // Should have captured 5 messages.
             Assert.assertThat("CaptureSocket.messages.size",socket.messages.size(),is(5));
