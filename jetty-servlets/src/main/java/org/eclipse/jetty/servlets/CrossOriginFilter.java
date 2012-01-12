@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -229,19 +231,34 @@ public class CrossOriginFilter implements Filter
             if (origin.trim().length() == 0)
                 continue;
 
-            boolean allowed = false;
             for (String allowedOrigin : allowedOrigins)
             {
-                if (allowedOrigin.equals(origin))
+                if (allowedOrigin.contains("*"))
                 {
-                    allowed = true;
-                    break;
+                    Matcher matcher = createMatcher(origin,allowedOrigin);
+                    if (matcher.matches())
+                        return true;
+                }
+                else if (allowedOrigin.equals(origin))
+                {
+                    return true;
                 }
             }
-            if (!allowed)
-                return false;
         }
-        return true;
+        return false;
+    }
+
+    private Matcher createMatcher(String origin, String allowedOrigin)
+    {
+        String regex = parseAllowedWildcardOriginToRegex(allowedOrigin);
+        Pattern pattern = Pattern.compile(regex);
+        return pattern.matcher(origin);
+    }
+
+    private String parseAllowedWildcardOriginToRegex(String allowedOrigin)
+    {
+        String regex = allowedOrigin.replace(".","\\.");
+        return regex.replace("*",".*"); // we want to be greedy here to match multiple subdomains, thus we use .*
     }
 
     private boolean isSimpleRequest(HttpServletRequest request)
