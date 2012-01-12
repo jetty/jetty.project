@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
 /**
  *
  */
-public class LoggerLog implements Logger
+public class LoggerLog extends AbstractLogger
 {
     private final Object _logger;
     private final Method _debugMT;
@@ -189,11 +189,14 @@ public class LoggerLog implements Logger
         }
     }
 
-    public Logger getLogger(String name)
+    /**
+     * Create a Child Logger of this Logger.
+     */
+    protected Logger newLogger(String fullname)
     {
         try
         {
-            Object logger=_getLoggerN.invoke(_logger, name);
+            Object logger=_getLoggerN.invoke(_logger, fullname);
             return new LoggerLog(logger);
         }
         catch (Exception e)

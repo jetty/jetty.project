@@ -19,10 +19,14 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -61,7 +65,11 @@ public class Log
      */
     public static boolean __ignored;
 
-    public static Map<String, Logger> __loggers = new HashMap<String, Logger>();
+    /**
+     * Hold loggers only.
+     */
+    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<String, Logger>();
+
 
     static
     {
@@ -427,14 +435,16 @@ public class Log
 
         Logger logger = __loggers.get(name);
         if(logger==null)
-        {
             logger = LOG.getLogger(name);
-            __loggers.put(name,logger);
-        }
 
         return logger;
     }
 
+    static ConcurrentMap<String, Logger> getMutableLoggers()
+    {
+        return __loggers;
+    }
+    
     /**
      * Get a map of all configured {@link Logger} instances.
      *
@@ -442,6 +452,6 @@ public class Log
      */
     public static Map<String, Logger> getLoggers()
     {
-        return __loggers;
+        return Collections.unmodifiableMap(__loggers);
     }
 }

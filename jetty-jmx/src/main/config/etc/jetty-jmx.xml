@@ -48,11 +48,10 @@
   </Call>
 
   <!-- Add the static log -->
-  <Get id="Logger" class="org.eclipse.jetty.util.log.Log" name="log" />
   <Ref id="MBeanContainer">
     <Call name="addBean">
       <Arg>
-        <Ref id="Logger" />
+        <New class="org.eclipse.jetty.util.log.Log"/>
       </Arg>
     </Call>
   </Ref>
