@@ -457,10 +457,12 @@ public class localContextRoot implements Context
                     {
                         throw e;
                     }
-                    catch (Exception e)
+                    catch (final Exception e)
                     {
-                        __log.warn("",e);
-                        throw new NamingException (e.getMessage());
+                        throw new NamingException (e.getMessage()) 
+                        {
+                            { initCause(e);}
+                        };
                     }
                 }
                 else
