@@ -237,7 +237,7 @@ public class IPAccessHandler extends HandlerWrapper
                 pathMap = new PathMap(true);
                 patternMap.put(addr,pathMap);
             }
-            if (path != null)
+            if (path != null && !"".equals(path))
                 pathMap.put(path,path);
             
             if (deprecated)
