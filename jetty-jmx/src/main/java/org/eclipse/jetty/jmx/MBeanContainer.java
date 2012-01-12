@@ -86,15 +86,6 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
     public MBeanContainer(MBeanServer server)
     {
         _server = server;
-
-        try
-        {
-            start();
-        }
-        catch (Exception e)
-        {
-            LOG.ignore(e);
-        }
     }
 
     /**
