@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.DateCache;
  * used for logging. For named debuggers, the system property name+".LONG" is checked. If it is not not set, then
  * "org.eclipse.jetty.util.log.LONG" is used as the default.
  */
-public class StdErrLog implements Logger
+public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
     private static DateCache _dateCache;
@@ -44,11 +44,6 @@ public class StdErrLog implements Logger
     private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
     private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
-
-    /**
-     * Tracking for child loggers only.
-     */
-    private final static ConcurrentMap<String, StdErrLog> __loggers = new ConcurrentHashMap<String, StdErrLog>();
 
     static
     {
@@ -332,28 +327,22 @@ public class StdErrLog implements Logger
     {
         if (enabled)
         {
-            synchronized (__loggers)
-            {
-                this._level = LEVEL_DEBUG;
+            this._level = LEVEL_DEBUG;
 
-                // Boot stomp all cached log levels to DEBUG
-                for(StdErrLog log: __loggers.values())
-                {
-                    log._level = LEVEL_DEBUG;
-                }
+            for (Logger log : Log.getLoggers().values())
+            {
+                if (log instanceof StdErrLog)
+                    ((StdErrLog)log).setLevel(LEVEL_DEBUG);
             }
         }
         else
         {
-            synchronized (__loggers)
+            this._level = this._configuredLevel;
+            
+            for (Logger log : Log.getLoggers().values())
             {
-                this._level = this._configuredLevel;
-
-                // restore all cached log configured levels
-                for(StdErrLog log: __loggers.values())
-                {
-                    log._level = log._configuredLevel;
-                }
+                if (log instanceof StdErrLog)
+                    ((StdErrLog)log).setLevel(((StdErrLog)log)._configuredLevel);
             }
         }
     }
@@ -570,67 +559,18 @@ public class StdErrLog implements Logger
         }
     }
 
-    /**
-     * A more robust form of name blank test. Will return true for null names, and names that have only whitespace
-     *
-     * @param name
-     *            the name to test
-     * @return true for null or blank name, false if any non-whitespace character is found.
-     */
-    private static boolean isBlank(String name)
-    {
-        if (name == null)
-        {
-            return true;
-        }
-        int size = name.length();
-        char c;
-        for (int i = 0; i < size; i++)
-        {
-            c = name.charAt(i);
-            if (!Character.isWhitespace(c))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
 
     /**
-     * Get a Child Logger relative to this Logger.
-     *
-     * @param name
-     *            the child name
-     * @return the appropriate child logger (if name specified results in a new unique child)
+     * Create a Child Logger of this Logger.
      */
-    public Logger getLogger(String name)
+    protected Logger newLogger(String fullname)
     {
-        if (isBlank(name))
-        {
-            return this;
-        }
-
-        String fullname = name;
-        if (!isBlank(_name))
-        {
-            fullname = _name + "." + name;
-        }
-
-        StdErrLog logger = __loggers.get(fullname);
-        if (logger == null)
-        {
-            StdErrLog sel = new StdErrLog(fullname);
-            // Preserve configuration for new loggers configuration
-            sel.setPrintLongNames(_printLongNames);
-            // Let Level come from configured Properties instead - sel.setLevel(_level);
-            sel.setSource(_source);
-            sel._stderr = this._stderr;
-            logger = __loggers.putIfAbsent(fullname,sel);
-            if (logger == null)
-            {
-                logger = sel;
-            }
-        }
+        StdErrLog logger = new StdErrLog(fullname);
+        // Preserve configuration for new loggers configuration
+        logger.setPrintLongNames(_printLongNames);
+        // Let Level come from configured Properties instead - sel.setLevel(_level);
+        logger.setSource(_source);
+        logger._stderr = this._stderr;
 
         return logger;
     }

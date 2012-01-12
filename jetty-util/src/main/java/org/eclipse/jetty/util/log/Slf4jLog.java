@@ -18,7 +18,7 @@ package org.eclipse.jetty.util.log;
 /**
  * Slf4jLog Logger
  */
-public class Slf4jLog implements Logger
+public class Slf4jLog extends AbstractLogger
 {
     private final org.slf4j.Logger _logger;
 
@@ -114,9 +114,12 @@ public class Slf4jLog implements Logger
         warn("setDebugEnabled not implemented",null,null);
     }
 
-    public Logger getLogger(String name)
+    /**
+     * Create a Child Logger of this Logger.
+     */
+    protected Logger newLogger(String fullname)
     {
-        return new Slf4jLog(name);
+        return new Slf4jLog(fullname);
     }
 
     public void ignore(Throwable ignored)

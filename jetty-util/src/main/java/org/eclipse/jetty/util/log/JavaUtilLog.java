@@ -28,7 +28,7 @@ import java.util.logging.Level;
  * standard java.util.logging configuration</a>.
  * </p>
  */
-public class JavaUtilLog implements Logger
+public class JavaUtilLog extends AbstractLogger
 {
     private Level configuredLevel;
     private java.util.logging.Logger _logger;
@@ -116,9 +116,12 @@ public class JavaUtilLog implements Logger
         _logger.log(Level.FINE, msg, thrown);
     }
 
-    public Logger getLogger(String name)
+    /**
+     * Create a Child Logger of this Logger.
+     */
+    protected Logger newLogger(String fullname)
     {
-        return new JavaUtilLog(name);
+        return new JavaUtilLog(fullname);
     }
 
     public void ignore(Throwable ignored)
