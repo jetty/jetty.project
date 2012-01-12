@@ -146,7 +146,16 @@ public class PathMap extends HashMap implements Externalizable
     @Override
     public Object put(Object pathSpec, Object object)
     {
-        StringTokenizer tok = new StringTokenizer(pathSpec.toString(),__pathSpecSeparators);
+        String str = pathSpec.toString();
+        if ("".equals(str.trim()))
+        {          
+            Entry entry = new Entry("",object);
+            entry.setMapped("");
+            _exactMap.put("", entry);
+            return super.put("", object);
+        }
+        
+        StringTokenizer tok = new StringTokenizer(str,__pathSpecSeparators);
         Object old =null;
 
         while (tok.hasMoreTokens())
@@ -218,13 +227,21 @@ public class PathMap extends HashMap implements Externalizable
      */
     public Entry getMatch(String path)
     {
-        Map.Entry entry;
+        Map.Entry entry=null;
 
         if (path==null)
             return null;
 
         int l=path.length();
-
+        
+        //special case
+        if (l == 1 && path.charAt(0)=='/')
+        {
+            entry = (Map.Entry)_exactMap.get("");
+            if (entry != null)
+                return (Entry)entry;
+        }
+        
         // try exact match
         entry=_exactMap.getEntry(path,0,l);
         if (entry!=null)
@@ -455,6 +472,9 @@ public class PathMap extends HashMap implements Externalizable
      */
     public static String pathInfo(String pathSpec, String path)
     {
+        if ("".equals(pathSpec))
+            return path; //servlet 3 spec sec 12.2 will be '/'
+        
         char c = pathSpec.charAt(0);
 
         if (c=='/')
