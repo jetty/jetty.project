@@ -45,6 +45,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         _asyncEndp=(AsyncEndPoint)endpoint;
     }
 
+    @Override
     public Connection handle() throws IOException
     {
         Connection connection = this;
@@ -54,10 +55,10 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         try
         {
             setCurrentConnection(this);
-            
+
             // don't check for idle while dispatched (unless blocking IO is done).
             _asyncEndp.setCheckForIdle(false);
-            
+
 
             // While progress and the connection has not changed
             while (progress && connection==this)
@@ -67,7 +68,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 {
                     // Handle resumed request
                     if (_request._async.isAsync())
-                    { 
+                    {
                        if (_request._async.isDispatchable())
                            handleRequest();
                     }
@@ -126,7 +127,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                     }
                     else if (_request.getAsyncContinuation().isAsyncStarted())
                     {
-                        // The request is suspended, so even though progress has been made, 
+                        // The request is suspended, so even though progress has been made,
                         // exit the while loop by setting progress to false
                         LOG.debug("suspended {}",this);
                         progress=false;
@@ -137,21 +138,18 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         finally
         {
             setCurrentConnection(null);
-            
+
             // If we are not suspended
             if (!_request.getAsyncContinuation().isAsyncStarted())
             {
                 // return buffers
                 _parser.returnBuffers();
                 _generator.returnBuffers();
-            }
-            
-            // reenable idle checking unless request is suspended
-            if(!_request.getAsyncContinuation().isAsyncStarted())
-            {
+
+                // reenable idle checking unless request is suspended
                 _asyncEndp.setCheckForIdle(true);
             }
-            
+
             // Safety net to catch spinning
             if (some_progress)
                 _total_no_progress=0;

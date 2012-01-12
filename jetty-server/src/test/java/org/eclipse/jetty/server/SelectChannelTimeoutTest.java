@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -84,7 +83,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 
     private synchronized String process(String content) throws UnsupportedEncodingException, IOException, InterruptedException
     {
-        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n" + "Connection: close\r\n";
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n";
 
         if (content == null)
             request += "\r\n";
@@ -97,11 +96,13 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
     {
         SelectChannelConnector connector = (SelectChannelConnector)_connector;
         Socket socket = new Socket((String)null,connector.getLocalPort());
+        socket.setSoTimeout(10 * MAX_IDLE_TIME);
         socket.getOutputStream().write(request.getBytes("UTF-8"));
         InputStream inputStream = socket.getInputStream();
+        long start = System.currentTimeMillis();
         String response = IO.toString(inputStream);
-        Thread.sleep(500);
-        assertEquals("Socket should be closed and return -1 on reading",-1,socket.getInputStream().read());
+        long timeElapsed = System.currentTimeMillis() - start;
+        assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
         return response;
     }
 

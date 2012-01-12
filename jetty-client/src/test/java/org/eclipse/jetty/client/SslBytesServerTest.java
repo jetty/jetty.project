@@ -45,7 +45,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -226,6 +225,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -304,6 +304,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertNull(handshake.get(5, TimeUnit.SECONDS));
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -331,6 +332,129 @@ public class SslBytesServerTest extends SslBytesTest
         record = proxy.readFromServer();
         Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
+    }
+
+    @Test
+    public void testClientHelloIncompleteThenReset() throws Exception
+    {
+        final SSLSocket client = newClient();
+
+        threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                client.startHandshake();
+                return null;
+            }
+        });
+
+        // Client Hello
+        TLSRecord record = proxy.readFromClient();
+        byte[] bytes = record.getBytes();
+        byte[] chunk1 = new byte[2 * bytes.length / 3];
+        System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
+        proxy.flushToServer(100, chunk1);
+
+        proxy.sendRSTToServer();
+
+        // Wait a while to detect spinning
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        client.close();
+    }
+
+    @Test
+    public void testClientHelloThenReset() throws Exception
+    {
+        final SSLSocket client = newClient();
+
+        threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                client.startHandshake();
+                return null;
+            }
+        });
+
+        // Client Hello
+        TLSRecord record = proxy.readFromClient();
+        Assert.assertNotNull(record);
+        proxy.flushToServer(record);
+
+        proxy.sendRSTToServer();
+
+        // Wait a while to detect spinning
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        client.close();
+    }
+
+    @Test
+    public void testHandshakeThenReset() throws Exception
+    {
+        final SSLSocket client = newClient();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        proxy.sendRSTToServer();
+
+        // Wait a while to detect spinning
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        client.close();
+    }
+
+    @Test
+    public void testRequestIncompleteThenReset() throws Exception
+    {
+        final SSLSocket client = newClient();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                OutputStream clientOutput = client.getOutputStream();
+                clientOutput.write(("" +
+                        "GET / HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "\r\n").getBytes("UTF-8"));
+                clientOutput.flush();
+                return null;
+            }
+        });
+
+        // Application data
+        TLSRecord record = proxy.readFromClient();
+        byte[] bytes = record.getBytes();
+        byte[] chunk1 = new byte[2 * bytes.length / 3];
+        System.arraycopy(bytes, 0, chunk1, 0, chunk1.length);
+        proxy.flushToServer(100, chunk1);
+
+        proxy.sendRSTToServer();
+
+        // Wait a while to detect spinning
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        client.close();
     }
 
     @Test
@@ -377,6 +501,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -468,6 +593,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(750));
         Assert.assertThat(sslFlushes.get(), lessThan(750));
         Assert.assertThat(httpParses.get(), lessThan(150));
@@ -492,20 +618,12 @@ public class SslBytesServerTest extends SslBytesTest
         proxy.flushToClient(record);
     }
 
-    /**
-     * TODO
-     * Currently this test does not pass.
-     * The problem is a mix of Java not being able to perform SSL half closes
-     * (but SSL supporting it), and the current implementation in Jetty.
-     * See the test below, that passes and whose only difference is that we
-     * delay the output shutdown from the client.
-     *
-     * @throws Exception if the test fails
-     */
-    @Ignore
     @Test
     public void testRequestWithCloseAlertAndShutdown() throws Exception
     {
+        // See next test on why we only run in Linux
+        Assume.assumeTrue(OS.IS_LINUX);
+
         final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -555,10 +673,11 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
         // We can't forward to the client, its socket is already closed
 
-        // Socket close
-        record = proxy.readFromClient();
-        Assert.assertNull(String.valueOf(record), record);
-        proxy.flushToServer(record);
+        // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
 
         // Socket close
         record = proxy.readFromServer();
@@ -569,21 +688,16 @@ public class SslBytesServerTest extends SslBytesTest
     @Test
     public void testRequestWithCloseAlert() throws Exception
     {
-        if ( !OS.IS_LINUX )
-        {
-            // currently we are ignoring this test on anything other then linux
-            
-            //http://tools.ietf.org/html/rfc2246#section-7.2.1
+        // Currently we are ignoring this test on anything other then linux
+        // http://tools.ietf.org/html/rfc2246#section-7.2.1
 
-            // TODO (react to this portion which seems to allow win/mac behavior)  
-            //It is required that the other party respond with a close_notify alert of its own 
-            //and close down the connection immediately, discarding any pending writes. It is not
-            //required for the initiator of the close to wait for the responding
-            //close_notify alert before closing the read side of the connection.
-            return;
-        }
-        
-        
+        // TODO (react to this portion which seems to allow win/mac behavior)
+        // It is required that the other party respond with a close_notify alert of its own
+        // and close down the connection immediately, discarding any pending writes. It is not
+        // required for the initiator of the close to wait for the responding
+        // close_notify alert before closing the read side of the connection.
+        Assume.assumeTrue(OS.IS_LINUX);
+
         final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -634,6 +748,7 @@ public class SslBytesServerTest extends SslBytesTest
         // We can't forward to the client, its socket is already closed
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -692,6 +807,7 @@ public class SslBytesServerTest extends SslBytesTest
         proxy.flushToClient(record);
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -700,7 +816,7 @@ public class SslBytesServerTest extends SslBytesTest
     }
 
     @Test
-    public void testRequestWithBigContentWriteBlockedAndResetException() throws Exception
+    public void testRequestWithBigContentWriteBlockedThenReset() throws Exception
     {
         final SSLSocket client = newClient();
 
@@ -744,11 +860,10 @@ public class SslBytesServerTest extends SslBytesTest
         // connection, and this will cause an exception in the
         // server that is trying to write the data
 
-        proxy.resetServer();
+        proxy.sendRSTToServer();
 
         // Wait a while to detect spinning
-        TimeUnit.SECONDS.sleep(1);
-
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -762,17 +877,17 @@ public class SslBytesServerTest extends SslBytesTest
         if ( !OS.IS_LINUX )
         {
             // currently we are ignoring this test on anything other then linux
-            
+
             //http://tools.ietf.org/html/rfc2246#section-7.2.1
 
-            // TODO (react to this portion which seems to allow win/mac behavior)  
-            //It is required that the other party respond with a close_notify alert of its own 
+            // TODO (react to this portion which seems to allow win/mac behavior)
+            //It is required that the other party respond with a close_notify alert of its own
             //and close down the connection immediately, discarding any pending writes. It is not
             //required for the initiator of the close to wait for the responding
             //close_notify alert before closing the read side of the connection.
             return;
         }
-        
+
         final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -831,6 +946,7 @@ public class SslBytesServerTest extends SslBytesTest
         // We can't forward to the client, its socket is already closed
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -900,6 +1016,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -953,6 +1070,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(150));
@@ -974,6 +1092,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(150));
@@ -1105,6 +1224,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
@@ -1264,6 +1384,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(100));
@@ -1312,7 +1433,7 @@ public class SslBytesServerTest extends SslBytesTest
         // Client should close the socket, but let's hold it open.
 
         // Check that we did not spin
-        TimeUnit.MILLISECONDS.sleep(100);
+        TimeUnit.MILLISECONDS.sleep(500);
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
