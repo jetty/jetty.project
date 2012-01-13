@@ -43,4 +43,10 @@ public class StdErrCapture
         String output = new String(test.toByteArray());
         Assert.assertThat(output,not(containsString(unexpectedString)));
     }
+    
+    public String toString()
+    {
+        err.flush();
+        return new String(test.toByteArray());
+    }
 }

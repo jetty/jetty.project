@@ -348,8 +348,8 @@ public class WebSocketClient
 
         return holder;
     }
-    
-    public static final InetSocketAddress toSocketAddress(URI uri)
+
+    public static InetSocketAddress toSocketAddress(URI uri)
     {
         String scheme = uri.getScheme();
         if (!("ws".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme)))
@@ -360,8 +360,7 @@ public class WebSocketClient
         if (port < 0)
             port = "ws".equals(scheme) ? 80 : 443;
 
-        InetSocketAddress address = new InetSocketAddress(uri.getHost(), port);
-        return address;
+        return new InetSocketAddress(uri.getHost(), port);
     }
 
     /* ------------------------------------------------------------ */
@@ -371,16 +370,8 @@ public class WebSocketClient
     {
         final WebSocket _websocket;
         final URI _uri;
-        final String _protocol;
-        final String _origin;
-        final MaskGen _maskGen;
-        final int _maxIdleTime;
-        final int _maxTextMessageSize;
-        final int _maxBinaryMessageSize;
-        final Map<String,String> _cookies;
-        final List<String> _extensions;
+        final WebSocketClient _client;
         final CountDownLatch _done = new CountDownLatch(1);
-
         ByteChannel _channel;
         WebSocketConnection _connection;
         Throwable _exception;
@@ -389,14 +380,7 @@ public class WebSocketClient
         {
             _websocket=websocket;
             _uri=uri;
-            _protocol=client._protocol;
-            _origin=client._origin;
-            _maskGen=client._maskGen;
-            _maxIdleTime=client._maxIdleTime;
-            _maxTextMessageSize=client._maxTextMessageSize;
-            _maxBinaryMessageSize=client._maxBinaryMessageSize;
-            _cookies=client._cookies;
-            _extensions=client._extensions;
+            _client=client;
             _channel=channel;
         }
 
@@ -404,8 +388,10 @@ public class WebSocketClient
         {
             try
             {
-                connection.getConnection().setMaxTextMessageSize(_maxTextMessageSize);
-                connection.getConnection().setMaxBinaryMessageSize(_maxBinaryMessageSize);
+                _client.getFactory().addConnection(connection);
+
+                connection.getConnection().setMaxTextMessageSize(_client.getMaxTextMessageSize());
+                connection.getConnection().setMaxBinaryMessageSize(_client.getMaxBinaryMessageSize());
 
                 WebSocketConnection con;
                 synchronized (this)
@@ -460,12 +446,12 @@ public class WebSocketClient
 
         public Map<String,String> getCookies()
         {
-            return _cookies;
+            return _client.getCookies();
         }
 
         public String getProtocol()
         {
-            return _protocol;
+            return _client.getProtocol();
         }
 
         public WebSocket getWebSocket()
@@ -480,17 +466,17 @@ public class WebSocketClient
 
         public int getMaxIdleTime()
         {
-            return _maxIdleTime;
+            return _client.getMaxIdleTime();
         }
 
         public String getOrigin()
         {
-            return _origin;
+            return _client.getOrigin();
         }
 
         public MaskGen getMaskGen()
         {
-            return _maskGen;
+            return _client.getMaskGen();
         }
 
         @Override

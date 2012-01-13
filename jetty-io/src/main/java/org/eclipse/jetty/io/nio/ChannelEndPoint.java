@@ -246,8 +246,7 @@ public class ChannelEndPoint implements EndPoint
             }
             catch (IOException x)
             {
-                LOG.debug(x.toString());
-                LOG.ignore(x);
+                LOG.debug("Exception while filling", x);
                 try
                 {
                     if (_channel.isOpen())

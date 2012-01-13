@@ -50,7 +50,7 @@ public class DefaultHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(DefaultHandler.class);
 
-    final long _faviconModified=(System.currentTimeMillis()/1000)*1000;
+    final long _faviconModified=(System.currentTimeMillis()/1000)*1000L;
     byte[] _favicon;
     boolean _serveIcon=true;
     boolean _showContexts=true;

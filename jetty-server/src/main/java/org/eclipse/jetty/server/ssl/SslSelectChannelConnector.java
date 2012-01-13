@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */
@@ -54,9 +55,15 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     }
 
     /* ------------------------------------------------------------ */
+    /** Construct with explicit SslContextFactory.
+     * The SslContextFactory passed is added via {@link #addBean(Object)} so that 
+     * it's lifecycle may be managed with {@link AggregateLifeCycle}.
+     * @param sslContextFactory
+     */
     public SslSelectChannelConnector(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
+        addBean(_sslContextFactory);
         setUseDirectBuffers(false);
         setSoLingerTime(30000);
     }
@@ -597,7 +604,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     protected void doStart() throws Exception
     {
         _sslContextFactory.checkKeyStore();
-
         _sslContextFactory.start();
 
         SSLEngine sslEngine = _sslContextFactory.newSslEngine();
@@ -627,7 +633,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected void doStop() throws Exception
     {
-        _sslContextFactory.stop();
         _sslBuffers=null;
         super.doStop();
     }

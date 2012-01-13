@@ -19,211 +19,85 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /* ------------------------------------------------------------ */
 /** Abstract Buffer pool.
- * simple unbounded pool of buffers for header, request and response sizes.
- *
  */
-public class HttpBuffers extends AbstractLifeCycle
+public interface HttpBuffers
 {
-    private int _requestBufferSize=16*1024;
-    private int _requestHeaderSize=6*1024;
-    private int _responseBufferSize=32*1024;
-    private int _responseHeaderSize=6*1024;
-    private int _maxBuffers=1024;
-    
-    private Buffers.Type _requestBufferType=Buffers.Type.BYTE_ARRAY;
-    private Buffers.Type _requestHeaderType=Buffers.Type.BYTE_ARRAY;
-    private Buffers.Type _responseBufferType=Buffers.Type.BYTE_ARRAY;
-    private Buffers.Type _responseHeaderType=Buffers.Type.BYTE_ARRAY;
-    
-    private Buffers _requestBuffers;
-    private Buffers _responseBuffers;
-    
-    
-    public HttpBuffers()
-    {
-        super();
-    }
-    
     /**
      * @return the requestBufferSize
      */
-    public int getRequestBufferSize()
-    {
-        return _requestBufferSize;
-    }
+    public int getRequestBufferSize();
     
     /**
      * @param requestBufferSize the requestBufferSize to set
      */
-    public void setRequestBufferSize(int requestBufferSize)
-    {
-        _requestBufferSize = requestBufferSize;
-    }
+    public void setRequestBufferSize(int requestBufferSize);
 
     /**
      * @return the requestHeaderSize
      */
-    public int getRequestHeaderSize()
-    {
-        return _requestHeaderSize;
-    }
+    public int getRequestHeaderSize();
 
     /**
      * @param requestHeaderSize the requestHeaderSize to set
      */
-    public void setRequestHeaderSize(int requestHeaderSize)
-    {
-        _requestHeaderSize = requestHeaderSize;
-    }
+    public void setRequestHeaderSize(int requestHeaderSize);
 
     /**
      * @return the responseBufferSize
      */
-    public int getResponseBufferSize()
-    {
-        return _responseBufferSize;
-    }
+    public int getResponseBufferSize();
 
     /**
      * @param responseBufferSize the responseBufferSize to set
      */
-    public void setResponseBufferSize(int responseBufferSize)
-    {
-        _responseBufferSize = responseBufferSize;
-    }
+    public void setResponseBufferSize(int responseBufferSize);
 
     /**
      * @return the responseHeaderSize
      */
-    public int getResponseHeaderSize()
-    {
-        return _responseHeaderSize;
-    }
+    public int getResponseHeaderSize();
 
     /**
      * @param responseHeaderSize the responseHeaderSize to set
      */
-    public void setResponseHeaderSize(int responseHeaderSize)
-    {
-        _responseHeaderSize = responseHeaderSize;
-    }
+    public void setResponseHeaderSize(int responseHeaderSize);
 
     /**
      * @return the requestBufferType
      */
-    public Buffers.Type getRequestBufferType()
-    {
-        return _requestBufferType;
-    }
-
-    /**
-     * @param requestBufferType the requestBufferType to set
-     */
-    protected void setRequestBufferType(Buffers.Type requestBufferType)
-    {
-        _requestBufferType = requestBufferType;
-    }
+    public Buffers.Type getRequestBufferType();
 
     /**
      * @return the requestHeaderType
      */
-    public Buffers.Type getRequestHeaderType()
-    {
-        return _requestHeaderType;
-    }
-
-    /**
-     * @param requestHeaderType the requestHeaderType to set
-     */
-    protected void setRequestHeaderType(Buffers.Type requestHeaderType)
-    {
-        _requestHeaderType = requestHeaderType;
-    }
+    public Buffers.Type getRequestHeaderType();
 
     /**
      * @return the responseBufferType
      */
-    public Buffers.Type getResponseBufferType()
-    {
-        return _responseBufferType;
-    }
-
-    /**
-     * @param responseBufferType the responseBufferType to set
-     */
-    protected void setResponseBufferType(Buffers.Type responseBufferType)
-    {
-        _responseBufferType = responseBufferType;
-    }
+    public Buffers.Type getResponseBufferType();
 
     /**
      * @return the responseHeaderType
      */
-    public Buffers.Type getResponseHeaderType()
-    {
-        return _responseHeaderType;
-    }
-
-    /**
-     * @param responseHeaderType the responseHeaderType to set
-     */
-    protected void setResponseHeaderType(Buffers.Type responseHeaderType)
-    {
-        _responseHeaderType = responseHeaderType;
-    }
+    public Buffers.Type getResponseHeaderType();
 
     /**
      * @param requestBuffers the requestBuffers to set
      */
-    public void setRequestBuffers(Buffers requestBuffers)
-    {
-        _requestBuffers = requestBuffers;
-    }
+    public void setRequestBuffers(Buffers requestBuffers);
 
     /**
      * @param responseBuffers the responseBuffers to set
      */
-    public void setResponseBuffers(Buffers responseBuffers)
-    {
-        _responseBuffers = responseBuffers;
-    }
+    public void setResponseBuffers(Buffers responseBuffers);
 
-    @Override
-    protected void doStart()
-        throws Exception
-    {
-        _requestBuffers=BuffersFactory.newBuffers(_requestHeaderType,_requestHeaderSize,_requestBufferType,_requestBufferSize,_requestBufferType,getMaxBuffers());
-        _responseBuffers=BuffersFactory.newBuffers(_responseHeaderType,_responseHeaderSize,_responseBufferType,_responseBufferSize,_responseBufferType,getMaxBuffers());
-        super.doStart();
-    }
-    
-    @Override
-    protected void doStop()
-        throws Exception
-    {
-        _requestBuffers=null;
-        _responseBuffers=null;
-    }
+    public Buffers getRequestBuffers();
 
-    public Buffers getRequestBuffers()
-    {
-        return _requestBuffers;
-    }
-    
+    public Buffers getResponseBuffers();
 
-    public Buffers getResponseBuffers()
-    {
-        return _responseBuffers;
-    }
+    public void setMaxBuffers(int maxBuffers);
 
-    public void setMaxBuffers(int maxBuffers)
-    {
-        _maxBuffers = maxBuffers;
-    }
-
-    public int getMaxBuffers()
-    {
-        return _maxBuffers;
-    }
+    public int getMaxBuffers();
     
 }

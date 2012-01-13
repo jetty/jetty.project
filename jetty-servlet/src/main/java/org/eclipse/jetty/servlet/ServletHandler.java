@@ -374,8 +374,8 @@ public class ServletHandler extends ScopedHandler
 
                 String servlet_path_spec=(String)entry.getKey(); 
                 String servlet_path=entry.getMapped()!=null?entry.getMapped():PathMap.pathMatch(servlet_path_spec,target);
-                String path_info=PathMap.pathInfo(servlet_path_spec,target);
-
+                String path_info=PathMap.pathInfo(servlet_path_spec,target); 
+                
                 if (DispatcherType.INCLUDE.equals(type))
                 {
                     baseRequest.setAttribute(Dispatcher.INCLUDE_SERVLET_PATH,servlet_path);
@@ -393,7 +393,7 @@ public class ServletHandler extends ScopedHandler
             // look for a servlet by name!
             servlet_holder=(ServletHolder)_servletNameMap.get(target);
         }
-
+       
         if (LOG.isDebugEnabled())
             LOG.debug("servlet {}|{}|{} -> {}",baseRequest.getContextPath(),baseRequest.getServletPath(),baseRequest.getPathInfo(),servlet_holder);
 

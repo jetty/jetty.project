@@ -1,26 +1,9 @@
 package org.eclipse.jetty.util.log;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class NamedLogTest
 {
-    private static Logger originalLogger;
-
-    @SuppressWarnings("deprecation")
-    @BeforeClass
-    public static void rememberOriginalLogger()
-    {
-        originalLogger = Log.getLog();
-    }
-
-    @AfterClass
-    public static void restoreOriginalLogger()
-    {
-        Log.setLog(originalLogger);
-    }
-
     @Test
     public void testNamedLogging()
     {
@@ -37,7 +20,7 @@ public class NamedLogTest
         red.generateLogs();
         green.generateLogs();
         blue.generateLogs();
-
+        
         output.assertContains(Red.class.getName());
         output.assertContains(Green.class.getName());
         output.assertContains(Blue.class.getName());

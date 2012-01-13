@@ -20,7 +20,7 @@ Command Line Options:
                    when the start.ini includes -X or -D arguments.
                    
   --exec           Run the generated command line (see --dry-run) in 
-                   a sub processes.  This can be used when start.ini
+                   a sub process. This can be used when start.ini
                    contains -X or -D arguments, but creates an extra
                    JVM instance.
                      
@@ -36,8 +36,10 @@ Command Line Options:
   
   --ini=<file>     Load command line arguments from a file. If 
                    no --ini options are specified, then the 
-                   start.ini file will be read if it exists.
-                   A --ini option with no file indicates that
+                   start.ini file will be read if it exists in 
+                   jetty.home. If specified jetty.home/start.ini
+                   and additional .ini files in jetty.home/start.d/
+                   will NOT be read. A --ini option with no file indicates that
                    start.ini should not be read.
                    
   --pre=<file>     Specify a configuration file that is to be processed
@@ -116,8 +118,11 @@ Available Configurations:
 Defaults:
   A start.ini file may be used to specify default arguments to start.jar,
   which are used if no command line arguments are provided and override 
-  the defaults in the start.config file. If --ini options are provided on 
-  the command line, then start.ini will no be read. The current start.ini 
-  arguments are:
+  the defaults in the start.config file. If the directory jetty.home/start.d
+  exists, then multiple *.ini files will be read from that directory in 
+  alphabetical order. If --ini options are provided on  the command line,
+  then start.ini and start.d will NOT be read. 
+  
+  The current start.ini arguments are:
 
     @STARTINI@

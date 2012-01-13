@@ -54,9 +54,9 @@ public class HashSessionManager extends AbstractSessionManager
     private Timer _timer;
     private boolean _timerStop=false;
     private TimerTask _task;
-    int _scavengePeriodMs=30000;
-    int _savePeriodMs=0; //don't do period saves by default
-    int _idleSavePeriodMs = 0; // don't idle save sessions by default.
+    long _scavengePeriodMs=30000;
+    long _savePeriodMs=0; //don't do period saves by default
+    long _idleSavePeriodMs = 0; // don't idle save sessions by default.
     private TimerTask _saveTask;
     File _storeDir;
     private boolean _lazyLoad=false;
@@ -135,7 +135,7 @@ public class HashSessionManager extends AbstractSessionManager
      */
     public int getScavengePeriod()
     {
-        return _scavengePeriodMs/1000;
+        return (int)(_scavengePeriodMs/1000);
     }
 
 
@@ -161,7 +161,7 @@ public class HashSessionManager extends AbstractSessionManager
       if (_idleSavePeriodMs <= 0)
         return 0;
 
-      return _idleSavePeriodMs / 1000;
+      return (int)(_idleSavePeriodMs / 1000);
     }
 
     /* ------------------------------------------------------------ */
@@ -175,7 +175,7 @@ public class HashSessionManager extends AbstractSessionManager
      */
     public void setIdleSavePeriod(int seconds)
     {
-      _idleSavePeriodMs = seconds * 1000;
+      _idleSavePeriodMs = seconds * 1000L;
     }
 
     /* ------------------------------------------------------------ */
@@ -183,7 +183,7 @@ public class HashSessionManager extends AbstractSessionManager
     public void setMaxInactiveInterval(int seconds)
     {
         super.setMaxInactiveInterval(seconds);
-        if (_dftMaxIdleSecs>0&&_scavengePeriodMs>_dftMaxIdleSecs*1000)
+        if (_dftMaxIdleSecs>0&&_scavengePeriodMs>_dftMaxIdleSecs*1000L)
             setScavengePeriod((_dftMaxIdleSecs+9)/10);
     }
 
@@ -193,7 +193,7 @@ public class HashSessionManager extends AbstractSessionManager
      */
     public void setSavePeriod (int seconds)
     {
-        int period = (seconds * 1000);
+        long period = (seconds * 1000L);
         if (period < 0)
             period=0;
         _savePeriodMs=period;
@@ -236,7 +236,7 @@ public class HashSessionManager extends AbstractSessionManager
         if (_savePeriodMs<=0)
             return 0;
 
-        return _savePeriodMs/1000;
+        return (int)(_savePeriodMs/1000);
     }
 
     /* ------------------------------------------------------------ */
@@ -248,8 +248,8 @@ public class HashSessionManager extends AbstractSessionManager
         if (seconds==0)
             seconds=60;
 
-        int old_period=_scavengePeriodMs;
-        int period=seconds*1000;
+        long old_period=_scavengePeriodMs;
+        long period=seconds*1000L;
         if (period>60000)
             period=60000;
         if (period<1000)
@@ -298,7 +298,7 @@ public class HashSessionManager extends AbstractSessionManager
             for (Iterator<HashedSession> i=_sessions.values().iterator(); i.hasNext();)
             {
                 HashedSession session=i.next();
-                long idleTime=session.getMaxInactiveInterval()*1000;
+                long idleTime=session.getMaxInactiveInterval()*1000L;
                 if (idleTime>0&&session.getAccessed()+idleTime<now)
                 {
                     // Found a stale session, add it to the list

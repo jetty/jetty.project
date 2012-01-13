@@ -23,10 +23,13 @@ import org.eclipse.jetty.io.EndPoint;
 
 public class WebSocketServletConnectionD06 extends WebSocketConnectionD06 implements WebSocketServletConnection
 {
-    public WebSocketServletConnectionD06(WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
+    private final WebSocketFactory factory;
+
+    public WebSocketServletConnectionD06(WebSocketFactory factory, WebSocket websocket, EndPoint endpoint, WebSocketBuffers buffers, long timestamp, int maxIdleTime, String protocol)
             throws IOException
     {
         super(websocket,endpoint,buffers,timestamp,maxIdleTime,protocol);
+        this.factory = factory;
     }
 
     /* ------------------------------------------------------------ */
@@ -46,5 +49,12 @@ public class WebSocketServletConnectionD06 extends WebSocketConnectionD06 implem
 
         onFrameHandshake();
         onWebSocketOpen();
+    }
+
+    @Override
+    public void onClose()
+    {
+        super.onClose();
+        factory.removeConnection(this);
     }
 }

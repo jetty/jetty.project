@@ -69,7 +69,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected Timer _timer; //scavenge timer
     protected TimerTask _task; //scavenge task
     protected long _lastScavengeTime;
-    protected long _scavengeIntervalMs = 1000 * 60 * 10; //10mins
+    protected long _scavengeIntervalMs = 1000L * 60 * 10; //10mins
     protected String _blobType; //if not set, is deduced from the type of the database at runtime
     
     protected String _createSessionIdTable;
@@ -245,7 +245,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             sec=60;
 
         long old_period=_scavengeIntervalMs;
-        long period=sec*1000;
+        long period=sec*1000L;
       
         _scavengeIntervalMs=period;
         

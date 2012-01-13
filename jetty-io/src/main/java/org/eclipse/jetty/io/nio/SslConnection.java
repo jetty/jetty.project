@@ -541,6 +541,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         switch(result.getStatus())
         {
             case BUFFER_UNDERFLOW:
+                if (_endp.isInputShutdown())
+                    _inbound.clear();
                 break;
 
             case BUFFER_OVERFLOW:
@@ -598,7 +600,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         {
             return _engine;
         }
-        
+
         public AsyncEndPoint getEndpoint()
         {
             return _aEndp;

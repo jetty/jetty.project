@@ -61,6 +61,13 @@ import org.eclipse.jetty.util.TypeUtil;
  * <p>
  * If the init parameter "delete" is set to "true", any files created will be deleted when the
  * current request returns.
+ * <p>
+ * The init parameter maxFormKeys sets the maximum number of keys that may be present in a 
+ * form (default set by system property org.eclipse.jetty.server.Request.maxFormKeys or 1000) to protect 
+ * against DOS attacks by bad hash keys. 
+ * <p>
+ * The init parameter deleteFiles controls if uploaded files are automatically deleted after the request
+ * completes.
  * 
  * Use init parameter "maxFileSize" to set the max size file that can be uploaded.
  * 
@@ -77,6 +84,7 @@ public class MultiPartFilter implements Filter
     private int _fileOutputBuffer = 0;
     private long _maxFileSize = -1L;
     private long _maxRequestSize = -1L;
+    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",1000).intValue();
 
     /* ------------------------------------------------------------------------------- */
     /**
@@ -97,6 +105,9 @@ public class MultiPartFilter implements Filter
             _maxRequestSize = Long.parseLong(maxRequestSize.trim());
         
         _context=filterConfig.getServletContext();
+        String mfks = filterConfig.getInitParameter("maxFormKeys");
+        if (mfks!=null)
+            _maxFormKeys=Integer.parseInt(mfks);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -138,8 +149,10 @@ public class MultiPartFilter implements Filter
             Collection<Part> parts = mpis.getParts();
             if (parts != null)
             {
-                for (Part p:parts)
+                Iterator<Part> itor = parts.iterator();
+                while (itor.hasNext() && params.size() < _maxFormKeys)
                 {
+                    Part p = itor.next();
                     MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
                     if (mp.getFile() != null)
                     {

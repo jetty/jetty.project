@@ -19,7 +19,7 @@ my be specified if a match is not achieved.
 -->
 
 <!ENTITY % CONFIG "Set|Get|Put|Call|New|Ref|Array|Map|Property">
-<!ENTITY % VALUE "#PCDATA|Get|Call|New|Ref|Array|Map|SystemProperty|Property">
+<!ENTITY % VALUE "#PCDATA|Get|Call|New|Ref|Array|Map|SystemProperty|Env|Property">
 
 <!ENTITY % TYPEATTR "type CDATA #IMPLIED " > <!-- String|Character|Short|Byte|Integer|Long|Boolean|Float|Double|char|short|byte|int|long|boolean|float|double|URL|InetAddress|InetAddrPort| #classname -->
 <!ENTITY % IMPLIEDCLASSATTR "class NMTOKEN #IMPLIED" >
@@ -244,6 +244,24 @@ This is equivalent to:
 -->
 <!ELEMENT SystemProperty EMPTY>
 <!ATTLIST SystemProperty %NAMEATTR; %DEFAULTATTR; %IDATTR;>
+
+<!--
+Environment variable Element.
+This element allows OS Environment variables to be retrieved as
+part of the value of elements such as Set, Put, Arg, etc.
+The name attribute specifies the env variable name and the optional
+default argument provides a default value.
+
+ <Env name="Test" default="value" />
+
+This is equivalent to:
+
+ String v=System.getEnv("Test");
+ if (v==null) v="value";
+ 
+-->
+<!ELEMENT Env EMPTY>
+<!ATTLIST Env %NAMEATTR; %DEFAULTATTR; %IDATTR;>
 
 
 <!--

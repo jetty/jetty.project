@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.nio.BlockingChannelConnector;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
@@ -49,10 +50,10 @@ public class LikeJettyXml
         
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        mbContainer.start();
         server.getContainer().addEventListener(mbContainer);
-        server.addBean(mbContainer);
-        mbContainer.addBean(Log.getRootLogger());
-
+        server.addBean(mbContainer,true);
+        mbContainer.addBean(new Log());
         
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -68,6 +69,13 @@ public class LikeJettyXml
         
         server.setConnectors(new Connector[]
         { connector });
+        
+        BlockingChannelConnector bConnector = new BlockingChannelConnector();
+        bConnector.setPort(8888);
+        bConnector.setMaxIdleTime(30000);
+        bConnector.setConfidentialPort(8443);
+        bConnector.setAcceptors(1);
+        server.addConnector(bConnector);
 
         SslSelectChannelConnector ssl_connector = new SslSelectChannelConnector();
         ssl_connector.setPort(8443);

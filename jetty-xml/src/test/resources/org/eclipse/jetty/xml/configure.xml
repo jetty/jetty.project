@@ -81,6 +81,7 @@
   <Put name="SomethingElse"><SystemProperty name="floople" default="xxx"/></Put>
   <Put name="Boolean" type="Boolean">True</Put>
   <Put name="Float" type="Float">2.3</Put>
+  <Put name="Env"><Env name="HOME"/></Put>
 
   <Call name="call">
   </Call>
