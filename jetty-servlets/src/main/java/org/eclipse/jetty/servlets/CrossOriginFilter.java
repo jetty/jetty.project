@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -44,7 +43,14 @@ import org.eclipse.jetty.util.log.Logger;
  * <ul>
  * <li><b>allowedOrigins</b>, a comma separated list of origins that are
  * allowed to access the resources. Default value is <b>*</b>, meaning all
- * origins</li>
+ * origins.<br />
+ * If an allowed origin contains one or more * characters (for example
+ * http://*.domain.com), then "*" characters are converted to ".*", "."
+ * characters are escaped to "\." and the resulting allowed origin
+ * interpreted as a regular expression.<br />
+ * Allowed origins can therefore be more complex expressions such as
+ * https?://*.domain.[a-z]{3} that matches http or https, multiple subdomains
+ * and any 3 letter top-level domain (.com, .net, .org, etc.).</li>
  * <li><b>allowedMethods</b>, a comma separated list of HTTP methods that
  * are allowed to be used when accessing the resources. Default value is
  * <b>GET,POST</b></li>
