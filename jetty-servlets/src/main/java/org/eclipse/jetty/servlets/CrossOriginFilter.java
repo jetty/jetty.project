@@ -18,7 +18,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -42,7 +43,14 @@ import org.eclipse.jetty.util.log.Logger;
  * <ul>
  * <li><b>allowedOrigins</b>, a comma separated list of origins that are
  * allowed to access the resources. Default value is <b>*</b>, meaning all
- * origins</li>
+ * origins.<br />
+ * If an allowed origin contains one or more * characters (for example
+ * http://*.domain.com), then "*" characters are converted to ".*", "."
+ * characters are escaped to "\." and the resulting allowed origin
+ * interpreted as a regular expression.<br />
+ * Allowed origins can therefore be more complex expressions such as
+ * https?://*.domain.[a-z]{3} that matches http or https, multiple subdomains
+ * and any 3 letter top-level domain (.com, .net, .org, etc.).</li>
  * <li><b>allowedMethods</b>, a comma separated list of HTTP methods that
  * are allowed to be used when accessing the resources. Default value is
  * <b>GET,POST</b></li>
@@ -229,19 +237,34 @@ public class CrossOriginFilter implements Filter
             if (origin.trim().length() == 0)
                 continue;
 
-            boolean allowed = false;
             for (String allowedOrigin : allowedOrigins)
             {
-                if (allowedOrigin.equals(origin))
+                if (allowedOrigin.contains("*"))
                 {
-                    allowed = true;
-                    break;
+                    Matcher matcher = createMatcher(origin,allowedOrigin);
+                    if (matcher.matches())
+                        return true;
+                }
+                else if (allowedOrigin.equals(origin))
+                {
+                    return true;
                 }
             }
-            if (!allowed)
-                return false;
         }
-        return true;
+        return false;
+    }
+
+    private Matcher createMatcher(String origin, String allowedOrigin)
+    {
+        String regex = parseAllowedWildcardOriginToRegex(allowedOrigin);
+        Pattern pattern = Pattern.compile(regex);
+        return pattern.matcher(origin);
+    }
+
+    private String parseAllowedWildcardOriginToRegex(String allowedOrigin)
+    {
+        String regex = allowedOrigin.replace(".","\\.");
+        return regex.replace("*",".*"); // we want to be greedy here to match multiple subdomains, thus we use .*
     }
 
     private boolean isSimpleRequest(HttpServletRequest request)

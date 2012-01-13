@@ -1,6 +1,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SslConnection;
+import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -102,7 +104,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             protected AsyncConnection newPlainConnection(SocketChannel channel, AsyncEndPoint endPoint)
             {
-                return new org.eclipse.jetty.server.AsyncHttpConnection(this, endPoint, getServer())
+                return new AsyncHttpConnection(this, endPoint, getServer())
                 {
                     @Override
                     protected HttpParser newHttpParser(Buffers requestBuffers, EndPoint endPoint, HttpParser.EventHandler requestHandler)
@@ -135,20 +137,31 @@ public class SslBytesServerTest extends SslBytesTest
         {
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
             {
-                request.setHandled(true);
-                String contentLength = request.getHeader("Content-Length");
-                if (contentLength != null)
+                try
                 {
-                    int length = Integer.parseInt(contentLength);
-                    ServletInputStream input = httpRequest.getInputStream();
-                    ServletOutputStream output = httpResponse.getOutputStream();
-                    byte[] buffer = new byte[32 * 1024];
-                    for (int i = 0; i < length; ++i)
+                    request.setHandled(true);
+                    String contentLength = request.getHeader("Content-Length");
+                    if (contentLength != null)
                     {
-                        int read = input.read(buffer);
-                        if ("/echo".equals(target))
-                            output.write(buffer, 0, read);
+                        int length = Integer.parseInt(contentLength);
+                        ServletInputStream input = httpRequest.getInputStream();
+                        ServletOutputStream output = httpResponse.getOutputStream();
+                        byte[] buffer = new byte[32 * 1024];
+                        while (length > 0)
+                        {
+                            int read = input.read(buffer);
+                            if (read < 0)
+                                throw new EOFException();
+                            length -= read;
+                            if (target.startsWith("/echo"))
+                                output.write(buffer, 0, read);
+                        }
                     }
+                }
+                catch (IOException x)
+                {
+                    if (!(target.endsWith("suppress_exception")))
+                        throw x;
                 }
             }
         });
@@ -860,6 +873,59 @@ public class SslBytesServerTest extends SslBytesTest
         // connection, and this will cause an exception in the
         // server that is trying to write the data
 
+        TimeUnit.MILLISECONDS.sleep(500);
+        proxy.sendRSTToServer();
+
+        // Wait a while to detect spinning
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        client.close();
+    }
+
+    @Test
+    public void testRequestWithBigContentReadBlockedThenReset() throws Exception
+    {
+        final SSLSocket client = newClient();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        byte[] data = new byte[128 * 1024];
+        Arrays.fill(data, (byte)'X');
+        final String content = new String(data, "UTF-8");
+        Future<Object> request = threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                OutputStream clientOutput = client.getOutputStream();
+                clientOutput.write(("" +
+                        "GET /echo_suppress_exception HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Content-Length: " + content.length() + "\r\n" +
+                        "\r\n" +
+                        content).getBytes("UTF-8"));
+                clientOutput.flush();
+                return null;
+            }
+        });
+
+        // Nine TLSRecords will be generated for the request,
+        // but we write only 5 of them, so the server goes in read blocked state
+        for (int i = 0; i < 5; ++i)
+        {
+            // Application data
+            TLSRecord record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+            proxy.flushToServer(record, 0);
+        }
+        Assert.assertNull(request.get(5, TimeUnit.SECONDS));
+
+        // The server should be read blocked, and we send a RST
+        TimeUnit.MILLISECONDS.sleep(500);
         proxy.sendRSTToServer();
 
         // Wait a while to detect spinning
