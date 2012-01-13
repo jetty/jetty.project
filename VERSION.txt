@@ -1,5 +1,33 @@
 jetty-8.1.0-SNAPSHOT
+
+jetty-8.1.0.RC4 - 13 January 2012
+ + 365048 jetty Http client does not send proxy authentication when requesting
+   a Https-resource through a web-proxy.
+ + 366774 removed XSS vulnerbility
+ + 367099 Upgrade jetty-websocket for RFC 6455 - Addendum.
+ + 367433 added tests to investigate
+ + 367435 improved D00 test harness
+ + 367485 HttpExchange canceled before response do not release connection.
+ + 367502 WebSocket connections should be closed when application context is
+   stopped.
  + 367548 jetty-osgi-boot must not import the nested package twice
+ + 367591 corrected configuration.xml version to 7.6
+ + 367635 Added support for start.d directory
+ + 367716 simplified maxIdleTime logic
+ + 368035 WebSocketClientFactory does not invoke super.doStop().
+ + 368060 do not encode sendRedirect URLs
+ + 368112 NPE on <jsp-config><taglib> element parsing web.xml
+ + 368113 Support servlet mapping to ""
+ + 368114 Protect against non-Strings in System properties for Log
+ + 368189 WebSocketClientFactory should not manage external thread pool. 368240
+   - Improve AggregateLifeCycle handling of shared lifecycles
+ + 368215 Remove debug from jaspi
+ + 368240 Better handling of locally created ThreadPool. Forgot to null out
+   field.
+ + 368291 Change warning to info for NoSuchFieldException on
+   BeanELResolver.properties
+ + 367638 limit number of form parameters to avoid DOS
+ + JETTY-1467 close half closed when idle
 
 jetty-8.1.0.RC2 - 22 December 2011
  + 359329 jetty-jaspi must exports its packages. jetty-plus must import
