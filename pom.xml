@@ -6,7 +6,7 @@
     <version>19</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>8.1.0-SNAPSHOT</version>
+  <version>8.1.0.RC4</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
