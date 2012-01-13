@@ -15,6 +15,9 @@ package org.eclipse.jetty.util.log;
 
 import static org.hamcrest.Matchers.is;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -23,18 +26,23 @@ import org.junit.Test;
 public class LogTest
 {
     private static Logger originalLogger;
+    private static Map<String,Logger> originalLoggers;
 
     @SuppressWarnings("deprecation")
     @BeforeClass
     public static void rememberOriginalLogger()
     {
         originalLogger = Log.getLog();
+        originalLoggers = new HashMap<String, Logger>(Log.getLoggers());
+        Log.getMutableLoggers().clear();
     }
 
     @AfterClass
     public static void restoreOriginalLogger()
     {
         Log.setLog(originalLogger);
+        Log.getMutableLoggers().clear();
+        Log.getMutableLoggers().putAll(originalLoggers);
     }
     
     @Test

@@ -59,6 +59,13 @@ import org.eclipse.jetty.util.TypeUtil;
  * <p>
  * If the init parameter "delete" is set to "true", any files created will be deleted when the
  * current request returns.
+ * <p>
+ * The init parameter maxFormKeys sets the maximum number of keys that may be present in a 
+ * form (default set by system property org.eclipse.jetty.server.Request.maxFormKeys or 1000) to protect 
+ * against DOS attacks by bad hash keys. 
+ * <p>
+ * The init parameter deleteFiles controls if uploaded files are automatically deleted after the request
+ * completes.
  * 
  */
 public class MultiPartFilter implements Filter
@@ -69,6 +76,7 @@ public class MultiPartFilter implements Filter
     private boolean _deleteFiles;
     private ServletContext _context;
     private int _fileOutputBuffer = 0;
+    private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",1000).intValue();
 
     /* ------------------------------------------------------------------------------- */
     /**
@@ -82,6 +90,9 @@ public class MultiPartFilter implements Filter
         if(fileOutputBuffer!=null)
             _fileOutputBuffer = Integer.parseInt(fileOutputBuffer);
         _context=filterConfig.getServletContext();
+        String mfks = filterConfig.getInitParameter("maxFormKeys");
+        if (mfks!=null)
+            _maxFormKeys=Integer.parseInt(mfks);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -134,7 +145,7 @@ public class MultiPartFilter implements Filter
             String content_transfer_encoding=null;
             
             
-            outer:while(!lastPart)
+            outer:while(!lastPart && params.size()<_maxFormKeys)
             {
                 String type_content=null;
                 

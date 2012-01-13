@@ -1,5 +1,3 @@
-package org.eclipse.jetty.rewrite.handler;
-
 //========================================================================
 //Copyright (c) 2006-2009 Mort Bay Consulting Pty. Ltd.
 //------------------------------------------------------------------------
@@ -12,12 +10,10 @@ package org.eclipse.jetty.rewrite.handler;
 //http://www.opensource.org/licenses/apache2.0.php
 //You may elect to redistribute this code under either of these licenses.
 //========================================================================
-
-import static org.junit.Assert.assertEquals;
+package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 import java.net.URLEncoder;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,6 +30,8 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class ProxyRuleTest
 {

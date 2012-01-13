@@ -16,20 +16,20 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.RealmResolver;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpBuffers;
+import org.eclipse.jetty.http.HttpBuffersImpl;
 import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
@@ -66,7 +66,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * @see HttpExchange
  * @see HttpDestination
  */
-public class HttpClient extends HttpBuffers implements Attributes, Dumpable
+public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attributes, Dumpable
 {
     public static final int CONNECTOR_SOCKET = 0;
     public static final int CONNECTOR_SELECT_CHANNEL = 2;
@@ -91,44 +91,46 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     private int _maxRedirects = 20;
     private LinkedList<String> _registeredListeners;
 
-    private SslContextFactory _sslContextFactory;
+    private final SslContextFactory _sslContextFactory;
 
     private RealmResolver _realmResolver;
 
     private AttributesMap _attributes=new AttributesMap();
 
+    private final HttpBuffersImpl _buffers= new HttpBuffersImpl();
 
     /* ------------------------------------------------------------------------------- */
     private void setBufferTypes()
     {
         if (_connectorType==CONNECTOR_SOCKET)
         {
-            setRequestBufferType(Type.BYTE_ARRAY);
-            setRequestHeaderType(Type.BYTE_ARRAY);
-            setResponseBufferType(Type.BYTE_ARRAY);
-            setResponseHeaderType(Type.BYTE_ARRAY);
+            _buffers.setRequestBufferType(Type.BYTE_ARRAY);
+            _buffers.setRequestHeaderType(Type.BYTE_ARRAY);
+            _buffers.setResponseBufferType(Type.BYTE_ARRAY);
+            _buffers.setResponseHeaderType(Type.BYTE_ARRAY);
         }
         else
         {
-            setRequestBufferType(Type.DIRECT);
-            setRequestHeaderType(_useDirectBuffers?Type.DIRECT:Type.INDIRECT);
-            setResponseBufferType(Type.DIRECT);
-            setResponseHeaderType(_useDirectBuffers?Type.DIRECT:Type.INDIRECT);
+            _buffers.setRequestBufferType(Type.DIRECT);
+            _buffers.setRequestHeaderType(_useDirectBuffers?Type.DIRECT:Type.INDIRECT);
+            _buffers.setResponseBufferType(Type.DIRECT);
+            _buffers.setResponseHeaderType(_useDirectBuffers?Type.DIRECT:Type.INDIRECT);
         }
+
     }
 
     /* ------------------------------------------------------------------------------- */
     public HttpClient()
     {
         this(new SslContextFactory());
-        setBufferTypes();
     }
 
     /* ------------------------------------------------------------------------------- */
     public HttpClient(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
-        setBufferTypes();
+        addBean(_sslContextFactory);
+        addBean(_buffers);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -149,25 +151,6 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
         _connectBlocking = connectBlocking;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.util.component.Dumpable#dump()
-     */
-    public String dump()
-    {
-        return AggregateLifeCycle.dump(this);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.util.component.Dumpable#dump(java.lang.Appendable, java.lang.String)
-     */
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(String.valueOf(this)).append("\n");
-        AggregateLifeCycle.dump(out,indent,Arrays.asList(_threadPool,_connector),_destinations.values());
-    }
-
     /* ------------------------------------------------------------------------------- */
     public void send(HttpExchange exchange) throws IOException
     {
@@ -183,25 +166,20 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
      */
     public ThreadPool getThreadPool()
     {
-        if (_threadPool==null)
-        {
-            QueuedThreadPool pool = new QueuedThreadPool();
-            pool.setMaxThreads(16);
-            pool.setDaemon(true);
-            pool.setName("HttpClient");
-            _threadPool = pool;
-        }
-
         return _threadPool;
     }
 
     /* ------------------------------------------------------------ */
-    /**
+    /** Set the ThreadPool.
+     * The threadpool passed is added via {@link #addBean(Object)} so that 
+     * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
      * @param threadPool the threadPool to set
      */
     public void setThreadPool(ThreadPool threadPool)
     {
+        removeBean(_threadPool);
         _threadPool = threadPool;
+        addBean(_threadPool);
     }
 
 
@@ -338,6 +316,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     }
 
 
+    /* ------------------------------------------------------------ */
     /**
      * Registers a listener that can listen to the stream of execution between the client and the
      * server and influence events.  Sequential calls to the method wrapper sequentially wrap the preceding
@@ -422,33 +401,26 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     protected void doStart() throws Exception
     {
         setBufferTypes();
-        super.doStart();
 
         _timeoutQ.setDuration(_timeout);
         _timeoutQ.setNow();
         _idleTimeoutQ.setDuration(_idleTimeout);
         _idleTimeoutQ.setNow();
 
-        if (_threadPool == null)
-            getThreadPool();
-
-        if (_threadPool instanceof LifeCycle)
+        if (_threadPool==null)
         {
-            ((LifeCycle)_threadPool).start();
+            QueuedThreadPool pool = new LocalQueuedThreadPool();
+            pool.setMaxThreads(16);
+            pool.setDaemon(true);
+            pool.setName("HttpClient");
+            _threadPool = pool;
+            addBean(_threadPool,true);
         }
 
-        _sslContextFactory.start();
+        _connector=(_connectorType == CONNECTOR_SELECT_CHANNEL)?new SelectConnector(this):new SocketConnector(this);
+        addBean(_connector,true);
 
-        if (_connectorType == CONNECTOR_SELECT_CHANNEL)
-        {
-
-            _connector = new SelectConnector(this);
-        }
-        else
-        {
-            _connector = new SocketConnector(this);
-        }
-        _connector.start();
+        super.doStart();
 
         _threadPool.dispatch(new Runnable()
         {
@@ -462,7 +434,7 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
                     {
                         Thread.sleep(200);
                     }
-                    catch (InterruptedException e)
+                    catch (InterruptedException ignored)
                     {
                     }
                 }
@@ -471,31 +443,24 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     }
 
     /* ------------------------------------------------------------ */
-    long getNow()
-    {
-        return _timeoutQ.getNow();
-    }
-
-    /* ------------------------------------------------------------ */
     @Override
     protected void doStop() throws Exception
     {
-        _connector.stop();
-        _connector = null;
-        _sslContextFactory.stop();
-
-        if (_threadPool instanceof LifeCycle)
-        {
-            ((LifeCycle)_threadPool).stop();
-        }
         for (HttpDestination destination : _destinations.values())
-        {
             destination.close();
-        }
 
         _timeoutQ.cancelAll();
         _idleTimeoutQ.cancelAll();
+
         super.doStop();
+
+        if (_threadPool instanceof LocalQueuedThreadPool)
+        {
+            removeBean(_threadPool);
+            _threadPool = null;
+        }
+
+        removeBean(_connector);
     }
 
     /* ------------------------------------------------------------ */
@@ -665,6 +630,96 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     public void setMaxRedirects(int redirects)
     {
         _maxRedirects = redirects;
+    }
+
+    public int getRequestBufferSize()
+    {
+        return _buffers.getRequestBufferSize();
+    }
+
+    public void setRequestBufferSize(int requestBufferSize)
+    {
+        _buffers.setRequestBufferSize(requestBufferSize);
+    }
+
+    public int getRequestHeaderSize()
+    {
+        return _buffers.getRequestHeaderSize();
+    }
+
+    public void setRequestHeaderSize(int requestHeaderSize)
+    {
+        _buffers.setRequestHeaderSize(requestHeaderSize);
+    }
+
+    public int getResponseBufferSize()
+    {
+        return _buffers.getResponseBufferSize();
+    }
+
+    public void setResponseBufferSize(int responseBufferSize)
+    {
+        _buffers.setResponseBufferSize(responseBufferSize);
+    }
+
+    public int getResponseHeaderSize()
+    {
+        return _buffers.getResponseHeaderSize();
+    }
+
+    public void setResponseHeaderSize(int responseHeaderSize)
+    {
+        _buffers.setResponseHeaderSize(responseHeaderSize);
+    }
+
+    public Type getRequestBufferType()
+    {
+        return _buffers.getRequestBufferType();
+    }
+
+    public Type getRequestHeaderType()
+    {
+        return _buffers.getRequestHeaderType();
+    }
+
+    public Type getResponseBufferType()
+    {
+        return _buffers.getResponseBufferType();
+    }
+
+    public Type getResponseHeaderType()
+    {
+        return _buffers.getResponseHeaderType();
+    }
+
+    public void setRequestBuffers(Buffers requestBuffers)
+    {
+        _buffers.setRequestBuffers(requestBuffers);
+    }
+
+    public void setResponseBuffers(Buffers responseBuffers)
+    {
+        _buffers.setResponseBuffers(responseBuffers);
+    }
+
+    public Buffers getRequestBuffers()
+    {
+        return _buffers.getRequestBuffers();
+    }
+
+    public Buffers getResponseBuffers()
+    {
+        return _buffers.getResponseBuffers();
+    }
+
+    public void setMaxBuffers(int maxBuffers)
+    {
+        _buffers.setMaxBuffers(maxBuffers);
+    }
+
+    public int getMaxBuffers()
+    {
+        return _buffers.getMaxBuffers();
     }
 
     /* ------------------------------------------------------------ */
@@ -838,5 +893,9 @@ public class HttpClient extends HttpBuffers implements Attributes, Dumpable
     public void setSecureRandomAlgorithm(String secureRandomAlgorithm)
     {
         _sslContextFactory.setSecureRandomAlgorithm(secureRandomAlgorithm);
+    }
+
+    private static class LocalQueuedThreadPool extends QueuedThreadPool
+    {
     }
 }

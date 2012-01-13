@@ -158,8 +158,6 @@ public class FormAuthModule extends BaseAuthModule
         boolean mandatory = isMandatory(messageInfo);  
         mandatory |= isJSecurityCheck(uri);
         HttpSession session = request.getSession(mandatory);
-       
-        System.err.println("FormAuthModule.validateRequest(info,subject,serviceSubject) for uri="+uri+" mandatory="+mandatory+" isLoginOrError="+isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo())));
         
         // not mandatory or its the login or login error page don't authenticate
         if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) return AuthStatus.SUCCESS;
@@ -171,7 +169,7 @@ public class FormAuthModule extends BaseAuthModule
             {
                 final String username = request.getParameter(__J_USERNAME);
                 final String password = request.getParameter(__J_PASSWORD);
-                System.err.println("Try login username="+username+" password="+password);
+            
                 boolean success = tryLogin(messageInfo, clientSubject, response, session, username, new Password(password));
                 if (success)
                 {
@@ -189,7 +187,6 @@ public class FormAuthModule extends BaseAuthModule
                             nuri = URIUtil.SLASH;
                     }
                    
-                    System.err.println("FormAuthModule succesful login, sending redirect to "+nuri);
                     response.setContentLength(0);   
                     response.sendRedirect(response.encodeRedirectURL(nuri));
                     return AuthStatus.SEND_CONTINUE;
@@ -215,8 +212,6 @@ public class FormAuthModule extends BaseAuthModule
             FormCredential form_cred = (FormCredential) session.getAttribute(__J_AUTHENTICATED);
             if (form_cred != null)
             {
-                System.err.println("Form cred: form.username="+form_cred._jUserName+" form.pwd="+new String(form_cred._jPassword));
-                
                 //TODO: we would like the form auth module to be able to invoke the loginservice.validate() method to check the previously authed user
                 
                 boolean success = tryLogin(messageInfo, clientSubject, response, session, form_cred._jUserName, new Password(new String(form_cred._jPassword)));
@@ -249,7 +244,6 @@ public class FormAuthModule extends BaseAuthModule
                 session.setAttribute(__J_URI, buf.toString());
             }
             
-            System.err.println("Redirecting to login page "+_formLoginPage+" and remembering juri="+buf.toString());
             response.setContentLength(0);
             response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)));
             return AuthStatus.SEND_CONTINUE;
@@ -288,12 +282,11 @@ public class FormAuthModule extends BaseAuthModule
         {
             char[] pwdChars = password.toString().toCharArray();
             Set<LoginCallbackImpl> loginCallbacks = clientSubject.getPrivateCredentials(LoginCallbackImpl.class);
-            System.err.println("FormAuthModule, LoginCallbackImpl.isEmpty="+loginCallbacks.isEmpty());
+           
             if (!loginCallbacks.isEmpty())
             {
                 LoginCallbackImpl loginCallback = loginCallbacks.iterator().next();
                 FormCredential form_cred = new FormCredential(username, pwdChars, loginCallback.getUserPrincipal(), loginCallback.getSubject());
-
                 session.setAttribute(__J_AUTHENTICATED, form_cred);
             }
 
@@ -310,7 +303,6 @@ public class FormAuthModule extends BaseAuthModule
 
     public boolean isLoginOrErrorPage(String pathInContext)
     {
-        System.err.println("ISLOGINORERRORPAGE? "+pathInContext+" error: "+_formErrorPath+" login:"+_formLoginPath);
         return pathInContext != null && (pathInContext.equals(_formErrorPath) || pathInContext.equals(_formLoginPath));
     }
 

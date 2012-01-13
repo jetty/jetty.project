@@ -30,34 +30,28 @@
   <!-- Initialize the Jetty MBean container                        -->
   <!-- =========================================================== -->
   <New id="MBeanContainer" class="org.eclipse.jetty.jmx.MBeanContainer">
-    <Arg>
-      <Ref id="MBeanServer" />
-    </Arg>
+    <Arg><Ref id="MBeanServer" /></Arg>
+    <Call name="start"/>
   </New>
 
   <!-- Add to the Server to listen for object events -->
   <Get id="Container" name="container">
     <Call name="addEventListener">
-      <Arg>
-        <Ref id="MBeanContainer" />
-      </Arg>
+      <Arg><Ref id="MBeanContainer" /></Arg>
     </Call>
   </Get>
 
-  <!-- Add to the Server as a lifecycle -->
-  <!-- Only do this if you know you will only have a single jetty server -->
+  <!-- Add to the Server as a managed lifecycle -->
   <Call name="addBean">
-    <Arg>
-      <Ref id="MBeanContainer" />
-    </Arg>
+    <Arg><Ref id="MBeanContainer"/></Arg>
+    <Arg type="boolean">true</Arg>
   </Call>
 
   <!-- Add the static log -->
-  <Get id="Logger" class="org.eclipse.jetty.util.log.Log" name="log" />
   <Ref id="MBeanContainer">
     <Call name="addBean">
       <Arg>
-        <Ref id="Logger" />
+        <New class="org.eclipse.jetty.util.log.Log"/>
       </Arg>
     </Call>
   </Ref>

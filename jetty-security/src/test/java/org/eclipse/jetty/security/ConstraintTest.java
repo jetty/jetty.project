@@ -835,11 +835,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 200 "));
         
         response = _connector.getResponses("GET /ctx/forbid/post HTTP/1.0\r\n\r\n");
-        System.err.println(response);
         assertTrue(response.startsWith("HTTP/1.1 200 "));  // This is so stupid, but it is the S P E C
-        
-        
-
     }
     private class RequestHandler extends AbstractHandler
     {

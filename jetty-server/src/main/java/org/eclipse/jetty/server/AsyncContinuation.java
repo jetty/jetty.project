@@ -185,9 +185,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
     
     /* ------------------------------------------------------------ */
-    /* (non-Javadoc)
-     * @see javax.servlet.ServletRequest#isSuspended()
-     */
     public boolean isSuspending()
     {
         synchronized(this)

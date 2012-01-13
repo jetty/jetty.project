@@ -50,10 +50,10 @@ public class LikeJettyXml
         
         // Setup JMX
         MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        mbContainer.start();
         server.getContainer().addEventListener(mbContainer);
-        server.addBean(mbContainer);
-        mbContainer.addBean(Log.getRootLogger());
-
+        server.addBean(mbContainer,true);
+        mbContainer.addBean(new Log());
         
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();

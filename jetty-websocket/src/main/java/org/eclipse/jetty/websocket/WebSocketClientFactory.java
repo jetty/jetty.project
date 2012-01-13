@@ -77,7 +77,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      */
     public WebSocketClientFactory()
     {
-        this(new QueuedThreadPool());
+        this(null);
     }
 
     /* ------------------------------------------------------------ */
@@ -114,14 +114,20 @@ public class WebSocketClientFactory extends AggregateLifeCycle
      */
     public WebSocketClientFactory(ThreadPool threadPool, MaskGen maskGen, int bufferSize)
     {
+        if (threadPool == null)
+            threadPool = new QueuedThreadPool();
         _threadPool = threadPool;
-        addBean(threadPool);
+        addBean(_threadPool);
+
         _buffers = new WebSocketBuffers(bufferSize);
         addBean(_buffers);
+
         _maskGen = maskGen;
         addBean(_maskGen);
+
         _selector = new WebSocketClientSelector();
         addBean(_selector);
+
         addBean(_sslContextFactory);
     }
 
@@ -208,6 +214,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
     protected void doStop() throws Exception
     {
         closeConnections();
+        super.doStop();
     }
 
     /* ------------------------------------------------------------ */

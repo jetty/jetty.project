@@ -9,7 +9,7 @@
   
   <context-param>
     <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
-    <param-value>QoSFilter,TransparentProxy.Logger,TransparentProxy.ThreadPool,TransparentProxy.HttpClient</param-value>
+    <param-value>QoSFilter,TransparentProxy.ThreadPool,TransparentProxy.HttpClient</param-value>
   </context-param>
   
   <!-- Declare TestListener, which declares TestFilter -->

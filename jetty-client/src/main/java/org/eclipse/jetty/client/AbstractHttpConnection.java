@@ -180,20 +180,23 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
 
             String method=_exchange.getMethod();
             String uri = _exchange.getRequestURI();
-            if (_destination.isProxied() && !HttpMethods.CONNECT.equals(method) && uri.startsWith("/"))
+            if (_destination.isProxied())
             {
-                boolean secure = _destination.isSecure();
-                String host = _destination.getAddress().getHost();
-                int port = _destination.getAddress().getPort();
-                StringBuilder absoluteURI = new StringBuilder();
-                absoluteURI.append(secure ? HttpSchemes.HTTPS : HttpSchemes.HTTP);
-                absoluteURI.append("://");
-                absoluteURI.append(host);
-                // Avoid adding default ports
-                if (!(secure && port == 443 || !secure && port == 80))
-                    absoluteURI.append(":").append(port);
-                absoluteURI.append(uri);
-                uri = absoluteURI.toString();
+                if (!HttpMethods.CONNECT.equals(method) && uri.startsWith("/"))
+                {
+                    boolean secure = _destination.isSecure();
+                    String host = _destination.getAddress().getHost();
+                    int port = _destination.getAddress().getPort();
+                    StringBuilder absoluteURI = new StringBuilder();
+                    absoluteURI.append(secure ? HttpSchemes.HTTPS : HttpSchemes.HTTP);
+                    absoluteURI.append("://");
+                    absoluteURI.append(host);
+                    // Avoid adding default ports
+                    if (!(secure && port == 443 || !secure && port == 80))
+                        absoluteURI.append(":").append(port);
+                    absoluteURI.append(uri);
+                    uri = absoluteURI.toString();
+                }
                 Authentication auth = _destination.getProxyAuthentication();
                 if (auth != null)
                     auth.setCredentials(_exchange);

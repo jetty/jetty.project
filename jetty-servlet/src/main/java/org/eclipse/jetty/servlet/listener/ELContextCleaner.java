@@ -76,7 +76,7 @@ public class ELContextCleaner implements ServletContextListener
         }
         catch (NoSuchFieldException e)
         {
-            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
+            LOG.info("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
         }
        
     }

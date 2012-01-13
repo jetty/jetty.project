@@ -77,6 +77,52 @@ public class CrossOriginFilterTest
     }
 
     @Test
+    public void testSimpleRequestWithMatchingWildcardOrigin() throws Exception
+    {
+        FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
+        String origin = "http://subdomain.example.com";
+        filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "http://*.example.com");
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
+
+        String request = "" +
+        "GET / HTTP/1.1\r\n" +
+        "Host: localhost\r\n" +
+        "Origin: " + origin + "\r\n" +
+        "\r\n";
+        String response = tester.getResponses(request);
+        Assert.assertTrue(response.contains("HTTP/1.1 200"));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER));
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSimpleRequestWithMatchingWildcardOriginAndMultipleSubdomains() throws Exception
+    {
+        FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
+        String origin = "http://subdomain.subdomain.example.com";
+        filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "http://*.example.com");
+        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
+
+        String request = "" +
+        "GET / HTTP/1.1\r\n" +
+        "Host: localhost\r\n" +
+        "Origin: " + origin + "\r\n" +
+        "\r\n";
+        String response = tester.getResponses(request);
+        Assert.assertTrue(response.contains("HTTP/1.1 200"));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
+        Assert.assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER));
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testSimpleRequestWithMatchingOrigin() throws Exception
     {
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
@@ -327,6 +373,7 @@ public class CrossOriginFilterTest
 
     public static class ResourceServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
         private final CountDownLatch latch;
 
         public ResourceServlet(CountDownLatch latch)

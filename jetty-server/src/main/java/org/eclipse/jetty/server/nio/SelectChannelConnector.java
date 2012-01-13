@@ -19,7 +19,6 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -32,9 +31,6 @@ import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /* ------------------------------------------------------------------------------- */
@@ -65,8 +61,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class SelectChannelConnector extends AbstractNIOConnector
 {
-    private static final Logger LOG = Log.getLogger(SelectChannelConnector.class);
-
     protected ServerSocketChannel _acceptChannel;
     private int _lowResourcesConnections;
     private int _lowResourcesMaxIdleTime;
@@ -82,6 +76,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     public SelectChannelConnector()
     {
         _manager.setMaxIdleTime(getMaxIdleTime());
+        addBean(_manager,true);
         setAcceptors(Math.max(1,(Runtime.getRuntime().availableProcessors()+3)/4));
     }
 
@@ -111,7 +106,11 @@ public class SelectChannelConnector extends AbstractNIOConnector
         synchronized(this)
         {
             if (_acceptChannel != null)
-                _acceptChannel.close();
+            {
+                removeBean(_acceptChannel);
+                if (_acceptChannel.isOpen())
+                    _acceptChannel.close();
+            }
             _acceptChannel = null;
             _localPort=-2;
         }
@@ -121,7 +120,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
-        AsyncEndPoint aEndp = ((AsyncEndPoint)endpoint);
         request.setTimeStamp(System.currentTimeMillis());
         endpoint.setMaxIdleTime(_maxIdleTime);
         super.customize(endpoint, request);
@@ -178,6 +176,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 if (_localPort<=0)
                     throw new IOException("Server channel not bound");
 
+                addBean(_acceptChannel);
             }
         }
     }
@@ -250,31 +249,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
 
         super.doStart();
-        _manager.start();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.AbstractConnector#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        synchronized(this)
-        {
-            if(_manager.isRunning())
-            {
-                try
-                {
-                    _manager.stop();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
-            }
-        }
-        super.doStop();
     }
 
     /* ------------------------------------------------------------ */
@@ -297,20 +271,6 @@ public class SelectChannelConnector extends AbstractNIOConnector
         return new AsyncHttpConnection(SelectChannelConnector.this,endpoint,getServer());
     }
 
-    /* ------------------------------------------------------------ */
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        super.dump(out, indent);
-        ServerSocketChannel channel;
-        synchronized (this)
-        {
-            channel=_acceptChannel;
-        }
-        if (channel==null)
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(null,"CLOSED",_manager));
-        else
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(channel,channel.isOpen()?"OPEN":"CLOSED",_manager));
-    }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -357,5 +317,4 @@ public class SelectChannelConnector extends AbstractNIOConnector
             return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
         }
     }
-
 }
