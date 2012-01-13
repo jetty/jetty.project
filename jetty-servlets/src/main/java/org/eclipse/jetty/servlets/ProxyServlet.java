@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <p>
  * This servlet needs the jetty-util and jetty-client classes to be available to the web application.
  * <p>
- * To facilitate JMX monitoring, the "HttpClient", it's "ThreadPool" and the "Logger" are set as context attributes prefixed with the servlet name.
+ * To facilitate JMX monitoring, the "HttpClient" and "ThreadPool" are set as context attributes prefixed with the servlet name.
  * <p>
  * The following init parameters may be used to configure the servlet:
  * <ul>
@@ -127,7 +127,6 @@ public class ProxyServlet implements Servlet
 
             if (_context != null)
             {
-                _context.setAttribute(config.getServletName() + ".Logger",_log);
                 _context.setAttribute(config.getServletName() + ".ThreadPool",_client.getThreadPool());
                 _context.setAttribute(config.getServletName() + ".HttpClient",_client);
             }
