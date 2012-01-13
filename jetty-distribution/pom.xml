@@ -12,7 +12,6 @@
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
-    <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
     <orbit-javax-annotation-version>1.0.0.v20100513-0750</orbit-javax-annotation-version>
     <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
     <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
@@ -69,7 +68,6 @@
                 <mkdir dir="${orbit-cache}" />
                 <get dest="${orbit-cache}" verbose="true" skipexisting="true">
                   <url url="${jetty-orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" />
-                  <url url="${jetty-orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.annotation_${orbit-javax-annotation-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
                   <url url="${jetty-orbit-url}/javax.el_${orbit-javax-el-version}.jar" />
