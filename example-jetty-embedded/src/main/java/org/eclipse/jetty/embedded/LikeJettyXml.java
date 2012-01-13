@@ -53,7 +53,7 @@ public class LikeJettyXml
         mbContainer.start();
         server.getContainer().addEventListener(mbContainer);
         server.addBean(mbContainer,true);
-        mbContainer.addBean(Log.getRootLogger());
+        mbContainer.addBean(new Log());
         
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
