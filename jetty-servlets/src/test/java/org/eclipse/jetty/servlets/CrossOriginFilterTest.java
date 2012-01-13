@@ -85,7 +85,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://subdomain.example.com";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "http://*.example.com");
-        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
+        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
@@ -108,7 +108,7 @@ public class CrossOriginFilterTest
         FilterHolder filterHolder = new FilterHolder(new CrossOriginFilter());
         String origin = "http://subdomain.subdomain.example.com";
         filterHolder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "http://*.example.com");
-        tester.getContext().addFilter(filterHolder, "/*", FilterMapping.DEFAULT);
+        tester.getContext().addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         CountDownLatch latch = new CountDownLatch(1);
         tester.getContext().addServlet(new ServletHolder(new ResourceServlet(latch)), "/*");
