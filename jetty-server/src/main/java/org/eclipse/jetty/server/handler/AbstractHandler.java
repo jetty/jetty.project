@@ -94,7 +94,7 @@ public abstract class AbstractHandler extends AggregateLifeCycle implements Hand
     /* ------------------------------------------------------------ */
     public void dumpThis(Appendable out) throws IOException
     {
-        out.append(toString()).append(' ').append(getState()).append('\n');
+        out.append(toString()).append(" - ").append(getState()).append('\n');
     }
     
 }
