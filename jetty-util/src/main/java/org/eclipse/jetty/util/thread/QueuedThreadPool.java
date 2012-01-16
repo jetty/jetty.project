@@ -498,7 +498,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             }
         }
 
-        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dumpObject(out,this);
         AggregateLifeCycle.dump(out,indent,dump);
 
     }

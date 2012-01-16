@@ -260,7 +260,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
     /* ------------------------------------------------------------ */
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(_name).append("==").append(_className).append("\n");
+        out.append(_name).append("==").append(_className)
+        .append(" - ").append(AbstractLifeCycle.getState(this)).append("\n");
         AggregateLifeCycle.dump(out,indent,_initParams.entrySet());
     }
 
