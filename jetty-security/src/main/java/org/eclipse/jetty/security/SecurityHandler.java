@@ -244,16 +244,19 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         return _initParameters.put(key,value);
     }
     
-
     /* ------------------------------------------------------------ */
     protected LoginService findLoginService()
     {
         List<LoginService> list = getServer().getBeans(LoginService.class);
         
-        for (LoginService service : list)
-            if (service.getName()!=null && service.getName().equals(getRealmName()))
-                return service;
-        if (list.size()>0)
+        String realm=getRealmName();
+        if (realm!=null)
+        {
+            for (LoginService service : list)
+                if (service.getName()!=null && service.getName().equals(realm))
+                    return service;
+        }
+        else if (list.size()==1)
             return list.get(0);
         return null;
     }
@@ -414,7 +417,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
         final Authenticator authenticator = _authenticator;
         
-        if (authenticator!=null && checkSecurity(baseRequest))
+        if (checkSecurity(baseRequest))
         {
             Object constraintInfo = prepareConstraintInfo(pathInContext, baseRequest);
             
@@ -433,13 +436,24 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             boolean isAuthMandatory = 
                 isAuthMandatory(baseRequest, base_response, constraintInfo);
 
+            if (isAuthMandatory && authenticator==null)
+            {
+                LOG.warn("No authenticator for: "+constraintInfo);
+                if (!baseRequest.isHandled())
+                {
+                    response.sendError(Response.SC_FORBIDDEN);
+                    baseRequest.setHandled(true);
+                }
+                return;
+            }
+            
             // check authentication
             Object previousIdentity = null;
             try
             {
                 Authentication authentication = baseRequest.getAuthentication();
                 if (authentication==null || authentication==Authentication.NOT_CHECKED)
-                    authentication=authenticator.validateRequest(request, response, isAuthMandatory);
+                    authentication=authenticator==null?Authentication.UNAUTHENTICATED:authenticator.validateRequest(request, response, isAuthMandatory);
 
                 if (authentication instanceof Authentication.Wrapped)
                 {
@@ -500,9 +514,11 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 else
                 {
                     baseRequest.setAuthentication(authentication);
-                    previousIdentity = _identityService.associate(null);
+                    if (_identityService!=null)
+                        previousIdentity = _identityService.associate(null);
                     handler.handle(pathInContext, baseRequest, request, response);
-                    authenticator.secureResponse(request, response, isAuthMandatory, null);
+                    if (authenticator!=null)
+                        authenticator.secureResponse(request, response, isAuthMandatory, null);
                 }
             }
             catch (ServerAuthException e)
@@ -513,7 +529,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
             finally
             {
-                _identityService.disassociate(previousIdentity);
+                if (_identityService!=null)
+                    _identityService.disassociate(previousIdentity);
             }
         }
         else

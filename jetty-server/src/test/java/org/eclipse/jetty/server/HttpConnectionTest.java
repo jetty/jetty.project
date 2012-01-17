@@ -448,8 +448,8 @@ public class HttpConnectionTest
                     PrintWriter writer = response.getWriter();
                     writer.write("<html><h1>FOO</h1></html>");
                     writer.flush();
-                    writer.close();
-                    throw new RuntimeException("SHOULD NOT GET HERE");
+                    if (!writer.checkError())
+                        throw new RuntimeException("SHOULD NOT GET HERE");
                 }
                 catch(Exception e)
                 {

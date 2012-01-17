@@ -889,11 +889,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     @Override
     public String toString()
     {
-        return String.format("%s@%s:%d %s",
+        return String.format("%s@%s:%d",
                 getClass().getSimpleName(),
                 getHost()==null?"0.0.0.0":getHost(),
-                getLocalPort()<=0?getPort():getLocalPort(),
-                AbstractLifeCycle.getState(this));
+                getLocalPort()<=0?getPort():getLocalPort());
     }
 
     /* ------------------------------------------------------------ */

@@ -373,7 +373,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     /* ------------------------------------------------------------ */
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dumpObject(out,this);
         AggregateLifeCycle.dump(out,indent,TypeUtil.asList(_selectSet));
     }
 
@@ -985,9 +985,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public String toString()
         {
             Selector selector=_selector;
-            return String.format("%s %s keys=%d selected=%d",
+            return String.format("%s keys=%d selected=%d",
                     super.toString(),
-                    SelectorManager.this.getState(),
                     selector != null && selector.isOpen() ? selector.keys().size() : -1,
                     selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1);
         }

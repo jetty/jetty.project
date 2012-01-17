@@ -337,7 +337,7 @@ public class MBeanContainer extends AbstractLifeCycle implements Container.Liste
 
     public void dump(Appendable out, String indent) throws IOException
     {
-        out.append(toString()).append("\n");
+        AggregateLifeCycle.dumpObject(out,this);
         AggregateLifeCycle.dump(out, indent, _beans.entrySet());
     }
 

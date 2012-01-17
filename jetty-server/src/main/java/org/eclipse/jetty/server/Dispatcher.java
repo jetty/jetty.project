@@ -131,7 +131,7 @@ public class Dispatcher implements RequestDispatcher
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
         Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
-        request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
+      
         
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
@@ -215,7 +215,7 @@ public class Dispatcher implements RequestDispatcher
         Response base_response=baseRequest.getResponse();
         response.resetBuffer();
         base_response.fwdReset();
-        request.removeAttribute(__JSP_FILE); // TODO remove when glassfish 1044 is fixed
+       
 
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);

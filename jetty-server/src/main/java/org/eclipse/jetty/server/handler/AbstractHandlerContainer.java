@@ -113,6 +113,6 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpThis(out);
-        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans());
+        dump(out,indent,getBeans(),TypeUtil.asList(getHandlers()));
     }
 }
