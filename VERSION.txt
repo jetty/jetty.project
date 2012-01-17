@@ -9,11 +9,9 @@ jetty-7.6.0.RC4 - 13 January 2012
  + 368035 WebSocketClientFactory does not invoke super.doStop().
  + 368060 do not encode sendRedirect URLs
  + 368114 Protect against non-Strings in System properties for Log
- + 368189 WebSocketClientFactory should not manage external thread pool. 368240
-   - Improve AggregateLifeCycle handling of shared lifecycles
+ + 368189 WebSocketClientFactory should not manage external thread pool.
  + 368215 Remove debug from jaspi
- + 368240 Better handling of locally created ThreadPool. Forgot to null out
-   field.
+ + 368240 Improve AggregateLifeCycle handling of shared lifecycles
  + 368291 Change warning to info for NoSuchFieldException on
    BeanELResolver.properties
 
