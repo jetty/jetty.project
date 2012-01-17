@@ -15,6 +15,9 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,9 +31,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
+
 import javax.servlet.http.HttpServletRequest;
 
-import junit.framework.Assert;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -41,12 +44,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class WebSocketMessageRFC6455Test
 {
@@ -606,7 +606,7 @@ public class WebSocketMessageRFC6455Test
             Thread.sleep(100);
 
         assertEquals(count*(mesg.length()+2),totalB.get()); // all messages
-        assertTrue(max>1000); // was blocked
+        Assert.assertThat("Was blocked (max time)", max, greaterThan(1000L)); // was blocked
     }
 
     @Test
