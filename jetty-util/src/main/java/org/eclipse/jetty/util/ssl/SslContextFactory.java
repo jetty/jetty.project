@@ -1524,11 +1524,10 @@ public class SslContextFactory extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     public String toString()
     {
-        return String.format("%s@%x(%s,%s)#%s",
+        return String.format("%s@%x(%s,%s)",
                 getClass().getSimpleName(),
                 hashCode(),
                 _keyStorePath,
-                _trustStorePath,
-                getState());
+                _trustStorePath);
     }
 }

@@ -498,7 +498,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             }
         }
 
-        out.append(String.valueOf(this)).append("\n");
+        AggregateLifeCycle.dumpObject(out,this);
         AggregateLifeCycle.dump(out,indent,dump);
 
     }
@@ -508,7 +508,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     @Override
     public String toString()
     {
-        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+(_jobs==null?-1:_jobs.size())+"}#"+getState();
+        return _name+"{"+getMinThreads()+"<="+getIdleThreads()+"<="+getThreads()+"/"+getMaxThreads()+","+(_jobs==null?-1:_jobs.size())+"}";
     }
 
     /* ------------------------------------------------------------ */

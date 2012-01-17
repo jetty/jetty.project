@@ -339,7 +339,16 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     /* ------------------------------------------------------------ */
     protected void dumpThis(Appendable out) throws IOException
     {
-        out.append(String.valueOf(this)).append("\n");
+        out.append(String.valueOf(this)).append(" - ").append(getState()).append("\n");
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void dumpObject(Appendable out,Object o) throws IOException
+    {
+        if (o instanceof LifeCycle)
+            out.append(String.valueOf(o)).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
+        else
+            out.append(String.valueOf(o)).append("\n"); 
     }
     
     /* ------------------------------------------------------------ */
@@ -359,15 +368,11 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
                 out.append(indent).append(" +- ");
                 if (b._bean instanceof Dumpable)
                     ((Dumpable)b._bean).dump(out,indent+(i==size?"    ":" |  "));
-                else
-                    out.append(String.valueOf(b._bean)).append("\n");
+                else 
+                    dumpObject(out,b._bean);
             }
-            else
-            {
-                out.append(indent).append(" +~ ");
-                out.append(String.valueOf(b._bean)).append("\n");
-            }
-
+            else 
+                dumpObject(out,b._bean);
         }
 
         if (i!=size)
@@ -395,16 +400,12 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
 
                 if (o instanceof Dumpable)
                     ((Dumpable)o).dump(out,indent+(i==size?"    ":" |  "));
-                else
-                    out.append(String.valueOf(o)).append("\n");
+                else 
+                    dumpObject(out,o);
             }
             
             if (i!=size)
-                out.append(indent).append(" |\n");
-                
+                out.append(indent).append(" |\n");          
         }
     }
-    
-    
-    
 }
