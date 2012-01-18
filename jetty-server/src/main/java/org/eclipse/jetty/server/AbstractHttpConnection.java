@@ -102,14 +102,14 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     protected final Parser _parser;
     protected final HttpFields _requestFields;
     protected final Request _request;
-    protected ServletInputStream _in;
+    protected volatile ServletInputStream _in;
 
     protected final Generator _generator;
     protected final HttpFields _responseFields;
     protected final Response _response;
-    protected Output _out;
-    protected OutputWriter _writer;
-    protected PrintWriter _printWriter;
+    protected volatile Output _out;
+    protected volatile OutputWriter _writer;
+    protected volatile PrintWriter _printWriter;
 
     int _include;
 
@@ -122,7 +122,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     private boolean _expect102Processing = false;
     private boolean _head = false;
     private boolean _host = false;
-    private boolean  _delayedHandling=false;
+    private boolean _delayedHandling=false;
 
     /* ------------------------------------------------------------ */
     public static AbstractHttpConnection getCurrentConnection()

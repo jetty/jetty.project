@@ -81,7 +81,7 @@ public class Response implements HttpServletResponse
     private String _characterEncoding;
     private boolean _explicitEncoding;
     private String _contentType;
-    private int _outputState;
+    private volatile int _outputState;
     private PrintWriter _writer;
 
     /* ------------------------------------------------------------ */
@@ -108,8 +108,8 @@ public class Response implements HttpServletResponse
         _characterEncoding=null;
         _explicitEncoding=false;
         _contentType=null;
-        _outputState=NONE;
         _writer=null;
+        _outputState=NONE;
     }
 
     /* ------------------------------------------------------------ */
@@ -646,8 +646,9 @@ public class Response implements HttpServletResponse
         if (_outputState!=NONE && _outputState!=STREAM)
             throw new IllegalStateException("WRITER");
 
+        ServletOutputStream out = _connection.getOutputStream();
         _outputState=STREAM;
-        return _connection.getOutputStream();
+        return out;
     }
 
     /* ------------------------------------------------------------ */
@@ -1065,8 +1066,8 @@ public class Response implements HttpServletResponse
     {
         resetBuffer();
 
-        _outputState=NONE;
         _writer=null;
+        _outputState=NONE;
     }
 
     /* ------------------------------------------------------------ */
