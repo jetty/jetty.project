@@ -452,7 +452,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 }
                 catch(SSLException e)
                 {
-                    _logger.warn(String.valueOf(_endp), e);
+                    _logger.debug(String.valueOf(_endp), e);
                     _endp.close();
                     throw e;
                 }
@@ -486,7 +486,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 break;
 
             default:
-                _logger.warn("{} wrap default {}",_session,result);
+                _logger.debug("{} wrap default {}",_session,result);
             throw new IOException(result.toString());
         }
 
@@ -528,7 +528,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 }
                 catch(SSLException e)
                 {
-                    _logger.warn(String.valueOf(_endp), e);
+                    _logger.debug(String.valueOf(_endp), e);
                     _endp.close();
                     throw e;
                 }
@@ -565,7 +565,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 break;
 
             default:
-                _logger.warn("{} wrap default {}",_session,result);
+                _logger.debug("{} wrap default {}",_session,result);
             throw new IOException(result.toString());
         }
 
