@@ -66,26 +66,26 @@
     <dependency>
       <groupId>javax.mail</groupId>
       <artifactId>mail</artifactId>
-	  <exclusions>
-	    <exclusion>
-		  <groupId>javax.activation</groupId>
-		  <artifactId>activation</artifactId>
-		</exclusion>
-	  </exclusions>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.activation</groupId>
+          <artifactId>activation</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
   <profiles>
     <profile>
       <id>below-jdk1.6</id>
       <activation>
-        <jdk>!1.6</jdk>
+        <jdk>(,1.6)</jdk>
       </activation>
       <dependencies>
-		<dependency>
-		  <groupId>javax.activation</groupId>
-		  <artifactId>activation</artifactId>
-		  <version>${javax-activation-version}</version>
-		</dependency>
+        <dependency>
+          <groupId>javax.activation</groupId>
+          <artifactId>activation</artifactId>
+          <version>1.1</version>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>
