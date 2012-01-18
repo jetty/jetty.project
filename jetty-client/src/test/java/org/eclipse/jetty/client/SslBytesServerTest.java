@@ -43,16 +43,18 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 public class SslBytesServerTest extends SslBytesTest
 {
@@ -1566,6 +1568,8 @@ public class SslBytesServerTest extends SslBytesTest
         {
             public void run()
             {
+                if (latch.getCount()==0)
+                    return;
                 try
                 {
                     // Send request
@@ -1578,8 +1582,7 @@ public class SslBytesServerTest extends SslBytesTest
                 }
                 catch (Exception x)
                 {
-                    // Latch won't trigger and test will
-                    // fail, just print the stack trace
+                    // Latch won't trigger and test will fail
                     x.printStackTrace();
                 }
             }
@@ -1607,6 +1610,15 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(sslHandles.get(), lessThan(20));
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
+
+        //System.err.println(((Dumpable)server.getConnectors()[0]).dump());
+        Assert.assertThat(((Dumpable)server.getConnectors()[0]).dump(),containsString("SCEP@"));
+        
+        completeClose(client);
+        
+        TimeUnit.MILLISECONDS.sleep(200);
+        //System.err.println(((Dumpable)server.getConnectors()[0]).dump());
+        Assert.assertThat(((Dumpable)server.getConnectors()[0]).dump(),not(containsString("SCEP@")));
 
     }
 /*
@@ -1718,9 +1730,28 @@ public class SslBytesServerTest extends SslBytesTest
         // Close Alert
         record = proxy.readFromServer();
         proxy.flushToClient(record);
+        
         // Socket close
         record = proxy.readFromServer();
         Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
+    }
+    
+    private void completeClose(SSLSocket client) throws Exception
+    {
+        client.close();
+
+        // Close Alert
+        TLSRecord record = proxy.readFromClient();
+        proxy.flushToServer(record);
+        // Socket close
+        record = proxy.readFromClient();
+        Assert.assertNull(String.valueOf(record), record);
+        proxy.flushToServer(record);
+
+        // Close Alert
+        record = proxy.readFromServer();
+        proxy.flushToClient(record);
+        
     }
 }
