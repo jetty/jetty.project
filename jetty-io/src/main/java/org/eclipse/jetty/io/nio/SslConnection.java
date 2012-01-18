@@ -182,22 +182,17 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             while (progress)
             {
                 progress=false;
-
+                
                 // If we are handshook let the delegate connection
                 if (_engine.getHandshakeStatus()!=HandshakeStatus.NOT_HANDSHAKING)
-                {
                     progress=process(null,null);
-                }
-                else
+                
+                // handle the delegate connection
+                AsyncConnection next = (AsyncConnection)_connection.handle();
+                if (next!=_connection && next!=null)
                 {
-                    // handle the delegate connection
-                    AsyncConnection next = (AsyncConnection)_connection.handle();
-                    if (next!=_connection && next!=null)
-                    {
-                        _connection=next;
-                        progress=true;
-                    }
-                    // TODO: consider moving here hasProgressed() - it's only used in SSL
+                    _connection=next;
+                    progress=true;
                 }
 
                 LOG.debug("{} handle {} progress={}", _session, this, progress);
@@ -389,6 +384,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         // The SSL needs to receive some handshake data from the other side
                         if (_handshook && !_allowRenegotiate)
                             _endp.close();
+                        else if (!_inbound.hasContent()&&filled==-1)
+                        {
+                            // No more input coming
+                            _endp.shutdownInput();
+                        }
                         else if (unwrap(toFill))
                             progress=true;
                     }

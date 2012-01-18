@@ -194,7 +194,7 @@ public class HttpParser implements Parser
     public void setPersistent(boolean persistent)
     {
         _persistent = persistent;
-        if (_state==STATE_END)
+        if (!_persistent &&(_state==STATE_END || _state==STATE_START))
             _state=STATE_SEEKING_EOF;
     }
 

@@ -24,6 +24,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -303,7 +304,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
 
             });
-            
+
             if (!selecting)
                 throw new IllegalStateException("!Selecting");
         }
@@ -960,7 +961,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     LOG.ignore(e);
                 }
-                
+
                 AggregateLifeCycle.dump(out,indent,dump);
             }
         }
@@ -969,8 +970,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         public void dumpKeyState(List<Object> dumpto)
         {
             Selector selector=_selector;
-            dumpto.add(selector+" keys="+selector.keys().size());
-            for (SelectionKey key: selector.keys())
+            Set<SelectionKey> keys = selector.keys();
+            dumpto.add(selector + " keys=" + keys.size());
+            for (SelectionKey key: keys)
             {
                 if (key.isValid())
                     dumpto.add(key.attachment()+" iOps="+key.interestOps()+" rOps="+key.readyOps());
