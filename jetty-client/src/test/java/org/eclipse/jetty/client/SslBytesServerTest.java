@@ -619,10 +619,10 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
-        TimeUnit.MILLISECONDS.sleep(500);
+        TimeUnit.MILLISECONDS.sleep(1000);
         Assert.assertThat(sslHandles.get(), lessThan(750));
         Assert.assertThat(sslFlushes.get(), lessThan(750));
-        Assert.assertThat(httpParses.get(), lessThan(150));
+        Assert.assertThat(httpParses.get(), lessThan(1000));
 
         client.close();
 
@@ -1555,7 +1555,6 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Ignore
     @Test
     public void testRequestConcurrentWithIdleExpiration() throws Exception
     {
@@ -1609,7 +1608,6 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(sslFlushes.get(), lessThan(20));
         Assert.assertThat(httpParses.get(), lessThan(50));
 
-        closeClient(client);
     }
 /*
     @Test

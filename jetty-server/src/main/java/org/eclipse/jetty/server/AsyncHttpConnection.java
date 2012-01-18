@@ -177,6 +177,10 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
             // then no more can happen, so close.
             _endp.close();
         }
+        
+        // Make idle parser seek EOF
+        if (_parser.isIdle())
+            _parser.setPersistent(false);
     }
 
 }
