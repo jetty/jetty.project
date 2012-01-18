@@ -358,7 +358,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         {
             if (connector.isIntegral(request))
                 return true;
-            if (connector.getConfidentialPort() > 0)
+            if (connector.getIntegralPort() > 0)
             {
                 String url = connector.getIntegralScheme() + "://" + request.getServerName() + ":" + connector.getIntegralPort() + request.getRequestURI();
                 if (request.getQueryString() != null)
@@ -440,6 +440,13 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     public void dump(Appendable out,String indent) throws IOException
     {
         dumpThis(out);
-        dump(out,indent,TypeUtil.asList(getHandlers()),getBeans(),Collections.singleton(_roles),_constraintMap.entrySet());
+        dump(out,indent,
+                Collections.singleton(getLoginService()),
+                Collections.singleton(getIdentityService()),
+                Collections.singleton(getAuthenticator()),
+                Collections.singleton(_roles),
+                _constraintMap.entrySet(),
+                getBeans(),
+                TypeUtil.asList(getHandlers()));
     }
 }

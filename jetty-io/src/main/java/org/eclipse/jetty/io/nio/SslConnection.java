@@ -182,22 +182,17 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             while (progress)
             {
                 progress=false;
-
+                
                 // If we are handshook let the delegate connection
                 if (_engine.getHandshakeStatus()!=HandshakeStatus.NOT_HANDSHAKING)
-                {
                     progress=process(null,null);
-                }
-                else
+                
+                // handle the delegate connection
+                AsyncConnection next = (AsyncConnection)_connection.handle();
+                if (next!=_connection && next!=null)
                 {
-                    // handle the delegate connection
-                    AsyncConnection next = (AsyncConnection)_connection.handle();
-                    if (next!=_connection && next!=null)
-                    {
-                        _connection=next;
-                        progress=true;
-                    }
-                    // TODO: consider moving here hasProgressed() - it's only used in SSL
+                    _connection=next;
+                    progress=true;
                 }
 
                 LOG.debug("{} handle {} progress={}", _session, this, progress);
@@ -274,40 +269,55 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         boolean some_progress=false;
         try
         {
+            // We need buffers to progress
             allocateBuffers();
+            
+            // if we don't have a buffer to put received data into
             if (toFill==null)
             {
+                // use the unwrapbuffer to hold received data.
                 _unwrapBuf.compact();
                 toFill=_unwrapBuf;
             }
+            // Else if the fill buffer is too small for the SSL session
             else if (toFill.capacity()<_session.getApplicationBufferSize())
             {
+                // fill to the temporary unwrapBuffer
                 boolean progress=process(null,toFlush);
+                
+                // if we received any data,
                 if (_unwrapBuf!=null && _unwrapBuf.hasContent())
                 {
+                    // transfer from temp buffer to fill buffer
                     _unwrapBuf.skip(toFill.put(_unwrapBuf));
                     return true;
                 }
                 else
+                    // return progress from recursive call
                     return progress;
             }
+            // Else if there is some temporary data
             else if (_unwrapBuf!=null && _unwrapBuf.hasContent())
             {
+                // transfer from temp buffer to fill buffer
                 _unwrapBuf.skip(toFill.put(_unwrapBuf));
                 return true;
             }
 
+            // If we are here, we have a buffer ready into which we can put some read data.
 
+            // If we have no data to flush, flush the empty buffer
             if (toFlush==null)
                 toFlush=__ZERO_BUFFER;
 
+            // While we are making progress processing SSL engine
             boolean progress=true;
-
             while (progress)
             {
                 progress=false;
+                
+                // Do any real IO
                 int filled=0,flushed=0;
-
                 try
                 {
                     // Read any available data
@@ -356,20 +366,6 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                             task.run();
                         }
 
-                        // Detect SUN JVM Bug!!!
-                        /* TODO
-                        if(initialStatus==HandshakeStatus.NOT_HANDSHAKING &&
-                                _engine.getHandshakeStatus()==HandshakeStatus.NEED_UNWRAP && sent==0 )
-                        {
-                            // This should be NEED_WRAP
-                            // The fix simply detects the signature of the bug and then close the connection (fail-fast) so that ff3 will delegate to using SSL instead of TLS.
-                            // This is a jvm bug on java1.6 where the SSLEngine expects more data from the initial handshake when the client(ff3-tls) already had given it.
-                            // See http://jira.codehaus.org/browse/JETTY-567 for more details
-                            LOG.warn("{} JETTY-567",_session);
-                            _endp.close();
-                            return false;
-                        }
-                        */
                     }
                     break;
 
@@ -388,6 +384,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         // The SSL needs to receive some handshake data from the other side
                         if (_handshook && !_allowRenegotiate)
                             _endp.close();
+                        else if (!_inbound.hasContent()&&filled==-1)
+                        {
+                            // No more input coming
+                            _endp.shutdownInput();
+                        }
                         else if (unwrap(toFill))
                             progress=true;
                     }
@@ -401,10 +402,12 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 if (_endp.isOpen() && _engine.isOutboundDone() && !_outbound.hasContent())
                     _endp.shutdownOutput();
 
+                // remember if any progress has been made
                 some_progress|=progress;
             }
 
-            if (toFill.hasContent())
+            // If we are reading into the temp buffer and it has some content, then we should be dispatched.
+            if (toFill==_unwrapBuf && _unwrapBuf.hasContent())
                 _aEndp.asyncDispatch();
         }
         finally
