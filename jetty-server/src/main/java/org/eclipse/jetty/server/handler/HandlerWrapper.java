@@ -86,8 +86,11 @@ public class HandlerWrapper extends AbstractHandlerContainer
     @Override
     protected void doStart() throws Exception
     {
-        if (_handler!=null)
-            _handler.start();
+        if (_handler == null)
+        {
+            throw new IllegalStateException("No decorated Handler set. call setHandler() before doStart().");
+        }
+        addBean(_handler);
         super.doStart();
     }
 
@@ -98,8 +101,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     @Override
     protected void doStop() throws Exception
     {
-        if (_handler!=null)
-            _handler.stop();
+        removeBean(_handler);
         super.doStop();
     }
 
