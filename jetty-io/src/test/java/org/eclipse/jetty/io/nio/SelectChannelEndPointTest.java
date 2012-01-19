@@ -196,7 +196,8 @@ public class SelectChannelEndPointTest
         }
         catch(SocketTimeoutException e)
         {
-            assertTrue(System.currentTimeMillis()-start>=400);
+            long duration = System.currentTimeMillis()-start;
+            Assert.assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
         }
 
         // write then shutdown
