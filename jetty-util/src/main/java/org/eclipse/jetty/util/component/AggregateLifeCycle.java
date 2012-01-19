@@ -40,6 +40,7 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
         final Object _bean;
         volatile boolean _managed=true;
         
+        @Override
         public String toString()
         {
             return "{"+_bean+","+_managed+"}";

@@ -86,8 +86,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     @Override
     protected void doStart() throws Exception
     {
-        if (_handler!=null)
-            _handler.start();
+        addBean(_handler);
         super.doStart();
     }
 
@@ -98,6 +97,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     @Override
     protected void doStop() throws Exception
     {
+        removeBean(_handler);
         if (_handler!=null)
             _handler.stop();
         super.doStop();
