@@ -320,6 +320,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
+    @Override
     protected Object prepareConstraintInfo(String pathInContext, Request request)
     {
         Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.match(pathInContext);
@@ -336,6 +337,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return null;
     }
 
+    @Override
     protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, Object constraintInfo) throws IOException
     {
         if (constraintInfo == null)
@@ -400,6 +402,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
     }
 
+    @Override
     protected boolean isAuthMandatory(Request baseRequest, Response base_response, Object constraintInfo)
     {
         if (constraintInfo == null)
@@ -441,9 +444,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     {
         dumpThis(out);
         dump(out,indent,
-                Collections.singleton(getLoginService()),
                 Collections.singleton(getIdentityService()),
-                Collections.singleton(getAuthenticator()),
                 Collections.singleton(_roles),
                 _constraintMap.entrySet(),
                 getBeans(),
