@@ -1,6 +1,8 @@
 package org.eclipse.jetty.io.nio;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.greaterThan;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -207,8 +209,8 @@ public class SelectChannelEndPointTest
         for (char c : "Goodbye Cruel TLS".toCharArray())
         {
             int b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            Assert.assertThat("expect valid char integer", b, greaterThan(0));
+            assertEquals("expect characters to be same", c,(char)b);
         }
         client.close();
 
