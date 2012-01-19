@@ -283,7 +283,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public void checkIdleTimestamp(long now)
     {
         long idleTimestamp=_idleTimestamp;
-                
+
         if (idleTimestamp!=0 && _maxIdleTime>0)
         {
             long idleForMs=now-idleTimestamp;
@@ -640,7 +640,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 catch (IOException e)
                 {
                     LOG.warn(e.toString());
-                    LOG.debug(e);
                     try{close();}
                     catch(IOException e2){LOG.ignore(e2);}
                 }
