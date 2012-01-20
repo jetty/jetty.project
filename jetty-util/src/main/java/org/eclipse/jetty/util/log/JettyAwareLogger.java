@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 package org.eclipse.jetty.util.log;
 
@@ -19,20 +19,20 @@ import org.slf4j.helpers.MessageFormatter;
 /**
  * JettyAwareLogger is used to fix a FQCN bug that arises from how Jetty
  * Log uses an indirect slf4j implementation.
- * 
+ *
  * https://bugs.eclipse.org/bugs/show_bug.cgi?id=276670
  */
-class JettyAwareLogger implements org.slf4j.Logger 
+class JettyAwareLogger implements org.slf4j.Logger
 {
     private static final int DEBUG = org.slf4j.spi.LocationAwareLogger.DEBUG_INT;
     private static final int ERROR = org.slf4j.spi.LocationAwareLogger.ERROR_INT;
     private static final int INFO  = org.slf4j.spi.LocationAwareLogger.INFO_INT;
     private static final int TRACE = org.slf4j.spi.LocationAwareLogger.TRACE_INT;
     private static final int WARN  = org.slf4j.spi.LocationAwareLogger.WARN_INT;
-    
+
     private static final String FQCN = Slf4jLog.class.getName();
     private final org.slf4j.spi.LocationAwareLogger _logger;
-    
+
     public JettyAwareLogger(org.slf4j.spi.LocationAwareLogger logger)
     {
         _logger = logger;
@@ -586,26 +586,33 @@ class JettyAwareLogger implements org.slf4j.Logger
     {
         log(marker, ERROR, msg, null, t);
     }
-    
+
     @Override
     public String toString()
     {
         return _logger.toString();
     }
-    
+
     private void log(Marker marker, int level, String msg, Object[] argArray, Throwable t)
     {
         if (argArray == null)
         {
             // Simple SLF4J Message (no args)
-            _logger.log(marker,FQCN,level,msg,null,t);
+            _logger.log(marker, FQCN, level, msg, null, t);
         }
         else
         {
-            // Don't assume downstream handles argArray properly.
-            // Do it the SLF4J way here to eliminate that as a bug.
-            FormattingTuple ft = MessageFormatter.arrayFormat(msg,argArray);
-            _logger.log(marker,FQCN,level,ft.getMessage(),null,t);
+            int loggerLevel = _logger.isTraceEnabled() ? TRACE :
+                    _logger.isDebugEnabled() ? DEBUG :
+                            _logger.isInfoEnabled() ? INFO :
+                                    _logger.isWarnEnabled() ? WARN : ERROR;
+            if (loggerLevel <= level)
+            {
+                // Don't assume downstream handles argArray properly.
+                // Do it the SLF4J way here to eliminate that as a bug.
+                FormattingTuple ft = MessageFormatter.arrayFormat(msg, argArray);
+                _logger.log(marker, FQCN, level, ft.getMessage(), null, t);
+            }
         }
     }
 }

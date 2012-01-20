@@ -11,6 +11,7 @@
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
   <properties>
+    <javax-activation-version>1.1</javax-activation-version>
     <javax-mail-version>1.4.1</javax-mail-version>
     <javax-transaction-version>1.1.1</javax-transaction-version>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
@@ -404,6 +405,11 @@
         <groupId>javax.mail</groupId>
         <artifactId>mail</artifactId>
         <version>${javax-mail-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>javax.activation</groupId>
+        <artifactId>activation</artifactId>
+        <version>${javax-activation-version}</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>

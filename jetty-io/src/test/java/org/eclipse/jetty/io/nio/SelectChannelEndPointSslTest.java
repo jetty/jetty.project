@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -22,7 +21,7 @@ import org.junit.Test;
 public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 {
     static SslContextFactory __sslCtxFactory=new SslContextFactory();
-    
+
     @BeforeClass
     public static void initSslEngine() throws Exception
     {
@@ -32,7 +31,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         __sslCtxFactory.setKeyManagerPassword("keypwd");
         __sslCtxFactory.start();
     }
-    
+
     @Override
     protected Socket newClient() throws IOException
     {
@@ -60,46 +59,46 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         super.testEcho();
     }
 
-    
+
     @Test
     @Override
     public void testShutdown() throws Exception
     {
         // SSL does not do half closes
     }
-    
+
     @Test
     public void testTcpClose() throws Exception
     {
-    
+
         // This test replaces SSLSocket() with a very manual SSL client
         // so we can close TCP underneath SSL.
 
         SocketChannel client = SocketChannel.open(_connector.socket().getLocalSocketAddress());
         client.socket().setSoTimeout(500);
-        
+
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
         _manager.register(server);
-        
+
         SSLEngine engine = __sslCtxFactory.newSslEngine();
         engine.setUseClientMode(true);
         engine.beginHandshake();
-        
+
         ByteBuffer appOut = ByteBuffer.allocate(engine.getSession().getApplicationBufferSize());
         ByteBuffer sslOut = ByteBuffer.allocate(engine.getSession().getPacketBufferSize()*2);
         ByteBuffer appIn = ByteBuffer.allocate(engine.getSession().getApplicationBufferSize());
         ByteBuffer sslIn = ByteBuffer.allocate(engine.getSession().getPacketBufferSize()*2);
-        
-        boolean debug=SslConnection.LOG.isDebugEnabled();
-        
+
+        boolean debug=false;
+
         if (debug) System.err.println(engine.getHandshakeStatus());
         int loop=20;
         while (engine.getHandshakeStatus()!=HandshakeStatus.NOT_HANDSHAKING)
         {
             if (--loop==0)
                 throw new IllegalStateException();
-            
+
             if (engine.getHandshakeStatus()==HandshakeStatus.NEED_WRAP)
             {
                 if (debug) System.err.printf("sslOut %d-%d-%d%n",sslOut.position(),sslOut.limit(),sslOut.capacity());
@@ -133,16 +132,16 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
             }
 
             if (engine.getHandshakeStatus()==HandshakeStatus.NEED_TASK)
-            {                    
+            {
                 Runnable task;
                 while ((task=engine.getDelegatedTask())!=null)
                     task.run();
                 if (debug) System.err.println(engine.getHandshakeStatus());
             }
         }
-        
+
         if (debug) System.err.println("\nSay Hello");
-        
+
         // write a message
         appOut.put("HelloWorld".getBytes("UTF-8"));
         appOut.flip();
@@ -164,11 +163,11 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
             sslIn.compact();
         else
             sslIn.clear();
-        
+
         appIn.flip();
         String reply= new String(appIn.array(),appIn.arrayOffset(),appIn.remaining());
         appIn.clear();
-        
+
         Assert.assertEquals("HelloWorld",reply);
 
         SelectorManager.LOG.info("javax.net.ssl.SSLException: Inbound closed... is expected soon");
