@@ -13,6 +13,7 @@
     <bundle-symbolic-name>${project.groupId}.boot.test</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
+    <paxexam-version>1.2.0</paxexam-version>
     <eclipse-ecj-version>3.6</eclipse-ecj-version>
     <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
     <orbit-javax-annotation-version>1.0.0.v20100513-0750</orbit-javax-annotation-version>
@@ -134,19 +135,19 @@
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam</artifactId>
-      <version>1.2.0</version>
-        <scope>test</scope>
+      <version>${paxexam-version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-junit</artifactId>
-      <version>1.2.0</version>
+      <version>${paxexam-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-container-default</artifactId>
-      <version>1.2.0</version>
+      <version>${paxexam-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -161,7 +162,7 @@
       <plugin>
 	  <groupId>org.ops4j.pax.exam</groupId>
 	  <artifactId>maven-paxexam-plugin</artifactId>
-	  <version>1.2.0</version>
+	  <version>${paxexam-version}</version>
 	  <executions>
 	      <execution>
 		  <id>generate-config</id>
