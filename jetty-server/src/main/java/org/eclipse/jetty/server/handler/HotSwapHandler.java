@@ -66,30 +66,25 @@ public class HotSwapHandler extends AbstractHandlerContainer
      */
     public void setHandler(Handler handler)
     {
+        if (handler == null)
+            throw new IllegalArgumentException("Parameter handler is null.");
         try
         {
             Handler old_handler = _handler;
             _handler = handler;
-            if (handler != null)
-            {
-                handler.setServer(getServer());
-                if (isStarted())
-                    handler.start();
-            }
+            Server server = getServer();
+            handler.setServer(server);
+            addBean(handler);
 
-            if (getServer() != null)
-                getServer().getContainer().update(this,old_handler,handler,"handler");
+            if (server != null)
+                server.getContainer().update(this,old_handler,handler,"handler");
 
             // if there is an old handler and it was started, stop it
-            if (old_handler != null && isStarted())
+            if (old_handler != null)
             {
-                old_handler.stop();
+                removeBean(old_handler);
             }
 
-        }
-        catch (RuntimeException e)
-        {
-            throw e;
         }
         catch (Exception e)
         {
@@ -104,8 +99,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
     @Override
     protected void doStart() throws Exception
     {
-        if (_handler != null)
-            _handler.start();
         super.doStart();
     }
 
@@ -117,8 +110,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_handler != null)
-            _handler.stop();
     }
 
     /* ------------------------------------------------------------ */
@@ -155,6 +146,8 @@ public class HotSwapHandler extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
+    @SuppressWarnings(
+    { "rawtypes", "unchecked" })
     @Override
     protected Object expandChildren(Object list, Class byClass)
     {
