@@ -18,14 +18,13 @@ package org.eclipse.jetty.util.log;
 /**
  * Slf4jLog Logger
  */
-public class Slf4jLog implements Logger
+public class Slf4jLog extends AbstractLogger
 {
     private final org.slf4j.Logger _logger;
 
     public Slf4jLog() throws Exception
     {
         this("org.eclipse.jetty.util.log");
-
     }
 
     public Slf4jLog(String name)
@@ -42,6 +41,7 @@ public class Slf4jLog implements Logger
         }
 
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger( name );
+        
         // Fix LocationAwareLogger use to indicate FQCN of this class - 
         // https://bugs.eclipse.org/bugs/show_bug.cgi?id=276670
         if (logger instanceof org.slf4j.spi.LocationAwareLogger)
@@ -114,9 +114,12 @@ public class Slf4jLog implements Logger
         warn("setDebugEnabled not implemented",null,null);
     }
 
-    public Logger getLogger(String name)
+    /**
+     * Create a Child Logger of this Logger.
+     */
+    protected Logger newLogger(String fullname)
     {
-        return new Slf4jLog(name);
+        return new Slf4jLog(fullname);
     }
 
     public void ignore(Throwable ignored)

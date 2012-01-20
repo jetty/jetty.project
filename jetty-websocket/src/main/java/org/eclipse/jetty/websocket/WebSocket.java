@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -109,7 +124,23 @@ public interface WebSocket
         String getProtocol();
         void sendMessage(String data) throws IOException;
         void sendMessage(byte[] data, int offset, int length) throws IOException;
+        
+        /**
+         * @deprecated Use {@link #close()}
+         */
         void disconnect();
+
+        /** 
+         * Close the connection with normal close code.
+         */
+        void close();
+        
+        /** Close the connection with specific closeCode and message.
+         * @param closeCode The close code to send, or -1 for no close code
+         * @param message The message to send or null for no message
+         */
+        void close(int closeCode,String message);
+        
         boolean isOpen();
 
         /**
@@ -154,12 +185,6 @@ public interface WebSocket
      */
     public interface FrameConnection extends Connection
     {
-        /** Close the connection with specific closeCode and message.
-         * @param closeCode
-         * @param message
-         */
-        void close(int closeCode,String message);
-        
         /**
          * @return The opcode of a binary message
          */

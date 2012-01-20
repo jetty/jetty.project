@@ -34,8 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.security.HashRealmResolver;
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -51,6 +49,8 @@ import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -165,7 +165,7 @@ public class SslSecurityListenerTest
 
         connector.setPort(0);
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystore);
+        cf.setKeyStorePath(keystore);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
 

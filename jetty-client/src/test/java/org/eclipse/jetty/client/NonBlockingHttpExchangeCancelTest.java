@@ -51,4 +51,10 @@ public class NonBlockingHttpExchangeCancelTest extends AbstractHttpExchangeCance
     {
         return httpClient;
     }
+    
+    /* ------------------------------------------------------------ */
+    public void testHttpExchangeCancelOnRequestComplete() throws Exception
+    {
+        super.testHttpExchangeCancelOnRequestComplete();
+    }
 }

@@ -29,8 +29,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  * @org.apache.xbean.XBean
  */
-public class ResourceHandler extends AbstractHandler
+public class ResourceHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(ResourceHandler.class);
 
@@ -309,7 +309,6 @@ public class ResourceHandler extends AbstractHandler
         }
         else
         {
-            included = Boolean.FALSE;
             servletPath = request.getServletPath();
             pathInfo = request.getPathInfo();
         }
@@ -359,6 +358,8 @@ public class ResourceHandler extends AbstractHandler
         {
             if(!HttpMethods.HEAD.equals(request.getMethod()))
             {
+                //try another handler
+                super.handle(target, baseRequest, request, response);
                 return;
             }
             skipContentBody = true;
@@ -369,12 +370,18 @@ public class ResourceHandler extends AbstractHandler
         if (resource==null || !resource.exists())
         {
             if (target.endsWith("/jetty-dir.css"))
-            {	
-                response.setContentType("text/css");
+            {	                
                 resource = getStylesheet();
+                if (resource==null)
+                    return;
+                response.setContentType("text/css");
             }
             else 
+            {
+                //no resource - try other handlers
+                super.handle(target, baseRequest, request, response);
                 return;
+            }
         }
             
         if (!_aliases && resource.getAlias()!=null)
@@ -432,10 +439,10 @@ public class ResourceHandler extends AbstractHandler
         catch(IllegalStateException e) {out = new WriterOutputStream(response.getWriter());}
 
         // See if a short direct method can be used?
-        if (out instanceof HttpConnection.Output)
+        if (out instanceof AbstractHttpConnection.Output)
         {
             // TODO file mapped buffers
-            ((HttpConnection.Output)out).sendContent(resource.getInputStream());
+            ((AbstractHttpConnection.Output)out).sendContent(resource.getInputStream());
         }
         else
         {

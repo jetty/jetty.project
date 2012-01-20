@@ -135,14 +135,14 @@ public interface Connector extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return The port to use when redirecting a request if a data constraint of integral is 
-     * required. See {@link org.eclipse.jetty.http.security.Constraint#getDataConstraint()}
+     * required. See {@link org.eclipse.jetty.util.security.Constraint#getDataConstraint()}
      */
     int getIntegralPort();
 
     /* ------------------------------------------------------------ */
     /**
      * @return The schema to use when redirecting a request if a data constraint of integral is 
-     * required. See {@link org.eclipse.jetty.http.security.Constraint#getDataConstraint()}
+     * required. See {@link org.eclipse.jetty.util.security.Constraint#getDataConstraint()}
      */
     String getIntegralScheme();
 
@@ -156,7 +156,7 @@ public interface Connector extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return The port to use when redirecting a request if a data constraint of confidential is 
-     * required. See {@link org.eclipse.jetty.http.security.Constraint#getDataConstraint()}
+     * required. See {@link org.eclipse.jetty.util.security.Constraint#getDataConstraint()}
      */
     int getConfidentialPort();
     
@@ -164,7 +164,7 @@ public interface Connector extends LifeCycle
     /* ------------------------------------------------------------ */
     /**
      * @return The schema to use when redirecting a request if a data constraint of confidential is 
-     * required. See {@link org.eclipse.jetty.http.security.Constraint#getDataConstraint()}
+     * required. See {@link org.eclipse.jetty.util.security.Constraint#getDataConstraint()}
      */
     String getConfidentialScheme();
     

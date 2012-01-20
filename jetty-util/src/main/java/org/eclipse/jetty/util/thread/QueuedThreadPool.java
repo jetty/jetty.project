@@ -363,6 +363,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                 return true;
             }
         }
+        LOG.debug("Dispatched {} to stopped {}",job,this);
         return false;
     }
 

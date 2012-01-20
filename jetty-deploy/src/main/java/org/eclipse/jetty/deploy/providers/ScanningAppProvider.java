@@ -99,7 +99,8 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     @Override
     protected void doStart() throws Exception
     {
-        if (LOG.isDebugEnabled()) LOG.debug(this.getClass().getSimpleName() + ".doStart()");
+        if (LOG.isDebugEnabled()) 
+            LOG.debug(this.getClass().getSimpleName() + ".doStart()");
         if (_monitoredDir == null)
         {
             throw new IllegalStateException("No configuration dir specified");
@@ -132,7 +133,8 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     protected void fileAdded(String filename) throws Exception
     {
-        if (LOG.isDebugEnabled()) LOG.debug("added ",filename);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("added {}",filename);
         App app = ScanningAppProvider.this.createApp(filename);
         if (app != null)
         {
@@ -144,7 +146,8 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     protected void fileChanged(String filename) throws Exception
     {
-        if (LOG.isDebugEnabled()) LOG.debug("changed ",filename);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("changed {}",filename);
         App app = _appMap.remove(filename);
         if (app != null)
         {
@@ -161,7 +164,8 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
     /* ------------------------------------------------------------ */
     protected void fileRemoved(String filename) throws Exception
     {
-        if (LOG.isDebugEnabled()) LOG.debug("removed ",filename);
+        if (LOG.isDebugEnabled()) 
+            LOG.debug("removed {}",filename);
         App app = _appMap.remove(filename);
         if (app != null)
             _deploymentManager.removeApp(app);

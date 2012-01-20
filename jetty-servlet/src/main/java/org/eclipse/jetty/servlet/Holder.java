@@ -21,11 +21,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.servlet.api.Registration;
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.api.Registration;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -82,7 +82,8 @@ public class Holder<T> extends AbstractLifeCycle implements Dumpable
             try
             {
                 _class=Loader.loadClass(Holder.class, _className);
-                if(LOG.isDebugEnabled())LOG.debug("Holding {}",_class);
+                if(LOG.isDebugEnabled())
+                    LOG.debug("Holding {}",_class);
             }
             catch (Exception e)
             {

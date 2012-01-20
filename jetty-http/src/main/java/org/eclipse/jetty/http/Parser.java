@@ -26,13 +26,17 @@ public interface Parser
     boolean isComplete();
 
     /**
-     * @return An indication of progress, typically the number of bytes filled plus the events parsed: -1 means EOF read, 0 no progress, >0 progress
+     * @return True if progress made
      * @throws IOException
      */
-    int parseAvailable() throws IOException;
+    boolean parseAvailable() throws IOException;
 
     boolean isMoreInBuffer() throws IOException;
 
     boolean isIdle();
+    
+    boolean isPersistent();
+    
+    void setPersistent(boolean persistent);
 
 }

@@ -14,8 +14,6 @@
 package org.eclipse.jetty.servlet.listener;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -78,7 +76,7 @@ public class ELContextCleaner implements ServletContextListener
         }
         catch (NoSuchFieldException e)
         {
-            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
+            LOG.info("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
         }
        
     }

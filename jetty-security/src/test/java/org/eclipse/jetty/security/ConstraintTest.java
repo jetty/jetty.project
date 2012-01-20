@@ -27,8 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.http.security.Password;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Connector;
@@ -41,7 +39,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Password;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -836,11 +835,7 @@ public class ConstraintTest
         assertTrue(response.startsWith("HTTP/1.1 200 "));
         
         response = _connector.getResponses("GET /ctx/forbid/post HTTP/1.0\r\n\r\n");
-        System.err.println(response);
         assertTrue(response.startsWith("HTTP/1.1 200 "));  // This is so stupid, but it is the S P E C
-        
-        
-
     }
     private class RequestHandler extends AbstractHandler
     {

@@ -24,14 +24,5 @@ public class SocketServerTest extends HttpServerTestBase
     public static void init() throws Exception
     {
         startServer(new SocketConnector());
-    }
-
-    @Override
-    public void testBlockingWhileReadingRequestContent() throws Exception
-    {
-        // TODO Auto-generated method stub
-        super.testBlockingWhileReadingRequestContent();
-    }
-    
-    
+    }    
 }

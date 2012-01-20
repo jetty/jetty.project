@@ -12,7 +12,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.xml.sax.SAXException;
 

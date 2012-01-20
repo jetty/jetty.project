@@ -19,8 +19,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jetty.client.security.Realm;
-import org.eclipse.jetty.http.security.Constraint;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
@@ -34,6 +32,8 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslSecuredContentExchangeTest
 extends ContentExchangeTest
@@ -63,7 +63,7 @@ extends ContentExchangeTest
         SslSelectChannelConnector connector = new SslSelectChannelConnector();
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystore.getAbsolutePath());
+        cf.setKeyStorePath(keystore.getAbsolutePath());
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
         server.addConnector(connector);

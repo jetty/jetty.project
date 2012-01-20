@@ -139,6 +139,12 @@ public class DeploymentManager extends AggregateLifeCycle
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /** Set the AppProviders.
+     * The providers passed are added via {@link #addBean(Object)} so that 
+     * their lifecycles may be managed as a {@link AggregateLifeCycle}.
+     * @param providers
+     */
     public void setAppProviders(Collection<AppProvider> providers)
     {
         if (isRunning())
@@ -481,7 +487,7 @@ public class DeploymentManager extends AggregateLifeCycle
                 while (it.hasNext())
                 {
                     Node node = it.next();
-                    LOG.debug("Executing Node: " + node);
+                    LOG.debug("Executing Node {}",node);
                     _lifecycle.runBindings(node,appentry.app,this);
                     appentry.setLifeCycleNode(node);
                 }

@@ -21,7 +21,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
 
 public class SslRenegotiateTest
@@ -95,7 +95,7 @@ public class SslRenegotiateTest
             String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
             connector.setPort(0);
             SslContextFactory cf = connector.getSslContextFactory();
-            cf.setKeyStore(keystore);
+            cf.setKeyStorePath(keystore);
             cf.setKeyStorePassword("storepwd");
             cf.setKeyManagerPassword("keypwd");
             cf.setAllowRenegotiate(reneg);
@@ -216,7 +216,7 @@ public class SslRenegotiateTest
 
     private void doWrap() throws Exception
     {
-        SSLEngineResult result =_engine.wrap(_outAppB,_outPacketB);
+        _engine.wrap(_outAppB,_outPacketB);
 //        System.err.println("wrapped "+result.bytesConsumed()+" to "+result.bytesProduced());
         _outPacketB.flip();
         while (_outPacketB.hasRemaining())

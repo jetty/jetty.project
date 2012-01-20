@@ -15,17 +15,16 @@ package org.eclipse.jetty.security;
 //You may elect to redistribute this code under either of these licenses. 
 //========================================================================
 
-import java.util.Collections;
 import java.util.Properties;
 
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.http.security.B64Code;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.B64Code;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -100,7 +99,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
         
         _targetName = properties.getProperty("targetName");
         
-        LOG.debug("\n\nTarget Name\n\n" + _targetName);
+        LOG.debug("Target Name {}", _targetName);
         
         super.doStart();
     }

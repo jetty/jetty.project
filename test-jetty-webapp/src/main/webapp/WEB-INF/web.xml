@@ -9,7 +9,7 @@
   
   <context-param>
     <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
-    <param-value>QoSFilter,TransparentProxy.Logger,TransparentProxy.ThreadPool,TransparentProxy.HttpClient</param-value>
+    <param-value>QoSFilter,TransparentProxy.ThreadPool,TransparentProxy.HttpClient</param-value>
   </context-param>
   
   <!-- Declare TestListener, which declares TestFilter -->
@@ -36,7 +36,7 @@
     <filter-class>org.eclipse.jetty.servlets.QoSFilter</filter-class>
     <init-param>
       <param-name>maxRequests</param-name>
-      <param-value>20</param-value>
+      <param-value>10000</param-value>
     </init-param>
     <init-param>
       <param-name>managedAttr</param-name>

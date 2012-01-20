@@ -58,7 +58,7 @@ public abstract class AbstractBuffers implements Buffers
         }
         throw new IllegalStateException();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Create a new content Buffer
@@ -77,7 +77,7 @@ public abstract class AbstractBuffers implements Buffers
        }
        throw new IllegalStateException();
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Create a new content Buffer
@@ -142,4 +142,9 @@ public abstract class AbstractBuffers implements Buffers
         return false;
     }
 
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return String.format("%s [%d,%d]", getClass().getSimpleName(), _headerSize, _bufferSize);
+    }
 }

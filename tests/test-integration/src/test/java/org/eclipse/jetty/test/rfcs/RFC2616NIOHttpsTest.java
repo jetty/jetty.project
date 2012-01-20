@@ -44,4 +44,9 @@ public class RFC2616NIOHttpsTest extends RFC2616BaseTest
     {
         return new HttpsSocketImpl();
     }
+    
+    public void test8_2_ExpectInvalid() throws Exception
+    {
+        super.test8_2_ExpectInvalid();
+    }
 }

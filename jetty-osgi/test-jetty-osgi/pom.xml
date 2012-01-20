@@ -2,11 +2,10 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>7.5.4-SNAPSHOT</version>
+    <version>7.6.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.osgi</groupId>
   <artifactId>test-jetty-osgi</artifactId>
   <name>Jetty :: OSGi :: Test</name>
   <description>Jetty OSGi Integration test</description>
@@ -49,13 +48,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -67,7 +64,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -79,13 +75,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -97,7 +91,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-websocket</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <!-- can't use javax.servlet:servlet-api:2.5 it is not a bundle.
@@ -112,13 +105,11 @@
     <dependency>
     	<groupId>org.eclipse.osgi</groupId>
     	<artifactId>org.eclipse.osgi</artifactId>
-        <version>${osgi-version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
         <groupId>org.eclipse.osgi</groupId>
         <artifactId>org.eclipse.osgi.services</artifactId>
-        <version>${osgi-services-version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -129,7 +120,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlets</artifactId>
-      <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     
@@ -192,7 +182,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.4</version>
         <executions>
           <execution>
             <phase>generate-resources</phase>

@@ -112,6 +112,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.copyContext("foo.xml","foo.xml");
 
         waitForDirectoryScan();
+        waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
     }
@@ -126,11 +127,13 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.copyContext("foo.xml","foo.xml");
 
         waitForDirectoryScan();
+        waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
 
         jetty.removeContext("foo.xml");
 
+        waitForDirectoryScan();
         waitForDirectoryScan();
 
         // FIXME: hot undeploy with removal not working! - jetty.assertNoWebAppContexts();
@@ -152,6 +155,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.copyContext("foo.xml","foo.xml");
 
         waitForDirectoryScan();
+        waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
 
@@ -164,6 +168,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         jetty.copyWebapp("foo-webapp-2.war","foo.war");
 
         // This should result in the existing foo.war being replaced with the new foo.war
+        waitForDirectoryScan();
         waitForDirectoryScan();
         jetty.assertWebAppContextsExists("/foo");
 

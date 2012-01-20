@@ -19,25 +19,19 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.AsyncHttpConnection;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.component.AggregateLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------------------------- */
 /**
@@ -67,8 +61,6 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public class SelectChannelConnector extends AbstractNIOConnector
 {
-    private static final Logger LOG = Log.getLogger(SelectChannelConnector.class);
-
     protected ServerSocketChannel _acceptChannel;
     private int _lowResourcesConnections;
     private int _lowResourcesMaxIdleTime;
@@ -84,6 +76,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     public SelectChannelConnector()
     {
         _manager.setMaxIdleTime(getMaxIdleTime());
+        addBean(_manager,true);
         setAcceptors(Math.max(1,(Runtime.getRuntime().availableProcessors()+3)/4));
     }
 
@@ -91,10 +84,15 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void accept(int acceptorID) throws IOException
     {
-        ServerSocketChannel server = _acceptChannel;
-        if (server!=null && server.isOpen())
+        ServerSocketChannel server;
+        synchronized(this)
         {
-            SocketChannel channel = _acceptChannel.accept();
+            server = _acceptChannel;
+        }
+
+        if (server!=null && server.isOpen() && _manager.isStarted())
+        {
+            SocketChannel channel = server.accept();
             channel.configureBlocking(false);
             Socket socket = channel.socket();
             configure(socket);
@@ -108,7 +106,11 @@ public class SelectChannelConnector extends AbstractNIOConnector
         synchronized(this)
         {
             if (_acceptChannel != null)
-                _acceptChannel.close();
+            {
+                removeBean(_acceptChannel);
+                if (_acceptChannel.isOpen())
+                    _acceptChannel.close();
+            }
             _acceptChannel = null;
             _localPort=-2;
         }
@@ -118,9 +120,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
-        SelectChannelEndPoint cep = ((SelectChannelEndPoint)endpoint);
-        cep.cancelIdle();
-        request.setTimeStamp(cep.getSelectSet().getNow());
+        request.setTimeStamp(System.currentTimeMillis());
         endpoint.setMaxIdleTime(_maxIdleTime);
         super.customize(endpoint, request);
     }
@@ -129,7 +129,8 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void persist(EndPoint endpoint) throws IOException
     {
-        ((SelectChannelEndPoint)endpoint).scheduleIdle();
+        AsyncEndPoint aEndp = ((AsyncEndPoint)endpoint);
+        aEndp.setCheckForIdle(true);
         super.persist(endpoint);
     }
 
@@ -138,9 +139,9 @@ public class SelectChannelConnector extends AbstractNIOConnector
     {
         return _manager;
     }
-    
+
     /* ------------------------------------------------------------ */
-    public Object getConnection()
+    public synchronized Object getConnection()
     {
         return _acceptChannel;
     }
@@ -175,6 +176,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
                 if (_localPort<=0)
                     throw new IOException("Server channel not bound");
 
+                addBean(_acceptChannel);
             }
         }
     }
@@ -245,39 +247,16 @@ public class SelectChannelConnector extends AbstractNIOConnector
         _manager.setMaxIdleTime(getMaxIdleTime());
         _manager.setLowResourcesConnections(getLowResourcesConnections());
         _manager.setLowResourcesMaxIdleTime(getLowResourcesMaxIdleTime());
-        _manager.start();
 
         super.doStart();
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.AbstractConnector#doStop()
-     */
-    @Override
-    protected void doStop() throws Exception
-    {
-        synchronized(this)
-        {
-            if(_manager.isRunning())
-            {
-                try
-                {
-                    _manager.stop();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn(e);
-                }
-            }
-        }
-        super.doStop();
-    }
-
-    /* ------------------------------------------------------------ */
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
-        return new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
+        SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
+        endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+        return endp;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -287,49 +266,11 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected Connection newConnection(SocketChannel channel,final SelectChannelEndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel,final AsyncEndPoint endpoint)
     {
-        return new SelectChannelHttpConnection(SelectChannelConnector.this,endpoint,getServer(),endpoint);
+        return new AsyncHttpConnection(SelectChannelConnector.this,endpoint,getServer());
     }
 
-    /* ------------------------------------------------------------ */
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(String.valueOf(this)).append("\n");
-        ServerSocketChannel channel=_acceptChannel;
-        if (channel==null)
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{null,"CLOSED",_manager}));
-        else
-            AggregateLifeCycle.dump(out,indent,Arrays.asList(new Object[]{_acceptChannel,_acceptChannel.isOpen()?"OPEN":"CLOSED",_manager}));
-    }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class SelectChannelHttpConnection extends AsyncHttpConnection
-    {
-        private final SelectChannelEndPoint _endpoint;
-
-        private SelectChannelHttpConnection(Connector connector, EndPoint endpoint, Server server, SelectChannelEndPoint endpoint2)
-        {
-            super(connector,endpoint,server);
-            _endpoint = endpoint2;
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public void cancelTimeout(Task task)
-        {
-            _endpoint.getSelectSet().cancelTimeout(task);
-        }
-
-        /* ------------------------------------------------------------ */
-        @Override
-        public void scheduleTimeout(Task task, long timeoutMs)
-        {
-            _endpoint.getSelectSet().scheduleTimeout(task,timeoutMs);
-        }
-    }
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -365,7 +306,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         }
 
         @Override
-        protected Connection newConnection(SocketChannel channel,SelectChannelEndPoint endpoint)
+        public AsyncConnection newConnection(SocketChannel channel,AsyncEndPoint endpoint, Object attachment)
         {
             return SelectChannelConnector.this.newConnection(channel,endpoint);
         }
@@ -376,5 +317,4 @@ public class SelectChannelConnector extends AbstractNIOConnector
             return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
         }
     }
-
 }

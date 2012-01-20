@@ -13,10 +13,22 @@
 
 package org.eclipse.jetty.util.log;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 
 /**
@@ -40,74 +52,139 @@ public class Log
     public final static String EXCEPTION= "EXCEPTION ";
     public final static String IGNORED= "IGNORED ";
 
+    /**
+     * Logging Configuration Properties
+     */
+    protected static Properties __props;
+    /**
+     * The {@link Logger} implementation class name
+     */
     public static String __logClass;
+    /**
+     * Legacy flag indicating if {@link Log#ignore(Throwable)} methods produce any output in the {@link Logger}s
+     */
     public static boolean __ignored;
+
+    /**
+     * Hold loggers only.
+     */
+    private final static ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<String, Logger>();
+
 
     static
     {
+        /* Instantiate a default configuration properties (empty)
+         */
+        __props = new Properties();
+
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             public Object run()
             {
-                __logClass = System.getProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.Slf4jLog");
-                __ignored = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.log.IGNORED", "false"));
+                /* First see if the jetty-logging.properties object exists in the classpath.
+                 * This is an optional feature used by embedded mode use, and test cases to allow for early
+                 * configuration of the Log class in situations where access to the System.properties are
+                 * either too late or just impossible.
+                 */
+                URL testProps = Log.class.getClassLoader().getResource("jetty-logging.properties");
+                if (testProps != null)
+                {
+                    InputStream in = null;
+                    try
+                    {
+                        in = testProps.openStream();
+                        __props.load(in);
+                    }
+                    catch (IOException e)
+                    {
+                        System.err.println("Unable to load " + testProps);
+                        e.printStackTrace(System.err);
+                    }
+                    finally
+                    {
+                        IO.close(in);
+                    }
+                }
+
+                /* Now load the System.properties as-is into the __props, these values will override
+                 * any key conflicts in __props.
+                 */
+                @SuppressWarnings("unchecked")
+                Enumeration<String> systemKeyEnum = (Enumeration<String>)System.getProperties().propertyNames();
+                while (systemKeyEnum.hasMoreElements())
+                {
+                    String key = systemKeyEnum.nextElement();
+                    String val = System.getProperty(key);
+                    //protect against application code insertion of non-String values (returned as null)
+                    if (val != null)
+                        __props.setProperty(key,val);
+                }
+
+                /* Now use the configuration properties to configure the Log statics
+                 */
+                __logClass = __props.getProperty("org.eclipse.jetty.util.log.class","org.eclipse.jetty.util.log.Slf4jLog");
+                __ignored = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.IGNORED","false"));
                 return null;
             }
         });
     }
 
-    private static Logger __log;
+    private static Logger LOG;
     private static boolean __initialized;
 
     public static boolean initialized()
     {
-        if (__log != null)
+        if (LOG != null)
+        {
             return true;
+        }
 
         synchronized (Log.class)
         {
             if (__initialized)
-                return __log != null;
+            {
+                return LOG != null;
+            }
             __initialized = true;
         }
 
         try
         {
             Class<?> log_class = Loader.loadClass(Log.class, __logClass);
-            if (__log == null || !__log.getClass().equals(log_class))
+            if (LOG == null || !LOG.getClass().equals(log_class))
             {
-                __log = (Logger)log_class.newInstance();
-                __log.debug("Logging to {} via {}", __log, log_class.getName());
+                LOG = (Logger)log_class.newInstance();
+                LOG.debug("Logging to {} via {}", LOG, log_class.getName());
             }
         }
-        catch(NoClassDefFoundError e)
+        catch(Throwable e)
         {
-            initStandardLogging(e);
-        }
-        catch(Exception e)
-        {
+            // Unable to load specified Logger implementation, default to standard logging.
             initStandardLogging(e);
         }
 
-        return __log != null;
+        return LOG != null;
     }
 
     private static void initStandardLogging(Throwable e)
     {
         Class<?> log_class;
         if(e != null && __ignored)
+        {
             e.printStackTrace();
-        if (__log == null)
+        }
+
+        if (LOG == null)
         {
             log_class = StdErrLog.class;
-            __log = new StdErrLog();
-            __log.debug("Logging to {} via {}", __log, log_class.getName());
+            LOG = new StdErrLog();
+            LOG.debug("Logging to {} via {}", LOG, log_class.getName());
         }
     }
 
     public static void setLog(Logger log)
     {
-        Log.__log = log;
+        Log.LOG = log;
     }
 
     /**
@@ -117,16 +194,16 @@ public class Log
     public static Logger getLog()
     {
         initialized();
-        return __log;
+        return LOG;
     }
-    
+
     /**
      * Get the root logger.
      * @return the root logger
      */
     public static Logger getRootLogger() {
         initialized();
-        return __log;
+        return LOG;
     }
 
     static boolean isIgnored()
@@ -180,7 +257,7 @@ public class Log
     {
         if (!isDebugEnabled())
             return;
-        __log.debug(EXCEPTION, th);
+        LOG.debug(EXCEPTION, th);
     }
 
     /**
@@ -191,7 +268,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.debug(msg);
+        LOG.debug(msg);
     }
 
     /**
@@ -202,7 +279,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.debug(msg, arg);
+        LOG.debug(msg, arg);
     }
 
     /**
@@ -213,7 +290,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.debug(msg, arg0, arg1);
+        LOG.debug(msg, arg0, arg1);
     }
 
     /**
@@ -229,7 +306,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.ignore(thrown);
+        LOG.ignore(thrown);
     }
 
     /**
@@ -240,7 +317,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.info(msg);
+        LOG.info(msg);
     }
 
     /**
@@ -251,7 +328,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.info(msg, arg);
+        LOG.info(msg, arg);
     }
 
     /**
@@ -262,7 +339,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.info(msg, arg0, arg1);
+        LOG.info(msg, arg0, arg1);
     }
 
     /**
@@ -273,7 +350,7 @@ public class Log
     {
         if (!initialized())
             return false;
-        return __log.isDebugEnabled();
+        return LOG.isDebugEnabled();
     }
 
     /**
@@ -284,7 +361,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(msg);
+        LOG.warn(msg);
     }
 
     /**
@@ -295,7 +372,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(msg, arg);
+        LOG.warn(msg, arg);
     }
 
     /**
@@ -306,7 +383,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(msg, arg0, arg1);
+        LOG.warn(msg, arg0, arg1);
     }
 
     /**
@@ -317,7 +394,7 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(msg, th);
+        LOG.warn(msg, th);
     }
 
     /**
@@ -328,12 +405,12 @@ public class Log
     {
         if (!initialized())
             return;
-        __log.warn(EXCEPTION, th);
+        LOG.warn(EXCEPTION, th);
     }
-    
+
     /**
      * Obtain a named Logger based on the fully qualified class name.
-     * 
+     *
      * @param clazz
      *            the class to base the Logger name off of
      * @return the Logger with the given name
@@ -353,6 +430,28 @@ public class Log
         if (!initialized())
             return null;
 
-        return name == null ? __log : __log.getLogger(name);
+        if(name==null)
+            return LOG;
+
+        Logger logger = __loggers.get(name);
+        if(logger==null)
+            logger = LOG.getLogger(name);
+
+        return logger;
+    }
+
+    static ConcurrentMap<String, Logger> getMutableLoggers()
+    {
+        return __loggers;
+    }
+    
+    /**
+     * Get a map of all configured {@link Logger} instances.
+     *
+     * @return a map of all configured {@link Logger} instances
+     */
+    public static Map<String, Logger> getLoggers()
+    {
+        return Collections.unmodifiableMap(__loggers);
     }
 }

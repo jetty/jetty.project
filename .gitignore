@@ -20,7 +20,7 @@ target/
 .idea/
 
 # Mac filesystem dust
-/.DS_Store
+.DS_Store
 
 # pmd
 .pmdruleset
@@ -31,3 +31,6 @@ target/
 
 # vim
 .*.sw[a-p]
+
+# merge tooling
+*.orig

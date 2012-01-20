@@ -16,8 +16,6 @@
 
 package org.eclipse.jetty.jmx;
 
-import java.net.MalformedURLException;
-
 import javax.management.remote.JMXServiceURL;
 
 import org.junit.Test;

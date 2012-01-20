@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 // ========================================================================
 // Copyright (c) 2010 Mort Bay Consulting Pty. Ltd.
 // ------------------------------------------------------------------------
@@ -18,8 +33,6 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -27,7 +40,6 @@ import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -73,9 +85,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
     }
 
-
     private final static byte[] MAGIC;
-    private final IdleCheck _idle;
     private final WebSocketParser _parser;
     private final WebSocketGenerator _generator;
     private final WebSocket _webSocket;
@@ -102,10 +112,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     private final WebSocketParser.FrameHandler _frameHandler= new FrameHandlerD06();
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
     private final WebSocket.FrameConnection _connection = new FrameConnectionD06();
 
 
@@ -114,9 +120,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         throws IOException
     {
         super(endpoint,timestamp);
-
-        if (endpoint instanceof AsyncEndPoint)
-            ((AsyncEndPoint)endpoint).cancelIdle();
 
         _endp.setMaxIdleTime(maxIdleTime);
 
@@ -128,28 +131,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         _generator = new WebSocketGeneratorD06(buffers, _endp,null);
         _parser = new WebSocketParserD06(buffers, endpoint, _frameHandler,true);
         _protocol=protocol;
-
-        if (_endp instanceof SelectChannelEndPoint)
-        {
-            final SelectChannelEndPoint scep=(SelectChannelEndPoint)_endp;
-            scep.cancelIdle();
-            _idle=new IdleCheck()
-            {
-                public void access(EndPoint endp)
-                {
-                    scep.scheduleIdle();
-                }
-            };
-            scep.scheduleIdle();
-        }
-        else
-        {
-            _idle = new IdleCheck()
-            {
-                public void access(EndPoint endp)
-                {}
-            };
-        }
 
         _maxTextMessageSize=buffers.getBufferSize();
         _maxBinaryMessageSize=-1;
@@ -199,7 +180,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         {
             if (_endp.isOpen())
             {
-                _idle.access(_endp);
                 if (_closedIn && _closedOut && _generator.isBufferEmpty())
                     _endp.close();
                 else if (_endp.isInputShutdown() && !_closedIn)
@@ -213,6 +193,12 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
+    public void onInputShutdown() throws IOException
+    {
+        // TODO
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
         return _parser.isBufferEmpty() && _generator.isBufferEmpty();
@@ -220,7 +206,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
 
     /* ------------------------------------------------------------ */
     @Override
-    public void idleExpired()
+    public void onIdleExpired(long idleForMs)
     {
         closeOut(WebSocketConnectionD06.CLOSE_NORMAL,"Idle");
     }
@@ -232,7 +218,7 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void closed()
+    public void onClose()
     {
         _webSocket.onClose(WebSocketConnectionD06.CLOSE_NORMAL,"");
     }
@@ -288,6 +274,13 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         }
     }
 
+    public void shutdown()
+    {
+        final WebSocket.Connection connection = _connection;
+        if (connection != null)
+            connection.close(CLOSE_SHUTDOWN, null);
+    }
+
     /* ------------------------------------------------------------ */
     public void fillBuffersFrom(Buffer buffer)
     {
@@ -309,8 +302,19 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         return Collections.emptyList();
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+    protected void onFrameHandshake()
+    {
+        if (_onFrame!=null)
+        {
+            _onFrame.onHandshake(_connection);
+        }
+    }
+
+    protected void onWebSocketOpen()
+    {
+        _webSocket.onOpen(_connection);
+    }
+
     /* ------------------------------------------------------------ */
     private class FrameConnectionD06 implements WebSocket.FrameConnection
     {
@@ -327,7 +331,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_TEXT,data,0,data.length);
             _generator.flush();
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -338,7 +341,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _generator.addFrame((byte)0x8,WebSocketConnectionD06.OP_BINARY,content,offset,length);
             _generator.flush();
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -349,7 +351,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _generator.addFrame(flags,opcode,content,offset,length);
             _generator.flush();
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -360,7 +361,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _generator.addFrame((byte)0x8,control,data,offset,length);
             _generator.flush();
             checkWriteable();
-            _idle.access(_endp);
         }
 
         /* ------------------------------------------------------------ */
@@ -502,10 +502,17 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
         /* ------------------------------------------------------------ */
         public void disconnect()
         {
+            close();
+        }
+
+        /* ------------------------------------------------------------ */
+        public void close()
+        {
             close(CLOSE_NORMAL,null);
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             return this.getClass().getSimpleName()+"@"+_endp.getLocalAddr()+":"+_endp.getLocalPort()+"<->"+_endp.getRemoteAddr()+":"+_endp.getRemotePort();
@@ -700,10 +707,6 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
                         }
                     }
                 }
-                catch(ThreadDeath th)
-                {
-                    throw th;
-                }
                 catch(Throwable th)
                 {
                     LOG.warn(th);
@@ -716,33 +719,11 @@ public class WebSocketConnectionD06 extends AbstractConnection implements WebSoc
             _connection.close(code,message);
         }
 
+        @Override
         public String toString()
         {
             return WebSocketConnectionD06.this.toString()+"FH";
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    private interface IdleCheck
-    {
-        void access(EndPoint endp);
-    }
-
-    /* ------------------------------------------------------------ */
-    public void handshake(HttpServletRequest request, HttpServletResponse response, String subprotocol) throws IOException
-    {
-        String key = request.getHeader("Sec-WebSocket-Key");
-
-        response.setHeader("Upgrade","WebSocket");
-        response.addHeader("Connection","Upgrade");
-        response.addHeader("Sec-WebSocket-Accept",hashKey(key));
-        if (subprotocol!=null)
-            response.addHeader("Sec-WebSocket-Protocol",subprotocol);
-        response.sendError(101);
-
-        if (_onFrame!=null)
-            _onFrame.onHandshake(_connection);
-        _webSocket.onOpen(_connection);
     }
 
     /* ------------------------------------------------------------ */

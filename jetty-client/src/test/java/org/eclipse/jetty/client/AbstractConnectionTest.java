@@ -14,7 +14,11 @@
 
 package org.eclipse.jetty.client;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -24,9 +28,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @version $Revision$ $Date$
@@ -41,6 +42,14 @@ public abstract class AbstractConnectionTest
         return httpClient;
     }
 
+
+    protected ServerSocket newServerSocket() throws IOException
+    {
+        ServerSocket serverSocket=new ServerSocket();
+        serverSocket.bind(null);
+        return serverSocket;
+    }
+    
     @Test
     public void testServerClosedConnection() throws Exception
     {
@@ -119,11 +128,15 @@ public abstract class AbstractConnectionTest
         }
     }
 
+    protected String getScheme()
+    {
+        return "http";
+    }
+    
     @Test
     public void testServerClosedIncomplete() throws Exception
     {
-        ServerSocket serverSocket = new ServerSocket();
-        serverSocket.bind(null);
+        ServerSocket serverSocket = newServerSocket();
         int port=serverSocket.getLocalPort();
 
         HttpClient httpClient = newHttpClient();
@@ -133,6 +146,7 @@ public abstract class AbstractConnectionTest
         {
             CountDownLatch latch = new CountDownLatch(1);
             HttpExchange exchange = new ConnectionExchange(latch);
+            exchange.setScheme(getScheme());
             exchange.setAddress(new Address("localhost", port));
             exchange.setRequestURI("/");
             httpClient.send(exchange);
@@ -159,7 +173,9 @@ public abstract class AbstractConnectionTest
 
             remote.close();
 
-            assertEquals(HttpExchange.STATUS_EXCEPTED, exchange.waitForDone());
+            int status = exchange.waitForDone();
+            
+            assertEquals(HttpExchange.STATUS_EXCEPTED, status);
 
         }
         finally
@@ -346,27 +362,33 @@ public abstract class AbstractConnectionTest
             HttpDestination dest = httpClient.getDestination(new Address("localhost", port),false);
 
             httpClient.send(exchange);
-            Socket s = serverSocket.accept();
+            Socket server = serverSocket.accept();
+            server.setSoTimeout(5000);
             byte[] buf = new byte[4096];
-            s.getInputStream().read(buf);
+            
+            int len=server.getInputStream().read(buf);
             assertEquals(1,dest.getConnections());
             assertEquals(0,dest.getIdleConnections());
 
-            s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
-
-            Thread.sleep(300);
+            server.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
+            
+            assertEquals(HttpExchange.STATUS_COMPLETED,exchange.waitForDone());
+            Thread.sleep(200); // TODO get rid of this
             assertEquals(1,dest.getConnections());
             assertEquals(1,dest.getIdleConnections());
 
             exchange = new ConnectionExchange();
             exchange.setAddress(new Address("localhost", port));
             exchange.setRequestURI("/");
-
             httpClient.send(exchange);
-            s.getInputStream().read(buf);
             assertEquals(1,dest.getConnections());
             assertEquals(0,dest.getIdleConnections());
-            s.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
+            
+            
+            len=server.getInputStream().read(buf);
+            assertEquals(1,dest.getConnections());
+            assertEquals(0,dest.getIdleConnections());
+            server.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n".getBytes());
 
             Thread.sleep(500);
 

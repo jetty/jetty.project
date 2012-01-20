@@ -15,14 +15,13 @@ package org.eclipse.jetty.server.ssl;
 import java.io.FileInputStream;
 import java.net.Socket;
 import java.security.KeyStore;
-import java.util.Arrays;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,7 +50,7 @@ public class SslSocketServerTest extends HttpServerTestBase
         SslSocketConnector connector = new SslSocketConnector();
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         SslContextFactory cf = connector.getSslContextFactory();
-        cf.setKeyStore(keystorePath);
+        cf.setKeyStorePath(keystorePath);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStore(keystorePath);

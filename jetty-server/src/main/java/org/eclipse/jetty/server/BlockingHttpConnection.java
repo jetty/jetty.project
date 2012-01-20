@@ -1,3 +1,15 @@
+// ========================================================================
+// Copyright (c) 2006-2011 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
@@ -6,66 +18,62 @@ import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.Parser;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class BlockingHttpConnection extends HttpConnection
+
+/* ------------------------------------------------------------ */
+/** Blocking Server HTTP Connection
+ */
+public class BlockingHttpConnection extends AbstractHttpConnection
 {
     private static final Logger LOG = Log.getLogger(BlockingHttpConnection.class);
 
-    private volatile boolean _handling;
-    
     public BlockingHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(connector,endpoint,server);
     }
 
-    
     public BlockingHttpConnection(Connector connector, EndPoint endpoint, Server server, Parser parser, Generator generator, Request request)
     {
         super(connector,endpoint,server,parser,generator,request);
     }
 
+    @Override
+    protected void handleRequest() throws IOException
+    {
+        super.handleRequest();
+    }
 
     public Connection handle() throws IOException
     {
         Connection connection = this;
 
-        // Loop while more in buffer
-        boolean more_in_buffer =true; // assume true until proven otherwise
-
         try
         {
             setCurrentConnection(this);
 
-            while (more_in_buffer && _endp.isOpen())
+            // do while the endpoint is open
+            // AND the connection has not changed
+            while (_endp.isOpen() && connection==this)
             {
                 try
                 {
                     // If we are not ended then parse available
-                    if (!_parser.isComplete())
+                    if (!_parser.isComplete() && !_endp.isInputShutdown())
                         _parser.parseAvailable();
 
                     // Do we have more generating to do?
                     // Loop here because some writes may take multiple steps and
                     // we need to flush them all before potentially blocking in the
                     // next loop.
-                    while (_generator.isCommitted() && !_generator.isComplete())
-                    {
-                        long written=_generator.flushBuffer();
-                        if (written<=0)
-                            break;
-                        if (_endp.isBufferingOutput())
-                            _endp.flush();
-                    }
+                    if (_generator.isCommitted() && !_generator.isComplete() && !_endp.isOutputShutdown())
+                        _generator.flushBuffer();
 
                     // Flush buffers
-                    if (_endp.isBufferingOutput())
-                        _endp.flush();
-      
+                    _endp.flush();
                 }
                 catch (HttpException e)
                 {
@@ -81,59 +89,44 @@ public class BlockingHttpConnection extends HttpConnection
                 }
                 finally
                 {
-                    more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-                    
-                    // Is this request/response round complete?
-                    if (_parser.isComplete() && _generator.isComplete() && !_endp.isBufferingOutput())
+                    //  Is this request/response round complete and are fully flushed?
+                    if (_parser.isComplete() && _generator.isComplete())
                     {
+                        // Reset the parser/generator
+                        reset();
+
                         // look for a switched connection instance?
-                        Connection switched=(_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
-                        ?(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection"):null;
-
-                        // have we switched?
-                        if (switched!=null)
+                        if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            _parser.reset();
-                            _generator.reset(true);
-                            connection=switched;
+                            Connection switched=(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
+                            if (switched!=null)
+                                connection=switched;
                         }
-                        else
-                        {
-                            // No switch, so cleanup and reset
-                            if (!_generator.isPersistent() || _endp.isInputShutdown())
-                            {
-                                _parser.reset();
-                                more_in_buffer=false;
-                                _endp.close();
-                            }
 
-                            if (more_in_buffer)
-                            {
-                                reset(false);
-                                more_in_buffer = _parser.isMoreInBuffer() || _endp.isBufferingInput();
-                            }
-                            else
-                                reset(true);
+                        // TODO Is this required?
+                        if (!_generator.isPersistent() && !_endp.isOutputShutdown())
+                        {
+                            LOG.warn("Safety net oshut!!! Please open a bugzilla");
+                            _endp.shutdownOutput();
                         }
                     }
-                    else if (_parser.isIdle() && _endp.isInputShutdown())
+                    
+                    // If we don't have a committed response and we are not suspended
+                    if (_endp.isInputShutdown() && _generator.isIdle() && !_request.getAsyncContinuation().isSuspended())
                     {
-                        more_in_buffer=false;
+                        // then no more can happen, so close.
                         _endp.close();
                     }
-
-                    if (_request.isAsyncStarted())
-                        throw new IllegalStateException();
                 }
             }
+
+            return connection;
         }
         finally
         {
-            _parser.returnBuffers();
             setCurrentConnection(null);
-            _handling=false;
+            _parser.returnBuffers();
+            _generator.returnBuffers();
         }
-        return connection;
     }
-
 }

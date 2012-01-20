@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.embedded;
 
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /* ------------------------------------------------------------ */
@@ -47,7 +47,7 @@ public class ManyConnectors
         System.setProperty("jetty.home",jetty_home);
         ssl_connector.setPort(8443);
         SslContextFactory cf = ssl_connector.getSslContextFactory();
-        cf.setKeyStore(jetty_home + "/etc/keystore");
+        cf.setKeyStorePath(jetty_home + "/etc/keystore");
         cf.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         cf.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
 

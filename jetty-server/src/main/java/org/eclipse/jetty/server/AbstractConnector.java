@@ -18,20 +18,21 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HttpBuffers;
+import org.eclipse.jetty.http.HttpBuffersImpl;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.io.Buffers;
+import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -48,10 +49,10 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * <li>Base acceptor thread</li>
  * <li>Optional reverse proxy headers checking</li>
  * </ul>
- * 
- * 
+ *
+ *
  */
-public abstract class AbstractConnector extends HttpBuffers implements Connector, Dumpable
+public abstract class AbstractConnector extends AggregateLifeCycle implements HttpBuffers, Connector, Dumpable
 {
     private static final Logger LOG = Log.getLogger(AbstractConnector.class);
 
@@ -84,7 +85,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     protected int _lowResourceMaxIdleTime = -1;
     protected int _soLingerTime = -1;
 
-    private transient Thread[] _acceptorThread;
+    private transient Thread[] _acceptorThreads;
 
     private final AtomicLong _statsStartedAt = new AtomicLong(-1L);
 
@@ -95,11 +96,14 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /** duration of a connection */
     private final SampleStatistic _connectionDurationStats = new SampleStatistic();
 
+    protected final HttpBuffersImpl _buffers = new HttpBuffersImpl();
+
     /* ------------------------------------------------------------ */
     /**
      */
     public AbstractConnector()
     {
+        addBean(_buffers);
     }
 
     /* ------------------------------------------------------------ */
@@ -123,9 +127,16 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     }
 
     /* ------------------------------------------------------------ */
+    /** Set the ThreadPool.
+     * The threadpool passed is added via {@link #addBean(Object)} so that 
+     * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
+     * @param threadPool the threadPool to set
+     */
     public void setThreadPool(ThreadPool pool)
     {
+        removeBean(_threadPool);
         _threadPool = pool;
+        addBean(_threadPool);
     }
 
     /* ------------------------------------------------------------ */
@@ -181,7 +192,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
      * <p>
      * Previously, Jetty supported separate idle timeouts and IO operation timeouts, however the expense of changing the value of soTimeout was significant, so
      * these timeouts were merged. With the advent of NIO, it may be possible to again differentiate these values (if there is demand).
-     * 
+     *
      * @param maxIdleTime
      *            The maxIdleTime to set.
      */
@@ -299,20 +310,22 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         // open listener port
         open();
 
-        super.doStart();
-
         if (_threadPool == null)
+        {
             _threadPool = _server.getThreadPool();
-        if (_threadPool != _server.getThreadPool() && (_threadPool instanceof LifeCycle))
-            ((LifeCycle)_threadPool).start();
+            addBean(_threadPool,false);
+        }
+
+        super.doStart();
 
         // Start selector thread
         synchronized (this)
         {
-            _acceptorThread = new Thread[getAcceptors()];
+            _acceptorThreads = new Thread[getAcceptors()];
 
-            for (int i = 0; i < _acceptorThread.length; i++)
-                _threadPool.dispatch(new Acceptor(i));
+            for (int i = 0; i < _acceptorThreads.length; i++)
+                if (!_threadPool.dispatch(new Acceptor(i)))
+                    throw new IllegalStateException("!accepting");
             if (_threadPool.isLowOnThreads())
                 LOG.warn("insufficient threads configured for {}",this);
         }
@@ -333,22 +346,18 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
             LOG.warn(e);
         }
 
-        if (_threadPool != _server.getThreadPool() && _threadPool instanceof LifeCycle)
-            ((LifeCycle)_threadPool).stop();
-
         super.doStop();
 
-        Thread[] acceptors = null;
+        Thread[] acceptors;
         synchronized (this)
         {
-            acceptors = _acceptorThread;
-            _acceptorThread = null;
+            acceptors = _acceptorThreads;
+            _acceptorThreads = null;
         }
         if (acceptors != null)
         {
-            for (int i = 0; i < acceptors.length; i++)
+            for (Thread thread : acceptors)
             {
-                Thread thread = acceptors[i];
                 if (thread != null)
                     thread.interrupt();
             }
@@ -358,11 +367,15 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     public void join() throws InterruptedException
     {
-        Thread[] threads = _acceptorThread;
+        Thread[] threads;
+        synchronized(this)
+        {
+            threads=_acceptorThreads;
+        }
         if (threads != null)
-            for (int i = 0; i < threads.length; i++)
-                if (threads[i] != null)
-                    threads[i].join();
+            for (Thread thread : threads)
+                if (thread != null)
+                    thread.join();
     }
 
     /* ------------------------------------------------------------ */
@@ -410,13 +423,13 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                 request.setScheme(HttpSchemes.HTTPS);
             }
         }
-        
+
         // Retrieving headers from the request
         String forwardedHost = getLeftMostFieldValue(httpFields,getForwardedHostHeader());
         String forwardedServer = getLeftMostFieldValue(httpFields,getForwardedServerHeader());
         String forwardedFor = getLeftMostFieldValue(httpFields,getForwardedForHeader());
         String forwardedProto = getLeftMostFieldValue(httpFields,getForwardedProtoHeader());
-        
+
         if (_hostHeader != null)
         {
             // Update host header
@@ -458,7 +471,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
             request.setRemoteHost(inetAddress == null?forwardedFor:inetAddress.getHostName());
         }
-        
+
         if (forwardedProto != null)
         {
             request.setScheme(forwardedProto);
@@ -611,7 +624,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     /**
      * Is reverse proxy handling on?
-     * 
+     *
      * @return true if this connector is checking the x-forwarded-for/host/server headers
      */
     public boolean isForwarded()
@@ -623,7 +636,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * Set reverse proxy handling. If set to true, then the X-Forwarded headers (or the headers set in their place) are looked for to set the request protocol,
      * host, server and client ip.
-     * 
+     *
      * @param check
      *            true if this connector is checking the x-forwarded-for/host/server headers
      * @set {@link #setForwardedForHeader(String)}
@@ -634,7 +647,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     public void setForwarded(boolean check)
     {
         if (check)
-            LOG.debug(this + " is forwarded");
+            LOG.debug("{} is forwarded",this);
         _forwarded = check;
     }
 
@@ -648,7 +661,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * Set a forced valued for the host header to control what is returned by {@link ServletRequest#getServerName()} and {@link ServletRequest#getServerPort()}.
      * This value is only used if {@link #isForwarded()} is true.
-     * 
+     *
      * @param hostHeader
      *            The value of the host header to force.
      */
@@ -659,7 +672,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
     /* ------------------------------------------------------------ */
     /*
-     * 
+     *
      * @see #setForwarded(boolean)
      */
     public String getForwardedHostHeader()
@@ -722,7 +735,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     /**
      * Get the forwardedProtoHeader.
-     * 
+     *
      * @return the forwardedProtoHeader (default X-Forwarded-For)
      * @see #setForwarded(boolean)
      */
@@ -734,7 +747,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     /**
      * Set the forwardedProtoHeader.
-     * 
+     *
      * @param forwardedProtoHeader
      *            the forwardedProtoHeader to set (default X-Forwarded-For)
      * @see #setForwarded(boolean)
@@ -782,17 +795,105 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         _forwardedSslSessionIdHeader = forwardedSslSessionId;
     }
 
+    public int getRequestBufferSize()
+    {
+        return _buffers.getRequestBufferSize();
+    }
+
+    public void setRequestBufferSize(int requestBufferSize)
+    {
+        _buffers.setRequestBufferSize(requestBufferSize);
+    }
+
+    public int getRequestHeaderSize()
+    {
+        return _buffers.getRequestHeaderSize();
+    }
+
+    public void setRequestHeaderSize(int requestHeaderSize)
+    {
+        _buffers.setRequestHeaderSize(requestHeaderSize);
+    }
+
+    public int getResponseBufferSize()
+    {
+        return _buffers.getResponseBufferSize();
+    }
+
+    public void setResponseBufferSize(int responseBufferSize)
+    {
+        _buffers.setResponseBufferSize(responseBufferSize);
+    }
+
+    public int getResponseHeaderSize()
+    {
+        return _buffers.getResponseHeaderSize();
+    }
+
+    public void setResponseHeaderSize(int responseHeaderSize)
+    {
+        _buffers.setResponseHeaderSize(responseHeaderSize);
+    }
+
+    public Type getRequestBufferType()
+    {
+        return _buffers.getRequestBufferType();
+    }
+
+    public Type getRequestHeaderType()
+    {
+        return _buffers.getRequestHeaderType();
+    }
+
+    public Type getResponseBufferType()
+    {
+        return _buffers.getResponseBufferType();
+    }
+
+    public Type getResponseHeaderType()
+    {
+        return _buffers.getResponseHeaderType();
+    }
+
+    public void setRequestBuffers(Buffers requestBuffers)
+    {
+        _buffers.setRequestBuffers(requestBuffers);
+    }
+
+    public void setResponseBuffers(Buffers responseBuffers)
+    {
+        _buffers.setResponseBuffers(responseBuffers);
+    }
+
+    public Buffers getRequestBuffers()
+    {
+        return _buffers.getRequestBuffers();
+    }
+
+    public Buffers getResponseBuffers()
+    {
+        return _buffers.getResponseBuffers();
+    }
+
+    public void setMaxBuffers(int maxBuffers)
+    {
+        _buffers.setMaxBuffers(maxBuffers);
+    }
+
+    public int getMaxBuffers()
+    {
+        return _buffers.getMaxBuffers();
+    }
+
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
-        String name = this.getClass().getName();
-        int dot = name.lastIndexOf('.');
-        if (dot > 0)
-            name = name.substring(dot + 1);
-
-        return name + "@" + (getHost() == null?"0.0.0.0":getHost()) + ":" + (getLocalPort() <= 0?getPort():getLocalPort()) + " "
-                + AbstractLifeCycle.getState(this);
+        return String.format("%s@%s:%d %s",
+                getClass().getSimpleName(),
+                getHost()==null?"0.0.0.0":getHost(),
+                getLocalPort()<=0?getPort():getLocalPort(),
+                AbstractLifeCycle.getState(this));
     }
 
     /* ------------------------------------------------------------ */
@@ -814,11 +915,11 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
             String name;
             synchronized (AbstractConnector.this)
             {
-                if (_acceptorThread == null)
+                if (_acceptorThreads == null)
                     return;
 
-                _acceptorThread[_acceptor] = current;
-                name = _acceptorThread[_acceptor].getName();
+                _acceptorThreads[_acceptor] = current;
+                name = _acceptorThreads[_acceptor].getName();
                 current.setName(name + " Acceptor" + _acceptor + " " + AbstractConnector.this);
             }
             int old_priority = current.getPriority();
@@ -845,10 +946,6 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
                         // Connector has been stopped
                         LOG.ignore(x);
                     }
-                    catch (ThreadDeath e)
-                    {
-                        throw e;
-                    }
                     catch (Throwable e)
                     {
                         LOG.warn(e);
@@ -862,8 +959,8 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
 
                 synchronized (AbstractConnector.this)
                 {
-                    if (_acceptorThread != null)
-                        _acceptorThread[_acceptor] = null;
+                    if (_acceptorThreads != null)
+                        _acceptorThreads[_acceptor] = null;
                 }
             }
         }
@@ -1001,7 +1098,8 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
         if (on && _statsStartedAt.get() != -1)
             return;
 
-        LOG.debug("Statistics on = " + on + " for " + this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Statistics on = " + on + " for " + this);
 
         statsReset();
         _statsStartedAt.set(on?System.currentTimeMillis():-1);
@@ -1039,19 +1137,19 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /* ------------------------------------------------------------ */
     protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
     {
-        _requestStats.set((oldConnection instanceof HttpConnection)?((HttpConnection)oldConnection).getRequests():0);
+        _requestStats.set((oldConnection instanceof AbstractHttpConnection)?((AbstractHttpConnection)oldConnection).getRequests():0);
     }
 
     /* ------------------------------------------------------------ */
     protected void connectionClosed(Connection connection)
     {
-        connection.closed();
+        connection.onClose();
 
         if (_statsStartedAt.get() == -1)
             return;
 
         long duration = System.currentTimeMillis() - connection.getTimeStamp();
-        int requests = (connection instanceof HttpConnection)?((HttpConnection)connection).getRequests():0;
+        int requests = (connection instanceof AbstractHttpConnection)?((AbstractHttpConnection)connection).getRequests():0;
         _requestStats.set(requests);
         _connectionStats.decrement();
         _connectionDurationStats.set(duration);
@@ -1070,7 +1168,7 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
     /**
      * Set the priority offset of the acceptor threads. The priority is adjusted by this amount (default 0) to either favour the acceptance of new threads and
      * newly active connections or to favour the handling of already dispatched connections.
-     * 
+     *
      * @param offset
      *            the amount to alter the priority of the acceptor threads.
      */
@@ -1117,17 +1215,4 @@ public abstract class AbstractConnector extends HttpBuffers implements Connector
             oldValue = valueHolder.get();
         }
     }
-
-    /* ------------------------------------------------------------ */
-    public String dump()
-    {
-        return AggregateLifeCycle.dump(this);
-    }
-
-    /* ------------------------------------------------------------ */
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        out.append(String.valueOf(this)).append("\n");
-    }
-
 }

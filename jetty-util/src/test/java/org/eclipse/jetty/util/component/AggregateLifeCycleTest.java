@@ -111,6 +111,107 @@ public class AggregateLifeCycleTest
     }
     
     @Test
+    public void testDisJoint() throws Exception
+    {
+        final AtomicInteger destroyed=new AtomicInteger();
+        final AtomicInteger started=new AtomicInteger();
+        final AtomicInteger stopped=new AtomicInteger();
+
+        AggregateLifeCycle a0=new AggregateLifeCycle();
+        
+        AggregateLifeCycle a1=new AggregateLifeCycle()
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                started.incrementAndGet();
+                super.doStart();
+            }
+
+            @Override
+            protected void doStop() throws Exception
+            {
+                stopped.incrementAndGet();
+                super.doStop();
+            }
+            
+            @Override
+            public void destroy()
+            {
+                destroyed.incrementAndGet();
+                super.destroy();
+            }
+
+        };
+        
+        // Start the a1 bean before adding, makes it auto disjoint
+        a1.start();
+        
+        // Now add it
+        a0.addBean(a1);
+        Assert.assertFalse(a0.isManaged(a1));
+        
+        a0.start();
+        Assert.assertEquals(1,started.get());
+        Assert.assertEquals(0,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+        
+        a0.start();
+        Assert.assertEquals(1,started.get());
+        Assert.assertEquals(0,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+        
+        a0.stop();
+        Assert.assertEquals(1,started.get());
+        Assert.assertEquals(0,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+        
+        a1.stop();
+        Assert.assertEquals(1,started.get());
+        Assert.assertEquals(1,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+        
+        a0.start();
+        Assert.assertEquals(1,started.get());
+        Assert.assertEquals(1,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+        
+        a0.manage(a1);
+        Assert.assertTrue(a0.isManaged(a1));
+
+        a0.stop();
+        Assert.assertEquals(1,started.get());
+        Assert.assertEquals(1,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+        
+
+        a0.start();
+        Assert.assertEquals(2,started.get());
+        Assert.assertEquals(1,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+
+        a0.stop();
+        Assert.assertEquals(2,started.get());
+        Assert.assertEquals(2,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+        
+
+        a0.unmanage(a1);
+        Assert.assertFalse(a0.isManaged(a1));
+        
+        a0.destroy();
+        Assert.assertEquals(2,started.get());
+        Assert.assertEquals(2,stopped.get());
+        Assert.assertEquals(0,destroyed.get());
+        
+        a1.destroy();
+        Assert.assertEquals(2,started.get());
+        Assert.assertEquals(2,stopped.get());
+        Assert.assertEquals(1,destroyed.get());
+        
+    }
+    
+    @Test
     public void testDumpable()
     {
         AggregateLifeCycle a0 = new AggregateLifeCycle();
@@ -158,6 +259,11 @@ public class AggregateLifeCycleTest
 
         System.err.println("--");
         a2.addBean(aa0);
+        a0.dumpStdErr(); 
+
+        System.err.println("--");
+        a0.unmanage(aa);
+        a2.unmanage(aa0);
         a0.dumpStdErr(); 
         
     }

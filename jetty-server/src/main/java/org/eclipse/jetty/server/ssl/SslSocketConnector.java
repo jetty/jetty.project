@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.ssl;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.HandshakeCompletedListener;
 import javax.net.ssl.SSLContext;
@@ -25,7 +26,6 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */
 /**
@@ -63,6 +64,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     public SslSocketConnector()
     {
         this(new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH));
+        setSoLingerTime(30000);
     }
 
     /* ------------------------------------------------------------ */
@@ -176,7 +178,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Deprecated
     public String getKeystore()
     {
-        return _sslContextFactory.getKeyStore();
+        return _sslContextFactory.getKeyStorePath();
     }
 
     /* ------------------------------------------------------------ */
@@ -427,7 +429,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
     @Deprecated
     public void setKeystore(String keystore)
     {
-        _sslContextFactory.setKeyStore(keystore);
+        _sslContextFactory.setKeyStorePath(keystore);
     }
 
     /* ------------------------------------------------------------ */

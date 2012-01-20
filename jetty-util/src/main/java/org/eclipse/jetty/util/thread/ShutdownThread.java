@@ -122,7 +122,7 @@ public class ShutdownThread extends Thread
             try
             {
                 lifeCycle.stop();
-                LOG.debug("Stopped " + lifeCycle);
+                LOG.debug("Stopped {}",lifeCycle);
             }
             catch (Exception ex)
             {

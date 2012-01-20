@@ -42,36 +42,38 @@ import org.eclipse.jetty.server.Authentication.User;
 public class JaspiAuthenticator implements Authenticator
 {
     private final ServerAuthConfig _authConfig;
+
     private final Map _authProperties;
+
     private final ServletCallbackHandler _callbackHandler;
+
     private final Subject _serviceSubject;
+
     private final boolean _allowLazyAuthentication;
+
     private final IdentityService _identityService;
+
     private final DeferredAuthentication _deferred;
 
-    public JaspiAuthenticator(ServerAuthConfig authConfig, Map authProperties, ServletCallbackHandler callbackHandler,
-                              Subject serviceSubject, boolean allowLazyAuthentication, IdentityService identityService)
+    public JaspiAuthenticator(ServerAuthConfig authConfig, Map authProperties, ServletCallbackHandler callbackHandler, Subject serviceSubject,
+                              boolean allowLazyAuthentication, IdentityService identityService)
     {
         // TODO maybe pass this in via setConfiguration ?
-        if (callbackHandler == null)
-            throw new NullPointerException("No CallbackHandler");
-        if (authConfig == null)
-            throw new NullPointerException("No AuthConfig");
+        if (callbackHandler == null) throw new NullPointerException("No CallbackHandler");
+        if (authConfig == null) throw new NullPointerException("No AuthConfig");
         this._authConfig = authConfig;
         this._authProperties = authProperties;
         this._callbackHandler = callbackHandler;
         this._serviceSubject = serviceSubject;
         this._allowLazyAuthentication = allowLazyAuthentication;
         this._identityService = identityService;
-        this._deferred=new DeferredAuthentication(this);
+        this._deferred = new DeferredAuthentication(this);
     }
-
 
     public void setConfiguration(AuthConfiguration configuration)
     {
     }
-    
-    
+
     public String getAuthMethod()
     {
         return "JASPI";
@@ -79,56 +81,57 @@ public class JaspiAuthenticator implements Authenticator
 
     public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
     {
-        if (_allowLazyAuthentication && !mandatory)
-            return _deferred;
-        
         JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
-        request.setAttribute("org.eclipse.jetty.security.jaspi.info",info);
-        return validateRequest(info);
+        request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
+
+        Authentication a = validateRequest(info);
+        
+        //if its not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
+        if (_allowLazyAuthentication && !info.isAuthMandatory() && a == Authentication.UNAUTHENTICATED)
+            a =_deferred;
+        return a;
     }
 
     // most likely validatedUser is not needed here.
     public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
     {
-        JaspiMessageInfo info = (JaspiMessageInfo)req.getAttribute("org.eclipse.jetty.security.jaspi.info");
-        if (info==null) throw new NullPointerException("MeesageInfo from request missing: " + req);
-        return secureResponse(info,validatedUser);
+        JaspiMessageInfo info = (JaspiMessageInfo) req.getAttribute("org.eclipse.jetty.security.jaspi.info");
+        if (info == null) throw new NullPointerException("MessageInfo from request missing: " + req);
+        return secureResponse(info, validatedUser);
     }
-    
+
+
     public Authentication validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
     {
         try
         {
             String authContextId = _authConfig.getAuthContextID(messageInfo);
-            ServerAuthContext authContext = _authConfig.getAuthContext(authContextId,_serviceSubject,_authProperties);
+            ServerAuthContext authContext = _authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
             Subject clientSubject = new Subject();
 
-            AuthStatus authStatus = authContext.validateRequest(messageInfo,clientSubject,_serviceSubject);
-//            String authMethod = (String)messageInfo.getMap().get(JaspiMessageInfo.AUTH_METHOD_KEY);
+            AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
 
-            if (authStatus == AuthStatus.SEND_CONTINUE)
-                return Authentication.SEND_CONTINUE;
-            if (authStatus == AuthStatus.SEND_FAILURE)
-                return Authentication.SEND_FAILURE;
-            
+            if (authStatus == AuthStatus.SEND_CONTINUE) return Authentication.SEND_CONTINUE;
+            if (authStatus == AuthStatus.SEND_FAILURE) return Authentication.SEND_FAILURE;
+
             if (authStatus == AuthStatus.SUCCESS)
             {
-            Set<UserIdentity> ids = clientSubject.getPrivateCredentials(UserIdentity.class);
+                Set<UserIdentity> ids = clientSubject.getPrivateCredentials(UserIdentity.class);
                 UserIdentity userIdentity;
                 if (ids.size() > 0)
                 {
                     userIdentity = ids.iterator().next();
-                } else {
+                }
+                else
+                {
                     CallerPrincipalCallback principalCallback = _callbackHandler.getThreadCallerPrincipalCallback();
-                    if (principalCallback == null)
-                    {
-                        return Authentication.UNAUTHENTICATED;
-                    }
+                    if (principalCallback == null) { return Authentication.UNAUTHENTICATED; }
                     Principal principal = principalCallback.getPrincipal();
-                    if (principal == null) {
+                    if (principal == null)
+                    {
                         String principalName = principalCallback.getName();
                         Set<Principal> principals = principalCallback.getSubject().getPrincipals();
-                        for (Principal p: principals)
+                        for (Principal p : principals)
                         {
                             if (p.getName().equals(principalName))
                             {
@@ -136,10 +139,7 @@ public class JaspiAuthenticator implements Authenticator
                                 break;
                             }
                         }
-                        if (principal == null)
-                        {
-                            return Authentication.UNAUTHENTICATED;
-                        }
+                        if (principal == null) { return Authentication.UNAUTHENTICATED; }
                     }
                     GroupPrincipalCallback groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
                     String[] groups = groupPrincipalCallback == null ? null : groupPrincipalCallback.getGroups();
@@ -149,10 +149,10 @@ public class JaspiAuthenticator implements Authenticator
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
             {
-                //we are processing a message in a secureResponse dialog.
+                // we are processing a message in a secureResponse dialog.
                 return Authentication.SEND_SUCCESS;
             }
-            //should not happen
+            // should not happen
             throw new NullPointerException("No AuthStatus returned");
         }
         catch (AuthException e)
@@ -166,9 +166,10 @@ public class JaspiAuthenticator implements Authenticator
         try
         {
             String authContextId = _authConfig.getAuthContextID(messageInfo);
-            ServerAuthContext authContext = _authConfig.getAuthContext(authContextId,_serviceSubject,_authProperties);
-            // TODO authContext.cleanSubject(messageInfo,validatedUser.getUserIdentity().getSubject());
-            AuthStatus status = authContext.secureResponse(messageInfo,_serviceSubject);
+            ServerAuthContext authContext = _authConfig.getAuthContext(authContextId, _serviceSubject, _authProperties);
+            // TODO
+            // authContext.cleanSubject(messageInfo,validatedUser.getUserIdentity().getSubject());
+            AuthStatus status = authContext.secureResponse(messageInfo, _serviceSubject);
             return (AuthStatus.SEND_SUCCESS.equals(status));
         }
         catch (AuthException e)

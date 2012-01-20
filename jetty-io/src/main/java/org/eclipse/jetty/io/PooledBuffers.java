@@ -25,7 +25,7 @@ public class PooledBuffers extends AbstractBuffers
         _otherBuffers=bufferType==otherType;
         _maxSize=maxSize;
     }
-    
+
     /* ------------------------------------------------------------ */
     public Buffer getHeader()
     {
@@ -55,17 +55,17 @@ public class PooledBuffers extends AbstractBuffers
             return getHeader();
         if (_otherBuffers && size==getBufferSize())
             return getBuffer();
-        
+
         // Look for an other buffer
         Buffer buffer = _others.poll();
-        
+
         // consume all other buffers until one of the right size is found
         while (buffer!=null && buffer.capacity()!=size)
         {
             _size.decrementAndGet();
             buffer = _others.poll();
         }
-        
+
         if (buffer==null)
             buffer=newBuffer(size);
         else
@@ -89,7 +89,16 @@ public class PooledBuffers extends AbstractBuffers
             else if (isBuffer(buffer))
                 _buffers.add(buffer);
             else
-                _others.add(buffer);    
+                _others.add(buffer);
         }
+    }
+
+    public String toString()
+    {
+        return String.format("%s [%d/%d@%d,%d/%d@%d,%d/%d@-]",
+                getClass().getSimpleName(),
+                _headers.size(),_maxSize,_headerSize,
+                _buffers.size(),_maxSize,_bufferSize,
+                _others.size(),_maxSize);
     }
 }

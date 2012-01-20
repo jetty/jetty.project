@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("deprecation")
 public abstract class AbstractSession implements AbstractSessionManager.SessionIf
 {
-    final static Logger __log = SessionHandler.__log;
+    final static Logger LOG = SessionHandler.LOG;
     
     private final AbstractSessionManager _manager;
     private final String _clusterId; // ID unique within cluster
@@ -62,8 +62,9 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _accessed=_created;
         _lastAccessed=_created;
         _requests=1;
-        _maxIdleMs=_manager._dftMaxIdleSecs>0?_manager._dftMaxIdleSecs*1000:-1;
-        __log.debug("new session & id "+_nodeId+" "+_clusterId);
+        _maxIdleMs=_manager._dftMaxIdleSecs>0?_manager._dftMaxIdleSecs*1000L:-1;
+        if (LOG.isDebugEnabled())
+            LOG.debug("new session & id "+_nodeId+" "+_clusterId);
     }
 
     /* ------------------------------------------------------------- */
@@ -76,7 +77,8 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _accessed=accessed;
         _lastAccessed=accessed;
         _requests=1;
-        __log.debug("new session "+_nodeId+" "+_clusterId);
+        if (LOG.isDebugEnabled())
+            LOG.debug("new session "+_nodeId+" "+_clusterId);
     }
     
     /* ------------------------------------------------------------- */
@@ -300,7 +302,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     {
         try
         {
-            __log.debug("invalidate ",_clusterId);
+            LOG.debug("invalidate {}",_clusterId);
             if (isValid())
                 clearAttributes();
         }
@@ -428,7 +430,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     /* ------------------------------------------------------------- */
     public void setMaxInactiveInterval(int secs)
     {
-        _maxIdleMs=(long)secs*1000;
+        _maxIdleMs=(long)secs*1000L;
     }
 
     /* ------------------------------------------------------------- */
@@ -455,7 +457,10 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     /* ------------------------------------------------------------- */
     protected void cookieSet()
     {
-        _cookieSet=_accessed;
+        synchronized (this)
+        {
+            _cookieSet=_accessed;
+        }
     }
 
     /* ------------------------------------------------------------ */

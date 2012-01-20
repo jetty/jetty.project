@@ -55,7 +55,7 @@ public class ProxyRule extends PatternRule
     private String _hostHeader;
     private String _proxyTo;
     
-    private int _connectorType = 2;
+    private int _connectorType = HttpClient.CONNECTOR_SELECT_CHANNEL;
     private String _maxThreads;
     private String _maxConnections;
     private String _timeout;
@@ -280,7 +280,7 @@ public class ProxyRule extends PatternRule
 
         if (debug != 0)
         {
-            _log.debug(debug + " " + request.getMethod() + " " + url + " " + request.getProtocol());
+            _log.debug("{} {} {} {}", debug ,request.getMethod(), url, request.getProtocol());
         }
         
         boolean hasContent = createHeaders(request,debug,exchange);
@@ -393,7 +393,7 @@ public class ProxyRule extends PatternRule
                 if (val != null)
                 {
                     if (debug != 0)
-                        _log.debug(debug + " " + hdr + ": " + val);
+                        _log.debug("{} {} {}",debug,hdr,val);
 
                     exchange.setRequestHeader(hdr,val);
                 }
@@ -482,6 +482,16 @@ public class ProxyRule extends PatternRule
     public void setConnectorType( int connectorType )
     {
         _connectorType = connectorType;
+    }
+
+    public String getHostHeader()
+    {
+        return _hostHeader;
+    }
+
+    public void setHostHeader(String hostHeader)
+    {
+        _hostHeader = hostHeader;
     }
     
 }

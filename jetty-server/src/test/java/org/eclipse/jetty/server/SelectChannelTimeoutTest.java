@@ -13,17 +13,97 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.Socket;
+
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.IO;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
 {
+
     @BeforeClass
     public static void init() throws Exception
     {
         SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setMaxIdleTime(MAX_IDLE_TIME); //250 msec max idle
+        connector.setMaxIdleTime(MAX_IDLE_TIME); // 250 msec max idle
         startServer(connector);
+    }
+
+    @Test
+    public void testIdleTimeoutAfterSuspend() throws Exception
+    {
+        SuspendHandler _handler = new SuspendHandler();
+        _server.stop();
+        SessionHandler session = new SessionHandler();
+        session.setHandler(_handler);
+        _server.setHandler(session);
+        _server.start();
+
+        _handler.setSuspendFor(100);
+        _handler.setResumeAfter(25);
+        assertTrue(process(null).toUpperCase().contains("RESUMED"));
+    }
+
+    @Test
+    public void testIdleTimeoutAfterTimeout() throws Exception
+    {
+        SuspendHandler _handler = new SuspendHandler();
+        _server.stop();
+        SessionHandler session = new SessionHandler();
+        session.setHandler(_handler);
+        _server.setHandler(session);
+        _server.start();
+
+        _handler.setSuspendFor(50);
+        assertTrue(process(null).toUpperCase().contains("TIMEOUT"));
+    }
+
+    @Test
+    public void testIdleTimeoutAfterComplete() throws Exception
+    {
+        SuspendHandler _handler = new SuspendHandler();
+        _server.stop();
+        SessionHandler session = new SessionHandler();
+        session.setHandler(_handler);
+        _server.setHandler(session);
+        _server.start();
+
+        _handler.setSuspendFor(100);
+        _handler.setCompleteAfter(25);
+        assertTrue(process(null).toUpperCase().contains("COMPLETED"));
+    }
+
+    private synchronized String process(String content) throws UnsupportedEncodingException, IOException, InterruptedException
+    {
+        String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n";
+
+        if (content == null)
+            request += "\r\n";
+        else
+            request += "Content-Length: " + content.length() + "\r\n" + "\r\n" + content;
+        return getResponse(request);
+    }
+
+    private String getResponse(String request) throws UnsupportedEncodingException, IOException, InterruptedException
+    {
+        SelectChannelConnector connector = (SelectChannelConnector)_connector;
+        Socket socket = new Socket((String)null,connector.getLocalPort());
+        socket.setSoTimeout(10 * MAX_IDLE_TIME);
+        socket.getOutputStream().write(request.getBytes("UTF-8"));
+        InputStream inputStream = socket.getInputStream();
+        long start = System.currentTimeMillis();
+        String response = IO.toString(inputStream);
+        long timeElapsed = System.currentTimeMillis() - start;
+        assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
+        return response;
     }
 
 }

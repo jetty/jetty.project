@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.5.4-SNAPSHOT</version>
+    <version>7.6.0-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests-parent</artifactId>
@@ -34,14 +34,6 @@
         <artifactId>findbugs-maven-plugin</artifactId>
         <configuration>
           <!-- No Point running Findbugs on testing projects -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
           <skip>true</skip>
         </configuration>
       </plugin>

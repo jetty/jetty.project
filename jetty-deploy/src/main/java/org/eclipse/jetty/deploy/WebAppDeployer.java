@@ -257,7 +257,7 @@ public class WebAppDeployer extends AbstractLifeCycle
 
                         if (path != null && path.equals(app.getFile().getCanonicalPath()))
                         {
-                            LOG.debug("Already deployed:"+path);
+                            LOG.debug("Already deployed: {}",path);
                             continue files;
                         }
                     }

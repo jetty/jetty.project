@@ -252,7 +252,7 @@ public class NestedGenerator extends AbstractGenerator
 
     /* ------------------------------------------------------------ */
     @Override
-    public long flushBuffer() throws IOException
+    public int flushBuffer() throws IOException
     {
         if (_state == STATE_HEADER)
             throw new IllegalStateException("State==HEADER");

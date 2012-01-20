@@ -13,36 +13,59 @@
 
 package org.eclipse.jetty.io;
 
-public interface AsyncEndPoint extends EndPoint
+import org.eclipse.jetty.util.thread.Timeout;
+
+public interface AsyncEndPoint extends ConnectedEndPoint
 {
     /* ------------------------------------------------------------ */
     /**
      * Dispatch the endpoint to a thread to attend to it.
      * 
      */
-    public void dispatch();
-    
-    /**
-     * @return true if this endpoint can accept a dispatch. False if the 
-     * endpoint cannot accept a dispatched (eg is suspended or already dispatched)
-     */
-    public boolean isReadyForDispatch();
+    public void asyncDispatch();
     
     /* ------------------------------------------------------------ */
     /** Schedule a write dispatch.
      * Set the endpoint to not be writable and schedule a dispatch when
      * it becomes writable.
      */
-    public void scheduleWrite();
-    
-    /* ------------------------------------------------------------ */
-    /** Schedule a call to the idle timeout
-     */
-    public void scheduleIdle();   
-    
-    /* ------------------------------------------------------------ */
-    /** Cancel a call to the idle timeout
-     */
-    public void cancelIdle();
+    public void scheduleWrite();  
 
+    /* ------------------------------------------------------------ */
+    /** Callback when idle.
+     * <p>An endpoint is idle if there has been no IO activity for 
+     * {@link #getMaxIdleTime()} and {@link #isCheckForIdle()} is true.
+     * @param idleForMs TODO
+     */
+    public void onIdleExpired(long idleForMs);
+
+    /* ------------------------------------------------------------ */
+    /** Set if the endpoint should be checked for idleness
+     */
+    public void setCheckForIdle(boolean check);
+
+    /* ------------------------------------------------------------ */
+    /** Get if the endpoint should be checked for idleness
+     */
+    public boolean isCheckForIdle();
+
+    
+    /* ------------------------------------------------------------ */
+    public boolean isWritable();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return True if IO has been successfully performed since the last call to {@link #hasProgressed()}
+     */
+    public boolean hasProgressed();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public void scheduleTimeout(Timeout.Task task, long timeoutMs);
+
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public void cancelTimeout(Timeout.Task task);
 }

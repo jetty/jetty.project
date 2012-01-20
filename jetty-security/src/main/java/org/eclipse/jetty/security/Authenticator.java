@@ -20,9 +20,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.Server;
 
 /**
  * Authenticator Interface

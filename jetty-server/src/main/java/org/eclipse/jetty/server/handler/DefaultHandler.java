@@ -29,9 +29,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 
 
 /* ------------------------------------------------------------ */
@@ -50,7 +50,7 @@ public class DefaultHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(DefaultHandler.class);
 
-    final long _faviconModified=(System.currentTimeMillis()/1000)*1000;
+    final long _faviconModified=(System.currentTimeMillis()/1000)*1000L;
     byte[] _favicon;
     boolean _serveIcon=true;
     boolean _showContexts=true;
@@ -61,7 +61,10 @@ public class DefaultHandler extends AbstractHandler
         {
             URL fav = this.getClass().getClassLoader().getResource("org/eclipse/jetty/favicon.ico");
             if (fav!=null)
-            _favicon=IO.readBytes(fav.openStream());
+            {
+                Resource r = Resource.newResource(fav);
+                _favicon=IO.readBytes(r.getInputStream());
+            }
         }
         catch(Exception e)
         {
@@ -110,10 +113,6 @@ public class DefaultHandler extends AbstractHandler
         response.setContentType(MimeTypes.TEXT_HTML);
         
         ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);
-
-        String uri=request.getRequestURI();
-        uri=StringUtil.replace(uri,"<","&lt;");
-        uri=StringUtil.replace(uri,">","&gt;");
         
         writer.write("<HTML>\n<HEAD>\n<TITLE>Error 404 - Not Found");
         writer.write("</TITLE>\n<BODY>\n<H2>Error 404 - Not Found.</H2>\n");

@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.nio;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.GatheringByteChannel;
@@ -42,7 +43,9 @@ public class ChannelEndPoint implements EndPoint
     protected final Socket _socket;
     protected final InetSocketAddress _local;
     protected final InetSocketAddress _remote;
-    protected int _maxIdleTime;
+    protected volatile int _maxIdleTime;
+    private volatile boolean _ishut;
+    private volatile boolean _oshut;
 
     public ChannelEndPoint(ByteChannel channel) throws IOException
     {
@@ -101,20 +104,76 @@ public class ChannelEndPoint implements EndPoint
         return _channel.isOpen();
     }
 
+    /** Shutdown the channel Input.
+     * Cannot be overridden. To override, see {@link #shutdownInput()}
+     * @throws IOException
+     */
+    protected final void shutdownChannelInput() throws IOException
+    {
+        LOG.debug("ishut {}", this);
+        _ishut = true;
+        if (_channel.isOpen())
+        {
+            if (_socket != null)
+            {
+                try
+                {
+                    if (!_socket.isInputShutdown())
+                    {
+                        _socket.shutdownInput();
+                    }
+                }
+                catch (SocketException e)
+                {
+                    LOG.debug(e.toString());
+                    LOG.ignore(e);
+                }
+                finally
+                {
+                    if (_oshut)
+                    {
+                        close();
+                    }
+                }
+            }
+        }
+    }
+
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
     public void shutdownInput() throws IOException
     {
-        if (_channel.isOpen() && _channel instanceof SocketChannel)
+        shutdownChannelInput();
+    }
+
+    protected final void shutdownChannelOutput() throws IOException
+    {
+        LOG.debug("oshut {}",this);
+        _oshut = true;
+        if (_channel.isOpen())
         {
-            Socket socket= ((SocketChannel)_channel).socket();
-            if (!socket.isClosed())
+            if (_socket != null)
             {
-                if(socket.isOutputShutdown())
-                    socket.close();
-                else if (!socket.isInputShutdown())
-                    socket.shutdownInput();
+                try
+                {
+                    if (!_socket.isOutputShutdown())
+                    {
+                        _socket.shutdownOutput();
+                    }
+                }
+                catch (SocketException e)
+                {
+                    LOG.debug(e.toString());
+                    LOG.ignore(e);
+                }
+                finally
+                {
+                    if (_ishut)
+                    {
+                        close();
+                    }
+                }
             }
         }
     }
@@ -124,27 +183,17 @@ public class ChannelEndPoint implements EndPoint
      */
     public void shutdownOutput() throws IOException
     {
-        if (_channel.isOpen() && _channel instanceof SocketChannel)
-        {
-            Socket socket= ((SocketChannel)_channel).socket();
-            if (!socket.isClosed())
-            {
-                if (socket.isInputShutdown())
-                    socket.close();
-                else if (!socket.isOutputShutdown())
-                    socket.shutdownOutput();
-            }
-        }
+        shutdownChannelOutput();
     }
 
     public boolean isOutputShutdown()
     {
-        return _channel.isOpen() && _socket!=null && _socket.isOutputShutdown();
+        return _oshut || !_channel.isOpen() || _socket != null && _socket.isOutputShutdown();
     }
 
     public boolean isInputShutdown()
     {
-        return _channel.isOpen() && _socket!=null && _socket.isInputShutdown();
+        return _ishut || !_channel.isOpen() || _socket != null && _socket.isInputShutdown();
     }
 
     /* (non-Javadoc)
@@ -152,6 +201,7 @@ public class ChannelEndPoint implements EndPoint
      */
     public void close() throws IOException
     {
+        LOG.debug("close {}",this);
         _channel.close();
     }
 
@@ -160,13 +210,15 @@ public class ChannelEndPoint implements EndPoint
      */
     public int fill(Buffer buffer) throws IOException
     {
+        if (_ishut)
+            return -1;
         Buffer buf = buffer.buffer();
         int len=0;
         if (buf instanceof NIOBuffer)
         {
             final NIOBuffer nbuf = (NIOBuffer)buf;
             final ByteBuffer bbuf=nbuf.getByteBuffer();
-            
+
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
             try
             {
@@ -188,22 +240,23 @@ public class ChannelEndPoint implements EndPoint
                 {
                     if (!isInputShutdown())
                         shutdownInput();
-                    else if (isOutputShutdown())
+                    if (isOutputShutdown())
                         _channel.close();
                 }
             }
             catch (IOException x)
             {
-                LOG.debug(x);
+                LOG.debug("Exception while filling", x);
                 try
                 {
-                    close();
+                    if (_channel.isOpen())
+                        _channel.close();
                 }
-                catch (IOException xx)
+                catch (Exception xx)
                 {
                     LOG.ignore(xx);
                 }
-                
+
                 if (len>0)
                     throw x;
                 len=-1;
@@ -213,7 +266,7 @@ public class ChannelEndPoint implements EndPoint
         {
             throw new IOException("Not Implemented");
         }
-        
+
         return len;
     }
 
@@ -285,20 +338,6 @@ public class ChannelEndPoint implements EndPoint
         }
         else
         {
-            if (header!=null)
-            {
-                if (buffer!=null && buffer.length()>0 && header.space()>buffer.length())
-                {
-                    header.put(buffer);
-                    buffer.clear();
-                }
-                if (trailer!=null && trailer.length()>0 && header.space()>trailer.length())
-                {
-                    header.put(trailer);
-                    trailer.clear();
-                }
-            }
-
             // flush header
             if (header!=null && header.length()>0)
                 length=flush(header);
@@ -468,24 +507,6 @@ public class ChannelEndPoint implements EndPoint
     public void flush()
         throws IOException
     {
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingInput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferingOutput()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isBufferred()
-    {
-        return false;
     }
 
     /* ------------------------------------------------------------ */

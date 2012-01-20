@@ -437,7 +437,8 @@ public class TagLibConfiguration extends AbstractConfiguration
         public void visitListener (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
         {     
             String className=node.getString("listener-class",false,true);
-            if (LOG.isDebugEnabled()) LOG.debug("listener="+className);
+            if (LOG.isDebugEnabled()) 
+                LOG.debug("listener="+className);
 
             try
             {

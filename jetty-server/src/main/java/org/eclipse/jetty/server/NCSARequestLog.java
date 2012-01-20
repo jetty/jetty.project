@@ -629,7 +629,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
     @Override
-    protected void doStart() throws Exception
+    protected synchronized void doStart() throws Exception
     {
         if (_logDateFormat != null)
         {

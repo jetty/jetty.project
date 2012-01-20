@@ -210,6 +210,7 @@ public class HttpParserTest
         StringEndPoint io=new StringEndPoint();
         io.setInput(
             "GET /mp HTTP/1.0\015\012"
+                + "Connection: Keep-Alive\015\012"
                 + "Header1: value1\015\012"
                 + "Transfer-Encoding: chunked\015\012"
                 + "\015\012"
@@ -219,10 +220,12 @@ public class HttpParserTest
                 + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\015\012"
                 + "0\015\012"
                 + "POST /foo HTTP/1.0\015\012"
+                + "Connection: Keep-Alive\015\012"
                 + "Header2: value2\015\012"
                 + "Content-Length: 0\015\012"
                 + "\015\012"
                 + "PUT /doodle HTTP/1.0\015\012"
+                + "Connection: close\015\012"
                 + "Header3: value3\015\012"
                 + "Content-Length: 10\015\012"
                 + "\015\012"
@@ -238,27 +241,27 @@ public class HttpParserTest
         assertEquals("GET", f0);
         assertEquals("/mp", f1);
         assertEquals("HTTP/1.0", f2);
-        assertEquals(1, h);
-        assertEquals("Header1", hdr[0]);
-        assertEquals("value1", val[0]);
+        assertEquals(2, h);
+        assertEquals("Header1", hdr[1]);
+        assertEquals("value1", val[1]);
         assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
 
         parser.parse();
         assertEquals("POST", f0);
         assertEquals("/foo", f1);
         assertEquals("HTTP/1.0", f2);
-        assertEquals(1, h);
-        assertEquals("Header2", hdr[0]);
-        assertEquals("value2", val[0]);
+        assertEquals(2, h);
+        assertEquals("Header2", hdr[1]);
+        assertEquals("value2", val[1]);
         assertEquals(null, _content);
 
         parser.parse();
         assertEquals("PUT", f0);
         assertEquals("/doodle", f1);
         assertEquals("HTTP/1.0", f2);
-        assertEquals(1, h);
-        assertEquals("Header3", hdr[0]);
-        assertEquals("value3", val[0]);
+        assertEquals(2, h);
+        assertEquals("Header3", hdr[1]);
+        assertEquals("value3", val[1]);
         assertEquals("0123456789", _content);
     }
 
@@ -266,7 +269,8 @@ public class HttpParserTest
     public void testStreamParse() throws Exception
     {
         StringEndPoint io=new StringEndPoint();
-        String http="GET / HTTP/1.0\015\012"
+        String http="GET / HTTP/1.1\015\012"
+                + "Host: test\015\012"
                 + "Header1: value1\015\012"
                 + "Transfer-Encoding: chunked\015\012"
                 + "\015\012"
@@ -275,11 +279,14 @@ public class HttpParserTest
                 + "1a\015\012"
                 + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\015\012"
                 + "0\015\012"
-                + "POST /foo HTTP/1.0\015\012"
+                + "POST /foo HTTP/1.1\015\012"
+                + "Host: test\015\012"
                 + "Header2: value2\015\012"
                 + "Content-Length: 0\015\012"
                 + "\015\012"
-                + "PUT /doodle HTTP/1.0\015\012"
+                + "PUT /doodle HTTP/1.1\015\012"
+                + "Host: test\015\012"
+                + "Connection: close\015\012"
                 + "Header3: value3\015\012"
                 + "Content-Length: 10\015\012"
                 + "\015\012"
@@ -296,15 +303,17 @@ public class HttpParserTest
                 http.length() - 2,
                 http.length() / 2,
                 http.length() / 3,
-                64,
+                128,
                 32
             };
 
         for (int t= 0; t < tests.length; t++)
         {
-            String tst="t"+tests[t];
+            String tst="t"+t+"="+tests[t];
             try
-            {
+            { 
+                f0=f1=f2=null;
+                h=0;
                 ByteArrayBuffer buffer= new ByteArrayBuffer(tests[t]);
                 ByteArrayBuffer content=new ByteArrayBuffer(8192);
                 SimpleBuffers buffers=new SimpleBuffers(buffer,content);
@@ -314,31 +323,32 @@ public class HttpParserTest
 
                 io.setInput(http);
 
+                // System.err.println(tst);
                 parser.parse();
                 assertEquals(tst,"GET", f0);
                 assertEquals(tst,"/", f1);
-                assertEquals(tst,"HTTP/1.0", f2);
-                assertEquals(tst,1, h);
-                assertEquals(tst,"Header1", hdr[0]);
-                assertEquals(tst,"value1", val[0]);
+                assertEquals(tst,"HTTP/1.1", f2);
+                assertEquals(tst,2, h);
+                assertEquals(tst,"Header1", hdr[1]);
+                assertEquals(tst,"value1", val[1]);
                 assertEquals(tst,"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
 
                 parser.parse();
                 assertEquals(tst,"POST", f0);
                 assertEquals(tst,"/foo", f1);
-                assertEquals(tst,"HTTP/1.0", f2);
-                assertEquals(tst,1, h);
-                assertEquals(tst,"Header2", hdr[0]);
-                assertEquals(tst,"value2", val[0]);
+                assertEquals(tst,"HTTP/1.1", f2);
+                assertEquals(tst,2, h);
+                assertEquals(tst,"Header2", hdr[1]);
+                assertEquals(tst,"value2", val[1]);
                 assertEquals(tst,null, _content);
 
                 parser.parse();
                 assertEquals(tst,"PUT", f0);
                 assertEquals(tst,"/doodle", f1);
-                assertEquals(tst,"HTTP/1.0", f2);
-                assertEquals(tst,1, h);
-                assertEquals(tst,"Header3", hdr[0]);
-                assertEquals(tst,"value3", val[0]);
+                assertEquals(tst,"HTTP/1.1", f2);
+                assertEquals(tst,3, h);
+                assertEquals(tst,"Header3", hdr[2]);
+                assertEquals(tst,"value3", val[2]);
                 assertEquals(tst,"0123456789", _content);
             }
             catch(Exception e)
@@ -401,7 +411,7 @@ public class HttpParserTest
         StringEndPoint io=new StringEndPoint();
         io.setInput(
         "HTTP/1.1 204 No-Content\015\012"
-        + "Connection: close\015\012"
+        + "Header: value\015\012"
         + "\015\012"
         + "HTTP/1.1 200 Correct\015\012"
         + "Content-Length: 10\015\012"
@@ -498,6 +508,36 @@ public class HttpParserTest
         assertEquals(null,_content);
         assertTrue(headerCompleted);
         assertTrue(messageCompleted);
+    }
+    
+    @Test
+    public void testSeekEOF() throws Exception
+    {
+        StringEndPoint io=new StringEndPoint();
+        io.setInput(
+        "HTTP/1.1 200 OK\015\012"
+        + "Content-Length: 0\015\012"
+        + "Connection: close\015\012"
+        + "\015\012"
+        + "\015\012" // extra CRLF ignored
+        + "HTTP/1.1 400 OK\015\012");  // extra data causes close
+        
+        
+        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+
+        Handler handler = new Handler();
+        HttpParser parser= new HttpParser(buffers,io, handler);
+        
+        parser.parse();
+        assertEquals("HTTP/1.1", f0);
+        assertEquals("200", f1);
+        assertEquals("OK", f2);
+        assertEquals(null,_content);
+        assertTrue(headerCompleted);
+        assertTrue(messageCompleted);
+        
+        
     }
     
     private String _content;

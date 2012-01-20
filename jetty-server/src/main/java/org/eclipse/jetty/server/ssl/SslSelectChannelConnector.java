@@ -14,30 +14,27 @@
 package org.eclipse.jetty.server.ssl;
 
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpSchemes;
-import org.eclipse.jetty.http.ssl.SslContextFactory;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.BuffersFactory;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
-import org.eclipse.jetty.io.nio.SslSelectChannelEndPoint;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.io.nio.AsyncConnection;
+import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /* ------------------------------------------------------------ */
 /**
@@ -54,13 +51,21 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     public SslSelectChannelConnector()
     {
         this(new SslContextFactory(SslContextFactory.DEFAULT_KEYSTORE_PATH));
+        setSoLingerTime(30000);
     }
 
     /* ------------------------------------------------------------ */
+    /** Construct with explicit SslContextFactory.
+     * The SslContextFactory passed is added via {@link #addBean(Object)} so that 
+     * it's lifecycle may be managed with {@link AggregateLifeCycle}.
+     * @param sslContextFactory
+     */
     public SslSelectChannelConnector(SslContextFactory sslContextFactory)
     {
         _sslContextFactory = sslContextFactory;
+        addBean(_sslContextFactory);
         setUseDirectBuffers(false);
+        setSoLingerTime(30000);
     }
 
     /* ------------------------------------------------------------ */
@@ -95,10 +100,10 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         request.setScheme(HttpSchemes.HTTPS);
         super.customize(endpoint,request);
 
-        SslSelectChannelEndPoint sslHttpChannelEndpoint=(SslSelectChannelEndPoint)endpoint;
-        SSLEngine sslEngine=sslHttpChannelEndpoint.getSSLEngine();
+        SslConnection.SslEndPoint sslEndpoint=(SslConnection.SslEndPoint)endpoint;
+        SSLEngine sslEngine=sslEndpoint.getSslEngine();
         SSLSession sslSession=sslEngine.getSession();
-                
+
         SslCertificates.customize(sslSession,endpoint,request);
     }
 
@@ -262,7 +267,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public void setKeystore(String keystore)
     {
-        _sslContextFactory.setKeyStore(keystore);
+        _sslContextFactory.setKeyStorePath(keystore);
     }
 
     /* ------------------------------------------------------------ */
@@ -273,7 +278,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Deprecated
     public String getKeystore()
     {
-        return _sslContextFactory.getKeyStore();
+        return _sslContextFactory.getKeyStorePath();
     }
 
     /* ------------------------------------------------------------ */
@@ -539,21 +544,31 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------------------------- */
     @Override
-    protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
+    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
-        SSLEngine engine = createSSLEngine(channel);
-        SslSelectChannelEndPoint endp = new SslSelectChannelEndPoint(_sslBuffers,channel,selectSet,key,engine, SslSelectChannelConnector.this._maxIdleTime);
-        endp.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
-        return endp;
+        try
+        {
+            SSLEngine engine = createSSLEngine(channel);
+            SslConnection connection = newSslConnection(endpoint, engine);
+            AsyncConnection delegate = newPlainConnection(channel, connection.getSslEndPoint());
+            connection.getSslEndPoint().setConnection(delegate);
+            connection.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
+            return connection;
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
     }
 
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    protected Connection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint)
+    protected AsyncConnection newPlainConnection(SocketChannel channel, AsyncEndPoint endPoint)
     {
-        HttpConnection connection=(HttpConnection)super.newConnection(channel,endpoint);
-        ((HttpParser)connection.getParser()).setForceContentBuffer(true);
-        return connection;
+        return super.newConnection(channel, endPoint);
+    }
+
+    protected SslConnection newSslConnection(AsyncEndPoint endpoint, SSLEngine engine)
+    {
+        return new SslConnection(engine, endpoint);
     }
 
     /* ------------------------------------------------------------ */
@@ -576,7 +591,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         {
             engine = _sslContextFactory.newSslEngine();
         }
-        
+
         engine.setUseClientMode(false);
         return engine;
     }
@@ -589,7 +604,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     protected void doStart() throws Exception
     {
         _sslContextFactory.checkKeyStore();
-
         _sslContextFactory.start();
 
         SSLEngine sslEngine = _sslContextFactory.newSslEngine();
@@ -619,7 +633,6 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     protected void doStop() throws Exception
     {
-        _sslContextFactory.stop();
         _sslBuffers=null;
         super.doStop();
     }

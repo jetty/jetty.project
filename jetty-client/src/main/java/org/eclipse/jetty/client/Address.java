@@ -43,6 +43,9 @@ public class Address
 
     public Address(String host, int port)
     {
+        if (host == null)
+            throw new IllegalArgumentException("Host is null");
+        
         this.host = host.trim();
         this.port = port;
     }

@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2011 Intalio, Inc.
+ * ======================================================================
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *   The Eclipse Public License is available at
+ *   http://www.eclipse.org/legal/epl-v10.html
+ *
+ *   The Apache License v2.0 is available at
+ *   http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ *******************************************************************************/
 package org.eclipse.jetty.websocket;
 
 import java.net.InetSocketAddress;
@@ -15,8 +30,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
 /**
- * @version $Revision$ $Date$
- * 
  * This is not a general purpose websocket client.
  * It's only for testing the websocket server and is hardwired to a specific draft version of the protocol.
  */
@@ -140,7 +153,7 @@ public class TestClient implements WebSocket.OnFrame
         {                    
             __framesSent++;
             byte flags= (byte)(off+len==data.length?0x8:0);
-            byte op=(byte)(off==0?opcode:WebSocketConnectionD13.OP_CONTINUATION);
+            byte op=(byte)(off==0?opcode:WebSocketConnectionRFC6455.OP_CONTINUATION);
 
             if (_verbose)                
                 System.err.printf("%s#sendFrame %s|%s %s\n",this.getClass().getSimpleName(),TypeUtil.toHexString(flags),TypeUtil.toHexString(op),TypeUtil.toHexString(data,off,len));
@@ -158,7 +171,9 @@ public class TestClient implements WebSocket.OnFrame
     public void disconnect() throws Exception
     {
         if (_connection!=null)
-            _connection.disconnect();
+        {
+            _connection.close();
+        }
     }
     
 
@@ -245,11 +260,11 @@ public class TestClient implements WebSocket.OnFrame
             {
                 long next = System.currentTimeMillis()+delay;
                 
-                byte opcode=binary?WebSocketConnectionD13.OP_BINARY:WebSocketConnectionD13.OP_TEXT;
+                byte opcode=binary?WebSocketConnectionRFC6455.OP_BINARY:WebSocketConnectionRFC6455.OP_TEXT;
                 
                 byte data[]=null;
 
-                if (opcode==WebSocketConnectionD13.OP_TEXT)
+                if (opcode==WebSocketConnectionRFC6455.OP_TEXT)
                 {
                     StringBuilder b = new StringBuilder();
                     while (b.length()<size)
@@ -263,7 +278,7 @@ public class TestClient implements WebSocket.OnFrame
                 }
 
                 for (int i=0;i<clients;i++)
-                    client[i].ping(opcode,data,opcode==WebSocketConnectionD13.OP_PING?-1:fragment);
+                    client[i].ping(opcode,data,opcode==WebSocketConnectionRFC6455.OP_PING?-1:fragment);
                 
                 while(System.currentTimeMillis()<next)
                     Thread.sleep(10);
