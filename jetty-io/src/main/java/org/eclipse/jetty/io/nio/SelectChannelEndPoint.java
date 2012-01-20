@@ -457,14 +457,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         return true;
     }
-
-    /* ------------------------------------------------------------ */
-    /* short cut for busyselectChannelServerTest */
-    public void clearWritable()
-    {
-        _writable=false;
-    }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.io.AsyncEndPoint#scheduleWrite()

@@ -135,8 +135,8 @@ public class HttpOutput extends ServletOutputStream
 
         // Add the _content
         if (_generator.addContent((byte)b))
-            // Buffers are full so flush.
-            flush();
+            // Buffers are full so commit.
+            _connection.commitResponse(Generator.MORE);
        
         if (_generator.isAllContentWritten())
         {
@@ -174,7 +174,7 @@ public class HttpOutput extends ServletOutputStream
             close();
         } 
         else if (_generator.isBufferFull())
-            flush();
+            _connection.commitResponse(Generator.MORE);
 
         // Block until our buffer is free
         while (buffer.length() > 0 && _generator.isOpen())
