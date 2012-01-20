@@ -24,8 +24,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 
 /* ------------------------------------------------------------ */
-/** A <code>HandlerContainer</code> that allows a hot swap
- * of a wrapped handler.
+/**
+ * A <code>HandlerContainer</code> that allows a hot swap of a wrapped handler.
  * 
  */
 public class HotSwapHandler extends AbstractHandlerContainer
@@ -48,19 +48,21 @@ public class HotSwapHandler extends AbstractHandlerContainer
     {
         return _handler;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the handlers.
      */
     public Handler[] getHandlers()
     {
-        return new Handler[] {_handler};
+        return new Handler[]
+        { _handler };
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
-     * @param handler Set the {@link Handler} which should be wrapped.
+     * @param handler
+     *            Set the {@link Handler} which should be wrapped.
      */
     public void setHandler(Handler handler)
     {
@@ -68,17 +70,16 @@ public class HotSwapHandler extends AbstractHandlerContainer
         {
             Handler old_handler = _handler;
             _handler = handler;
-            if (handler!=null)
+            if (handler != null)
             {
                 handler.setServer(getServer());
                 if (isStarted())
                     handler.start();
             }
 
-            if (getServer()!=null)
-                getServer().getContainer().update(this, old_handler, handler, "handler");
+            if (getServer() != null)
+                getServer().getContainer().update(this,old_handler,handler,"handler");
 
-            
             // if there is an old handler and it was started, stop it
             if (old_handler != null && isStarted())
             {
@@ -86,74 +87,73 @@ public class HotSwapHandler extends AbstractHandlerContainer
             }
 
         }
-        catch(RuntimeException e)
+        catch (RuntimeException e)
         {
             throw e;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStart()
      */
     @Override
     protected void doStart() throws Exception
     {
-        if (_handler!=null)
+        if (_handler != null)
             _handler.start();
         super.doStart();
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
     @Override
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_handler!=null)
+        if (_handler != null)
             _handler.stop();
     }
-    
+
     /* ------------------------------------------------------------ */
-    /* 
+    /*
      * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (_handler!=null && isStarted())
+        if (_handler != null && isStarted())
         {
-            _handler.handle(target,baseRequest, request, response);
+            _handler.handle(target,baseRequest,request,response);
         }
     }
-    
 
     /* ------------------------------------------------------------ */
     @Override
     public void setServer(Server server)
     {
-        Server old_server=getServer();
-        if (server==old_server)
+        Server old_server = getServer();
+        if (server == old_server)
             return;
-        
+
         if (isRunning())
             throw new IllegalStateException(RUNNING);
-            
+
         super.setServer(server);
-        
-        Handler h=getHandler();
-        if (h!=null)
+
+        Handler h = getHandler();
+        if (h != null)
             h.setServer(server);
-        
-        if (server!=null && server!=old_server)
-            server.getContainer().update(this, null,_handler, "handler");
+
+        if (server != null && server != old_server)
+            server.getContainer().update(this,null,_handler,"handler");
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected Object expandChildren(Object list, Class byClass)
@@ -167,8 +167,8 @@ public class HotSwapHandler extends AbstractHandlerContainer
     {
         if (!isStopped())
             throw new IllegalStateException("!STOPPED");
-        Handler child=getHandler();
-        if (child!=null)
+        Handler child = getHandler();
+        if (child != null)
         {
             setHandler(null);
             child.destroy();
