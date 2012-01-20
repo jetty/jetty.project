@@ -10,6 +10,7 @@ import java.net.SocketTimeoutException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.Assert;
@@ -51,6 +53,8 @@ import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 public class SslBytesServerTest extends SslBytesTest
 {
@@ -61,8 +65,10 @@ public class SslBytesServerTest extends SslBytesTest
     private final int idleTimeout = 2000;
     private ExecutorService threadPool;
     private Server server;
+    private int serverPort;
     private SSLContext sslContext;
     private SimpleProxy proxy;
+    private Runnable idleHook;
 
     @Before
     public void init() throws Exception
@@ -97,6 +103,15 @@ public class SslBytesServerTest extends SslBytesTest
                                 return super.flush(buffer);
                             }
                         };
+                    }
+
+                    @Override
+                    public void onIdleExpired(long idleForMs)
+                    {
+                        final Runnable idleHook = SslBytesServerTest.this.idleHook;
+                        if (idleHook != null)
+                            idleHook.run();
+                        super.onIdleExpired(idleForMs);
                     }
                 };
             }
@@ -166,7 +181,7 @@ public class SslBytesServerTest extends SslBytesTest
             }
         });
         server.start();
-        int serverPort = connector.getLocalPort();
+        serverPort = connector.getLocalPort();
 
         sslContext = cf.getSslContext();
 
@@ -606,10 +621,10 @@ public class SslBytesServerTest extends SslBytesTest
         }
 
         // Check that we did not spin
-        TimeUnit.MILLISECONDS.sleep(500);
+        TimeUnit.MILLISECONDS.sleep(1000);
         Assert.assertThat(sslHandles.get(), lessThan(750));
         Assert.assertThat(sslFlushes.get(), lessThan(750));
-        Assert.assertThat(httpParses.get(), lessThan(150));
+        Assert.assertThat(httpParses.get(), lessThan(1000));
 
         client.close();
 
@@ -1512,6 +1527,172 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertFalse(serverEndPoint.get().isOpen());
     }
 
+    @Test
+    public void testPlainText() throws Exception
+    {
+        final SSLSocket client = newClient();
+
+        threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                client.startHandshake();
+                return null;
+            }
+        });
+
+        // Instead of passing the Client Hello, we simulate plain text was passed in
+        proxy.flushToServer(0, "GET / HTTP/1.1\r\n".getBytes("UTF-8"));
+
+        // We expect that the server closes the connection immediately
+        TLSRecord record = proxy.readFromServer();
+        Assert.assertNull(String.valueOf(record), record);
+
+        // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        client.close();
+    }
+
+    @Test
+    public void testRequestConcurrentWithIdleExpiration() throws Exception
+    {
+        final SSLSocket client = newClient();
+        final OutputStream clientOutput = client.getOutputStream();
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        idleHook = new Runnable()
+        {
+            public void run()
+            {
+                if (latch.getCount()==0)
+                    return;
+                try
+                {
+                    // Send request
+                    clientOutput.write(("" +
+                            "GET / HTTP/1.1\r\n" +
+                            "Host: localhost\r\n" +
+                            "\r\n").getBytes("UTF-8"));
+                    clientOutput.flush();
+                    latch.countDown();
+                }
+                catch (Exception x)
+                {
+                    // Latch won't trigger and test will fail
+                    x.printStackTrace();
+                }
+            }
+        };
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        Assert.assertTrue(latch.await(idleTimeout * 2, TimeUnit.MILLISECONDS));
+
+        // Be sure that the server sent a SSL close alert
+        TLSRecord record = proxy.readFromServer();
+        Assert.assertNotNull(record);
+        Assert.assertEquals(TLSRecord.Type.ALERT, record.getType());
+
+        // Write the request to the server, to simulate a request
+        // concurrent with the SSL close alert
+        record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+        proxy.flushToServer(record, 0);
+
+        // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        //System.err.println(((Dumpable)server.getConnectors()[0]).dump());
+        Assert.assertThat(((Dumpable)server.getConnectors()[0]).dump(),containsString("SCEP@"));
+        
+        completeClose(client);
+        
+        TimeUnit.MILLISECONDS.sleep(200);
+        //System.err.println(((Dumpable)server.getConnectors()[0]).dump());
+        Assert.assertThat(((Dumpable)server.getConnectors()[0]).dump(),not(containsString("SCEP@")));
+
+    }
+/*
+    @Test
+    public void testRequestWriteBlockedWithPipelinedRequest() throws Exception
+    {
+        final SSLSocket client = newClient();
+        final OutputStream clientOutput = client.getOutputStream();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        Assert.assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        byte[] data = new byte[128 * 1024];
+        Arrays.fill(data, (byte)'X');
+        final String content = new String(data, "UTF-8");
+        Future<Object> request = threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                clientOutput.write(("" +
+                        "POST /echo HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Content-Length: " + content.length() + "\r\n" +
+                        "\r\n" +
+                        content).getBytes("UTF-8"));
+                clientOutput.flush();
+                return null;
+            }
+        });
+
+        // Nine TLSRecords will be generated for the request
+        for (int i = 0; i < 9; ++i)
+        {
+            // Application data
+            TLSRecord record = proxy.readFromClient();
+            Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+            proxy.flushToServer(record, 0);
+        }
+        Assert.assertNull(request.get(5, TimeUnit.SECONDS));
+
+        // We do not read the big request to cause a write blocked on the server
+        TimeUnit.MILLISECONDS.sleep(500);
+
+        // Now send the pipelined request
+        Future<Object> pipelined = threadPool.submit(new Callable<Object>()
+        {
+            public Object call() throws Exception
+            {
+                clientOutput.write(("" +
+                        "GET /pipelined HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "\r\n").getBytes("UTF-8"));
+                clientOutput.flush();
+                return null;
+            }
+        });
+
+        TLSRecord record = proxy.readFromClient();
+        Assert.assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+        proxy.flushToServer(record, 0);
+        Assert.assertNull(pipelined.get(5, TimeUnit.SECONDS));
+
+        // Check that we did not spin
+        TimeUnit.MILLISECONDS.sleep(500);
+        Assert.assertThat(sslHandles.get(), lessThan(20));
+        Assert.assertThat(sslFlushes.get(), lessThan(20));
+        Assert.assertThat(httpParses.get(), lessThan(50));
+
+        Thread.sleep(5000);
+
+//        closeClient(client);
+    }
+*/
     private void assumeJavaVersionSupportsTLSRenegotiations()
     {
         // Due to a security bug, TLS renegotiations were disabled in JDK 1.6.0_19-21
@@ -1549,9 +1730,28 @@ public class SslBytesServerTest extends SslBytesTest
         // Close Alert
         record = proxy.readFromServer();
         proxy.flushToClient(record);
+        
         // Socket close
         record = proxy.readFromServer();
         Assert.assertNull(String.valueOf(record), record);
         proxy.flushToClient(record);
+    }
+    
+    private void completeClose(SSLSocket client) throws Exception
+    {
+        client.close();
+
+        // Close Alert
+        TLSRecord record = proxy.readFromClient();
+        proxy.flushToServer(record);
+        // Socket close
+        record = proxy.readFromClient();
+        Assert.assertNull(String.valueOf(record), record);
+        proxy.flushToServer(record);
+
+        // Close Alert
+        record = proxy.readFromServer();
+        proxy.flushToClient(record);
+        
     }
 }

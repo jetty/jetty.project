@@ -739,8 +739,14 @@ public class ProxyServlet implements Servlet
      */
     protected void handleOnException(Throwable ex, HttpServletRequest request, HttpServletResponse response)
     {
-        _log.warn(ex.toString());
-        _log.debug(ex);
+        if (ex instanceof IOException)
+        {
+            _log.warn(ex.toString());
+            _log.debug(ex);
+        }
+        else
+            _log.warn(ex);
+        
         if (!response.isCommitted())
         {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

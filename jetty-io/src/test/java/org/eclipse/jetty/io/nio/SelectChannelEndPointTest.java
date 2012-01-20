@@ -1,6 +1,8 @@
 package org.eclipse.jetty.io.nio;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.greaterThan;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -196,7 +198,8 @@ public class SelectChannelEndPointTest
         }
         catch(SocketTimeoutException e)
         {
-            assertTrue(System.currentTimeMillis()-start>=400);
+            long duration = System.currentTimeMillis()-start;
+            Assert.assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
         }
 
         // write then shutdown
@@ -206,8 +209,8 @@ public class SelectChannelEndPointTest
         for (char c : "Goodbye Cruel TLS".toCharArray())
         {
             int b = client.getInputStream().read();
-            assertTrue(b>0);
-            assertEquals(c,(char)b);
+            Assert.assertThat("expect valid char integer", b, greaterThan(0));
+            assertEquals("expect characters to be same", c,(char)b);
         }
         client.close();
 

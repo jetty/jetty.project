@@ -31,16 +31,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
+
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -492,7 +497,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
         finally
         {
-            System.err.println("Got "+total+" of "+(512*1024));
+            //System.err.println("Got "+total+" of "+(512*1024));
             client.close();
         }
     }
@@ -739,7 +744,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             IO.copy(is,bout);
             byte[] b=bout.toByteArray();
 
-            System.err.println("OUTPUT: "+new String(b));
+            //System.err.println("OUTPUT: "+new String(b));
             int i=0;
             while (b[i]!='Z')
                 i++;
@@ -1205,4 +1210,69 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
 
 
+    @Test
+    public void testUnreadInput () throws Exception
+    {
+        configureServer(new NoopHandler());
+        final int REQS=5;
+        String content="This is a loooooooooooooooooooooooooooooooooo"+
+        "ooooooooooooooooooooooooooooooooooooooooooooo"+
+        "ooooooooooooooooooooooooooooooooooooooooooooo"+
+        "ooooooooooooooooooooooooooooooooooooooooooooo"+
+        "ooooooooooooooooooooooooooooooooooooooooooooo"+
+        "ooooooooooooooooooooooooooooooooooooooooooooo"+
+        "ooooooooooooooooooooooooooooooooooooooooooooo"+
+        "ooooooooooooooooooooooooooooooooooooooooooooo"+
+        "ooooooooooooooooooooooooooooooooooooooooooooo"+
+        "oooooooooooonnnnnnnnnnnnnnnnggggggggg content"+
+        new String(new char[65*1024]);
+        final byte[] bytes = content.getBytes();
+
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        final OutputStream out=client.getOutputStream();
+
+        new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    for (int i=0; i<REQS; i++)
+                    {
+                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StringUtil.__ISO_8859_1));
+                        out.write(("Content-Length: "+bytes.length+"\r\n" + "\r\n").getBytes(StringUtil.__ISO_8859_1));
+                        out.write(bytes,0,bytes.length);
+                    }
+                    out.write("GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(StringUtil.__ISO_8859_1));
+                    out.flush();
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+            
+        String resps = readResponse(client);
+               
+        int offset=0;
+        for (int i=0;i<(REQS+1);i++)
+        {
+            int ok=resps.indexOf("HTTP/1.1 200 OK",offset);
+            assertThat("resp"+i,ok,greaterThanOrEqualTo(offset));
+            offset=ok+15;
+        }
+    }
+
+    public class NoopHandler extends AbstractHandler
+    {
+        public void handle(String target, Request baseRequest,
+                HttpServletRequest request, HttpServletResponse response) throws IOException,
+                ServletException
+        {
+           //don't read the input, just send something back
+            ((Request)request).setHandled(true);
+            response.setStatus(200);
+        }
+    }
 }
