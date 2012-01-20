@@ -1,3 +1,5 @@
+jetty-7.6.0-SNAPSHOT
+
 jetty-7.6.0.RC5 - 20 January 2012
  + 359329 Prevent reinvocation of LoginModule.login with jaspi for already
    authed user
