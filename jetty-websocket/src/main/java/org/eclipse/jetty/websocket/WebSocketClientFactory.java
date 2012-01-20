@@ -354,7 +354,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
         private final HttpParser _parser;
         private String _accept;
         private String _error;
-        private boolean _handshaken;
+        private ByteArrayBuffer _handshake;
 
         public HandshakeConnection(AsyncEndPoint endpoint, WebSocketClient.WebSocketFuture future)
         {
@@ -404,72 +404,75 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             });
         }
 
-        private void handshake()
+        private boolean handshake()
         {
-            String path = _future.getURI().getPath();
-            if (path == null || path.length() == 0)
-                path = "/";
-
-            if (_future.getURI().getRawQuery() != null)
-                path += "?" + _future.getURI().getRawQuery();
-
-            String origin = _future.getOrigin();
-
-            StringBuilder request = new StringBuilder(512);
-            request.append("GET ").append(path).append(" HTTP/1.1\r\n")
-                    .append("Host: ").append(_future.getURI().getHost()).append(":")
-                    .append(_future.getURI().getPort()).append("\r\n")
-                    .append("Upgrade: websocket\r\n")
-                    .append("Connection: Upgrade\r\n")
-                    .append("Sec-WebSocket-Key: ")
-                    .append(_key).append("\r\n");
-
-            if (origin != null)
-                request.append("Origin: ").append(origin).append("\r\n");
-
-            request.append("Sec-WebSocket-Version: ").append(WebSocketConnectionRFC6455.VERSION).append("\r\n");
-
-            if (_future.getProtocol() != null)
-                request.append("Sec-WebSocket-Protocol: ").append(_future.getProtocol()).append("\r\n");
-
-            Map<String, String> cookies = _future.getCookies();
-            if (cookies != null && cookies.size() > 0)
+            if (_handshake==null)
             {
-                for (String cookie : cookies.keySet())
-                    request.append("Cookie: ")
-                            .append(QuotedStringTokenizer.quoteIfNeeded(cookie, HttpFields.__COOKIE_DELIM))
-                            .append("=")
-                            .append(QuotedStringTokenizer.quoteIfNeeded(cookies.get(cookie), HttpFields.__COOKIE_DELIM))
-                            .append("\r\n");
+                String path = _future.getURI().getPath();
+                if (path == null || path.length() == 0)
+                    path = "/";
+
+                if (_future.getURI().getRawQuery() != null)
+                    path += "?" + _future.getURI().getRawQuery();
+
+                String origin = _future.getOrigin();
+
+                StringBuilder request = new StringBuilder(512);
+                request.append("GET ").append(path).append(" HTTP/1.1\r\n")
+                .append("Host: ").append(_future.getURI().getHost()).append(":")
+                .append(_future.getURI().getPort()).append("\r\n")
+                .append("Upgrade: websocket\r\n")
+                .append("Connection: Upgrade\r\n")
+                .append("Sec-WebSocket-Key: ")
+                .append(_key).append("\r\n");
+
+                if (origin != null)
+                    request.append("Origin: ").append(origin).append("\r\n");
+
+                request.append("Sec-WebSocket-Version: ").append(WebSocketConnectionRFC6455.VERSION).append("\r\n");
+
+                if (_future.getProtocol() != null)
+                    request.append("Sec-WebSocket-Protocol: ").append(_future.getProtocol()).append("\r\n");
+
+                Map<String, String> cookies = _future.getCookies();
+                if (cookies != null && cookies.size() > 0)
+                {
+                    for (String cookie : cookies.keySet())
+                        request.append("Cookie: ")
+                        .append(QuotedStringTokenizer.quoteIfNeeded(cookie, HttpFields.__COOKIE_DELIM))
+                        .append("=")
+                        .append(QuotedStringTokenizer.quoteIfNeeded(cookies.get(cookie), HttpFields.__COOKIE_DELIM))
+                        .append("\r\n");
+                }
+
+                request.append("\r\n");
+
+                _handshake=new ByteArrayBuffer(request.toString(), false);
             }
-
-            request.append("\r\n");
-
+            
             // TODO extensions
 
             try
             {
-                Buffer handshake = new ByteArrayBuffer(request.toString(), false);
-                int len = handshake.length();
-                if (len != _endp.flush(handshake))
-                    throw new IOException("incomplete");
+                int len = _handshake.length();
+                int flushed = _endp.flush(_handshake);
+                if (flushed<0)
+                    throw new IOException("incomplete handshake");
             }
             catch (IOException e)
             {
                 _future.handshakeFailed(e);
             }
-            finally
-            {
-                _handshaken = true;
-            }
+            return _handshake.length()==0;
         }
 
         public Connection handle() throws IOException
         {
             while (_endp.isOpen() && !_parser.isComplete())
             {
-                if (!_handshaken)
-                    handshake();
+                if (_handshake==null || _handshake.length()>0)
+                    if (!handshake())
+                        return this;
 
                 if (!_parser.parseAvailable())
                 {

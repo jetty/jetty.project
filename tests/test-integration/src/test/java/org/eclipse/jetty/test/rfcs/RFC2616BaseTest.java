@@ -16,8 +16,8 @@
 
 package org.eclipse.jetty.test.rfcs;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.junit.Assert.*;
+import static org.junit.matchers.JUnitMatchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +42,7 @@ import org.eclipse.jetty.toolchain.test.StringAssert;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -955,6 +956,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-9.8">RFC 2616 (section 9.8)</a>
      */
     @Test
+    @Ignore("Introduction of fix for realm-less security constraints has rendered this test invalid due to default configuration preventing use of TRACE in webdefault.xml")
     public void test9_8() throws Exception
     {
 

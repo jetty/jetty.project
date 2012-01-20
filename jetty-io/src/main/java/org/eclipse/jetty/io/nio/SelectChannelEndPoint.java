@@ -176,9 +176,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 _writable = true; // Once writable is in ops, only removed with dispatch.
             }
 
-            // Dispatch if we are not already
-            if (!_dispatched)
+            // If dispatched, then deregister interest
+            if (_dispatched)
+                _key.interestOps(0);
+            else
             {
+                // other wise do the dispatch
                 dispatch();
                 if (_dispatched && !_selectSet.getManager().isDeferringInterestedOps0())
                 {
@@ -280,7 +283,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public void checkIdleTimestamp(long now)
     {
         long idleTimestamp=_idleTimestamp;
-                
+
         if (idleTimestamp!=0 && _maxIdleTime>0)
         {
             long idleForMs=now-idleTimestamp;
@@ -454,14 +457,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         return true;
     }
-
-    /* ------------------------------------------------------------ */
-    /* short cut for busyselectChannelServerTest */
-    public void clearWritable()
-    {
-        _writable=false;
-    }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.io.AsyncEndPoint#scheduleWrite()
@@ -637,7 +633,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 catch (IOException e)
                 {
                     LOG.warn(e.toString());
-                    LOG.debug(e);
                     try{close();}
                     catch(IOException e2){LOG.ignore(e2);}
                 }

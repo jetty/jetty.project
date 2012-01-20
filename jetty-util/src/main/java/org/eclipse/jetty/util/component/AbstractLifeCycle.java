@@ -209,9 +209,4 @@ public abstract class AbstractLifeCycle implements LifeCycle
         public void lifeCycleStopped(LifeCycle event) {}
         public void lifeCycleStopping(LifeCycle event) {}
     }
-    
-    public String toString()
-    {
-        return super.toString()+"#"+getState();
-    }
 }

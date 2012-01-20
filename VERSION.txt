@@ -71,6 +71,37 @@ jetty-8.1.0.RC0 - 30 November 2011
  + 364283 can't parse the servlet multipart-config for the web.xml
  + 364430 Support web.xml enabled state for servlets
 
+jetty-7.6.0.RC5 - 20 January 2012
+ + 359329 Prevent reinvocation of LoginModule.login with jaspi for already
+   authed user
+ + 368632 Remove superfluous removal of org.apache.catalina.jsp_file
+ + 368633 fixed configure.dtd resource mappings
+ + 368635 moved lifecycle state reporting from toString to dump
+ + 368773 process data constraints without realm
+ + 368787 always set token view to new header buffers in httpparser
+ + 368821 improved test harness
+ + 368920 JettyAwareLogger always formats the arguments.
+ + 368948 POM for jetty-jndi references unknown version for javax.activation.
+ + 368992 avoid non-blocking flush when writing to avoid setting !_writable
+   without _writeblocked
+ + JETTY-1475 made output state fields volatile to provide memory barrier for
+   non dispatched thread IO
+
+jetty-7.6.0.RC4 - 13 January 2012
+ + 365048 jetty Http client does not send proxy authentication when requesting
+   a Https-resource through a web-proxy.
+ + 366774 removed XSS vulnerbility
+ + 367099 Upgrade jetty-websocket for RFC 6455 - Addendum.
+ + 367716 simplified maxIdleTime logic
+ + 368035 WebSocketClientFactory does not invoke super.doStop().
+ + 368060 do not encode sendRedirect URLs
+ + 368114 Protect against non-Strings in System properties for Log
+ + 368189 WebSocketClientFactory should not manage external thread pool.
+ + 368215 Remove debug from jaspi
+ + 368240 Improve AggregateLifeCycle handling of shared lifecycles
+ + 368291 Change warning to info for NoSuchFieldException on
+   BeanELResolver.properties
+
 jetty-7.6.0.RC3 - 05 January 2012
  + 367433 added tests to investigate
  + 367435 improved D00 test harness
@@ -79,7 +110,7 @@ jetty-7.6.0.RC3 - 05 January 2012
    stopped.
  + 367591 corrected configuration.xml version to 7.6
  + 367635 Added support for start.d directory
- + 637638 limit number of form parameters to avoid DOS
+ + 367638 limit number of form parameters to avoid DOS
  + JETTY-1467 close half closed when idle
 
 jetty-7.6.0.RC2 - 22 December 2011
