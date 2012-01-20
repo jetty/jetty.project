@@ -211,11 +211,20 @@ public class FormAuthModule extends BaseAuthModule
             // Check if the session is already authenticated.
             FormCredential form_cred = (FormCredential) session.getAttribute(__J_AUTHENTICATED);
             if (form_cred != null)
-            {
-                //TODO: we would like the form auth module to be able to invoke the loginservice.validate() method to check the previously authed user
-                
-                boolean success = tryLogin(messageInfo, clientSubject, response, session, form_cred._jUserName, new Password(new String(form_cred._jPassword)));
-                if (success) { return AuthStatus.SUCCESS; }
+            {                
+                //TODO: ideally we would like the form auth module to be able to invoke the 
+                //loginservice.validate() method to check the previously authed user, but it is not visible
+                //to FormAuthModule
+                if (form_cred._subject == null)
+                    return AuthStatus.SEND_FAILURE;
+                Set<Object> credentials = form_cred._subject.getPrivateCredentials();
+                if (credentials == null || credentials.isEmpty())
+                    return AuthStatus.SEND_FAILURE; //if no private credentials, assume it cannot be authenticated
+
+                clientSubject.getPrivateCredentials().addAll(credentials);
+
+                //boolean success = tryLogin(messageInfo, clientSubject, response, session, form_cred._jUserName, new Password(new String(form_cred._jPassword)));
+                return AuthStatus.SUCCESS;  
             }
             else if (ssoSource != null)
             {
