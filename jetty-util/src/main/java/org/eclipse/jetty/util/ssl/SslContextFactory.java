@@ -71,6 +71,22 @@ import org.eclipse.jetty.util.security.Password;
  */
 public class SslContextFactory extends AbstractLifeCycle
 {
+    public final static TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509TrustManager()
+    {
+        public java.security.cert.X509Certificate[] getAcceptedIssuers()
+        {
+            return new java.security.cert.X509Certificate[]{};
+        }
+
+        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
+        {
+        }
+
+        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
+        {
+        }
+    }};
+    
     private static final Logger LOG = Log.getLogger(SslContextFactory.class);
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
@@ -229,22 +245,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 {
                     LOG.debug("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
                     // Create a trust manager that does not validate certificate chains
-                    TrustManager trustAllCerts = new X509TrustManager()
-                    {
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers()
-                        {
-                            return null;
-                        }
-
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
-                        {
-                        }
-
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
-                        {
-                        }
-                    };
-                    trust_managers = new TrustManager[] { trustAllCerts };
+                    trust_managers = TRUST_ALL_CERTS;
                 }
 
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
