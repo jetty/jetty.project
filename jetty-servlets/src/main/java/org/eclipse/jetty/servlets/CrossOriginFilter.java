@@ -17,6 +17,7 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -215,10 +216,16 @@ public class CrossOriginFilter implements Filter
     {
         // WebSocket clients such as Chrome 5 implement a version of the WebSocket
         // protocol that does not accept extra response headers on the upgrade response
-        if ("Upgrade".equalsIgnoreCase(request.getHeader("Connection")) &&
-            "WebSocket".equalsIgnoreCase(request.getHeader("Upgrade")))
+        for (String connection : Collections.<String>list(request.getHeaders("Connection")))
         {
-            return false;
+            if ("Upgrade".equalsIgnoreCase(connection))
+            {
+                for (String upgrade : Collections.<String>list(request.getHeaders("Upgrade")))
+                {
+                    if ("WebSocket".equalsIgnoreCase(upgrade))
+                        return false;
+                }
+            }
         }
         return true;
     }
