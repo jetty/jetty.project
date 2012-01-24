@@ -15,6 +15,7 @@ package org.eclipse.jetty.util;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import java.util.Locale;
 import java.util.TimeZone;
@@ -69,12 +70,26 @@ public class DateCacheTest
 
             // Test string is cached
             dc = new DateCache();
-            String s1=dc.format(System.currentTimeMillis());
-            dc.format(1);
-            String s2=dc.format(System.currentTimeMillis());
-            dc.format(System.currentTimeMillis()+10*60*60);
-            String s3=dc.format(System.currentTimeMillis());
-            assertTrue(s1==s2 || s2==s3);
+            long now = 1000L*(System.currentTimeMillis()%1000L)+123;
+            // format a time for now
+            String s1=dc.format(now);
+            
+            // format a  time in the past (this should not reset cached date)
+            dc.format(now-2000);
+            
+            // format a time a little later than now 
+            String s2=dc.format(now+10);
+            
+            // format a time  in future (this should reset cached data)
+            dc.format(now+2000);
+            
+            // format time a little later than now
+            String s3=dc.format(now+20);
+            
+            assertEquals(s1,s2);
+            assertEquals(s2,s3);
+            assertTrue(s1==s2);
+            assertFalse(s2==s3);
     }
 
 }

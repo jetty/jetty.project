@@ -323,9 +323,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         {
             synchronized (this)
             {
-                _writable=false;
-                if (!_dispatched)
-                    updateKey();
+                if (_dispatched)
+                    _writable=false;
             }
         }
         else if (l>0)
@@ -349,9 +348,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         {
             synchronized (this)
             {
-                _writable=false;
-                if (!_dispatched)
-                    updateKey();
+                if (_dispatched)
+                    _writable=false;
             }
         }
         else if (l>0)

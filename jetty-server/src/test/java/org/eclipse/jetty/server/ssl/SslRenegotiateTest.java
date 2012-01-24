@@ -37,22 +37,6 @@ public class SslRenegotiateTest
 {
     private static final Logger LOG = Log.getLogger(SslRenegotiateTest.class);
 
-    private static final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager()
-    {
-        public java.security.cert.X509Certificate[] getAcceptedIssuers()
-        {
-            return null;
-        }
-
-        public void checkClientTrusted( java.security.cert.X509Certificate[] certs, String authType )
-        {
-        }
-
-        public void checkServerTrusted( java.security.cert.X509Certificate[] certs, String authType )
-        {
-        }
-    } };
-
     private ByteBuffer _outAppB;
     private ByteBuffer _outPacketB;
     private ByteBuffer _inAppB;
@@ -110,7 +94,7 @@ public class SslRenegotiateTest
             _socket.configureBlocking(true);
 
             SSLContext context=SSLContext.getInstance("SSL");
-            context.init( null, trustAllCerts, new java.security.SecureRandom() );
+            context.init( null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom() );
 
             _engine = context.createSSLEngine();
             _engine.setUseClientMode(true);

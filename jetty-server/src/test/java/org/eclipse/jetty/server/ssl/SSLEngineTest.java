@@ -20,7 +20,8 @@ package org.eclipse.jetty.server.ssl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,8 +38,6 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -81,25 +80,6 @@ public class SSLEngineTest
 
     private static final int BODY_SIZE=300;
 
-    private static final TrustManager[] s_dummyTrustManagers=new TrustManager[]
-    {
-        new X509TrustManager()
-        {
-            public java.security.cert.X509Certificate[] getAcceptedIssuers()
-            {
-                return null;
-            }
-
-            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
-            {
-            }
-
-            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
-            {
-            }
-        }
-    };
-
     private static Server server;
     private static SslSelectChannelConnector connector;
 
@@ -134,7 +114,7 @@ public class SSLEngineTest
     public void testBigResponse() throws Exception
     {
         SSLContext ctx=SSLContext.getInstance("TLS");
-        ctx.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
+        ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
         int port=connector.getLocalPort();
 
@@ -152,7 +132,7 @@ public class SSLEngineTest
 
         String response = IO.toString(client.getInputStream());
 
-        assertTrue(response.length()>102400);
+        assertThat(response.length(),greaterThan(102400));
     }
 
     @Test
@@ -164,7 +144,7 @@ public class SSLEngineTest
         Socket[] client=new Socket[numConns];
 
         SSLContext ctx=SSLContext.getInstance("SSLv3");
-        ctx.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
+        ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
         int port=connector.getLocalPort();
 
@@ -231,7 +211,7 @@ public class SSLEngineTest
         server.start();
 
         SSLContext context = SSLContext.getInstance("SSL");
-        context.init(null,s_dummyTrustManagers,new java.security.SecureRandom());
+        context.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
         HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
 
         URL url = new URL("https://localhost:"+connector.getLocalPort()+"/test");
