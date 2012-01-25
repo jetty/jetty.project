@@ -73,7 +73,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         {
             HttpsURLConnection.setDefaultHostnameVerifier(__hostnameverifier);
             SSLContext sc = SSLContext.getInstance("TLS"); 
-            sc.init(null, __trustAllCerts, new java.security.SecureRandom()); 
+            sc.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom()); 
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         }
         catch(Exception e)

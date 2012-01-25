@@ -157,10 +157,12 @@
       <param-name>useFileMappedBuffer</param-name>
       <param-value>true</param-value>
     </init-param>
+    <!--
     <init-param>
       <param-name>resourceCache</param-name>
       <param-value>resourceCache</param-value>
     </init-param>
+    -->
     <!--
     <init-param>
       <param-name>cacheControl</param-name>
