@@ -37,7 +37,7 @@ public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
     private static DateCache _dateCache;
-    private static Properties __props = Log.__props;
+    private static final Properties __props = new Properties();
 
     private final static boolean __source = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
@@ -45,6 +45,8 @@ public class StdErrLog extends AbstractLogger
 
     static
     {
+        __props.putAll(Log.__props);
+        
         String deprecatedProperties[] =
         { "DEBUG", "org.eclipse.jetty.util.log.DEBUG", "org.eclipse.jetty.util.log.stderr.DEBUG" };
 
@@ -97,7 +99,8 @@ public class StdErrLog extends AbstractLogger
 
     public StdErrLog(String name, Properties props)
     {
-        __props = props;
+        if (props!=null)
+            __props.putAll(props);
         this._name = name == null?"":name;
         this._abbrevname = condensePackageString(this._name);
         this._level = getLoggingLevel(props,this._name);
@@ -603,7 +606,8 @@ public class StdErrLog extends AbstractLogger
 
     public static void setProperties(Properties props)
     {
-        __props = props;
+        __props.clear();
+        __props.putAll(props);
     }
 
     public void ignore(Throwable ignored)

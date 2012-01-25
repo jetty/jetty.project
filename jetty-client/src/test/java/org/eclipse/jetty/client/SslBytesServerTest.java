@@ -1,5 +1,7 @@
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
@@ -19,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -50,11 +53,6 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 
 public class SslBytesServerTest extends SslBytesTest
 {
@@ -624,7 +622,9 @@ public class SslBytesServerTest extends SslBytesTest
         TimeUnit.MILLISECONDS.sleep(1000);
         Assert.assertThat(sslHandles.get(), lessThan(750));
         Assert.assertThat(sslFlushes.get(), lessThan(750));
-        Assert.assertThat(httpParses.get(), lessThan(1000));
+        // An average of 958 httpParses is seen in standard Oracle JDK's
+        // An average of 1183 httpParses is seen in OpenJDK JVMs.
+        Assert.assertThat(httpParses.get(), lessThan(1500));
 
         client.close();
 

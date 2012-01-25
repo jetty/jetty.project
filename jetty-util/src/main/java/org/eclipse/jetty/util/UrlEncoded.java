@@ -462,52 +462,60 @@ public class UrlEncoded extends MultiMap implements Cloneable
             int totalLength=0;
             while ((b=in.read())>=0)
             {
-                switch ((char) b)
+                try
                 {
-                    case '&':
-                        value = buffer.length()==0?"":buffer.toString();
-                        buffer.reset();
-                        if (key != null)
-                        {
-                            map.add(key,value);
-                        }
-                        else if (value!=null&&value.length()>0)
-                        {
-                            map.add(value,"");
-                        }
-                        key = null;
-                        value=null;
-                        if (maxKeys>0 && map.size()>maxKeys)
-                        {
-                            LOG.warn("maxFormKeys limit exceeded keys>{}",maxKeys);
-                            return;
-                        }
-                        break;
-                        
-                    case '=':
-                        if (key!=null)
-                        {
+                    switch ((char) b)
+                    {
+                        case '&':
+                            value = buffer.length()==0?"":buffer.toString();
+                            buffer.reset();
+                            if (key != null)
+                            {
+                                map.add(key,value);
+                            }
+                            else if (value!=null&&value.length()>0)
+                            {
+                                map.add(value,"");
+                            }
+                            key = null;
+                            value=null;
+                            if (maxKeys>0 && map.size()>maxKeys)
+                            {
+                                LOG.warn("maxFormKeys limit exceeded keys>{}",maxKeys);
+                                return;
+                            }
+                            break;
+
+                        case '=':
+                            if (key!=null)
+                            {
+                                buffer.append((byte)b);
+                                break;
+                            }
+                            key = buffer.toString();
+                            buffer.reset();
+                            break;
+
+                        case '+':
+                            buffer.append((byte)' ');
+                            break;
+
+                        case '%':
+                            int dh=in.read();
+                            int dl=in.read();
+                            if (dh<0||dl<0)
+                                break;
+                            buffer.append((byte)((TypeUtil.convertHexDigit((byte)dh)<<4) + TypeUtil.convertHexDigit((byte)dl)));
+                            break;
+                        default:
                             buffer.append((byte)b);
                             break;
-                        }
-                        key = buffer.toString();
-                        buffer.reset();
-                        break;
-                        
-                    case '+':
-                        buffer.append((byte)' ');
-                        break;
-                        
-                    case '%':
-                        int dh=in.read();
-                        int dl=in.read();
-                        if (dh<0||dl<0)
-                            break;
-                        buffer.append((byte)((TypeUtil.convertHexDigit((byte)dh)<<4) + TypeUtil.convertHexDigit((byte)dl)));
-                        break;
-                    default:
-                        buffer.append((byte)b);
-                    break;
+                    }
+                }
+                catch(NotUtf8Exception e)
+                {
+                    LOG.warn(e.toString());
+                    LOG.debug(e);
                 }
                 if (maxLength>=0 && (++totalLength > maxLength))
                     throw new IllegalStateException("Form too large");

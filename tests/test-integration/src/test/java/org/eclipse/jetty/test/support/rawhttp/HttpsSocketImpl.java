@@ -32,6 +32,7 @@ import javax.net.ssl.X509TrustManager;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * An HTTPS Socket Impl
@@ -45,26 +46,6 @@ public class HttpsSocketImpl implements HttpSocket
 
     public HttpsSocketImpl() throws Exception
     {
-        // Create loose SSL context.
-        // Create a trust manager that does not validate certificate
-        // chains
-        TrustManager[] trustAllCerts = new TrustManager[]
-        { new X509TrustManager()
-        {
-            public java.security.cert.X509Certificate[] getAcceptedIssuers()
-            {
-                return null;
-            }
-
-            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
-            {
-            }
-
-            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
-            {
-            }
-        } };
-
         @SuppressWarnings("unused")
         HostnameVerifier hostnameVerifier = new HostnameVerifier()
         {
@@ -80,7 +61,7 @@ public class HttpsSocketImpl implements HttpSocket
         {
             // TODO real trust manager
             this.sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null,trustAllCerts,new java.security.SecureRandom());
+            sslContext.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
         }
         catch (Exception e)
         {
