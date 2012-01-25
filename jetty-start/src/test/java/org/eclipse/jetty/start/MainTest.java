@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.start;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.List;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,18 +35,13 @@ public class MainTest
     @Before
     public void setUp() throws Exception
     {
-        System.setProperty("jetty.home",this.getClass().getResource("/jetty.home").getFile());
+        File testJettyHome = MavenTestingUtils.getTestResourceDir("jetty.home");
+        System.setProperty("jetty.home",testJettyHome.getAbsolutePath());
     }
 
-    /**
-     * Test method for {@link org.eclipse.jetty.start.StartIniParser#loadStartIni(java.lang.String)}.
-     * @throws IOException 
-     */
     @Test
     public void testLoadStartIni() throws IOException
     {
-        URL startIni = this.getClass().getResource("/jetty.home/");
-        System.setProperty("jetty.home",startIni.getFile());
         Main main = new Main();
         List<String> args = main.parseStartIniFiles();
         assertEquals("Expected 5 uncommented lines in start.ini",9,args.size());
