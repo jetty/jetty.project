@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-aggregate-project</artifactId>
-    <version>8.1.0.v20120125</version>
+    <version>8.1.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-websocket</artifactId>
