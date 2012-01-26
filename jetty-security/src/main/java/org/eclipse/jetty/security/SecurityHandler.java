@@ -306,7 +306,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             if (_identityService==null)
                 _identityService=findIdentityService();
             
-            if (_identityService==null && _realmName!=null)
+            if (_identityService==null && _loginService!=null)
                 _identityService=new DefaultIdentityService();
         }
         
