@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.6.0.v20120127</version>
+    <version>7.6.1-SNAPSHOT</version>
   </parent>
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-aggregate-project</artifactId>
