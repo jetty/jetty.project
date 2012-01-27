@@ -1,6 +1,7 @@
 jetty-8.1.1-SNAPSHOT
 
-jetty-8.1.0.v20120125 - 25 January 2012
+jetty-8.1.0.v20120127 - 27 January 2012
+ + 368773 allow authentication to be set by non securityHandler handlers
  + 368992 avoid update key while flushing during a write
  + 369216 turned off the shared resource cache
  + 369349 replace quotes with a space escape method
