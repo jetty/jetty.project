@@ -10,8 +10,29 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.eclipse.jetty.spdy.api.*;
-import org.eclipse.jetty.spdy.frames.*;
+
+import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
+import org.eclipse.jetty.spdy.api.SPDYException;
+import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionStatus;
+import org.eclipse.jetty.spdy.api.SettingsInfo;
+import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.frames.ControlFrame;
+import org.eclipse.jetty.spdy.frames.ControlFrameType;
+import org.eclipse.jetty.spdy.frames.DataFrame;
+import org.eclipse.jetty.spdy.frames.GoAwayFrame;
+import org.eclipse.jetty.spdy.frames.HeadersFrame;
+import org.eclipse.jetty.spdy.frames.PingFrame;
+import org.eclipse.jetty.spdy.frames.RstStreamFrame;
+import org.eclipse.jetty.spdy.frames.SettingsFrame;
+import org.eclipse.jetty.spdy.frames.SynReplyFrame;
+import org.eclipse.jetty.spdy.frames.SynStreamFrame;
+import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.slf4j.Logger;
@@ -252,7 +273,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     @Override
     public void onDataFrame(DataFrame frame, ByteBuffer data)
     {
-        logger.info("Processing {}, {} data bytes", frame, data.remaining());
+        logger.debug("Processing {}, {} data bytes", frame, data.remaining());
 
         int streamId = frame.getStreamId();
         IStream stream = streams.get(streamId);
@@ -572,7 +593,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
             if (frameBytes == null)
                 return;
             flushing = true;
-            logger.debug("Flushing {}, {} frame(s) queued", frameBytes, queue.size());
+            logger.debug("Flushing {}, {} frame(s) in queue", frameBytes, queue.size());
         }
 
         ByteBuffer buffer = frameBytes.getByteBuffer();
