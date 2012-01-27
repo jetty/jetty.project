@@ -20,6 +20,7 @@ public class HeadersBlockGenerator
 
     public ByteBuffer generate(short version, Headers headers) throws StreamException
     {
+        // TODO: ByteArrayOutputStream is quite inefficient, but grows on demand; optimize using ByteBuffer ?
         Charset iso1 = Charset.forName("ISO-8859-1");
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(headers.getSize() * 64);
         writeCount(version, buffer, headers.getSize());
