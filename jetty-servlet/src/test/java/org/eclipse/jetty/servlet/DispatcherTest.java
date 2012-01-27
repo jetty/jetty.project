@@ -344,11 +344,16 @@ public class DispatcherTest
             RequestDispatcher dispatcher = null;
 
             if(request.getParameter("include")!=null)
+            {
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("include"));
+                dispatcher.include(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+            }
             else if(request.getParameter("forward")!=null)
+            {
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("forward"));
+                dispatcher.forward(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+            }
             
-            dispatcher.forward(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
         }
     }
 
