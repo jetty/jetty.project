@@ -1,0 +1,86 @@
+package org.eclipse.jetty.spdy.api;
+
+import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.junit.Ignore;
+import org.junit.Test;
+
+@Ignore
+public class ServerUsageTest
+{
+    @Test
+    public void testServerSynAndReplyWithData() throws Exception
+    {
+        new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public Stream.FrameListener onSyn(Stream stream, SynInfo streamInfo)
+            {
+                Headers synHeaders = streamInfo.getHeaders();
+                // Do something with headers, for example extract them and perform an http request via Jetty's LocalConnector
+
+                // Get the http response, fill headers and data
+                Headers replyHeaders = new Headers();
+                replyHeaders.put("host", synHeaders.get("host"));
+                // Sends a reply
+                stream.reply(new ReplyInfo(replyHeaders, false));
+
+                // Sends data and shows how DataInfo can be reused
+                StringDataInfo dataInfo = new StringDataInfo("foo", false);
+                stream.data(dataInfo);
+                dataInfo.setClose(true);
+                dataInfo.setCompress(false);
+                dataInfo.setString("bar");
+                stream.data(dataInfo);
+                // Stream is now closed
+                return null;
+            }
+        };
+    }
+
+    @Test
+    public void testServerInitiatesStreamAndPushesData() throws Exception
+    {
+        new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public void onConnect(Session session)
+            {
+                // SPDY does not allow the server to initiate a stream without an existing stream
+                // being opened by the client already.
+                // Correct SPDY sequence will be:
+                // C ---       SYN_STREAM(id=1)       --> S
+                // C <--       SYN_REPLY(id=1)        --- S
+                // C <-- SYN_STREAM(id=2,uni,assId=1) --- S
+                //
+                // However, the API may allow to initiate the stream like in bwtp
+
+                SynInfo synInfo = new SynInfo(new Headers(), false, true, 0, (byte)0);
+                Stream stream = session.syn((short)2, synInfo, null);
+                // The point here is that we have no idea if the client accepted our stream
+                // So we return a stream, we may be able to send the headers frame, but later
+                // the client sends a rst frame.
+                // We have to atomically set some flag on the stream to signal it's closed
+                // and any operation on it will throw
+
+                stream.headers(new HeadersInfo(new Headers(), false, false));
+            }
+        };
+    }
+
+    @Test
+    public void testServerPush() throws Exception
+    {
+        new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public Stream.FrameListener onSyn(Stream stream, SynInfo streamInfo)
+            {
+                Session session = stream.getSession();
+                // Since it's unidirectional, no need to pass the listener
+                Stream pushStream = session.syn(stream.getVersion(), new SynInfo(new Headers(), false, true, stream.getId(), (byte)0), null);
+                pushStream.data(new StringDataInfo("foo", false));
+                return null;
+            }
+        };
+    }
+}

@@ -1,0 +1,66 @@
+package org.eclipse.jetty.spdy;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class SPDYHeadersTest extends SPDYTest
+{
+    @Test
+    public void testHeaders() throws Exception
+    {
+        ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                stream.reply(new ReplyInfo(false));
+                return new Stream.FrameListener.Adapter()
+                {
+                    @Override
+                    public void onHeaders(Stream stream, HeadersInfo headersInfo)
+                    {
+                        Assert.assertTrue(stream.isHalfClosed());
+                        stream.headers(new HeadersInfo(new Headers(), true));
+                        Assert.assertTrue(stream.isClosed());
+                    }
+                };
+            }
+        };
+
+        Session session = startClient(startServer(serverSessionFrameListener), null);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        short version = 2;
+        session.syn(version, new SynInfo(false), new Stream.FrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Headers headers = new Headers();
+                headers.put("foo", "bar");
+                headers.put("baz", "woo");
+                stream.headers(new HeadersInfo(headers, true));
+                Assert.assertTrue(stream.isHalfClosed());
+            }
+
+            @Override
+            public void onHeaders(Stream stream, HeadersInfo headersInfo)
+            {
+                Assert.assertTrue(stream.isClosed());
+                latch.countDown();
+            }
+        });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+}
