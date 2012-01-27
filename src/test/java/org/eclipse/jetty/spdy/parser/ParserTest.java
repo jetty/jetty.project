@@ -2,6 +2,7 @@ package org.eclipse.jetty.spdy.parser;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;

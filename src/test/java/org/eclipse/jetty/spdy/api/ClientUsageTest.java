@@ -1,6 +1,7 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.charset.Charset;
+
 import org.eclipse.jetty.spdy.StandardSession;
 import org.junit.Ignore;
 import org.junit.Test;

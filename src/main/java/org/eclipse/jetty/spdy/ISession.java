@@ -1,6 +1,5 @@
 package org.eclipse.jetty.spdy;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
