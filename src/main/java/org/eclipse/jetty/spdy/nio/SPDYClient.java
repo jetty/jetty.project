@@ -14,6 +14,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ConnectedEndPoint;
@@ -21,6 +23,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
+import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.CompressionFactory.Compressor;
 import org.eclipse.jetty.spdy.CompressionFactory.Decompressor;
@@ -32,6 +35,7 @@ import org.eclipse.jetty.spdy.api.Session.FrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -93,6 +97,23 @@ public class SPDYClient
         this.maxIdleTime = maxIdleTime;
     }
 
+    protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
+    {
+        try
+        {
+            String peerHost = channel.socket().getInetAddress().getHostAddress();
+            int peerPort = channel.socket().getPort();
+            SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
+            engine.setUseClientMode(true);
+            engine.beginHandshake();
+            return engine;
+        }
+        catch (SSLException x)
+        {
+            throw new RuntimeException(x);
+        }
+    }
+
     protected CompressionFactory newCompressionFactory()
     {
         return new StandardCompressionFactory();
@@ -118,19 +139,34 @@ public class SPDYClient
     public static class Factory extends AggregateLifeCycle
     {
         private final ThreadPool threadPool;
+        private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
 
         public Factory()
         {
-            this(null);
+            this(null, null);
+        }
+
+        public Factory(SslContextFactory sslContextFactory)
+        {
+            this(null, sslContextFactory);
         }
 
         public Factory(ThreadPool threadPool)
         {
+            this(threadPool, null);
+        }
+
+        public Factory(ThreadPool threadPool, SslContextFactory sslContextFactory)
+        {
             if (threadPool == null)
                 threadPool = new QueuedThreadPool();
             this.threadPool = threadPool;
-            addBean(this.threadPool);
+            addBean(threadPool);
+
+            this.sslContextFactory = sslContextFactory;
+            if (sslContextFactory != null)
+                addBean(sslContextFactory);
 
             selector = new ClientSelectorManager();
             addBean(selector);
@@ -164,10 +200,9 @@ public class SPDYClient
                     maxIdleTime = getMaxIdleTime();
                 SelectChannelEndPoint result = new SelectChannelEndPoint(channel, selectSet, key, (int)maxIdleTime);
 
-                // TODO: handle SSL
-
                 AsyncConnection connection = newConnection(channel, result, attachment);
                 result.setConnection(connection);
+
                 return result;
             }
 
@@ -193,13 +228,24 @@ public class SPDYClient
                 SessionFuture sessionFuture = (SessionFuture)attachment;
                 SPDYClient client = sessionFuture.client;
 
+                if (sslContextFactory != null)
+                {
+                    SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
+                    SslConnection sslConnection = new SslConnection(engine, endPoint);
+                    endPoint.setConnection(sslConnection);
+                    endPoint = sslConnection.getSslEndPoint();
+                }
+
                 CompressionFactory compressionFactory = client.newCompressionFactory();
                 Parser parser = client.newParser(compressionFactory.newDecompressor());
                 Generator generator = client.newGenerator(compressionFactory.newCompressor());
 
                 AsyncSPDYConnection connection = new AsyncSPDYConnection(endPoint, parser);
+                endPoint.setConnection(connection);
+
                 Session session = client.newSession(connection, sessionFuture.listener, parser, generator);
                 sessionFuture.connected(session);
+
                 return connection;
             }
         }
