@@ -2,26 +2,34 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.eclipse.jetty.spdy;
+package org.eclipse.jetty.spdy.nio;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
+import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.CompressionFactory.Compressor;
 import org.eclipse.jetty.spdy.CompressionFactory.Decompressor;
+import org.eclipse.jetty.spdy.ISession;
+import org.eclipse.jetty.spdy.StandardCompressionFactory;
+import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Session.FrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
-import org.eclipse.jetty.spdy.nio.AsyncSPDYConnection;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;

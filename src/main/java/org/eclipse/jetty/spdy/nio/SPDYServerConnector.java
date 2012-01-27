@@ -1,13 +1,17 @@
-package org.eclipse.jetty.spdy;
+package org.eclipse.jetty.spdy.nio;
 
 import java.nio.channels.SocketChannel;
+
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.spdy.CompressionFactory;
+import org.eclipse.jetty.spdy.ISession;
+import org.eclipse.jetty.spdy.StandardCompressionFactory;
+import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
-import org.eclipse.jetty.spdy.nio.AsyncSPDYConnection;
 import org.eclipse.jetty.spdy.parser.Parser;
 
 public class SPDYServerConnector extends SelectChannelConnector
