@@ -33,7 +33,9 @@ public class SPDYServerConnector extends SelectChannelConnector
         AsyncSPDYConnection connection = new AsyncSPDYConnection(endPoint, parser);
         Session session = newSession(connection, listener, parser, generator);
 
-        listener.onConnect(session);
+        // NPE guard to support tests
+        if (listener != null)
+            listener.onConnect(session);
 
         return connection;
     }
