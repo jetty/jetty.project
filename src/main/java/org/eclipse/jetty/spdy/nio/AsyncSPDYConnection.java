@@ -2,7 +2,12 @@ package org.eclipse.jetty.spdy.nio;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.eclipse.jetty.io.*;
+
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
@@ -94,6 +99,7 @@ public class AsyncSPDYConnection extends AbstractConnection implements AsyncConn
         }
         finally
         {
+            buffer.limit(jettyBuffer.putIndex());
             buffer.position(jettyBuffer.getIndex());
         }
 
