@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class AsyncSPDYConnection extends AbstractConnection implements AsyncConnection, Controller {
 
-    protected static final Logger logger = LoggerFactory.getLogger(AsyncSPDYConnection.class);
+    private static final Logger logger = LoggerFactory.getLogger(AsyncSPDYConnection.class);
     private final Parser parser;
     private ByteBuffer buffer;
     private Handler handler;
@@ -44,9 +44,11 @@ public class AsyncSPDYConnection extends AbstractConnection implements AsyncConn
 
             int filled = fill();
             progress |= filled > 0;
+            logger.debug("Filled {} from {}", filled, endPoint);
 
             int flushed = flush();
             progress |= flushed > 0;
+            logger.debug("Flushed {} to {}", flushed, endPoint);
 
             endPoint.flush();
 
@@ -90,7 +92,8 @@ public class AsyncSPDYConnection extends AbstractConnection implements AsyncConn
         AsyncEndPoint endPoint = getEndPoint();
         try
         {
-            endPoint.flush(jettyBuffer);
+            int written = endPoint.flush(jettyBuffer);
+            logger.debug("Written {} bytes", written);
         }
         catch (IOException x)
         {
@@ -132,20 +135,23 @@ public class AsyncSPDYConnection extends AbstractConnection implements AsyncConn
     {
         try
         {
+            AsyncEndPoint endPoint = getEndPoint();
             if (onlyOutput)
             {
                 try
                 {
-                    getEndPoint().shutdownOutput();
+                    logger.debug("Shutting down output {}", endPoint);
+                    endPoint.shutdownOutput();
                 }
                 catch (IOException x)
                 {
-                    getEndPoint().close();
+                    endPoint.close();
                 }
             }
             else
             {
-                getEndPoint().close();
+                logger.debug("Closing {}", endPoint);
+                endPoint.close();
             }
         }
         catch (IOException x)
