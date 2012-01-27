@@ -215,12 +215,17 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         logger.debug("Processing {}", frame);
 
+        if (closed.get())
+        {
+            logger.debug("Skipped processing of {}", frame);
+            return;
+        }
+
         switch (frame.getType())
         {
             case SYN_STREAM:
             {
-                if (!closed.get())
-                    onSyn((SynStreamFrame)frame);
+                onSyn((SynStreamFrame)frame);
                 break;
             }
             case SYN_REPLY:
@@ -274,6 +279,12 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     public void onDataFrame(DataFrame frame, ByteBuffer data)
     {
         logger.debug("Processing {}, {} data bytes", frame, data.remaining());
+
+        if (closed.get())
+        {
+            logger.debug("Skipped processing of {}", frame);
+            return;
+        }
 
         int streamId = frame.getStreamId();
         IStream stream = streams.get(streamId);
