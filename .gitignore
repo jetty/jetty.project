@@ -34,3 +34,6 @@ target/
 
 # merge tooling
 *.orig
+
+#maven
+*.versionsBackup

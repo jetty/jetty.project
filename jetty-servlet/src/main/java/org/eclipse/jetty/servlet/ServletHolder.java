@@ -86,7 +86,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         super (Source.EMBEDDED);
     }
     
-    
     /* ---------------------------------------------------------------- */
     /** Constructor .
      */
@@ -105,7 +104,27 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ---------------------------------------------------------------- */
-    /** Constructor for existing servlet.
+    /** Constructor for servlet class.
+     */
+    public ServletHolder(String name, Class<? extends Servlet> servlet)
+    {
+        super (Source.EMBEDDED);
+        setName(name);
+        setHeldClass(servlet);
+    }
+    
+    /* ---------------------------------------------------------------- */
+    /** Constructor for servlet class.
+     */
+    public ServletHolder(String name, Servlet servlet)
+    {
+        super (Source.EMBEDDED);
+        setName(name);
+        setServlet(servlet);
+    }
+    
+    /* ---------------------------------------------------------------- */
+    /** Constructor for servlet class.
      */
     public ServletHolder(Class<? extends Servlet> servlet)
     {
