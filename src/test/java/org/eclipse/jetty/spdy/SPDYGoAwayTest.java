@@ -1,5 +1,6 @@
 package org.eclipse.jetty.spdy;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -8,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -16,6 +18,8 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
 
 public class SPDYGoAwayTest extends SPDYTest
 {
@@ -191,8 +195,18 @@ public class SPDYGoAwayTest extends SPDYTest
         Stream stream2 = session.syn(version, new SynInfo(false), null);
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
 
-        stream2.data(new StringDataInfo("foo", true));
-        Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
+        // There is a race between the data we want to send, and the client
+        // closing the connection because the server closed it after the
+        // go_away, so we guard with a try/catch to have the test pass cleanly
+        try
+        {
+            stream2.data(new StringDataInfo("foo", true));
+            Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
+        }
+        catch (SPDYException x)
+        {
+            Assert.assertThat(x.getCause(), instanceOf(ClosedChannelException.class));
+        }
 
         // Be sure the last good stream is the first
         Assert.assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
