@@ -6,6 +6,7 @@
 # maven
 target/
 */src/main/java/META-INF/
+*.versionsBackup
 
 # common junk
 *.log
