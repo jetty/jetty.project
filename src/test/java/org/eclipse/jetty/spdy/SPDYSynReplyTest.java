@@ -85,7 +85,6 @@ public class SPDYSynReplyTest extends SPDYTest
         Assert.assertTrue(streamCreatedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(stream.isClosed());
-        Assert.assertEquals(0, serverSession.getStreams().size());
 
         Assert.assertTrue(streamRemovedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(0, session.getStreams().size());
