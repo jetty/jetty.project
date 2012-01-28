@@ -228,25 +228,35 @@ public class SPDYClient
                 SessionFuture sessionFuture = (SessionFuture)attachment;
                 SPDYClient client = sessionFuture.client;
 
+                CompressionFactory compressionFactory = client.newCompressionFactory();
+                Parser parser = client.newParser(compressionFactory.newDecompressor());
+                Generator generator = client.newGenerator(compressionFactory.newCompressor());
+
+                AsyncConnection result;
+                ISession.Controller controller;
                 if (sslContextFactory != null)
                 {
                     SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
                     SslConnection sslConnection = new SslConnection(engine, endPoint);
                     endPoint.setConnection(sslConnection);
-                    endPoint = sslConnection.getSslEndPoint();
+                    AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+                    AsyncSPDYConnection connection = new AsyncSPDYConnection(sslEndPoint, parser);
+                    sslEndPoint.setConnection(connection);
+                    result = sslConnection;
+                    controller = connection;
+                }
+                else
+                {
+                    AsyncSPDYConnection connection = new AsyncSPDYConnection(endPoint, parser);
+                    endPoint.setConnection(connection);
+                    result = connection;
+                    controller = connection;
                 }
 
-                CompressionFactory compressionFactory = client.newCompressionFactory();
-                Parser parser = client.newParser(compressionFactory.newDecompressor());
-                Generator generator = client.newGenerator(compressionFactory.newCompressor());
-
-                AsyncSPDYConnection connection = new AsyncSPDYConnection(endPoint, parser);
-                endPoint.setConnection(connection);
-
-                Session session = client.newSession(connection, sessionFuture.listener, parser, generator);
+                Session session = client.newSession(controller, sessionFuture.listener, parser, generator);
                 sessionFuture.connected(session);
 
-                return connection;
+                return result;
             }
         }
     }
