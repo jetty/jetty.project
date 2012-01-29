@@ -23,10 +23,13 @@ import org.eclipse.jetty.server.Request;
 /**
  * Rewrite the URI by matching with a regular expression. 
  * The replacement string may use $n" to replace the nth capture group.
+ * If the replacement string contains ? character, then it is split into a path
+ * and query string component.  The returned target contains only the path.
  */
 public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
 {
     private String _replacement;
+    private String _query;
 
     /* ------------------------------------------------------------ */
     public RewriteRegexRule()
@@ -43,7 +46,9 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
      */
     public void setReplacement(String replacement)
     {
-        _replacement = replacement;
+        String[] split=replacement.split("\\?",2);
+        _replacement = split[0];
+        _query=split.length==2?split[1]:null;
     }
 
 
@@ -54,32 +59,36 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     public String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException
     {
         target=_replacement;
+        String query=_query;
         for (int g=1;g<=matcher.groupCount();g++)
         {
-            String group = Matcher.quoteReplacement(matcher.group(g));
+            String group=matcher.group(g);
+            if (group==null)
+                group="";
+            else
+                group = Matcher.quoteReplacement(group);
             target=target.replaceAll("\\$"+g,group);
+            if (query!=null)
+                query=query.replaceAll("\\$"+g,group);
         }
 
+        if (query!=null)
+            request.setAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q",query);
         return target;
     }
 
     /* ------------------------------------------------------------ */
     public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
     {
-        Matcher matcher=_regex.matcher(request.getRequestURI());
-        boolean matches = matcher.matches();
-        if (matches)
+        request.setRequestURI(newTarget);
+        if (_query!=null)
         {
-            String uri=_replacement;
-            for (int g=1;g<=matcher.groupCount();g++)
-            {
-                String group = Matcher.quoteReplacement(matcher.group(g));
-                uri=uri.replaceAll("\\$"+g,group);
-            }
-            request.setRequestURI(uri);
+            String query=(String)request.getAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q");
+            if (request.getQueryString()==null)
+                request.setQueryString(query);
+            else
+                request.setQueryString(request.getQueryString()+"&"+query);
         }
-        else
-            request.setRequestURI(newTarget);
     }
 
     /* ------------------------------------------------------------ */
