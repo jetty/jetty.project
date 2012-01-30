@@ -661,20 +661,21 @@ public class Main
 
     String buildCommandLine(Classpath classpath, List<String> xmls) throws IOException
     {
-        StringBuilder cmd = new StringBuilder();
-        cmd.append(findJavaBin());
+        CommandLineBuilder cmd = new CommandLineBuilder(findJavaBin());
+
         for (String x : _jvmArgs)
-            cmd.append(' ').append(x);
-        cmd.append(" -Djetty.home=").append(_jettyHome);
+        {
+            cmd.addArg(x);
+        }
+        cmd.addEqualsArg("-Djetty.home",_jettyHome);
         for (String p : _sysProps)
         {
-            cmd.append("   -D").append(p);
             String v = System.getProperty(p);
-            if (v != null && v.length() > 0)
-                cmd.append('=').append(v);
+            cmd.addEqualsArg("-D" + p,v);
         }
-        cmd.append("   -cp ").append(classpath.toString());
-        cmd.append("   ").append(_config.getMainClassname());
+        cmd.addArg("-cp");
+        cmd.addArg(classpath.toString());
+        cmd.addRawArg(_config.getMainClassname());
 
         // Check if we need to pass properties as a file
         Properties properties = Config.getProperties();
@@ -684,12 +685,12 @@ public class Main
             if (!_dryRun)
                 prop_file.deleteOnExit();
             properties.store(new FileOutputStream(prop_file),"start.jar properties");
-            cmd.append(" ").append(prop_file.getAbsolutePath());
+            cmd.addArg(prop_file.getAbsolutePath());
         }
 
         for (String xml : xmls)
         {
-            cmd.append(' ').append(xml);
+            cmd.addArg(xml);
         }
 
         return cmd.toString();
