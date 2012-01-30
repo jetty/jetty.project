@@ -247,9 +247,7 @@ public class StandardStream implements IStream
     @Override
     public void data(DataInfo dataInfo)
     {
-        // We do not update the close state here, because the dataInfo may
-        // generate several frames and in the middle we may receive window
-        // updates, so we need the stream to update the window size
+        updateCloseState(dataInfo.isClose());
         session.data(this, dataInfo);
     }
 

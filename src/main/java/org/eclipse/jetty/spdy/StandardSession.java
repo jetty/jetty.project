@@ -718,7 +718,6 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
             }
             else
             {
-                stream.updateCloseState(data.isClose());
                 if (stream.isClosed())
                     removeStream(stream);
             }
