@@ -12,9 +12,24 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.After;
+import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 
 public abstract class SPDYTest
 {
+    @Rule
+    public final TestWatchman testName = new TestWatchman()
+    {
+        @Override
+        public void starting(FrameworkMethod method)
+        {
+            super.starting(method);
+            System.err.printf("Running %s.%s()%n",
+                    method.getMethod().getDeclaringClass().getName(),
+                    method.getName());
+        }
+    };
     private Server server;
     private SPDYClient.Factory clientFactory;
 
