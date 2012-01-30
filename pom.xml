@@ -20,7 +20,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <slf4j-version>1.6.1</slf4j-version>
     <build-support-version>1.1</build-support-version>
-    <jetty.test.helper>1.6</jetty.test.helper>
+    <jetty.test.helper>1.6.1</jetty.test.helper>
     <jetty.test.policy>1.2</jetty.test.policy>
   </properties>
   <scm>
