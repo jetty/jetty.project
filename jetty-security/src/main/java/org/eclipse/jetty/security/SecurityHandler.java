@@ -469,7 +469,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 {
                     Authentication.User userAuth = (Authentication.User)authentication;
                     baseRequest.setAuthentication(authentication);
-                    previousIdentity = _identityService.associate(userAuth.getUserIdentity());
+                    if (_identityService!=null)
+                        previousIdentity = _identityService.associate(userAuth.getUserIdentity());
 
                     if (isAuthMandatory)
                     {
@@ -483,7 +484,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     }
                          
                     handler.handle(pathInContext, baseRequest, request, response);
-                    authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
+                    if (authenticator!=null)
+                        authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
                 }
                 else if (authentication instanceof Authentication.Deferred)
                 {

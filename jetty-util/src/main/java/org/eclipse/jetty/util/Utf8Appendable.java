@@ -40,7 +40,7 @@ import java.io.IOException;
  **/
 public abstract class Utf8Appendable
 {
-    private final char REPLACEMENT = '\ufffd';
+    public static final char REPLACEMENT = '\ufffd';
     private static final int UTF8_ACCEPT = 0;
     private static final int UTF8_REJECT = 12;
 

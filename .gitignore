@@ -6,6 +6,7 @@
 # maven
 target/
 */src/main/java/META-INF/
+*.versionsBackup
 
 # common junk
 *.log
@@ -34,3 +35,6 @@ target/
 
 # merge tooling
 *.orig
+
+#maven
+*.versionsBackup

@@ -220,7 +220,6 @@ public class URLEncodedTest
         */ 
     }
     
-
     /* -------------------------------------------------------------- */
     @Test
     public void testUtf8()
@@ -235,5 +234,22 @@ public class URLEncodedTest
         String hex ="E0B89FE0B8ABE0B881E0B8A7E0B894E0B8B2E0B988E0B881E0B89FE0B8A7E0B8ABE0B8AAE0B894E0B8B2E0B988E0B8ABE0B89FE0B881E0B8A7E0B894E0B8AAE0B8B2E0B89FE0B881E0B8ABE0B8A3E0B894E0B989E0B89FE0B8ABE0B899E0B881E0B8A3E0B894E0B8B5";
         String expected = new String(TypeUtil.fromHexString(hex),"utf-8");
         assertEquals(expected,url_encoded.get("text"));
+    }
+    
+    /* -------------------------------------------------------------- */
+    @Test
+    public void testNotUtf8() throws Exception
+    {   
+        String query="name=X%c0%afZ";
+        
+        MultiMap<String> map = new MultiMap<String>();
+        
+        UrlEncoded.decodeUtf8To(query.getBytes(StringUtil.__ISO_8859_1),0,query.length(),map);
+        assertEquals("X"+Utf8Appendable.REPLACEMENT+Utf8Appendable.REPLACEMENT+"Z",map.getValue("name",0));
+
+        map.clear();
+
+        UrlEncoded.decodeUtf8To(new ByteArrayInputStream(query.getBytes(StringUtil.__ISO_8859_1)),map,100,2);
+        assertEquals("X"+Utf8Appendable.REPLACEMENT+Utf8Appendable.REPLACEMENT+"Z",map.getValue("name",0));
     }
 }
