@@ -7,6 +7,7 @@ import org.eclipse.jetty.spdy.nio.SPDYClient;
 import org.eclipse.jetty.spdy.nio.SPDYServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.junit.Assume;
 import org.junit.Before;
 
 public class SSLSPDYSynReplyTest extends SPDYSynReplyTest
@@ -28,6 +29,14 @@ public class SSLSPDYSynReplyTest extends SPDYSynReplyTest
     @Before
     public void init()
     {
+        try
+        {
+            getClass().getClassLoader().loadClass("org.eclipse.jetty.npn.Agent");
+        }
+        catch (ClassNotFoundException x)
+        {
+            Assume.assumeNoException(x);
+        }
         NextProtoNego.debug = true;
     }
 }

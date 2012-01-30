@@ -40,10 +40,8 @@ public class AsyncSPDYConnection extends AbstractConnection implements AsyncConn
         boolean progress = true;
         while (endPoint.isOpen() && progress)
         {
-            progress = false;
-
             int filled = fill();
-            progress |= filled > 0;
+            progress = filled > 0;
             logger.debug("Filled {} from {}", filled, endPoint);
 
             int flushed = flush();

@@ -1,5 +1,6 @@
 package org.eclipse.jetty.spdy.nio;
 
+import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
@@ -7,6 +8,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
@@ -14,6 +17,7 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.StandardSession;
+import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -129,17 +133,45 @@ public class SPDYServerConnector extends SelectChannelConnector
             Parser parser = new Parser(compressionFactory.newDecompressor());
             Generator generator = new Generator(compressionFactory.newCompressor());
 
-            AsyncSPDYConnection connection = new AsyncSPDYConnection(endPoint, parser);
+            ServerAsyncSPDYConnection connection = new ServerAsyncSPDYConnection(endPoint, parser, listener);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(connection, 2, listener, generator);
+            final StandardSession session = new StandardSession(connection, 2, listener, generator);
             parser.addListener(session);
-
-            // NPE guard to support tests
-            if (listener != null)
-                listener.onConnect(session);
+            connection.setSession(session);
 
             return connection;
+        }
+    }
+
+    private class ServerAsyncSPDYConnection extends AsyncSPDYConnection
+    {
+        private final ServerSessionFrameListener listener;
+        private volatile Session session;
+
+        private ServerAsyncSPDYConnection(EndPoint endp, Parser parser, ServerSessionFrameListener listener)
+        {
+            super(endp, parser);
+            this.listener = listener;
+        }
+
+        @Override
+        public Connection handle() throws IOException
+        {
+            final Session session = this.session;
+            if (session != null)
+            {
+                // NPE guard to support tests
+                if (listener != null)
+                    listener.onConnect(session);
+                this.session = null;
+            }
+            return super.handle();
+        }
+
+        private void setSession(Session session)
+        {
+            this.session = session;
         }
     }
 }
