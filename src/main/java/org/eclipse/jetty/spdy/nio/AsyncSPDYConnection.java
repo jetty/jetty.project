@@ -19,8 +19,8 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AsyncSPDYConnection extends AbstractConnection implements AsyncConnection, Controller {
-
+public class AsyncSPDYConnection extends AbstractConnection implements AsyncConnection, Controller
+{
     private static final Logger logger = LoggerFactory.getLogger(AsyncSPDYConnection.class);
     private final Parser parser;
     private ByteBuffer buffer;

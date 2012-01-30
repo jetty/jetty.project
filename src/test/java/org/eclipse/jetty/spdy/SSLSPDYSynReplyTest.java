@@ -1,11 +1,13 @@
 package org.eclipse.jetty.spdy;
 
+import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.nio.SPDYClient;
 import org.eclipse.jetty.spdy.nio.SPDYServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.junit.Before;
 
 public class SSLSPDYSynReplyTest extends SPDYSynReplyTest
 {
@@ -21,5 +23,11 @@ public class SSLSPDYSynReplyTest extends SPDYSynReplyTest
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
         return new SPDYClient.Factory(threadPool, sslContextFactory);
+    }
+
+    @Before
+    public void init()
+    {
+        NextProtoNego.debug = true;
     }
 }

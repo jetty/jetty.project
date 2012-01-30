@@ -22,6 +22,7 @@ public abstract class SPDYTest
     {
         server = new Server();
         Connector connector = newSPDYServerConnector(listener);
+        connector.setPort(47443);
         server.addConnector(connector);
         server.start();
         return new InetSocketAddress(connector.getLocalPort());
@@ -57,6 +58,7 @@ public abstract class SPDYTest
         sslContextFactory.setTrustStore("src/test/resources/truststore.jks");
         sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setProtocol("TLSv1");
+        sslContextFactory.setIncludeProtocols("TLSv1");
         return sslContextFactory;
     }
 

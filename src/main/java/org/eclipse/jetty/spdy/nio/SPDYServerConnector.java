@@ -2,7 +2,6 @@ package org.eclipse.jetty.spdy.nio;
 
 import java.nio.channels.SocketChannel;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
@@ -66,7 +65,7 @@ public class SPDYServerConnector extends SelectChannelConnector
 
         Session session = newSession(controller, listener, parser, generator);
 
-        // TODO: this is called in the selector thread, which is not good
+        // TODO: this is called in the selector thread, which is not optimal
         // NPE guard to support tests
         if (listener != null)
             listener.onConnect(session);
@@ -76,19 +75,11 @@ public class SPDYServerConnector extends SelectChannelConnector
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
-        try
-        {
-            String peerHost = channel.socket().getInetAddress().getHostAddress();
-            int peerPort = channel.socket().getPort();
-            SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
-            engine.setUseClientMode(false);
-            engine.beginHandshake();
-            return engine;
-        }
-        catch (SSLException x)
-        {
-            throw new RuntimeException(x);
-        }
+        String peerHost = channel.socket().getInetAddress().getHostAddress();
+        int peerPort = channel.socket().getPort();
+        SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
+        engine.setUseClientMode(false);
+        return engine;
     }
 
     protected CompressionFactory newCompressionFactory()

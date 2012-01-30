@@ -2,6 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
+
 package org.eclipse.jetty.spdy.nio;
 
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -24,10 +26,8 @@ import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslConnection;
+import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.spdy.CompressionFactory;
-import org.eclipse.jetty.spdy.CompressionFactory.Compressor;
-import org.eclipse.jetty.spdy.CompressionFactory.Decompressor;
-import org.eclipse.jetty.spdy.ISession;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.spdy.api.Session;
@@ -97,43 +97,24 @@ public class SPDYClient
         this.maxIdleTime = maxIdleTime;
     }
 
+    protected AsyncConnectionFactory selectAsyncConnectionFactory(List<String> serverProtocols)
+    {
+        if (serverProtocols == null)
+            return new ClientSPDY2AsyncConnectionFactory();
+
+        // TODO: for each server protocol, lookup a connection factory in SPDYClient.Factory;
+        // TODO: if that's null, lookup a connection factory in SPDYClient; if that's null, return null.
+
+        return new ClientSPDY2AsyncConnectionFactory();
+    }
+
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
     {
-        try
-        {
-            String peerHost = channel.socket().getInetAddress().getHostAddress();
-            int peerPort = channel.socket().getPort();
-            SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
-            engine.setUseClientMode(true);
-            engine.beginHandshake();
-            return engine;
-        }
-        catch (SSLException x)
-        {
-            throw new RuntimeException(x);
-        }
-    }
-
-    protected CompressionFactory newCompressionFactory()
-    {
-        return new StandardCompressionFactory();
-    }
-
-    protected Parser newParser(Decompressor decompressor)
-    {
-        return new Parser(decompressor);
-    }
-
-    protected Generator newGenerator(Compressor compressor)
-    {
-        return new Generator(compressor);
-    }
-
-    private Session newSession(ISession.Controller controller, FrameListener listener, Parser parser, Generator generator)
-    {
-        StandardSession session = new StandardSession(controller, 1, listener, generator);
-        parser.addListener(session);
-        return session;
+        String peerHost = channel.socket().getInetAddress().getHostAddress();
+        int peerPort = channel.socket().getPort();
+        SSLEngine engine = sslContextFactory.newSslEngine(peerHost, peerPort);
+        engine.setUseClientMode(true);
+        return engine;
     }
 
     public static class Factory extends AggregateLifeCycle
@@ -223,45 +204,72 @@ public class SPDYClient
             }
 
             @Override
-            public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+            public AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint, final Object attachment)
             {
                 SessionFuture sessionFuture = (SessionFuture)attachment;
-                SPDYClient client = sessionFuture.client;
+                final SPDYClient client = sessionFuture.client;
 
-                CompressionFactory compressionFactory = client.newCompressionFactory();
-                Parser parser = client.newParser(compressionFactory.newDecompressor());
-                Generator generator = client.newGenerator(compressionFactory.newCompressor());
-
-                AsyncConnection result;
-                ISession.Controller controller;
                 if (sslContextFactory != null)
                 {
                     SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
                     SslConnection sslConnection = new SslConnection(engine, endPoint);
                     endPoint.setConnection(sslConnection);
-                    AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-                    AsyncSPDYConnection connection = new AsyncSPDYConnection(sslEndPoint, parser);
+                    final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+
+                    NextProtoNego.put(engine, new NextProtoNego.ClientProvider()
+                    {
+                        @Override
+                        public boolean supports()
+                        {
+                            return true;
+                        }
+
+                        @Override
+                        public String selectProtocol(List<String> protocols)
+                        {
+                            AsyncConnectionFactory connectionFactory = client.selectAsyncConnectionFactory(protocols);
+                            if (connectionFactory == null)
+                                return null;
+
+                            AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
+                            sslEndPoint.setConnection(connection);
+
+                            return connectionFactory.getProtocol();
+//                            return protocols == null ? null : connectionFactory.getProtocol();
+                        }
+                    });
+
+                    AsyncConnection connection = new NoProtocolConnection(sslEndPoint);
                     sslEndPoint.setConnection(connection);
-                    result = sslConnection;
-                    controller = connection;
+
+                    startHandshake(engine);
+
+                    return sslConnection;
                 }
                 else
                 {
-                    AsyncSPDYConnection connection = new AsyncSPDYConnection(endPoint, parser);
+                    AsyncConnectionFactory connectionFactory = new ClientSPDY2AsyncConnectionFactory();
+                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
                     endPoint.setConnection(connection);
-                    result = connection;
-                    controller = connection;
+                    return connection;
                 }
+            }
 
-                Session session = client.newSession(controller, sessionFuture.listener, parser, generator);
-                sessionFuture.connected(session);
-
-                return result;
+            private void startHandshake(SSLEngine engine)
+            {
+                try
+                {
+                    engine.beginHandshake();
+                }
+                catch (SSLException x)
+                {
+                    throw new RuntimeException(x);
+                }
             }
         }
     }
 
-    private class SessionFuture implements Future<Session>
+    private static class SessionFuture implements Future<Session>
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final SPDYClient client;
@@ -328,6 +336,34 @@ public class SPDYClient
         {
             this.session = session;
             latch.countDown();
+        }
+    }
+
+    private static class ClientSPDY2AsyncConnectionFactory implements AsyncConnectionFactory
+    {
+        @Override
+        public String getProtocol()
+        {
+            return "spdy/2";
+        }
+
+        @Override
+        public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
+        {
+            SessionFuture sessionFuture = (SessionFuture)attachment;
+
+            CompressionFactory compressionFactory = new StandardCompressionFactory();
+            Parser parser = new Parser(compressionFactory.newDecompressor());
+            Generator generator = new Generator(compressionFactory.newCompressor());
+
+            AsyncSPDYConnection connection = new AsyncSPDYConnection(endPoint, parser);
+            endPoint.setConnection(connection);
+
+            StandardSession session = new StandardSession(connection, 1, sessionFuture.listener, generator);
+            parser.addListener(session);
+            sessionFuture.connected(session);
+
+            return connection;
         }
     }
 }
