@@ -235,7 +235,6 @@ public class SPDYClient
                             sslEndPoint.setConnection(connection);
 
                             return connectionFactory.getProtocol();
-//                            return protocols == null ? null : connectionFactory.getProtocol();
                         }
                     });
 
