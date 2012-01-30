@@ -27,13 +27,14 @@ public class CommandLineBuilder
     }
 
     /**
-     * Similar to {@link #addArg(String)} but does no quoting of the name parameter, and will quote the value parameter as needed.
+     * Similar to {@link #addArg(String)} but concats both name + value with an "=" sign, quoting were needed, and excluding the "=" portion if the value is
+     * undefined or empty.
      * <p>
      * 
      * <pre>
      *   addEqualsArg("-Dname", "value") = "-Dname=value"
-     *   addEqualsArg("-Djetty.home", "/opt/company inc/jetty (7)/") = "-Djetty.home=\"/opt/company inc/jetty (7)/\""
-     *   addEqualsArg("-Djenkins.workspace", "/opt/workspaces/jetty jdk7/") = "-Djenkins.workspace=\"/opt/workspaces/jetty jdk7/\""
+     *   addEqualsArg("-Djetty.home", "/opt/company inc/jetty (7)/") = "-Djetty.home=/opt/company\ inc/jetty\ (7)/"
+     *   addEqualsArg("-Djenkins.workspace", "/opt/workspaces/jetty jdk7/") = "-Djenkins.workspace=/opt/workspaces/jetty\ jdk7/"
      *   addEqualsArg("-Dstress", null) = "-Dstress"
      *   addEqualsArg("-Dstress", "") = "-Dstress"
      * </pre>
@@ -47,11 +48,11 @@ public class CommandLineBuilder
     {
         if (value != null && value.length() > 0)
         {
-            args.add(name + "=" + quote(value));
+            args.add(quote(name + "=" + value));
         }
         else
         {
-            args.add(name);
+            args.add(quote(name));
         }
     }
 
@@ -87,27 +88,18 @@ public class CommandLineBuilder
             return arg;
         }
         StringBuilder buf = new StringBuilder();
-        buf.append('"');
+//        buf.append('"');
         boolean escaped = false;
         for (char c : arg.toCharArray())
         {
-            if (c == '"')
+            if (!escaped && ((c == '"') || (c == ' ')))
             {
-                if (!escaped)
-                {
-                    buf.append("\\\"");
-                    escaped = false;
-                    continue;
-                }
+                buf.append("\\");
             }
-
-            if (c == '\\')
-            {
-                escaped = true;
-            }
+            escaped = (c == '\\');
             buf.append(c);
         }
-        buf.append('"');
+//        buf.append('"');
         return buf.toString();
     }
 

@@ -13,7 +13,7 @@ public class CommandLineBuilderTest
         cmd.addEqualsArg("-Djava.io.tmpdir","/home/java/temp dir/");
         cmd.addArg("--version");
         
-        Assert.assertThat(cmd.toString(), is("java -Djava.io.tmpdir=\"/home/java/temp dir/\" --version"));
+        Assert.assertThat(cmd.toString(), is("java -Djava.io.tmpdir=/home/java/temp\\ dir/ --version"));
     }
     
     @Test
@@ -25,13 +25,13 @@ public class CommandLineBuilderTest
     @Test
     public void testQuotingSpaceInPath()
     {
-        assertQuoting("/opt/jetty 7/home","\"/opt/jetty 7/home\"");
+        assertQuoting("/opt/jetty 7/home","/opt/jetty\\ 7/home");
     }
 
     @Test
     public void testQuotingSpaceAndQuotesInPath()
     {
-        assertQuoting("/opt/jetty 7 \"special\"/home","\"/opt/jetty 7 \\\"special\\\"/home\"");
+        assertQuoting("/opt/jetty 7 \"special\"/home","/opt/jetty\\ 7\\ \\\"special\\\"/home");
     }
 
     private void assertQuoting(String raw, String expected)
