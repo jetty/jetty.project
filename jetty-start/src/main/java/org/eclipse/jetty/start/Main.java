@@ -659,7 +659,7 @@ public class Main
         throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
     }
 
-    private String buildCommandLine(Classpath classpath, List<String> xmls) throws IOException
+    String buildCommandLine(Classpath classpath, List<String> xmls) throws IOException
     {
         StringBuilder cmd = new StringBuilder();
         cmd.append(findJavaBin());
@@ -1089,5 +1089,10 @@ public class Main
         }
 
         return args;
+    }
+
+    void addJvmArgs(List<String> jvmArgs)
+    {
+        _jvmArgs.addAll(jvmArgs);
     }
 }
