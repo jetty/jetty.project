@@ -663,19 +663,17 @@ public class Main
     {
         StringBuilder cmd = new StringBuilder();
         cmd.append(findJavaBin());
-        for (String x : _jvmArgs) {
-            cmd.append(" \"").append(x).append("\"");
-        }
-        cmd.append(" \"-Djetty.home=").append(_jettyHome).append("\"");
+        for (String x : _jvmArgs)
+            cmd.append(' ').append(x);
+        cmd.append(" -Djetty.home=").append(_jettyHome);
         for (String p : _sysProps)
         {
-            cmd.append("  \"-D").append(p);
+            cmd.append("   -D").append(p);
             String v = System.getProperty(p);
             if (v != null && v.length() > 0)
                 cmd.append('=').append(v);
-            cmd.append("\"");
         }
-        cmd.append("   -cp \"").append(classpath.toString()).append("\"");
+        cmd.append("   -cp ").append(classpath.toString());
         cmd.append("   ").append(_config.getMainClassname());
 
         // Check if we need to pass properties as a file
@@ -683,16 +681,15 @@ public class Main
         if (properties.size() > 0)
         {
             File prop_file = File.createTempFile("start",".properties");
-            if (!_dryRun) {
+            if (!_dryRun)
                 prop_file.deleteOnExit();
-            }
             properties.store(new FileOutputStream(prop_file),"start.jar properties");
-            cmd.append(" \"").append(prop_file.getAbsolutePath()).append("\"");
+            cmd.append(" ").append(prop_file.getAbsolutePath());
         }
 
         for (String xml : xmls)
         {
-            cmd.append(" \"").append(xml).append("\"");
+            cmd.append(' ').append(xml);
         }
 
         return cmd.toString();
