@@ -541,29 +541,31 @@ public class Main
         // Show Command Line to execute Jetty
         if (_dryRun)
         {
-            System.out.println(buildCommandLine(classpath,configuredXmls));
+            CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
+            System.out.println(cmd.toString());
             return;
         }
 
         // execute Jetty in another JVM
         if (_exec)
         {
-            String cmd = buildCommandLine(classpath,configuredXmls);
-            final Process process = Runtime.getRuntime().exec(cmd);
-            Runtime.getRuntime().addShutdownHook(new Thread()
+            CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
+            ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
+            final Process process = pbuilder.start();
+            
+            try
             {
-                @Override
-                public void run()
-                {
-                    Config.debug("Destroying " + process);
-                    process.destroy();
-                }
-            });
-            copyInThread(process.getErrorStream(),System.err);
-            copyInThread(process.getInputStream(),System.out);
-            copyInThread(System.in,process.getOutputStream());
-            monitor.setProcess(process);
-            process.waitFor();
+                copyInThread(process.getErrorStream(),System.err);
+                copyInThread(process.getInputStream(),System.out);
+                copyInThread(System.in,process.getOutputStream());
+                monitor.setProcess(process);
+                process.waitFor();
+            }
+            finally
+            {
+                Config.debug("Destroying " + process);
+                process.destroy();
+            }
             return;
         }
 
@@ -659,7 +661,7 @@ public class Main
         throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
     }
 
-    String buildCommandLine(Classpath classpath, List<String> xmls) throws IOException
+    CommandLineBuilder buildCommandLine(Classpath classpath, List<String> xmls) throws IOException
     {
         CommandLineBuilder cmd = new CommandLineBuilder(findJavaBin());
 
@@ -693,7 +695,7 @@ public class Main
             cmd.addArg(xml);
         }
 
-        return cmd.toString();
+        return cmd;
     }
 
     private String findJavaBin()
