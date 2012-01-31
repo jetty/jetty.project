@@ -10,7 +10,6 @@
   <packaging>pom</packaging>
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
-    <orbit-servlet-api-version>2.5.0.v201103041518</orbit-servlet-api-version>
   </properties>
   <build>
     <plugins>
@@ -284,73 +283,6 @@
     </plugins>
   </build>
   <dependencies>
-    <!-- Orbit Deps -->
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
-      <version>${orbit-servlet-api-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.annotation</artifactId>
-      <version>1.1.0.v201108011116</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.objectweb.asm</artifactId>
-      <version>3.1.0.v200803061910</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.activation</artifactId>
-      <version>1.1.0.v201105071233</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-      <version>1.4.1.v201005082020</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.transaction</artifactId>
-      <version>1.1.1.v201105210645</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.el</artifactId>
-      <version>2.1.0.v201105211819</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet.jsp</artifactId>
-      <version>2.1.0.v201105211820</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet.jsp.jstl</artifactId>
-      <version>1.2.0.v201105211821</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>com.sun.el</artifactId>
-      <version>1.0.0.v201105211818</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.apache.jasper.glassfish</artifactId>
-      <version>2.1.0.v201110031002</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
-      <version>1.2.0.v201112081803</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.eclipse.jdt.core</artifactId>
-      <version>3.7.1</version>
-    </dependency>
-
     <!-- Standard Jetty Deps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
