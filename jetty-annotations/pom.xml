@@ -75,14 +75,12 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-annotation_1.0_spec</artifactId>
-      <version>1.1.1</version>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.annotation</artifactId>
     </dependency>
     <dependency>
-      <groupId>asm</groupId>
-      <artifactId>asm-commons</artifactId>
-      <version>3.1</version>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>org.objectweb.asm</artifactId>
     </dependency>
   </dependencies>
 </project>
