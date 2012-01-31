@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpMethods;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Inject;
@@ -109,6 +110,7 @@ public class TestJettyOSGiBootWithJsp
      * plus your testcase, wrapped into a bundle called pax-exam-probe
      */
     @Test
+    @Ignore
     public void listBundles() throws Exception
     {
     	Map<String,Bundle> bundlesIndexedBySymbolicName = new HashMap<String, Bundle>();
