@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.start;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -90,10 +91,12 @@ public class MainTest
         Main main = new Main();
         main.addJvmArgs(jvmArgs);
 
-        String commandLine = main.buildCommandLine(new Classpath(""),xmls);
-        assertTrue("CommandLine shouldn't be null",commandLine != null);
-        assertTrue("CommandLine should contain jvmArgs",commandLine.contains("--exec -Xms1024m -Xmx1024m"));
-        assertTrue("CommandLine should contain xmls",commandLine.contains("jetty.xml jetty-jmx.xml jetty-logging.xml"));
+        CommandLineBuilder cmd = main.buildCommandLine(new Classpath(""),xmls);
+        Assert.assertThat("CommandLineBuilder shouldn't be null", cmd, notNullValue());
+        String commandLine = cmd.toString();
+        Assert.assertThat("CommandLine shouldn't be null", commandLine, notNullValue());
+        Assert.assertThat("CommandLine should contain jvmArgs",commandLine, containsString("--exec -Xms1024m -Xmx1024m"));
+        Assert.assertThat("CommandLine should contain xmls",commandLine, containsString("jetty.xml jetty-jmx.xml jetty-logging.xml"));
 
     }
 
