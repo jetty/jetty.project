@@ -13,13 +13,16 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Assert;
@@ -76,7 +79,7 @@ public class MainTest
     }
 
     @Test
-    public void testBuildCommandLine() throws IOException
+    public void testBuildCommandLine() throws IOException, NoSuchFieldException, IllegalAccessException
     {
         List<String> jvmArgs = new ArrayList<String>();
         jvmArgs.add("--exec");
@@ -91,13 +94,30 @@ public class MainTest
         Main main = new Main();
         main.addJvmArgs(jvmArgs);
 
-        CommandLineBuilder cmd = main.buildCommandLine(new Classpath(""),xmls);
-        Assert.assertThat("CommandLineBuilder shouldn't be null", cmd, notNullValue());
+        Classpath classpath = nastyWayToCreateAClasspathObject("/jetty/home with spaces/");
+        CommandLineBuilder cmd = main.buildCommandLine(classpath,xmls);
+        Assert.assertThat("CommandLineBuilder shouldn't be null",cmd,notNullValue());
         String commandLine = cmd.toString();
-        Assert.assertThat("CommandLine shouldn't be null", commandLine, notNullValue());
-        Assert.assertThat("CommandLine should contain jvmArgs",commandLine, containsString("--exec -Xms1024m -Xmx1024m"));
-        Assert.assertThat("CommandLine should contain xmls",commandLine, containsString("jetty.xml jetty-jmx.xml jetty-logging.xml"));
+        Assert.assertThat("CommandLine shouldn't be null",commandLine,notNullValue());
+        Assert.assertThat("Classpath should be correctly quoted and match expected value",commandLine,
+                containsString("-cp /jetty/home with spaces/somejar.jar:/jetty/home with spaces/someotherjar.jar"));
+        Assert.assertThat("CommandLine should contain jvmArgs",commandLine,containsString("--exec -Xms1024m -Xmx1024m"));
+        Assert.assertThat("CommandLine should contain xmls",commandLine,containsString("jetty.xml jetty-jmx.xml jetty-logging.xml"));
 
+    }
+
+    private Classpath nastyWayToCreateAClasspathObject(String jettyHome) throws NoSuchFieldException, IllegalAccessException
+    {
+        Classpath classpath = new Classpath();
+        Field classpathElements = Classpath.class.getDeclaredField("_elements");
+        classpathElements.setAccessible(true);
+        File file = new File(jettyHome + "somejar.jar");
+        File file2 = new File(jettyHome + "someotherjar.jar");
+        Vector<File> elements = new Vector<File>();
+        elements.add(file);
+        elements.add(file2);
+        classpathElements.set(classpath,elements);
+        return classpath;
     }
 
 }
