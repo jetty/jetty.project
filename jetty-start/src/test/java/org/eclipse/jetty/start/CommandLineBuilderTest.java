@@ -1,21 +1,28 @@
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class CommandLineBuilderTest
 {
+    private CommandLineBuilder cmd = new CommandLineBuilder("java");
+
+    @Before
+    public void setUp()
+    {
+        cmd.addEqualsArg("-Djava.io.tmpdir","/home/java/temp dir/");
+        cmd.addArg("--version");
+    }
+
     @Test
     public void testSimpleCommandline()
     {
-        CommandLineBuilder cmd = new CommandLineBuilder("java");
-        cmd.addEqualsArg("-Djava.io.tmpdir","/home/java/temp dir/");
-        cmd.addArg("--version");
-        
-        Assert.assertThat(cmd.toString(), is("java -Djava.io.tmpdir=/home/java/temp\\ dir/ --version"));
+        Assert.assertThat(cmd.toString(),is("java -Djava.io.tmpdir=/home/java/temp\\ dir/ --version"));
     }
-    
+
     @Test
     public void testQuotingSimple()
     {
@@ -32,6 +39,12 @@ public class CommandLineBuilderTest
     public void testQuotingSpaceAndQuotesInPath()
     {
         assertQuoting("/opt/jetty 7 \"special\"/home","/opt/jetty\\ 7\\ \\\"special\\\"/home");
+    }
+
+    @Test
+    public void testToStringIsQuotedEvenIfArgsAreNotQuotedForProcessBuilder()
+    {
+        System.out.println(cmd.toString());
     }
 
     private void assertQuoting(String raw, String expected)
