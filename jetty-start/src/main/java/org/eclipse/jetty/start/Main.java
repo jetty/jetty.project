@@ -669,14 +669,14 @@ public class Main
         {
             cmd.addArg(x);
         }
-        cmd.addEqualsArg("-Djetty.home",_jettyHome);
+        cmd.addRawArg("-Djetty.home=" + _jettyHome);
         for (String p : _sysProps)
         {
             String v = System.getProperty(p);
             cmd.addEqualsArg("-D" + p,v);
         }
         cmd.addArg("-cp");
-        cmd.addArg(classpath.toString());
+        cmd.addRawArg(classpath.toString());
         cmd.addRawArg(_config.getMainClassname());
 
         // Check if we need to pass properties as a file
@@ -692,9 +692,8 @@ public class Main
 
         for (String xml : xmls)
         {
-            cmd.addArg(xml);
+            cmd.addRawArg(xml);
         }
-
         return cmd;
     }
 
