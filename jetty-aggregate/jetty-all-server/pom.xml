@@ -114,7 +114,7 @@
         </plugins>
     </build>
 
-    <dependencies>
+ <dependencies>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-deploy</artifactId>
@@ -128,8 +128,8 @@
           <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>

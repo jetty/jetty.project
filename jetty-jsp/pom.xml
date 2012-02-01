@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.6.1-SNAPSHOT</version>
+    <version>8.1.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jsp</artifactId>
@@ -16,13 +16,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.servlet.jsp</artifactId>
-      <version>2.1.0.v201105211820</version>
+      <version>2.2.0.v201112011158</version>
     </dependency>
     <!-- JSP Impl -->
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
        <artifactId>org.apache.jasper.glassfish</artifactId>
-       <version>2.1.0.v201110031002</version>
+       <version>2.2.2.v201112011158</version>
     </dependency>
     <!-- JSTL Api -->
     <dependency>
@@ -40,13 +40,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.el</artifactId>
-      <version>2.1.0.v201105211819</version>
+      <version>2.2.0.v201108011116</version>
     </dependency>
     <!-- EL Impl -->
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>com.sun.el</artifactId>
-      <version>1.0.0.v201105211818</version>
+      <version>2.2.0.v201108011116</version>
     </dependency>
     <!-- Eclipse Java Compiler (for JSP Compilation) -->
     <dependency>

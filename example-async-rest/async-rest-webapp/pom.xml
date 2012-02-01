@@ -25,8 +25,8 @@
       <scope>test</scope>
     </dependency>
       <dependency>
-         <groupId>${servlet.spec.groupId}</groupId>
-         <artifactId>${servlet.spec.artifactId}</artifactId>
+         <groupId>org.eclipse.jetty.orbit</groupId>
+         <artifactId>javax.servlet</artifactId>
          <scope>provided</scope>
        </dependency>
   </dependencies>
