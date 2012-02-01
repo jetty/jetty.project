@@ -421,7 +421,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                     o = null;
                     break;
                 }
-                o.append(encodeName(entry.getKey().toString()),encodeName(out,bout,value));
+                o.append(encodeName(entry.getKey().toString()),encodeName(out,bout,entry.getValue()));
             }
 
             if (o != null)
