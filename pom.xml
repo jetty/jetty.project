@@ -146,7 +146,7 @@
                 <!-- Banned Dependencies (should use Orbit based versions now) -->
                 <bannedDependencies>
                   <includes>
-                    <include>javax.servlet:servlet-api</include>
+                    <include>javax.servlet</include>
                     <include>org.apache.geronimo.specs</include>
                     <include>javax.mail</include>
                     <include>javax.activation</include>
@@ -413,9 +413,10 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.el</artifactId>
-        <version>2.1.0.v201105211819</version>
+        <artifactId>javax.security.auth.message</artifactId>
+        <version>1.0.0.v201108011116</version>
       </dependency>
+      <!--
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.servlet.jsp</artifactId>
@@ -428,8 +429,8 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.security.auth.message</artifactId>
-        <version>1.0.0.v201108011116</version>
+        <artifactId>javax.el</artifactId>
+        <version>2.1.0.v201105211819</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -451,6 +452,7 @@
         <artifactId>org.eclipse.jdt.core</artifactId>
         <version>3.7.1</version>
       </dependency>
+        -->
 
       <!-- Old Deps -->
       <dependency>
