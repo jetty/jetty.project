@@ -76,9 +76,8 @@
       </activation>
       <dependencies>
         <dependency>
-          <groupId>javax.activation</groupId>
-          <artifactId>activation</artifactId>
-          <version>1.1</version>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.activation</artifactId>
         </dependency>
       </dependencies>
     </profile>
