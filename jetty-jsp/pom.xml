@@ -7,11 +7,11 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jsp</artifactId>
   <name>Jetty :: JSP dependencies</name>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <build>
   </build>
 
-  <dependencies>
+   <dependencies>
 <!-- jstl -->
     <dependency>
        <groupId>org.eclipse.jetty.orbit</groupId>
@@ -46,6 +46,6 @@
       <artifactId>org.eclipse.jdt.core</artifactId>
       <version>3.7.1</version>
     </dependency>
-  </dependencies>
+   </dependencies>
 
 </project>
