@@ -48,9 +48,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>jta</artifactId>
-      <version>1.1</version>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.transaction</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

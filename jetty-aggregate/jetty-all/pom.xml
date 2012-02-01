@@ -20,8 +20,9 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <includes>META-INF/**,org/eclipse/**,org/apache/jasper/compiler/*</includes>
               <excludes>**/MANIFEST.MF,javax/**</excludes>
+              <excludeArtifactIds>javax</excludeArtifactIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -38,6 +39,8 @@
               <includes>**/*</includes>
               <excludes>META-INF/**</excludes>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <excludeArtifactIds>javax</excludeArtifactIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit</excludeGroupIds>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <overWriteReleases>true</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -103,8 +106,12 @@
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-	  <groupId>${servlet.spec.groupId}</groupId>
-	  <artifactId>${servlet.spec.artifactId}</artifactId>
+          <groupId>org.mortbay.jetty</groupId>
+           <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -115,8 +122,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>${servlet.spec.groupId}</groupId>
-      <artifactId>${servlet.spec.artifactId}</artifactId>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -132,8 +139,8 @@
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-	  <groupId>${servlet.spec.groupId}</groupId>
-	  <artifactId>${servlet.spec.artifactId}</artifactId>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.apache.geronimo.specs</groupId>
@@ -160,28 +167,12 @@
       <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.geronimo.specs</groupId>
-          <artifactId>geronimo-annotation_1.0_spec</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>asm</groupId>
-          <artifactId>asm-commons</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaspi</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.geronimo.specs</groupId>
-          <artifactId>geronimo-jaspic_1.0_spec</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -211,39 +202,6 @@
       <artifactId>jetty-nested</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-jta_1.1_spec</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>javax.mail</groupId>
-      <artifactId>mail</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>javax.activation</groupId>
-      <artifactId>activation</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-jaspic_1.0_spec</artifactId>
-      <version>1.0</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-annotation_1.0_spec</artifactId>
-      <version>1.1.1</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>asm</groupId>
-      <artifactId>asm-commons</artifactId>
-      <scope>compile</scope>
-      <version>3.1</version>
     </dependency>
   </dependencies>
 </project>

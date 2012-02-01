@@ -170,6 +170,7 @@ public abstract class AbstractDoSFilterTest
     {
         Thread other = new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -205,6 +206,7 @@ public abstract class AbstractDoSFilterTest
     {
         Thread other = new Thread()
         {
+            @Override
             public void run()
             {
                 try
@@ -283,11 +285,11 @@ public abstract class AbstractDoSFilterTest
         assertEquals(0,count(responses,"DoSFilter: delayed"));
 
         // alternate between sessions
-        responses = doRequests(request1+request2+request1+request2+request1,2,550,550,last);
+        responses = doRequests(request1+request2+request1+request2+request1,2,350,550,last);
 
         assertEquals(11,count(responses,"HTTP/1.1 200 OK"));
         int delayedRequests = count(responses,"DoSFilter: delayed");
-        assertTrue(delayedRequests >= 2 && delayedRequests <= 3);
+        assertTrue("delayedRequests: " + delayedRequests + " is not between 2 and 3",delayedRequests >= 2 && delayedRequests <= 3);
     }
 
     @Test
@@ -305,6 +307,7 @@ public abstract class AbstractDoSFilterTest
 
     public static class TestServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             if (request.getParameter("session")!=null)

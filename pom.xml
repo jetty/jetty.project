@@ -11,19 +11,12 @@
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
   <properties>
-    <javax-activation-version>1.1</javax-activation-version>
-    <javax-mail-version>1.4.1</javax-mail-version>
-    <javax-transaction-version>1.1.1</javax-transaction-version>
-    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
-    <junit-version>4.8.1</junit-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <slf4j-version>1.6.1</slf4j-version>
-    <servlet.spec.groupId>org.mortbay.jetty</servlet.spec.groupId>
-    <servlet.spec.artifactId>servlet-api</servlet.spec.artifactId>
-    <servlet.spec.version>3.0.20100224</servlet.spec.version>
+    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
+    <orbit-servlet-api-version>2.5.0.v201103041518</orbit-servlet-api-version>
     <build-support-version>1.1</build-support-version>
-    <jetty.test.helper>1.6</jetty.test.helper>
-    <jetty.test.policy>1.2</jetty.test.policy>
+    <slf4j-version>1.6.1</slf4j-version>
+    <jetty-test-policy-version>1.2</jetty-test-policy-version>
   </properties>
   <scm>
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
@@ -140,7 +133,29 @@
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
                 <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
                 <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
+             </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-orbit-deps</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <!-- Banned Dependencies (should use Orbit based versions now) -->
+                <bannedDependencies>
+                  <includes>
+                    <include>javax.servlet</include>
+                    <include>org.apache.geronimo.specs</include>
+                    <include>javax.mail</include>
+                    <include>javax.activation</include>
+                  </includes>
+                  <searchTransitive>true</searchTransitive>
+                  <message>This dependency is banned, use the ORBIT provided dependency instead.</message>
+                </bannedDependencies>
               </rules>
+              <fail>true</fail>
             </configuration>
           </execution>
         </executions>
@@ -354,6 +369,7 @@
     <module>jetty-osgi</module>
     <module>jetty-nosql</module>
     <module>jetty-http-spi</module>
+    <module>jetty-jsp</module>
     <module>jetty-distribution</module>
     <module>test-continuation</module>
     <!--module>test-continuation-jetty6</module-->
@@ -366,11 +382,81 @@
   </modules>
   <dependencyManagement>
     <dependencies>
+      <!-- Orbit Deps -->
       <dependency>
-         <groupId>${servlet.spec.groupId}</groupId>
-         <artifactId>${servlet.spec.artifactId}</artifactId>
-         <version>${servlet.spec.version}</version>
+         <groupId>javax.servlet</groupId>
+         <artifactId>servlet-api</artifactId>
+         <version>2.5</version>
        </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.annotation</artifactId>
+        <version>1.1.0.v201108011116</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>org.objectweb.asm</artifactId>
+        <version>3.1.0.v200803061910</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.activation</artifactId>
+        <version>1.1.0.v201105071233</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.mail.glassfish</artifactId>
+        <version>1.4.1.v201005082020</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.transaction</artifactId>
+        <version>1.1.1.v201105210645</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.security.auth.message</artifactId>
+        <version>1.0.0.v201108011116</version>
+      </dependency>
+      <!--
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.servlet.jsp</artifactId>
+        <version>2.1.0.v201105211820</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.servlet.jsp.jstl</artifactId>
+        <version>1.2.0.v201105211821</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.el</artifactId>
+        <version>2.1.0.v201105211819</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>com.sun.el</artifactId>
+        <version>1.0.0.v201105211818</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>org.apache.jasper.glassfish</artifactId>
+        <version>2.1.0.v201110031002</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
+        <version>1.2.0.v201112081803</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>org.eclipse.jdt.core</artifactId>
+        <version>3.7.1</version>
+      </dependency>
+        -->
+
+      <!-- Old Deps -->
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-plugin-tools-api</artifactId>
@@ -379,7 +465,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-test-helper</artifactId>
-        <version>${jetty.test.helper}</version>
+        <version>1.6.1</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -397,24 +483,9 @@
         <version>${slf4j-version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-jta_1.1_spec</artifactId>
-        <version>${javax-transaction-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>javax.mail</groupId>
-        <artifactId>mail</artifactId>
-        <version>${javax-mail-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>javax.activation</groupId>
-        <artifactId>activation</artifactId>
-        <version>${javax-activation-version}</version>
-      </dependency>
-      <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>${junit-version}</version>
+        <version>4.8.1</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>

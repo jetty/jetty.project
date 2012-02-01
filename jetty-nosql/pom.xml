@@ -8,8 +8,6 @@
   <artifactId>jetty-nosql</artifactId>
   <name>Jetty :: NoSQL Session Managers</name>
   <properties>
-    <jetty-version>${project.version}</jetty-version>
-    <junit4-version>${junit-version}</junit4-version>
     <bundle-symbolic-name>${project.groupId}.nosql</bundle-symbolic-name>
   </properties>
   <build>

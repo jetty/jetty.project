@@ -76,7 +76,7 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-test-policy</artifactId>
-                  <version>${jetty.test.policy}</version>
+                  <version>${jetty-test-policy-version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**/*.keystore</includes>
@@ -96,7 +96,7 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-test-policy</artifactId>
-                  <version>${jetty.test.policy}</version>
+                  <version>${jetty-test-policy-version}</version>
                   <type>jar</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>

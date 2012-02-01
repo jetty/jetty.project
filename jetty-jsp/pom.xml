@@ -1,0 +1,58 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-project</artifactId>
+    <version>7.6.1-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-jsp</artifactId>
+  <name>Jetty :: JSP dependencies</name>
+  <packaging>jar</packaging>
+  <build>
+  </build>
+
+  <dependencies>
+    <!-- JSP Api -->
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet.jsp</artifactId>
+      <version>2.1.0.v201105211820</version>
+    </dependency>
+    <!-- JSP Impl -->
+    <dependency>
+       <groupId>org.eclipse.jetty.orbit</groupId>
+       <artifactId>org.apache.jasper.glassfish</artifactId>
+       <version>2.1.0.v201110031002</version>
+    </dependency>
+    <!-- JSTL Api -->
+    <dependency>
+       <groupId>org.eclipse.jetty.orbit</groupId>
+       <artifactId>javax.servlet.jsp.jstl</artifactId>
+       <version>1.2.0.v201105211821</version>
+    </dependency>
+    <!-- JSTL Impl -->
+    <dependency>
+       <groupId>org.eclipse.jetty.orbit</groupId>
+       <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
+       <version>1.2.0.v201112081803</version>
+    </dependency>
+    <!-- EL Api -->
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.el</artifactId>
+      <version>2.1.0.v201105211819</version>
+    </dependency>
+    <!-- EL Impl -->
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>com.sun.el</artifactId>
+      <version>1.0.0.v201105211818</version>
+    </dependency>
+    <!-- Eclipse Java Compiler (for JSP Compilation) -->
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>org.eclipse.jdt.core</artifactId>
+      <version>3.7.1</version>
+    </dependency>
+  </dependencies>
+</project>

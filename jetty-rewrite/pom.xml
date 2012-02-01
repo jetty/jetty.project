@@ -85,6 +85,10 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>test-jetty-servlet</artifactId>
       <version>${project.version}</version>

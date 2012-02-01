@@ -85,15 +85,20 @@
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-	  <groupId>${servlet.spec.groupId}</groupId>
-	  <artifactId>${servlet.spec.artifactId}</artifactId>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
-      <dependency>
-         <groupId>${servlet.spec.groupId}</groupId>
-         <artifactId>${servlet.spec.artifactId}</artifactId>
-       </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-websocket</artifactId>

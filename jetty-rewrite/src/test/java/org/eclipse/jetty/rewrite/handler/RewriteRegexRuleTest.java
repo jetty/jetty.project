@@ -23,11 +23,13 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
 {
     private String[][] _tests=
     {
-            {"/foo/bar",".*","/replace","/replace"},
-            {"/foo/bar","/xxx.*","/replace",null},
-            {"/foo/bar","/(.*)/(.*)","/$2/$1/xxx","/bar/foo/xxx"},
-            {"/foo/$bar",".*","/$replace","/$replace"},
-            {"/foo/$bar","/foo/(.*)","/$1/replace","/$bar/replace"},
+            {"/foo/bar",".*","/replace","/replace",null},
+            {"/foo/bar","/xxx.*","/replace",null,null},
+            {"/foo/bar","/(.*)/(.*)","/$2/$1/xxx","/bar/foo/xxx",null},
+            {"/foo/bar","/(foo)/(.*)(bar)","/$3/$1/xxx$2","/bar/foo/xxx",null},
+            {"/foo/$bar",".*","/$replace","/$replace",null},
+            {"/foo/$bar","/foo/(.*)","/$1/replace","/$bar/replace",null},
+            {"/foo/bar/info","/foo/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2","/info/other","p1=bar"},
     };
     private RewriteRegexRule _rule;
 
@@ -47,6 +49,13 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             _rule.setReplacement(test[2]);
             String result = _rule.matchAndApply(test[0], _request, _response);
             assertEquals(test[1], test[3], result);
+            
+            _request.setRequestURI(test[0]);
+            _request.setQueryString(null);
+            _rule.applyURI(_request,test[0],result);
+
+            assertEquals(test[3], _request.getRequestURI());
+            assertEquals(test[4], _request.getQueryString());
         }
     }
 }
