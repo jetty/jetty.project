@@ -28,8 +28,6 @@ import org.eclipse.jetty.nosql.NoSqlSessionManager;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.Logger;
-import org.omg.CORBA._IDLTypeStub;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
@@ -421,7 +419,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                     o = null;
                     break;
                 }
-                o.append(encodeName(entry.getKey().toString()),encodeName(out,bout,value));
+                o.append(encodeName(entry.getKey().toString()),encodeName(out,bout,entry.getValue()));
             }
 
             if (o != null)
