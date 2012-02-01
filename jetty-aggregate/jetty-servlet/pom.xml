@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-servlet</artifactId>
   <name>Jetty :: Aggregate :: Servlet Server</name>
-  
+
   <build>
     <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
     <plugins>
@@ -21,8 +21,9 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <includes>**</includes>
               <excludes>**/MANIFEST.MF,javax/**</excludes>
+              <excludeArtifactIds>javax</excludeArtifactIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -39,6 +40,8 @@
               <includes>**/*</includes>
               <excludes>META-INF/**</excludes>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <excludeArtifactIds>javax</excludeArtifactIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit</excludeGroupIds>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <overWriteReleases>true</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -47,8 +50,7 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins
-        </groupId>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -83,21 +85,6 @@
       <artifactId>jetty-servlet</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
