@@ -115,8 +115,6 @@ public class MongoSessionManager extends NoSqlSessionManager
         {
             __log.debug("MongoSessionManager:save:" + session);
             session.willPassivate();
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            ObjectOutputStream out = new ObjectOutputStream(bout);
 
             // Form query for upsert
             BasicDBObject key = new BasicDBObject(__ID,session.getClusterId());
@@ -159,7 +157,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                     if (value == null)
                         unsets.put(getContextKey() + "." + encodeName(name),1);
                     else
-                        sets.put(getContextKey() + "." + encodeName(name),encodeName(out,bout,value));
+                        sets.put(getContextKey() + "." + encodeName(name),encodeName(value));
                 }
             }
             else
@@ -403,7 +401,7 @@ public class MongoSessionManager extends NoSqlSessionManager
     }
 
     /*------------------------------------------------------------ */
-    protected Object encodeName(ObjectOutputStream out, ByteArrayOutputStream bout, Object value) throws IOException
+    protected Object encodeName(Object value) throws IOException
     {
         if (value instanceof Number || value instanceof String || value instanceof Boolean || value instanceof Date)
         {
@@ -419,13 +417,15 @@ public class MongoSessionManager extends NoSqlSessionManager
                     o = null;
                     break;
                 }
-                o.append(encodeName(entry.getKey().toString()),encodeName(out,bout,entry.getValue()));
+                o.append(encodeName(entry.getKey().toString()),encodeName(entry.getValue()));
             }
 
             if (o != null)
                 return o;
         }
-
+        
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bout);
         out.reset();
         out.writeUnshared(value);
         out.flush();
@@ -433,30 +433,32 @@ public class MongoSessionManager extends NoSqlSessionManager
     }
 
     /*------------------------------------------------------------ */
-    protected Object decodeValue(Object value) throws IOException, ClassNotFoundException
+    protected Object decodeValue(final Object valueToDecode) throws IOException, ClassNotFoundException
     {
-        if (value == null || value instanceof Number || value instanceof String || value instanceof Boolean || value instanceof Date)
+        if (valueToDecode == null || valueToDecode instanceof Number || valueToDecode instanceof String || valueToDecode instanceof Boolean || valueToDecode instanceof Date)
         {
-            return value;
+            return valueToDecode;
         }
-        else if (value instanceof byte[])
+        else if (valueToDecode instanceof byte[])
         {
-            ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream((byte[])value));
-            return in.readObject();
+            final byte[] decodeObject = (byte[])valueToDecode;
+            final ByteArrayInputStream bais = new ByteArrayInputStream(decodeObject);
+            final ClassLoadingObjectInputStream objectInputStream = new ClassLoadingObjectInputStream(bais);
+            return objectInputStream.readUnshared();
         }
-        else if (value instanceof DBObject)
+        else if (valueToDecode instanceof DBObject)
         {
             Map<String, Object> map = new HashMap<String, Object>();
-            for (String name : ((DBObject)value).keySet())
+            for (String name : ((DBObject)valueToDecode).keySet())
             {
                 String attr = decodeName(name);
-                map.put(attr,decodeValue(((DBObject)value).get(name)));
+                map.put(attr,decodeValue(((DBObject)valueToDecode).get(name)));
             }
             return map;
         }
         else
         {
-            throw new IllegalStateException(value.getClass().toString());
+            throw new IllegalStateException(valueToDecode.getClass().toString());
         }
     }
 
@@ -544,6 +546,38 @@ public class MongoSessionManager extends NoSqlSessionManager
         }
 
         return temp.get(keyChain[keyChain.length - 1]);
+    }
+
+    
+     /**
+     * ClassLoadingObjectInputStream
+     *
+     *
+     */
+    protected class ClassLoadingObjectInputStream extends ObjectInputStream
+    {
+        public ClassLoadingObjectInputStream(java.io.InputStream in) throws IOException
+        {
+            super(in);
+        }
+
+        public ClassLoadingObjectInputStream () throws IOException
+        {
+            super();
+        }
+
+        @Override
+        public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
+        {
+            try
+            {
+                return Class.forName(cl.getName(), false, Thread.currentThread().getContextClassLoader());
+            }
+            catch (ClassNotFoundException e)
+            {
+                return super.resolveClass(cl);
+            }
+        }
     }
 
 }
