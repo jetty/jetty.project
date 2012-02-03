@@ -13,6 +13,7 @@
   <build>
     <defaultGoal>install</defaultGoal>
     <plugins>
+      <!-- Jetty 7 is JDK5 +
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
@@ -21,6 +22,7 @@
           <verbose>false</verbose>
         </configuration>
       </plugin>
+       -->
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
