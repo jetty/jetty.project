@@ -9,10 +9,6 @@
   <artifactId>test-jetty-nested</artifactId>
   <name>Jetty :: Nested Test</name>
   <packaging>war</packaging>
-  <build>
-    <plugins>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

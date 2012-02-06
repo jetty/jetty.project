@@ -11,7 +11,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * is configured via an {@link XmlConfiguration} config file that
  * does the identical work.
  * <p>
- * See <a href="http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk/example-jetty-embedded/src/main/resources/fileserver.xml">fileserver.xml</a>
+ * See <a href="http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/example-jetty-embedded/src/main/resources/fileserver.xml">fileserver.xml</a>
  */
 public class FileServerXml
 {

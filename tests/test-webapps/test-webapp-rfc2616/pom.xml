@@ -40,14 +40,14 @@
   </build>
   <dependencies>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlets</artifactId>
-        <version>${project.version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlets</artifactId>
+      <version>${project.version}</version>
     </dependency>
-  	<dependency>
-  		<groupId>javax.servlet</groupId>
-  		<artifactId>servlet-api</artifactId>
-  		<scope>provided</scope>
-  	</dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 </project>

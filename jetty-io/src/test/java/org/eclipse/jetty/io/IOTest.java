@@ -48,7 +48,7 @@ public class IOTest
 
         IO.copyThread(in,out);
         Thread.sleep(1500);
-        System.err.println(out);
+        // System.err.println(out);
 
         assertEquals( "copyThread",
                       out.toString(),
@@ -157,7 +157,7 @@ public class IOTest
 
         // Write from server to client with oshut
         server.getOutputStream().write(1);
-        System.err.println("OSHUT "+server);
+        // System.err.println("OSHUT "+server);
         server.shutdownOutput();
 
         // Client reads response
@@ -168,19 +168,19 @@ public class IOTest
             // Client reads -1 and does ishut
             assertEquals(-1,client.getInputStream().read());
             assertFalse(client.isInputShutdown());
-            System.err.println("ISHUT "+client);
+            //System.err.println("ISHUT "+client);
             client.shutdownInput();
 
             // Client ???
-            System.err.println("OSHUT "+client);
+            //System.err.println("OSHUT "+client);
             client.shutdownOutput();
-            System.err.println("CLOSE "+client);
+            //System.err.println("CLOSE "+client);
             client.close();
 
             // Server reads -1, does ishut and then close
             assertEquals(-1,server.getInputStream().read());
             assertFalse(server.isInputShutdown());
-            System.err.println("ISHUT "+server);
+            //System.err.println("ISHUT "+server);
 
             try
             {
@@ -188,9 +188,9 @@ public class IOTest
             }
             catch(SocketException e)
             {
-                System.err.println(e);
+                // System.err.println(e);
             }
-            System.err.println("CLOSE "+server);
+            //System.err.println("CLOSE "+server);
             server.close();
 
         }
@@ -222,7 +222,7 @@ public class IOTest
 
         // Write from server to client with oshut
         server.getOutputStream().write(1);
-        System.err.println("OSHUT "+server);
+        //System.err.println("OSHUT "+server);
         server.shutdownOutput();
 
         try
@@ -254,8 +254,6 @@ public class IOTest
             assertFalse(client.isInputShutdown());
 
             // Client can still write data even though server is closed???
-            client.getOutputStream().write(1);
-            Thread.sleep(100);
             client.getOutputStream().write(1);
 
             // Client eventually sees Broken Pipe

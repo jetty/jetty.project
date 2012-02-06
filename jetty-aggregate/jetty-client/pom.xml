@@ -65,7 +65,7 @@
                   <url>http://eclipse.org/jetty</url>
                   <Built-By>${user.name}</Built-By>
                   <package>org.eclipse.jetty</package>
-                  <Bundle-License>http://dev.eclipse.org/svnroot/rt/org.eclipse.jetty/jetty/trunk/NOTICE.txt</Bundle-License>
+                  <Bundle-License>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/NOTICE.txt</Bundle-License>
                   <Bundle-Name>Jetty HTTP Client</Bundle-Name>
                 </manifestEntries>
               </archive>

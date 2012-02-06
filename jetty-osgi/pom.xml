@@ -139,16 +139,6 @@
         <version>${equinox-servletbridge-version}</version>
       </dependency-->
       <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jsp-2.1-glassfish</artifactId>
-        <version>${jsp-2.1-glassfish-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jsp-api-2.1-glassfish</artifactId>
-        <version>${jsp-2.1-glassfish-version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j-version}</version>

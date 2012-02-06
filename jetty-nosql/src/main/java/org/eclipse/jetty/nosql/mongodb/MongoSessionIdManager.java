@@ -429,7 +429,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /**
      * is the session id known to mongo, and is it valid
      */
-    @Override
     public boolean idInUse(String sessionId)
     {        
         /*
@@ -453,7 +452,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void addSession(HttpSession session)
     {
         if (session == null)
@@ -475,7 +473,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void removeSession(HttpSession session)
     {
         if (session == null)
@@ -490,7 +487,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public void invalidateAll(String sessionId)
     {
         synchronized (_sessionsIds)
@@ -519,7 +515,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     // TODO not sure if this is correct
-    @Override
     public String getClusterId(String nodeId)
     {
         int dot=nodeId.lastIndexOf('.');
@@ -528,7 +523,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     // TODO not sure if this is correct
-    @Override
     public String getNodeId(String clusterId, HttpServletRequest request)
     {
         if (_workerName!=null)

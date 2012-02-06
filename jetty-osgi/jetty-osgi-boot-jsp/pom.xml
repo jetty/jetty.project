@@ -24,24 +24,23 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.osgi</groupId>
-    	<artifactId>org.eclipse.osgi</artifactId>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.osgi</groupId>
-        <artifactId>org.eclipse.osgi.services</artifactId>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
     </dependency>
+    <!-- Orbit Servlet Deps -->
     <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jsp-2.1-glassfish</artifactId>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
     </dependency>
+    <!-- Orbit JSP Deps -->
     <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jsp-api-2.1-glassfish</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jsp</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
@@ -95,6 +94,4 @@
       </plugin>
     </plugins>
   </build>
-
-
 </project>

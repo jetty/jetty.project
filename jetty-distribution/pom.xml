@@ -9,21 +9,7 @@
   <name>Jetty :: Distribution Assemblies</name>
   <packaging>pom</packaging>
   <properties>
-    <jetty-orbit-url>http://download.eclipse.org/jetty/orbit</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <eclipse-ecj-version>3.6</eclipse-ecj-version>
-    <orbit-javax-activation-version>${javax-activation-version}.0.v201005080500</orbit-javax-activation-version>
-    <orbit-javax-annotation-version>1.0.0.v20100513-0750</orbit-javax-annotation-version>
-    <orbit-javax-el-version>2.1.0.v201004190952</orbit-javax-el-version>
-    <orbit-javax-mail-glassfish-version>${javax-mail-version}.v201005082020</orbit-javax-mail-glassfish-version>
-    <orbit-javax-servlet-version>2.5.0.v200910301333</orbit-javax-servlet-version>
-    <orbit-javax-servlet-jsp-version>2.1.0.v201004190952</orbit-javax-servlet-jsp-version>
-    <orbit-javax-servlet-jsp-jstl-version>1.2.0.v201004190952</orbit-javax-servlet-jsp-jstl-version>
-    <orbit-com-sun-el-version>1.0.0.v201004190952</orbit-com-sun-el-version>
-    <orbit-org-apache-jasper-version>2.1.0.v201110031002</orbit-org-apache-jasper-version>
-    <orbit-org-apache-taglibs-standard-version>1.2.0.v201004190952</orbit-org-apache-taglibs-standard-version>
-    <orbit-org-objectweb-asm-version>3.1.0.v200803061910</orbit-org-objectweb-asm-version>
-    <orbit-javax-transaction-version>1.1.1.v201004190952</orbit-javax-transaction-version>
   </properties>
   <build>
     <plugins>
@@ -61,74 +47,6 @@
             </goals>
             <configuration>
               <tasks>
-                <!-- This is the Orbit Downloads Process -->
-
-                <!-- Step 1: download orbit artifact into orbit-cache (if not present) -->
-                <property name="orbit-cache" value="${user.home}/.m2/eclipse-orbit" />
-
-                <mkdir dir="${orbit-cache}" />
-                <get dest="${orbit-cache}" verbose="true" skipexisting="true">
-                  <url url="${jetty-orbit-url}/javax.servlet_${orbit-javax-servlet-version}.jar" />
-                  <url url="${jetty-orbit-url}/javax.activation_${orbit-javax-activation-version}.jar" />
-                  <url url="${jetty-orbit-url}/javax.annotation_${orbit-javax-annotation-version}.jar" />
-                  <url url="${jetty-orbit-url}/javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
-                  <url url="${jetty-orbit-url}/javax.el_${orbit-javax-el-version}.jar" />
-                  <url url="${jetty-orbit-url}/javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
-                  <url url="${jetty-orbit-url}/javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
-                  <url url="${jetty-orbit-url}/com.sun.el_${orbit-com-sun-el-version}.jar" />
-                  <url url="${jetty-orbit-url}/org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
-                  <url url="${jetty-orbit-url}/org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
-                  <url url="${jetty-orbit-url}/org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
-                  <url url="${jetty-orbit-url}/javax.transaction_${orbit-javax-transaction-version}.jar" />
-                  <url url="${jetty-orbit-url}/ecj-${eclipse-ecj-version}.jar" />
-                </get>
-
-                <!-- Step 2: copy the orbit artifact from orbit-cache to the appropriate lib directory -->
-
-                <!-- ${jetty.home}/lib/ -->
-                <mkdir dir="${assembly-directory}/lib" />
-                <copy file="${orbit-cache}/javax.servlet_${orbit-javax-servlet-version}.jar" tofile="${assembly-directory}/lib/servlet-api-2.5.jar" />
-
-                <!-- ${jetty.home}/lib/annotations/ -->
-                <mkdir dir="${assembly-directory}/lib/annotations" />
-                <copy todir="${assembly-directory}/lib/annotations">
-                  <fileset dir="${orbit-cache}">
-                    <include name="javax.annotation_${orbit-javax-annotation-version}.jar" />
-                    <include name="org.objectweb.asm_${orbit-org-objectweb-asm-version}.jar" />
-                  </fileset>
-                </copy>
-
-                <!-- ${jetty.home}/lib/jndi/ -->
-                <mkdir dir="${assembly-directory}/lib/jndi" />
-                <copy todir="${assembly-directory}/lib/jndi">
-                  <fileset dir="${orbit-cache}">
-                    <include name="javax.activation_${orbit-javax-activation-version}.jar" />
-                    <include name="javax.mail.glassfish_${orbit-javax-mail-glassfish-version}.jar" />
-                  </fileset>
-                </copy>
-
-               <!-- ${jetty.home}/lib/jta/ -->
-                <mkdir dir="${assembly-directory}/lib/jta" />
-                <copy todir="${assembly-directory}/lib/jta">
-                  <fileset dir="${orbit-cache}">
-                    <include name="javax.transaction_${orbit-javax-transaction-version}.jar" />
-                  </fileset>
-                </copy>
-
-                <!-- ${jetty.home}/lib/jsp/ -->
-                <mkdir dir="${assembly-directory}/lib/jsp" />
-                <copy todir="${assembly-directory}/lib/jsp">
-                  <fileset dir="${orbit-cache}">
-                    <include name="javax.el_${orbit-javax-el-version}.jar" />
-                    <include name="javax.servlet.jsp_${orbit-javax-servlet-jsp-version}.jar" />
-                    <include name="javax.servlet.jsp.jstl_${orbit-javax-servlet-jsp-jstl-version}.jar" />
-                    <include name="com.sun.el_${orbit-com-sun-el-version}.jar" />
-                    <include name="org.apache.jasper.glassfish_${orbit-org-apache-jasper-version}.jar" />
-                    <include name="org.apache.taglibs.standard.glassfish_${orbit-org-apache-taglibs-standard-version}.jar" />
-                    <include name="ecj-${eclipse-ecj-version}.jar" />
-                  </fileset>
-                </copy>
-
                 <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
             </configuration>
@@ -206,9 +124,81 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeArtifactIds>jetty-start,jetty-monitor</excludeArtifactIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit</excludeGroupIds>
+              <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor,jetty-jsp</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-orbit-servlet-api-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.orbit</groupId>
+                  <artifactId>javax.servlet</artifactId>
+                  <version>${orbit-servlet-api-version}</version>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${assembly-directory}/lib</outputDirectory>
+                  <destFileName>servlet-api-2.5.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-orbit-lib-annotations-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.annotation,org.objectweb.asm</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-orbit-lib-jta-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.transaction</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jta</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-orbit-lib-jndi-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>javax.mail.glassfish,javax.activation</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jndi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-orbit-lib-jsp-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>com.sun.el,javax.el,javax.servlet.jsp,javax.servlet.jsp.jstl,org.apache.jasper.glassfish,org.apache.taglibs.standard.glassfish,org.eclipse.jdt.core</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -235,6 +225,7 @@
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <excludes>META-INF/**</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
@@ -293,6 +284,39 @@
     </plugins>
   </build>
   <dependencies>
+    <!-- Orbit Deps -->
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.annotation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>org.objectweb.asm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.activation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.mail.glassfish</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.transaction</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.security.auth.message</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jsp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Standard Jetty Deps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>

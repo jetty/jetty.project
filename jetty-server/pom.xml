@@ -8,7 +8,6 @@
   <artifactId>jetty-server</artifactId>
   <name>Jetty :: Server Core</name>
   <description>The core jetty server artifact.</description>
-  <url>${jetty.url}</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
   </properties>
@@ -88,8 +87,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -108,9 +107,9 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-core</artifactId>
-        <scope>test</scope>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
       </dependency>
   </dependencies>
 </project>

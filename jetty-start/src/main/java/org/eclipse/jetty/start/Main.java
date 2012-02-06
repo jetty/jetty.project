@@ -541,29 +541,31 @@ public class Main
         // Show Command Line to execute Jetty
         if (_dryRun)
         {
-            System.out.println(buildCommandLine(classpath,configuredXmls));
+            CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
+            System.out.println(cmd.toString());
             return;
         }
 
         // execute Jetty in another JVM
         if (_exec)
         {
-            String cmd = buildCommandLine(classpath,configuredXmls);
-            final Process process = Runtime.getRuntime().exec(cmd);
-            Runtime.getRuntime().addShutdownHook(new Thread()
+            CommandLineBuilder cmd = buildCommandLine(classpath,configuredXmls);
+            ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
+            final Process process = pbuilder.start();
+            
+            try
             {
-                @Override
-                public void run()
-                {
-                    Config.debug("Destroying " + process);
-                    process.destroy();
-                }
-            });
-            copyInThread(process.getErrorStream(),System.err);
-            copyInThread(process.getInputStream(),System.out);
-            copyInThread(System.in,process.getOutputStream());
-            monitor.setProcess(process);
-            process.waitFor();
+                copyInThread(process.getErrorStream(),System.err);
+                copyInThread(process.getInputStream(),System.out);
+                copyInThread(System.in,process.getOutputStream());
+                monitor.setProcess(process);
+                process.waitFor();
+            }
+            finally
+            {
+                Config.debug("Destroying " + process);
+                process.destroy();
+            }
             return;
         }
 
@@ -659,23 +661,23 @@ public class Main
         throw new FileNotFoundException("Unable to find XML Config: " + xmlFilename);
     }
 
-    private String buildCommandLine(Classpath classpath, List<String> xmls) throws IOException
+    CommandLineBuilder buildCommandLine(Classpath classpath, List<String> xmls) throws IOException
     {
-        StringBuilder cmd = new StringBuilder();
-        cmd.append(findJavaBin());
-        for (String x : _jvmArgs) {
-            cmd.append(x);
+        CommandLineBuilder cmd = new CommandLineBuilder(findJavaBin());
+
+        for (String x : _jvmArgs)
+        {
+            cmd.addArg(x);
         }
-        cmd.append(" -Djetty.home=").append(escapeSpaces(_jettyHome));
+        cmd.addRawArg("-Djetty.home=" + _jettyHome);
         for (String p : _sysProps)
         {
-            cmd.append("  -D").append(p);
             String v = System.getProperty(p);
-            if (v != null && v.length() > 0)
-                cmd.append("=").append(escapeSpaces(v));
+            cmd.addEqualsArg("-D" + p,v);
         }
-        cmd.append(" -cp ").append(classpath.toString());
-        cmd.append("  ").append(_config.getMainClassname());
+        cmd.addArg("-cp");
+        cmd.addRawArg(classpath.toString());
+        cmd.addRawArg(_config.getMainClassname());
 
         // Check if we need to pass properties as a file
         Properties properties = Config.getProperties();
@@ -685,18 +687,14 @@ public class Main
             if (!_dryRun)
                 prop_file.deleteOnExit();
             properties.store(new FileOutputStream(prop_file),"start.jar properties");
-            cmd.append(" ").append(escapeSpaces(prop_file.getAbsolutePath()));
+            cmd.addArg(prop_file.getAbsolutePath());
         }
 
         for (String xml : xmls)
-            cmd.append(" ").append(escapeSpaces(xml));
-
-        return cmd.toString();
-    }
-    
-    private static String escapeSpaces(String s)
-    {
-        return s.replace(" ","\\ ");
+        {
+            cmd.addRawArg(xml);
+        }
+        return cmd;
     }
 
     private String findJavaBin()
@@ -1093,5 +1091,10 @@ public class Main
         }
 
         return args;
+    }
+
+    void addJvmArgs(List<String> jvmArgs)
+    {
+        _jvmArgs.addAll(jvmArgs);
     }
 }
