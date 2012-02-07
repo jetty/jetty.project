@@ -27,7 +27,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SPDYPingTest extends SPDYTest
+public class PingTest extends AbstractTest
 {
     @Test
     public void testPingPong() throws Exception

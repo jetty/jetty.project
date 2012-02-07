@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.Assume;
 import org.junit.Before;
 
-public class SSLSPDYSynReplyTest extends SPDYSynReplyTest
+public class SSLSynReplyTest extends SynReplyTest
 {
     @Override
     protected Connector newSPDYServerConnector(ServerSessionFrameListener listener)

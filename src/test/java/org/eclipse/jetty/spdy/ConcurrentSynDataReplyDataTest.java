@@ -39,7 +39,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SPDYConcurrentSynDataReplyDataTest extends SPDYTest
+public class ConcurrentSynDataReplyDataTest extends AbstractTest
 {
     @Test
     public void testConcurrentSynDataReplyData() throws Exception

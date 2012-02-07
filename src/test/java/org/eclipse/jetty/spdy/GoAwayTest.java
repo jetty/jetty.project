@@ -38,7 +38,7 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 
-public class SPDYGoAwayTest extends SPDYTest
+public class GoAwayTest extends AbstractTest
 {
     @Test
     public void testGoAwayOnClientClose() throws Exception

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.eclipse.jetty.spdy;
+package org.eclipse.jetty.spdy.nio;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
@@ -23,23 +23,24 @@ import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
+import org.eclipse.jetty.spdy.CompressionFactory;
+import org.eclipse.jetty.spdy.StandardCompressionFactory;
+import org.eclipse.jetty.spdy.StandardSession;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
-import org.eclipse.jetty.spdy.nio.AsyncConnectionFactory;
-import org.eclipse.jetty.spdy.nio.AsyncSPDYConnection;
 import org.eclipse.jetty.spdy.parser.Parser;
 
-public class ServerSPDY2AsyncConnectionFactory implements AsyncConnectionFactory
+public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 {
     private final ServerSessionFrameListener listener;
 
-    public ServerSPDY2AsyncConnectionFactory()
+    public ServerSPDYAsyncConnectionFactory()
     {
         this(null);
     }
 
-    public ServerSPDY2AsyncConnectionFactory(ServerSessionFrameListener listener)
+    public ServerSPDYAsyncConnectionFactory(ServerSessionFrameListener listener)
     {
         this.listener = listener;
     }

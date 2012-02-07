@@ -32,7 +32,7 @@ import org.junit.Rule;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 
-public abstract class SPDYTest
+public abstract class AbstractTest
 {
     @Rule
     public final TestWatchman testName = new TestWatchman()

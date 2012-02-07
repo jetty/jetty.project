@@ -52,7 +52,7 @@ public class HTTPOverSPDYTest
         server = new Server();
         connector = new SPDYServerConnector(null);
         server.addConnector(connector);
-        connector.putAsyncConnectionFactory("spdy/2", new HTTP11OverSPDY2AsyncConnectionFactory(connector));
+        connector.putAsyncConnectionFactory("spdy/2", new HTTP11OverSPDYAsyncConnectionFactory(connector));
         server.setHandler(handler);
         server.start();
 

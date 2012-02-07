@@ -98,7 +98,7 @@ public class SPDYClient
         channel.socket().setTcpNoDelay(true);
         channel.configureBlocking(false);
 
-        SessionFuture result = new SessionFuture(this, channel, listener);
+        SessionFuture result = new SessionFuture(this, listener);
 
         channel.connect(address);
         factory.selector.register(channel, result);
@@ -268,49 +268,57 @@ public class SPDYClient
                 SessionFuture sessionFuture = (SessionFuture)attachment;
                 final SPDYClient client = sessionFuture.client;
 
-                if (sslContextFactory != null)
+                try
                 {
-                    SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
-                    SslConnection sslConnection = new SslConnection(engine, endPoint);
-                    endPoint.setConnection(sslConnection);
-                    final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
-
-                    NextProtoNego.put(engine, new NextProtoNego.ClientProvider()
+                    if (sslContextFactory != null)
                     {
-                        @Override
-                        public boolean supports()
+                        SSLEngine engine = client.newSSLEngine(sslContextFactory, channel);
+                        SslConnection sslConnection = new SslConnection(engine, endPoint);
+                        endPoint.setConnection(sslConnection);
+                        final AsyncEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+
+                        NextProtoNego.put(engine, new NextProtoNego.ClientProvider()
                         {
-                            return true;
-                        }
+                            @Override
+                            public boolean supports()
+                            {
+                                return true;
+                            }
 
-                        @Override
-                        public String selectProtocol(List<String> protocols)
-                        {
-                            String protocol = client.selectProtocol(protocols);
-                            if (protocol == null)
-                                return null;
+                            @Override
+                            public String selectProtocol(List<String> protocols)
+                            {
+                                String protocol = client.selectProtocol(protocols);
+                                if (protocol == null)
+                                    return null;
 
-                            AsyncConnectionFactory connectionFactory = client.getAsyncConnectionFactory(protocol);
-                            AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
-                            sslEndPoint.setConnection(connection);
+                                AsyncConnectionFactory connectionFactory = client.getAsyncConnectionFactory(protocol);
+                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
+                                sslEndPoint.setConnection(connection);
 
-                            return protocol;
-                        }
-                    });
+                                return protocol;
+                            }
+                        });
 
-                    AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
-                    sslEndPoint.setConnection(connection);
+                        AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
+                        sslEndPoint.setConnection(connection);
 
-                    startHandshake(engine);
+                        startHandshake(engine);
 
-                    return sslConnection;
+                        return sslConnection;
+                    }
+                    else
+                    {
+                        AsyncConnectionFactory connectionFactory = new ClientSPDY2AsyncConnectionFactory();
+                        AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
+                        endPoint.setConnection(connection);
+                        return connection;
+                    }
                 }
-                else
+                catch (Exception x)
                 {
-                    AsyncConnectionFactory connectionFactory = new ClientSPDY2AsyncConnectionFactory();
-                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
-                    endPoint.setConnection(connection);
-                    return connection;
+                    sessionFuture.failed(x);
+                    throw x;
                 }
             }
 
@@ -332,16 +340,14 @@ public class SPDYClient
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final SPDYClient client;
-        private final SocketChannel channel;
         private final FrameListener listener;
-        private volatile boolean cancelled;
-        private volatile Throwable failure;
-        private volatile Session session;
+        private boolean cancelled;
+        private Throwable failure;
+        private Session session;
 
-        private SessionFuture(SPDYClient client, SocketChannel channel, FrameListener listener)
+        private SessionFuture(SPDYClient client, FrameListener listener)
         {
             this.client = client;
-            this.channel = channel;
             this.listener = listener;
         }
 
@@ -349,6 +355,7 @@ public class SPDYClient
         public boolean cancel(boolean mayInterruptIfRunning)
         {
             cancelled = true;
+            latch.countDown();
             return false;
         }
 
@@ -389,6 +396,12 @@ public class SPDYClient
         private long getMaxIdleTime()
         {
             return client.getMaxIdleTime();
+        }
+
+        private void failed(Throwable x)
+        {
+            this.failure = x;
+            latch.countDown();
         }
 
         private void connected(Session session)

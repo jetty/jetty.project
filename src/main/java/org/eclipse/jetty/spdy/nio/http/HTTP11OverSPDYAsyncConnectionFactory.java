@@ -37,7 +37,6 @@ import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.spdy.ServerSPDY2AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
@@ -46,12 +45,13 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.nio.EmptyAsyncEndPoint;
+import org.eclipse.jetty.spdy.nio.ServerSPDYAsyncConnectionFactory;
 
-public class HTTP11OverSPDY2AsyncConnectionFactory extends ServerSPDY2AsyncConnectionFactory
+public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
 {
     private final Connector connector;
 
-    public HTTP11OverSPDY2AsyncConnectionFactory(Connector connector)
+    public HTTP11OverSPDYAsyncConnectionFactory(Connector connector)
     {
         this.connector = connector;
     }

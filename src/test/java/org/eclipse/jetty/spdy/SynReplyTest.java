@@ -40,7 +40,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SPDYSynReplyTest extends SPDYTest
+public class SynReplyTest extends AbstractTest
 {
     @Test
     public void testSynReply() throws Exception

@@ -30,7 +30,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SPDYHeadersTest extends SPDYTest
+public class HeadersTest extends AbstractTest
 {
     @Test
     public void testHeaders() throws Exception

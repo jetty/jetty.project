@@ -28,7 +28,7 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SPDYSettingsTest extends SPDYTest
+public class SettingsTest extends AbstractTest
 {
     @Test
     public void testSettings() throws Exception
