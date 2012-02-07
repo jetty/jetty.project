@@ -12,7 +12,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty.version>7.6.0.v20120127</jetty.version>
+        <jetty.version>7.6.1-SNAPSHOT</jetty.version>
         <jetty.npn.version>1.0.0-SNAPSHOT</jetty.npn.version>
     </properties>
 
@@ -30,7 +30,7 @@
                         <configuration>
                             <rules>
                                 <requireJavaVersion>
-                                    <version>1.7</version>
+                                    <version>[1.7,)</version>
                                 </requireJavaVersion>
                             </rules>
                         </configuration>

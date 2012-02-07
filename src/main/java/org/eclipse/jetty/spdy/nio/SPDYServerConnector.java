@@ -16,32 +16,25 @@
 
 package org.eclipse.jetty.spdy.nio;
 
-import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.spdy.CompressionFactory;
-import org.eclipse.jetty.spdy.StandardCompressionFactory;
-import org.eclipse.jetty.spdy.StandardSession;
-import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.ServerSPDY2AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
-import org.eclipse.jetty.spdy.generator.Generator;
-import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SPDYServerConnector extends SelectChannelConnector
 {
-    private final ServerSessionFrameListener listener;
+    private final List<AsyncConnectionFactory> factories = new CopyOnWriteArrayList<>();
     private final SslContextFactory sslContextFactory;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
@@ -51,10 +44,16 @@ public class SPDYServerConnector extends SelectChannelConnector
 
     public SPDYServerConnector(ServerSessionFrameListener listener, SslContextFactory sslContextFactory)
     {
-        this.listener = listener;
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
+        if (listener != null)
+            addAsyncConnectionFactory(new ServerSPDY2AsyncConnectionFactory(listener));
+    }
+
+    public void addAsyncConnectionFactory(AsyncConnectionFactory factory)
+    {
+        factories.add(factory);
     }
 
     @Override
@@ -84,7 +83,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                 }
             });
 
-            AsyncConnection connection = new NoProtocolConnection(sslEndPoint);
+            AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
             sslEndPoint.setConnection(connection);
 
             startHandshake(engine);
@@ -93,7 +92,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
         else
         {
-            AsyncConnectionFactory connectionFactory = new ServerSPDY2AsyncConnectionFactory();
+            AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory("spdy/2");
             AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, null);
             endPoint.setConnection(connection);
             return connection;
@@ -102,15 +101,20 @@ public class SPDYServerConnector extends SelectChannelConnector
 
     protected List<String> provideProtocols()
     {
-        // TODO: connectionFactories.map(AsyncConnectionFactory::getProtocol())
-
-        return Arrays.asList("spdy/2");
+        List<String> result = new ArrayList<>();
+        for (AsyncConnectionFactory factory : factories)
+            result.add(factory.getProtocol());
+        return result;
     }
 
     protected AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
     {
-        // TODO: select from existing AsyncConnectionFactories
-        return new ServerSPDY2AsyncConnectionFactory();
+        for (AsyncConnectionFactory factory : factories)
+        {
+            if (factory.getProtocol().equals(protocol))
+                return factory;
+        }
+        return null;
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
@@ -131,63 +135,6 @@ public class SPDYServerConnector extends SelectChannelConnector
         catch (SSLException x)
         {
             throw new RuntimeException(x);
-        }
-    }
-
-    private class ServerSPDY2AsyncConnectionFactory implements AsyncConnectionFactory
-    {
-        @Override
-        public String getProtocol()
-        {
-            return "spdy/2";
-        }
-
-        @Override
-        public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
-        {
-            CompressionFactory compressionFactory = new StandardCompressionFactory();
-            Parser parser = new Parser(compressionFactory.newDecompressor());
-            Generator generator = new Generator(compressionFactory.newCompressor());
-
-            ServerAsyncSPDYConnection connection = new ServerAsyncSPDYConnection(endPoint, parser, listener);
-            endPoint.setConnection(connection);
-
-            final StandardSession session = new StandardSession(connection, 2, listener, generator);
-            parser.addListener(session);
-            connection.setSession(session);
-
-            return connection;
-        }
-    }
-
-    private class ServerAsyncSPDYConnection extends AsyncSPDYConnection
-    {
-        private final ServerSessionFrameListener listener;
-        private volatile Session session;
-
-        private ServerAsyncSPDYConnection(EndPoint endp, Parser parser, ServerSessionFrameListener listener)
-        {
-            super(endp, parser);
-            this.listener = listener;
-        }
-
-        @Override
-        public Connection handle() throws IOException
-        {
-            final Session session = this.session;
-            if (session != null)
-            {
-                // NPE guard to support tests
-                if (listener != null)
-                    listener.onConnect(session);
-                this.session = null;
-            }
-            return super.handle();
-        }
-
-        private void setSession(Session session)
-        {
-            this.session = session;
         }
     }
 }

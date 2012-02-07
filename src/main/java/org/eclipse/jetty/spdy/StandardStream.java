@@ -17,6 +17,8 @@
 package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
@@ -39,6 +41,7 @@ import org.slf4j.LoggerFactory;
 public class StandardStream implements IStream
 {
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
+    private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final AtomicInteger windowSize = new AtomicInteger(65535);
     private final ISession session;
     private final SynStreamFrame frame;
@@ -94,6 +97,24 @@ public class StandardStream implements IStream
     public boolean isHalfClosed()
     {
         return halfClosed;
+    }
+
+    @Override
+    public Object getAttribute(String key)
+    {
+        return attributes.get(key);
+    }
+
+    @Override
+    public void setAttribute(String key, Object value)
+    {
+        attributes.put(key, value);
+    }
+
+    @Override
+    public Object removeAttribute(String key)
+    {
+        return attributes.remove(key);
     }
 
     @Override

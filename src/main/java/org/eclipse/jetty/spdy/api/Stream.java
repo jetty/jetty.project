@@ -38,6 +38,12 @@ public interface Stream
 
     public boolean isHalfClosed();
 
+    public Object getAttribute(String key);
+
+    public void setAttribute(String key, Object value);
+
+    public Object removeAttribute(String key);
+
     public interface FrameListener extends EventListener
     {
         public void onReply(Stream stream, ReplyInfo replyInfo);

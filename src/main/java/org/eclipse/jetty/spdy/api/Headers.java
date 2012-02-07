@@ -143,6 +143,12 @@ public class Headers implements Iterable<Headers.Header>
         return headers.values().iterator();
     }
 
+    @Override
+    public String toString()
+    {
+        return headers.toString();
+    }
+
     public static class Header
     {
         private final String name;

@@ -254,7 +254,7 @@ public class SPDYClient
                         }
                     });
 
-                    AsyncConnection connection = new NoProtocolConnection(sslEndPoint);
+                    AsyncConnection connection = new EmptyAsyncConnection(sslEndPoint);
                     sslEndPoint.setConnection(connection);
 
                     startHandshake(engine);

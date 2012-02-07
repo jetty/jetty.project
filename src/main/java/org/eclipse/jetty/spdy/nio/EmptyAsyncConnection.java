@@ -23,9 +23,9 @@ import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 
-public class NoProtocolConnection extends AbstractConnection implements AsyncConnection
+public class EmptyAsyncConnection extends AbstractConnection implements AsyncConnection
 {
-    public NoProtocolConnection(AsyncEndPoint endPoint)
+    public EmptyAsyncConnection(AsyncEndPoint endPoint)
     {
         super(endPoint);
     }
