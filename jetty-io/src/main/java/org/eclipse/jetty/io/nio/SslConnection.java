@@ -74,8 +74,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         SslBuffers(int packetSize, int appSize)
         {
-            _in=BufferUtil.allocate(packetSize);
-            _out=BufferUtil.allocate(packetSize);
+            _in=BufferUtil.allocateDirect(packetSize);
+            _out=BufferUtil.allocateDirect(packetSize);
             _unwrap=BufferUtil.allocate(appSize);
         }
     }
@@ -163,6 +163,10 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     _inbound=null;
                     _outbound=null;
                     _unwrapBuf=null;
+                    _buffers._in.clear().limit(0);
+                    _buffers._out.clear().limit(0);
+                    _buffers._unwrap.clear().limit(0);
+                    
                     __buffers.set(_buffers);
                     _buffers=null;
                 }
@@ -324,10 +328,16 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     // Read any available data
                     if (!BufferUtil.isAtCapacity(_inbound) && (filled=_endp.fill(_inbound))>0)
                         progress = true;
+                    else
+                        _inbound.compact().flip();
 
                     // flush any output data
                     if (!BufferUtil.isEmpty(_outbound) && (flushed=_endp.flush(_outbound))>0)
+                    {
                         progress = true;
+                        _outbound.compact().flip();
+                    }
+                    
                 }
                 catch (IOException e)
                 {
@@ -473,6 +483,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         {
             buffer.compact();
             result=_engine.unwrap(_inbound,buffer);
+            buffer.flip();
+            
             if (_logger.isDebugEnabled())
                 _logger.debug("{} unwrap {} {} consumed={} produced={}",
                         _session,
@@ -480,7 +492,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         result.getHandshakeStatus(),
                         result.bytesConsumed(),
                         result.bytesProduced());
-            buffer.flip();
+            
         }
         catch(SSLException e)
         {
@@ -492,8 +504,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         switch(result.getStatus())
         {
             case BUFFER_UNDERFLOW:
+                _inbound.compact().flip();
                 if (_endp.isInputShutdown())
-                    _inbound.clear();
+                    _inbound.clear().limit(0);
                 break;
 
             case BUFFER_OVERFLOW:

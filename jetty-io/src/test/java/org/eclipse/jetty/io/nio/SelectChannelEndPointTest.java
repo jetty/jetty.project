@@ -11,6 +11,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
@@ -25,6 +26,8 @@ import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.BufferUtil;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -392,13 +395,15 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.register(server);
-        int writes = 100000;
+        int writes = 10000;
 
-        final byte[] bytes="HelloWorld".getBytes("UTF-8");
+        final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
+        byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);
         final CountDownLatch latch = new CountDownLatch(writes);
         final InputStream in = new BufferedInputStream(client.getInputStream());
         final long start = System.currentTimeMillis();
         client.getOutputStream().write(bytes);
+        client.getOutputStream().write(count);
         client.getOutputStream().flush();
 
         new Thread()
@@ -416,6 +421,10 @@ public class SelectChannelEndPointTest
                             assertTrue(b>0);
                             assertEquals(0xff&b0,b);
                         }
+                        
+                        int b=in.read();
+                        while(b>0 && b!='\n')
+                            b=in.read();
                         latch.countDown();
                     }
                 }
@@ -429,11 +438,18 @@ public class SelectChannelEndPointTest
         }.start();
 
 
+        PrintStream print = new PrintStream(client.getOutputStream());
+        
         // Write client to server
         for (int i=1;i<writes;i++)
         {
-            client.getOutputStream().write(bytes);
+            print.write(bytes);
+            print.print(i);
+            print.print('\n');
+            if (i%100==0)
+                print.flush();
             Thread.yield();
+            
         }
         client.getOutputStream().flush();
 
