@@ -117,6 +117,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
     private int _version = UNKNOWN;
 
+    private String _charset;
     private boolean _expect = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
@@ -137,9 +138,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    /** Constructor
-     *
-     */
     public AbstractHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(endpoint);
@@ -250,28 +248,26 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The result of calling {@link #getConnector}.{@link Connector#isConfidential(Request) isCondidential}(request), or false
-     *  if there is no connector.
+     * Find out if the request supports CONFIDENTIAL security.
+     * @param request the incoming HTTP request
+     * @return the result of calling {@link Connector#isConfidential(Request)}, or false
+     * if there is no connector
      */
     public boolean isConfidential(Request request)
     {
-        if (_connector!=null)
-            return _connector.isConfidential(request);
-        return false;
+        return _connector != null && _connector.isConfidential(request);
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * Find out if the request is INTEGRAL security.
-     * @param request
-     * @return <code>true</code> if there is a {@link #getConnector() connector} and it considers <code>request</code>
-     *         to be {@link Connector#isIntegral(Request) integral}
+     * Find out if the request supports INTEGRAL security.
+     * @param request the incoming HTTP request
+     * @return the result of calling {@link Connector#isIntegral(Request)}, or false
+     * if there is no connector
      */
     public boolean isIntegral(Request request)
     {
-        if (_connector!=null)
-            return _connector.isIntegral(request);
-        return false;
+        return _connector != null && _connector.isIntegral(request);
     }
 
     /* ------------------------------------------------------------ */
@@ -311,6 +307,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
      *
      * @return The input stream for this connection.
      * The stream will be created if it does not already exist.
+     * @throws IOException if the input stream cannot be retrieved
      */
     public ServletInputStream getInputStream() throws IOException
     {
@@ -346,6 +343,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
     /* ------------------------------------------------------------ */
     /**
+     * @param encoding the PrintWriter encoding
      * @return A {@link PrintWriter} wrapping the {@link #getOutputStream output stream}. The writer is created if it
      *    does not already exist.
      */
@@ -556,10 +554,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     _generator.setPersistent(false);
                 _generator.completeHeader(_responseFields, last);
             }
-            catch(IOException io)
-            {
-                throw io;
-            }
             catch(RuntimeException e)
             {
                 LOG.warn("header full: " + e);
@@ -586,10 +580,6 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             try
             {
                 _generator.completeHeader(_responseFields, Generator.LAST);
-            }
-            catch(IOException io)
-            {
-                throw io;
             }
             catch(RuntimeException e)
             {
@@ -701,13 +691,219 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 _requests);
     }
 
+    protected void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
+    {
+        uri=uri.asImmutableBuffer();
+
+        _host = false;
+        _expect = false;
+        _expect100Continue=false;
+        _expect102Processing=false;
+        _delayedHandling=false;
+        _charset=null;
+
+        if(_request.getTimeStamp()==0)
+            _request.setTimeStamp(System.currentTimeMillis());
+        _request.setMethod(method.toString());
+
+        try
+        {
+            _head=false;
+            switch (HttpMethods.CACHE.getOrdinal(method))
+            {
+              case HttpMethods.CONNECT_ORDINAL:
+                  _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
+                  break;
+
+              case HttpMethods.HEAD_ORDINAL:
+                  _head=true;
+                  _uri.parse(uri.array(), uri.getIndex(), uri.length());
+                  break;
+
+              default:
+                  _uri.parse(uri.array(), uri.getIndex(), uri.length());
+            }
+
+            _request.setUri(_uri);
+
+            if (version==null)
+            {
+                _request.setProtocol(HttpVersions.HTTP_0_9);
+                _version=HttpVersions.HTTP_0_9_ORDINAL;
+            }
+            else
+            {
+                version= HttpVersions.CACHE.get(version);
+                if (version==null)
+                    throw new HttpException(HttpStatus.BAD_REQUEST_400,null);
+                _version = HttpVersions.CACHE.getOrdinal(version);
+                if (_version <= 0) _version = HttpVersions.HTTP_1_0_ORDINAL;
+                _request.setProtocol(version.toString());
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.debug(e);
+            if (e instanceof HttpException)
+                throw (HttpException)e;
+            throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
+        }
+    }
+
+    protected void parsedHeader(Buffer name, Buffer value) throws IOException
+    {
+        int ho = HttpHeaders.CACHE.getOrdinal(name);
+        switch (ho)
+        {
+            case HttpHeaders.HOST_ORDINAL:
+                // TODO check if host matched a host in the URI.
+                _host = true;
+                break;
+
+            case HttpHeaders.EXPECT_ORDINAL:
+                value = HttpHeaderValues.CACHE.lookup(value);
+                switch(HttpHeaderValues.CACHE.getOrdinal(value))
+                {
+                    case HttpHeaderValues.CONTINUE_ORDINAL:
+                        _expect100Continue=_generator instanceof HttpGenerator;
+                        break;
+
+                    case HttpHeaderValues.PROCESSING_ORDINAL:
+                        _expect102Processing=_generator instanceof HttpGenerator;
+                        break;
+
+                    default:
+                        String[] values = value.toString().split(",");
+                        for  (int i=0;values!=null && i<values.length;i++)
+                        {
+                            CachedBuffer cb=HttpHeaderValues.CACHE.get(values[i].trim());
+                            if (cb==null)
+                                _expect=true;
+                            else
+                            {
+                                switch(cb.getOrdinal())
+                                {
+                                    case HttpHeaderValues.CONTINUE_ORDINAL:
+                                        _expect100Continue=_generator instanceof HttpGenerator;
+                                        break;
+                                    case HttpHeaderValues.PROCESSING_ORDINAL:
+                                        _expect102Processing=_generator instanceof HttpGenerator;
+                                        break;
+                                    default:
+                                        _expect=true;
+                                }
+                            }
+                        }
+                }
+                break;
+
+            case HttpHeaders.ACCEPT_ENCODING_ORDINAL:
+            case HttpHeaders.USER_AGENT_ORDINAL:
+                value = HttpHeaderValues.CACHE.lookup(value);
+                break;
+
+            case HttpHeaders.CONTENT_TYPE_ORDINAL:
+                value = MimeTypes.CACHE.lookup(value);
+                _charset=MimeTypes.getCharsetFromContentType(value);
+                break;
+        }
+
+        _requestFields.add(name, value);
+    }
+
+    protected void headerComplete() throws IOException
+    {
+        _requests++;
+        _generator.setVersion(_version);
+        switch (_version)
+        {
+            case HttpVersions.HTTP_0_9_ORDINAL:
+                break;
+            case HttpVersions.HTTP_1_0_ORDINAL:
+                _generator.setHead(_head);
+                if (_parser.isPersistent())
+                {
+                    _responseFields.add(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.KEEP_ALIVE_BUFFER);
+                    _generator.setPersistent(true);
+                }
+                else if (HttpMethods.CONNECT.equals(_request.getMethod()))
+                {
+                    _generator.setPersistent(true);
+                    _parser.setPersistent(true);
+                }
+
+                if (_server.getSendDateHeader())
+                    _generator.setDate(_request.getTimeStampBuffer());
+                break;
+
+            case HttpVersions.HTTP_1_1_ORDINAL:
+                _generator.setHead(_head);
+
+                if (!_parser.isPersistent())
+                {
+                    _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
+                    _generator.setPersistent(false);
+                }
+                if (_server.getSendDateHeader())
+                    _generator.setDate(_request.getTimeStampBuffer());
+
+                if (!_host)
+                {
+                    LOG.debug("!host {}",this);
+                    _generator.setResponse(HttpStatus.BAD_REQUEST_400, null);
+                    _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
+                    _generator.completeHeader(_responseFields, true);
+                    _generator.complete();
+                    return;
+                }
+
+                if (_expect)
+                {
+                    LOG.debug("!expectation {}",this);
+                    _generator.setResponse(HttpStatus.EXPECTATION_FAILED_417, null);
+                    _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
+                    _generator.completeHeader(_responseFields, true);
+                    _generator.complete();
+                    return;
+                }
+
+                break;
+            default:
+        }
+
+        if(_charset!=null)
+            _request.setCharacterEncodingUnchecked(_charset);
+
+        // Either handle now or wait for first content
+        if ((((HttpParser)_parser).getContentLength()<=0 && !((HttpParser)_parser).isChunking())||_expect100Continue)
+            handleRequest();
+        else
+            _delayedHandling=true;
+    }
+
+    protected void content(Buffer buffer) throws IOException
+    {
+        if (_delayedHandling)
+        {
+            _delayedHandling=false;
+            handleRequest();
+        }
+    }
+
+    public void messageComplete(long contentLength) throws IOException
+    {
+        if (_delayedHandling)
+        {
+            _delayedHandling=false;
+            handleRequest();
+        }
+    }
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     private class RequestHandler extends HttpParser.EventHandler
     {
-        private String _charset;
-
         /*
          *
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#startRequest(org.eclipse.io.Buffer,
@@ -716,126 +912,16 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         @Override
         public void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
         {
-            uri=uri.asImmutableBuffer();
-
-            _host = false;
-            _expect = false;
-            _expect100Continue=false;
-            _expect102Processing=false;
-            _delayedHandling=false;
-            _charset=null;
-
-            if(_request.getTimeStamp()==0)
-                _request.setTimeStamp(System.currentTimeMillis());
-            _request.setMethod(method.toString());
-
-            try
-            {
-                _head=false;
-                switch (HttpMethods.CACHE.getOrdinal(method))
-                {
-                  case HttpMethods.CONNECT_ORDINAL:
-                      _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
-                      break;
-
-                  case HttpMethods.HEAD_ORDINAL:
-                      _head=true;
-                      _uri.parse(uri.array(), uri.getIndex(), uri.length());
-                      break;
-
-                  default:
-                      _uri.parse(uri.array(), uri.getIndex(), uri.length());
-                }
-
-                _request.setUri(_uri);
-
-                if (version==null)
-                {
-                    _request.setProtocol(HttpVersions.HTTP_0_9);
-                    _version=HttpVersions.HTTP_0_9_ORDINAL;
-                }
-                else
-                {
-                    version= HttpVersions.CACHE.get(version);
-                    if (version==null)
-                        throw new HttpException(HttpStatus.BAD_REQUEST_400,null);
-                    _version = HttpVersions.CACHE.getOrdinal(version);
-                    if (_version <= 0) _version = HttpVersions.HTTP_1_0_ORDINAL;
-                    _request.setProtocol(version.toString());
-                }
-            }
-            catch (Exception e)
-            {
-                LOG.debug(e);
-                if (e instanceof HttpException)
-                    throw (HttpException)e;
-                throw new HttpException(HttpStatus.BAD_REQUEST_400,null,e);
-            }
+            AbstractHttpConnection.this.startRequest(method, uri, version);
         }
 
         /*
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#parsedHeaderValue(org.eclipse.io.Buffer)
          */
         @Override
-        public void parsedHeader(Buffer name, Buffer value)
+        public void parsedHeader(Buffer name, Buffer value) throws IOException
         {
-            int ho = HttpHeaders.CACHE.getOrdinal(name);
-            switch (ho)
-            {
-                case HttpHeaders.HOST_ORDINAL:
-                    // TODO check if host matched a host in the URI.
-                    _host = true;
-                    break;
-
-                case HttpHeaders.EXPECT_ORDINAL:
-                    value = HttpHeaderValues.CACHE.lookup(value);
-                    switch(HttpHeaderValues.CACHE.getOrdinal(value))
-                    {
-                        case HttpHeaderValues.CONTINUE_ORDINAL:
-                            _expect100Continue=_generator instanceof HttpGenerator;
-                            break;
-
-                        case HttpHeaderValues.PROCESSING_ORDINAL:
-                            _expect102Processing=_generator instanceof HttpGenerator;
-                            break;
-
-                        default:
-                            String[] values = value.toString().split(",");
-                            for  (int i=0;values!=null && i<values.length;i++)
-                            {
-                                CachedBuffer cb=HttpHeaderValues.CACHE.get(values[i].trim());
-                                if (cb==null)
-                                    _expect=true;
-                                else
-                                {
-                                    switch(cb.getOrdinal())
-                                    {
-                                        case HttpHeaderValues.CONTINUE_ORDINAL:
-                                            _expect100Continue=_generator instanceof HttpGenerator;
-                                            break;
-                                        case HttpHeaderValues.PROCESSING_ORDINAL:
-                                            _expect102Processing=_generator instanceof HttpGenerator;
-                                            break;
-                                        default:
-                                            _expect=true;
-                                    }
-                                }
-                            }
-                    }
-                    break;
-
-                case HttpHeaders.ACCEPT_ENCODING_ORDINAL:
-                case HttpHeaders.USER_AGENT_ORDINAL:
-                    value = HttpHeaderValues.CACHE.lookup(value);
-                    break;
-
-                case HttpHeaders.CONTENT_TYPE_ORDINAL:
-                    value = MimeTypes.CACHE.lookup(value);
-                    _charset=MimeTypes.getCharsetFromContentType(value);
-                    break;
-            }
-
-            _requestFields.add(name, value);
+            AbstractHttpConnection.this.parsedHeader(name, value);
         }
 
         /*
@@ -844,72 +930,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         @Override
         public void headerComplete() throws IOException
         {
-            _requests++;
-            _generator.setVersion(_version);
-            switch (_version)
-            {
-                case HttpVersions.HTTP_0_9_ORDINAL:
-                    break;
-                case HttpVersions.HTTP_1_0_ORDINAL:
-                    _generator.setHead(_head);
-                    if (_parser.isPersistent())
-                    {
-                        _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
-                        _generator.setPersistent(true);
-                    }
-                    else if (HttpMethods.CONNECT.equals(_request.getMethod()))
-                    {
-                        _generator.setPersistent(true);
-                        _parser.setPersistent(true);
-                    }
-
-                    if (_server.getSendDateHeader())
-                        _generator.setDate(_request.getTimeStampBuffer());
-                    break;
-
-                case HttpVersions.HTTP_1_1_ORDINAL:
-                    _generator.setHead(_head);
-
-                    if (!_parser.isPersistent())
-                    {
-                        _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
-                        _generator.setPersistent(false);
-                    }
-                    if (_server.getSendDateHeader())
-                        _generator.setDate(_request.getTimeStampBuffer());
-
-                    if (!_host)
-                    {
-                        LOG.debug("!host {}",this);
-                        _generator.setResponse(HttpStatus.BAD_REQUEST_400, null);
-                        _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
-                        _generator.completeHeader(_responseFields, true);
-                        _generator.complete();
-                        return;
-                    }
-
-                    if (_expect)
-                    {
-                        LOG.debug("!expectation {}",this);
-                        _generator.setResponse(HttpStatus.EXPECTATION_FAILED_417, null);
-                        _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
-                        _generator.completeHeader(_responseFields, true);
-                        _generator.complete();
-                        return;
-                    }
-
-                    break;
-                default:
-            }
-
-            if(_charset!=null)
-                _request.setCharacterEncodingUnchecked(_charset);
-
-            // Either handle now or wait for first content
-            if ((((HttpParser)_parser).getContentLength()<=0 && !((HttpParser)_parser).isChunking())||_expect100Continue)
-                handleRequest();
-            else
-                _delayedHandling=true;
+            AbstractHttpConnection.this.headerComplete();
         }
 
         /* ------------------------------------------------------------ */
@@ -919,11 +940,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         @Override
         public void content(Buffer ref) throws IOException
         {
-            if (_delayedHandling)
-            {
-                _delayedHandling=false;
-                handleRequest();
-            }
+            AbstractHttpConnection.this.content(ref);
         }
 
         /* ------------------------------------------------------------ */
@@ -935,11 +952,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         @Override
         public void messageComplete(long contentLength) throws IOException
         {
-            if (_delayedHandling)
-            {
-                _delayedHandling=false;
-                handleRequest();
-            }
+            AbstractHttpConnection.this.messageComplete(contentLength);
         }
 
         /* ------------------------------------------------------------ */
@@ -955,9 +968,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("Bad request!: "+version+" "+status+" "+reason);
         }
-
     }
-
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
