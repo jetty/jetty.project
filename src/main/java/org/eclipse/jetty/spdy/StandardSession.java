@@ -31,6 +31,7 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionStatus;
@@ -307,8 +308,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         if (stream == null)
         {
             // There is no stream, therefore no version, so we hardcode version 2.
-            short version = (short)2;
-            rst(version, new RstInfo(streamId, StreamStatus.INVALID_STREAM));
+            rst(SPDY.V2, new RstInfo(streamId, StreamStatus.INVALID_STREAM));
         }
         else
         {

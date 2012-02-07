@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.SynInfo;
@@ -51,7 +52,7 @@ public class HTTPOverSPDYTest
         server = new Server();
         connector = new SPDYServerConnector(null);
         server.addConnector(connector);
-        connector.putAsyncConnectionFactory("spdy/2", new ServerHTTP11OverSPDY2AsyncConnectionFactory(connector));
+        connector.putAsyncConnectionFactory("spdy/2", new HTTP11OverSPDY2AsyncConnectionFactory(connector));
         server.setHandler(handler);
         server.start();
 
@@ -64,7 +65,7 @@ public class HTTPOverSPDYTest
     @After
     public void stop() throws Exception
     {
-        session.goAway((short)2);
+        session.goAway(SPDY.V2);
         clientFactory.stop();
         clientFactory.join();
         server.stop();
@@ -95,7 +96,7 @@ public class HTTPOverSPDYTest
         headers.put("url", "http://localhost:" + connector.getLocalPort() + path);
         headers.put("version", "HTTP/1.1");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn((short)2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)

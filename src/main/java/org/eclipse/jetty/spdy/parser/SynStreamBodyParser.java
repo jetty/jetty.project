@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
@@ -151,11 +152,11 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
         // so we use an int to perform the shifts
         switch (version)
         {
-            case 2:
+            case SPDY.V2:
                 int p2 = currByte & 0b1100_0000;
                 p2 >>>= 6;
                 return (byte)p2;
-            case 3:
+            case SPDY.V3:
                 int p3 = currByte & 0b1110_0000;
                 p3 >>>= 5;
                 return (byte)p3;

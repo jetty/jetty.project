@@ -22,6 +22,7 @@ import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 
@@ -77,7 +78,7 @@ public class SynReplyBodyParser extends ControlFrameBodyParser
                 {
                     switch (controlFrameParser.getVersion())
                     {
-                        case 2:
+                        case SPDY.V2:
                         {
                             if (buffer.remaining() >= 2)
                             {
@@ -91,7 +92,7 @@ public class SynReplyBodyParser extends ControlFrameBodyParser
                             }
                             break;
                         }
-                        case 3:
+                        case SPDY.V3:
                         {
                             state = State.HEADERS;
                             break;
@@ -105,7 +106,7 @@ public class SynReplyBodyParser extends ControlFrameBodyParser
                 }
                 case ADDITIONAL_BYTES:
                 {
-                    assert controlFrameParser.getVersion() == 2;
+                    assert controlFrameParser.getVersion() == SPDY.V2;
                     buffer.get();
                     --cursor;
                     if (cursor == 0)

@@ -47,11 +47,11 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.nio.EmptyAsyncEndPoint;
 
-public class ServerHTTP11OverSPDY2AsyncConnectionFactory extends ServerSPDY2AsyncConnectionFactory
+public class HTTP11OverSPDY2AsyncConnectionFactory extends ServerSPDY2AsyncConnectionFactory
 {
     private final Connector connector;
 
-    public ServerHTTP11OverSPDY2AsyncConnectionFactory(Connector connector)
+    public HTTP11OverSPDY2AsyncConnectionFactory(Connector connector)
     {
         this.connector = connector;
     }

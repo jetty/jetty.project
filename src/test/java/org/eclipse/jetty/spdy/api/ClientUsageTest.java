@@ -30,7 +30,7 @@ public class ClientUsageTest
     {
         Session session = new StandardSession(null, 1, null, null);
 
-        session.syn((short)2, new SynInfo(false), new Stream.FrameListener.Adapter()
+        session.syn(SPDY.V2, new SynInfo(false), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -39,7 +39,7 @@ public class ClientUsageTest
                 replyInfo.getHeaders().get("host");
 
                 // Then issue another similar request
-                stream.getSession().syn((short)2, new SynInfo(true), this);
+                stream.getSession().syn(SPDY.V2, new SynInfo(true), this);
             }
         });
     }
@@ -49,7 +49,7 @@ public class ClientUsageTest
     {
         Session session = new StandardSession(null, 1, null, null);
 
-        Stream stream = session.syn((short)2, new SynInfo(false), new Stream.FrameListener.Adapter()
+        Stream stream = session.syn(SPDY.V2, new SynInfo(false), new Stream.FrameListener.Adapter()
         {
             // The good of passing the listener here is that you can safely accumulate info
             // from the headers to be used in the data, e.g. content-type, charset
@@ -66,7 +66,7 @@ public class ClientUsageTest
                 //                stream.setAttribute("content-length", contentLength);
 
                 // Then issue another similar request
-                stream.getSession().syn((short)2, new SynInfo(true), this);
+                stream.getSession().syn(SPDY.V2, new SynInfo(true), this);
             }
 
             @Override

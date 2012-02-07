@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -31,7 +32,6 @@ public class SynStreamGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        short version = 2;
         byte flags = SynInfo.FLAG_FIN;
         int streamId = 13;
         int associatedStreamId = 11;
@@ -39,7 +39,7 @@ public class SynStreamGenerateParseTest
         Headers headers = new Headers();
         headers.put("a", "b");
         headers.put("c", "d");
-        SynStreamFrame frame1 = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, headers);
+        SynStreamFrame frame1 = new SynStreamFrame(SPDY.V2, flags, streamId, associatedStreamId, priority, headers);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -54,7 +54,7 @@ public class SynStreamGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.SYN_STREAM, frame2.getType());
         SynStreamFrame synStream = (SynStreamFrame)frame2;
-        Assert.assertEquals(version, synStream.getVersion());
+        Assert.assertEquals(SPDY.V2, synStream.getVersion());
         Assert.assertEquals(streamId, synStream.getStreamId());
         Assert.assertEquals(associatedStreamId, synStream.getAssociatedStreamId());
         Assert.assertEquals(flags, synStream.getFlags());
@@ -65,7 +65,6 @@ public class SynStreamGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        short version = 2;
         byte flags = SynInfo.FLAG_FIN;
         int streamId = 13;
         int associatedStreamId = 11;
@@ -73,7 +72,7 @@ public class SynStreamGenerateParseTest
         Headers headers = new Headers();
         headers.put("a", "b");
         headers.put("c", "d");
-        SynStreamFrame frame1 = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, headers);
+        SynStreamFrame frame1 = new SynStreamFrame(SPDY.V2, flags, streamId, associatedStreamId, priority, headers);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -89,7 +88,7 @@ public class SynStreamGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.SYN_STREAM, frame2.getType());
         SynStreamFrame synStream = (SynStreamFrame)frame2;
-        Assert.assertEquals(version, synStream.getVersion());
+        Assert.assertEquals(SPDY.V2, synStream.getVersion());
         Assert.assertEquals(streamId, synStream.getStreamId());
         Assert.assertEquals(associatedStreamId, synStream.getAssociatedStreamId());
         Assert.assertEquals(flags, synStream.getFlags());

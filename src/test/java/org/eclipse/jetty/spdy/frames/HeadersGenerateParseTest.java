@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.junit.Assert;
@@ -31,12 +32,11 @@ public class HeadersGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        short version = 2;
         byte flags = HeadersInfo.FLAG_RESET_COMPRESSION;
         int streamId = 13;
         Headers headers = new Headers();
         headers.put("a", "b");
-        HeadersFrame frame1 = new HeadersFrame(version, flags, streamId, headers);
+        HeadersFrame frame1 = new HeadersFrame(SPDY.V2, flags, streamId, headers);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -51,7 +51,7 @@ public class HeadersGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.HEADERS, frame2.getType());
         HeadersFrame headersFrame = (HeadersFrame)frame2;
-        Assert.assertEquals(version, headersFrame.getVersion());
+        Assert.assertEquals(SPDY.V2, headersFrame.getVersion());
         Assert.assertEquals(streamId, headersFrame.getStreamId());
         Assert.assertEquals(flags, headersFrame.getFlags());
         Assert.assertEquals(headers, headersFrame.getHeaders());
@@ -60,12 +60,11 @@ public class HeadersGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        short version = 2;
         byte flags = HeadersInfo.FLAG_RESET_COMPRESSION;
         int streamId = 13;
         Headers headers = new Headers();
         headers.put("a", "b");
-        HeadersFrame frame1 = new HeadersFrame(version, flags, streamId, headers);
+        HeadersFrame frame1 = new HeadersFrame(SPDY.V2, flags, streamId, headers);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -81,7 +80,7 @@ public class HeadersGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.HEADERS, frame2.getType());
         HeadersFrame headersFrame = (HeadersFrame)frame2;
-        Assert.assertEquals(version, headersFrame.getVersion());
+        Assert.assertEquals(SPDY.V2, headersFrame.getVersion());
         Assert.assertEquals(streamId, headersFrame.getStreamId());
         Assert.assertEquals(flags, headersFrame.getFlags());
         Assert.assertEquals(headers, headersFrame.getHeaders());

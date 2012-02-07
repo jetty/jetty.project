@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.StreamException;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
@@ -65,10 +66,10 @@ public class SynStreamGenerator extends ControlFrameGenerator
     {
         switch (version)
         {
-            case 2:
+            case SPDY.V2:
                 priority <<= 6;
                 break;
-            case 3:
+            case SPDY.V3:
                 priority <<= 5;
                 break;
             default:

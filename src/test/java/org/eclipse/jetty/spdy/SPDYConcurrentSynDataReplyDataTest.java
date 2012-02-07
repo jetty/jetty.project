@@ -30,6 +30,7 @@ import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
@@ -68,7 +69,6 @@ public class SPDYConcurrentSynDataReplyDataTest extends SPDYTest
         final int iterations = 50;
         final int count = 50;
 
-        final short version = 2;
         final Headers headers = new Headers();
         headers.put("method", "get");
         headers.put("path", "/");
@@ -94,7 +94,7 @@ public class SPDYConcurrentSynDataReplyDataTest extends SPDYTest
                 @Override
                 public Object call() throws Exception
                 {
-                    process(session, version, headers, iterations);
+                    process(session, SPDY.V2, headers, iterations);
                     return null;
                 }
             });

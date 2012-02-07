@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.StreamException;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
@@ -64,9 +65,9 @@ public class SynReplyGenerator extends ControlFrameGenerator
     {
         switch (version)
         {
-            case 2:
+            case SPDY.V2:
                 return 6;
-            case 3:
+            case SPDY.V3:
                 return 4;
             default:
                 // Here the version is trusted to be correct; if it's not
@@ -79,10 +80,10 @@ public class SynReplyGenerator extends ControlFrameGenerator
     {
         switch (version)
         {
-            case 2:
+            case SPDY.V2:
                 buffer.putShort((short)0);
                 break;
-            case 3:
+            case SPDY.V3:
                 break;
             default:
                 // Here the version is trusted to be correct; if it's not

@@ -71,7 +71,7 @@ public class ServerUsageTest
                 // However, the API may allow to initiate the stream like in bwtp
 
                 SynInfo synInfo = new SynInfo(new Headers(), false, true, 0, (byte)0);
-                Stream stream = session.syn((short)2, synInfo, null);
+                Stream stream = session.syn(SPDY.V2, synInfo, null);
                 // The point here is that we have no idea if the client accepted our stream
                 // So we return a stream, we may be able to send the headers frame, but later
                 // the client sends a rst frame.

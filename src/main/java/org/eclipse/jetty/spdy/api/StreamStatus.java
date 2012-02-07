@@ -35,9 +35,9 @@ public enum StreamStatus
     {
         switch (version)
         {
-            case 2:
+            case SPDY.V2:
                 return Mapper.v2Codes.get(code);
-            case 3:
+            case SPDY.V3:
                 return Mapper.v3Codes.get(code);
             default:
                 throw new IllegalStateException();
@@ -61,9 +61,9 @@ public enum StreamStatus
     {
         switch (version)
         {
-            case 2:
+            case SPDY.V2:
                 return v2Code;
-            case 3:
+            case SPDY.V3:
                 return v3Code;
             default:
                 throw new IllegalStateException();

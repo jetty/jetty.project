@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.junit.Assert;
@@ -29,10 +30,9 @@ public class GoAwayGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        short version = 2;
         int lastStreamId = 13;
         int statusCode = 1;
-        GoAwayFrame frame1 = new GoAwayFrame(version, lastStreamId, statusCode);
+        GoAwayFrame frame1 = new GoAwayFrame(SPDY.V2, lastStreamId, statusCode);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -47,7 +47,7 @@ public class GoAwayGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.GO_AWAY, frame2.getType());
         GoAwayFrame goAway = (GoAwayFrame)frame2;
-        Assert.assertEquals(version, goAway.getVersion());
+        Assert.assertEquals(SPDY.V2, goAway.getVersion());
         Assert.assertEquals(lastStreamId, goAway.getLastStreamId());
         Assert.assertEquals(0, goAway.getFlags());
         Assert.assertEquals(statusCode, goAway.getStatusCode());
@@ -56,10 +56,9 @@ public class GoAwayGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        short version = 2;
         int lastStreamId = 13;
         int statusCode = 1;
-        GoAwayFrame frame1 = new GoAwayFrame(version, lastStreamId, statusCode);
+        GoAwayFrame frame1 = new GoAwayFrame(SPDY.V2, lastStreamId, statusCode);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -75,7 +74,7 @@ public class GoAwayGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.GO_AWAY, frame2.getType());
         GoAwayFrame goAway = (GoAwayFrame)frame2;
-        Assert.assertEquals(version, goAway.getVersion());
+        Assert.assertEquals(SPDY.V2, goAway.getVersion());
         Assert.assertEquals(lastStreamId, goAway.getLastStreamId());
         Assert.assertEquals(0, goAway.getFlags());
         Assert.assertEquals(statusCode, goAway.getStatusCode());

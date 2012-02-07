@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionStatus;
@@ -62,10 +63,9 @@ public class SPDYGoAwayTest extends SPDYTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        short version = (short)2;
-        session.syn(version, new SynInfo(true), null);
+        session.syn(SPDY.V2, new SynInfo(true), null);
 
-        session.goAway(version);
+        session.goAway(SPDY.V2);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -73,14 +73,13 @@ public class SPDYGoAwayTest extends SPDYTest
     @Test
     public void testGoAwayOnServerClose() throws Exception
     {
-        final short version = (short)2;
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
             public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
-                stream.getSession().goAway(version);
+                stream.getSession().goAway(SPDY.V2);
                 return null;
             }
         };
@@ -97,7 +96,7 @@ public class SPDYGoAwayTest extends SPDYTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
 
-        Stream stream1 = session.syn(version, new SynInfo(true), null);
+        Stream stream1 = session.syn(SPDY.V2, new SynInfo(true), null);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         GoAwayInfo goAwayInfo = ref.get();
@@ -109,7 +108,6 @@ public class SPDYGoAwayTest extends SPDYTest
     @Test
     public void testSynStreamIgnoredAfterGoAway() throws Exception
     {
-        final short version = (short)2;
         final CountDownLatch latch = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
@@ -122,7 +120,7 @@ public class SPDYGoAwayTest extends SPDYTest
                 if (synCount == 1)
                 {
                     stream.reply(new ReplyInfo(true));
-                    stream.getSession().goAway(version);
+                    stream.getSession().goAway(SPDY.V2);
                 }
                 else
                 {
@@ -137,13 +135,13 @@ public class SPDYGoAwayTest extends SPDYTest
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
             {
-                ref.get().syn(version, new SynInfo(true), null);
+                ref.get().syn(SPDY.V2, new SynInfo(true), null);
             }
         };
         Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
         ref.set(session);
 
-        session.syn(version, new SynInfo(true), null);
+        session.syn(SPDY.V2, new SynInfo(true), null);
 
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
@@ -151,7 +149,6 @@ public class SPDYGoAwayTest extends SPDYTest
     @Test
     public void testDataNotProcessedAfterGoAway() throws Exception
     {
-        final short version = (short)2;
         final CountDownLatch closeLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
@@ -169,7 +166,7 @@ public class SPDYGoAwayTest extends SPDYTest
                 }
                 else
                 {
-                    stream.getSession().goAway(version);
+                    stream.getSession().goAway(SPDY.V2);
                     closeLatch.countDown();
                     return new Stream.FrameListener.Adapter()
                     {
@@ -197,7 +194,7 @@ public class SPDYGoAwayTest extends SPDYTest
 
         // First stream is processed ok
         final CountDownLatch reply1Latch = new CountDownLatch(1);
-        Stream stream1 = session.syn(version, new SynInfo(true), new Stream.FrameListener.Adapter()
+        Stream stream1 = session.syn(SPDY.V2, new SynInfo(true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -208,7 +205,7 @@ public class SPDYGoAwayTest extends SPDYTest
         Assert.assertTrue(reply1Latch.await(5, TimeUnit.SECONDS));
 
         // Second stream is closed in the middle
-        Stream stream2 = session.syn(version, new SynInfo(false), null);
+        Stream stream2 = session.syn(SPDY.V2, new SynInfo(false), null);
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
 
         // There is a race between the data we want to send, and the client

@@ -22,6 +22,7 @@ import java.util.EnumMap;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.StreamException;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
@@ -173,7 +174,7 @@ public abstract class ControlFrameParser
 
     private void checkVersion(short version) throws SessionException
     {
-        if (version != 2 && version != 3)
+        if (version != SPDY.V2 && version != SPDY.V3)
             throw new SessionException(SessionStatus.PROTOCOL_ERROR, "Unrecognized version " + version);
     }
 

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.eclipse.jetty.spdy.frames;
+package org.eclipse.jetty.spdy.api;
 
-import org.eclipse.jetty.spdy.api.SPDY;
-
-public class NoOpFrame extends ControlFrame
+public class SPDY
 {
-    public NoOpFrame()
+    public static final short V2 = 2;
+    public static final short V3 = 3;
+
+    private SPDY()
     {
-        super(SPDY.V2, ControlFrameType.NOOP, (byte)0);
     }
 }

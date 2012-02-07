@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -49,7 +50,7 @@ public class SPDYSettingsTest extends SPDYTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        session.settings((short)2, clientSettingsInfo);
+        session.settings(SPDY.V2, clientSettingsInfo);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -67,7 +68,7 @@ public class SPDYSettingsTest extends SPDYTest
             @Override
             public void onConnect(Session session)
             {
-                session.settings((short)2, serverSettingsInfo);
+                session.settings(SPDY.V2, serverSettingsInfo);
             }
         };
 

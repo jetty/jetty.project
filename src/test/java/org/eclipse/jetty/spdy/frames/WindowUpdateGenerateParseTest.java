@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy.frames;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.junit.Assert;
@@ -29,10 +30,9 @@ public class WindowUpdateGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        short version = 2;
         int streamId = 13;
         int windowDelta = 17;
-        WindowUpdateFrame frame1 = new WindowUpdateFrame(version, streamId, windowDelta);
+        WindowUpdateFrame frame1 = new WindowUpdateFrame(SPDY.V2, streamId, windowDelta);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -47,7 +47,7 @@ public class WindowUpdateGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.WINDOW_UPDATE, frame2.getType());
         WindowUpdateFrame windowUpdate = (WindowUpdateFrame)frame2;
-        Assert.assertEquals(version, windowUpdate.getVersion());
+        Assert.assertEquals(SPDY.V2, windowUpdate.getVersion());
         Assert.assertEquals(streamId, windowUpdate.getStreamId());
         Assert.assertEquals(0, windowUpdate.getFlags());
         Assert.assertEquals(windowDelta, windowUpdate.getWindowDelta());
@@ -56,10 +56,9 @@ public class WindowUpdateGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        short version = 2;
         int streamId = 13;
         int windowDelta = 17;
-        WindowUpdateFrame frame1 = new WindowUpdateFrame(version, streamId, windowDelta);
+        WindowUpdateFrame frame1 = new WindowUpdateFrame(SPDY.V2, streamId, windowDelta);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -75,7 +74,7 @@ public class WindowUpdateGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.WINDOW_UPDATE, frame2.getType());
         WindowUpdateFrame windowUpdate = (WindowUpdateFrame)frame2;
-        Assert.assertEquals(version, windowUpdate.getVersion());
+        Assert.assertEquals(SPDY.V2, windowUpdate.getVersion());
         Assert.assertEquals(streamId, windowUpdate.getStreamId());
         Assert.assertEquals(0, windowUpdate.getFlags());
         Assert.assertEquals(windowDelta, windowUpdate.getWindowDelta());

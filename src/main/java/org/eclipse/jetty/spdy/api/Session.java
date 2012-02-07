@@ -24,9 +24,8 @@ import java.util.List;
  * <p>Once a {@link Session} has been obtained, it can be used to open SPDY streams:</p>
  * <pre>
  * Session session = ...;
- * short spdyVersion = 2;
- * SynInfo synInfo = new SynInfo(spdyVersion, true);
- * session.syn(synInfo, new Stream.FrameListener.Adapter()
+ * SynInfo synInfo = new SynInfo(true);
+ * session.syn(SPDY.V2, synInfo, new Stream.FrameListener.Adapter()
  * {
  *     public void onReply(Stream stream, ReplyInfo replyInfo)
  *     {

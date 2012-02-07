@@ -23,6 +23,7 @@ import java.util.zip.ZipException;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 
 public abstract class HeadersBlockParser
@@ -127,12 +128,15 @@ public abstract class HeadersBlockParser
 
     private int readCount(int version, ByteBuffer buffer) throws StreamException
     {
-        if (version == 2)
-            return buffer.getShort();
-        else if (version == 3)
-            return buffer.getInt();
-        else
-            throw new IllegalStateException();
+        switch (version)
+        {
+            case SPDY.V2:
+                return buffer.getShort();
+            case SPDY.V3:
+                return buffer.getInt();
+            default:
+                throw new IllegalStateException();
+        }
     }
 
     private int readNameLength(int version, ByteBuffer buffer) throws StreamException

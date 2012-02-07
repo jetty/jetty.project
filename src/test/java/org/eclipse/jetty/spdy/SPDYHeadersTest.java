@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.SynInfo;
@@ -56,8 +57,7 @@ public class SPDYHeadersTest extends SPDYTest
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        short version = 2;
-        session.syn(version, new SynInfo(false), new Stream.FrameListener.Adapter()
+        session.syn(SPDY.V2, new SynInfo(false), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)

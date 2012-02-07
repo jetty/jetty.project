@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.SPDY;
 
 public class HeadersBlockGenerator
 {
@@ -103,13 +104,13 @@ public class HeadersBlockGenerator
     {
         switch (version)
         {
-            case 2:
+            case SPDY.V2:
             {
                 buffer.write((value & 0xFF_00) >>> 8);
                 buffer.write(value & 0x00_FF);
                 break;
             }
-            case 3:
+            case SPDY.V3:
             {
                 buffer.write((value & 0xFF_00_00_00) >>> 24);
                 buffer.write((value & 0x00_FF_00_00) >>> 16);
