@@ -27,6 +27,8 @@ import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -57,6 +59,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class SPDYClient
 {
+    private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
     private final Factory factory;
     private SocketAddress bindAddress;
     private long maxIdleTime;
@@ -113,15 +116,39 @@ public class SPDYClient
         this.maxIdleTime = maxIdleTime;
     }
 
-    protected AsyncConnectionFactory selectAsyncConnectionFactory(List<String> serverProtocols)
+    protected String selectProtocol(List<String> serverProtocols)
     {
         if (serverProtocols == null)
-            return new ClientSPDY2AsyncConnectionFactory();
+            return "spdy/2";
 
-        // TODO: for each server protocol, lookup a connection factory in SPDYClient.Factory;
-        // TODO: if that's null, lookup a connection factory in SPDYClient; if that's null, return null.
+        for (String serverProtocol : serverProtocols)
+        {
+            for (String protocol : factories.keySet())
+            {
+                if (serverProtocol.equals(protocol))
+                    return protocol;
+            }
+            String protocol = factory.selectProtocol(serverProtocols);
+            if (protocol != null)
+                return protocol;
+        }
 
-        return new ClientSPDY2AsyncConnectionFactory();
+        return null;
+    }
+
+    protected AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
+    {
+        for (Map.Entry<String, AsyncConnectionFactory> entry : factories.entrySet())
+        {
+            if (protocol.equals(entry.getKey()))
+                return entry.getValue();
+        }
+        for (Map.Entry<String, AsyncConnectionFactory> entry : factory.factories.entrySet())
+        {
+            if (protocol.equals(entry.getKey()))
+                return entry.getValue();
+        }
+        return null;
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
@@ -135,6 +162,7 @@ public class SPDYClient
 
     public static class Factory extends AggregateLifeCycle
     {
+        private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
         private final ThreadPool threadPool;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
@@ -167,6 +195,8 @@ public class SPDYClient
 
             selector = new ClientSelectorManager();
             addBean(selector);
+
+            factories.put("spdy/2", new ClientSPDY2AsyncConnectionFactory());
         }
 
         public SPDYClient newSPDYClient()
@@ -177,6 +207,19 @@ public class SPDYClient
         public void join() throws InterruptedException
         {
             threadPool.join();
+        }
+
+        protected String selectProtocol(List<String> serverProtocols)
+        {
+            for (String serverProtocol : serverProtocols)
+            {
+                for (String protocol : factories.keySet())
+                {
+                    if (serverProtocol.equals(protocol))
+                        return protocol;
+                }
+            }
+            return null;
         }
 
         private class ClientSelectorManager extends SelectorManager
@@ -243,14 +286,15 @@ public class SPDYClient
                         @Override
                         public String selectProtocol(List<String> protocols)
                         {
-                            AsyncConnectionFactory connectionFactory = client.selectAsyncConnectionFactory(protocols);
-                            if (connectionFactory == null)
+                            String protocol = client.selectProtocol(protocols);
+                            if (protocol == null)
                                 return null;
 
+                            AsyncConnectionFactory connectionFactory = client.getAsyncConnectionFactory(protocol);
                             AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
                             sslEndPoint.setConnection(connection);
 
-                            return connectionFactory.getProtocol();
+                            return protocol;
                         }
                     });
 
@@ -356,12 +400,6 @@ public class SPDYClient
 
     private static class ClientSPDY2AsyncConnectionFactory implements AsyncConnectionFactory
     {
-        @Override
-        public String getProtocol()
-        {
-            return "spdy/2";
-        }
-
         @Override
         public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
         {

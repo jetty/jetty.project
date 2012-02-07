@@ -18,8 +18,9 @@ package org.eclipse.jetty.spdy.nio;
 
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -34,7 +35,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SPDYServerConnector extends SelectChannelConnector
 {
-    private final List<AsyncConnectionFactory> factories = new CopyOnWriteArrayList<>();
+    // Order is important on server side, so we use a LinkedHashMap
+    private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final SslContextFactory sslContextFactory;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
@@ -47,13 +49,41 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
-        if (listener != null)
-            addAsyncConnectionFactory(new ServerSPDY2AsyncConnectionFactory(listener));
+        putAsyncConnectionFactory("spdy/2", new ServerSPDY2AsyncConnectionFactory(listener));
     }
 
-    public void addAsyncConnectionFactory(AsyncConnectionFactory factory)
+    public AsyncConnectionFactory putAsyncConnectionFactory(String protocol, AsyncConnectionFactory factory)
     {
-        factories.add(factory);
+        synchronized (factories)
+        {
+            return factories.put(protocol, factory);
+        }
+    }
+
+    public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
+    {
+        final Map<String, AsyncConnectionFactory> copy = new LinkedHashMap<>();
+        synchronized (factories)
+        {
+            copy.putAll(factories);
+        }
+        return copy.get(protocol);
+    }
+
+    public Map<String, AsyncConnectionFactory> getAsyncConnectionFactories()
+    {
+        synchronized (factories)
+        {
+            return new LinkedHashMap<>(factories);
+        }
+    }
+
+    protected List<String> provideProtocols()
+    {
+        synchronized (factories)
+        {
+            return new ArrayList<>(factories.keySet());
+        }
     }
 
     @Override
@@ -97,24 +127,6 @@ public class SPDYServerConnector extends SelectChannelConnector
             endPoint.setConnection(connection);
             return connection;
         }
-    }
-
-    protected List<String> provideProtocols()
-    {
-        List<String> result = new ArrayList<>();
-        for (AsyncConnectionFactory factory : factories)
-            result.add(factory.getProtocol());
-        return result;
-    }
-
-    protected AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
-    {
-        for (AsyncConnectionFactory factory : factories)
-        {
-            if (factory.getProtocol().equals(protocol))
-                return factory;
-        }
-        return null;
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)

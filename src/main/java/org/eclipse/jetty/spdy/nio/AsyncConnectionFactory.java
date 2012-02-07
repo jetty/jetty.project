@@ -23,7 +23,5 @@ import org.eclipse.jetty.io.nio.AsyncConnection;
 
 public interface AsyncConnectionFactory
 {
-    public String getProtocol();
-
     public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment);
 }

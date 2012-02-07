@@ -45,12 +45,6 @@ public class ServerSPDY2AsyncConnectionFactory implements AsyncConnectionFactory
     }
 
     @Override
-    public String getProtocol()
-    {
-        return "spdy/2";
-    }
-
-    @Override
     public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
     {
         CompressionFactory compressionFactory = new StandardCompressionFactory();
