@@ -14,6 +14,8 @@
 package org.eclipse.jetty.io;
 
 
+import java.nio.ByteBuffer;
+
 /* ------------------------------------------------------------ */
 /** BufferSource.
  * Represents a pool or other source of buffers and abstracts the creation
@@ -23,11 +25,11 @@ package org.eclipse.jetty.io;
  */
 public interface Buffers
 {
-    enum Type { BYTE_ARRAY, DIRECT, INDIRECT } ;
+    enum Type { DIRECT, INDIRECT } ;
     
-    Buffer getHeader();
-    Buffer getBuffer();
-    Buffer getBuffer(int size);
+    ByteBuffer getHeader();
+    ByteBuffer getBuffer();
+    ByteBuffer getBuffer(int size);
     
-    void returnBuffer(Buffer buffer);
+    void returnBuffer(ByteBuffer buffer);
 }

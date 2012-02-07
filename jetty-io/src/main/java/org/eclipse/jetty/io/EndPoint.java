@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
 /**
@@ -42,42 +43,40 @@ public interface EndPoint
     void close() throws IOException;
 
     /**
-     * Fill the buffer from the current putIndex to it's capacity from whatever
-     * byte source is backing the buffer. The putIndex is increased if bytes filled.
-     * The buffer may chose to do a compact before filling.
+     * Fill the passed buffer with data from this endpoint.  The bytes are appended to any 
+     * data already in the buffer by writing from the buffers limit up to it's capacity. 
+     * The limit is updated to include the filled bytes.  
+     * 
+     * @param buffer The buffer to fill. The position and limit are modified during the fill. After the 
+     * operation, the position is unchanged and the limit is increased to reflect the new data filled.
      * @return an <code>int</code> value indicating the number of bytes
      * filled or -1 if EOF is reached.
      * @throws EofException If input is shutdown or the endpoint is closed.
      */
-    int fill(Buffer buffer) throws IOException;
+    int fill(ByteBuffer buffer) throws IOException;
 
 
     /**
-     * Flush the buffer from the current getIndex to it's putIndex using whatever byte
-     * sink is backing the buffer. The getIndex is updated with the number of bytes flushed.
-     * Any mark set is cleared.
-     * If the entire contents of the buffer are flushed, then an implicit empty() is done.
-     *
-     * @param buffer The buffer to flush. This buffers getIndex is updated.
+     * Flush data from the passed buffer to this endpoint.  As many bytes as can be consumed 
+     * are taken from the buffer position up until the buffer limit.  The 
+     * buffers position is updated to indicate how many bytes have been consumed.  
+     * 
+     * @param buffer The buffer to flush. This buffers position is updated if it is not read only.
      * @return  the number of bytes written
      * @throws EofException If the endpoint is closed or output is shutdown.
      */
-    int flush(Buffer buffer) throws IOException;
+    int flush(ByteBuffer buffer) throws IOException;
 
     /**
-     * Flush the buffer from the current getIndex to it's putIndex using whatever byte
-     * sink is backing the buffer. The getIndex is updated with the number of bytes flushed.
-     * Any mark set is cleared.
-     * If the entire contents of the buffer are flushed, then an implicit empty() is done.
-     * The passed header/trailer buffers are written before/after the contents of this buffer. This may be done
-     * either as gather writes, as a poke into this buffer or as several writes. The implementation is free to
-     * select the optimal mechanism.
-     * @param header A buffer to write before flushing this buffer. This buffers getIndex is updated.
-     * @param buffer The buffer to flush. This buffers getIndex is updated.
-     * @param trailer A buffer to write after flushing this buffer. This buffers getIndex is updated.
-     * @return the total number of bytes written.
+     * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed 
+     * are taken from the header/buffer position up until the buffer limit.  The header/buffers position 
+     * is updated to indicate how many bytes have been consumed.  
+     * 
+     * @param buffer The buffer to flush. This buffers position is updated if it is not read only.
+     * @return  the number of bytes written
+     * @throws EofException If the endpoint is closed or output is shutdown.
      */
-    int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException;
+    int flush(ByteBuffer header, ByteBuffer buffer) throws IOException;
 
 
     /* ------------------------------------------------------------ */
@@ -121,9 +120,6 @@ public interface EndPoint
      * if this <code>EndPoint</code> does not represent a network connection.
      */
     public int getRemotePort();
-
-    /* ------------------------------------------------------------ */
-    public boolean isBlocking();
 
     /* ------------------------------------------------------------ */
     public boolean blockReadable(long millisecs) throws IOException;

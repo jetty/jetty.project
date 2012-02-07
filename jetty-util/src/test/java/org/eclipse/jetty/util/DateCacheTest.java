@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 
@@ -35,61 +35,33 @@ public class DateCacheTest
     {
         //@WAS: Test t = new Test("org.eclipse.jetty.util.DateCache");
         //                            012345678901234567890123456789
-        DateCache dc = new DateCache("EEE, dd MMM yyyy HH:mm:ss zzz ZZZ",
-                                     Locale.US);
-            dc.setTimeZone(TimeZone.getTimeZone("GMT"));
-            String last=dc.format(System.currentTimeMillis());
-            boolean change=false;
-            for (int i=0;i<15;i++)
-            {
-                Thread.sleep(100);
-                String date=dc.format(System.currentTimeMillis());
-                
-                assertEquals( "Same Date",
-                              last.substring(0,17),
-                              date.substring(0,17));
-                
-                if (!last.substring(17).equals(date.substring(17)))
-                    change=true;
-                else
-                {
-                    int lh=Integer.parseInt(last.substring(17,19));
-                    int dh=Integer.parseInt(date.substring(17,19));
-                    int lm=Integer.parseInt(last.substring(20,22));
-                    int dm=Integer.parseInt(date.substring(20,22));
-                    int ls=Integer.parseInt(last.substring(23,25));
-                    int ds=Integer.parseInt(date.substring(23,25));
+        DateCache dc = new DateCache("EEE, dd MMM yyyy HH:mm:ss zzz ZZZ",Locale.US);
+        dc.setTimeZone(TimeZone.getTimeZone("GMT"));
+        
+        Thread.sleep(2000);
 
-                    // This won't work at midnight!
-                    change|= ds!=ls || dm!=lm || dh!=lh;
-                }
-                last=date;
-            }
-            assertTrue("time changed", change);
-
-
-            // Test string is cached
-            dc = new DateCache();
-            long now = 1000L*(System.currentTimeMillis()%1000L)+123;
-            // format a time for now
-            String s1=dc.format(now);
+        long now=System.currentTimeMillis();
+        long end=now+3000;
+        String f=dc.format(now);
+        String last=f;
+        
+        int hits=0;
+        int misses=0;
+        
+        while (now<end)
+        {
+            last=f;
+            f=dc.format(now);
+            // System.err.printf("%s %s%n",f,last==f);
+            if (last==f)
+                hits++;
+            else
+                misses++;
             
-            // format a  time in the past (this should not reset cached date)
-            dc.format(now-2000);
-            
-            // format a time a little later than now 
-            String s2=dc.format(now+10);
-            
-            // format a time  in future (this should reset cached data)
-            dc.format(now+2000);
-            
-            // format time a little later than now
-            String s3=dc.format(now+20);
-            
-            assertEquals(s1,s2);
-            assertEquals(s2,s3);
-            assertTrue(s1==s2);
-            assertFalse(s2==s3);
+            TimeUnit.MILLISECONDS.sleep(50);
+            now=System.currentTimeMillis();
+        }
+        Assert.assertTrue(hits/10 > misses);
     }
 
 }

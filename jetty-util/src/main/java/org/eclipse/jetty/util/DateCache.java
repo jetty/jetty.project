@@ -18,6 +18,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /* ------------------------------------------------------------ */
 /**  Date Format Cache.
@@ -34,33 +38,36 @@ import java.util.TimeZone;
  * If consecutive calls are frequently very different, then this
  * may be a little slower than a normal DateFormat.
  *
- * 
- * 
  */
 
-public class DateCache  
+public class DateCache
 {
     public static String DEFAULT_FORMAT="EEE MMM dd HH:mm:ss zzz yyyy";
-    private static long __hitWindow=60*60;
     
     private String _formatString;
     private String _tzFormatString;
     private SimpleDateFormat _tzFormat;
     
-    private String _minFormatString;
-    private SimpleDateFormat _minFormat;
-
-    private String _secFormatString;
-    private String _secFormatString0;
-    private String _secFormatString1;
-
-    private long _lastMinutes = -1;
-    private long _lastSeconds = -1;
-    private int _lastMs = -1;
-    private String _lastResult = null;
+    private volatile Tick _tick;
 
     private Locale _locale	= null;
     private DateFormatSymbols	_dfs	= null;
+    
+    private static Timer __timer;
+    
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private static class Tick
+    {
+        final long _seconds;
+        final String _string;
+        public Tick(long seconds, String string)
+        {
+            _seconds = seconds;
+            _string = string;
+        }
+    }
 
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -70,7 +77,6 @@ public class DateCache
     public DateCache()
     {
         this(DEFAULT_FORMAT);
-        getFormat().setTimeZone(TimeZone.getDefault());
     }
     
     /* ------------------------------------------------------------ */
@@ -82,12 +88,29 @@ public class DateCache
         _formatString=format;
         setTimeZone(TimeZone.getDefault());
         
+        synchronized (DateCache.class)
+        {
+            if (__timer==null)
+                __timer=new Timer("DateCache@"+Integer.toHexString(hashCode()),true);
+
+            Date start = new Date((2+(System.currentTimeMillis()/1000))*1000);
+            __timer.scheduleAtFixedRate(new TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    formatNow();
+                }
+            },
+            start,
+            1000);
+        }
     }
     
     /* ------------------------------------------------------------ */
     public DateCache(String format,Locale l)
     {
-        _formatString=format;
+        this(format);
         _locale = l;
         setTimeZone(TimeZone.getDefault());       
     }
@@ -95,7 +118,7 @@ public class DateCache
     /* ------------------------------------------------------------ */
     public DateCache(String format,DateFormatSymbols s)
     {
-        _formatString=format;
+        this(format);
         _dfs = s;
         setTimeZone(TimeZone.getDefault());
     }
@@ -104,28 +127,23 @@ public class DateCache
     /** Set the timezone.
      * @param tz TimeZone
      */
-    public synchronized void setTimeZone(TimeZone tz)
+    public void setTimeZone(TimeZone tz)
     {
         setTzFormatString(tz);        
         if( _locale != null ) 
         {
             _tzFormat=new SimpleDateFormat(_tzFormatString,_locale);
-            _minFormat=new SimpleDateFormat(_minFormatString,_locale);
         }
         else if( _dfs != null ) 
         {
             _tzFormat=new SimpleDateFormat(_tzFormatString,_dfs);
-            _minFormat=new SimpleDateFormat(_minFormatString,_dfs);
         }
         else 
         {
             _tzFormat=new SimpleDateFormat(_tzFormatString);
-            _minFormat=new SimpleDateFormat(_minFormatString);
         }
         _tzFormat.setTimeZone(tz);
-        _minFormat.setTimeZone(tz);
-        _lastSeconds=-1;
-        _lastMinutes=-1;        
+        _tick=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -145,7 +163,7 @@ public class DateCache
     }
     
     /* ------------------------------------------------------------ */
-    private synchronized void setTzFormatString(final  TimeZone tz )
+    private void setTzFormatString(final  TimeZone tz )
     {
         int zIndex = _formatString.indexOf( "ZZZ" );
         if( zIndex >= 0 )
@@ -182,34 +200,32 @@ public class DateCache
         }
         else
             _tzFormatString=_formatString;
-        setMinFormatString();
+        _tick=null;
     }
 
-    
+
     /* ------------------------------------------------------------ */
-    private void setMinFormatString()
+    /** Format a date according to our stored formatter.
+     * @param inDate 
+     * @return Formatted date
+     */
+    public String format(Date inDate)
     {
-        int i = _tzFormatString.indexOf("ss.SSS");
-        int l = 6;
-        if (i>=0)
-            throw new IllegalStateException("ms not supported");
-        i = _tzFormatString.indexOf("ss");
-        l=2;
+        long seconds = inDate.getTime() / 1000;
+
+        Tick tick=_tick;
         
-        // Build a formatter that formats a second format string
-        String ss1=_tzFormatString.substring(0,i);
-        String ss2=_tzFormatString.substring(i+l);
-        _minFormatString =ss1+"'ss'"+ss2;
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Format a date according to our stored formatter.
-     * @param inDate 
-     * @return Formatted date
-     */
-    public synchronized String format(Date inDate)
-    {
-        return format(inDate.getTime());
+        // Is this the cached time
+        if (tick==null || seconds!=tick._seconds)
+        {
+            // It's a cache miss
+            synchronized (this)
+            {
+                return _tzFormat.format(inDate);
+            }
+        }
+        
+        return tick._string;
     }
     
     /* ------------------------------------------------------------ */
@@ -217,53 +233,38 @@ public class DateCache
      * @param inDate 
      * @return Formatted date
      */
-    public synchronized String format(long inDate)
+    public String format(long inDate)
     {
         long seconds = inDate / 1000;
 
-        // Is it not suitable to cache?
-        if (seconds<_lastSeconds ||
-            _lastSeconds>0 && seconds>_lastSeconds+__hitWindow)
+        Tick tick=_tick;
+        
+        // Is this the cached time
+        if (tick==null || seconds!=tick._seconds)
         {
             // It's a cache miss
             Date d = new Date(inDate);
-            return _tzFormat.format(d);
-            
+            synchronized (this)
+            {
+                return _tzFormat.format(d);
+            }
         }
-                                          
-        // Check if we are in the same second
-        // and don't care about millis
-        if (_lastSeconds==seconds )
-            return _lastResult;
-
-        Date d = new Date(inDate);
         
-        // Check if we need a new format string
-        long minutes = seconds/60;
-        if (_lastMinutes != minutes)
+        return tick._string;
+    }
+
+
+    /* ------------------------------------------------------------ */
+    private void formatNow()
+    {
+        long now = System.currentTimeMillis();
+        long seconds = now / 1000;
+
+        synchronized (this)
         {
-            _lastMinutes = minutes;
-            _secFormatString=_minFormat.format(d);
-
-            int i=_secFormatString.indexOf("ss");
-            int l=2;
-            _secFormatString0=_secFormatString.substring(0,i);
-            _secFormatString1=_secFormatString.substring(i+l);
+            String s= _tzFormat.format(new Date(now));
+            _tick=new Tick(seconds,s);
         }
-
-        // Always format if we get here
-        _lastSeconds = seconds;
-        StringBuilder sb=new StringBuilder(_secFormatString.length());
-        sb.append(_secFormatString0);
-        int s=(int)(seconds%60);
-        if (s<10)
-            sb.append('0');
-        sb.append(s);
-        sb.append(_secFormatString1);
-        _lastResult=sb.toString();
-
-                
-        return _lastResult;
     }
 
     /* ------------------------------------------------------------ */
@@ -275,14 +276,6 @@ public class DateCache
     {
         buffer.append(format(inDate));
     }
-    
-    /* ------------------------------------------------------------ */
-    /** Get the format.
-     */
-    public SimpleDateFormat getFormat()
-    {
-        return _minFormat;
-    }
 
     /* ------------------------------------------------------------ */
     public String getFormatString()
@@ -290,17 +283,4 @@ public class DateCache
         return _formatString;
     }    
 
-    /* ------------------------------------------------------------ */
-    public String now()
-    {
-        long now=System.currentTimeMillis();
-        _lastMs=(int)(now%1000);
-        return format(now);
-    }
-
-    /* ------------------------------------------------------------ */
-    public int lastMs()
-    {
-        return _lastMs;
-    }
 }

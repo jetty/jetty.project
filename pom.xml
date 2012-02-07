@@ -6,7 +6,7 @@
     <version>19</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>8.1.1-SNAPSHOT</version>
+  <version>9.0.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -29,8 +29,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
+          <source>1.7</source>
+          <target>1.7</target>
           <verbose>false</verbose>
         </configuration>
       </plugin>
@@ -345,6 +345,7 @@
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
+    <!--
     <module>jetty-websocket</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
@@ -372,13 +373,13 @@
     <module>jetty-jsp</module>
     <module>jetty-distribution</module>
     <module>test-continuation</module>
-    <!--module>test-continuation-jetty6</module-->
     <module>test-jetty-servlet</module>
     <module>test-jetty-webapp</module>
     <module>test-jetty-nested</module>
     <module>example-jetty-embedded</module>
     <module>example-async-rest</module>
     <module>tests</module>
+    -->
   </modules>
   <dependencyManagement>
     <dependencies>
@@ -512,10 +513,12 @@
          duplicate hits on aggregated classes) -->
       <id>aggregates</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <activeByDefault>false</activeByDefault>
+	<!--
         <file>
           <exists>${basedir}/pom.xml</exists>
         </file>
+	-->
       </activation>
       <modules>
         <module>jetty-aggregate</module>
@@ -529,10 +532,12 @@
         -->
       <id>osgi</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <activeByDefault>false</activeByDefault>
+	<!--
         <file>
           <exists>${basedir}/pom.xml</exists>
         </file>
+	-->
       </activation>
       <modules>
         <module>jetty-osgi</module>

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.io;
 
+import java.nio.ByteBuffer;
+
 /* ------------------------------------------------------------ */
 /** SimpleBuffers.
  * Simple implementation of Buffers holder.
@@ -21,8 +23,8 @@ package org.eclipse.jetty.io;
  */
 public class SimpleBuffers implements Buffers
 {   
-    final Buffer _header;
-    final Buffer _buffer;
+    final ByteBuffer _header;
+    final ByteBuffer _buffer;
     boolean _headerOut;
     boolean _bufferOut;
     
@@ -30,14 +32,14 @@ public class SimpleBuffers implements Buffers
     /**
      * 
      */
-    public SimpleBuffers(Buffer header, Buffer buffer)
+    public SimpleBuffers(ByteBuffer header, ByteBuffer buffer)
     {
         _header=header;
         _buffer=buffer;
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getBuffer()
+    public ByteBuffer getBuffer()
     {
         synchronized(this)
         {
@@ -54,13 +56,13 @@ public class SimpleBuffers implements Buffers
             }
             
             if (_buffer!=null)
-                return new ByteArrayBuffer(_buffer.capacity());
-            return new ByteArrayBuffer(4096);
+                return ByteBuffer.allocate(_buffer.capacity());
+            return ByteBuffer.allocate(4096);
         }
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getHeader()
+    public ByteBuffer getHeader()
     {
         synchronized(this)
         {
@@ -77,13 +79,13 @@ public class SimpleBuffers implements Buffers
             }
             
             if (_header!=null)
-                return new ByteArrayBuffer(_header.capacity());
-            return new ByteArrayBuffer(4096);
+                return ByteBuffer.allocate(_header.capacity());
+            return ByteBuffer.allocate(4096);
         }
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getBuffer(int size)
+    public ByteBuffer getBuffer(int size)
     {
         synchronized(this)
         {
@@ -96,11 +98,11 @@ public class SimpleBuffers implements Buffers
     }
 
     /* ------------------------------------------------------------ */
-    public void returnBuffer(Buffer buffer)
+    public void returnBuffer(ByteBuffer buffer)
     {
         synchronized(this)
         {
-            buffer.clear();
+            buffer.clear().limit(0);
             if (buffer==_header)
                 _headerOut=false;
             if (buffer==_buffer)

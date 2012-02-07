@@ -34,10 +34,10 @@ import org.junit.Test;
  */
 public class StringMapTest
 {
-    StringMap m0;
-    StringMap m1;
-    StringMap m5;
-    StringMap m5i;
+    StringMap<String> m0;
+    StringMap<String> m1;
+    StringMap<String> m5;
+    StringMap<String> m5i;
 
     /*
      * @see TestCase#setUp()
@@ -46,18 +46,18 @@ public class StringMapTest
     @Before
     public void setUp() throws Exception
     {
-        m0=new StringMap();
-        m1=new StringMap(false);
+        m0=new StringMap<String>();
+        m1=new StringMap<String>(false);
         m1.put("abc", "0");
         
-        m5=new StringMap(false);
+        m5=new StringMap<String>(false);
         m5.put("a", "0");
         m5.put("ab", "1");
         m5.put("abc", "2");
         m5.put("abb", "3");
         m5.put("bbb", "4");
         
-        m5i=new StringMap(true); 
+        m5i=new StringMap<String>(true); 
         m5i.put(null, "0");
         m5i.put("ab", "1");
         m5i.put("abc", "2");
@@ -142,7 +142,7 @@ public class StringMapTest
     @Test
     public void testGetEntryStringintint()
     {
-        Map.Entry entry;
+        Map.Entry<String,String> entry;
         
         entry=m5.getEntry("xabcyz",1,3);
         assertTrue(entry!=null);
@@ -181,7 +181,7 @@ public class StringMapTest
     {
         char[] xabcyz = {'x','a','b','c','y','z'};
         char[] xaBcyz = {'x','a','B','c','y','z'};
-        Map.Entry entry;
+        Map.Entry<String,String> entry;
         
         entry=m5.getEntry(xabcyz,1,3);
         assertTrue(entry!=null);
@@ -266,17 +266,17 @@ public class StringMapTest
         oo.writeObject(m5i);
         
         oi=new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
-        m0=(StringMap)oi.readObject();
-        m1=(StringMap)oi.readObject();
-        m5=(StringMap)oi.readObject();
-        m5i=(StringMap)oi.readObject();
+        m0=(StringMap<String>)oi.readObject();
+        m1=(StringMap<String>)oi.readObject();
+        m5=(StringMap<String>)oi.readObject();
+        m5i=(StringMap<String>)oi.readObject();
         testSize();
         
         oi=new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
-        m0=(StringMap)oi.readObject();
-        m1=(StringMap)oi.readObject();
-        m5=(StringMap)oi.readObject();
-        m5i=(StringMap)oi.readObject();
+        m0=(StringMap<String>)oi.readObject();
+        m1=(StringMap<String>)oi.readObject();
+        m5=(StringMap<String>)oi.readObject();
+        m5i=(StringMap<String>)oi.readObject();
         testPutGet();
         
     }
@@ -292,7 +292,7 @@ public class StringMapTest
     @Test
     public void testIgnoreCase()
     {
-        StringMap map = new StringMap(true);
+        StringMap<String> map = new StringMap<String>(true);
         map.put("POST","1");
         map.put("HEAD","2");
         map.put("PUT","3");

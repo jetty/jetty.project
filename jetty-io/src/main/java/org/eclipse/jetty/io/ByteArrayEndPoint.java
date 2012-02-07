@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
 
@@ -25,14 +26,12 @@ import java.io.IOException;
 public class ByteArrayEndPoint implements ConnectedEndPoint
 {
     protected byte[] _inBytes;
-    protected ByteArrayBuffer _in;
-    protected ByteArrayBuffer _out;
+    protected ByteBuffer _in;
+    protected ByteBuffer _out;
     protected boolean _closed;
-    protected boolean _nonBlocking;
     protected boolean _growOutput;
     protected Connection _connection;
     protected int _maxIdleTime;
-
 
     /* ------------------------------------------------------------ */
     /**
@@ -40,6 +39,17 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
      */
     public ByteArrayEndPoint()
     {
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     *
+     */
+    public ByteArrayEndPoint(byte[] input, int outputSize)
+    {
+        _inBytes=input;
+        _in=ByteBuffer.wrap(input);
+        _out=ByteBuffer.allocate(outputSize);
     }
 
     /* ------------------------------------------------------------ */
@@ -62,38 +72,9 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the nonBlocking
-     */
-    public boolean isNonBlocking()
-    {
-        return _nonBlocking;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param nonBlocking the nonBlocking to set
-     */
-    public void setNonBlocking(boolean nonBlocking)
-    {
-        _nonBlocking=nonBlocking;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     *
-     */
-    public ByteArrayEndPoint(byte[] input, int outputSize)
-    {
-        _inBytes=input;
-        _in=new ByteArrayBuffer(input);
-        _out=new ByteArrayBuffer(outputSize);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the in.
      */
-    public ByteArrayBuffer getIn()
+    public ByteBuffer getIn()
     {
         return _in;
     }
@@ -101,7 +82,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     /**
      * @param in The in to set.
      */
-    public void setIn(ByteArrayBuffer in)
+    public void setIn(ByteBuffer in)
     {
         _in = in;
     }
@@ -109,7 +90,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     /**
      * @return Returns the out.
      */
-    public ByteArrayBuffer getOut()
+    public ByteBuffer getOut()
     {
         return _out;
     }
@@ -117,7 +98,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     /**
      * @param out The out to set.
      */
-    public void setOut(ByteArrayBuffer out)
+    public void setOut(ByteBuffer out)
     {
         _out = out;
     }
@@ -147,15 +128,6 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     public boolean isOutputShutdown()
     {
         return _closed;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#isBlocking()
-     */
-    public boolean isBlocking()
-    {
-        return !_nonBlocking;
     }
 
     /* ------------------------------------------------------------ */
@@ -201,81 +173,60 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     /*
      * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
      */
-    public int fill(Buffer buffer) throws IOException
+    public int fill(ByteBuffer buffer) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
-
-        if (_in!=null && _in.length()>0)
-        {
-            int len = buffer.put(_in);
-            _in.skip(len);
-            return len;
-        }
-
-        if (_in!=null && _in.length()==0 && _nonBlocking)
-            return 0;
-
-        close();
-        return -1;
+        if (_in!=null)
+            return BufferUtil.put(_in,buffer);
+        
+        return 0;
     }
 
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer)
      */
-    public int flush(Buffer buffer) throws IOException
+    public int flush(ByteBuffer buffer) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
-        if (_growOutput && buffer.length()>_out.space())
+        
+        if (_growOutput && buffer.remaining()>_out.remaining())
         {
             _out.compact();
 
-            if (buffer.length()>_out.space())
+            if (buffer.remaining()>_out.remaining())
             {
-                ByteArrayBuffer n = new ByteArrayBuffer(_out.putIndex()+buffer.length());
-
-                n.put(_out.peek(0,_out.putIndex()));
-                if (_out.getIndex()>0)
-                {
-                    n.mark();
-                    n.setGetIndex(_out.getIndex());
-                }
+                ByteBuffer n = ByteBuffer.allocate(_out.capacity()+buffer.remaining()*2);
+                n.put(_out);
                 _out=n;
             }
         }
-        int len = _out.put(buffer);
-        buffer.skip(len);
-        return len;
+
+        int put=buffer.remaining();
+        _out.put(buffer);
+        return put;
     }
 
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
-    public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+    public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
 
         int flushed=0;
 
-        if (header!=null && header.length()>0)
+        if (header!=null && header.remaining()>0)
             flushed=flush(header);
 
-        if (header==null || header.length()==0)
+        if (header==null || header.remaining()==0)
         {
-            if (buffer!=null && buffer.length()>0)
+            if (buffer!=null && buffer.remaining()>0)
                 flushed+=flush(buffer);
-
-            if (buffer==null || buffer.length()==0)
-            {
-                if (trailer!=null && trailer.length()>0)
-                {
-                    flushed+=flush(trailer);
-                }
-            }
         }
 
         return flushed;
@@ -288,10 +239,8 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     public void reset()
     {
         _closed=false;
-        _in.clear();
+        _in.rewind();
         _out.clear();
-        if (_inBytes!=null)
-            _in.setPutIndex(_inBytes.length);
     }
 
     /* ------------------------------------------------------------ */

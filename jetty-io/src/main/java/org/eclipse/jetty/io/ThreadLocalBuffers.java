@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.io;
 
+import java.nio.ByteBuffer;
+
 
 
 /* ------------------------------------------------------------ */
@@ -39,19 +41,19 @@ public class ThreadLocalBuffers extends AbstractBuffers
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getBuffer()
+    public ByteBuffer getBuffer()
     {
         ThreadBuffers buffers = _buffers.get();
         if (buffers._buffer!=null)
         {
-            Buffer b=buffers._buffer;
+            ByteBuffer b=buffers._buffer;
             buffers._buffer=null;
             return b;
         }
 
         if (buffers._other!=null && isBuffer(buffers._other))
         {
-            Buffer b=buffers._other;
+            ByteBuffer b=buffers._other;
             buffers._other=null;
             return b;
         }
@@ -60,19 +62,19 @@ public class ThreadLocalBuffers extends AbstractBuffers
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getHeader()
+    public ByteBuffer getHeader()
     {
         ThreadBuffers buffers = _buffers.get();
         if (buffers._header!=null)
         {
-            Buffer b=buffers._header;
+            ByteBuffer b=buffers._header;
             buffers._header=null;
             return b;
         }
 
         if (buffers._other!=null && isHeader(buffers._other))
         {
-            Buffer b=buffers._other;
+            ByteBuffer b=buffers._other;
             buffers._other=null;
             return b;
         }
@@ -81,12 +83,12 @@ public class ThreadLocalBuffers extends AbstractBuffers
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getBuffer(int size)
+    public ByteBuffer getBuffer(int size)
     {
         ThreadBuffers buffers = _buffers.get();
         if (buffers._other!=null && buffers._other.capacity()==size)
         {
-            Buffer b=buffers._other;
+            ByteBuffer b=buffers._other;
             buffers._other=null;
             return b;
         }
@@ -95,10 +97,10 @@ public class ThreadLocalBuffers extends AbstractBuffers
     }
 
     /* ------------------------------------------------------------ */
-    public void returnBuffer(Buffer buffer)
+    public void returnBuffer(ByteBuffer buffer)
     {
-        buffer.clear();
-        if (buffer.isVolatile() || buffer.isImmutable())
+        buffer.clear().limit(0);
+        if (buffer.isReadOnly())
             return;
         
         ThreadBuffers buffers = _buffers.get();
@@ -123,8 +125,8 @@ public class ThreadLocalBuffers extends AbstractBuffers
     /* ------------------------------------------------------------ */
     protected static class ThreadBuffers
     {
-        Buffer _buffer;
-        Buffer _header;
-        Buffer _other;
+        ByteBuffer _buffer;
+        ByteBuffer _header;
+        ByteBuffer _other;
     }
 }

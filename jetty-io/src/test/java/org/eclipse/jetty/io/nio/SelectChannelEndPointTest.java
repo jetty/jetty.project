@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.BufferUtil;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -105,8 +107,8 @@ public class SelectChannelEndPointTest
 
     public class TestConnection extends AbstractConnection implements AsyncConnection
     {
-        NIOBuffer _in = new IndirectNIOBuffer(32*1024);
-        NIOBuffer _out = new IndirectNIOBuffer(32*1024);
+        ByteBuffer _in = BufferUtil.allocate(32*1024);
+        ByteBuffer _out = BufferUtil.allocate(32*1024);
 
         public TestConnection(EndPoint endp)
         {
@@ -119,26 +121,29 @@ public class SelectChannelEndPointTest
             while(progress)
             {
                 progress=false;
-                _in.compact();
-                if (_in.space()>0 && _endp.fill(_in)>0)
+                _in.compact().flip();
+                if (!BufferUtil.isAtCapacity(_in) && _endp.fill(_in)>0)
+                {
                     progress=true;
-
-                while (_blockAt>0 && _in.length()>0 && _in.length()<_blockAt)
+                }
+                
+                
+                while (_blockAt>0 && _in.remaining()>0 && _in.remaining()<_blockAt)
                 {
                     _endp.blockReadable(10000);
-                    if (_in.space()>0 && _endp.fill(_in)>0)
+                    if (!BufferUtil.isAtCapacity(_in) && _endp.fill(_in)>0)
                         progress=true;
                 }
 
-                if (_in.hasContent() && _in.skip(_out.put(_in))>0)
+                if (!BufferUtil.isEmpty(_in) && BufferUtil.put(_in,_out)>0)
                     progress=true;
 
-                if (_out.hasContent() && _endp.flush(_out)>0)
+                if (!BufferUtil.isEmpty(_out) && _endp.flush(_out)>0)
                     progress=true;
 
-                _out.compact();
+                _out.compact().flip();
 
-                if (!_out.hasContent() && _endp.isInputShutdown())
+                if (!!BufferUtil.isEmpty(_out) && _endp.isInputShutdown())
                     _endp.shutdownOutput();
             }
             return this;

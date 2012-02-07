@@ -14,13 +14,13 @@
 package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
@@ -304,7 +304,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     /* ------------------------------------------------------------ */
     @Override
-    public int fill(Buffer buffer) throws IOException
+    public int fill(ByteBuffer buffer) throws IOException
     {
         int fill=super.fill(buffer);
         if (fill>0)
@@ -314,12 +314,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     /* ------------------------------------------------------------ */
     @Override
-    public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+    public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
     {
-        int l = super.flush(header, buffer, trailer);
+        int l = super.flush(header, buffer);
 
         // If there was something to write and it wasn't written, then we are not writable.
-        if (l==0 && ( header!=null && header.hasContent() || buffer!=null && buffer.hasContent() || trailer!=null && trailer.hasContent()))
+        if (l==0 && ( header!=null && header.remaining()>0 || buffer!=null && buffer.remaining()>0))
         {
             synchronized (this)
             {
@@ -339,12 +339,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /*
      */
     @Override
-    public int flush(Buffer buffer) throws IOException
+    public int flush(ByteBuffer buffer) throws IOException
     {
         int l = super.flush(buffer);
 
         // If there was something to write and it wasn't written, then we are not writable.
-        if (l==0 && buffer!=null && buffer.hasContent())
+        if (l==0 && buffer!=null && buffer.remaining()>0)
         {
             synchronized (this)
             {

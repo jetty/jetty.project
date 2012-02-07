@@ -1,7 +1,7 @@
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+import java.nio.ByteBuffer;
+
 
 public abstract class AbstractBuffers implements Buffers
 {
@@ -45,16 +45,14 @@ public abstract class AbstractBuffers implements Buffers
      * Create a new header Buffer
      * @return new Buffer
      */
-    final protected Buffer newHeader()
+    final protected ByteBuffer newHeader()
     {
         switch(_headerType)
         {
-            case BYTE_ARRAY:
-                return new ByteArrayBuffer(_headerSize);
             case DIRECT:
-                return new DirectNIOBuffer(_headerSize);
+                return BufferUtil.allocateDirect(_headerSize);
             case INDIRECT:
-                return new IndirectNIOBuffer(_headerSize);
+                return BufferUtil.allocate(_headerSize);
         }
         throw new IllegalStateException();
     }
@@ -64,16 +62,14 @@ public abstract class AbstractBuffers implements Buffers
      * Create a new content Buffer
      * @return new Buffer
      */
-    final protected Buffer newBuffer()
+    final protected ByteBuffer newBuffer()
     {
        switch(_bufferType)
        {
-           case BYTE_ARRAY:
-               return new ByteArrayBuffer(_bufferSize);
            case DIRECT:
-               return new DirectNIOBuffer(_bufferSize);
+               return BufferUtil.allocateDirect(_bufferSize);
            case INDIRECT:
-               return new IndirectNIOBuffer(_bufferSize);
+               return BufferUtil.allocate(_bufferSize);
        }
        throw new IllegalStateException();
     }
@@ -84,16 +80,14 @@ public abstract class AbstractBuffers implements Buffers
      * @param size
      * @return new Buffer
      */
-    final protected Buffer newBuffer(int size)
+    final protected ByteBuffer newBuffer(int size)
     {
        switch(_otherType)
        {
-           case BYTE_ARRAY:
-               return new ByteArrayBuffer(size);
            case DIRECT:
-               return new DirectNIOBuffer(size);
+               return BufferUtil.allocateDirect(size);
            case INDIRECT:
-               return new IndirectNIOBuffer(size);
+               return BufferUtil.allocate(size);
        }
        throw new IllegalStateException();
     }
@@ -103,18 +97,17 @@ public abstract class AbstractBuffers implements Buffers
      * @param buffer
      * @return True if the buffer is the correct type to be a Header buffer
      */
-    public final boolean isHeader(Buffer buffer)
+    public final boolean isHeader(ByteBuffer buffer)
     {
         if (buffer.capacity()==_headerSize)
         {
             switch(_headerType)
             {
-                case BYTE_ARRAY:
-                    return buffer instanceof ByteArrayBuffer && !(buffer instanceof  IndirectNIOBuffer);
                 case DIRECT:
-                    return buffer instanceof  DirectNIOBuffer;
+                    return buffer.isDirect();
+                    
                 case INDIRECT:
-                    return buffer instanceof  IndirectNIOBuffer;
+                    return !buffer.isDirect();
             }
         }
         return false;
@@ -125,18 +118,17 @@ public abstract class AbstractBuffers implements Buffers
      * @param buffer
      * @return True if the buffer is the correct type to be a Header buffer
      */
-    public final boolean isBuffer(Buffer buffer)
+    public final boolean isBuffer(ByteBuffer buffer)
     {
         if (buffer.capacity()==_bufferSize)
         {
             switch(_bufferType)
             {
-                case BYTE_ARRAY:
-                    return buffer instanceof ByteArrayBuffer && !(buffer instanceof  IndirectNIOBuffer);
                 case DIRECT:
-                    return buffer instanceof  DirectNIOBuffer;
+                    return buffer.isDirect();
+                    
                 case INDIRECT:
-                    return buffer instanceof  IndirectNIOBuffer;
+                    return !buffer.isDirect();
             }
         }
         return false;

@@ -13,24 +13,27 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.eclipse.jetty.util.StringMap;
+import org.eclipse.jetty.util.StringUtil;
 
 /* ------------------------------------------------------------------------------- */
 /** 
- * Stores a collection of {@link Buffer} objects.
+ * Stores a collection of {@link ByteBuffer} objects.
  * Buffers are stored in an ordered collection and can retreived by index or value
  * 
  */
 public class BufferCache
 {
-    private final HashMap _bufferMap=new HashMap();
     private final StringMap _stringMap=new StringMap(StringMap.CASE_INSENSTIVE);
-    private final ArrayList _index= new ArrayList();
-
+    private final ArrayList<CachedBuffer> _index= new ArrayList<CachedBuffer>();
+    
     /* ------------------------------------------------------------------------------- */
     /** Add a buffer to the cache at the specified index.
      * @param value The content of the buffer.
@@ -38,12 +41,13 @@ public class BufferCache
     public CachedBuffer add(String value, int ordinal)
     {
         CachedBuffer buffer= new CachedBuffer(value, ordinal);
-        _bufferMap.put(buffer, buffer);
         _stringMap.put(value, buffer);
-        while ((ordinal - _index.size()) >= 0)
-            _index.add(null);
-        if (_index.get(ordinal)==null)
-            _index.add(ordinal, buffer);
+        if (ordinal>=0)
+        {
+            while ((ordinal - _index.size()) >= 0)
+                _index.add(null);
+            _index.set(ordinal,buffer);
+        }
         return buffer;
     }
 
@@ -54,9 +58,29 @@ public class BufferCache
         return (CachedBuffer)_index.get(ordinal);
     }
 
-    public CachedBuffer get(Buffer buffer)
+    public ByteBuffer getBuffer(ByteBuffer buffer)
     {
-        return (CachedBuffer)_bufferMap.get(buffer);
+        CachedBuffer cached=get(buffer);
+        if (cached!=null)
+            return cached.getBuffer();
+        return buffer;
+    }
+
+    public String getString(ByteBuffer buffer)
+    {
+        CachedBuffer cached=get(buffer);
+        if (cached!=null)
+            return cached.toString();
+        return BufferUtil.toString(buffer);
+    }
+    
+    public CachedBuffer get(ByteBuffer buffer)
+    {
+        byte[] array=buffer.isReadOnly()?null:buffer.array();
+        Map.Entry<String,Object> entry=_stringMap.getBestEntry(buffer);
+        if (entry!=null)
+            return (CachedBuffer)entry.getValue();
+        return null;
     }
 
     public CachedBuffer get(String value)
@@ -64,20 +88,14 @@ public class BufferCache
         return (CachedBuffer)_stringMap.get(value);
     }
 
-    public Buffer lookup(Buffer buffer)
+    @Deprecated
+    public ByteBuffer lookup(ByteBuffer buffer)
     {
-        if (buffer instanceof CachedBuffer)
-            return buffer;
-        
-        Buffer b= get(buffer);
-        if (b == null)
-        {
-            if (buffer instanceof Buffer.CaseInsensitve)
-                return buffer;
-            return new ByteArrayBuffer.CaseInsensitive(buffer.asArray(),0,buffer.length(),Buffer.IMMUTABLE);
-        }
+        CachedBuffer cached=get(buffer);
+        if (cached!=null)
+            return cached.getBuffer();
 
-        return b;
+        return buffer;
     }
     
     public CachedBuffer getBest(byte[] value, int offset, int maxLength)
@@ -88,19 +106,28 @@ public class BufferCache
         return null;
     }
 
-    public Buffer lookup(String value)
+    public ByteBuffer lookup(String value)
     {
-        Buffer b= get(value);
+        CachedBuffer b= get(value);
         if (b == null)
-        {
-            return new CachedBuffer(value,-1);
-        }
-        return b;
+            return ByteBuffer.wrap(value.getBytes(StringUtil.__ISO_8859_1_CHARSET));
+        return b.getBuffer();
     }
 
-    public String toString(Buffer buffer)
+    public String toString(ByteBuffer buffer)
     {
-        return lookup(buffer).toString();
+        CachedBuffer cached = get(buffer);
+        if (cached!=null)
+            return cached.toString();
+        
+
+        byte[] array=buffer.array();
+        if (array!=null)
+            return new String(array,buffer.position(),buffer.remaining(),StringUtil.__ISO_8859_1_CHARSET);
+        
+        array=new byte[buffer.remaining()];
+        buffer.asReadOnlyBuffer().get(array);
+        return new String(array,0,buffer.remaining(),StringUtil.__ISO_8859_1_CHARSET);
     }
 
     public int getOrdinal(String value)
@@ -109,30 +136,41 @@ public class BufferCache
         return buffer==null?-1:buffer.getOrdinal();
     }
     
-    public int getOrdinal(Buffer buffer)
+    public int getOrdinal(ByteBuffer buffer)
     {
-        if (buffer instanceof CachedBuffer)
-            return ((CachedBuffer)buffer).getOrdinal();
-        buffer=lookup(buffer);
-        if (buffer!=null && buffer instanceof CachedBuffer)
-            return ((CachedBuffer)buffer).getOrdinal();
+        CachedBuffer cached = get(buffer);
+        if (cached!=null)
+            return cached.getOrdinal();
         return -1;
     }
     
-    public static class CachedBuffer extends ByteArrayBuffer.CaseInsensitive
+    public static class CachedBuffer 
     {
         private final int _ordinal;
+        private final String _string;
+        private final ByteBuffer _buffer;
         private HashMap _associateMap=null;
         
         public CachedBuffer(String value, int ordinal)
         {
-            super(value);
+            _string=value;
+            _buffer=ByteBuffer.wrap(value.getBytes(StringUtil.__ISO_8859_1_CHARSET)).asReadOnlyBuffer();
             _ordinal= ordinal;
         }
 
         public int getOrdinal()
         {
             return _ordinal;
+        }
+
+        public ByteBuffer getBuffer()
+        {
+            return _buffer;
+        }
+
+        public String toString()
+        {
+            return _string;
         }
 
         public CachedBuffer getAssociate(Object key)
@@ -156,7 +194,6 @@ public class BufferCache
     public String toString()
     {
         return "CACHE["+
-        	"bufferMap="+_bufferMap+
         	",stringMap="+_stringMap+
         	",index="+_index+
         	"]";

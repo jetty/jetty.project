@@ -1,14 +1,15 @@
 package org.eclipse.jetty.io;
 
+import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PooledBuffers extends AbstractBuffers
 {
-    private final Queue<Buffer> _headers;
-    private final Queue<Buffer> _buffers;
-    private final Queue<Buffer> _others;
+    private final Queue<ByteBuffer> _headers;
+    private final Queue<ByteBuffer> _buffers;
+    private final Queue<ByteBuffer> _others;
     private final AtomicInteger _size = new AtomicInteger();
     private final int _maxSize;
     private final boolean _otherHeaders;
@@ -18,18 +19,18 @@ public class PooledBuffers extends AbstractBuffers
     public PooledBuffers(Buffers.Type headerType, int headerSize, Buffers.Type bufferType, int bufferSize, Buffers.Type otherType,int maxSize)
     {
         super(headerType,headerSize,bufferType,bufferSize,otherType);
-        _headers=new ConcurrentLinkedQueue<Buffer>();
-        _buffers=new ConcurrentLinkedQueue<Buffer>();
-        _others=new ConcurrentLinkedQueue<Buffer>();
+        _headers=new ConcurrentLinkedQueue<ByteBuffer>();
+        _buffers=new ConcurrentLinkedQueue<ByteBuffer>();
+        _others=new ConcurrentLinkedQueue<ByteBuffer>();
         _otherHeaders=headerType==otherType;
         _otherBuffers=bufferType==otherType;
         _maxSize=maxSize;
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getHeader()
+    public ByteBuffer getHeader()
     {
-        Buffer buffer = _headers.poll();
+        ByteBuffer buffer = _headers.poll();
         if (buffer==null)
             buffer=newHeader();
         else
@@ -38,9 +39,9 @@ public class PooledBuffers extends AbstractBuffers
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getBuffer()
+    public ByteBuffer getBuffer()
     {
-        Buffer buffer = _buffers.poll();
+        ByteBuffer buffer = _buffers.poll();
         if (buffer==null)
             buffer=newBuffer();
         else
@@ -49,7 +50,7 @@ public class PooledBuffers extends AbstractBuffers
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getBuffer(int size)
+    public ByteBuffer getBuffer(int size)
     {
         if (_otherHeaders && size==getHeaderSize())
             return getHeader();
@@ -57,7 +58,7 @@ public class PooledBuffers extends AbstractBuffers
             return getBuffer();
 
         // Look for an other buffer
-        Buffer buffer = _others.poll();
+        ByteBuffer buffer = _others.poll();
 
         // consume all other buffers until one of the right size is found
         while (buffer!=null && buffer.capacity()!=size)
@@ -74,10 +75,10 @@ public class PooledBuffers extends AbstractBuffers
     }
 
     /* ------------------------------------------------------------ */
-    public void returnBuffer(Buffer buffer)
+    public void returnBuffer(ByteBuffer buffer)
     {
-        buffer.clear();
-        if (buffer.isVolatile() || buffer.isImmutable())
+        buffer.clear().limit(0);
+        if (buffer.isReadOnly())
             return;
 
         if (_size.incrementAndGet() > _maxSize)
@@ -93,6 +94,7 @@ public class PooledBuffers extends AbstractBuffers
         }
     }
 
+    /* ------------------------------------------------------------ */
     public String toString()
     {
         return String.format("%s [%d/%d@%d,%d/%d@%d,%d/%d@-]",

@@ -19,7 +19,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
-import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -37,7 +36,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     @Override
-    public int fill(Buffer buffer) throws IOException
+    public int fill(ByteBuffer buffer) throws IOException
     {
         int read = super.fill(buffer);
         notifyIncoming(buffer, read);
@@ -45,25 +44,26 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     @Override
-    public int flush(Buffer buffer) throws IOException
+    public int flush(ByteBuffer buffer) throws IOException
     {
-        int position = buffer.getIndex();
+        int position = buffer.position();
         int written = super.flush(buffer);
         notifyOutgoing(buffer, position, written);
         return written;
     }
 
     @Override
-    protected int gatheringFlush(Buffer header, ByteBuffer bbuf0, Buffer buffer, ByteBuffer bbuf1) throws IOException
+    public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
     {
-        int headerPosition = header.getIndex();
-        int headerLength = header.length();
-        int bufferPosition = buffer.getIndex();
-        int written = super.gatheringFlush(header, bbuf0, buffer,bbuf1);
+        int headerPosition = header.position();
+        int headerLength = header.remaining();
+        int bufferPosition = buffer.position();
+        int written = super.flush(header, buffer);
         notifyOutgoing(header, headerPosition, written > headerLength ? headerLength : written);
         notifyOutgoing(buffer, bufferPosition, written > headerLength ? written - headerLength : 0);
         return written;
     }
+
 
     public void notifyOpened()
     {
@@ -83,7 +83,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
         }
     }
 
-    public void notifyIncoming(Buffer buffer, int read)
+    public void notifyIncoming(ByteBuffer buffer, int read)
     {
         if (listeners != null && !listeners.isEmpty() && read > 0)
         {
@@ -91,7 +91,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
             {
                 try
                 {
-                    Buffer view = buffer.asReadOnlyBuffer();
+                    ByteBuffer view = buffer.asReadOnlyBuffer();
                     listener.incoming(_socket, view);
                 }
                 catch (Exception x)
@@ -102,7 +102,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
         }
     }
 
-    public void notifyOutgoing(Buffer buffer, int position, int written)
+    public void notifyOutgoing(ByteBuffer buffer, int position, int written)
     {
         if (listeners != null && !listeners.isEmpty() && written > 0)
         {
@@ -110,9 +110,9 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
             {
                 try
                 {
-                    Buffer view = buffer.asReadOnlyBuffer();
-                    view.setGetIndex(position);
-                    view.setPutIndex(position + written);
+                    ByteBuffer view = buffer.slice();
+                    view.position(position);
+                    view.limit(position + written);
                     listener.outgoing(_socket, view);
                 }
                 catch (Exception x)

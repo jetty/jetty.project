@@ -4,7 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+import java.nio.ByteBuffer;
+
 import org.junit.Test;
 
 public abstract class EndPointTest<T extends EndPoint>
@@ -22,15 +23,15 @@ public abstract class EndPointTest<T extends EndPoint>
     public void testClientServerExchange() throws Exception
     {
         EndPointPair<T> c = newConnection();
-        Buffer buffer = new IndirectNIOBuffer(4096);
+        ByteBuffer buffer = BufferUtil.allocate(4096);
         
         // Client sends a request
-        c.client.flush(new ByteArrayBuffer("request"));
+        c.client.flush(BufferUtil.toBuffer("request"));
         
         // Server receives the request
         int len = c.server.fill(buffer);
         assertEquals(7,len);
-        assertEquals("request",buffer.toString());
+        assertEquals("request",BufferUtil.toString(buffer));
 
         // Client and server are open
         assertTrue(c.client.isOpen());
@@ -41,7 +42,7 @@ public abstract class EndPointTest<T extends EndPoint>
         assertFalse(c.server.isOutputShutdown());
         
         // Server sends response and closes output
-        c.server.flush(new ByteArrayBuffer("response"));
+        c.server.flush(BufferUtil.toBuffer("response"));
         c.server.shutdownOutput();
         
         // client server are open, server is oshut
@@ -53,10 +54,10 @@ public abstract class EndPointTest<T extends EndPoint>
         assertTrue(c.server.isOutputShutdown());
         
         // Client reads response
-        buffer.clear();
+        BufferUtil.clear(buffer);
         len = c.client.fill(buffer);
         assertEquals(8,len);
-        assertEquals("response",buffer.toString());
+        assertEquals("response",BufferUtil.toString(buffer));
 
         // Client and server are open, server is oshut
         assertTrue(c.client.isOpen());
@@ -67,7 +68,7 @@ public abstract class EndPointTest<T extends EndPoint>
         assertTrue(c.server.isOutputShutdown());
         
         // Client reads -1
-        buffer.clear();
+        BufferUtil.clear(buffer);
         len = c.client.fill(buffer);
         assertEquals(-1,len);
 
@@ -91,7 +92,7 @@ public abstract class EndPointTest<T extends EndPoint>
         assertTrue(c.server.isOutputShutdown());
 
         // Server reads close
-        buffer.clear();
+        BufferUtil.clear(buffer);
         len = c.server.fill(buffer);
         assertEquals(-1,len);
 
@@ -111,12 +112,12 @@ public abstract class EndPointTest<T extends EndPoint>
     public void testClientClose() throws Exception
     {
         EndPointPair<T> c = newConnection();
-        Buffer buffer = new IndirectNIOBuffer(4096);
+        ByteBuffer buffer = BufferUtil.allocate(4096);
         
-        c.client.flush(new ByteArrayBuffer("request"));
+        c.client.flush(BufferUtil.toBuffer("request"));
         int len = c.server.fill(buffer);
         assertEquals(7,len);
-        assertEquals("request",buffer.toString());
+        assertEquals("request",BufferUtil.toString(buffer));
 
         assertTrue(c.client.isOpen());
         assertFalse(c.client.isInputShutdown());

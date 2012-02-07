@@ -428,7 +428,11 @@ public class Log
     public static Logger getLogger(String name)
     {
         if (!initialized())
-            return null;
+        {
+            IllegalStateException e = new IllegalStateException();
+            e.printStackTrace();
+            throw e;
+        }
 
         if(name==null)
             return LOG;

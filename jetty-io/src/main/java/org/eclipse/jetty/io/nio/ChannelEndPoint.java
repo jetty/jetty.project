@@ -23,7 +23,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.BufferUtil;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -208,210 +208,61 @@ public class ChannelEndPoint implements EndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
      */
-    public int fill(Buffer buffer) throws IOException
+    public int fill(ByteBuffer buffer) throws IOException
     {
         if (_ishut)
             return -1;
-        Buffer buf = buffer.buffer();
-        int len=0;
-        if (buf instanceof NIOBuffer)
+
+        int pos=buffer.position();
+        try
         {
-            final NIOBuffer nbuf = (NIOBuffer)buf;
-            final ByteBuffer bbuf=nbuf.getByteBuffer();
+            buffer.position(buffer.limit());
+            buffer.limit(buffer.capacity());
 
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            try
-            {
-                synchronized(bbuf)
-                {
-                    try
-                    {
-                        bbuf.position(buffer.putIndex());
-                        len=_channel.read(bbuf);
-                    }
-                    finally
-                    {
-                        buffer.setPutIndex(bbuf.position());
-                        bbuf.position(0);
-                    }
-                }
+            int filled = _channel.read(buffer);
 
-                if (len<0 && isOpen())
-                {
-                    if (!isInputShutdown())
-                        shutdownInput();
-                    if (isOutputShutdown())
-                        _channel.close();
-                }
-            }
-            catch (IOException x)
-            {
-                LOG.debug("Exception while filling", x);
-                try
-                {
-                    if (_channel.isOpen())
-                        _channel.close();
-                }
-                catch (Exception xx)
-                {
-                    LOG.ignore(xx);
-                }
-
-                if (len>0)
-                    throw x;
-                len=-1;
-            }
+            if (filled==-1)
+                shutdownInput();
+            
+            return filled;
         }
-        else
+        finally
         {
-            throw new IOException("Not Implemented");
+            buffer.limit(buffer.position());
+            buffer.position(pos);
         }
-
-        return len;
     }
 
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer)
      */
-    public int flush(Buffer buffer) throws IOException
+    public int flush(ByteBuffer buffer) throws IOException
     {
-        Buffer buf = buffer.buffer();
-        int len=0;
-        if (buf instanceof NIOBuffer)
-        {
-            final NIOBuffer nbuf = (NIOBuffer)buf;
-            final ByteBuffer bbuf=nbuf.getByteBuffer();
-
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized(bbuf)
-            {
-                try
-                {
-                    bbuf.position(buffer.getIndex());
-                    bbuf.limit(buffer.putIndex());
-                    len=_channel.write(bbuf);
-                }
-                finally
-                {
-                    if (len>0)
-                        buffer.skip(len);
-                    bbuf.position(0);
-                    bbuf.limit(bbuf.capacity());
-                }
-            }
-        }
-        else if (buf instanceof RandomAccessFileBuffer)
-        {
-            len = ((RandomAccessFileBuffer)buf).writeTo(_channel,buffer.getIndex(),buffer.length());
-            if (len>0)
-                buffer.skip(len);
-        }
-        else if (buffer.array()!=null)
-        {
-            ByteBuffer b = ByteBuffer.wrap(buffer.array(), buffer.getIndex(), buffer.length());
-            len=_channel.write(b);
-            if (len>0)
-                buffer.skip(len);
-        }
-        else
-        {
-            throw new IOException("Not Implemented");
-        }
+        int len=_channel.write(buffer);
         return len;
     }
 
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
-    public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+    public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
     {
-        int length=0;
-
-        Buffer buf0 = header==null?null:header.buffer();
-        Buffer buf1 = buffer==null?null:buffer.buffer();
-
-        if (_channel instanceof GatheringByteChannel &&
-            header!=null && header.length()!=0 && buf0 instanceof NIOBuffer &&
-            buffer!=null && buffer.length()!=0 && buf1 instanceof NIOBuffer)
-        {
-            length = gatheringFlush(header,((NIOBuffer)buf0).getByteBuffer(),buffer,((NIOBuffer)buf1).getByteBuffer());
-        }
+        int len;
+        if (buffer==null||buffer.remaining()==0)
+            len=flush(header);
+        else if (header==null||header.remaining()==0)
+            len=flush(buffer);
+        else if (_channel instanceof GatheringByteChannel)
+            len= (int)((GatheringByteChannel)_channel).write(new ByteBuffer[]{header,buffer},0,2);
         else
         {
-            // flush header
-            if (header!=null && header.length()>0)
-                length=flush(header);
+            len=flush(header);
 
-            // flush buffer
-            if ((header==null || header.length()==0) &&
-                 buffer!=null && buffer.length()>0)
-                length+=flush(buffer);
-
-            // flush trailer
-            if ((header==null || header.length()==0) &&
-                (buffer==null || buffer.length()==0) &&
-                 trailer!=null && trailer.length()>0)
-                length+=flush(trailer);
+            if (header.remaining()==0)
+                len+=flush(buffer);
         }
 
-        return length;
-    }
-
-    protected int gatheringFlush(Buffer header, ByteBuffer bbuf0, Buffer buffer, ByteBuffer bbuf1) throws IOException
-    {
-        int length;
-
-        synchronized(this)
-        {
-            // We must sync because buffers may be shared (eg nbuf1 is likely to be cached content).
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized(bbuf0)
-            {
-                //noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized(bbuf1)
-                {
-                    try
-                    {
-                        // Adjust position indexs of buf0 and buf1
-                        bbuf0.position(header.getIndex());
-                        bbuf0.limit(header.putIndex());
-                        bbuf1.position(buffer.getIndex());
-                        bbuf1.limit(buffer.putIndex());
-
-                        _gather2[0]=bbuf0;
-                        _gather2[1]=bbuf1;
-
-                        // do the gathering write.
-                        length=(int)((GatheringByteChannel)_channel).write(_gather2);
-
-                        int hl=header.length();
-                        if (length>hl)
-                        {
-                            header.clear();
-                            buffer.skip(length-hl);
-                        }
-                        else if (length>0)
-                        {
-                            header.skip(length);
-                        }
-                    }
-                    finally
-                    {
-                        // adjust buffer 0 and 1
-                        if (!header.isImmutable())
-                            header.setGetIndex(bbuf0.position());
-                        if (!buffer.isImmutable())
-                            buffer.setGetIndex(bbuf1.position());
-
-                        bbuf0.position(0);
-                        bbuf1.position(0);
-                        bbuf0.limit(bbuf0.capacity());
-                        bbuf1.limit(bbuf1.capacity());
-                    }
-                }
-            }
-        }
-        return length;
+        return len;
     }
 
     /* ------------------------------------------------------------ */

@@ -399,8 +399,9 @@ public class StdErrLog extends AbstractLogger
 
     private void format(StringBuilder buffer, String level, String msg, Object... args)
     {
-        String d = _dateCache.now();
-        int ms = _dateCache.lastMs();
+        long now = System.currentTimeMillis();
+        int ms=(int)(now%1000);
+        String d = _dateCache.format(now);
         tag(buffer,d,ms,level);
         format(buffer,msg,args);
     }

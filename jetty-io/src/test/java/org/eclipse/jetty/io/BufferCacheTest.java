@@ -18,8 +18,11 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.Before;
 import org.junit.Test;
+import java.nio.ByteBuffer;
 
 /**
  *
@@ -44,8 +47,8 @@ public class BufferCacheTest
     {
         for (int i=0; i<S.length; i++)
         {
-            String s="S0S1s2s3";
-            ByteArrayBuffer buf=new ByteArrayBuffer(s.getBytes(),i*2,2);
+            String s="S0S1s2s3s0s1S2S3";
+            ByteBuffer buf=ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET),i*2,2);
             BufferCache.CachedBuffer b=cache.get(buf);
             int index=b==null?-1:b.getOrdinal();
 
@@ -61,12 +64,26 @@ public class BufferCacheTest
     {
         for (int i=0; i<S.length; i++)
         {
-            String s="S0S1s2s3";
-            ByteArrayBuffer buf=new ByteArrayBuffer(s.getBytes(),i*2,2);
-            Buffer b=cache.get(buf);
+            String s="S0S1s2s3s0s1S2S3";
+            ByteBuffer buf=ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET),i*2,2);
+            ByteBuffer b=cache.getBuffer(buf);
+
+            assertEquals(i,b.get(1)-'0');
+        }
+    }
+
+
+    @Test
+    public void testGet()
+    {
+        for (int i=0; i<S.length; i++)
+        {
+            String s="S0S1s2s3s0s1S2S3";
+            ByteBuffer buf=ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET),i*2,2);
+            CachedBuffer b=cache.get(buf);
 
             if (i>0)
-                assertEquals(i,b.peek(1)-'0');
+                assertEquals(S[i],b.toString());
             else
                 assertEquals(null,b);
         }
@@ -77,17 +94,17 @@ public class BufferCacheTest
     {
         for (int i=0; i<S.length; i++)
         {
-            String s="S0S1s2s3";
-            ByteArrayBuffer buf=new ByteArrayBuffer(s.getBytes(),i*2,2);
-            Buffer b=cache.lookup(buf);
+            String s="S0S1s2s3s0s1S2S3";
+            ByteBuffer buf=ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET),i*2,2);
+            ByteBuffer b=cache.lookup(buf);
 
-            assertEquals(S[i],b.toString());
+            assertEquals(S[i],BufferUtil.toString(b));
             if (i>0)
-                assertSame(""+i, S[i], b.toString());
+                assertEquals(""+i, S[i], BufferUtil.toString(b));
             else
             {
-                assertNotSame(""+i, S[i], b.toString());
-                assertEquals(""+i, S[i], b.toString());
+                assertNotSame(""+i, S[i], BufferUtil.toString(b));
+                assertEquals(""+i, S[i], BufferUtil.toString(b));
             }
         }
     }
@@ -95,39 +112,23 @@ public class BufferCacheTest
     @Test
     public void testLookupPartialBuffer()
     {
-        cache.add("44444",4);
+        String key="44444";
+        cache.add(key,4);
 
-        ByteArrayBuffer buf=new ByteArrayBuffer("44444");
-        Buffer b=cache.lookup(buf);
-        assertEquals("44444",b.toString());
+        ByteBuffer buf=BufferUtil.toBuffer("44444");
+        ByteBuffer b=cache.get(buf).getBuffer();
+        assertEquals("44444",BufferUtil.toString(b));
         assertEquals(4,cache.getOrdinal(b));
 
-        buf=new ByteArrayBuffer("4444");
-        b=cache.lookup(buf);
-        assertEquals(-1,cache.getOrdinal(b));
+        buf=BufferUtil.toBuffer("4444");
+        assertEquals(null,cache.get(buf));
+        assertSame(buf,cache.getBuffer(buf));
+        assertEquals(-1,cache.getOrdinal(buf));
 
-        buf=new ByteArrayBuffer("44444x");
-        b=cache.lookup(buf);
-        assertEquals(-1,cache.getOrdinal(b));
+        buf=BufferUtil.toBuffer("44444x");
+        assertEquals("44444",cache.get(buf).toString());
+        assertEquals(4,cache.getOrdinal(buf));
 
-
-    }
-
-    @Test
-    public void testInsensitiveLookupBuffer()
-    {
-        for (int i=0; i<S.length; i++)
-        {
-            String s="s0s1S2S3";
-            ByteArrayBuffer buf=new ByteArrayBuffer(s.getBytes(),i*2,2);
-            Buffer b=cache.lookup(buf);
-
-            assertTrue("test"+i,S[i].equalsIgnoreCase(b.toString()));
-            if (i>0)
-                assertSame("test"+i, S[i], b.toString());
-            else
-                assertNotSame("test"+i, S[i], b.toString());
-        }
     }
 
     @Test
@@ -135,15 +136,15 @@ public class BufferCacheTest
     {
         for (int i=0; i<S.length; i++)
         {
-            String s="S0S1s2s3";
-            ByteArrayBuffer buf=new ByteArrayBuffer(s.getBytes(),i*2,2);
-            String b=cache.toString(buf);
+            String s="S0S1s2s3s0s1S2S3";
+            ByteBuffer buf=ByteBuffer.wrap(s.getBytes(StringUtil.__ISO_8859_1_CHARSET),i*2,2);
+            String str=cache.getString(buf);
 
-            assertEquals(S[i],b);
+            assertEquals(S[i],str);
             if (i>0)
-                assertSame(S[i], b);
+                assertSame(S[i], str);
             else
-                assertNotSame(S[i], b);
+                assertNotSame(S[i], str);
         }
     }
 }

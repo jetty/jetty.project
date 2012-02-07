@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.nio.ByteBuffer;
 import java.text.DateFormatSymbols;
 import java.util.Locale;
 
@@ -20,7 +21,7 @@ import org.eclipse.jetty.util.DateCache;
 
 public class BufferDateCache extends DateCache
 {
-    Buffer _buffer;
+    ByteBuffer _buffer;
     String _last;
     
     public BufferDateCache()
@@ -43,13 +44,13 @@ public class BufferDateCache extends DateCache
         super(format);
     }
 
-    public synchronized Buffer formatBuffer(long date)
+    public synchronized ByteBuffer formatBuffer(long date)
     {
         String d = super.format(date);
         if (d==_last)
             return _buffer;
         _last=d;
-        _buffer=new ByteArrayBuffer(d);
+        _buffer=BufferUtil.toBuffer(d);
         
         return _buffer;
     }

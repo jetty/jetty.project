@@ -15,7 +15,12 @@ package org.eclipse.jetty.io.bio;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
+import org.eclipse.jetty.io.BufferUtil;
+import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -24,37 +29,26 @@ import org.eclipse.jetty.util.StringUtil;
  * To change the template for this generated type comment go to
  * Window - Preferences - Java - Code Generation - Code and Comments
  */
-public class StringEndPoint extends StreamEndPoint
+public class StringEndPoint extends ByteArrayEndPoint
 {
-    String _encoding=StringUtil.__UTF8;
-    ByteArrayInputStream _bin = new ByteArrayInputStream(new byte[0]);
-    ByteArrayOutputStream _bout = new ByteArrayOutputStream();
+    Charset _charset=StringUtil.__UTF8_CHARSET;
     
     public StringEndPoint()
     {
-        super(null,null);
-        _in=_bin;
-        _out=_bout;
     }
     
     public StringEndPoint(String encoding)
     {
         this();
         if (encoding!=null)
-            _encoding=encoding;
+            _charset=Charset.forName(encoding);
     }
     
     public void setInput(String s) 
     {
         try
         {
-            byte[] bytes = s.getBytes(_encoding);
-            _bin=new ByteArrayInputStream(bytes);
-            _in=_bin;
-            _bout = new ByteArrayOutputStream();
-            _out=_bout;
-            _ishut=false;
-            _oshut=false;
+            super.setIn(BufferUtil.toBuffer(s,_charset));
         }
         catch(Exception e)
         {
@@ -64,17 +58,11 @@ public class StringEndPoint extends StreamEndPoint
     
     public String getOutput() 
     {
-        try
-        {
-            String s = new String(_bout.toByteArray(),_encoding);
-            _bout.reset();
-      	  return s;
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-            throw new IllegalStateException(_encoding+": "+e.toString());
-        }
+        ByteBuffer b = getOut();
+        b.flip();
+        String s=BufferUtil.toString(b,_charset);
+        b.clear();
+        return s;
     }
 
     /**
@@ -82,6 +70,6 @@ public class StringEndPoint extends StreamEndPoint
      */
     public boolean hasMore()
     {
-        return _bin.available()>0;
+        return getOut().position()>0;
     }   
 }

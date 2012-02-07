@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import static org.junit.Assert.assertTrue;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -87,11 +88,11 @@ public class ThreadLocalBuffersTest
     {
         InnerBuffers buffers = new InnerBuffers(128,256);
 
-        Buffer h1 = buffers.getHeader();
-        Buffer h2 = buffers.getHeader();
-        Buffer b1 = buffers.getBuffer();
-        Buffer b2 = buffers.getBuffer();
-        Buffer b3 = buffers.getBuffer(512);
+        ByteBuffer h1 = buffers.getHeader();
+        ByteBuffer h2 = buffers.getHeader();
+        ByteBuffer b1 = buffers.getBuffer();
+        ByteBuffer b2 = buffers.getBuffer();
+        ByteBuffer b3 = buffers.getBuffer(512);
 
         buffers.returnBuffer(h1);
         buffers.returnBuffer(h2);
@@ -134,12 +135,12 @@ public class ThreadLocalBuffersTest
     {
         InnerBuffers buffers = new InnerBuffers(128,128);
 
-        Buffer h1 = buffers.getHeader();
-        Buffer h2 = buffers.getHeader();
-        Buffer b1 = buffers.getBuffer();
-        Buffer b2 = buffers.getBuffer();
-        Buffer b3 = buffers.getBuffer(128);
-        List<Buffer> known = new ArrayList<Buffer>();
+        ByteBuffer h1 = buffers.getHeader();
+        ByteBuffer h2 = buffers.getHeader();
+        ByteBuffer b1 = buffers.getBuffer();
+        ByteBuffer b2 = buffers.getBuffer();
+        ByteBuffer b3 = buffers.getBuffer(128);
+        List<ByteBuffer> known = new ArrayList<ByteBuffer>();
         known.add(h1);
         known.add(h2);
         known.add(b1);
@@ -153,29 +154,24 @@ public class ThreadLocalBuffersTest
         buffers.returnBuffer(b3); // other slot   *
 
         assertTrue(h1==buffers.getHeader()); // pooled header
-        Buffer buffer = buffers.getHeader();
-        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
+        assertTrue(b3==buffers.getHeader()); // pooled other
+        ByteBuffer buffer = buffers.getHeader();
+        for (ByteBuffer b:known) assertTrue(b!=buffer); // new buffer
+        
         assertTrue(b1==buffers.getBuffer()); // b1 used from buffer slot
         buffer = buffers.getBuffer();
-        for (Buffer b:known) assertTrue(b!=buffer); // new buffer
-        
-        assertTrue(b3==buffers.getBuffer(128)); // b3 from other slot
+        for (ByteBuffer b:known) assertTrue(b!=buffer); // new buffer
 
+        buffer = buffers.getBuffer(128);
+        for (ByteBuffer b:known) assertTrue(b!=buffer); // new buffer
     }
 
-    private static class HeaderBuffer extends ByteArrayBuffer
-    {
-        public HeaderBuffer(int size)
-        {
-            super(size);
-        }
-    }
 
     private static class InnerBuffers extends ThreadLocalBuffers
     {
         InnerBuffers(int headerSize,int bufferSize)
         {
-            super(Type.DIRECT,headerSize,Type.BYTE_ARRAY,bufferSize,Type.INDIRECT);
+            super(Type.INDIRECT,headerSize,Type.DIRECT,bufferSize,Type.INDIRECT);
         }
     }
 
@@ -198,10 +194,10 @@ public class ThreadLocalBuffersTest
                 {
                     if ( runTest )
                     {
-                        Buffer buf = httpBuffers.getHeader();
+                        ByteBuffer buf = httpBuffers.getHeader();
                         buffersRetrieved.getAndIncrement();
 
-                        buf.put(new Byte("2"));
+                        buf.compact().put(new Byte("2")).flip();
 
                         // sleep( threadWaitTime );
 

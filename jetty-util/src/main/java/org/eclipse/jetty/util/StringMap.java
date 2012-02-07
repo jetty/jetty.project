@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.Externalizable;
+import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,19 +34,19 @@ import java.util.Set;
  *
  * This map is NOT synchronized.
  */
-public class StringMap extends AbstractMap implements Externalizable
+public class StringMap<O> extends AbstractMap<String,O> implements Externalizable
 {
     public static final boolean CASE_INSENSTIVE=true;
     protected static final int __HASH_WIDTH=17;
     
     /* ------------------------------------------------------------ */
     protected int _width=__HASH_WIDTH;
-    protected Node _root=new Node();
+    protected Node<O> _root=new Node<>();
     protected boolean _ignoreCase=false;
     protected NullEntry _nullEntry=null;
-    protected Object _nullValue=null;
-    protected HashSet _entrySet=new HashSet(3);
-    protected Set _umEntrySet=Collections.unmodifiableSet(_entrySet);
+    protected O _nullValue=null;
+    protected HashSet<Map.Entry<String,O>> _entrySet=new HashSet<>(3);
+    protected Set<Map.Entry<String,O>> _umEntrySet=Collections.unmodifiableSet(_entrySet);
     
     /* ------------------------------------------------------------ */
     /** Constructor. 
@@ -111,19 +112,11 @@ public class StringMap extends AbstractMap implements Externalizable
     
     /* ------------------------------------------------------------ */
     @Override
-    public Object put(Object key, Object value)
-    {
-        if (key==null)
-            return put(null,value);
-        return put(key.toString(),value);
-    }
-        
-    /* ------------------------------------------------------------ */
-    public Object put(String key, Object value)
+    public O put(String key, O value)
     {
         if (key==null)
         {
-            Object oldValue=_nullValue;
+            O oldValue=_nullValue;
             _nullValue=value;
             if (_nullEntry==null)
             {   
@@ -133,10 +126,10 @@ public class StringMap extends AbstractMap implements Externalizable
             return oldValue;
         }
         
-        Node node = _root;
+        Node<O> node = _root;
         int ni=-1;
-        Node prev = null;
-        Node parent = null;
+        Node<O> prev = null;
+        Node<O> parent = null;
 
         // look for best match
     charLoop:
@@ -185,7 +178,7 @@ public class StringMap extends AbstractMap implements Externalizable
             }
 
             // We have run out of nodes, so as this is a put, make one
-            node = new Node(_ignoreCase,key,i);
+            node = new Node<O>(_ignoreCase,key,i);
 
             if (prev!=null) // add to end of chain
                 prev._next=node;
@@ -201,7 +194,7 @@ public class StringMap extends AbstractMap implements Externalizable
                         parent._children[oi]=node;
                     else
                     {
-                        Node n=parent._children[oi];
+                        Node<O> n=parent._children[oi];
                         while(n._next!=null)
                             n=n._next;
                         n._next=node;
@@ -220,7 +213,7 @@ public class StringMap extends AbstractMap implements Externalizable
             if(ni>0)
                 node.split(this,ni);
         
-            Object old = node._value;
+            O old = node._value;
             node._key=key;
             node._value=value;
             _entrySet.add(node);
@@ -228,25 +221,23 @@ public class StringMap extends AbstractMap implements Externalizable
         }
         return null;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
-    public Object get(Object key)
+    public O get(Object key)
     {
         if (key==null)
             return _nullValue;
-        if (key instanceof String)
-            return get((String)key);
         return get(key.toString());
     }
     
     /* ------------------------------------------------------------ */
-    public Object get(String key)
+    public O get(String key)
     {
         if (key==null)
             return _nullValue;
         
-        Map.Entry entry = getEntry(key,0,key.length());
+        Map.Entry<String,O> entry = getEntry(key,0,key.length());
         if (entry==null)
             return null;
         return entry.getValue();
@@ -260,12 +251,12 @@ public class StringMap extends AbstractMap implements Externalizable
      * @return The Map.Entry for the key or null if the key is not in
      * the map.
      */
-    public Map.Entry getEntry(String key,int offset, int length)
+    public Map.Entry<String,O> getEntry(String key,int offset, int length)
     {
         if (key==null)
             return _nullEntry;
         
-        Node node = _root;
+        Node<O> node = _root;
         int ni=-1;
 
         // look for best match
@@ -316,12 +307,12 @@ public class StringMap extends AbstractMap implements Externalizable
      * @return The Map.Entry for the key or null if the key is not in
      * the map.
      */
-    public Map.Entry getEntry(char[] key,int offset, int length)
+    public Map.Entry<String, O> getEntry(char[] key,int offset, int length)
     {
         if (key==null)
             return _nullEntry;
         
-        Node node = _root;
+        Node<O> node = _root;
         int ni=-1;
 
         // look for best match
@@ -367,18 +358,18 @@ public class StringMap extends AbstractMap implements Externalizable
     /* ------------------------------------------------------------ */
     /** Get a map entry by byte array key, using as much of the passed key as needed for a match.
      * A simple 8859-1 byte to char mapping is assumed.
-     * @param key char array containing the key
+     * @param key byte array containing the key
      * @param offset Offset of the key within the array.
      * @param maxLength The length of the key 
      * @return The Map.Entry for the key or null if the key is not in
      * the map.
      */
-    public Map.Entry getBestEntry(byte[] key,int offset, int maxLength)
+    public Map.Entry<String,O> getBestEntry(byte[] key,int offset, int maxLength)
     {
         if (key==null)
             return _nullEntry;
         
-        Node node = _root;
+        Node<O> node = _root;
         int ni=-1;
 
         // look for best match
@@ -392,7 +383,74 @@ public class StringMap extends AbstractMap implements Externalizable
             {
                 ni=0;
                 
-                Node child = (node._children==null)?null:node._children[c%_width];
+                Node<O> child = (node._children==null)?null:node._children[c%_width];
+                
+                if (child==null && i>0)
+                    return node; // This is the best match
+                node=child;           
+            }
+            
+            // While we have a node to try
+            while (node!=null) 
+            {
+                // If it is a matching node, goto next char
+                if (node._char[ni]==c || _ignoreCase&&node._ochar[ni]==c)
+                {
+                    ni++;
+                    if (ni==node._char.length)
+                        ni=-1;
+                    continue charLoop;
+                }
+
+                // No char match, so if mid node then no match at all.
+                if (ni>0) return null;
+
+                // try next in chain
+                node=node._next;                
+            }
+            return null;
+        }
+        
+        if (ni>0) return null;
+        if (node!=null && node._key==null)
+            return null;
+        return node;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get a map entry by ByteBuffer key, using as much of the passed key as needed for a match.
+     * A simple 8859-1 byte to char mapping is assumed.
+     * @param key ByteBuffer containing the key
+     * @return The Map.Entry for the key or null if the key is not in
+     * the map.
+     */
+    public Map.Entry<String,O> getBestEntry(ByteBuffer key)
+    {
+        if (key==null)
+            return _nullEntry;
+        
+        if (!key.isReadOnly() && !key.isDirect())
+            return getBestEntry(key.array(),key.position(),key.remaining());
+        
+        
+        Node<O> node = _root;
+        int ni=-1;
+
+        // look for best match
+        int position=key.position();
+        int remaining=key.remaining();
+        
+    charLoop:
+        for (int i=0;i<remaining;i++)
+        {
+            char c=(char)key.get(position+i);
+
+            // Advance node
+            if (ni==-1)
+            {
+                ni=0;
+                
+                Node<O> child = (node._children==null)?null:node._children[c%_width];
                 
                 if (child==null && i>0)
                     return node; // This is the best match
@@ -426,22 +484,22 @@ public class StringMap extends AbstractMap implements Externalizable
         return node;
     }
     
-    
     /* ------------------------------------------------------------ */
     @Override
-    public Object remove(Object key)
+    public O remove(Object key)
     {
         if (key==null)
             return remove(null);
         return remove(key.toString());
     }
     
+    
     /* ------------------------------------------------------------ */
-    public Object remove(String key)
+    public O remove(String key)
     {
         if (key==null)
         {
-            Object oldValue=_nullValue;
+            O oldValue=_nullValue;
             if (_nullEntry!=null)
             {
                 _entrySet.remove(_nullEntry);   
@@ -451,7 +509,7 @@ public class StringMap extends AbstractMap implements Externalizable
             return oldValue;
         }
         
-        Node node = _root;
+        Node<O> node = _root;
         int ni=-1;
 
         // look for best match
@@ -492,7 +550,7 @@ public class StringMap extends AbstractMap implements Externalizable
         if (node!=null && node._key==null)
             return null;
         
-        Object old = node._value;
+        O old = node._value;
         _entrySet.remove(node);
         node._value=null;
         node._key=null;
@@ -502,7 +560,7 @@ public class StringMap extends AbstractMap implements Externalizable
 
     /* ------------------------------------------------------------ */
     @Override
-    public Set entrySet()
+    public Set<Map.Entry<String,O>> entrySet()
     {
         return _umEntrySet;
     }
@@ -535,7 +593,7 @@ public class StringMap extends AbstractMap implements Externalizable
     @Override
     public void clear()
     {
-        _root=new Node();
+        _root=new Node<O>();
         _nullEntry=null;
         _nullValue=null;
         _entrySet.clear();
@@ -545,14 +603,14 @@ public class StringMap extends AbstractMap implements Externalizable
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private static class Node implements Map.Entry
+    private static class Node<O> implements Map.Entry<String,O>
     {
         char[] _char;
         char[] _ochar;
-        Node _next;
-        Node[] _children;
+        Node<O> _next;
+        Node<O>[] _children;
         String _key;
-        Object _value;
+        O _value;
         
         Node(){}
         
@@ -577,9 +635,9 @@ public class StringMap extends AbstractMap implements Externalizable
             }
         }
 
-        Node split(StringMap map,int offset)
+        Node<O> split(StringMap<O> map,int offset)
         {
-            Node split = new Node();
+            Node<O> split = new Node<O>();
             int sl=_char.length-offset;
             
             char[] tmp=this._char;
@@ -613,9 +671,9 @@ public class StringMap extends AbstractMap implements Externalizable
             return split;
         }
         
-        public Object getKey(){return _key;}
-        public Object getValue(){return _value;}
-        public Object setValue(Object o){Object old=_value;_value=o;return old;}
+        public String getKey(){return _key;}
+        public O getValue(){return _value;}
+        public O setValue(O o){O old=_value;_value=o;return old;}
         @Override
         public String toString()
         {
@@ -659,12 +717,12 @@ public class StringMap extends AbstractMap implements Externalizable
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private class NullEntry implements Map.Entry
+    private class NullEntry implements Map.Entry<String,O>
     {
-        public Object getKey(){return null;}
-        public Object getValue(){return _nullValue;}
-        public Object setValue(Object o)
-            {Object old=_nullValue;_nullValue=o;return old;}
+        public String getKey(){return null;}
+        public O getValue(){return _nullValue;}
+        public O setValue(O o)
+            {O old=_nullValue;_nullValue=o;return old;}
         @Override
         public String toString(){return "[:null="+_nullValue+"]";}
     }
@@ -673,7 +731,7 @@ public class StringMap extends AbstractMap implements Externalizable
     public void writeExternal(java.io.ObjectOutput out)
         throws java.io.IOException
     {
-        HashMap map = new HashMap(this);
+        HashMap<String,O> map = new HashMap<String,O>(this);
         out.writeBoolean(_ignoreCase);
         out.writeObject(map);
     }
@@ -683,7 +741,7 @@ public class StringMap extends AbstractMap implements Externalizable
         throws java.io.IOException, ClassNotFoundException
     {
         boolean ic=in.readBoolean();
-        HashMap map = (HashMap)in.readObject();
+        HashMap<String,O> map = (HashMap<String,O>)in.readObject();
         setIgnoreCase(ic);
         this.putAll(map);
     }
