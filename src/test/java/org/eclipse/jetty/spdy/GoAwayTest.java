@@ -41,7 +41,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 public class GoAwayTest extends AbstractTest
 {
     @Test
-    public void testGoAwayOnClientClose() throws Exception
+    public void testServerReceivesGoAwayOnClientGoAway() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
@@ -71,7 +71,7 @@ public class GoAwayTest extends AbstractTest
     }
 
     @Test
-    public void testGoAwayOnServerClose() throws Exception
+    public void testClientReceivesGoAwayOnServerGoAway() throws Exception
     {
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {

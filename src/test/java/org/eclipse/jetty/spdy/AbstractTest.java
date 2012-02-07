@@ -53,7 +53,7 @@ public abstract class AbstractTest
     {
         server = new Server();
         Connector connector = newSPDYServerConnector(listener);
-        connector.setPort(47443);
+        connector.setPort(0);
         server.addConnector(connector);
         server.start();
         return new InetSocketAddress(connector.getLocalPort());

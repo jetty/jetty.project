@@ -66,9 +66,9 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     private final AtomicInteger pingIds;
     private final FrameListener frameListener;
     private final Generator generator;
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean goAwaySent = new AtomicBoolean();
+    private final AtomicBoolean goAwayReceived = new AtomicBoolean();
     private volatile int lastStreamId;
-    private volatile boolean rejected;
     private boolean flushing;
 
     public StandardSession(Controller controller, int initialStreamId, FrameListener frameListener, Generator generator)
@@ -136,7 +136,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         try
         {
             // SPEC v3, 2.2.2
-            if (!closed.get())
+            if (!goAwaySent.get())
             {
                 RstStreamFrame frame = new RstStreamFrame(version, rstInfo.getStreamId(), rstInfo.getStreamStatus().getCode(version));
                 control(null, frame);
@@ -203,9 +203,9 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     @Override
     public void goAway(short version)
     {
-        if (closed.compareAndSet(false, true))
+        if (goAwaySent.compareAndSet(false, true))
         {
-            if (!rejected)
+            if (!goAwayReceived.get())
             {
                 GoAwayFrame frame = new GoAwayFrame(version, lastStreamId, SessionStatus.OK.getCode());
                 goAway(frame);
@@ -232,7 +232,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         logger.debug("Processing {}", frame);
 
-        if (closed.get())
+        if (goAwaySent.get())
         {
             logger.debug("Skipped processing of {}", frame);
             return;
@@ -297,7 +297,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         logger.debug("Processing {}, {} data bytes", frame, data.remaining());
 
-        if (closed.get())
+        if (goAwaySent.get())
         {
             logger.debug("Skipped processing of {}", frame);
             return;
@@ -468,9 +468,16 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
 
     private void onGoAway(GoAwayFrame frame)
     {
-        rejected = true;
-        notifyOnGoAway(frame);
-        flush();
+        if (goAwayReceived.compareAndSet(false, true))
+        {
+            notifyOnGoAway(frame);
+            flush();
+
+            // SPDY does not require to send back a response to a GO_AWAY.
+            // We notified the application of the last good stream id,
+            // tried our best to flush remaining data, and close.
+            controller.close(false);
+        }
     }
 
     private void onHeaders(HeadersFrame frame)
@@ -688,7 +695,11 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         public void complete()
         {
             if (frame.getType() == ControlFrameType.GO_AWAY)
-                controller.close(true);
+            {
+                // After sending a GO_AWAY we need to hard close the connection.
+                // Recipients will know the last good stream id and act accordingly.
+                controller.close(false);
+            }
         }
 
         @Override
