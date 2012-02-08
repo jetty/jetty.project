@@ -130,6 +130,7 @@ public class Parser
     {
         try
         {
+            logger.debug("Parsing {} bytes", buffer.remaining());
             while (buffer.hasRemaining())
             {
                 switch (state)

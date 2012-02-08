@@ -422,7 +422,7 @@ public class SPDYClient
             Parser parser = new Parser(compressionFactory.newDecompressor());
             Generator generator = new Generator(compressionFactory.newCompressor());
 
-            AsyncSPDYConnection connection = new AsyncSPDYConnection(endPoint, parser);
+            SPDYAsyncConnection connection = new SPDYAsyncConnection(endPoint, parser);
             endPoint.setConnection(connection);
 
             StandardSession session = new StandardSession(connection, 1, sessionFuture.listener, generator);

@@ -201,11 +201,14 @@ public class StandardStream implements IStream
     {
         try
         {
-            // TODO: if the read buffer is small, but the default window size is big,
-            // we will send many window update frames... perhaps we can delay
-            // window update frames until we have a bigger delta to send
-            WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(getVersion(), getId(), delta);
-            session.control(this, windowUpdateFrame);
+            if (delta > 0)
+            {
+                // TODO: if the read buffer is small, but the default window size is big,
+                // we will send many window update frames... perhaps we can delay
+                // window update frames until we have a bigger delta to send
+                WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(getVersion(), getId(), delta);
+                session.control(this, windowUpdateFrame);
+            }
         }
         catch (StreamException x)
         {

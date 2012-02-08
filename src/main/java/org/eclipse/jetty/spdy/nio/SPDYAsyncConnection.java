@@ -35,15 +35,15 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AsyncSPDYConnection extends AbstractConnection implements AsyncConnection, Controller
+public class SPDYAsyncConnection extends AbstractConnection implements AsyncConnection, Controller
 {
-    private static final Logger logger = LoggerFactory.getLogger(AsyncSPDYConnection.class);
+    private static final Logger logger = LoggerFactory.getLogger(SPDYAsyncConnection.class);
     private final Parser parser;
     private ByteBuffer buffer;
     private Handler handler;
     private volatile boolean flushing;
 
-    public AsyncSPDYConnection(EndPoint endp, Parser parser)
+    public SPDYAsyncConnection(EndPoint endp, Parser parser)
     {
         super(endp);
         this.parser = parser;
@@ -58,11 +58,9 @@ public class AsyncSPDYConnection extends AbstractConnection implements AsyncConn
         {
             int filled = fill();
             progress = filled > 0;
-            logger.debug("Filled {} from {}", filled, endPoint);
 
             int flushed = flush();
             progress |= flushed > 0;
-            logger.debug("Flushed {} to {}", flushed, endPoint);
 
             endPoint.flush();
 
@@ -74,11 +72,12 @@ public class AsyncSPDYConnection extends AbstractConnection implements AsyncConn
         return this;
     }
 
-    protected int fill() throws IOException
+    public int fill() throws IOException
     {
         NIOBuffer jettyBuffer = new DirectNIOBuffer(1024);
         AsyncEndPoint endPoint = getEndPoint();
         int filled = endPoint.fill(jettyBuffer);
+        logger.debug("Filled {} from {}", filled, endPoint);
         if (filled > 0)
         {
             ByteBuffer buffer = jettyBuffer.getByteBuffer();
@@ -86,16 +85,17 @@ public class AsyncSPDYConnection extends AbstractConnection implements AsyncConn
             buffer.position(jettyBuffer.getIndex());
             parser.parse(buffer);
         }
-
         return filled;
     }
 
-    protected int flush()
+    public int flush()
     {
+        int result = 0;
         // Volatile read to ensure visibility of buffer and handler
-        if (!flushing)
-            return 0;
-        return write(buffer, handler);
+        if (flushing)
+            result = write(buffer, handler);
+        logger.debug("Flushed {} to {}", result, getEndPoint());
+        return result;
     }
 
     @Override

@@ -56,7 +56,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         if (listener == null)
             listener = newServerSessionFrameListener(endPoint, attachment);
 
-        ServerAsyncSPDYConnection connection = new ServerAsyncSPDYConnection(endPoint, parser, listener);
+        ServerSPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, parser, listener);
         endPoint.setConnection(connection);
 
         final StandardSession session = new StandardSession(connection, 2, listener, generator);
@@ -71,12 +71,12 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         return listener;
     }
 
-    private static class ServerAsyncSPDYConnection extends AsyncSPDYConnection
+    private static class ServerSPDYAsyncConnection extends SPDYAsyncConnection
     {
         private final ServerSessionFrameListener listener;
         private volatile Session session;
 
-        private ServerAsyncSPDYConnection(EndPoint endPoint, Parser parser, ServerSessionFrameListener listener)
+        private ServerSPDYAsyncConnection(EndPoint endPoint, Parser parser, ServerSessionFrameListener listener)
         {
             super(endPoint, parser);
             this.listener = listener;
