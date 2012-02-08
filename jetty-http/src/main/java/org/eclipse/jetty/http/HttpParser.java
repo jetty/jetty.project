@@ -339,14 +339,14 @@ public class HttpParser implements Parser
                     case STATE_URI:
                         if (ch == HttpTokens.SPACE)
                         {
-                            _field1=BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__ISO_8859_1_CHARSET);
+                            _field1=BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__UTF8_CHARSET);
                             start=-1;
                             _state=STATE_SPACE2;
                         }
                         else if (ch < HttpTokens.SPACE && ch>=0)
                         {
                             // HTTP/0.9
-                            _field1=BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__ISO_8859_1_CHARSET);
+                            _field1=BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__UTF8_CHARSET);
                             start=-1;
                             _requestHandler.startRequest(_field0,_field1,null);
                             _persistent=false;
@@ -497,7 +497,7 @@ public class HttpParser implements Parser
                                         }
                                     }
 
-                                    _handler.parsedHeader(_field0, _field0);
+                                    _handler.parsedHeader(_field0, _field1);
                                 }
                                 _field0=_field1=null;
                                 _header=null;

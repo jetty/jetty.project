@@ -47,15 +47,12 @@ public class HttpParserTest
     @Test
     public void testLineParse1() throws Exception
     {
-        StringEndPoint io=new StringEndPoint();
-        io.setInput("GET /999\015\012");
-        ByteBuffer buffer= BufferUtil.allocate(4096);
-        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+        ByteBuffer buffer= BufferUtil.toBuffer("GET /999\015\012");
 
         f2= null;
         Handler handler = new Handler();
-        HttpParser parser= new HttpParser(buffers,io, handler);
-        parser.parse();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parse(buffer);
         assertEquals("GET", f0);
         assertEquals("/999", f1);
         assertEquals(null, f2);
@@ -65,15 +62,12 @@ public class HttpParserTest
     @Test
     public void testLineParse2() throws Exception
     {
-        StringEndPoint io=new StringEndPoint();
-        io.setInput("POST /222  \015\012");
-        ByteBuffer buffer= BufferUtil.allocate(4096);
-        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /222  \015\012");
 
         f2= null;
         Handler handler = new Handler();
-        HttpParser parser= new HttpParser(buffers,io, handler);
-        parser.parse();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parse(buffer);
         assertEquals("POST", f0);
         assertEquals("/222", f1);
         assertEquals(null, f2);
@@ -83,14 +77,11 @@ public class HttpParserTest
     @Test
     public void testLineParse3() throws Exception
     {
-        StringEndPoint io=new StringEndPoint();
-        io.setInput("POST /fo\u0690 HTTP/1.0\015\012" + "\015\012");
-        ByteBuffer buffer= BufferUtil.allocate(4096);
-        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /fo\u0690 HTTP/1.0\015\012" + "\015\012",StringUtil.__UTF8_CHARSET);
 
         Handler handler = new Handler();
-        HttpParser parser= new HttpParser(buffers,io, handler);
-        parser.parse();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parse(buffer);
         assertEquals("POST", f0);
         assertEquals("/fo\u0690", f1);
         assertEquals("HTTP/1.0", f2);
@@ -100,14 +91,11 @@ public class HttpParserTest
     @Test
     public void testLineParse4() throws Exception
     {
-        StringEndPoint io=new StringEndPoint();
-        io.setInput("POST /foo?param=\u0690 HTTP/1.0\015\012" + "\015\012");
-        ByteBuffer buffer= BufferUtil.allocate(4096);
-        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /foo?param=\u0690 HTTP/1.0\015\012" + "\015\012",StringUtil.__UTF8_CHARSET);
 
         Handler handler = new Handler();
-        HttpParser parser= new HttpParser(buffers,io, handler);
-        parser.parse();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parse(buffer);
         assertEquals("POST", f0);
         assertEquals("/foo?param=\u0690", f1);
         assertEquals("HTTP/1.0", f2);
@@ -117,14 +105,10 @@ public class HttpParserTest
     @Test
     public void testConnect() throws Exception
     {
-        StringEndPoint io=new StringEndPoint();
-        io.setInput("CONNECT 192.168.1.2:80 HTTP/1.1\015\012" + "\015\012");
-        ByteBuffer buffer= BufferUtil.allocate(4096);
-        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
-
+        ByteBuffer buffer= BufferUtil.toBuffer("CONNECT 192.168.1.2:80 HTTP/1.1\015\012" + "\015\012");
         Handler handler = new Handler();
-        HttpParser parser= new HttpParser(buffers,io, handler);
-        parser.parse();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parse(buffer);
         assertTrue(handler.request);
         assertEquals("CONNECT", f0);
         assertEquals("192.168.1.2:80", f1);
@@ -135,8 +119,7 @@ public class HttpParserTest
     @Test
     public void testHeaderParse() throws Exception
     {
-        StringEndPoint io=new StringEndPoint();
-        io.setInput(
+        ByteBuffer buffer= BufferUtil.toBuffer(
             "GET / HTTP/1.0\015\012"
                 + "Host: localhost\015\012"
                 + "Header1: value1\015\012"
@@ -147,12 +130,10 @@ public class HttpParserTest
                 + "  value4\015\012"
                 + "Server5: notServer\015\012"
                 + "\015\012");
-        ByteBuffer buffer= BufferUtil.allocate(4096);
-        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
-
         Handler handler = new Handler();
-        HttpParser parser= new HttpParser(buffers,io, handler);
-        parser.parse();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parse(buffer);
+        
         assertEquals("GET", f0);
         assertEquals("/", f1);
         assertEquals("HTTP/1.0", f2);
@@ -163,7 +144,7 @@ public class HttpParserTest
         assertEquals("Header2", hdr[2]);
         assertEquals("value 2a value 2b", val[2]);
         assertEquals("Header3", hdr[3]);
-        assertEquals("", val[3]);
+        assertEquals(null, val[3]);
         assertEquals("Header4", hdr[4]);
         assertEquals("value4", val[4]);
         assertEquals("Server5", hdr[5]);
@@ -172,10 +153,17 @@ public class HttpParserTest
     }
 
     @Test
+    public void testHttpHeaders() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("Transfer-Encoding");
+        assertEquals(HttpHeaders.TRANSFER_ENCODING,HttpHeaders.CACHE.get(buffer));
+        
+    }
+    
+    @Test
     public void testChunkParse() throws Exception
     {
-        StringEndPoint io=new StringEndPoint();
-        io.setInput(
+        ByteBuffer buffer= BufferUtil.toBuffer(
             "GET /chunk HTTP/1.0\015\012"
                 + "Header1: value1\015\012"
                 + "Transfer-Encoding: chunked\015\012"
@@ -185,13 +173,10 @@ public class HttpParserTest
                 + "1a\015\012"
                 + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\015\012"
                 + "0\015\012");
-        ByteBuffer buffer= BufferUtil.allocate(4096);
-        ByteBuffer content=BufferUtil.allocate(8192);
-        SimpleBuffers buffers=new SimpleBuffers(buffer,content);
-
         Handler handler = new Handler();
-        HttpParser parser= new HttpParser(buffers,io, handler);
-        parser.parse();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parse(buffer);
+        
         assertEquals("GET", f0);
         assertEquals("/chunk", f1);
         assertEquals("HTTP/1.0", f2);
@@ -557,7 +542,7 @@ public class HttpParserTest
         {
             if (_content==null)
                 _content="";
-            _content= _content + ref;
+            _content= _content + BufferUtil.toString(ref,StringUtil.__UTF8_CHARSET);
         }
 
         public void startRequest(String tok0, String tok1, String tok2)
