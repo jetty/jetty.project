@@ -282,7 +282,7 @@ public class HTTPOverSPDYTest
         });
         stream.data(new StringDataInfo(data, true));
 
-        Assert.assertTrue(handlerLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -330,7 +330,7 @@ public class HTTPOverSPDYTest
 
         stream.data(new StringDataInfo(data2, true));
 
-        Assert.assertTrue(handlerLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
     }
 }
