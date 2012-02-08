@@ -2,6 +2,8 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 
 public abstract class AbstractBuffers implements Buffers
 {

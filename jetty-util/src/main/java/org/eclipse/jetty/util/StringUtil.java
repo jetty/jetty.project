@@ -14,7 +14,10 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -33,6 +36,9 @@ public class StringUtil
 {
     private static final Logger LOG = Log.getLogger(StringUtil.class);
     
+    
+    private final static StringMap<String> CHARSETS= new StringMap<String>(true);
+    
     public static final String ALL_INTERFACES="0.0.0.0";
     public static final String CRLF="\015\012";
     public static final String __LINE_SEPARATOR=
@@ -40,7 +46,6 @@ public class StringUtil
        
     public static final String __ISO_8859_1="ISO-8859-1";
     public final static String __UTF8="UTF-8";
-    public final static String __UTF8Alt="UTF8";
     public final static String __UTF16="UTF-16";
     
     public final static Charset __UTF8_CHARSET;
@@ -50,7 +55,51 @@ public class StringUtil
     {
         __UTF8_CHARSET=Charset.forName(__UTF8);
         __ISO_8859_1_CHARSET=Charset.forName(__ISO_8859_1);
+        
+        CHARSETS.put("UTF-8",__UTF8);
+        CHARSETS.put("UTF8",__UTF8);
+        CHARSETS.put("UTF-16",__UTF16);
+        CHARSETS.put("UTF16",__UTF16);
+        CHARSETS.put("ISO-8859-1",__ISO_8859_1);
+        CHARSETS.put("ISO_8859_1",__ISO_8859_1);
     }
+    
+    /* ------------------------------------------------------------ */
+    /** Convert alternate charset names (eg utf8) to normalized
+     * name (eg UTF-8).
+     */
+    public static String normalizeCharset(String s)
+    {
+        String n=CHARSETS.get(s);
+        return (n==null)?s:n;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convert alternate charset names (eg utf8) to normalized
+     * name (eg UTF-8).
+     */
+    public static String normalizeCharset(String s,int offset,int length)
+    {
+        Map.Entry<String,String> n=CHARSETS.getEntry(s,offset,length);       
+        return (n==null)?s.substring(offset,offset+length):n.getValue();
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Convert alternate charset names (eg utf8) to normalized
+     * name (eg UTF-8).
+     */
+    public static String normalizeCharset(ByteBuffer b,int position,int length)
+    {
+        Map.Entry<String,String> n=CHARSETS.getEntry(b,position,length); 
+        if (n!=null)
+            return n.getValue();
+        ByteBuffer slice = b.slice();
+        slice.position(position);
+        slice.limit(position+length);
+        return BufferUtil.toString(slice);
+    }
+    
+    
     
     private static char[] lowercases = {
           '\000','\001','\002','\003','\004','\005','\006','\007',
@@ -330,7 +379,7 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     public static boolean isUTF8(String charset)
     {
-        return __UTF8.equalsIgnoreCase(charset)||__UTF8Alt.equalsIgnoreCase(charset);
+        return __UTF8.equalsIgnoreCase(charset)||__UTF8.equalsIgnoreCase(normalizeCharset(charset));
     }
 
 
@@ -496,5 +545,84 @@ public class StringUtil
         }
       
         return sidBytes;
+    }
+    
+
+    /**
+     * Convert String to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
+     * 
+     * @param string
+     *            A String containing an integer.
+     * @return an int
+     */
+    public static int toInt(String string)
+    {
+        int val = 0;
+        boolean started = false;
+        boolean minus = false;
+
+        for (int i = 0; i < string.length(); i++)
+        {
+            char b = string.charAt(i);
+            if (b <= ' ')
+            {
+                if (started)
+                    break;
+            }
+            else if (b >= '0' && b <= '9')
+            {
+                val = val * 10 + (b - '0');
+                started = true;
+            }
+            else if (b == '-' && !started)
+            {
+                minus = true;
+            }
+            else
+                break;
+        }
+
+        if (started)
+            return minus?(-val):val;
+        throw new NumberFormatException(string);
+    }
+
+    /**
+     * Convert String to an long. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
+     * 
+     * @param string
+     *            A String containing an integer.
+     * @return an int
+     */
+    public static long toLong(String string)
+    {
+        long val = 0;
+        boolean started = false;
+        boolean minus = false;
+
+        for (int i = 0; i < string.length(); i++)
+        {
+            char b = string.charAt(i);
+            if (b <= ' ')
+            {
+                if (started)
+                    break;
+            }
+            else if (b >= '0' && b <= '9')
+            {
+                val = val * 10L + (b - '0');
+                started = true;
+            }
+            else if (b == '-' && !started)
+            {
+                minus = true;
+            }
+            else
+                break;
+        }
+
+        if (started)
+            return minus?(-val):val;
+        throw new NumberFormatException(string);
     }
 }

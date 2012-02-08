@@ -13,30 +13,54 @@
 
 package org.eclipse.jetty.http;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache;
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringMap;
+
 
 /* ------------------------------------------------------------------------------- */
-/** 
- * 
- * 
- */
-public class HttpVersions
+public enum HttpVersions
 {
-	public final static String
-		HTTP_0_9 = "",
-		HTTP_1_0 = "HTTP/1.0",
-		HTTP_1_1 = "HTTP/1.1";
-		
-	public final static int
-		HTTP_0_9_ORDINAL=9,
-		HTTP_1_0_ORDINAL=10,
-		HTTP_1_1_ORDINAL=11;
-	
-	public final static BufferCache CACHE = new BufferCache();
-	
-    public final static Buffer 
-        HTTP_0_9_BUFFER=CACHE.add(HTTP_0_9,HTTP_0_9_ORDINAL),
-        HTTP_1_0_BUFFER=CACHE.add(HTTP_1_0,HTTP_1_0_ORDINAL),
-        HTTP_1_1_BUFFER=CACHE.add(HTTP_1_1,HTTP_1_1_ORDINAL);
+    HTTP_0_9("HTTP/0.9",9),
+    HTTP_1_0("HTTP/1.0",10),
+    HTTP_1_1("HTTP/1.1",11);
+    
+    /* ------------------------------------------------------------ */
+    public final static StringMap<HttpVersions> CACHE= new StringMap<HttpVersions>(true);
+    static
+    {
+        for (HttpVersions version : HttpVersions.values())
+            CACHE.put(version.toString(),version);
+    }
+    
+    private final String _string;
+    private final ByteBuffer _buffer;
+    private final int _version;
+
+    /* ------------------------------------------------------------ */
+    HttpVersions(String s,int version)
+    {
+        _string=s;
+        _buffer=BufferUtil.toBuffer(s);
+        _version=version;
+    }
+
+    /* ------------------------------------------------------------ */
+    public ByteBuffer toBuffer()
+    {
+        return _buffer.asReadOnlyBuffer();
+    }
+    
+    /* ------------------------------------------------------------ */
+    public int getVerion()
+    {
+        return _version;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String toString()
+    {
+        return _string;
+    }
 }

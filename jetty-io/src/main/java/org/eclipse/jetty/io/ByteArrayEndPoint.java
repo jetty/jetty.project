@@ -16,6 +16,8 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 
 
 /* ------------------------------------------------------------ */

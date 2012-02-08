@@ -1,6 +1,8 @@
 package org.eclipse.jetty.http;
 
-import org.eclipse.jetty.io.Buffer;
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -42,9 +44,9 @@ public class MimeTypesTest
     private void assertMimeTypeByExtension(String expectedMimeType, String filename)
     {
         MimeTypes mimetypes = new MimeTypes();
-        Buffer contentType = mimetypes.getMimeByExtension(filename);
+        ByteBuffer contentType = mimetypes.getMimeByExtension(filename);
         String prefix = "MimeTypes.getMimeByExtension(" + filename + ")";
         Assert.assertNotNull(prefix,contentType);
-        Assert.assertEquals(prefix,expectedMimeType,contentType.toString());
+        Assert.assertEquals(prefix,expectedMimeType,BufferUtil.toString(contentType));
     }
 }

@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -34,16 +35,13 @@ import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.io.BufferDateCache;
-import org.eclipse.jetty.io.BufferUtil;
-import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -289,12 +287,12 @@ public class HttpFields
 
     /* -------------------------------------------------------------- */
     public final static String __01Jan1970=formatDate(0);
-    public final static Buffer __01Jan1970_BUFFER=new ByteArrayBuffer(__01Jan1970);
+    public final static ByteBuffer __01Jan1970_BUFFER=BufferUtil.toBuffer(__01Jan1970);
     public final static String __01Jan1970_COOKIE = formatCookieDate(0).trim();
-
+    private final static byte[] __colon_space = new byte[] {':',' '};
     /* -------------------------------------------------------------- */
     private final ArrayList<Field> _fields = new ArrayList<Field>(20);
-    private final HashMap<Buffer,Field> _names = new HashMap<Buffer,Field>(32);
+    private final StringMap<Field> _names = new StringMap<Field>(true);
     private final int _maxCookieVersion;
     
     /* ------------------------------------------------------------ */
@@ -316,38 +314,6 @@ public class HttpFields
     }
     
 
-    // TODO externalize this cache so it can be configurable
-    private static ConcurrentMap<String, Buffer> __cache = new ConcurrentHashMap<String, Buffer>();
-    private static int __cacheSize = Integer.getInteger("org.eclipse.jetty.http.HttpFields.CACHE",2000);
-    
-    /* -------------------------------------------------------------- */
-    private Buffer convertValue(String value)
-    {
-        Buffer buffer = __cache.get(value);
-        if (buffer!=null)
-            return buffer;
-        
-        try
-        {   
-            buffer = new ByteArrayBuffer(value,StringUtil.__ISO_8859_1);
-            
-            if (__cacheSize>0)
-            {
-                if (__cache.size()>__cacheSize)
-                    __cache.clear();
-                Buffer b=__cache.putIfAbsent(value,buffer);
-                if (b!=null)
-                    buffer=b;
-            }
-            
-            return buffer;
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-    
     /* -------------------------------------------------------------- */
     /**
      * Get Collection of header names. 
@@ -355,11 +321,10 @@ public class HttpFields
     public Collection<String> getFieldNamesCollection()
     {
         final List<String> list = new ArrayList<String>(_fields.size());
-
 	for (Field f : _fields)
 	{
 	    if (f!=null)
-	        list.add(BufferUtil.to8859_1_String(f._name));
+	        list.add(f._name);
 	}
 	return list;
     }
@@ -404,29 +369,29 @@ public class HttpFields
     }
 
     /* ------------------------------------------------------------ */
-    private Field getField(String name)
+    public Field getField(HttpHeaders header)
     {
-        return _names.get(HttpHeaders.CACHE.lookup(name));
+        return _names.get(header.toString());
     }
-
+    
     /* ------------------------------------------------------------ */
-    private Field getField(Buffer name)
+    public Field getField(String name)
     {
-        return _names.get(HttpHeaders.CACHE.lookup(name));
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean containsKey(Buffer name)
-    {
-        return _names.containsKey(HttpHeaders.CACHE.lookup(name));
+        return _names.get(name);
     }
 
     /* ------------------------------------------------------------ */
     public boolean containsKey(String name)
     {
-        return _names.containsKey(HttpHeaders.CACHE.lookup(name));
+        return _names.containsKey(name);
     }
 
+    /* -------------------------------------------------------------- */
+    public String getStringField(HttpHeaders header)
+    {
+        return getStringField(header.toString());
+    }
+    
     /* -------------------------------------------------------------- */
     /**
      * @return the value of a field, or null if not found. For multiple fields of the same name,
@@ -437,30 +402,6 @@ public class HttpFields
     {
         Field field = getField(name);
         return field==null?null:field.getValue();
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * @return the value of a field, or null if not found. For multiple fields of the same name,
-     *         only the first is returned.
-     * @param name the case-insensitive field name
-     */
-    public String getStringField(Buffer name)
-    {
-        Field field = getField(name);
-        return field==null?null:field.getValue();
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * @return the value of a field, or null if not found. For multiple fields of the same name,
-     *         only the first is returned.
-     * @param name the case-insensitive field name
-     */
-    public Buffer get(Buffer name)
-    {
-        Field field = getField(name);
-        return field==null?null:field._value;
     }
 
 
@@ -495,41 +436,6 @@ public class HttpFields
      * @param name the case-insensitive field name
      */
     public Enumeration<String> getValues(String name)
-    {
-        final Field field = getField(name);
-        if (field == null) 
-        {
-            List<String> empty=Collections.emptyList();
-            return Collections.enumeration(empty);
-        }
-
-        return new Enumeration<String>()
-        {
-            Field f = field;
-
-            public boolean hasMoreElements()
-            {
-                return f != null;
-            }
-
-            public String nextElement() throws NoSuchElementException
-            {
-                if (f == null) throw new NoSuchElementException();
-                Field n = f;
-                f = f._next;
-                return n.getValue();
-            }
-        };
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * Get multi headers
-     * 
-     * @return Enumeration of the value Strings
-     * @param name the case-insensitive field name
-     */
-    public Enumeration<String> getValues(Buffer name)
     {
         final Field field = getField(name);
         if (field == null) 
@@ -599,7 +505,7 @@ public class HttpFields
         };
     }
 
-    
+
     /* -------------------------------------------------------------- */
     /**
      * Set a field.
@@ -609,48 +515,10 @@ public class HttpFields
      */
     public void put(String name, String value)
     {
-        if (value==null)
-            remove(name);
-        else
-        {
-            Buffer n = HttpHeaders.CACHE.lookup(name);
-            Buffer v = convertValue(value);
-            put(n, v);
-        }
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * Set a field.
-     * 
-     * @param name the name of the field
-     * @param value the value of the field. If null the field is cleared.
-     */
-    public void put(Buffer name, String value)
-    {
-        Buffer n = HttpHeaders.CACHE.lookup(name);
-        Buffer v = convertValue(value);
-        put(n, v);
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * Set a field.
-     * 
-     * @param name the name of the field
-     * @param value the value of the field. If null the field is cleared.
-     */
-    public void put(Buffer name, Buffer value)
-    {
         remove(name);
         if (value == null)
             return;
 
-        if (!(name instanceof BufferCache.CachedBuffer)) 
-            name = HttpHeaders.CACHE.lookup(name);
-        if (!(value instanceof CachedBuffer))
-            value= HttpHeaderValues.CACHE.lookup(value).asImmutableBuffer();
-        
         // new value;
         Field field = new Field(name, value);
         _fields.add(field);
@@ -664,31 +532,12 @@ public class HttpFields
      * @param name the name of the field
      * @param list the List value of the field. If null the field is cleared.
      */
-    public void put(String name, List<?> list)
+    public void put(String name, List<String> list)
     {
-        if (list == null || list.size() == 0)
-        {
-            remove(name);
-            return;
-        }
-        Buffer n = HttpHeaders.CACHE.lookup(name);
-
-        Object v = list.get(0);
-        if (v != null)
-            put(n, HttpHeaderValues.CACHE.lookup(v.toString()));
-        else
-            remove(n);
-
-        if (list.size() > 1)
-        {
-            java.util.Iterator<?> iter = list.iterator();
-            iter.next();
-            while (iter.hasNext())
-            {
-                v = iter.next();
-                if (v != null) put(n, HttpHeaderValues.CACHE.lookup(v.toString()));
-            }
-        }
+        remove(name);
+        for (String v : list)
+            if (v!=null)
+                add(name,v);
     }
 
     /* -------------------------------------------------------------- */
@@ -702,35 +551,8 @@ public class HttpFields
      *                value.
      */
     public void add(String name, String value) throws IllegalArgumentException
-    {
-        if (value==null)
-            return;
-        Buffer n = HttpHeaders.CACHE.lookup(name);
-        Buffer v = convertValue(value);
-        add(n, v);
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
-     * headers of the same name.
-     * 
-     * @param name the name of the field
-     * @param value the value of the field.
-     * @exception IllegalArgumentException If the name is a single valued field and already has a
-     *                value.
-     */
-    public void add(Buffer name, Buffer value) throws IllegalArgumentException
     {   
         if (value == null) throw new IllegalArgumentException("null value");
-
-        if (!(name instanceof CachedBuffer))
-            name = HttpHeaders.CACHE.lookup(name);
-        name=name.asImmutableBuffer();
-        
-        if (!(value instanceof CachedBuffer) && HttpHeaderValues.hasKnownValues(HttpHeaders.CACHE.getOrdinal(name)))
-            value= HttpHeaderValues.CACHE.lookup(value);
-        value=value.asImmutableBuffer();
         
         Field field = _names.get(name);
         Field last = null;
@@ -751,6 +573,7 @@ public class HttpFields
             _names.put(name, field);
     }
 
+
     /* ------------------------------------------------------------ */
     /**
      * Remove a field.
@@ -759,19 +582,6 @@ public class HttpFields
      */
     public void remove(String name)
     {
-        remove(HttpHeaders.CACHE.lookup(name));
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Remove a field.
-     * 
-     * @param name
-     */
-    public void remove(Buffer name)
-    {
-        if (!(name instanceof BufferCache.CachedBuffer)) 
-            name = HttpHeaders.CACHE.lookup(name);
         Field field = _names.remove(name);
         while (field != null)
         {
@@ -796,20 +606,6 @@ public class HttpFields
 
     /* -------------------------------------------------------------- */
     /**
-     * Get a header as an long value. Returns the value of an integer field or -1 if not found. The
-     * case of the field name is ignored.
-     * 
-     * @param name the case-insensitive field name
-     * @exception NumberFormatException If bad long found
-     */
-    public long getLongField(Buffer name) throws NumberFormatException
-    {
-        Field field = getField(name);
-        return field==null?-1L:field.getLongValue();
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
      * Get a header as a date value. Returns the value of a date field, or -1 if not found. The case
      * of the field name is ignored.
      * 
@@ -821,7 +617,7 @@ public class HttpFields
         if (field == null) 
             return -1;
 
-        String val = valueParameters(BufferUtil.to8859_1_String(field._value), null);
+        String val = valueParameters(field._value, null);
         if (val == null) 
             return -1;
 
@@ -831,18 +627,6 @@ public class HttpFields
         return date;
     }
 
-    /* -------------------------------------------------------------- */
-    /**
-     * Sets the value of an long field.
-     * 
-     * @param name the field name
-     * @param value the field long value
-     */
-    public void putLongField(Buffer name, long value)
-    {
-        Buffer v = BufferUtil.toBuffer(value);
-        put(name, v);
-    }
 
     /* -------------------------------------------------------------- */
     /**
@@ -853,51 +637,10 @@ public class HttpFields
      */
     public void putLongField(String name, long value)
     {
-        Buffer n = HttpHeaders.CACHE.lookup(name);
-        Buffer v = BufferUtil.toBuffer(value);
-        put(n, v);
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * Sets the value of an long field.
-     * 
-     * @param name the field name
-     * @param value the field long value
-     */
-    public void addLongField(String name, long value)
-    {
-        Buffer n = HttpHeaders.CACHE.lookup(name);
-        Buffer v = BufferUtil.toBuffer(value);
-        add(n, v);
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * Sets the value of an long field.
-     * 
-     * @param name the field name
-     * @param value the field long value
-     */
-    public void addLongField(Buffer name, long value)
-    {
-        Buffer v = BufferUtil.toBuffer(value);
-        add(name, v);
-    }
-
-    /* -------------------------------------------------------------- */
-    /**
-     * Sets the value of a date field.
-     * 
-     * @param name the field name
-     * @param date the field date value
-     */
-    public void putDateField(Buffer name, long date)
-    {
-        String d=formatDate(date);
-        Buffer v = new ByteArrayBuffer(d);
+        String v = Long.toString(value);
         put(name, v);
     }
+
 
     /* -------------------------------------------------------------- */
     /**
@@ -908,8 +651,8 @@ public class HttpFields
      */
     public void putDateField(String name, long date)
     {
-        Buffer n = HttpHeaders.CACHE.lookup(name);
-        putDateField(n,date);
+        String d=formatDate(date);
+        put(name, d);
     }
 
     /* -------------------------------------------------------------- */
@@ -922,9 +665,7 @@ public class HttpFields
     public void addDateField(String name, long date)
     {
         String d=formatDate(date);
-        Buffer n = HttpHeaders.CACHE.lookup(name);
-        Buffer v = new ByteArrayBuffer(d);
-        add(n, v);
+        add(name,d);
     }
 
     /* ------------------------------------------------------------ */
@@ -1053,7 +794,7 @@ public class HttpFields
             {
                 _fields.remove(field);
                 if (last==null)
-                    _names.put(HttpHeaders.SET_COOKIE_BUFFER,field._next);
+                    _names.put(HttpHeaders.SET_COOKIE.toString(),field._next);
                 else
                     last._next=field._next;
                 break;
@@ -1062,14 +803,14 @@ public class HttpFields
             field=field._next;
         }
 
-        add(HttpHeaders.SET_COOKIE_BUFFER, new ByteArrayBuffer(name_value_params));
+        add(HttpHeaders.SET_COOKIE.toString(), name_value_params);
         
         // Expire responses with set-cookie headers so they do not get cached.
-        put(HttpHeaders.EXPIRES_BUFFER, __01Jan1970_BUFFER);
+        put(HttpHeaders.EXPIRES.toString(), __01Jan1970);
     }
 
     /* -------------------------------------------------------------- */
-    public void putTo(Buffer buffer) throws IOException
+    public void putTo(ByteBuffer buffer) throws IOException
     {
         for (int i = 0; i < _fields.size(); i++)
         {
@@ -1130,11 +871,11 @@ public class HttpFields
     {
         if (fields == null) return;
 
-        Enumeration e = fields.getFieldNames();
+        Enumeration<String> e = fields.getFieldNames();
         while (e.hasMoreElements())
         {
             String name = (String) e.nextElement();
-            Enumeration values = fields.getValues(name);
+            Enumeration<String> values = fields.getValues(name);
             while (values.hasMoreElements())
                 add(name, (String) values.nextElement());
         }
@@ -1183,7 +924,7 @@ public class HttpFields
     /* ------------------------------------------------------------ */
     private static final Float __one = new Float("1.0");
     private static final Float __zero = new Float("0.0");
-    private static final StringMap __qualities = new StringMap();
+    private static final StringMap<Float> __qualities = new StringMap<>();
     static
     {
         __qualities.put(null, __one);
@@ -1215,11 +956,12 @@ public class HttpFields
         if (value.charAt(qe++) == 'q')
         {
             qe++;
-            Map.Entry entry = __qualities.getEntry(value, qe, value.length() - qe);
-            if (entry != null) return (Float) entry.getValue();
+            Map.Entry<String,Float> entry = __qualities.getEntry(value, qe, value.length() - qe);
+            if (entry != null) 
+                return (Float) entry.getValue();
         }
 
-        HashMap params = new HashMap(3);
+        Map<String,String> params = new HashMap<String,String>(4);
         valueParameters(value, params);
         String qs = (String) params.get("q");
         Float q = (Float) __qualities.get(qs);
@@ -1244,9 +986,10 @@ public class HttpFields
      * @param e Enumeration of values with quality parameters
      * @return values in quality order.
      */
-    public static List qualityList(Enumeration e)
+    public static List<String> qualityList(Enumeration<String> e)
     {
-        if (e == null || !e.hasMoreElements()) return Collections.EMPTY_LIST;
+        if (e == null || !e.hasMoreElements()) 
+            return Collections.emptyList();
 
         Object list = null;
         Object qual = null;
@@ -1296,65 +1039,57 @@ public class HttpFields
     /* ------------------------------------------------------------ */
     public static final class Field
     {
-        private Buffer _name;
-        private Buffer _value;
+        private final String _name;
+        private final String _value;
         private Field _next;
-
+        
         /* ------------------------------------------------------------ */
-        private Field(Buffer name, Buffer value)
+        private Field(String name, String value)
         {
             _name = name;
             _value = value;
             _next = null;
         }
         
-        /* ------------------------------------------------------------ */
-        public void putTo(Buffer buffer) throws IOException
+        private byte[] toSanitisedBytes(String s)
         {
-            int o=(_name instanceof CachedBuffer)?((CachedBuffer)_name).getOrdinal():-1;
-            if (o>=0)
-                buffer.put(_name);
-            else
+            byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
+            for (int i=bytes.length;i-->0;)
             {
-                int s=_name.getIndex();
-                int e=_name.putIndex();
-                while (s<e)
+                switch(bytes[i])
                 {
-                    byte b=_name.peek(s++);
-                    switch(b)
-                    {
-                        case '\r':
-                        case '\n':
-                        case ':' :
-                            continue;
-                        default:
-                            buffer.put(b);
-                    }
+                    case '\r':
+                    case '\n':
+                    case ':' :
+                        bytes[i]=(byte)'?';
                 }
             }
-            
-            buffer.put((byte) ':');
-            buffer.put((byte) ' ');
-            
-            o=(_value instanceof CachedBuffer)?((CachedBuffer)_value).getOrdinal():-1;
-            if (o>=0)
-                buffer.put(_value);
+            return bytes;
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void putTo(ByteBuffer buffer) throws IOException
+        {
+            HttpHeaders header = HttpHeaders.CACHE.get(_name);
+            if (header!=null)
+            {
+                buffer.put(header.toBuffer());
+                buffer.put(__colon_space);
+                
+                if (HttpHeaderValues.hasKnownValues(header))
+                {
+                    HttpHeaderValues value=HttpHeaderValues.CACHE.get(_value);
+                    if (value!=null)
+                        buffer.put(value.toBuffer());
+                    else
+                        buffer.put(toSanitisedBytes(_value));
+                }
+            }
             else
             {
-                int s=_value.getIndex();
-                int e=_value.putIndex();
-                while (s<e)
-                {
-                    byte b=_value.peek(s++);
-                    switch(b)
-                    {
-                        case '\r':
-                        case '\n':
-                            continue;
-                        default:
-                            buffer.put(b);
-                    }
-                }
+                buffer.put(toSanitisedBytes(_name));
+                buffer.put(__colon_space);
+                buffer.put(toSanitisedBytes(_value));
             }
 
             BufferUtil.putCRLF(buffer);
@@ -1363,50 +1098,27 @@ public class HttpFields
         /* ------------------------------------------------------------ */
         public String getName()
         {
-            return BufferUtil.to8859_1_String(_name);
-        }
-
-        /* ------------------------------------------------------------ */
-        Buffer getNameBuffer()
-        {
             return _name;
-        }
-
-        /* ------------------------------------------------------------ */
-        public int getNameOrdinal()
-        {
-            return HttpHeaders.CACHE.getOrdinal(_name);
         }
 
         /* ------------------------------------------------------------ */
         public String getValue()
         {
-            return BufferUtil.to8859_1_String(_value);
-        }
-
-        /* ------------------------------------------------------------ */
-        public Buffer getValueBuffer()
-        {
             return _value;
-        }
-
-        /* ------------------------------------------------------------ */
-        public int getValueOrdinal()
-        {
-            return HttpHeaderValues.CACHE.getOrdinal(_value);
         }
 
         /* ------------------------------------------------------------ */
         public int getIntValue()
         {
-            return (int) getLongValue();
+            return StringUtil.toInt(_value);
         }
 
         /* ------------------------------------------------------------ */
         public long getLongValue()
         {
-            return BufferUtil.toLong(_value);
+            return StringUtil.toLong(_value);
         }
+        
 
         /* ------------------------------------------------------------ */
         public String toString()

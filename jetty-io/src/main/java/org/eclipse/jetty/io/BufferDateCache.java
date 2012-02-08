@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.text.DateFormatSymbols;
 import java.util.Locale;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.DateCache;
 
 public class BufferDateCache extends DateCache

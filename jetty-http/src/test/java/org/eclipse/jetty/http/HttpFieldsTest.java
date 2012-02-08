@@ -18,15 +18,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.View;
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.Assert;
 import org.junit.Test;
+import org.junit.matchers.JUnitMatchers;
 
 /**
  *
@@ -46,7 +47,7 @@ public class HttpFieldsTest
         assertNull(header.getStringField("name2"));
 
         int matches=0;
-        Enumeration e = header.getFieldNames();
+        Enumeration<String> e = header.getFieldNames();
         while (e.hasMoreElements())
         {
             Object o=e.nextElement();
@@ -69,7 +70,7 @@ public class HttpFieldsTest
         HttpFields header = new HttpFields();
 
         header.put("name0", "value0");
-        header.put(new ByteArrayBuffer("name1"), new ByteArrayBuffer("value1"));
+        header.put("name1", "value1");
 
         assertEquals("value0",header.getStringField("name0"));
         assertEquals("value0",header.getStringField("Name0"));
@@ -86,11 +87,14 @@ public class HttpFieldsTest
         header.put("name\r\n1", "value1");
         header.put("name:2", "value:\r\n2");
 
-        ByteArrayBuffer buffer = new ByteArrayBuffer(1024);
+        ByteBuffer buffer = BufferUtil.allocate(1024);
+        buffer.clear();
         header.putTo(buffer);
-        assertTrue(buffer.toString().contains("name0: value0"));
-        assertTrue(buffer.toString().contains("name1: value1"));
-        assertTrue(buffer.toString().contains("name2: value:2"));
+        buffer.flip();
+        String out = BufferUtil.toString(buffer);
+        assertTrue(out.contains("name0: value??0"));
+        assertTrue(out.contains("name??1: value1"));
+        assertTrue(out.contains("name?2: value???2"));
     }
 
     @Test
@@ -98,20 +102,22 @@ public class HttpFieldsTest
     {
         HttpFields header = new HttpFields();
 
-        header.put("Connection", "keep-alive");
-        assertEquals(HttpHeaderValues.KEEP_ALIVE, header.getStringField(HttpHeaders.CONNECTION));
+        header.put("Connection", "Keep-Alive");
+        header.put("tRansfer-EncOding", "CHUNKED");
+        header.put("CONTENT-ENCODING", "gZIP");
 
-        int matches=0;
-        Enumeration e = header.getFieldNames();
-        while (e.hasMoreElements())
-        {
-            Object o=e.nextElement();
-            if (o==HttpHeaders.CONTENT_TYPE)
-                matches++;
-            if (o==HttpHeaders.CONNECTION)
-                matches++;
-        }
-        assertEquals(1, matches);
+        ByteBuffer buffer = BufferUtil.allocate(1024);
+        buffer.clear();
+        header.putTo(buffer);
+        buffer.flip();
+        String out = BufferUtil.toString(buffer);
+        
+        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeaders.CONNECTION+": "+HttpHeaderValues.KEEP_ALIVE));
+        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeaders.TRANSFER_ENCODING+": "+HttpHeaderValues.CHUNKED));
+        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeaders.CONTENT_ENCODING+": "+HttpHeaderValues.GZIP));
+        
+        
+        
     }
 
     @Test
@@ -175,7 +181,7 @@ public class HttpFieldsTest
         assertNull(header.getStringField("name3"));
 
         int matches=0;
-        Enumeration e = header.getFieldNames();
+        Enumeration<String> e = header.getFieldNames();
         while (e.hasMoreElements())
         {
             Object o=e.nextElement();
@@ -213,7 +219,7 @@ public class HttpFieldsTest
         assertNull(fields.getStringField("name3"));
 
         int matches=0;
-        Enumeration e = fields.getFieldNames();
+        Enumeration<String> e = fields.getFieldNames();
         while (e.hasMoreElements())
         {
             Object o=e.nextElement();
@@ -234,122 +240,7 @@ public class HttpFieldsTest
         assertEquals(false, e.hasMoreElements());
     }
 
-    @Test
-    public void testReuse() throws Exception
-    {
-        HttpFields header = new HttpFields();
-        Buffer n1=new ByteArrayBuffer("name1");
-        Buffer va=new ByteArrayBuffer("value1");
-        Buffer vb=new ByteArrayBuffer(10);
-        vb.put((byte)'v');
-        vb.put((byte)'a');
-        vb.put((byte)'l');
-        vb.put((byte)'u');
-        vb.put((byte)'e');
-        vb.put((byte)'1');
 
-        header.put("name0", "value0");
-        header.put(n1,va);
-        header.put("name2", "value2");
-
-        assertEquals("value0",header.getStringField("name0"));
-        assertEquals("value1",header.getStringField("name1"));
-        assertEquals("value2",header.getStringField("name2"));
-        assertNull(header.getStringField("name3"));
-
-        header.remove(n1);
-        assertNull(header.getStringField("name1"));
-        header.put(n1,vb);
-        assertEquals("value1",header.getStringField("name1"));
-
-        int matches=0;
-        Enumeration e = header.getFieldNames();
-        while (e.hasMoreElements())
-        {
-            Object o=e.nextElement();
-            if ("name0".equals(o))
-                matches++;
-            if ("name1".equals(o))
-                matches++;
-            if ("name2".equals(o))
-                matches++;
-        }
-        assertEquals(3, matches);
-
-        e = header.getValues("name1");
-        assertEquals(true, e.hasMoreElements());
-        assertEquals(e.nextElement(), "value1");
-        assertEquals(false, e.hasMoreElements());
-    }
-
-    @Test
-    public void testCase() throws Exception
-    {
-        HttpFields fields= new HttpFields();
-        Set s;
-        //         0123456789012345678901234567890
-        byte[] b ="Message-IDmessage-idvalueVALUE".getBytes();
-        ByteArrayBuffer buf= new ByteArrayBuffer(512);
-        buf.put(b);
-
-        View headUC= new View.CaseInsensitive(buf);
-        View headLC= new View.CaseInsensitive(buf);
-        View valUC = new View(buf);
-        View valLC = new View(buf);
-        headUC.update(0,10);
-        headLC.update(10,20);
-        valUC.update(20,25);
-        valLC.update(25,30);
-
-        fields.add("header","value");
-        fields.add(headUC,valLC);
-        fields.add("other","data");
-        s=enum2set(fields.getFieldNames());
-        assertEquals(3,s.size());
-        assertTrue(s.contains("message-id"));
-        assertEquals("value",fields.getStringField("message-id").toLowerCase());
-        assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
-
-        fields.clear();
-
-        fields.add("header","value");
-        fields.add(headLC,valLC);
-        fields.add("other","data");
-        s=enum2set(fields.getFieldNames());
-        assertEquals(3,s.size());
-        assertTrue(s.contains("message-id"));
-        assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
-        assertEquals("value",fields.getStringField("message-id").toLowerCase());
-
-        fields.clear();
-
-        fields.add("header","value");
-        fields.add(headUC,valUC);
-        fields.add("other","data");
-        s=enum2set(fields.getFieldNames());
-        assertEquals(3,s.size());
-        assertTrue(s.contains("message-id"));
-        assertEquals("value",fields.getStringField("message-id").toLowerCase());
-        assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
-
-        fields.clear();
-
-        fields.add("header","value");
-        fields.add(headLC,valUC);
-        fields.add("other","data");
-        s=enum2set(fields.getFieldNames());
-        assertEquals(3,s.size());
-        assertTrue(s.contains("message-id"));
-        assertEquals("value",fields.getStringField("Message-ID").toLowerCase());
-        assertEquals("value",fields.getStringField("message-id").toLowerCase());
-    }
-
-    @Test
-    public void testHttpHeaderValues() throws Exception
-    {
-        assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("unknown value")).getOrdinal()<0);
-        assertTrue(((CachedBuffer)HttpHeaderValues.CACHE.lookup("close")).getOrdinal()>=0);
-    }
 
     @Test
     public void testSetCookie() throws Exception
@@ -524,17 +415,4 @@ public class HttpFieldsTest
 
     }
 
-    @Test
-    public void testToString() throws Exception
-    {
-        HttpFields header = new HttpFields();
-
-        header.put(new ByteArrayBuffer("name0"), new View(new ByteArrayBuffer("value0")));
-        header.put(new ByteArrayBuffer("name1"), new View(new ByteArrayBuffer("value1".getBytes())));
-        String s1=header.toString();
-        String s2=header.toString();
-        //System.err.println(s1);
-        //System.err.println(s2);
-        assertEquals(s1,s2);
-    }
 }

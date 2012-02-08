@@ -11,12 +11,11 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
-import org.eclipse.jetty.util.StringUtil;
 
 /* ------------------------------------------------------------------------------- */
 /**
@@ -72,13 +71,13 @@ public class BufferUtil
     public static byte[] toArray(ByteBuffer buffer)
     {
         byte[] to = new byte[buffer.remaining()];
-        if (buffer.isDirect())
-            buffer.slice().get(to);
-        else
+        if (buffer.hasArray())
         {
             byte[] array = buffer.array();
-            System.arraycopy(array,buffer.position(),to,0,to.length);
+            System.arraycopy(array,buffer.arrayOffset()+buffer.position(),to,0,to.length);
         }
+        else
+            buffer.slice().get(to);
         return to;
     }
 
@@ -117,18 +116,18 @@ public class BufferUtil
                     to.put(from);
                     put=remaining;
                 }
-                else if (to.isDirect())
+                else if (from.hasArray())
                 {
                     put=to.remaining();
-                    ByteBuffer slice=from.slice();
-                    slice.limit(put);
-                    to.put(slice);
+                    to.put(from.array(),from.arrayOffset()+from.position(),put);
                     from.position(from.position()+put);
                 }
                 else
                 {
                     put=to.remaining();
-                    to.put(from.array(),from.arrayOffset()+from.position(),put);
+                    ByteBuffer slice=from.slice();
+                    slice.limit(put);
+                    to.put(slice);
                     from.position(from.position()+put);
                 }
             }
@@ -151,25 +150,46 @@ public class BufferUtil
         return toString(buffer,StringUtil.__ISO_8859_1_CHARSET);
     }
 
+    /* ------------------------------------------------------------ */
     public static String toUTF8String(ByteBuffer buffer)
     {
         return toString(buffer,StringUtil.__UTF8_CHARSET);
     }
-    
+
+    /* ------------------------------------------------------------ */
     public static String toString(ByteBuffer buffer, Charset charset)
     {
         if (buffer == null)
             return null;
-        byte[] array = buffer.isReadOnly()?null:buffer.array();
+        byte[] array = buffer.hasArray()?buffer.array():null;
         if (array == null)
         {
             byte[] to = new byte[buffer.remaining()];
             buffer.slice().get(to);
             return new String(to,0,to.length,charset);
         }
-        return new String(array,buffer.position(),buffer.remaining(),charset);
+        return new String(array,buffer.arrayOffset()+buffer.position(),buffer.remaining(),charset);
     }
 
+    /* ------------------------------------------------------------ */
+    public static String toString(ByteBuffer buffer, int position, int length, Charset charset)
+    {
+        if (buffer == null)
+            return null;
+        byte[] array = buffer.hasArray()?buffer.array():null;
+        if (array == null)
+        {
+            ByteBuffer slice=buffer.slice();
+            slice.position(position);
+            slice.limit(position+length);
+            byte[] to = new byte[length];
+            slice.get(to);
+            return new String(to,0,to.length,charset);
+        }
+        return new String(array,buffer.arrayOffset()+position,length,charset);
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      * 

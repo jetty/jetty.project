@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,94 +33,73 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class MimeTypes
 {
+    public enum Type
+    {
+        FORM_ENCODED("application/x-www-form-urlencoded"),
+        MESSAGE_HTTP("message/http"),
+        MULTIPART_BYTERANGES("multipart/byteranges"),
+
+        TEXT_HTML("text/html"),
+        TEXT_PLAIN("text/plain"),
+        TEXT_XML("text/xml"),
+        TEXT_JSON("text/json"),
+
+        TEXT_HTML_8859_1("text/html;charset=ISO-8859-1"),
+        TEXT_PLAIN_8859_1("text/plain;charset=ISO-8859-1"),
+        TEXT_XML_8859_1("text/xml;charset=ISO-8859-1"),
+        TEXT_HTML_UTF_8("text/html;charset=UTF-8"),
+        TEXT_PLAIN_UTF_8("text/plain;charset=UTF-8"),
+        TEXT_XML_UTF_8("text/xml;charset=UTF-8"),
+        TEXT_JSON_UTF_8("text/json;charset=UTF-8");
+
+
+        /* ------------------------------------------------------------ */
+        private final String _string;
+        private final ByteBuffer _buffer;
+
+        /* ------------------------------------------------------------ */
+        Type(String s)
+        {
+            _string=s;
+            _buffer=BufferUtil.toBuffer(s);
+        }
+
+        /* ------------------------------------------------------------ */
+        public ByteBuffer toBuffer()
+        {
+            return _buffer.asReadOnlyBuffer();
+        }
+
+        /* ------------------------------------------------------------ */
+        public String toString()
+        {
+            return _string;
+        }
+    }
+
+    /* ------------------------------------------------------------ */
     private static final Logger LOG = Log.getLogger(MimeTypes.class);
-
-    public final static String
-      FORM_ENCODED="application/x-www-form-urlencoded",
-      MESSAGE_HTTP="message/http",
-      MULTIPART_BYTERANGES="multipart/byteranges",
-      
-      TEXT_HTML="text/html",
-      TEXT_PLAIN="text/plain",
-      TEXT_XML="text/xml",
-      TEXT_JSON="text/json",
-      
-      TEXT_HTML_8859_1="text/html;charset=ISO-8859-1",
-      TEXT_PLAIN_8859_1="text/plain;charset=ISO-8859-1",
-      TEXT_XML_8859_1="text/xml;charset=ISO-8859-1",
-      
-      TEXT_HTML_UTF_8="text/html;charset=UTF-8",
-      TEXT_PLAIN_UTF_8="text/plain;charset=UTF-8",
-      TEXT_XML_UTF_8="text/xml;charset=UTF-8",
-      TEXT_JSON_UTF_8="text/json;charset=UTF-8";
-
-    private final static String
-      TEXT_HTML__8859_1="text/html; charset=ISO-8859-1",
-      TEXT_PLAIN__8859_1="text/plain; charset=ISO-8859-1",
-      TEXT_XML__8859_1="text/xml; charset=ISO-8859-1",
-      TEXT_HTML__UTF_8="text/html; charset=UTF-8",
-      TEXT_PLAIN__UTF_8="text/plain; charset=UTF-8",
-      TEXT_XML__UTF_8="text/xml; charset=UTF-8",
-      TEXT_JSON__UTF_8="text/json; charset=UTF-8";
-
-    private final static int
-	FORM_ENCODED_ORDINAL=1,
-    	MESSAGE_HTTP_ORDINAL=2,
-    	MULTIPART_BYTERANGES_ORDINAL=3,
-    	
-    	TEXT_HTML_ORDINAL=4,
-	TEXT_PLAIN_ORDINAL=5,
-	TEXT_XML_ORDINAL=6,
-        TEXT_JSON_ORDINAL=7,
-	
-        TEXT_HTML_8859_1_ORDINAL=8,
-        TEXT_PLAIN_8859_1_ORDINAL=9,
-        TEXT_XML_8859_1_ORDINAL=10,
-        
-        TEXT_HTML_UTF_8_ORDINAL=11,
-        TEXT_PLAIN_UTF_8_ORDINAL=12,
-        TEXT_XML_UTF_8_ORDINAL=13,
-        TEXT_JSON_UTF_8_ORDINAL=14;
+    private final static StringMap<MimeTypes.Type> CACHE= new StringMap<MimeTypes.Type>(true);
+    private final static StringMap<ByteBuffer> TYPES= new StringMap<ByteBuffer>(true); 
+    private final static Map<String,ByteBuffer> __dftMimeMap = new HashMap<String,ByteBuffer>();
+    private final static Map<String,String> __encodings = new HashMap<String,String>();
     
-    private static int __index=15;
-    
-    public final static BufferCache CACHE = new BufferCache(); 
-
-    public final static CachedBuffer
-    	FORM_ENCODED_BUFFER=CACHE.add(FORM_ENCODED,FORM_ENCODED_ORDINAL),
-    	MESSAGE_HTTP_BUFFER=CACHE.add(MESSAGE_HTTP, MESSAGE_HTTP_ORDINAL),
-    	MULTIPART_BYTERANGES_BUFFER=CACHE.add(MULTIPART_BYTERANGES,MULTIPART_BYTERANGES_ORDINAL),
-        
-        TEXT_HTML_BUFFER=CACHE.add(TEXT_HTML,TEXT_HTML_ORDINAL),
-        TEXT_PLAIN_BUFFER=CACHE.add(TEXT_PLAIN,TEXT_PLAIN_ORDINAL),
-        TEXT_XML_BUFFER=CACHE.add(TEXT_XML,TEXT_XML_ORDINAL),
-        TEXT_JSON_BUFFER=CACHE.add(TEXT_JSON,TEXT_JSON_ORDINAL),
-
-        TEXT_HTML_8859_1_BUFFER=CACHE.add(TEXT_HTML_8859_1,TEXT_HTML_8859_1_ORDINAL),
-        TEXT_PLAIN_8859_1_BUFFER=CACHE.add(TEXT_PLAIN_8859_1,TEXT_PLAIN_8859_1_ORDINAL),
-        TEXT_XML_8859_1_BUFFER=CACHE.add(TEXT_XML_8859_1,TEXT_XML_8859_1_ORDINAL),
-        
-        TEXT_HTML_UTF_8_BUFFER=CACHE.add(TEXT_HTML_UTF_8,TEXT_HTML_UTF_8_ORDINAL),
-        TEXT_PLAIN_UTF_8_BUFFER=CACHE.add(TEXT_PLAIN_UTF_8,TEXT_PLAIN_UTF_8_ORDINAL),
-        TEXT_XML_UTF_8_BUFFER=CACHE.add(TEXT_XML_UTF_8,TEXT_XML_UTF_8_ORDINAL),
-        TEXT_JSON_UTF_8_BUFFER=CACHE.add(TEXT_JSON_UTF_8,TEXT_JSON_UTF_8_ORDINAL),
-
-        TEXT_HTML__8859_1_BUFFER=CACHE.add(TEXT_HTML__8859_1,TEXT_HTML_8859_1_ORDINAL),
-        TEXT_PLAIN__8859_1_BUFFER=CACHE.add(TEXT_PLAIN__8859_1,TEXT_PLAIN_8859_1_ORDINAL),
-        TEXT_XML__8859_1_BUFFER=CACHE.add(TEXT_XML__8859_1,TEXT_XML_8859_1_ORDINAL),
-        
-        TEXT_HTML__UTF_8_BUFFER=CACHE.add(TEXT_HTML__UTF_8,TEXT_HTML_UTF_8_ORDINAL),
-        TEXT_PLAIN__UTF_8_BUFFER=CACHE.add(TEXT_PLAIN__UTF_8,TEXT_PLAIN_UTF_8_ORDINAL),
-        TEXT_XML__UTF_8_BUFFER=CACHE.add(TEXT_XML__UTF_8,TEXT_XML_UTF_8_ORDINAL),
-        TEXT_JSON__UTF_8_BUFFER=CACHE.add(TEXT_JSON__UTF_8,TEXT_JSON_UTF_8_ORDINAL);
-
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private final static Map __dftMimeMap = new HashMap();
-    private final static Map __encodings = new HashMap();
     static
     {
+        
+        for (MimeTypes.Type type : MimeTypes.Type.values())
+        {
+            CACHE.put(type.toString(),type);
+            TYPES.put(type.toString(),type.toBuffer());
+            
+            int charset=type.toString().indexOf(";charset=");
+            if (charset>0)
+            {
+                CACHE.put(type.toString().replace(";charset=","; charset="),type);
+                TYPES.put(type.toString().replace(";charset=","; charset="),type.toBuffer());
+            }
+        }
+        
         try
         {
             ResourceBundle mime = ResourceBundle.getBundle("org/eclipse/jetty/http/mime");
@@ -142,11 +120,11 @@ public class MimeTypes
         try
         {
             ResourceBundle encoding = ResourceBundle.getBundle("org/eclipse/jetty/http/encoding");
-            Enumeration i = encoding.getKeys();
+            Enumeration<String> i = encoding.getKeys();
             while(i.hasMoreElements())
             {
-                Buffer type = normalizeMimeType((String)i.nextElement());
-                __encodings.put(type,encoding.getString(type.toString()));
+                String type = i.nextElement();
+                __encodings.put(type,encoding.getString(type));
             }
         }
         catch(MissingResourceException e)
@@ -156,37 +134,11 @@ public class MimeTypes
         }
 
         
-        TEXT_HTML_BUFFER.setAssociate("ISO-8859-1",TEXT_HTML_8859_1_BUFFER);
-        TEXT_HTML_BUFFER.setAssociate("ISO_8859_1",TEXT_HTML_8859_1_BUFFER);
-        TEXT_HTML_BUFFER.setAssociate("iso-8859-1",TEXT_HTML_8859_1_BUFFER);
-        TEXT_PLAIN_BUFFER.setAssociate("ISO-8859-1",TEXT_PLAIN_8859_1_BUFFER);
-        TEXT_PLAIN_BUFFER.setAssociate("ISO_8859_1",TEXT_PLAIN_8859_1_BUFFER);
-        TEXT_PLAIN_BUFFER.setAssociate("iso-8859-1",TEXT_PLAIN_8859_1_BUFFER);
-        TEXT_XML_BUFFER.setAssociate("ISO-8859-1",TEXT_XML_8859_1_BUFFER);
-        TEXT_XML_BUFFER.setAssociate("ISO_8859_1",TEXT_XML_8859_1_BUFFER);
-        TEXT_XML_BUFFER.setAssociate("iso-8859-1",TEXT_XML_8859_1_BUFFER);
-
-        TEXT_HTML_BUFFER.setAssociate("UTF-8",TEXT_HTML_UTF_8_BUFFER);
-        TEXT_HTML_BUFFER.setAssociate("UTF8",TEXT_HTML_UTF_8_BUFFER);
-        TEXT_HTML_BUFFER.setAssociate("utf8",TEXT_HTML_UTF_8_BUFFER);
-        TEXT_HTML_BUFFER.setAssociate("utf-8",TEXT_HTML_UTF_8_BUFFER);
-        TEXT_PLAIN_BUFFER.setAssociate("UTF-8",TEXT_PLAIN_UTF_8_BUFFER);
-        TEXT_PLAIN_BUFFER.setAssociate("UTF8",TEXT_PLAIN_UTF_8_BUFFER);
-        TEXT_PLAIN_BUFFER.setAssociate("utf8",TEXT_PLAIN_UTF_8_BUFFER);
-        TEXT_PLAIN_BUFFER.setAssociate("utf-8",TEXT_PLAIN_UTF_8_BUFFER);
-        TEXT_XML_BUFFER.setAssociate("UTF-8",TEXT_XML_UTF_8_BUFFER);
-        TEXT_XML_BUFFER.setAssociate("UTF8",TEXT_XML_UTF_8_BUFFER);
-        TEXT_XML_BUFFER.setAssociate("utf8",TEXT_XML_UTF_8_BUFFER);
-        TEXT_XML_BUFFER.setAssociate("utf-8",TEXT_XML_UTF_8_BUFFER);
-        TEXT_JSON_BUFFER.setAssociate("UTF-8",TEXT_JSON_UTF_8_BUFFER);
-        TEXT_JSON_BUFFER.setAssociate("UTF8",TEXT_JSON_UTF_8_BUFFER);
-        TEXT_JSON_BUFFER.setAssociate("utf8",TEXT_JSON_UTF_8_BUFFER);
-        TEXT_JSON_BUFFER.setAssociate("utf-8",TEXT_JSON_UTF_8_BUFFER);
     }
 
 
     /* ------------------------------------------------------------ */
-    private Map _mimeMap;
+    private final Map<String,ByteBuffer> _mimeMap=new HashMap<String,ByteBuffer>();
     
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -196,7 +148,7 @@ public class MimeTypes
     }
 
     /* ------------------------------------------------------------ */
-    public synchronized Map getMimeMap()
+    public synchronized Map<String,ByteBuffer> getMimeMap()
     {
         return _mimeMap;
     }
@@ -205,22 +157,14 @@ public class MimeTypes
     /**
      * @param mimeMap A Map of file extension to mime-type.
      */
-    public void setMimeMap(Map mimeMap)
+    public void setMimeMap(Map<String,String> mimeMap)
     {
-        if (mimeMap==null)
+        _mimeMap.clear();
+        if (mimeMap!=null)
         {
-            _mimeMap=null;
-            return;
+            for (String ext : mimeMap.keySet())
+            _mimeMap.put(StringUtil.asciiToLowerCase(ext),normalizeMimeType(mimeMap.get(ext)));
         }
-        
-        Map m=new HashMap();
-        Iterator i=mimeMap.entrySet().iterator();
-        while (i.hasNext())
-        {
-            Map.Entry entry = (Map.Entry)i.next();
-            m.put(entry.getKey(),normalizeMimeType(entry.getValue().toString()));
-        }
-        _mimeMap=m;
     }
 
     /* ------------------------------------------------------------ */
@@ -229,9 +173,9 @@ public class MimeTypes
      * @return MIME type matching the longest dot extension of the
      * file name.
      */
-    public Buffer getMimeByExtension(String filename)
+    public ByteBuffer getMimeByExtension(String filename)
     {
-        Buffer type=null;
+        ByteBuffer type=null;
 
         if (filename!=null)
         {
@@ -245,18 +189,18 @@ public class MimeTypes
 
                 String ext=StringUtil.asciiToLowerCase(filename.substring(i+1));
                 if (_mimeMap!=null)
-                    type = (Buffer)_mimeMap.get(ext);
+                    type=_mimeMap.get(ext);
                 if (type==null)
-                    type=(Buffer)__dftMimeMap.get(ext);
+                    type=__dftMimeMap.get(ext);
             }
         }
 
         if (type==null)
         {
             if (_mimeMap!=null)
-                type=(Buffer)_mimeMap.get("*");
+                type=_mimeMap.get("*");
              if (type==null)
-                 type=(Buffer)__dftMimeMap.get("*");
+                 type=__dftMimeMap.get("*");
         }
 
         return type;
@@ -269,49 +213,30 @@ public class MimeTypes
      */
     public void addMimeMapping(String extension,String type)
     {
-        if (_mimeMap==null)
-            _mimeMap=new HashMap();
-        
         _mimeMap.put(StringUtil.asciiToLowerCase(extension),normalizeMimeType(type));
     }
 
     /* ------------------------------------------------------------ */
-    private static synchronized Buffer normalizeMimeType(String type)
+    private static ByteBuffer normalizeMimeType(String type)
     {
-        Buffer b =CACHE.get(type);
-        if (b==null)
-            b=CACHE.add(type,__index++);
-        return b;
+        MimeTypes.Type t =CACHE.get(type);
+        if (t!=null)
+            return t.toBuffer();
+        
+        return BufferUtil.toBuffer(StringUtil.asciiToLowerCase(type));
     }
 
     /* ------------------------------------------------------------ */
-    public static String getCharsetFromContentType(Buffer value)
-    {
-        if (value instanceof CachedBuffer)
-        {
-            switch(((CachedBuffer)value).getOrdinal())
-            {
-                case TEXT_HTML_8859_1_ORDINAL:
-                case TEXT_PLAIN_8859_1_ORDINAL:
-                case TEXT_XML_8859_1_ORDINAL:
-                    return StringUtil.__ISO_8859_1;
-
-                case TEXT_HTML_UTF_8_ORDINAL:
-                case TEXT_PLAIN_UTF_8_ORDINAL:
-                case TEXT_XML_UTF_8_ORDINAL:
-                case TEXT_JSON_UTF_8_ORDINAL:
-                    return StringUtil.__UTF8;
-            }
-        }
-        
-        int i=value.getIndex();
-        int end=value.putIndex();
+    public static String getCharsetFromContentType(ByteBuffer value)
+    {   
+        int i=value.position();
+        int end=value.limit();
         int state=0;
         int start=0;
         boolean quote=false;
         for (;i<end;i++)
         {
-            byte b = value.peek(i);
+            byte b = value.get(i);
             
             if (quote && state!=10)
             {
@@ -359,12 +284,12 @@ public class MimeTypes
                 case 10:
                     if (!quote && (';'==b || ' '==b )||
                         (quote && '"'==b ))
-                        return CACHE.lookup(value.peek(start,i-start)).toString();
+                        return StringUtil.normalizeCharset(value,start,i-start);
             }
         }    
         
         if (state==10)
-            return CACHE.lookup(value.peek(start,i-start)).toString();
+            return StringUtil.normalizeCharset(value,start,i-start);
         
         return (String)__encodings.get(value);
     }

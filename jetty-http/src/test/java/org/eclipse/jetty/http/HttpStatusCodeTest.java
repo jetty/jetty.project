@@ -28,6 +28,6 @@ public class HttpStatusCodeTest
 
     public void testHttpMethod()
     {
-        assertEquals("GET",HttpMethods.GET_BUFFER.toString());
+        assertEquals("GET",HttpMethods.GET.toString());
     }
 }

@@ -11,13 +11,14 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.util;
 
 
 import static org.junit.Assert.assertEquals;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
 
 /**

@@ -149,11 +149,6 @@ public class StringMapTest
         assertEquals("abc",entry.getKey());
         assertEquals("2",entry.getValue());
         
-        entry=m5.getBestEntry("xabcyz".getBytes(),1,5);
-        assertTrue(entry!=null);
-        assertEquals("abc",entry.getKey());
-        assertEquals("2",entry.getValue());
-        
         entry=m5.getEntry("xaBcyz",1,3);
         assertTrue(entry==null);
         

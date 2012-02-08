@@ -13,47 +13,47 @@
 
 package org.eclipse.jetty.http;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache;
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringMap;
+
 
 /* ------------------------------------------------------------------------------- */
 /** 
- * 
- * 
  */
-public class HttpMethods
+public enum HttpMethods
 {
-    public final static String GET= "GET",
-        POST= "POST",
-        HEAD= "HEAD",
-        PUT= "PUT",
-        OPTIONS= "OPTIONS",
-        DELETE= "DELETE",
-        TRACE= "TRACE",
-        CONNECT= "CONNECT",
-        MOVE= "MOVE";
+    GET,
+    POST,
+    HEAD,
+    PUT,
+    OPTIONS,
+    DELETE,
+    TRACE,
+    CONNECT,
+    MOVE;
 
-    public final static int GET_ORDINAL= 1,
-        POST_ORDINAL= 2,
-        HEAD_ORDINAL= 3,
-        PUT_ORDINAL= 4,
-        OPTIONS_ORDINAL= 5,
-        DELETE_ORDINAL= 6,
-        TRACE_ORDINAL= 7,
-        CONNECT_ORDINAL= 8,
-        MOVE_ORDINAL= 9;
+    /* ------------------------------------------------------------ */
+    public final static StringMap<HttpMethods> CACHE= new StringMap<HttpMethods>(true);
+    static
+    {
+        for (HttpMethods method : HttpMethods.values())
+            CACHE.put(method.toString(),method);
+    }
 
-    public final static BufferCache CACHE= new BufferCache();
+    /* ------------------------------------------------------------ */
+    private final ByteBuffer _buffer;
 
-    public final static Buffer 
-        GET_BUFFER= CACHE.add(GET, GET_ORDINAL),
-        POST_BUFFER= CACHE.add(POST, POST_ORDINAL),
-        HEAD_BUFFER= CACHE.add(HEAD, HEAD_ORDINAL),
-        PUT_BUFFER= CACHE.add(PUT, PUT_ORDINAL),
-        OPTIONS_BUFFER= CACHE.add(OPTIONS, OPTIONS_ORDINAL),
-        DELETE_BUFFER= CACHE.add(DELETE, DELETE_ORDINAL),
-        TRACE_BUFFER= CACHE.add(TRACE, TRACE_ORDINAL),
-        CONNECT_BUFFER= CACHE.add(CONNECT, CONNECT_ORDINAL),
-        MOVE_BUFFER= CACHE.add(MOVE, MOVE_ORDINAL);
+    /* ------------------------------------------------------------ */
+    HttpMethods()
+    {
+        _buffer=BufferUtil.toBuffer(toString());
+    }
 
+    /* ------------------------------------------------------------ */
+    public ByteBuffer toBuffer()
+    {
+        return _buffer.asReadOnlyBuffer();
+    }
 }

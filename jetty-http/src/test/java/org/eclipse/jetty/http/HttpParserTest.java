@@ -17,11 +17,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.io.bio.StringEndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
 
@@ -33,14 +33,11 @@ public class HttpParserTest
     @Test
     public void testLineParse0() throws Exception
     {
-        StringEndPoint io=new StringEndPoint();
-        io.setInput("POST /foo HTTP/1.0\015\012" + "\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
-        SimpleBuffers buffers=new SimpleBuffers(buffer,null);
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /foo HTTP/1.0\015\012" + "\015\012");
 
         Handler handler = new Handler();
-        HttpParser parser= new HttpParser(buffers,io, handler);
-        parser.parse();
+        HttpParser parser= new HttpParser((HttpParser.RequestHandler)handler);
+        parser.parse(buffer);
         assertEquals("POST", f0);
         assertEquals("/foo", f1);
         assertEquals("HTTP/1.0", f2);
@@ -52,7 +49,7 @@ public class HttpParserTest
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("GET /999\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         f2= null;
@@ -70,7 +67,7 @@ public class HttpParserTest
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("POST /222  \015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         f2= null;
@@ -88,7 +85,7 @@ public class HttpParserTest
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("POST /fo\u0690 HTTP/1.0\015\012" + "\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -105,7 +102,7 @@ public class HttpParserTest
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("POST /foo?param=\u0690 HTTP/1.0\015\012" + "\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -122,7 +119,7 @@ public class HttpParserTest
     {
         StringEndPoint io=new StringEndPoint();
         io.setInput("CONNECT 192.168.1.2:80 HTTP/1.1\015\012" + "\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -150,7 +147,7 @@ public class HttpParserTest
                 + "  value4\015\012"
                 + "Server5: notServer\015\012"
                 + "\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -188,8 +185,8 @@ public class HttpParserTest
                 + "1a\015\012"
                 + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\015\012"
                 + "0\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
-        ByteArrayBuffer content=new ByteArrayBuffer(8192);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
+        ByteBuffer content=BufferUtil.allocate(8192);
         SimpleBuffers buffers=new SimpleBuffers(buffer,content);
 
         Handler handler = new Handler();
@@ -231,8 +228,8 @@ public class HttpParserTest
                 + "\015\012"
                 + "0123456789\015\012");
 
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
-        ByteArrayBuffer content=new ByteArrayBuffer(8192);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
+        ByteBuffer content=BufferUtil.allocate(8192);
         SimpleBuffers buffers=new SimpleBuffers(buffer,content);
 
         Handler handler = new Handler();
@@ -314,8 +311,8 @@ public class HttpParserTest
             { 
                 f0=f1=f2=null;
                 h=0;
-                ByteArrayBuffer buffer= new ByteArrayBuffer(tests[t]);
-                ByteArrayBuffer content=new ByteArrayBuffer(8192);
+                ByteBuffer buffer= BufferUtil.allocate(tests[t]);
+                ByteBuffer content=BufferUtil.allocate(8192);
                 SimpleBuffers buffers=new SimpleBuffers(buffer,content);
 
                 Handler handler = new Handler();
@@ -370,7 +367,7 @@ public class HttpParserTest
         + "Content-Type: text/plain\015\012"
         + "\015\012"
         + "0123456789\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -392,7 +389,7 @@ public class HttpParserTest
         "HTTP/1.1 304 Not-Modified\015\012"
         + "Connection: close\015\012"
         + "\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -418,7 +415,7 @@ public class HttpParserTest
         + "Content-Type: text/plain\015\012"
         + "\015\012"
         + "0123456789\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -450,7 +447,7 @@ public class HttpParserTest
         + "Content-Type: text/plain\015\012"
         + "\015\012"
         + "0123456789\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -474,7 +471,7 @@ public class HttpParserTest
         + "Content-Type: text/plain\015\012"
         + "\015\012"
         + "0123456789\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -496,7 +493,7 @@ public class HttpParserTest
         "HTTP/1.1 304 found\015\012"
         + "Content-Length: 10\015\012"
         + "\015\012");
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -523,7 +520,7 @@ public class HttpParserTest
         + "HTTP/1.1 400 OK\015\012");  // extra data causes close
         
         
-        ByteArrayBuffer buffer= new ByteArrayBuffer(4096);
+        ByteBuffer buffer= BufferUtil.allocate(4096);
         SimpleBuffers buffers=new SimpleBuffers(buffer,null);
 
         Handler handler = new Handler();
@@ -551,48 +548,37 @@ public class HttpParserTest
     private boolean headerCompleted;
     private boolean messageCompleted;
 
-    private class Handler extends HttpParser.EventHandler
+    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler
     {
         private HttpFields fields;
         private boolean request;
 
-        public void content(Buffer ref)
+        public void content(ByteBuffer ref)
         {
             if (_content==null)
                 _content="";
             _content= _content + ref;
         }
 
-        public void startRequest(Buffer tok0, Buffer tok1, Buffer tok2)
+        public void startRequest(String tok0, String tok1, String tok2)
         {
-            try
-            {
-                request=true;
-                h= -1;
-                hdr= new String[9];
-                val= new String[9];
-                f0= tok0.toString();
-                f1=new String(tok1.array(),tok1.getIndex(),tok1.length(),StringUtil.__UTF8);
-                if (tok2!=null)
-                    f2= tok2.toString();
-                else
-                    f2=null;
+            request=true;
+            h= -1;
+            hdr= new String[9];
+            val= new String[9];
+            f0= tok0;
+            f1= tok1;
+            f2= tok2;
 
-                fields=new HttpFields();
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                throw new RuntimeException(e);
-            }
-
+            fields=new HttpFields();
             messageCompleted = false;
             headerCompleted = false;
         }
 
-        public void parsedHeader(Buffer name, Buffer value)
+        public void parsedHeader(String name, String value)
         {
-            hdr[++h]= name.toString(StringUtil.__ISO_8859_1);
-            val[h]= value.toString(StringUtil.__ISO_8859_1);
+            hdr[++h]= name;
+            val[h]= value;
         }
 
         public void headerComplete()
@@ -615,7 +601,7 @@ public class HttpParserTest
             messageCompleted = true;
         }
 
-        public void startResponse(Buffer version, int status, Buffer reason)
+        public void startResponse(String version, int status, String reason)
         {
             request=false;
             f0 = version.toString();
@@ -628,6 +614,11 @@ public class HttpParserTest
 
             messageCompleted = false;
             headerCompleted = false;
+        }
+
+        @Override
+        public void earlyEOF()
+        {
         }
     }
 }

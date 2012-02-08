@@ -14,13 +14,13 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Abstract interface for a connection Parser for use by Jetty.
  */
 public interface Parser
 {
-    void returnBuffers();
     void reset();
 
     boolean isComplete();
@@ -29,10 +29,10 @@ public interface Parser
      * @return True if progress made
      * @throws IOException
      */
-    boolean parseAvailable() throws IOException;
+    boolean parseAvailable(ByteBuffer buffer) throws IOException;
 
-    boolean isMoreInBuffer() throws IOException;
-
+    boolean onEOF()throws IOException;
+    
     boolean isIdle();
     
     boolean isPersistent();

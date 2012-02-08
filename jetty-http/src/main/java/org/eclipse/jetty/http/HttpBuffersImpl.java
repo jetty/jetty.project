@@ -30,10 +30,10 @@ public class HttpBuffersImpl extends AbstractLifeCycle implements HttpBuffers
     private int _responseHeaderSize=6*1024;
     private int _maxBuffers=1024;
     
-    private Buffers.Type _requestBufferType=Buffers.Type.BYTE_ARRAY;
-    private Buffers.Type _requestHeaderType=Buffers.Type.BYTE_ARRAY;
-    private Buffers.Type _responseBufferType=Buffers.Type.BYTE_ARRAY;
-    private Buffers.Type _responseHeaderType=Buffers.Type.BYTE_ARRAY;
+    private Buffers.Type _requestBufferType=Buffers.Type.INDIRECT;
+    private Buffers.Type _requestHeaderType=Buffers.Type.INDIRECT;
+    private Buffers.Type _responseBufferType=Buffers.Type.INDIRECT;
+    private Buffers.Type _responseHeaderType=Buffers.Type.INDIRECT;
     
     private Buffers _requestBuffers;
     private Buffers _responseBuffers;

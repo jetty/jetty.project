@@ -244,6 +244,15 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     }
     
     /* ------------------------------------------------------------ */
+    public O get(ByteBuffer buffer, int position, int length)
+    {
+        Map.Entry<String,O> entry = getEntry(buffer,position,length);
+        if (entry==null)
+            return null;
+        return entry.getValue();
+    }
+    
+    /* ------------------------------------------------------------ */
     /** Get a map entry by substring key.
      * @param key String containing the key
      * @param offset Offset of the key within the String.
@@ -360,11 +369,11 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
      * A simple 8859-1 byte to char mapping is assumed.
      * @param key byte array containing the key
      * @param offset Offset of the key within the array.
-     * @param maxLength The length of the key 
+     * @param length The length of the key 
      * @return The Map.Entry for the key or null if the key is not in
      * the map.
      */
-    public Map.Entry<String,O> getBestEntry(byte[] key,int offset, int maxLength)
+    public Map.Entry<String,O> getEntry(byte[] key,int offset, int length)
     {
         if (key==null)
             return _nullEntry;
@@ -374,7 +383,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
 
         // look for best match
     charLoop:
-        for (int i=0;i<maxLength;i++)
+        for (int i=0;i<length;i++)
         {
             char c=(char)key[offset+i];
 
@@ -382,12 +391,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
             if (ni==-1)
             {
                 ni=0;
-                
-                Node<O> child = (node._children==null)?null:node._children[c%_width];
-                
-                if (child==null && i>0)
-                    return node; // This is the best match
-                node=child;           
+                node=(node._children==null)?null:node._children[c%_width];      
             }
             
             // While we have a node to try
@@ -424,24 +428,31 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
      * @return The Map.Entry for the key or null if the key is not in
      * the map.
      */
-    public Map.Entry<String,O> getBestEntry(ByteBuffer key)
+    public Map.Entry<String,O> getEntry(ByteBuffer key)
+    {
+        return getEntry(key,key.position(),key.remaining());
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Get a map entry by ByteBuffer key, using as much of the passed key as needed for a match.
+     * A simple 8859-1 byte to char mapping is assumed.
+     * @param key ByteBuffer containing the key
+     * @return The Map.Entry for the key or null if the key is not in
+     * the map.
+     */
+    public Map.Entry<String,O> getEntry(ByteBuffer key,int position,int length)
     {
         if (key==null)
             return _nullEntry;
         
         if (!key.isReadOnly() && !key.isDirect())
-            return getBestEntry(key.array(),key.position(),key.remaining());
-        
+            return getEntry(key.array(),key.position(),key.remaining());
         
         Node<O> node = _root;
         int ni=-1;
-
-        // look for best match
-        int position=key.position();
-        int remaining=key.remaining();
         
     charLoop:
-        for (int i=0;i<remaining;i++)
+        for (int i=0;i<length;i++)
         {
             char c=(char)key.get(position+i);
 
@@ -449,12 +460,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
             if (ni==-1)
             {
                 ni=0;
-                
-                Node<O> child = (node._children==null)?null:node._children[c%_width];
-                
-                if (child==null && i>0)
-                    return node; // This is the best match
-                node=child;           
+                node=(node._children==null)?null:node._children[c%_width];       
             }
             
             // While we have a node to try
