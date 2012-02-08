@@ -77,4 +77,10 @@ public class SynInfo
         flags += isUnidirectional() ? FLAG_UNIDIRECTIONAL : 0;
         return flags;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("SYN close=%b %s", close, headers);
+    }
 }

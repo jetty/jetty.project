@@ -48,4 +48,10 @@ public class ReplyInfo
     {
         return isClose() ? FLAG_FIN : 0;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("REPLY close=%b %s", close, headers);
+    }
 }

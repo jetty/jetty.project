@@ -58,4 +58,10 @@ public class HeadersInfo
         flags += isResetCompression() ? FLAG_RESET_COMPRESSION : 0;
         return flags;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("HEADER close=%b %s", close, headers);
+    }
 }

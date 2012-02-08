@@ -46,12 +46,15 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.nio.EmptyAsyncEndPoint;
 import org.eclipse.jetty.spdy.nio.ServerSPDYAsyncConnectionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
+public class HTTPOverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Connector connector;
 
-    public HTTP11OverSPDYAsyncConnectionFactory(Connector connector)
+    public HTTPOverSPDYAsyncConnectionFactory(Connector connector)
     {
         this.connector = connector;
     }
@@ -73,10 +76,13 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             // cycle is processed at a time, so we need to fake an http connection
             // for each SYN in order to run concurrently.
 
+            logger.debug("Received {}", synInfo);
+
             try
             {
                 HTTPSPDYConnection connection = new HTTPSPDYConnection(connector, new HTTPSPDYAsyncEndPoint(stream), connector.getServer(), stream);
                 stream.setAttribute("connection", connection);
+                stream.setAttribute(ParseStatus.class.getName(), ParseStatus.INITIAL);
 
                 Headers headers = synInfo.getHeaders();
                 if (headers.isEmpty())
@@ -101,6 +107,8 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
                     }
                     else
                     {
+                        if (headers.names().contains("expect"))
+                            forwardHeadersComplete(stream);
                         return this;
                     }
                 }
@@ -119,11 +127,8 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
         private boolean processRequest(Stream stream, Headers headers) throws IOException
         {
-            Boolean requestSeen = (Boolean)stream.getAttribute("request");
-            if (requestSeen == null || !requestSeen)
+            if (stream.getAttribute(ParseStatus.class.getName()) == ParseStatus.INITIAL)
             {
-                stream.setAttribute("request", Boolean.TRUE);
-
                 Headers.Header method = headers.get("method");
                 Headers.Header uri = headers.get("url");
                 Headers.Header version = headers.get("version");
@@ -146,6 +151,8 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         @Override
         public void onHeaders(Stream stream, HeadersInfo headersInfo)
         {
+            logger.debug("Received {}", headersInfo);
+
             // TODO: support trailers
             Boolean dataSeen = (Boolean)stream.getAttribute("data");
             if (dataSeen != null && dataSeen)
@@ -176,9 +183,8 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         {
             try
             {
-                forwardHeadersComplete(stream);
-
-                stream.setAttribute("data", Boolean.TRUE);
+                if (stream.getAttribute(ParseStatus.class.getName()) == ParseStatus.REQUEST)
+                    forwardHeadersComplete(stream);
 
                 ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
                 dataInfo.getBytes(buffer);
@@ -206,12 +212,18 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
         private void forwardRequest(Stream stream, String method, String uri, String version) throws IOException
         {
+            assert stream.getAttribute(ParseStatus.class.getName()) == ParseStatus.INITIAL;
+
             HTTPSPDYConnection connection = (HTTPSPDYConnection)stream.getAttribute("connection");
             connection.startRequest(new ByteArrayBuffer(method), new ByteArrayBuffer(uri), new ByteArrayBuffer(version));
+
+            stream.setAttribute(ParseStatus.class.getName(), ParseStatus.REQUEST);
         }
 
         private void forwardHeaders(Stream stream, Headers headers) throws IOException
         {
+            assert stream.getAttribute(ParseStatus.class.getName()) == ParseStatus.REQUEST;
+
             HTTPSPDYConnection connection = (HTTPSPDYConnection)stream.getAttribute("connection");
             for (Headers.Header header : headers)
             {
@@ -259,14 +271,20 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
         private void forwardHeadersComplete(Stream stream) throws IOException
         {
+            assert stream.getAttribute(ParseStatus.class.getName()) == ParseStatus.REQUEST;
+
             HTTPSPDYConnection connection = (HTTPSPDYConnection)stream.getAttribute("connection");
             connection.headerComplete();
+
+            stream.setAttribute(ParseStatus.class.getName(), ParseStatus.HEADERS);
         }
 
         private void forwardContent(Stream stream, ByteBuffer buffer) throws IOException
         {
             HTTPSPDYConnection connection = (HTTPSPDYConnection)stream.getAttribute("connection");
             connection.content(new IndirectNIOBuffer(buffer, false));
+
+            stream.setAttribute(ParseStatus.class.getName(), ParseStatus.CONTENT);
         }
 
         private void forwardRequestComplete(Stream stream) throws IOException
@@ -279,6 +297,12 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         {
             stream.getSession().goAway(stream.getVersion());
         }
+
+    }
+
+    private enum ParseStatus
+    {
+        INITIAL, REQUEST, HEADERS, CONTENT
     }
 
     private class HTTPSPDYConnection extends AbstractHttpConnection
@@ -368,7 +392,10 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         @Override
         public void send1xx(int code) throws IOException
         {
-            // TODO
+            Headers headers = new Headers();
+            headers.put("status", String.valueOf(code));
+            headers.put("version", "HTTP/1.1");
+            stream.reply(new ReplyInfo(headers, false));
         }
 
         @Override
@@ -392,6 +419,7 @@ public class HTTP11OverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         public void addContent(Buffer content, boolean last) throws IOException
         {
             // TODO
+            System.out.println("SIMON");
         }
 
         @Override

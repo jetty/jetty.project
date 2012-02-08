@@ -16,6 +16,7 @@
 
 package org.eclipse.jetty.spdy.nio.http;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
@@ -33,11 +34,13 @@ import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.nio.SPDYClient;
 import org.eclipse.jetty.spdy.nio.SPDYServerConnector;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class HTTPOverSPDYTest
@@ -52,7 +55,7 @@ public class HTTPOverSPDYTest
         server = new Server();
         connector = new SPDYServerConnector(null);
         server.addConnector(connector);
-        connector.putAsyncConnectionFactory("spdy/2", new HTTP11OverSPDYAsyncConnectionFactory(connector));
+        connector.putAsyncConnectionFactory("spdy/2", new HTTPOverSPDYAsyncConnectionFactory(connector));
         server.setHandler(handler);
         server.start();
 
@@ -72,6 +75,53 @@ public class HTTPOverSPDYTest
         server.join();
     }
 
+    @Ignore
+    @Test
+    public void test100Continue() throws Exception
+    {
+        final String data = "data";
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.sendError(100);
+
+                BufferedReader reader = httpRequest.getReader();
+                String read = reader.readLine();
+                Assert.assertEquals(data, read);
+                Assert.assertNull(reader.readLine());
+
+                httpResponse.setStatus(200);
+            }
+        }, null);
+
+        Headers headers = new Headers();
+        headers.put("method", "POST");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/100");
+        headers.put("version", "HTTP/1.1");
+        headers.put("expect", "100-continue");
+
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        session.syn(SPDY.V2, new SynInfo(headers, false), new Stream.FrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertTrue(replyInfo.getHeaders().get("status").value().contains("100"));
+                replyLatch.countDown();
+
+                // Now send the data
+                stream.data(new StringDataInfo(data, true));
+            }
+        });
+
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+
+        Thread.sleep(500_000);
+    }
+
     @Test
     public void testSimpleGET() throws Exception
     {
@@ -85,8 +135,8 @@ public class HTTPOverSPDYTest
             {
                 request.setHandled(true);
                 Assert.assertEquals(path, target);
-                Assert.assertEquals(httpRequest.getRequestURI(), path);
-                Assert.assertEquals(httpRequest.getHeader("host"), "localhost:" + connector.getLocalPort());
+                Assert.assertEquals(path, httpRequest.getRequestURI());
+                Assert.assertEquals("localhost:" + connector.getLocalPort(), httpRequest.getHeader("host"));
                 handlerLatch.countDown();
             }
         }, null);
@@ -94,6 +144,47 @@ public class HTTPOverSPDYTest
         Headers headers = new Headers();
         headers.put("method", "GET");
         headers.put("url", "http://localhost:" + connector.getLocalPort() + path);
+        headers.put("version", "HTTP/1.1");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertTrue(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                replyLatch.countDown();
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithQueryString() throws Exception
+    {
+        final String path = "/foo";
+        final String query = "p=1";
+        final String uri = path + "?" + query;
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                Assert.assertEquals(path, target);
+                Assert.assertEquals(path, httpRequest.getRequestURI());
+                Assert.assertEquals(query, httpRequest.getQueryString());
+                handlerLatch.countDown();
+            }
+        }, null);
+
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + uri);
         headers.put("version", "HTTP/1.1");
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
