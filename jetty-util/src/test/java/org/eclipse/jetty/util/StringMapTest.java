@@ -58,11 +58,9 @@ public class StringMapTest
         m5.put("bbb", "4");
         
         m5i=new StringMap<String>(true); 
-        m5i.put(null, "0");
         m5i.put("ab", "1");
         m5i.put("abc", "2");
         m5i.put("abb", "3");
-        m5i.put("bbb", null);
     }
 
     @Test
@@ -71,7 +69,7 @@ public class StringMapTest
         assertEquals(0, m0.size());
         assertEquals(1, m1.size());
         assertEquals(5, m5.size());
-        assertEquals(5, m5i.size());
+        assertEquals(3, m5i.size());
         
         m1.remove("abc");
         m5.remove("abc");
@@ -80,7 +78,7 @@ public class StringMapTest
         assertEquals(0, m0.size());
         assertEquals(0, m1.size());
         assertEquals(4, m5.size());
-        assertEquals(5, m5i.size());
+        assertEquals(3, m5i.size());
     }
 
     @Test
@@ -120,7 +118,6 @@ public class StringMapTest
         assertEquals("2",m5i.get("abc"));
         assertEquals("2",m5i.get("aBc"));
         
-        m5.put(null,"x");
         m5.put("aBc", "x");
         m5i.put("AbC", "x");
 
@@ -131,8 +128,6 @@ public class StringMapTest
         assertEquals("x",m5i.get((Object)"abc"));
         assertEquals("x",m5i.get("aBc"));
         
-        assertEquals("x",m5.get(null));
-        assertEquals("0",m5i.get(null));
         
     }
 
@@ -159,12 +154,6 @@ public class StringMapTest
         entry.setValue("x");
         assertEquals("{[c:abc=x]}",entry.toString());
         
-        entry=m5i.getEntry((String)null,0,0);
-        assertTrue(entry!=null);
-        assertEquals(null,entry.getKey());
-        assertEquals("0",entry.getValue());
-        entry.setValue("x");
-        assertEquals("[:null=x]",entry.toString());
 
     }
 
@@ -203,17 +192,15 @@ public class StringMapTest
         m5.remove("aBc");
         m5.remove("bbb");
         m5i.remove("aBc");
-        m5i.remove(null);
 
         assertEquals(0, m0.size());
         assertEquals(0, m1.size());
         assertEquals(4, m5.size());
-        assertEquals(3, m5i.size());
+        assertEquals(2, m5i.size());
 
         assertEquals("2",m5.get("abc"));
         assertEquals(null,m5.get("bbb"));
         assertEquals(null,m5i.get("AbC"));
-        assertEquals(null,m5i.get(null));
     }
 
     /*
@@ -241,41 +228,11 @@ public class StringMapTest
         assertTrue(m5.containsKey("bbb"));
         assertTrue(!m5.containsKey("xyz"));
         
-        assertTrue(m5i.containsKey(null));
         assertTrue(m5i.containsKey("abc"));
         assertTrue(m5i.containsKey("aBc"));
         assertTrue(m5i.containsKey("ABC"));
     }
 
-    @Test
-    public void testWriteExternal()
-        throws Exception
-    {
-        ByteArrayOutputStream bout= new ByteArrayOutputStream();
-        ObjectOutputStream oo=new ObjectOutputStream(bout);
-        ObjectInputStream oi;
-        
-        oo.writeObject(m0);
-        oo.writeObject(m1);
-        oo.writeObject(m5);
-        oo.writeObject(m5i);
-        
-        oi=new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
-        m0=(StringMap<String>)oi.readObject();
-        m1=(StringMap<String>)oi.readObject();
-        m5=(StringMap<String>)oi.readObject();
-        m5i=(StringMap<String>)oi.readObject();
-        testSize();
-        
-        oi=new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
-        m0=(StringMap<String>)oi.readObject();
-        m1=(StringMap<String>)oi.readObject();
-        m5=(StringMap<String>)oi.readObject();
-        m5i=(StringMap<String>)oi.readObject();
-        testPutGet();
-        
-    }
-    
     @Test
     public void testToString()
     {

@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -34,25 +32,25 @@ import java.util.Set;
  *
  * This map is NOT synchronized.
  */
-public class StringMap<O> extends AbstractMap<String,O> implements Externalizable
+public class StringMap<O> extends AbstractMap<String,O>
 {
     public static final boolean CASE_INSENSTIVE=true;
     protected static final int __HASH_WIDTH=17;
     
     /* ------------------------------------------------------------ */
-    protected int _width=__HASH_WIDTH;
+
+    private final boolean _ignoreCase;
+    
     protected Node<O> _root=new Node<>();
-    protected boolean _ignoreCase=false;
-    protected NullEntry _nullEntry=null;
-    protected O _nullValue=null;
     protected HashSet<Map.Entry<String,O>> _entrySet=new HashSet<>(3);
-    protected Set<Map.Entry<String,O>> _umEntrySet=Collections.unmodifiableSet(_entrySet);
     
     /* ------------------------------------------------------------ */
     /** Constructor. 
      */
     public StringMap()
-    {}
+    {
+        _ignoreCase=false;
+    }
     
     /* ------------------------------------------------------------ */
     /** Constructor. 
@@ -60,32 +58,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
      */
     public StringMap(boolean ignoreCase)
     {
-        this();
         _ignoreCase=ignoreCase;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Constructor. 
-     * @param ignoreCase 
-     * @param width Width of hash tables, larger values are faster but
-     * use more memory.
-     */
-    public StringMap(boolean ignoreCase,int width)
-    {
-        this();
-        _ignoreCase=ignoreCase;
-        _width=width;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Set the ignoreCase attribute.
-     * @param ic If true, the map is case insensitive for keys.
-     */
-    public void setIgnoreCase(boolean ic)
-    {
-        if (_root._children!=null)
-            throw new IllegalStateException("Must be set before first put");
-        _ignoreCase=ic;
     }
 
     /* ------------------------------------------------------------ */
@@ -93,38 +66,13 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     {
         return _ignoreCase;
     }
-
-    /* ------------------------------------------------------------ */
-    /** Set the hash width.
-     * @param width Width of hash tables, larger values are faster but
-     * use more memory.
-     */
-    public void setWidth(int width)
-    {
-        _width=width;
-    }
-
-    /* ------------------------------------------------------------ */
-    public int getWidth()
-    {
-        return _width;
-    }
     
     /* ------------------------------------------------------------ */
     @Override
     public O put(String key, O value)
     {
         if (key==null)
-        {
-            O oldValue=_nullValue;
-            _nullValue=value;
-            if (_nullEntry==null)
-            {   
-                _nullEntry=new NullEntry();
-                _entrySet.add(_nullEntry);
-            }
-            return oldValue;
-        }
+            throw new IllegalArgumentException();
         
         Node<O> node = _root;
         int ni=-1;
@@ -143,7 +91,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
                 parent=node;
                 prev=null;
                 ni=0;
-                node=(node._children==null)?null:node._children[c%_width];
+                node=(node._children==null)?null:node._children[c%__HASH_WIDTH];
             }
             
             // Loop through a node chain at the same level
@@ -185,10 +133,10 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
             else if (parent!=null) // add new child
             {
                 if (parent._children==null)
-                    parent._children=new Node[_width];
-                parent._children[c%_width]=node;
-                int oi=node._ochar[0]%_width;
-                if (node._ochar!=null && node._char[0]%_width!=oi)
+                    parent._children=new Node[__HASH_WIDTH];
+                parent._children[c%__HASH_WIDTH]=node;
+                int oi=node._ochar[0]%__HASH_WIDTH;
+                if (node._ochar!=null && node._char[0]%__HASH_WIDTH!=oi)
                 {
                     if (parent._children[oi]==null)
                         parent._children[oi]=node;
@@ -227,7 +175,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public O get(Object key)
     {
         if (key==null)
-            return _nullValue;
+            throw new IllegalArgumentException();
         return get(key.toString());
     }
     
@@ -235,7 +183,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public O get(String key)
     {
         if (key==null)
-            return _nullValue;
+            throw new IllegalArgumentException();
         
         Map.Entry<String,O> entry = getEntry(key,0,key.length());
         if (entry==null)
@@ -263,7 +211,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public Map.Entry<String,O> getEntry(String key,int offset, int length)
     {
         if (key==null)
-            return _nullEntry;
+            throw new IllegalArgumentException();
         
         Node<O> node = _root;
         int ni=-1;
@@ -278,7 +226,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
             if (ni==-1)
             {
                 ni=0;
-                node=(node._children==null)?null:node._children[c%_width];
+                node=(node._children==null)?null:node._children[c%__HASH_WIDTH];
             }
             
             // Look through the node chain
@@ -319,7 +267,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public Map.Entry<String, O> getEntry(char[] key,int offset, int length)
     {
         if (key==null)
-            return _nullEntry;
+            throw new IllegalArgumentException();
         
         Node<O> node = _root;
         int ni=-1;
@@ -334,7 +282,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
             if (ni==-1)
             {
                 ni=0;
-                node=(node._children==null)?null:node._children[c%_width];
+                node=(node._children==null)?null:node._children[c%__HASH_WIDTH];
             }
             
             // While we have a node to try
@@ -376,7 +324,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public Map.Entry<String,O> getEntry(byte[] key,int offset, int length)
     {
         if (key==null)
-            return _nullEntry;
+            throw new IllegalArgumentException();
         
         Node<O> node = _root;
         int ni=-1;
@@ -391,7 +339,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
             if (ni==-1)
             {
                 ni=0;
-                node=(node._children==null)?null:node._children[c%_width];      
+                node=(node._children==null)?null:node._children[c%__HASH_WIDTH];      
             }
             
             // While we have a node to try
@@ -443,7 +391,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public Map.Entry<String,O> getEntry(ByteBuffer key,int position,int length)
     {
         if (key==null)
-            return _nullEntry;
+            throw new IllegalArgumentException();
         
         if (!key.isReadOnly() && !key.isDirect())
             return getEntry(key.array(),key.position(),key.remaining());
@@ -460,7 +408,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
             if (ni==-1)
             {
                 ni=0;
-                node=(node._children==null)?null:node._children[c%_width];       
+                node=(node._children==null)?null:node._children[c%__HASH_WIDTH];       
             }
             
             // While we have a node to try
@@ -504,16 +452,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public O remove(String key)
     {
         if (key==null)
-        {
-            O oldValue=_nullValue;
-            if (_nullEntry!=null)
-            {
-                _entrySet.remove(_nullEntry);   
-                _nullEntry=null;
-                _nullValue=null;
-            }
-            return oldValue;
-        }
+            throw new IllegalArgumentException();
         
         Node<O> node = _root;
         int ni=-1;
@@ -528,7 +467,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
             if (ni==-1)
             {
                 ni=0;
-                node=(node._children==null)?null:node._children[c%_width];
+                node=(node._children==null)?null:node._children[c%__HASH_WIDTH];
             }
             
             // While we have a node to try
@@ -568,7 +507,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     @Override
     public Set<Map.Entry<String,O>> entrySet()
     {
-        return _umEntrySet;
+        return Collections.unmodifiableSet(_entrySet);
     }
     
     /* ------------------------------------------------------------ */
@@ -590,7 +529,7 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public boolean containsKey(Object key)
     {
         if (key==null)
-            return _nullEntry!=null;
+            return false;
         return
             getEntry(key.toString(),0,key==null?0:key.toString().length())!=null;
     }
@@ -600,8 +539,6 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
     public void clear()
     {
         _root=new Node<O>();
-        _nullEntry=null;
-        _nullValue=null;
         _entrySet.clear();
     }
 
@@ -669,10 +606,10 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
                 map._entrySet.add(split);
 
             split._children=this._children;            
-            this._children=new Node[map._width];
-            this._children[split._char[0]%map._width]=split;
-            if (split._ochar!=null && this._children[split._ochar[0]%map._width]!=split)
-                this._children[split._ochar[0]%map._width]=split;
+            this._children=new Node[map.__HASH_WIDTH];
+            this._children[split._char[0]%map.__HASH_WIDTH]=split;
+            if (split._ochar!=null && this._children[split._ochar[0]%map.__HASH_WIDTH]!=split)
+                this._children[split._ochar[0]%map.__HASH_WIDTH]=split;
 
             return split;
         }
@@ -721,34 +658,4 @@ public class StringMap<O> extends AbstractMap<String,O> implements Externalizabl
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private class NullEntry implements Map.Entry<String,O>
-    {
-        public String getKey(){return null;}
-        public O getValue(){return _nullValue;}
-        public O setValue(O o)
-            {O old=_nullValue;_nullValue=o;return old;}
-        @Override
-        public String toString(){return "[:null="+_nullValue+"]";}
-    }
-
-    /* ------------------------------------------------------------ */
-    public void writeExternal(java.io.ObjectOutput out)
-        throws java.io.IOException
-    {
-        HashMap<String,O> map = new HashMap<String,O>(this);
-        out.writeBoolean(_ignoreCase);
-        out.writeObject(map);
-    }
-    
-    /* ------------------------------------------------------------ */
-    public void readExternal(java.io.ObjectInput in)
-        throws java.io.IOException, ClassNotFoundException
-    {
-        boolean ic=in.readBoolean();
-        HashMap<String,O> map = (HashMap<String,O>)in.readObject();
-        setIgnoreCase(ic);
-        this.putAll(map);
-    }
 }
