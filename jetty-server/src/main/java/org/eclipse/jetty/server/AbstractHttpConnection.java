@@ -149,7 +149,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _responseFields = new HttpFields(server.getMaxCookieVersion());
         _request = new Request(this);
         _response = new Response(this);
-        _generator = new HttpGenerator(ab.getResponseBuffers(), _endp);
+        _generator = newHttpGenerator(ab.getResponseBuffers(), endpoint);
         _generator.setSendServerVersion(server.getSendServerVersion());
         _server = server;
     }
@@ -175,6 +175,11 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     protected HttpParser newHttpParser(Buffers requestBuffers, EndPoint endpoint, HttpParser.EventHandler requestHandler)
     {
         return new HttpParser(requestBuffers, endpoint, requestHandler);
+    }
+
+    protected HttpGenerator newHttpGenerator(Buffers responseBuffers, EndPoint endPoint)
+    {
+        return new HttpGenerator(responseBuffers, endPoint);
     }
 
     /* ------------------------------------------------------------ */
