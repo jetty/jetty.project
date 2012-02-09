@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.URIUtil;
  *
  *
  */
-public class PathMap extends HashMap implements Externalizable
+public class PathMap<O> extends HashMap<String,O>
 {
     /* ------------------------------------------------------------ */
     private static String __pathSpecSeparators = ":,";
@@ -74,13 +74,13 @@ public class PathMap extends HashMap implements Externalizable
     }
 
     /* --------------------------------------------------------------- */
-    final StringMap _prefixMap=new StringMap();
-    final StringMap _suffixMap=new StringMap();
-    final StringMap _exactMap=new StringMap();
+    final StringMap<MappedEntry<O>> _prefixMap=new StringMap<>();
+    final StringMap<MappedEntry<O>> _suffixMap=new StringMap<>();
+    final StringMap<MappedEntry<O>> _exactMap=new StringMap<>();
 
     List _defaultSingletonList=null;
-    Entry _prefixDefault=null;
-    Entry _default=null;
+    MappedEntry<O> _prefixDefault=null;
+    MappedEntry<O> _default=null;
     final Set _entrySet;
     boolean _nodefault=false;
 
@@ -121,22 +121,6 @@ public class PathMap extends HashMap implements Externalizable
         _entrySet=entrySet();
     }
 
-    /* ------------------------------------------------------------ */
-    public void writeExternal(java.io.ObjectOutput out)
-        throws java.io.IOException
-    {
-        HashMap map = new HashMap(this);
-        out.writeObject(map);
-    }
-
-    /* ------------------------------------------------------------ */
-    public void readExternal(java.io.ObjectInput in)
-        throws java.io.IOException, ClassNotFoundException
-    {
-        HashMap map = (HashMap)in.readObject();
-        this.putAll(map);
-    }
-
     /* --------------------------------------------------------------- */
     /** Add a single path match to the PathMap.
      * @param pathSpec The path specification, or comma separated list of
@@ -144,19 +128,19 @@ public class PathMap extends HashMap implements Externalizable
      * @param object The object the path maps to
      */
     @Override
-    public Object put(Object pathSpec, Object object)
+    public O put(String pathSpec, O object)
     {
         String str = pathSpec.toString();
         if ("".equals(str.trim()))
         {          
-            Entry entry = new Entry("",object);
+            MappedEntry entry = new MappedEntry("",object);
             entry.setMapped("");
             _exactMap.put("", entry);
             return super.put("", object);
         }
         
         StringTokenizer tok = new StringTokenizer(str,__pathSpecSeparators);
-        Object old =null;
+        O old =null;
 
         while (tok.hasMoreTokens())
         {
@@ -168,7 +152,7 @@ public class PathMap extends HashMap implements Externalizable
             old = super.put(spec,object);
 
             // Make entry that was just created.
-            Entry entry = new Entry(spec,object);
+            MappedEntry entry = new MappedEntry(spec,object);
 
             if (entry.getKey().equals(spec))
             {
@@ -225,9 +209,9 @@ public class PathMap extends HashMap implements Externalizable
      * @param path the path.
      * @return Map.Entry of the best matched  or null.
      */
-    public Entry getMatch(String path)
+    public MappedEntry<O> getMatch(String path)
     {
-        Map.Entry entry=null;
+        MappedEntry<O> entry=null;
 
         if (path==null)
             return null;
@@ -237,23 +221,23 @@ public class PathMap extends HashMap implements Externalizable
         //special case
         if (l == 1 && path.charAt(0)=='/')
         {
-            entry = (Map.Entry)_exactMap.get("");
+            entry = _exactMap.get("");
             if (entry != null)
-                return (Entry)entry;
+                return (MappedEntry)entry;
         }
         
         // try exact match
-        entry=_exactMap.getEntry(path,0,l);
+        entry=_exactMap.get(path,0,l);
         if (entry!=null)
-            return (Entry) entry.getValue();
+            return entry;
 
         // prefix search
         int i=l;
         while((i=path.lastIndexOf('/',i-1))>=0)
         {
-            entry=_prefixMap.getEntry(path,0,i);
+            entry=_prefixMap.get(path,0,i);
             if (entry!=null)
-                return (Entry) entry.getValue();
+                return entry;
         }
 
         // Prefix Default
@@ -264,9 +248,9 @@ public class PathMap extends HashMap implements Externalizable
         i=0;
         while ((i=path.indexOf('.',i+1))>0)
         {
-            entry=_suffixMap.getEntry(path,i+1,l-i-1);
+            entry=_suffixMap.get(path,i+1,l-i-1);
             if (entry!=null)
-                return (Entry) entry.getValue();
+                return entry;
         }
 
         // Default
@@ -281,7 +265,7 @@ public class PathMap extends HashMap implements Externalizable
      */
     public Object getLazyMatches(String path)
     {
-        Map.Entry entry;
+        MappedEntry entry;
         Object entries=null;
 
         if (path==null)
@@ -290,17 +274,17 @@ public class PathMap extends HashMap implements Externalizable
         int l=path.length();
 
         // try exact match
-        entry=_exactMap.getEntry(path,0,l);
+        entry=_exactMap.get(path,0,l);
         if (entry!=null)
-            entries=LazyList.add(entries,entry.getValue());
+            entries=LazyList.add(entries,entry);
 
         // prefix search
         int i=l-1;
         while((i=path.lastIndexOf('/',i-1))>=0)
         {
-            entry=_prefixMap.getEntry(path,0,i);
+            entry=_prefixMap.get(path,0,i);
             if (entry!=null)
-                entries=LazyList.add(entries,entry.getValue());
+                entries=LazyList.add(entries,entry);
         }
 
         // Prefix Default
@@ -311,9 +295,9 @@ public class PathMap extends HashMap implements Externalizable
         i=0;
         while ((i=path.indexOf('.',i+1))>0)
         {
-            entry=_suffixMap.getEntry(path,i+1,l-i-1);
+            entry=_suffixMap.get(path,i+1,l-i-1);
             if (entry!=null)
-                entries=LazyList.add(entries,entry.getValue());
+                entries=LazyList.add(entries,entry);
         }
 
         // Default
@@ -348,13 +332,13 @@ public class PathMap extends HashMap implements Externalizable
      */
     public boolean containsMatch(String path)
     {
-    	Entry match = getMatch(path);
+    	MappedEntry match = getMatch(path);
     	return match!=null && !match.equals(_default);
     }
 
     /* --------------------------------------------------------------- */
     @Override
-    public Object remove(Object pathSpec)
+    public O remove(Object pathSpec)
     {
         if (pathSpec!=null)
         {
@@ -532,30 +516,29 @@ public class PathMap extends HashMap implements Externalizable
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public static class Entry implements Map.Entry
+    public static class MappedEntry<O> implements Map.Entry<String,O>
     {
-        private final Object key;
-        private final Object value;
+        private final String key;
+        private final O value;
         private String mapped;
-        private transient String string;
 
-        Entry(Object key, Object value)
+        MappedEntry(String key, O value)
         {
             this.key=key;
             this.value=value;
         }
 
-        public Object getKey()
+        public String getKey()
         {
             return key;
         }
 
-        public Object getValue()
+        public O getValue()
         {
             return value;
         }
 
-        public Object setValue(Object o)
+        public O setValue(O o)
         {
             throw new UnsupportedOperationException();
         }
@@ -563,9 +546,7 @@ public class PathMap extends HashMap implements Externalizable
         @Override
         public String toString()
         {
-            if (string==null)
-                string=key+"="+value;
-            return string;
+            return key+"="+value;
         }
 
         public String getMapped()

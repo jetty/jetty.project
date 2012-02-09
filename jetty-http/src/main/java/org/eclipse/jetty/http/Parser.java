@@ -25,11 +25,14 @@ public interface Parser
 
     boolean isComplete();
 
+    
+    /* ------------------------------------------------------------ */
     /**
-     * @return True if progress made
+     * @param buffer
+     * @return True if parsed to the next unit
      * @throws IOException
      */
-    boolean parseAvailable(ByteBuffer buffer) throws IOException;
+    boolean parseNext(ByteBuffer buffer) throws IOException;
 
     boolean onEOF()throws IOException;
     

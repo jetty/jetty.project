@@ -112,44 +112,6 @@ public class StringMap<O> extends AbstractMap<String,O>
     }
 
     /* ------------------------------------------------------------ */
-    public static void main(String[] arg)
-    {
-        StringMap<String> map = new StringMap<>();
-        
-        System.err.println("null="+map.get("nothing"));
-        
-        map.put("foo","1");
-        System.err.println("null="+map.get("nothing"));
-        System.err.println("null="+map.get("foobar"));
-        System.err.println("1="+map.get("foo"));
-        System.err.println("null="+map.get("fo"));
-        
-        map.put("foobar","2");
-        System.err.println("null="+map.get("nothing"));
-        System.err.println("2="+map.get("foobar"));
-        System.err.println("1="+map.get("foo"));
-        System.err.println("null="+map.get("fo"));
-        System.err.println("null="+map.get("foob"));
-        
-        map.put("foob","3");
-        System.err.println("null="+map.get("nothing"));
-        System.err.println("2="+map.get("foobar"));
-        System.err.println("3="+map.get("foob"));
-        System.err.println("1="+map.get("foo"));
-        
-        map.put("fool","4");
-        map.put("fop","5");
-        map.put("fred","6");
-        
-
-        System.err.println("2="+map.get(BufferUtil.toBuffer("foobar")));
-        System.err.println("3="+map.get(BufferUtil.toBuffer("foob")));
-        System.err.println("1="+map.get(BufferUtil.toBuffer("foo")));
-        
-        
-    }
-    
-    /* ------------------------------------------------------------ */
     @Override
     public O put(String key, O value)
     {
@@ -178,10 +140,11 @@ public class StringMap<O> extends AbstractMap<String,O>
     /* ------------------------------------------------------------ */
     public O get(ByteBuffer buffer, int position, int length)
     {
-        ByteBuffer slice=buffer.slice();
-        slice.position(position);
-        slice.limit(position+length);
-        return _map.get(slice);
+        ByteBuffer ro=buffer.asReadOnlyBuffer();
+        ro.limit(ro.capacity());
+        ro.position(position);
+        ro.limit(position+length);
+        return _map.get(ro);
     }
     
     

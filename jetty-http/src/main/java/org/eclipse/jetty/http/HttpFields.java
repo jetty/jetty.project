@@ -927,7 +927,7 @@ public class HttpFields
     private static final StringMap<Float> __qualities = new StringMap<>();
     static
     {
-        __qualities.put(null, __one);
+        __qualities.put("*", __one);
         __qualities.put("1.0", __one);
         __qualities.put("1", __one);
         __qualities.put("0.9", new Float("0.9"));
@@ -956,14 +956,16 @@ public class HttpFields
         if (value.charAt(qe++) == 'q')
         {
             qe++;
-            Map.Entry<String,Float> entry = __qualities.getEntry(value, qe, value.length() - qe);
-            if (entry != null) 
-                return (Float) entry.getValue();
+            Float q = __qualities.get(value, qe, value.length() - qe);
+            if (q != null) 
+                return q;
         }
 
         Map<String,String> params = new HashMap<String,String>(4);
         valueParameters(value, params);
         String qs = (String) params.get("q");
+        if (qs==null)
+            qs="*";
         Float q = (Float) __qualities.get(qs);
         if (q == null)
         {

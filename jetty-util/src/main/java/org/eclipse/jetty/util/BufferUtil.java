@@ -16,6 +16,8 @@ package org.eclipse.jetty.util;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import javax.swing.text.Position;
+
 
 /* ------------------------------------------------------------------------------- */
 /**
@@ -179,11 +181,11 @@ public class BufferUtil
         byte[] array = buffer.hasArray()?buffer.array():null;
         if (array == null)
         {
-            ByteBuffer slice=buffer.slice();
-            slice.position(position);
-            slice.limit(position+length);
+            ByteBuffer ro=buffer.asReadOnlyBuffer();
+            ro.position(position);
+            ro.limit(position+length);
             byte[] to = new byte[length];
-            slice.get(to);
+            ro.get(to);
             return new String(to,0,to.length,charset);
         }
         return new String(array,buffer.arrayOffset()+position,length,charset);
@@ -461,6 +463,73 @@ public class BufferUtil
         return ByteBuffer.wrap(s.getBytes(charset));
     }
 
+    public static String toDetailString(ByteBuffer buffer)
+    {
+        StringBuilder buf = new StringBuilder();
+        buf.append("[p=");
+        buf.append(buffer.position());
+        buf.append(",l=");
+        buf.append(buffer.limit());
+        buf.append(",c=");
+        buf.append(buffer.capacity());
+        buf.append("]={");
+        
+        for (int i=0;i<buffer.position();i++)
+        {
+            char c=(char)buffer.get(i);
+            if (c>=' ')
+                buf.append(c);
+            else if (c=='\r'||c=='\n')
+                buf.append('|');
+            else
+                buf.append('?');
+            if (i==16&&buffer.position()>32)
+            {
+                buf.append("...");
+                i=buffer.position()-16;
+            }
+        }
+        buf.append("}{");
+        for (int i=buffer.position();i<buffer.limit();i++)
+        {
+            char c=(char)buffer.get(i);
+            if (c>=' ')
+                buf.append(c);
+            else if (c=='\r'||c=='\n')
+                buf.append('|');
+            else
+                buf.append('?');
+            if (i==buffer.position()+16&&buffer.limit()>buffer.position()+32)
+            {
+                buf.append("...");
+                i=buffer.limit()-16;
+            }
+        }
+        buf.append("}{");
+        int limit=buffer.limit();
+        buffer.limit(buffer.capacity());
+        for (int i=limit;i<buffer.capacity();i++)
+        {
+            char c=(char)buffer.get(i);
+            if (c>=' ')
+                buf.append(c);
+            else if (c=='\r'||c=='\n')
+                buf.append('|');
+            else
+                buf.append('?');
+            if (i==limit+16&&buffer.capacity()>limit+32)
+            {
+                buf.append("...");
+                i=buffer.capacity()-16;
+            }
+        }
+        buffer.limit(limit);
+        buf.append("}");
+        
+        return buf.toString();
+    }
+    
+    
     private final static int[] decDivisors =
     { 1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1 };
 
