@@ -20,6 +20,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.ContentExchange;
 import org.eclipse.jetty.client.HttpClient;
@@ -109,7 +110,8 @@ public abstract class AbstractNewSessionTest
             String action = request.getParameter("action");
             if ("create".equals(action))
             {
-                request.getSession(true);
+                HttpSession session = request.getSession(true);
+                assertTrue(session.isNew());
             }
             else if ("old-create".equals(action))
             {
