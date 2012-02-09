@@ -133,5 +133,14 @@ public enum HttpHeaders
     {
         return _string;
     }
+    
+    public static void main (String[] args)
+    {
+        for (HttpHeaders h : HttpHeaders.values())
+        {
+            System.err.println("\n\n"+h);
+            CACHE.get(h.toString());
+        }
+    }
 }
 

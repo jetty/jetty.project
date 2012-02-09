@@ -489,7 +489,7 @@ public class BufferUtil
                 i=buffer.position()-16;
             }
         }
-        buf.append("}{");
+        buf.append("<<<");
         for (int i=buffer.position();i<buffer.limit();i++)
         {
             char c=(char)buffer.get(i);
@@ -505,7 +505,7 @@ public class BufferUtil
                 i=buffer.limit()-16;
             }
         }
-        buf.append("}{");
+        buf.append(">>>");
         int limit=buffer.limit();
         buffer.limit(buffer.capacity());
         for (int i=limit;i<buffer.capacity();i++)

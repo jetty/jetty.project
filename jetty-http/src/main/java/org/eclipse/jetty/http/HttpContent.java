@@ -15,9 +15,8 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -27,10 +26,10 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public interface HttpContent
 {
-    Buffer getContentType();
-    Buffer getLastModified();
-    Buffer getIndirectBuffer();
-    Buffer getDirectBuffer();
+    ByteBuffer getContentType();
+    ByteBuffer getLastModified();
+    ByteBuffer getIndirectBuffer();
+    ByteBuffer getDirectBuffer();
     Resource getResource();
     long getContentLength();
     InputStream getInputStream() throws IOException;
@@ -42,17 +41,17 @@ public interface HttpContent
     public class ResourceAsHttpContent implements HttpContent
     {
         final Resource _resource;
-        final Buffer _mimeType;
+        final ByteBuffer _mimeType;
         final int _maxBuffer;
 
-        public ResourceAsHttpContent(final Resource resource, final Buffer mimeType)
+        public ResourceAsHttpContent(final Resource resource, final ByteBuffer mimeType)
         {
             _resource=resource;
             _mimeType=mimeType;
             _maxBuffer=-1;
         }
         
-        public ResourceAsHttpContent(final Resource resource, final Buffer mimeType, int maxBuffer)
+        public ResourceAsHttpContent(final Resource resource, final ByteBuffer mimeType, int maxBuffer)
         {
             _resource=resource;
             _mimeType=mimeType;
@@ -60,32 +59,47 @@ public interface HttpContent
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getContentType()
+        public ByteBuffer getContentType()
         {
             return _mimeType;
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getLastModified()
+        public ByteBuffer getLastModified()
         {
             return null;
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getDirectBuffer()
+        public ByteBuffer getDirectBuffer()
         {
             return null;
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getIndirectBuffer()
+        public ByteBuffer getIndirectBuffer()
         {
             try
             {
                 if (_resource.length()<=0 || _maxBuffer<_resource.length())
                     return null;
-                ByteArrayBuffer buffer = new ByteArrayBuffer((int)_resource.length());
-                buffer.readFrom(_resource.getInputStream(),(int)_resource.length());
+                int length=(int)_resource.length();
+                byte[] array = new byte[length];
+                
+                int offset=0;
+                InputStream in=_resource.getInputStream();
+                
+                do
+                {
+                    int filled=in.read(array,offset,length);
+                    if (filled<0)
+                        break;
+                    length-=filled;
+                    offset+=filled;
+                }
+                while(length>0);
+                
+                ByteBuffer buffer = ByteBuffer.wrap(array);
                 return buffer;
             }
             catch(IOException e)
