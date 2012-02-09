@@ -60,6 +60,10 @@ public class HashSessionManager extends AbstractSessionManager
     File _storeDir;
     private boolean _lazyLoad=false;
     private volatile boolean _sessionsLoaded=false;
+    private boolean _deleteUnrestorableSessions=false;
+    
+
+
 
     /* ------------------------------------------------------------ */
     public HashSessionManager()
@@ -433,6 +437,18 @@ public class HashSessionManager extends AbstractSessionManager
     {
         return _lazyLoad;
     }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isDeleteUnrestorableSessions()
+    {
+        return _deleteUnrestorableSessions;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setDeleteUnrestorableSessions(boolean deleteUnrestorableSessions)
+    {
+        _deleteUnrestorableSessions = deleteUnrestorableSessions;
+    }
 
     /* ------------------------------------------------------------ */
     public void restoreSessions () throws Exception
@@ -460,9 +476,9 @@ public class HashSessionManager extends AbstractSessionManager
     /* ------------------------------------------------------------ */
     protected synchronized HashedSession restoreSession(String idInCuster)
     {
+        File file = new File(_storeDir,idInCuster);
         try
         {
-            File file = new File(_storeDir,idInCuster);
             if (file.exists())
             {
                 FileInputStream in = new FileInputStream(file);
@@ -476,7 +492,18 @@ public class HashSessionManager extends AbstractSessionManager
         }
         catch (Exception e)
         {
-            __log.warn("Problem restoring session "+idInCuster, e);
+           
+            if (isDeleteUnrestorableSessions())
+            {
+                if (file.exists())
+                {
+                    file.delete();
+                    __log.warn("Deleting file for unrestorable session "+idInCuster, e);
+                }
+            }
+            else
+                __log.warn("Problem restoring session "+idInCuster, e);
+                
         }
         return null;
     }
