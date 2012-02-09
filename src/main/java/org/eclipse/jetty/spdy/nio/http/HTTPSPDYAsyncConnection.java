@@ -376,10 +376,13 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
                 status.append(" ").append(_reason.toString("UTF-8"));
             headers.put("status", status.toString());
             headers.put("version", "HTTP/1.1");
-            for (int i = 0; i < fields.size(); ++i)
+            if (fields != null)
             {
-                HttpFields.Field field = fields.getField(i);
-                headers.put(field.getName(), field.getValue());
+                for (int i = 0; i < fields.size(); ++i)
+                {
+                    HttpFields.Field field = fields.getField(i);
+                    headers.put(field.getName(), field.getValue());
+                }
             }
             stream.reply(new ReplyInfo(headers, allContentAdded));
         }
