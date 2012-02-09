@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.helper;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,12 +30,13 @@ import java.net.URI;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 public class SafariD00
 {
+    private static final Logger LOG = Log.getLogger(SafariD00.class);
     private URI uri;
     private SocketAddress endpoint;
     private Socket socket;
@@ -54,7 +57,9 @@ public class SafariD00
      */
     public Socket connect() throws IOException
     {
+        LOG.info("Connecting to endpoint: " + endpoint);
         socket = new Socket();
+        socket.setTcpNoDelay(true);
         socket.connect(endpoint,1000);
 
         out = socket.getOutputStream();
@@ -70,6 +75,7 @@ public class SafariD00
      */
     public void issueHandshake() throws IOException
     {
+        LOG.debug("Issuing Handshake");
         StringBuilder req = new StringBuilder();
         req.append("GET ").append(uri.getPath()).append(" HTTP/1.1\r\n");
         req.append("Upgrade: WebSocket\r\n");
@@ -80,7 +86,7 @@ public class SafariD00
         req.append("Sec-WebSocket-Key2: 3? C;7~0 8   \" 3 2105 6  `_ {\r\n");
         req.append("\r\n");
 
-        // System.out.printf("--- Request ---%n%s",req);
+        LOG.debug("Request:" + req);
 
         byte reqBytes[] = req.toString().getBytes("UTF-8");
         byte hixieBytes[] = TypeUtil.fromHexString("e739617916c9daf3");
@@ -96,8 +102,9 @@ public class SafariD00
         InputStreamReader reader = new InputStreamReader(in);
         BufferedReader br = new BufferedReader(reader);
 
-        socket.setSoTimeout(5000);
+        socket.setSoTimeout(10000);
 
+        LOG.debug("Reading http header");
         boolean foundEnd = false;
         String line;
         while (!foundEnd)
@@ -114,6 +121,7 @@ public class SafariD00
         byte hixieHandshakeExpected[] = TypeUtil.fromHexString("c7438d956cf611a6af70603e6fa54809");
         byte hixieHandshake[] = new byte[hixieHandshakeExpected.length];
 
+        LOG.debug("Reading hixie handshake bytes");
         int readLen = in.read(hixieHandshake,0,hixieHandshake.length);
         Assert.assertThat("Read hixie handshake bytes",readLen,is(hixieHandshake.length));
     }
@@ -123,6 +131,7 @@ public class SafariD00
         int len = 0;
         for (String msg : msgs)
         {
+            LOG.debug("sending message: " + msg);
             len += (msg.length() + 2);
         }
 
@@ -141,6 +150,7 @@ public class SafariD00
 
     public void disconnect() throws IOException
     {
+        LOG.debug("disconnect");
         socket.close();
     }
 }
