@@ -39,9 +39,10 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
 {
     private static final Logger logger = LoggerFactory.getLogger(SPDYAsyncConnection.class);
     private final Parser parser;
-    private ByteBuffer buffer;
-    private Handler handler;
-    private volatile boolean flushing;
+    private ByteBuffer readBuffer;
+    private ByteBuffer writeBuffer;
+    private Handler writeHandler;
+    private volatile boolean writePending;
 
     public SPDYAsyncConnection(EndPoint endp, Parser parser)
     {
@@ -74,17 +75,26 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
 
     public int fill() throws IOException
     {
-        NIOBuffer jettyBuffer = new DirectNIOBuffer(1024);
-        AsyncEndPoint endPoint = getEndPoint();
-        int filled = endPoint.fill(jettyBuffer);
-        logger.debug("Filled {} from {}", filled, endPoint);
-        if (filled > 0)
+        // In order to support reentrant parsing, we save the read buffer
+
+        int filled = 0;
+        if (readBuffer == null)
         {
+            // TODO: use buffer pool ?
+            NIOBuffer jettyBuffer = new DirectNIOBuffer(1024);
+            AsyncEndPoint endPoint = getEndPoint();
+            filled = endPoint.fill(jettyBuffer);
+            logger.debug("Filled {} from {}", filled, endPoint);
+            if (filled <= 0)
+                return filled;
+
             ByteBuffer buffer = jettyBuffer.getByteBuffer();
             buffer.limit(jettyBuffer.putIndex());
             buffer.position(jettyBuffer.getIndex());
-            parser.parse(buffer);
+            this.readBuffer = buffer;
         }
+        parser.parse(readBuffer);
+        readBuffer = null;
         return filled;
     }
 
@@ -92,8 +102,8 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     {
         int result = 0;
         // Volatile read to ensure visibility of buffer and handler
-        if (flushing)
-            result = write(buffer, handler);
+        if (writePending)
+            result = write(writeBuffer, writeHandler);
         logger.debug("Flushed {} to {}", result, getEndPoint());
         return result;
     }
@@ -123,20 +133,20 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
         if (buffer.hasRemaining())
         {
             // Save buffer and handler in order to finish the write later in flush()
-            this.buffer = buffer;
-            this.handler = handler;
+            this.writeBuffer = buffer;
+            this.writeHandler = handler;
             // Volatile write to ensure visibility of buffer and handler
-            flushing = true;
+            writePending = true;
             endPoint.scheduleWrite();
         }
         else
         {
-            if (flushing)
+            if (writePending)
             {
-                this.buffer = null;
-                this.handler = null;
+                this.writeBuffer = null;
+                this.writeHandler = null;
                 // Volatile write to ensure visibility of buffer and handler
-                flushing = false;
+                writePending = false;
             }
             handler.complete();
         }

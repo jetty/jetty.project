@@ -54,8 +54,8 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
     private static final Logger logger = LoggerFactory.getLogger(HTTPSPDYAsyncConnection.class);
     private final SPDYAsyncConnection connection;
     private final Stream stream;
+    private NIOBuffer buffer;
     private volatile State state = State.INITIAL;
-    private volatile NIOBuffer buffer;
 
     public HTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
     {
@@ -182,8 +182,8 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
         {
             case REQUEST:
             {
-                state = endRequest ? State.FINAL : State.CONTENT;
                 buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
+                state = endRequest ? State.FINAL : State.CONTENT;
                 logger.debug("Accumulated first {} content bytes", byteBuffer.remaining());
                 headerComplete();
                 content(buffer);
@@ -191,9 +191,8 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
             }
             case CONTENT:
             {
-                if (endRequest)
-                    state = State.FINAL;
                 buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
+                state = endRequest ? State.FINAL : State.CONTENT;
                 logger.debug("Accumulated {} content bytes", byteBuffer.remaining());
                 content(buffer);
                 break;
@@ -218,7 +217,7 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
 
                 while (true)
                 {
-                    // We read and parse more bytes; this may change the state
+                    // We need to parse more bytes; this may change the state
                     // (for example to FINAL state) and change the buffer field
                     connection.fill();
 
