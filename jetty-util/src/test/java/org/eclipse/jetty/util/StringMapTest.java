@@ -132,56 +132,6 @@ public class StringMapTest
     }
 
     /*
-     * Test for Map.Entry getEntry(String, int, int)
-     */
-    @Test
-    public void testGetEntryStringintint()
-    {
-        Map.Entry<String,String> entry;
-        
-        entry=m5.getEntry("xabcyz",1,3);
-        assertTrue(entry!=null);
-        assertEquals("abc",entry.getKey());
-        assertEquals("2",entry.getValue());
-        
-        entry=m5.getEntry("xaBcyz",1,3);
-        assertTrue(entry==null);
-        
-        entry=m5i.getEntry("xaBcyz",1,3);
-        assertTrue(entry!=null);
-        assertEquals("abc",entry.getKey());
-        assertEquals("2",entry.getValue());
-        entry.setValue("x");
-        assertEquals("{[c:abc=x]}",entry.toString());
-        
-
-    }
-
-    /*
-     * Test for Map.Entry getEntry(char[], int, int)
-     */
-    @Test
-    public void testGetEntrycharArrayintint()
-    {
-        char[] xabcyz = {'x','a','b','c','y','z'};
-        char[] xaBcyz = {'x','a','B','c','y','z'};
-        Map.Entry<String,String> entry;
-        
-        entry=m5.getEntry(xabcyz,1,3);
-        assertTrue(entry!=null);
-        assertEquals("abc",entry.getKey());
-        assertEquals("2",entry.getValue());
-        
-        entry=m5.getEntry(xaBcyz,1,3);
-        assertTrue(entry==null);
-        
-        entry=m5i.getEntry(xaBcyz,1,3);
-        assertTrue(entry!=null);
-        assertEquals("abc",entry.getKey());
-        assertEquals("2",entry.getValue());
-    }
-
-    /*
      * Test for Object remove(Object)
      */
     @Test

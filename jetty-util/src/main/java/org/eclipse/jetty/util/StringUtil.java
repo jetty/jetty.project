@@ -80,8 +80,8 @@ public class StringUtil
      */
     public static String normalizeCharset(String s,int offset,int length)
     {
-        Map.Entry<String,String> n=CHARSETS.getEntry(s,offset,length);       
-        return (n==null)?s.substring(offset,offset+length):n.getValue();
+        String n=CHARSETS.get(s,offset,length);       
+        return (n==null)?s.substring(offset,offset+length):n;
     }
 
     /* ------------------------------------------------------------ */
@@ -90,9 +90,9 @@ public class StringUtil
      */
     public static String normalizeCharset(ByteBuffer b,int position,int length)
     {
-        Map.Entry<String,String> n=CHARSETS.getEntry(b,position,length); 
+        String n=CHARSETS.get(b,position,length); 
         if (n!=null)
-            return n.getValue();
+            return n;
         ByteBuffer slice = b.slice();
         slice.position(position);
         slice.limit(position+length);
