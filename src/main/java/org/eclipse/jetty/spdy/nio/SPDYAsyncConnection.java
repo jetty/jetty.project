@@ -76,6 +76,8 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     public int fill() throws IOException
     {
         // In order to support reentrant parsing, we save the read buffer
+        // so that reentrant calls can finish to consume the read buffer
+        // or eventually read more bytes and parse them.
 
         int filled = 0;
         if (readBuffer == null)
