@@ -23,14 +23,15 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.spdy.ISession;
 import org.eclipse.jetty.spdy.ISession.Controller;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
+import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,38 +40,48 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
 {
     private static final Logger logger = LoggerFactory.getLogger(SPDYAsyncConnection.class);
     private final Parser parser;
+    private volatile Session session;
     private ByteBuffer readBuffer;
     private ByteBuffer writeBuffer;
     private Handler writeHandler;
     private volatile boolean writePending;
 
-    public SPDYAsyncConnection(EndPoint endp, Parser parser)
+    public SPDYAsyncConnection(AsyncEndPoint endPoint, Parser parser)
     {
-        super(endp);
+        super(endPoint);
         this.parser = parser;
+        endPoint.setCheckForIdle(true);
     }
 
     @Override
     public Connection handle() throws IOException
     {
         AsyncEndPoint endPoint = getEndPoint();
-        boolean progress = true;
-        while (endPoint.isOpen() && progress)
+        try
         {
-            int filled = fill();
-            progress = filled > 0;
+            endPoint.setCheckForIdle(false);
+            boolean progress = true;
+            while (endPoint.isOpen() && progress)
+            {
+                int filled = fill();
+                progress = filled > 0;
 
-            int flushed = flush();
-            progress |= flushed > 0;
+                int flushed = flush();
+                progress |= flushed > 0;
 
-            endPoint.flush();
+                endPoint.flush();
 
-            progress |= endPoint.hasProgressed();
+                progress |= endPoint.hasProgressed();
 
-            if (!progress && filled < 0)
-                close(false);
+                if (!progress && filled < 0)
+                    close(false);
+            }
+            return this;
         }
-        return this;
+        finally
+        {
+            endPoint.setCheckForIdle(true);
+        }
     }
 
     public int fill() throws IOException
@@ -214,5 +225,21 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     public void onInputShutdown() throws IOException
     {
         // TODO
+    }
+
+    @Override
+    public void onIdleExpired(long idleForMs)
+    {
+        session.goAway(SPDY.V2);
+    }
+
+    protected Session getSession()
+    {
+        return session;
+    }
+
+    protected void setSession(Session session)
+    {
+        this.session = session;
     }
 }

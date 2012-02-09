@@ -21,12 +21,10 @@ import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.StandardSession;
-import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -74,9 +72,9 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     private static class ServerSPDYAsyncConnection extends SPDYAsyncConnection
     {
         private final ServerSessionFrameListener listener;
-        private volatile Session session;
+        private volatile boolean connected;
 
-        private ServerSPDYAsyncConnection(EndPoint endPoint, Parser parser, ServerSessionFrameListener listener)
+        private ServerSPDYAsyncConnection(AsyncEndPoint endPoint, Parser parser, ServerSessionFrameListener listener)
         {
             super(endPoint, parser);
             this.listener = listener;
@@ -85,20 +83,14 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         @Override
         public Connection handle() throws IOException
         {
-            final Session session = this.session;
-            if (session != null)
+            if (!connected)
             {
                 // NPE guard to support tests
                 if (listener != null)
-                    listener.onConnect(session);
-                this.session = null;
+                    listener.onConnect(getSession());
+                connected = true;
             }
             return super.handle();
-        }
-
-        private void setSession(Session session)
-        {
-            this.session = session;
         }
     }
 }

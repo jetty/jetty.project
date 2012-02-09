@@ -428,6 +428,7 @@ public class SPDYClient
             StandardSession session = new StandardSession(connection, 1, sessionFuture.listener, generator);
             parser.addListener(session);
             sessionFuture.connected(session);
+            connection.setSession(session);
 
             return connection;
         }
