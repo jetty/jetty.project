@@ -24,6 +24,7 @@ import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.frames.HeadersFrame;
 
 public class HeadersBlockGenerator
 {
@@ -32,7 +33,7 @@ public class HeadersBlockGenerator
     public HeadersBlockGenerator(CompressionFactory.Compressor compressor)
     {
         this.compressor = compressor;
-        this.compressor.setDictionary(Headers.DICTIONARY);
+        this.compressor.setDictionary(HeadersFrame.DICTIONARY);
     }
 
     public ByteBuffer generate(short version, Headers headers) throws StreamException

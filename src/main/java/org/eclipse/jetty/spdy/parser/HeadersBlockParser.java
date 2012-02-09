@@ -22,9 +22,9 @@ import java.util.zip.ZipException;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.frames.HeadersFrame;
 
 public abstract class HeadersBlockParser
 {
@@ -167,7 +167,7 @@ public abstract class HeadersBlockParser
                     if (decompressed != null)
                         return ByteBuffer.wrap(decompressed);
                     else
-                        decompressor.setDictionary(Headers.DICTIONARY);
+                        decompressor.setDictionary(HeadersFrame.DICTIONARY);
                 }
                 else
                 {
