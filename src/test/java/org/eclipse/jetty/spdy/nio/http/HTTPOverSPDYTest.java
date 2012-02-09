@@ -287,7 +287,7 @@ public class HTTPOverSPDYTest
     }
 
     @Test
-    public void testPOSTWithParametersInTwoFrames() throws Exception
+    public void testPOSTWithParametersInTwoFramesTwoReads() throws Exception
     {
         final String path = "/foo";
         final String data1 = "a=1&";
@@ -328,6 +328,51 @@ public class HTTPOverSPDYTest
 
         Thread.sleep(1000);
 
+        stream.data(new StringDataInfo(data2, true));
+
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPOSTWithParametersInTwoFramesOneRead() throws Exception
+    {
+        final String path = "/foo";
+        final String data1 = "a=1&";
+        final String data2 = "b=2";
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                Assert.assertEquals("POST", httpRequest.getMethod());
+                Assert.assertEquals("1", httpRequest.getParameter("a"));
+                Assert.assertEquals("2", httpRequest.getParameter("b"));
+                handlerLatch.countDown();
+            }
+        }, null);
+
+        Headers headers = new Headers();
+        headers.put("method", "POST");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + path);
+        headers.put("version", "HTTP/1.1");
+        headers.put("content-type", "application/x-www-form-urlencoded");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        Stream stream = session.syn(SPDY.V2, new SynInfo(headers, false), new Stream.FrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertTrue(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                replyLatch.countDown();
+            }
+        });
+        stream.data(new StringDataInfo(data1, false));
         stream.data(new StringDataInfo(data2, true));
 
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
