@@ -324,10 +324,9 @@ public class HTTPOverSPDYTest
                 replyLatch.countDown();
             }
         });
+        // Sleep between the data frames so that they will be read in 2 reads
         stream.data(new StringDataInfo(data1, false));
-
         Thread.sleep(1000);
-
         stream.data(new StringDataInfo(data2, true));
 
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
@@ -372,6 +371,7 @@ public class HTTPOverSPDYTest
                 replyLatch.countDown();
             }
         });
+        // Send the data frames consecutively, so the server reads both frames in one read
         stream.data(new StringDataInfo(data1, false));
         stream.data(new StringDataInfo(data2, true));
 
