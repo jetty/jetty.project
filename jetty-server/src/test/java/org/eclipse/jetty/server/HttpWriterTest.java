@@ -8,7 +8,7 @@ import java.io.IOException;
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
@@ -63,7 +63,7 @@ public class HttpWriterTest
                 return 1024;
             }
 
-            public void addContent(Buffer content, boolean last) throws IOException
+            public void addContent(ByteBuffer content, boolean last) throws IOException
             {
                 _bytes.put(content);
                 content.clear();
@@ -160,8 +160,8 @@ public class HttpWriterTest
     @Test
     public void testOutput() throws Exception
     {
-        Buffer sb=new ByteArrayBuffer(1500);
-        Buffer bb=new ByteArrayBuffer(8096);
+        ByteBuffer sb=new ByteArrayBuffer(1500);
+        ByteBuffer bb=new ByteArrayBuffer(8096);
         HttpFields fields = new HttpFields();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
 

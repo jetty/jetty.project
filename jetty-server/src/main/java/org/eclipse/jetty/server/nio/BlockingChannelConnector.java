@@ -23,7 +23,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -228,10 +228,10 @@ public class BlockingChannelConnector extends AbstractNIOConnector
 
         /* ------------------------------------------------------------ */
         /**
-         * @see org.eclipse.jetty.io.nio.ChannelEndPoint#fill(org.eclipse.jetty.io.Buffer)
+         * @see org.eclipse.jetty.io.nio.ChannelEndPoint#fill(org.eclipse.jetty.io.ByteBuffer)
          */
         @Override
-        public int fill(Buffer buffer) throws IOException
+        public int fill(ByteBuffer buffer) throws IOException
         {
             _idleTimestamp=System.currentTimeMillis();
             return super.fill(buffer);
@@ -239,10 +239,10 @@ public class BlockingChannelConnector extends AbstractNIOConnector
 
         /* ------------------------------------------------------------ */
         /**
-         * @see org.eclipse.jetty.io.nio.ChannelEndPoint#flush(org.eclipse.jetty.io.Buffer)
+         * @see org.eclipse.jetty.io.nio.ChannelEndPoint#flush(org.eclipse.jetty.io.ByteBuffer)
          */
         @Override
-        public int flush(Buffer buffer) throws IOException
+        public int flush(ByteBuffer buffer) throws IOException
         {
             _idleTimestamp=System.currentTimeMillis();
             return super.flush(buffer);
@@ -250,10 +250,10 @@ public class BlockingChannelConnector extends AbstractNIOConnector
 
         /* ------------------------------------------------------------ */
         /**
-         * @see org.eclipse.jetty.io.nio.ChannelEndPoint#flush(org.eclipse.jetty.io.Buffer, org.eclipse.jetty.io.Buffer, org.eclipse.jetty.io.Buffer)
+         * @see org.eclipse.jetty.io.nio.ChannelEndPoint#flush(org.eclipse.jetty.io.ByteBuffer, org.eclipse.jetty.io.ByteBuffer, org.eclipse.jetty.io.ByteBuffer)
          */
         @Override
-        public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+        public int flush(ByteBuffer header, ByteBuffer buffer, ByteBuffer trailer) throws IOException
         {
             _idleTimestamp=System.currentTimeMillis();
             return super.flush(header,buffer,trailer);

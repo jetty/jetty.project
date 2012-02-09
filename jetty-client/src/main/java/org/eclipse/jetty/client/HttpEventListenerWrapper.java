@@ -16,7 +16,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 
 public class HttpEventListenerWrapper implements HttpEventListener
 {
@@ -24,9 +24,9 @@ public class HttpEventListenerWrapper implements HttpEventListener
     boolean _delegatingRequests;
     boolean _delegatingResponses;
     boolean _delegationResult = true;
-    private Buffer _version;
+    private ByteBuffer _version;
     private int _status;
-    private Buffer _reason;
+    private ByteBuffer _reason;
 
     public HttpEventListenerWrapper()
     {
@@ -119,13 +119,13 @@ public class HttpEventListenerWrapper implements HttpEventListener
         }
     }
 
-    public void onResponseContent(Buffer content) throws IOException
+    public void onResponseContent(ByteBuffer content) throws IOException
     {
         if (_delegatingResponses)
             _listener.onResponseContent(content);
     }
 
-    public void onResponseHeader(Buffer name, Buffer value) throws IOException
+    public void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
     {
         if (_delegatingResponses)
             _listener.onResponseHeader(name,value);
@@ -137,7 +137,7 @@ public class HttpEventListenerWrapper implements HttpEventListener
             _listener.onResponseHeaderComplete();
     }
 
-    public void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    public void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
     {
         if (_delegatingResponses)
         {

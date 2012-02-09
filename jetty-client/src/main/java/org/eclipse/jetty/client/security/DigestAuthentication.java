@@ -19,7 +19,7 @@ import java.security.MessageDigest;
 import java.util.Map;
 
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -63,7 +63,7 @@ public class DigestAuthentication implements Authentication
         
         buffer.append(", ").append("cnonce").append('=').append('"').append(cnonce).append('"');
         
-        exchange.setRequestHeader( HttpHeaders.AUTHORIZATION, 
+        exchange.setRequestHeader( HttpHeader.AUTHORIZATION, 
                 new String(buffer.toString().getBytes(StringUtil.__ISO_8859_1)));
     }
     

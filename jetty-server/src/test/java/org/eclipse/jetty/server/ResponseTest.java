@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
 
 import org.eclipse.jetty.http.Generator;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.ByteArrayBuffer;
@@ -314,7 +314,7 @@ public class ResponseTest
         response.sendError(500, "Database Error");
         assertEquals(500, response.getStatus());
         assertEquals("Database Error", response.getReason());
-        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeaders.CACHE_CONTROL));
+        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL));
 
         response=newResponse();
 
@@ -327,7 +327,7 @@ public class ResponseTest
         response.sendError(406, "Super Nanny");
         assertEquals(406, response.getStatus());
         assertEquals("Super Nanny", response.getReason());
-        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeaders.CACHE_CONTROL));
+        assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL));
     }
 
     @Test

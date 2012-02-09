@@ -25,7 +25,7 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
@@ -140,7 +140,7 @@ public class SslSocketConnector extends SocketConnector  implements SslConnector
         throws IOException
     {
         super.customize(endpoint, request);
-        request.setScheme(HttpSchemes.HTTPS);
+        request.setScheme(HttpScheme.HTTPS);
 
         SocketEndPoint socket_end_point = (SocketEndPoint)endpoint;
         SSLSocket sslSocket = (SSLSocket)socket_end_point.getTransport();

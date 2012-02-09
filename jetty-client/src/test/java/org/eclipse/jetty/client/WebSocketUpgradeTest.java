@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -110,10 +110,10 @@ public class WebSocketUpgradeTest
         {
             /* ------------------------------------------------------------ */
             /**
-             * @see org.eclipse.jetty.client.HttpExchange#onResponseStatus(org.eclipse.jetty.io.Buffer, int, org.eclipse.jetty.io.Buffer)
+             * @see org.eclipse.jetty.client.HttpExchange#onResponseStatus(org.eclipse.jetty.io.ByteBuffer, int, org.eclipse.jetty.io.ByteBuffer)
              */
             @Override
-            protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+            protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
             {
                 waitFor(2);
                 _results.add(new Integer(status));
@@ -153,7 +153,7 @@ public class WebSocketUpgradeTest
         };
 
         httpExchange.setURL("http://localhost:"+_port+"/");
-        httpExchange.setMethod(HttpMethods.GET);
+        httpExchange.setMethod(HttpMethod.GET);
 
         httpExchange.addRequestHeader("Upgrade","WebSocket");
         httpExchange.addRequestHeader("Connection","Upgrade");

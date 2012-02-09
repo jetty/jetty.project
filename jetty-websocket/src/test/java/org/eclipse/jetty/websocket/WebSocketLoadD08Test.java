@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -158,7 +158,7 @@ public class WebSocketLoadD08Test
         private final WebSocketParserD08 _parser;
         private final WebSocketParser.FrameHandler _handler = new WebSocketParser.FrameHandler()
         {
-            public void onFrame(byte flags, byte opcode, Buffer buffer)
+            public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
             {
                 _response=buffer;
             }
@@ -167,7 +167,7 @@ public class WebSocketLoadD08Test
             {
             }
         };
-        private volatile Buffer _response;
+        private volatile ByteBuffer _response;
         
         public WebSocketClient(String host, int port, int readTimeout, CountDownLatch latch, int iterations) throws IOException
         {

@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.websocket.WebSocketParser.FrameHandler;
 
@@ -90,7 +90,7 @@ public class AbstractExtension implements Extension
         return name.toString();
     }
 
-    public void onFrame(byte flags, byte opcode, Buffer buffer)
+    public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
     {
         // System.err.printf("onFrame %s %x %x %d\n",getExtensionName(),flags,opcode,buffer.length());
         _inbound.onFrame(flags,opcode,buffer);

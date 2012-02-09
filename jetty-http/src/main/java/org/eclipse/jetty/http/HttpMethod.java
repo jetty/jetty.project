@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.StringMap;
 /* ------------------------------------------------------------------------------- */
 /** 
  */
-public enum HttpMethods
+public enum HttpMethod
 {
     GET,
     POST,
@@ -35,10 +35,10 @@ public enum HttpMethods
     MOVE;
 
     /* ------------------------------------------------------------ */
-    public final static StringMap<HttpMethods> CACHE= new StringMap<HttpMethods>(true);
+    public final static StringMap<HttpMethod> CACHE= new StringMap<HttpMethod>(true);
     static
     {
-        for (HttpMethods method : HttpMethods.values())
+        for (HttpMethod method : HttpMethod.values())
             CACHE.put(method.toString(),method);
     }
 
@@ -46,7 +46,7 @@ public enum HttpMethods
     private final ByteBuffer _buffer;
 
     /* ------------------------------------------------------------ */
-    HttpMethods()
+    HttpMethod()
     {
         _buffer=BufferUtil.toBuffer(toString());
     }

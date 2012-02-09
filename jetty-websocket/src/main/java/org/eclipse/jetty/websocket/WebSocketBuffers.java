@@ -28,7 +28,7 @@
 
 package org.eclipse.jetty.websocket;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.BuffersFactory;
@@ -53,17 +53,17 @@ public class WebSocketBuffers
         _buffers = BuffersFactory.newBuffers(Type.DIRECT,bufferSize,Type.INDIRECT,bufferSize,Type.INDIRECT,-1);
     }
 
-    public Buffer getBuffer()
+    public ByteBuffer getBuffer()
     {
         return _buffers.getBuffer();
     }
 
-    public Buffer getDirectBuffer()
+    public ByteBuffer getDirectBuffer()
     {
         return _buffers.getHeader();
     }
 
-    public void returnBuffer(Buffer buffer)
+    public void returnBuffer(ByteBuffer buffer)
     {
         _buffers.returnBuffer(buffer);
     }

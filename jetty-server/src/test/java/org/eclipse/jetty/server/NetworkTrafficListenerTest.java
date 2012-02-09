@@ -30,7 +30,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector;
@@ -119,14 +119,14 @@ public class NetworkTrafficListenerTest
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
             @Override
-            public void incoming(Socket socket, Buffer bytes)
+            public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(bytes.toString("UTF-8"));
                 incomingLatch.countDown();
             }
 
             @Override
-            public void outgoing(Socket socket, Buffer bytes)
+            public void outgoing(Socket socket, ByteBuffer bytes)
             {
                 outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
@@ -183,13 +183,13 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(2);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
-            public void incoming(Socket socket, Buffer bytes)
+            public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(bytes.toString("UTF-8"));
                 incomingLatch.countDown();
             }
 
-            public void outgoing(Socket socket, Buffer bytes)
+            public void outgoing(Socket socket, ByteBuffer bytes)
             {
                 outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
@@ -250,13 +250,13 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(4);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
-            public void incoming(Socket socket, Buffer bytes)
+            public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(bytes.toString("UTF-8"));
                 incomingLatch.countDown();
             }
 
-            public void outgoing(Socket socket, Buffer bytes)
+            public void outgoing(Socket socket, ByteBuffer bytes)
             {
                 outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
@@ -316,13 +316,13 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
-            public void incoming(Socket socket, Buffer bytes)
+            public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(bytes.toString("UTF-8"));
                 incomingLatch.countDown();
             }
 
-            public void outgoing(Socket socket, Buffer bytes)
+            public void outgoing(Socket socket, ByteBuffer bytes)
             {
                 outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();
@@ -389,12 +389,12 @@ public class NetworkTrafficListenerTest
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
         connector.addNetworkTrafficListener(new NetworkTrafficListener.Empty()
         {
-            public void incoming(Socket socket, Buffer bytes)
+            public void incoming(Socket socket, ByteBuffer bytes)
             {
                 incomingData.set(incomingData.get() + bytes.toString("UTF-8"));
             }
 
-            public void outgoing(Socket socket, Buffer bytes)
+            public void outgoing(Socket socket, ByteBuffer bytes)
             {
                 outgoingData.set(outgoingData.get() + bytes.toString("UTF-8"));
                 outgoingLatch.countDown();

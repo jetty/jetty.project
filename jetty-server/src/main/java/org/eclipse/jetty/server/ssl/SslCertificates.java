@@ -8,7 +8,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Request;
@@ -86,7 +86,7 @@ public class SslCertificates
      */
     public static void customize(SSLSession sslSession, EndPoint endpoint, Request request) throws IOException
     {
-        request.setScheme(HttpSchemes.HTTPS);
+        request.setScheme(HttpScheme.HTTPS);
 
         try
         {

@@ -14,9 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.Map;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringMap;
@@ -25,7 +23,7 @@ import org.eclipse.jetty.util.StringMap;
 /**
  * 
  */
-public enum HttpHeaderValues 
+public enum HttpHeaderValue 
 {
     CLOSE("close"),
     CHUNKED("chunked"),
@@ -40,10 +38,10 @@ public enum HttpHeaderValues
     UPGRADE("Upgrade");
 
     /* ------------------------------------------------------------ */
-    public final static StringMap<HttpHeaderValues> CACHE= new StringMap<HttpHeaderValues>(true);
+    public final static StringMap<HttpHeaderValue> CACHE= new StringMap<HttpHeaderValue>(true);
     static
     {
-        for (HttpHeaderValues value : HttpHeaderValues.values())
+        for (HttpHeaderValue value : HttpHeaderValue.values())
             CACHE.put(value.toString(),value);
     }
 
@@ -51,7 +49,7 @@ public enum HttpHeaderValues
     private final ByteBuffer _buffer;
 
     /* ------------------------------------------------------------ */
-    HttpHeaderValues(String s)
+    HttpHeaderValue(String s)
     {
         _string=s;
         _buffer=BufferUtil.toBuffer(s);
@@ -70,13 +68,13 @@ public enum HttpHeaderValues
     }
 
     /* ------------------------------------------------------------ */
-    private static EnumSet<HttpHeaders> __known = 
-            EnumSet.of(HttpHeaders.CONNECTION,
-                    HttpHeaders.TRANSFER_ENCODING,
-                    HttpHeaders.CONTENT_ENCODING);
+    private static EnumSet<HttpHeader> __known = 
+            EnumSet.of(HttpHeader.CONNECTION,
+                    HttpHeader.TRANSFER_ENCODING,
+                    HttpHeader.CONTENT_ENCODING);
   
     /* ------------------------------------------------------------ */
-    public static boolean hasKnownValues(HttpHeaders header)
+    public static boolean hasKnownValues(HttpHeader header)
     {
         if (header==null)
             return false;

@@ -21,9 +21,9 @@ import java.util.StringTokenizer;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpEventListenerWrapper;
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -116,7 +116,7 @@ public class SecurityListener extends HttpEventListenerWrapper
 
   
     @Override
-    public void onResponseStatus( Buffer version, int status, Buffer reason )
+    public void onResponseStatus( ByteBuffer version, int status, ByteBuffer reason )
         throws IOException
     {
         if (LOG.isDebugEnabled())
@@ -139,7 +139,7 @@ public class SecurityListener extends HttpEventListenerWrapper
 
 
     @Override
-    public void onResponseHeader( Buffer name, Buffer value )
+    public void onResponseHeader( ByteBuffer name, ByteBuffer value )
         throws IOException
     {
         if (LOG.isDebugEnabled())
@@ -148,10 +148,10 @@ public class SecurityListener extends HttpEventListenerWrapper
         
         if (!isDelegatingResponses())
         {
-            int header = HttpHeaders.CACHE.getOrdinal(name);
+            int header = HttpHeader.CACHE.getOrdinal(name);
             switch (header)
             {
-                case HttpHeaders.WWW_AUTHENTICATE_ORDINAL:
+                case HttpHeader.WWW_AUTHENTICATE_ORDINAL:
 
                     // TODO don't hard code this bit.
                     String authString = value.toString();

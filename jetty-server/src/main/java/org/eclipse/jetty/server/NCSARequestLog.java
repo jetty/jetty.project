@@ -22,7 +22,7 @@ import java.util.TimeZone;
 
 import javax.servlet.http.Cookie;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
@@ -467,7 +467,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             String addr = null;
             if (_preferProxiedForAddress)
             {
-                addr = request.getHeader(HttpHeaders.X_FORWARDED_FOR);
+                addr = request.getHeader(HttpHeader.X_FORWARDED_FOR);
             }
 
             if (addr == null)
@@ -601,7 +601,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                                Response response,
                                StringBuilder b) throws IOException
     {
-        String referer = request.getHeader(HttpHeaders.REFERER);
+        String referer = request.getHeader(HttpHeader.REFERER);
         if (referer == null)
             b.append("\"-\" ");
         else
@@ -611,7 +611,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             b.append("\" ");
         }
 
-        String agent = request.getHeader(HttpHeaders.USER_AGENT);
+        String agent = request.getHeader(HttpHeader.USER_AGENT);
         if (agent == null)
             b.append("\"-\" ");
         else

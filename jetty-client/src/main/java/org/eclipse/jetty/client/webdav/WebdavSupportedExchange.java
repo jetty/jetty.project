@@ -16,7 +16,7 @@ package org.eclipse.jetty.client.webdav;
 import java.io.IOException;
 
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -29,7 +29,7 @@ public class WebdavSupportedExchange extends HttpExchange
     private boolean _isComplete = false;
 
     @Override
-    protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+    protected void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("WebdavSupportedExchange:Header:" + name.toString() + " / " + value.toString() );

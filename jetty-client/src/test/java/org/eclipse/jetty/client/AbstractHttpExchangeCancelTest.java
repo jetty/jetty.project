@@ -21,7 +21,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -198,7 +198,7 @@ public abstract class AbstractHttpExchangeCancelTest
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
-            protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+            protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
             {
                 super.onResponseStatus(version, status, reason);
                 cancel();
@@ -223,7 +223,7 @@ public abstract class AbstractHttpExchangeCancelTest
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
-            protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+            protected void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
             {
                 super.onResponseHeader(name, value);
                 cancel();
@@ -273,7 +273,7 @@ public abstract class AbstractHttpExchangeCancelTest
         TestHttpExchange exchange = new TestHttpExchange()
         {
             @Override
-            protected void onResponseContent(Buffer content) throws IOException
+            protected void onResponseContent(ByteBuffer content) throws IOException
             {
                 super.onResponseContent(content);
                 cancel();

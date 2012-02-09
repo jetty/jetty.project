@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.io.ByteBuffer;
 
 
 /* ------------------------------------------------------------ */
@@ -116,7 +116,7 @@ public class Curl
                 }
 
                 @Override
-                protected void onResponseContent(Buffer content) throws IOException
+                protected void onResponseContent(ByteBuffer content) throws IOException
                 {
                     super.onResponseContent(content);
                     if (d)
@@ -127,10 +127,10 @@ public class Curl
 
                 /* ------------------------------------------------------------ */
                 /**
-                 * @see org.eclipse.jetty.client.HttpExchange#onResponseHeader(org.eclipse.jetty.io.Buffer, org.eclipse.jetty.io.Buffer)
+                 * @see org.eclipse.jetty.client.HttpExchange#onResponseHeader(org.eclipse.jetty.io.ByteBuffer, org.eclipse.jetty.io.ByteBuffer)
                  */
                 @Override
-                protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+                protected void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
                 {
                     super.onResponseHeader(name,value);
                     if (v)
@@ -151,10 +151,10 @@ public class Curl
 
                 /* ------------------------------------------------------------ */
                 /**
-                 * @see org.eclipse.jetty.client.HttpExchange#onResponseStatus(org.eclipse.jetty.io.Buffer, int, org.eclipse.jetty.io.Buffer)
+                 * @see org.eclipse.jetty.client.HttpExchange#onResponseStatus(org.eclipse.jetty.io.ByteBuffer, int, org.eclipse.jetty.io.ByteBuffer)
                  */
                 @Override
-                protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+                protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
                 {
                     super.onResponseStatus(version,status,reason);
                     if (v)
@@ -162,7 +162,7 @@ public class Curl
                 }
             };
             
-            ex.setMethod(HttpMethods.GET);
+            ex.setMethod(HttpMethod.GET);
             ex.setURL(arg);
 
             System.err.println("\nSending "+ex);

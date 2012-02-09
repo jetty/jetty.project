@@ -23,8 +23,8 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpBuffersImpl;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.Connection;
@@ -62,9 +62,9 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     private ThreadPool _threadPool;
     private String _host;
     private int _port = 0;
-    private String _integralScheme = HttpSchemes.HTTPS;
+    private String _integralScheme = HttpScheme.HTTPS;
     private int _integralPort = 0;
-    private String _confidentialScheme = HttpSchemes.HTTPS;
+    private String _confidentialScheme = HttpScheme.HTTPS;
     private int _confidentialPort = 0;
     private int _acceptQueueSize = 0;
     private int _acceptors = 1;
@@ -73,10 +73,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     private boolean _forwarded;
     private String _hostHeader;
 
-    private String _forwardedHostHeader = HttpHeaders.X_FORWARDED_HOST;
-    private String _forwardedServerHeader = HttpHeaders.X_FORWARDED_SERVER;
-    private String _forwardedForHeader = HttpHeaders.X_FORWARDED_FOR;
-    private String _forwardedProtoHeader = HttpHeaders.X_FORWARDED_PROTO;
+    private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST;
+    private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER;
+    private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR;
+    private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO;
     private String _forwardedCipherSuiteHeader;
     private String _forwardedSslSessionIdHeader;
     private boolean _reuseAddress = true;
@@ -420,7 +420,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
             if(ssl_session_id!=null)
             {
                 request.setAttribute("javax.servlet.request.ssl_session_id", ssl_session_id);
-                request.setScheme(HttpSchemes.HTTPS);
+                request.setScheme(HttpScheme.HTTPS);
             }
         }
 
@@ -433,7 +433,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         if (_hostHeader != null)
         {
             // Update host header
-            httpFields.put(HttpHeaders.HOST_BUFFER,_hostHeader);
+            httpFields.put(HttpHeader.HOST_BUFFER,_hostHeader);
             request.setServerName(null);
             request.setServerPort(-1);
             request.getServerName();
@@ -441,7 +441,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         else if (forwardedHost != null)
         {
             // Update host header
-            httpFields.put(HttpHeaders.HOST_BUFFER,forwardedHost);
+            httpFields.put(HttpHeader.HOST_BUFFER,forwardedHost);
             request.setServerName(null);
             request.setServerPort(-1);
             request.getServerName();
@@ -558,7 +558,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
      */
     public boolean isConfidential(Request request)
     {
-        return _forwarded && request.getScheme().equalsIgnoreCase(HttpSchemes.HTTPS);
+        return _forwarded && request.getScheme().equalsIgnoreCase(HttpScheme.HTTPS);
     }
 
     /* ------------------------------------------------------------ */

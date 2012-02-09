@@ -15,7 +15,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 
 /**
  * An exchange that retains response status and response headers for later use.
@@ -50,14 +50,14 @@ public class CachedExchange extends HttpExchange
     }
 
     @Override
-    protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    protected synchronized void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
     {
         _responseStatus = status;
         super.onResponseStatus(version, status, reason);
     }
 
     @Override
-    protected synchronized void onResponseHeader(Buffer name, Buffer value) throws IOException
+    protected synchronized void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
     {
         if (_responseFields != null)
         {

@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.security.HashRealmResolver;
 import org.eclipse.jetty.client.security.Realm;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -142,7 +142,7 @@ public class SslSecurityListenerTest
         };
         
         httpExchange.setURL("https://127.0.0.1:" + _port + "/");
-        httpExchange.setMethod(HttpMethods.GET);
+        httpExchange.setMethod(HttpMethod.GET);
 
         _httpClient.send(httpExchange);
         

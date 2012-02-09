@@ -16,7 +16,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 
 /**
  * 
@@ -34,16 +34,16 @@ public interface HttpEventListener
     public void onRequestComplete() throws IOException;
 
 
-    public void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException;
+    public void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException;
 
 
-    public void onResponseHeader(Buffer name, Buffer value) throws IOException;
+    public void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException;
 
     
     public void onResponseHeaderComplete() throws IOException;
 
     
-    public void onResponseContent(Buffer content) throws IOException;
+    public void onResponseContent(ByteBuffer content) throws IOException;
 
 
     public void onResponseComplete() throws IOException;

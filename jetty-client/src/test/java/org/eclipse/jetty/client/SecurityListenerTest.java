@@ -30,8 +30,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -139,19 +139,19 @@ public class SecurityListenerTest
                 }
 
                 @Override
-                protected void onResponseStatus(Buffer version, int status, Buffer reason)
+                protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason)
                 {
                     // System.err.println("Response Status: " + version+" "+status+" "+reason);
                 }
 
                 @Override
-                protected void onResponseHeader(Buffer name, Buffer value)
+                protected void onResponseHeader(ByteBuffer name, ByteBuffer value)
                 {
                     // System.err.println("Response header: " + name + " = " + value);
                 }
 
                 @Override
-                protected void onResponseContent(Buffer content)
+                protected void onResponseContent(ByteBuffer content)
                 {
                     // System.err.println("Response content:" + content);
                 }
@@ -227,7 +227,7 @@ public class SecurityListenerTest
         };
         
         httpExchange.setURL("http://localhost:" + _port + "/?i=1");
-        httpExchange.setMethod(HttpMethods.GET);
+        httpExchange.setMethod(HttpMethod.GET);
         
         _httpClient.send(httpExchange);
 
@@ -246,7 +246,7 @@ public class SecurityListenerTest
         };
         
         httpExchange2.setURL("http://localhost:" + _port + "/?i=2");
-        httpExchange2.setMethod(HttpMethods.GET);
+        httpExchange2.setMethod(HttpMethod.GET);
         
         _httpClient.send(httpExchange2);
 

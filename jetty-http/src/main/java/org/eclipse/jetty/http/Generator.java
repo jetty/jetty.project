@@ -15,8 +15,8 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.Buffer;
 
 public interface Generator
 {
@@ -29,12 +29,12 @@ public interface Generator
      * 
      * @param content
      * @param last
-     * @throws IllegalArgumentException if <code>content</code> is {@link Buffer#isImmutable immutable}.
+     * @throws IllegalArgumentException if <code>content</code> is {@link ByteBuffer#isImmutable immutable}.
      * @throws IllegalStateException If the request is not expecting any more content,
      *   or if the buffers are full and cannot be flushed.
      * @throws IOException if there is a problem flushing the buffers.
      */
-    void addContent(Buffer content, boolean last) throws IOException;
+    void addContent(ByteBuffer content, boolean last) throws IOException;
 
     /* ------------------------------------------------------------ */
     /**
@@ -95,7 +95,7 @@ public interface Generator
     
     void setPersistent(boolean persistent);
 
-    void setDate(Buffer timeStampBuffer);
+    void setDate(ByteBuffer timeStampBuffer);
     
 
 }

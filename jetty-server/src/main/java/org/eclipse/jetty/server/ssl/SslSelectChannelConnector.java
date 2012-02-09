@@ -21,7 +21,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
@@ -97,7 +97,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
     @Override
     public void customize(EndPoint endpoint, Request request) throws IOException
     {
-        request.setScheme(HttpSchemes.HTTPS);
+        request.setScheme(HttpScheme.HTTPS);
         super.customize(endpoint,request);
 
         SslConnection.SslEndPoint sslEndpoint=(SslConnection.SslEndPoint)endpoint;

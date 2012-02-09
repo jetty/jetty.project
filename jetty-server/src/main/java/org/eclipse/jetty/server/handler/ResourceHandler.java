@@ -22,11 +22,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.AbstractHttpConnection;
@@ -354,9 +354,9 @@ public class ResourceHandler extends HandlerWrapper
 
         boolean skipContentBody = false;
 
-        if(!HttpMethods.GET.equals(request.getMethod()))
+        if(!HttpMethod.GET.equals(request.getMethod()))
         {
-            if(!HttpMethods.HEAD.equals(request.getMethod()))
+            if(!HttpMethod.HEAD.equals(request.getMethod()))
             {
                 //try another handler
                 super.handle(target, baseRequest, request, response);
@@ -416,7 +416,7 @@ public class ResourceHandler extends HandlerWrapper
         long last_modified=resource.lastModified();
         if (last_modified>0)
         {
-            long if_modified=request.getDateHeader(HttpHeaders.IF_MODIFIED_SINCE);
+            long if_modified=request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE);
             if (if_modified>0 && last_modified/1000<=if_modified/1000)
             {
                 response.setStatus(HttpStatus.NOT_MODIFIED_304);
@@ -424,13 +424,13 @@ public class ResourceHandler extends HandlerWrapper
             }
         }
 
-        Buffer mime=_mimeTypes.getMimeByExtension(resource.toString());
+        ByteBuffer mime=_mimeTypes.getMimeByExtension(resource.toString());
         if (mime==null)
             mime=_mimeTypes.getMimeByExtension(request.getPathInfo());
 
         // set the headers
         doResponseHeaders(response,resource,mime!=null?mime.toString():null);
-        response.setDateHeader(HttpHeaders.LAST_MODIFIED,last_modified);
+        response.setDateHeader(HttpHeader.LAST_MODIFIED,last_modified);
         if(skipContentBody)
             return;
         // Send the content
@@ -485,18 +485,18 @@ public class ResourceHandler extends HandlerWrapper
             HttpFields fields = ((Response)response).getHttpFields();
 
             if (length>0)
-                fields.putLongField(HttpHeaders.CONTENT_LENGTH_BUFFER,length);
+                fields.putLongField(HttpHeader.CONTENT_LENGTH_BUFFER,length);
 
             if (_cacheControl!=null)
-                fields.put(HttpHeaders.CACHE_CONTROL_BUFFER,_cacheControl);
+                fields.put(HttpHeader.CACHE_CONTROL_BUFFER,_cacheControl);
         }
         else
         {
             if (length>0)
-                response.setHeader(HttpHeaders.CONTENT_LENGTH,Long.toString(length));
+                response.setHeader(HttpHeader.CONTENT_LENGTH,Long.toString(length));
 
             if (_cacheControl!=null)
-                response.setHeader(HttpHeaders.CACHE_CONTROL,_cacheControl.toString());
+                response.setHeader(HttpHeader.CACHE_CONTROL,_cacheControl.toString());
         }
 
     }

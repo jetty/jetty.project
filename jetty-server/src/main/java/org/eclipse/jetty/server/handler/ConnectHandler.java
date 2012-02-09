@@ -15,10 +15,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -172,7 +172,7 @@ public class ConnectHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (HttpMethods.CONNECT.equalsIgnoreCase(request.getMethod()))
+        if (HttpMethod.CONNECT.equalsIgnoreCase(request.getMethod()))
         {
             _logger.debug("CONNECT request for {}", request.getRequestURI());
             try
@@ -234,8 +234,8 @@ public class ConnectHandler extends HandlerWrapper
         // connection is installed (it is only installed after returning from this method)
         // 2. when the client sends data before this unread data has been written.
         AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentConnection();
-        Buffer headerBuffer = ((HttpParser)httpConnection.getParser()).getHeaderBuffer();
-        Buffer bodyBuffer = ((HttpParser)httpConnection.getParser()).getBodyBuffer();
+        ByteBuffer headerBuffer = ((HttpParser)httpConnection.getParser()).getHeaderBuffer();
+        ByteBuffer bodyBuffer = ((HttpParser)httpConnection.getParser()).getBodyBuffer();
         int length = headerBuffer == null ? 0 : headerBuffer.length();
         length += bodyBuffer == null ? 0 : bodyBuffer.length();
         IndirectNIOBuffer buffer = null;
@@ -271,7 +271,7 @@ public class ConnectHandler extends HandlerWrapper
         upgradeConnection(request, response, clientToProxy);
     }
 
-    private ClientToProxyConnection prepareConnections(ConcurrentMap<String, Object> context, SocketChannel channel, Buffer buffer)
+    private ClientToProxyConnection prepareConnections(ConcurrentMap<String, Object> context, SocketChannel channel, ByteBuffer buffer)
     {
         AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentConnection();
         ProxyToServerConnection proxyToServer = newProxyToServerConnection(context, buffer);
@@ -302,7 +302,7 @@ public class ConnectHandler extends HandlerWrapper
         return new ClientToProxyConnection(context, channel, endPoint, timeStamp);
     }
 
-    protected ProxyToServerConnection newProxyToServerConnection(ConcurrentMap<String, Object> context, Buffer buffer)
+    protected ProxyToServerConnection newProxyToServerConnection(ConcurrentMap<String, Object> context, ByteBuffer buffer)
     {
         return new ProxyToServerConnection(context, buffer);
     }
@@ -379,7 +379,7 @@ public class ConnectHandler extends HandlerWrapper
      *         or -1 if the channel has been closed remotely
      * @throws IOException if the endPoint cannot be read
      */
-    protected int read(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
+    protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
         return endPoint.fill(buffer);
     }
@@ -393,7 +393,7 @@ public class ConnectHandler extends HandlerWrapper
      * @throws IOException if the buffer cannot be written
      * @return the number of bytes written
      */
-    protected int write(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
+    protected int write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
     {
         if (buffer == null)
             return 0;
@@ -469,14 +469,14 @@ public class ConnectHandler extends HandlerWrapper
     public class ProxyToServerConnection implements AsyncConnection
     {
         private final CountDownLatch _ready = new CountDownLatch(1);
-        private final Buffer _buffer = new IndirectNIOBuffer(1024);
+        private final ByteBuffer _buffer = new IndirectNIOBuffer(1024);
         private final ConcurrentMap<String, Object> _context;
-        private volatile Buffer _data;
+        private volatile ByteBuffer _data;
         private volatile ClientToProxyConnection _toClient;
         private volatile long _timestamp;
         private volatile AsyncEndPoint _endPoint;
 
-        public ProxyToServerConnection(ConcurrentMap<String, Object> context, Buffer data)
+        public ProxyToServerConnection(ConcurrentMap<String, Object> context, ByteBuffer data)
         {
             _context = context;
             _data = data;
@@ -683,7 +683,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public class ClientToProxyConnection implements AsyncConnection
     {
-        private final Buffer _buffer = new IndirectNIOBuffer(1024);
+        private final ByteBuffer _buffer = new IndirectNIOBuffer(1024);
         private final ConcurrentMap<String, Object> _context;
         private final SocketChannel _channel;
         private final EndPoint _endPoint;

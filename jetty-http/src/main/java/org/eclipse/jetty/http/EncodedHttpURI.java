@@ -44,14 +44,14 @@ public class EncodedHttpURI extends HttpURI
             _raw[_scheme+1]=='t' && 
             _raw[_scheme+2]=='t' && 
             _raw[_scheme+3]=='p' )
-            return HttpSchemes.HTTP.toString();
+            return HttpScheme.HTTP.toString();
         if (l==6 && 
             _raw[_scheme]=='h' && 
             _raw[_scheme+1]=='t' && 
             _raw[_scheme+2]=='t' && 
             _raw[_scheme+3]=='p' && 
             _raw[_scheme+4]=='s' )
-            return HttpSchemes.HTTPS.toString();
+            return HttpScheme.HTTPS.toString();
         
         return StringUtil.toString(_raw,_scheme,_authority-_scheme-1,_encoding);
     }

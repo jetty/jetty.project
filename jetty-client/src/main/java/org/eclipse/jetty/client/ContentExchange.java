@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferUtil;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.ByteBuffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -60,7 +60,7 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
-    protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    protected synchronized void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
     {
         if (_responseContent!=null)
             _responseContent.reset();
@@ -68,16 +68,16 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
-    protected synchronized void onResponseHeader(Buffer name, Buffer value) throws IOException
+    protected synchronized void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
     {
         super.onResponseHeader(name, value);
-        int header = HttpHeaders.CACHE.getOrdinal(name);
+        int header = HttpHeader.CACHE.getOrdinal(name);
         switch (header)
         {
-            case HttpHeaders.CONTENT_LENGTH_ORDINAL:
+            case HttpHeader.CONTENT_LENGTH_ORDINAL:
                 _bufferSize = BufferUtil.toInt(value);
                 break;
-            case HttpHeaders.CONTENT_TYPE_ORDINAL:
+            case HttpHeader.CONTENT_TYPE_ORDINAL:
                 String mime = StringUtil.asciiToLowerCase(value.toString());
                 int i = mime.indexOf("charset=");
                 if (i > 0)
@@ -92,7 +92,7 @@ public class ContentExchange extends CachedExchange
     }
 
     @Override
-    protected synchronized void onResponseContent(Buffer content) throws IOException
+    protected synchronized void onResponseContent(ByteBuffer content) throws IOException
     {
         super.onResponseContent(content);
         if (_responseContent == null)

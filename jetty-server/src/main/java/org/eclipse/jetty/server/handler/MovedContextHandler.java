@@ -19,7 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
@@ -116,10 +116,10 @@ public class MovedContextHandler extends ContextHandler
                 location.append(q);
             }
             
-            response.setHeader(HttpHeaders.LOCATION,location.toString());
+            response.setHeader(HttpHeader.LOCATION,location.toString());
 
             if (_expires!=null)
-                response.setHeader(HttpHeaders.EXPIRES,_expires);
+                response.setHeader(HttpHeader.EXPIRES,_expires);
             
             response.setStatus(_permanent?HttpServletResponse.SC_MOVED_PERMANENTLY:HttpServletResponse.SC_FOUND);
             response.setContentLength(0);

@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
@@ -370,7 +370,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
             _parser = new HttpParser(buffers, _endp, new HttpParser.EventHandler()
             {
                 @Override
-                public void startResponse(Buffer version, int status, Buffer reason) throws IOException
+                public void startResponse(ByteBuffer version, int status, ByteBuffer reason) throws IOException
                 {
                     if (status != 101)
                     {
@@ -380,14 +380,14 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 }
 
                 @Override
-                public void parsedHeader(Buffer name, Buffer value) throws IOException
+                public void parsedHeader(ByteBuffer name, ByteBuffer value) throws IOException
                 {
                     if (__ACCEPT.equals(name))
                         _accept = value.toString();
                 }
 
                 @Override
-                public void startRequest(Buffer method, Buffer url, Buffer version) throws IOException
+                public void startRequest(ByteBuffer method, ByteBuffer url, ByteBuffer version) throws IOException
                 {
                     if (_error == null)
                         _error = "Bad response: " + method + " " + url + " " + version;
@@ -395,7 +395,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 }
 
                 @Override
-                public void content(Buffer ref) throws IOException
+                public void content(ByteBuffer ref) throws IOException
                 {
                     if (_error == null)
                         _error = "Bad response. " + ref.length() + "B of content?";
@@ -495,7 +495,7 @@ public class WebSocketClientFactory extends AggregateLifeCycle
                 {
                     WebSocketConnection connection = newWebSocketConnection();
 
-                    Buffer header = _parser.getHeaderBuffer();
+                    ByteBuffer header = _parser.getHeaderBuffer();
                     if (header.hasContent())
                         connection.fillBuffersFrom(header);
                     _buffers.returnBuffer(header);

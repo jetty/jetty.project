@@ -26,7 +26,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -99,7 +99,7 @@ public class HttpHeadersTest
 
             ContentExchange exchange = new ContentExchange();
             exchange.setURL(requestUrl);
-            exchange.setMethod(HttpMethods.GET);
+            exchange.setMethod(HttpMethod.GET);
             exchange.addRequestHeader("User-Agent","Jetty-Client/7.0");
 
             httpClient.send(exchange);
@@ -140,7 +140,7 @@ public class HttpHeadersTest
                 }
             };
             exchange.setURL(requestUrl);
-            exchange.setMethod(HttpMethods.GET);
+            exchange.setMethod(HttpMethod.GET);
 
             for (int i = 0; i < 4; i++)
             {

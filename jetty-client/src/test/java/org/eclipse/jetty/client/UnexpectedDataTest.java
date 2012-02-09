@@ -25,7 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -84,7 +84,7 @@ public class UnexpectedDataTest
                 }
             };
             httpExchange.setURL("http://localhost:" + _port + "/?i=" + i);
-            httpExchange.setMethod(HttpMethods.GET);
+            httpExchange.setMethod(HttpMethod.GET);
             _httpClient.send(httpExchange);
 
             Assert.assertTrue(done.await(1000, TimeUnit.SECONDS));

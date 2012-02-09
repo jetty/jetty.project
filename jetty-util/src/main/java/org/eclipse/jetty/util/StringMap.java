@@ -60,7 +60,7 @@ public class StringMap<O> extends AbstractMap<String,O>
     public StringMap(final boolean ignoreCase)
     {
         _caseInsensitive=ignoreCase;
-        _map = new TreeMap<>(new Comparator<Object>()
+        _map = new TreeMap<Object,O>(new Comparator<Object>()
         {
             @Override
             public int compare(Object o1, Object o2)

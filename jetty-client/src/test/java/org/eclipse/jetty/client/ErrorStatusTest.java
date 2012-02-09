@@ -21,7 +21,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.Handler;
@@ -160,7 +160,7 @@ public class ErrorStatusTest
 
         ContentExchange putExchange = new ContentExchange();
         putExchange.setURL(getBaseUrl() + "output.txt");
-        putExchange.setMethod(HttpMethods.PUT);
+        putExchange.setMethod(HttpMethod.PUT);
         putExchange.setRequestHeader("X-Response-Status",Integer.toString(status));
         putExchange.setRequestContent(new ByteArrayBuffer(getContent().getBytes()));
         
@@ -182,7 +182,7 @@ public class ErrorStatusTest
 
         ContentExchange getExchange = new ContentExchange();
         getExchange.setURL(getBaseUrl() + "input.txt");
-        getExchange.setMethod(HttpMethods.GET);
+        getExchange.setMethod(HttpMethod.GET);
         getExchange.setRequestHeader("X-Response-Status",Integer.toString(status));
        
         getClient().send(getExchange);
@@ -207,7 +207,7 @@ public class ErrorStatusTest
     
         ContentExchange postExchange = new ContentExchange();
         postExchange.setURL(getBaseUrl() + "test");
-        postExchange.setMethod(HttpMethods.POST);
+        postExchange.setMethod(HttpMethod.POST);
         postExchange.setRequestHeader("X-Response-Status",Integer.toString(status));
         postExchange.setRequestContent(new ByteArrayBuffer(getContent().getBytes()));
         

@@ -27,11 +27,11 @@ import org.eclipse.jetty.client.HttpClient.Connector;
 import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -94,7 +94,7 @@ public class HttpDestination implements Dumpable
         return _ssl;
     }
 
-    public Buffer getHostHeader()
+    public ByteBuffer getHostHeader()
     {
         return _hostHeader;
     }
@@ -517,7 +517,7 @@ public class HttpDestination implements Dumpable
                 buf.append(cookie.getValue()); // TODO quotes
             }
             if (buf != null)
-                ex.addRequestHeader(HttpHeaders.COOKIE, buf.toString());
+                ex.addRequestHeader(HttpHeader.COOKIE, buf.toString());
         }
 
         // Add any known authorizations
@@ -674,13 +674,13 @@ public class HttpDestination implements Dumpable
         {
             this.proxyEndPoint = proxyEndPoint;
             this.exchange = exchange;
-            setMethod(HttpMethods.CONNECT);
+            setMethod(HttpMethod.CONNECT);
             setVersion(exchange.getVersion());
             String serverHostAndPort = serverAddress.toString();
             setRequestURI(serverHostAndPort);
-            addRequestHeader(HttpHeaders.HOST, serverHostAndPort);
-            addRequestHeader(HttpHeaders.PROXY_CONNECTION, "keep-alive");
-            addRequestHeader(HttpHeaders.USER_AGENT, "Jetty-Client");
+            addRequestHeader(HttpHeader.HOST, serverHostAndPort);
+            addRequestHeader(HttpHeader.PROXY_CONNECTION, "keep-alive");
+            addRequestHeader(HttpHeader.USER_AGENT, "Jetty-Client");
         }
 
         @Override

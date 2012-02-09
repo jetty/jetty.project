@@ -30,7 +30,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
@@ -69,7 +69,7 @@ public class WebSocketParserD08 implements WebSocketParser
     private final FrameHandler _handler;
     private final boolean _shouldBeMasked;
     private State _state;
-    private Buffer _buffer;
+    private ByteBuffer _buffer;
     private byte _flags;
     private byte _opcode;
     private int _bytesNeeded;
@@ -123,7 +123,7 @@ public class WebSocketParserD08 implements WebSocketParser
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getBuffer()
+    public ByteBuffer getBuffer()
     {
         return _buffer;
     }
@@ -160,7 +160,7 @@ public class WebSocketParserD08 implements WebSocketParser
                     // Can we send a fake frame?
                     if (_fakeFragments && _state==State.DATA)
                     {
-                        Buffer data =_buffer.get(4*(available/4));
+                        ByteBuffer data =_buffer.get(4*(available/4));
                         _buffer.compact();
                         if (_masked)
                         {
@@ -331,7 +331,7 @@ public class WebSocketParserD08 implements WebSocketParser
                 }
                 else
                 {
-                    Buffer data =_buffer.get(_bytesNeeded);
+                    ByteBuffer data =_buffer.get(_bytesNeeded);
                     if (_masked)
                     {
                         if (data.array()==null)
@@ -355,7 +355,7 @@ public class WebSocketParserD08 implements WebSocketParser
     }
 
     /* ------------------------------------------------------------ */
-    public void fill(Buffer buffer)
+    public void fill(ByteBuffer buffer)
     {
         if (buffer!=null && buffer.length()>0)
         {
@@ -381,7 +381,7 @@ public class WebSocketParserD08 implements WebSocketParser
     @Override
     public String toString()
     {
-        Buffer buffer=_buffer;
+        ByteBuffer buffer=_buffer;
         return WebSocketParserD08.class.getSimpleName()+"@"+ Integer.toHexString(hashCode())+"|"+_state+"|"+(buffer==null?"<>":buffer.toDetailString());
     }
 

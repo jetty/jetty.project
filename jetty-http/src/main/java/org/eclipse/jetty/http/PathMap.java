@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.Externalizable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;

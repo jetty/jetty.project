@@ -14,26 +14,22 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.io.BufferDateCache;
 import org.eclipse.jetty.util.BufferUtil;
@@ -41,7 +37,6 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -369,7 +364,7 @@ public class HttpFields
     }
 
     /* ------------------------------------------------------------ */
-    public Field getField(HttpHeaders header)
+    public Field getField(HttpHeader header)
     {
         return _names.get(header.toString());
     }
@@ -387,7 +382,7 @@ public class HttpFields
     }
 
     /* -------------------------------------------------------------- */
-    public String getStringField(HttpHeaders header)
+    public String getStringField(HttpHeader header)
     {
         return getStringField(header.toString());
     }
@@ -786,7 +781,7 @@ public class HttpFields
         name_value_params = buf.toString();
         
         // remove existing set-cookie of same name
-        Field field = getField(HttpHeaders.SET_COOKIE);
+        Field field = getField(HttpHeader.SET_COOKIE);
         Field last=null;
         while (field!=null)
         {
@@ -794,7 +789,7 @@ public class HttpFields
             {
                 _fields.remove(field);
                 if (last==null)
-                    _names.put(HttpHeaders.SET_COOKIE.toString(),field._next);
+                    _names.put(HttpHeader.SET_COOKIE.toString(),field._next);
                 else
                     last._next=field._next;
                 break;
@@ -803,10 +798,10 @@ public class HttpFields
             field=field._next;
         }
 
-        add(HttpHeaders.SET_COOKIE.toString(), name_value_params);
+        add(HttpHeader.SET_COOKIE.toString(), name_value_params);
         
         // Expire responses with set-cookie headers so they do not get cached.
-        put(HttpHeaders.EXPIRES.toString(), __01Jan1970);
+        put(HttpHeader.EXPIRES.toString(), __01Jan1970);
     }
 
     /* -------------------------------------------------------------- */
@@ -1072,15 +1067,15 @@ public class HttpFields
         /* ------------------------------------------------------------ */
         public void putTo(ByteBuffer buffer) throws IOException
         {
-            HttpHeaders header = HttpHeaders.CACHE.get(_name);
+            HttpHeader header = HttpHeader.CACHE.get(_name);
             if (header!=null)
             {
                 buffer.put(header.toBuffer());
                 buffer.put(__colon_space);
                 
-                if (HttpHeaderValues.hasKnownValues(header))
+                if (HttpHeaderValue.hasKnownValues(header))
                 {
-                    HttpHeaderValues value=HttpHeaderValues.CACHE.get(_value);
+                    HttpHeaderValue value=HttpHeaderValue.CACHE.get(_value);
                     if (value!=null)
                         buffer.put(value.toBuffer());
                     else

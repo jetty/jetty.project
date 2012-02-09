@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -649,7 +649,7 @@ public class WebSocketMessageD06Test
                 
         WebSocketParserD06 parser = new WebSocketParserD06(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
         {
-            public void onFrame(byte flags, byte opcode, Buffer buffer)
+            public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
             {
                 received.set(buffer.toString());
             }
@@ -682,7 +682,7 @@ public class WebSocketMessageD06Test
                 
         WebSocketParserD06 parser = new WebSocketParserD06(new WebSocketBuffers(8096),endp,new WebSocketParser.FrameHandler()
         {
-            public void onFrame(byte flags, byte opcode, Buffer buffer)
+            public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
             {
                 received.set(buffer.toString());
             }

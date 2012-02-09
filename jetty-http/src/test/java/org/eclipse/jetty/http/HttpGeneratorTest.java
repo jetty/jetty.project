@@ -18,12 +18,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.ByteArrayBuffer;
+import javax.swing.text.View;
+
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
-import org.eclipse.jetty.io.View;
 import org.junit.Test;
 
 /**
@@ -40,8 +40,8 @@ public class HttpGeneratorTest
     @Test
     public void testRequest() throws Exception
     {
-        Buffer bb=new ByteArrayBuffer(8096);
-        Buffer sb=new ByteArrayBuffer(1500);
+        ByteBuffer bb=new ByteArrayBuffer(8096);
+        ByteBuffer sb=new ByteArrayBuffer(1500);
         HttpFields fields = new HttpFields();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
         HttpGenerator hg = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
@@ -61,8 +61,8 @@ public class HttpGeneratorTest
     @Test
     public void testHTTP() throws Exception
     {
-        Buffer bb=new ByteArrayBuffer(8096);
-        Buffer sb=new ByteArrayBuffer(1500);
+        ByteBuffer bb=new ByteArrayBuffer(8096);
+        ByteBuffer sb=new ByteArrayBuffer(1500);
         HttpFields fields = new HttpFields();
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
         HttpGenerator hb = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
@@ -181,7 +181,7 @@ public class HttpGeneratorTest
             if (_body!=null)
             {
                 int inc=1+_body.length()/chunks;
-                Buffer buf=new ByteArrayBuffer(_body);
+                ByteBuffer buf=new ByteArrayBuffer(_body);
                 View view = new View(buf);
                 for (int i=1;i<chunks;i++)
                 {
@@ -245,7 +245,7 @@ public class HttpGeneratorTest
         private int index=0;
 
         @Override
-        public void content(Buffer ref)
+        public void content(ByteBuffer ref)
         {
             if (index == 0)
                 content= "";
@@ -254,7 +254,7 @@ public class HttpGeneratorTest
         }
 
         @Override
-        public void startRequest(Buffer tok0, Buffer tok1, Buffer tok2)
+        public void startRequest(ByteBuffer tok0, ByteBuffer tok1, ByteBuffer tok2)
         {
             h= -1;
             hdr= new String[9];
@@ -273,7 +273,7 @@ public class HttpGeneratorTest
          * @see org.eclipse.jetty.EventHandler#startResponse(org.eclipse.io.Buffer, int, org.eclipse.io.Buffer)
          */
         @Override
-        public void startResponse(Buffer version, int status, Buffer reason)
+        public void startResponse(ByteBuffer version, int status, ByteBuffer reason)
         {
             h= -1;
             hdr= new String[9];
@@ -288,7 +288,7 @@ public class HttpGeneratorTest
         }
 
         @Override
-        public void parsedHeader(Buffer name,Buffer value)
+        public void parsedHeader(ByteBuffer name,ByteBuffer value)
         {
             hdr[++h]= name.toString();
             val[h]= value.toString();

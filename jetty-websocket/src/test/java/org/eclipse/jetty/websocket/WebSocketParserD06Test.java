@@ -20,9 +20,9 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.io.ByteBuffer;
+import org.eclipse.jetty.io.BufferCache.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.StringUtil;
@@ -54,7 +54,7 @@ public class WebSocketParserD06Test
         }
 
         @Override
-        public int put(Buffer src)
+        public int put(ByteBuffer src)
         {
             return put(src.asArray(),0,src.length());
         }
@@ -102,7 +102,7 @@ public class WebSocketParserD06Test
     @Test
     public void testCache() throws Exception
     {
-        assertEquals(HttpHeaderValues.UPGRADE_ORDINAL ,((CachedBuffer)HttpHeaderValues.CACHE.lookup("Upgrade")).getOrdinal());
+        assertEquals(HttpHeaderValue.UPGRADE_ORDINAL ,((CachedBuffer)HttpHeaderValue.CACHE.lookup("Upgrade")).getOrdinal());
     }
 
     @Test
@@ -302,7 +302,7 @@ public class WebSocketParserD06Test
         int _code;
         String _message;
 
-        public void onFrame(byte flags, byte opcode, Buffer buffer)
+        public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
         {
             _flags=flags;
             _opcode=opcode;

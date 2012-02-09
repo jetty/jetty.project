@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
@@ -210,7 +210,7 @@ public class GzipHandler extends HandlerWrapper
         {
             String ae = request.getHeader("accept-encoding");
             if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
-                    && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
+                    && !HttpMethod.HEAD.equalsIgnoreCase(request.getMethod()))
             {
                 if (_excluded!=null)
                 {

@@ -14,8 +14,6 @@
 package org.eclipse.jetty.http;
 
 import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.BuffersFactory;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 
 /* ------------------------------------------------------------ */
 /** Abstract Buffer pool.

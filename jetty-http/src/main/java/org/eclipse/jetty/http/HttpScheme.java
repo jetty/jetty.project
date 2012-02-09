@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.StringMap;
 /* ------------------------------------------------------------------------------- */
 /** 
  */
-public enum HttpSchemes
+public enum HttpScheme
 {    
     HTTP("http"),
     HTTPS("https"),
@@ -29,10 +29,10 @@ public enum HttpSchemes
     WSS("wss");
 
     /* ------------------------------------------------------------ */
-    public final static StringMap<HttpSchemes> CACHE= new StringMap<HttpSchemes>(true);
+    public final static StringMap<HttpScheme> CACHE= new StringMap<HttpScheme>(true);
     static
     {
-        for (HttpSchemes version : HttpSchemes.values())
+        for (HttpScheme version : HttpScheme.values())
             CACHE.put(version.toString(),version);
     }
 
@@ -40,7 +40,7 @@ public enum HttpSchemes
     private final ByteBuffer _buffer;
 
     /* ------------------------------------------------------------ */
-    HttpSchemes(String s)
+    HttpScheme(String s)
     {
         _string=s;
         _buffer=BufferUtil.toBuffer(s);

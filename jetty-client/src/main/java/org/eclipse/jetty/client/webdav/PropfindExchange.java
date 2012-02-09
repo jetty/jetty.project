@@ -17,7 +17,7 @@ import java.io.IOException;
 
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -30,7 +30,7 @@ public class PropfindExchange extends HttpExchange
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
     {
         if ( status == HttpStatus.OK_200 )
         {

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
@@ -286,7 +286,7 @@ public class ResourceCache
     }
     
     /* ------------------------------------------------------------ */
-    protected Buffer getIndirectBuffer(Resource resource)
+    protected ByteBuffer getIndirectBuffer(Resource resource)
     {
         try
         {
@@ -296,7 +296,7 @@ public class ResourceCache
                 LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
                 return null;
             }
-            Buffer buffer = new IndirectNIOBuffer(len);
+            ByteBuffer buffer = new IndirectNIOBuffer(len);
             InputStream is = resource.getInputStream();
             buffer.readFrom(is,len);
             is.close();
@@ -310,7 +310,7 @@ public class ResourceCache
     }
 
     /* ------------------------------------------------------------ */
-    protected Buffer getDirectBuffer(Resource resource)
+    protected ByteBuffer getDirectBuffer(Resource resource)
     {
         try
         {
@@ -323,7 +323,7 @@ public class ResourceCache
                 LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
                 return null;
             }
-            Buffer buffer = new DirectNIOBuffer(len);
+            ByteBuffer buffer = new DirectNIOBuffer(len);
             InputStream is = resource.getInputStream();
             buffer.readFrom(is,len);
             is.close();
@@ -352,12 +352,12 @@ public class ResourceCache
         final int _length;
         final String _key;
         final long _lastModified;
-        final Buffer _lastModifiedBytes;
-        final Buffer _contentType;
+        final ByteBuffer _lastModifiedBytes;
+        final ByteBuffer _contentType;
         
         volatile long _lastAccessed;
-        AtomicReference<Buffer> _indirectBuffer=new AtomicReference<Buffer>();
-        AtomicReference<Buffer> _directBuffer=new AtomicReference<Buffer>();
+        AtomicReference<ByteBuffer> _indirectBuffer=new AtomicReference<ByteBuffer>();
+        AtomicReference<ByteBuffer> _directBuffer=new AtomicReference<ByteBuffer>();
 
         /* ------------------------------------------------------------ */
         Content(String pathInContext,Resource resource)
@@ -425,13 +425,13 @@ public class ResourceCache
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getLastModified()
+        public ByteBuffer getLastModified()
         {
             return _lastModifiedBytes;
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getContentType()
+        public ByteBuffer getContentType()
         {
             return _contentType;
         }
@@ -443,12 +443,12 @@ public class ResourceCache
         }
 
         /* ------------------------------------------------------------ */
-        public Buffer getIndirectBuffer()
+        public ByteBuffer getIndirectBuffer()
         {
-            Buffer buffer = _indirectBuffer.get();
+            ByteBuffer buffer = _indirectBuffer.get();
             if (buffer==null)
             {
-                Buffer buffer2=ResourceCache.this.getIndirectBuffer(_resource);
+                ByteBuffer buffer2=ResourceCache.this.getIndirectBuffer(_resource);
                 
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
@@ -464,12 +464,12 @@ public class ResourceCache
         
 
         /* ------------------------------------------------------------ */
-        public Buffer getDirectBuffer()
+        public ByteBuffer getDirectBuffer()
         {
-            Buffer buffer = _directBuffer.get();
+            ByteBuffer buffer = _directBuffer.get();
             if (buffer==null)
             {
-                Buffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
+                ByteBuffer buffer2=ResourceCache.this.getDirectBuffer(_resource);
 
                 if (buffer2==null)
                     LOG.warn("Could not load "+this);
@@ -493,7 +493,7 @@ public class ResourceCache
         /* ------------------------------------------------------------ */
         public InputStream getInputStream() throws IOException
         {
-            Buffer indirect = getIndirectBuffer();
+            ByteBuffer indirect = getIndirectBuffer();
             if (indirect!=null && indirect.array()!=null)
                 return new ByteArrayInputStream(indirect.array(),indirect.getIndex(),indirect.length());
            

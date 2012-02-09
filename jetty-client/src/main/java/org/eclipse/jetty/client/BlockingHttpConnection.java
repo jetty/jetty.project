@@ -18,7 +18,7 @@ import java.io.InterruptedIOException;
 
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -34,7 +34,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
     private static final Logger LOG = Log.getLogger(BlockingHttpConnection.class);
 
     private boolean _requestComplete;
-    private Buffer _requestContentChunk;
+    private ByteBuffer _requestContentChunk;
 
     BlockingHttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endPoint)
     {
@@ -114,7 +114,7 @@ public class BlockingHttpConnection extends AbstractHttpConnection
                             else if (_generator.isEmpty())
                             {
                                 LOG.debug("addChunk");
-                                Buffer chunk=_requestContentChunk;
+                                ByteBuffer chunk=_requestContentChunk;
                                 _requestContentChunk=exchange.getRequestContentChunk(null);
                                 _generator.addContent(chunk,_requestContentChunk==null);
                             }

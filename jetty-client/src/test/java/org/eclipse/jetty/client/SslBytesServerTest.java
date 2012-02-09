@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -95,7 +95,7 @@ public class SslBytesServerTest extends SslBytesTest
                         return new SslEndPoint()
                         {
                             @Override
-                            public int flush(Buffer buffer) throws IOException
+                            public int flush(ByteBuffer buffer) throws IOException
                             {
                                 sslFlushes.incrementAndGet();
                                 return super.flush(buffer);

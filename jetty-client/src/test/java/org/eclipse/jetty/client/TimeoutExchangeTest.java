@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.Connector;
@@ -117,7 +117,7 @@ public class TimeoutExchangeTest
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
         httpExchange.setRequestContent(new ByteArrayBuffer("<h1>??</h1>"));
         _httpClient.send(httpExchange);
 
@@ -135,7 +135,7 @@ public class TimeoutExchangeTest
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
         httpExchange.setRequestContent(new ByteArrayBuffer("<h1>??</h1>"));
         _httpClient.send(httpExchange);
 
@@ -154,7 +154,7 @@ public class TimeoutExchangeTest
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
         httpExchange.setRequestContent(new ByteArrayBuffer("<h1>??</h1>"));
         httpExchange.setTimeout(exchangeTimeout);
         _httpClient.send(httpExchange);
@@ -175,7 +175,7 @@ public class TimeoutExchangeTest
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
         httpExchange.setRequestContent(new ByteArrayBuffer("<h1>??</h1>"));
         httpExchange.setTimeout(exchangeTimeout);
         _httpClient.send(httpExchange);
@@ -197,7 +197,7 @@ public class TimeoutExchangeTest
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
         httpExchange.setRequestContent(new ByteArrayBuffer("<h1>??</h1>"));
         _httpClient.send(httpExchange);
 
@@ -219,7 +219,7 @@ public class TimeoutExchangeTest
 
         CustomContentExchange httpExchange = new CustomContentExchange();
         httpExchange.setURL("http://localhost:" + _port + "/?sleep=" + serverSleep);
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
         httpExchange.setRequestContent(new ByteArrayBuffer("<h1>??</h1>"));
         httpExchange.setTimeout(exchangeTimeout);
         _httpClient.send(httpExchange);

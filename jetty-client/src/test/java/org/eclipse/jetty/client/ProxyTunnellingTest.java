@@ -13,8 +13,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.Connector;
@@ -108,7 +108,7 @@ public class ProxyTunnellingTest
         try
         {
             ContentExchange exchange = new ContentExchange(true);
-            exchange.setMethod(HttpMethods.GET);
+            exchange.setMethod(HttpMethod.GET);
             String body = "BODY";
             exchange.setURL("https://localhost:" + serverConnector.getLocalPort() + "/echo?body=" + URLEncoder.encode(body, "UTF-8"));
 
@@ -136,7 +136,7 @@ public class ProxyTunnellingTest
         try
         {
             ContentExchange exchange = new ContentExchange(true);
-            exchange.setMethod(HttpMethods.GET);
+            exchange.setMethod(HttpMethod.GET);
             String body = "BODY";
             exchange.setURL("https://localhost:" + serverConnector.getLocalPort() + "/echo?body=" + URLEncoder.encode(body, "UTF-8"));
 
@@ -146,11 +146,11 @@ public class ProxyTunnellingTest
             assertEquals(body, content);
 
             exchange = new ContentExchange(true);
-            exchange.setMethod(HttpMethods.POST);
+            exchange.setMethod(HttpMethod.POST);
             exchange.setURL("https://localhost:" + serverConnector.getLocalPort() + "/echo");
-            exchange.setRequestHeader(HttpHeaders.CONTENT_TYPE, MimeTypes.FORM_ENCODED);
+            exchange.setRequestHeader(HttpHeader.CONTENT_TYPE, MimeTypes.FORM_ENCODED);
             content = "body=" + body;
-            exchange.setRequestHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(content.length()));
+            exchange.setRequestHeader(HttpHeader.CONTENT_LENGTH, String.valueOf(content.length()));
             exchange.setRequestContent(new ByteArrayBuffer(content, "UTF-8"));
 
             httpClient.send(exchange);
@@ -187,7 +187,7 @@ public class ProxyTunnellingTest
                     latch.countDown();
                 }
             };
-            exchange.setMethod(HttpMethods.GET);
+            exchange.setMethod(HttpMethod.GET);
             String body = "BODY";
             exchange.setURL("https://localhost:" + serverConnector.getLocalPort() + "/echo?body=" + URLEncoder.encode(body, "UTF-8"));
 
@@ -224,7 +224,7 @@ public class ProxyTunnellingTest
                 }
 
             };
-            exchange.setMethod(HttpMethods.GET);
+            exchange.setMethod(HttpMethod.GET);
             String body = "BODY";
             exchange.setURL("https://localhost:" + serverPort + "/echo?body=" + URLEncoder.encode(body, "UTF-8"));
 

@@ -18,7 +18,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -430,14 +430,14 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             }
 
             @Override
-            protected int read(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
+            protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
             {
                 assertEquals(contextValue, context.get(contextKey));
                 return super.read(endPoint, buffer, context);
             }
 
             @Override
-            protected int write(EndPoint endPoint, Buffer buffer, ConcurrentMap<String, Object> context) throws IOException
+            protected int write(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
             {
                 assertEquals(contextValue, context.get(contextKey));
                 return super.write(endPoint, buffer, context);

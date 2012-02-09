@@ -20,17 +20,17 @@ import org.eclipse.jetty.util.StringMap;
 
 
 /* ------------------------------------------------------------------------------- */
-public enum HttpVersions
+public enum HttpVersion
 {
     HTTP_0_9("HTTP/0.9",9),
     HTTP_1_0("HTTP/1.0",10),
     HTTP_1_1("HTTP/1.1",11);
     
     /* ------------------------------------------------------------ */
-    public final static StringMap<HttpVersions> CACHE= new StringMap<HttpVersions>(true);
+    public final static StringMap<HttpVersion> CACHE= new StringMap<HttpVersion>(true);
     static
     {
-        for (HttpVersions version : HttpVersions.values())
+        for (HttpVersion version : HttpVersion.values())
             CACHE.put(version.toString(),version);
     }
     
@@ -39,7 +39,7 @@ public enum HttpVersions
     private final int _version;
 
     /* ------------------------------------------------------------ */
-    HttpVersions(String s,int version)
+    HttpVersion(String s,int version)
     {
         _string=s;
         _buffer=BufferUtil.toBuffer(s);

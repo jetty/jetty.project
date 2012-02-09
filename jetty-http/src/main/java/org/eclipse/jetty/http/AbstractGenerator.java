@@ -14,6 +14,9 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import javax.swing.text.View;
 
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
@@ -50,9 +53,9 @@ public abstract class AbstractGenerator implements Generator
     protected int _state = STATE_HEADER;
 
     protected int _status = 0;
-    protected int _version = HttpVersions.HTTP_1_1_ORDINAL;
-    protected  Buffer _reason;
-    protected  Buffer _method;
+    protected HttpVersion _version = HttpVersion.HTTP_1_1;
+    protected  ByteBuffer _reason;
+    protected  ByteBuffer _method;
     protected  String _uri;
 
     protected long _contentWritten = 0;
@@ -62,11 +65,11 @@ public abstract class AbstractGenerator implements Generator
     protected boolean _noContent = false;
     protected Boolean _persistent = null;
 
-    protected Buffer _header; // Buffer for HTTP header (and maybe small _content)
-    protected Buffer _buffer; // Buffer for copy of passed _content
-    protected Buffer _content; // Buffer passed to addContent
+    protected ByteBuffer _header; // Buffer for HTTP header (and maybe small _content)
+    protected ByteBuffer _buffer; // Buffer for copy of passed _content
+    protected ByteBuffer _content; // Buffer passed to addContent
 
-    protected Buffer _date;
+    protected ByteBuffer _date;
 
     private boolean _sendServerVersion;
 
@@ -101,7 +104,7 @@ public abstract class AbstractGenerator implements Generator
     {
         _state = STATE_HEADER;
         _status = 0;
-        _version = HttpVersions.HTTP_1_1_ORDINAL;
+        _version = HttpVersion.HTTP_1_1;
         _reason = null;
         _last = false;
         _head = false;
@@ -167,7 +170,7 @@ public abstract class AbstractGenerator implements Generator
             _buffer=_buffers.getBuffer();
         if (contentBufferSize > _buffer.capacity())
         {
-            Buffer nb = _buffers.getBuffer(contentBufferSize);
+            ByteBuffer nb = _buffers.getBuffer(contentBufferSize);
             nb.put(_buffer);
             _buffers.returnBuffer(_buffer);
             _buffer = nb;
@@ -175,7 +178,7 @@ public abstract class AbstractGenerator implements Generator
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getUncheckedBuffer()
+    public ByteBuffer getUncheckedBuffer()
     {
         return _buffer;
     }
@@ -258,7 +261,7 @@ public abstract class AbstractGenerator implements Generator
     {
         return _persistent!=null
         ?_persistent.booleanValue()
-        :(isRequest()?true:_version>HttpVersions.HTTP_1_0_ORDINAL);
+        :(isRequest()?true:_version>HttpVersion.HTTP_1_0_ORDINAL);
     }
 
     /* ------------------------------------------------------------ */
@@ -277,7 +280,7 @@ public abstract class AbstractGenerator implements Generator
         if (_state != STATE_HEADER)
             throw new IllegalStateException("STATE!=START "+_state);
         _version = version;
-        if (_version==HttpVersions.HTTP_0_9_ORDINAL && _method!=null)
+        if (_version==HttpVersion.HTTP_0_9_ORDINAL && _method!=null)
             _noContent=true;
     }
 
@@ -289,9 +292,9 @@ public abstract class AbstractGenerator implements Generator
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.http.Generator#setDate(org.eclipse.jetty.io.Buffer)
+     * @see org.eclipse.jetty.http.Generator#setDate(org.eclipse.jetty.io.ByteBuffer)
      */
-    public void setDate(Buffer timeStampBuffer)
+    public void setDate(ByteBuffer timeStampBuffer)
     {
         _date=timeStampBuffer;
     }
@@ -301,12 +304,12 @@ public abstract class AbstractGenerator implements Generator
      */
     public void setRequest(String method, String uri)
     {
-        if (method==null || HttpMethods.GET.equals(method) )
-            _method=HttpMethods.GET_BUFFER;
+        if (method==null || HttpMethod.GET.equals(method) )
+            _method=HttpMethod.GET_BUFFER;
         else
-            _method=HttpMethods.CACHE.lookup(method);
+            _method=HttpMethod.CACHE.lookup(method);
         _uri=uri;
-        if (_version==HttpVersions.HTTP_0_9_ORDINAL)
+        if (_version==HttpVersion.HTTP_0_9_ORDINAL)
             _noContent=true;
     }
 
@@ -327,7 +330,7 @@ public abstract class AbstractGenerator implements Generator
             // TODO don't hard code
             if (len>1024)
                 len=1024;
-            _reason=new ByteArrayBuffer(len);
+            _reason=BufferUtil.allocate(len);
             for (int i=0;i<len;i++)
             {
                 char ch = reason.charAt(i);
@@ -428,8 +431,8 @@ public abstract class AbstractGenerator implements Generator
         // block until everything is flushed
         long now=System.currentTimeMillis();
         long end=now+maxIdleTime;
-        Buffer content = _content;
-        Buffer buffer = _buffer;
+        ByteBuffer content = _content;
+        ByteBuffer buffer = _buffer;
         if (content!=null && content.length()>0 || buffer!=null && buffer.length()>0 || isBufferFull())
         {
             flushBuffer();
@@ -468,7 +471,7 @@ public abstract class AbstractGenerator implements Generator
             if (content != null)
             {
                 completeHeader(null, false);
-                addContent(new View(new ByteArrayBuffer(content)), Generator.LAST);
+                addContent(new View(BufferUtil.allocate(content)), Generator.LAST);
             }
             else
             {

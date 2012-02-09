@@ -21,8 +21,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -86,24 +86,24 @@ public class DefaultHandler extends AbstractHandler
         String method=request.getMethod();
 
         // little cheat for common request
-        if (_serveIcon && _favicon!=null && method.equals(HttpMethods.GET) && request.getRequestURI().equals("/favicon.ico"))
+        if (_serveIcon && _favicon!=null && method.equals(HttpMethod.GET) && request.getRequestURI().equals("/favicon.ico"))
         {
-            if (request.getDateHeader(HttpHeaders.IF_MODIFIED_SINCE)==_faviconModified)
+            if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE)==_faviconModified)
                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
             else
             {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("image/x-icon");
                 response.setContentLength(_favicon.length);
-                response.setDateHeader(HttpHeaders.LAST_MODIFIED, _faviconModified);
-                response.setHeader(HttpHeaders.CACHE_CONTROL,"max-age=360000,public");
+                response.setDateHeader(HttpHeader.LAST_MODIFIED, _faviconModified);
+                response.setHeader(HttpHeader.CACHE_CONTROL,"max-age=360000,public");
                 response.getOutputStream().write(_favicon);
             }
             return;
         }
         
         
-        if (!method.equals(HttpMethods.GET) || !request.getRequestURI().equals("/"))
+        if (!method.equals(HttpMethod.GET) || !request.getRequestURI().equals("/"))
         {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;   

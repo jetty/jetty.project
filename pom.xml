@@ -345,11 +345,11 @@
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
-    <!--
     <module>jetty-websocket</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-client</module>
+    <!--
     <module>jetty-xml</module>
     <module>jetty-security</module>
     <module>jetty-jaspi</module>

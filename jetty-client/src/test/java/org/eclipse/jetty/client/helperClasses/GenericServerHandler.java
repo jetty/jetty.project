@@ -7,7 +7,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -33,7 +33,7 @@ public class GenericServerHandler extends AbstractHandler
             if (request.getServerName().equals("jetty.eclipse.org"))
             {
                 response.getOutputStream().println("Proxy request: " + request.getRequestURL());
-                response.getOutputStream().println(request.getHeader(HttpHeaders.PROXY_AUTHORIZATION));
+                response.getOutputStream().println(request.getHeader(HttpHeader.PROXY_AUTHORIZATION));
             }
             else if (request.getMethod().equalsIgnoreCase("GET"))
             {

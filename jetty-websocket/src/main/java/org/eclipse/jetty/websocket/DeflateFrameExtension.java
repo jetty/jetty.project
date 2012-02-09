@@ -21,7 +21,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -63,7 +63,7 @@ public class DeflateFrameExtension extends AbstractExtension
      * @see org.eclipse.jetty.websocket.AbstractExtension#onFrame(byte, byte, org.eclipse.jetty.io.Buffer)
      */
     @Override
-    public void onFrame(byte flags, byte opcode, Buffer buffer)
+    public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
     {
         if (getConnection().isControl(opcode) || !isFlag(flags,1))
         {

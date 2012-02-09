@@ -21,15 +21,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.client.security.Authentication;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpVersions;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
@@ -55,7 +55,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
     protected HttpParser _parser;
     protected boolean _http11 = true;
     protected int _status;
-    protected Buffer _connectionHeader;
+    protected ByteBuffer _connectionHeader;
     protected boolean _reserved;
 
     // The current exchange waiting for a response
@@ -182,13 +182,13 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             String uri = _exchange.getRequestURI();
             if (_destination.isProxied())
             {
-                if (!HttpMethods.CONNECT.equals(method) && uri.startsWith("/"))
+                if (!HttpMethod.CONNECT.equals(method) && uri.startsWith("/"))
                 {
                     boolean secure = _destination.isSecure();
                     String host = _destination.getAddress().getHost();
                     int port = _destination.getAddress().getPort();
                     StringBuilder absoluteURI = new StringBuilder();
-                    absoluteURI.append(secure ? HttpSchemes.HTTPS : HttpSchemes.HTTP);
+                    absoluteURI.append(secure ? HttpScheme.HTTPS : HttpScheme.HTTP);
                     absoluteURI.append("://");
                     absoluteURI.append(host);
                     // Avoid adding default ports
@@ -203,19 +203,19 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
             }
 
             _generator.setRequest(method, uri);
-            _parser.setHeadResponse(HttpMethods.HEAD.equalsIgnoreCase(method));
+            _parser.setHeadResponse(HttpMethod.HEAD.equalsIgnoreCase(method));
 
             HttpFields requestHeaders = _exchange.getRequestFields();
-            if (_exchange.getVersion() >= HttpVersions.HTTP_1_1_ORDINAL)
+            if (_exchange.getVersion() >= HttpVersion.HTTP_1_1_ORDINAL)
             {
-                if (!requestHeaders.containsKey(HttpHeaders.HOST_BUFFER))
-                    requestHeaders.add(HttpHeaders.HOST_BUFFER,_destination.getHostHeader());
+                if (!requestHeaders.containsKey(HttpHeader.HOST_BUFFER))
+                    requestHeaders.add(HttpHeader.HOST_BUFFER,_destination.getHostHeader());
             }
 
-            Buffer requestContent = _exchange.getRequestContent();
+            ByteBuffer requestContent = _exchange.getRequestContent();
             if (requestContent != null)
             {
-                requestHeaders.putLongField(HttpHeaders.CONTENT_LENGTH, requestContent.length());
+                requestHeaders.putLongField(HttpHeader.CONTENT_LENGTH, requestContent.length());
                 _generator.completeHeader(requestHeaders,false);
                 _generator.addContent(new View(requestContent),true);
             }
@@ -237,7 +237,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
                 }
                 else
                 {
-                    requestHeaders.remove(HttpHeaders.CONTENT_LENGTH);
+                    requestHeaders.remove(HttpHeader.CONTENT_LENGTH);
                     _generator.completeHeader(requestHeaders, true);
                 }
             }
@@ -258,7 +258,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
     private class Handler extends HttpParser.EventHandler
     {
         @Override
-        public void startRequest(Buffer method, Buffer url, Buffer version) throws IOException
+        public void startRequest(ByteBuffer method, ByteBuffer url, ByteBuffer version) throws IOException
         {
             // System.out.println( method.toString() + "///" + url.toString() +
             // "///" + version.toString() );
@@ -268,7 +268,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         }
 
         @Override
-        public void startResponse(Buffer version, int status, Buffer reason) throws IOException
+        public void startResponse(ByteBuffer version, int status, ByteBuffer reason) throws IOException
         {
             HttpExchange exchange = _exchange;
             if (exchange==null)
@@ -288,12 +288,12 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
 
                 case HttpStatus.OK_200:
                     // handle special case for CONNECT 200 responses
-                    if (HttpMethods.CONNECT.equalsIgnoreCase(exchange.getMethod()))
+                    if (HttpMethod.CONNECT.equalsIgnoreCase(exchange.getMethod()))
                         _parser.setHeadResponse(true);
                     break;
             }
 
-            _http11 = HttpVersions.HTTP_1_1_BUFFER.equals(version);
+            _http11 = HttpVersion.HTTP_1_1_BUFFER.equals(version);
             _status=status;
             exchange.getEventListener().onResponseStatus(version,status,reason);
             exchange.setStatus(HttpExchange.STATUS_PARSING_HEADERS);
@@ -301,14 +301,14 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         }
 
         @Override
-        public void parsedHeader(Buffer name, Buffer value) throws IOException
+        public void parsedHeader(ByteBuffer name, ByteBuffer value) throws IOException
         {
             HttpExchange exchange = _exchange;
             if (exchange!=null)
             {
-                if (HttpHeaders.CACHE.getOrdinal(name) == HttpHeaders.CONNECTION_ORDINAL)
+                if (HttpHeader.CACHE.getOrdinal(name) == HttpHeader.CONNECTION_ORDINAL)
                 {
-                    _connectionHeader = HttpHeaderValues.CACHE.lookup(value);
+                    _connectionHeader = HttpHeaderValue.CACHE.lookup(value);
                 }
                 exchange.getEventListener().onResponseHeader(name,value);
             }
@@ -323,7 +323,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         }
 
         @Override
-        public void content(Buffer ref) throws IOException
+        public void content(ByteBuffer ref) throws IOException
         {
             HttpExchange exchange = _exchange;
             if (exchange!=null)
@@ -511,12 +511,12 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         }
 
         /* ------------------------------------------------------------ */
-        public void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+        public void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
         {
         }
 
         /* ------------------------------------------------------------ */
-        public void onResponseHeader(Buffer name, Buffer value) throws IOException
+        public void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
         {
             _next.onResponseHeader(name,value);
         }
@@ -528,7 +528,7 @@ public abstract class AbstractHttpConnection extends AbstractConnection implemen
         }
 
         /* ------------------------------------------------------------ */
-        public void onResponseContent(Buffer content) throws IOException
+        public void onResponseContent(ByteBuffer content) throws IOException
         {
         }
 

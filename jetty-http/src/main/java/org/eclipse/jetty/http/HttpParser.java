@@ -22,7 +22,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpParser implements Parser
+public class HttpParser
 {
     private static final Logger LOG = Log.getLogger(HttpParser.class);
 
@@ -56,8 +56,8 @@ public class HttpParser implements Parser
     private final EventHandler _handler;
     private final RequestHandler _requestHandler;
     private final ResponseHandler _responseHandler;
-    private HttpHeaders _header;
-    private HttpHeaderValues _value;
+    private HttpHeader _header;
+    private HttpHeaderValue _value;
     private int _responseStatus; 
     private boolean _persistent;
 
@@ -249,7 +249,7 @@ public class HttpParser implements Parser
                     case METHOD:
                         if (ch == HttpTokens.SPACE)
                         {
-                            HttpMethods method=HttpMethods.CACHE.get(buffer,start,buffer.position()-start-1);
+                            HttpMethod method=HttpMethod.CACHE.get(buffer,start,buffer.position()-start-1);
                             _field0=method==null?BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__ISO_8859_1_CHARSET):method.toString();
                             _state=State.SPACE1;
                         }
@@ -262,10 +262,10 @@ public class HttpParser implements Parser
                     case RESPONSE_VERSION:
                         if (ch == HttpTokens.SPACE)
                         {
-                            HttpVersions v=HttpVersions.CACHE.get(buffer,start,buffer.position()-start-1);
+                            HttpVersion v=HttpVersion.CACHE.get(buffer,start,buffer.position()-start-1);
                             _field0=v==null?BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__ISO_8859_1_CHARSET):v.toString();
                             start=-1;
-                            _persistent=HttpVersions.HTTP_1_1==v;
+                            _persistent=HttpVersion.HTTP_1_1==v;
                             _state=State.SPACE1;
                         }
                         else if (ch < HttpTokens.SPACE && ch>=0)
@@ -369,13 +369,13 @@ public class HttpParser implements Parser
                     case REQUEST_VERSION:
                         if (ch == HttpTokens.CARRIAGE_RETURN || ch == HttpTokens.LINE_FEED)
                         {
-                            HttpVersions v=HttpVersions.CACHE.get(buffer,start,buffer.position()-start-1);
+                            HttpVersion v=HttpVersion.CACHE.get(buffer,start,buffer.position()-start-1);
                             String version=v==null?BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__ISO_8859_1_CHARSET):v.toString();
                             start=-1;
                             
                             at_next|=_requestHandler.startRequest(_field0, _field1, version);
                             _eol=ch;
-                            _persistent=HttpVersions.HTTP_1_1==v;
+                            _persistent=HttpVersion.HTTP_1_1==v;
                             _state=State.HEADER;
                             _field0=_field1=null;
                             continue;
@@ -437,13 +437,13 @@ public class HttpParser implements Parser
                                                 break;
 
                                             case TRANSFER_ENCODING:
-                                                if (_value==HttpHeaderValues.CHUNKED)
+                                                if (_value==HttpHeaderValue.CHUNKED)
                                                     _contentLength=HttpTokens.CHUNKED_CONTENT;
                                                 else
                                                 {
-                                                    if (_field1.endsWith(HttpHeaderValues.CHUNKED.toString()))
+                                                    if (_field1.endsWith(HttpHeaderValue.CHUNKED.toString()))
                                                         _contentLength=HttpTokens.CHUNKED_CONTENT;
-                                                    else if (_field1.indexOf(HttpHeaderValues.CHUNKED.toString()) >= 0)
+                                                    else if (_field1.indexOf(HttpHeaderValue.CHUNKED.toString()) >= 0)
                                                         throw new HttpException(400,null);
                                                 }
                                                 break;
@@ -463,7 +463,7 @@ public class HttpParser implements Parser
                                                     {
                                                         for (String v : _field1.toString().split(","))
                                                         {
-                                                            switch(HttpHeaderValues.CACHE.get(v.trim()))
+                                                            switch(HttpHeaderValue.CACHE.get(v.trim()))
                                                             {
                                                                 case CLOSE:
                                                                     _persistent=false;
@@ -551,14 +551,14 @@ public class HttpParser implements Parser
                             case HttpTokens.CARRIAGE_RETURN:
                             case HttpTokens.LINE_FEED:
                                 _eol=ch;
-                                _header=HttpHeaders.CACHE.get(buffer,start,length);
+                                _header=HttpHeader.CACHE.get(buffer,start,length);
                                 _field0=_header==null?BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET):_header.toString();
                                 start=length=-1;
                                 _state=State.HEADER;
                                 break;
                                 
                             case HttpTokens.COLON:
-                                _header=HttpHeaders.CACHE.get(buffer,start,length);
+                                _header=HttpHeader.CACHE.get(buffer,start,length);
                                 _field0=_header==null?BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET):_header.toString();
                                 start=length=-1;
                                 _state=State.HEADER_VALUE;
@@ -581,14 +581,14 @@ public class HttpParser implements Parser
                             case HttpTokens.CARRIAGE_RETURN:
                             case HttpTokens.LINE_FEED:
                                 _eol=ch;
-                                _header=HttpHeaders.CACHE.get(buffer,start,length);
+                                _header=HttpHeader.CACHE.get(buffer,start,length);
                                 _field0=_header==null?BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET):_header.toString();
                                 start=length=-1;
                                 _state=State.HEADER;
                                 break;
                                 
                             case HttpTokens.COLON:
-                                _header=HttpHeaders.CACHE.get(buffer,start,length);
+                                _header=HttpHeader.CACHE.get(buffer,start,length);
                                 _field0=_header==null?BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET):_header.toString();
                                 start=length=-1;
                                 _state=State.HEADER_VALUE;
@@ -616,9 +616,9 @@ public class HttpParser implements Parser
                                         _value=null;
                                         _field1+=" "+BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET);
                                     }
-                                    else if (HttpHeaderValues.hasKnownValues(_header))
+                                    else if (HttpHeaderValue.hasKnownValues(_header))
                                     {
-                                        _value=HttpHeaderValues.CACHE.get(buffer,start,length);
+                                        _value=HttpHeaderValue.CACHE.get(buffer,start,length);
                                         _field1=_value.toString();
                                     }
                                     else
@@ -659,9 +659,9 @@ public class HttpParser implements Parser
                                         _value=null;
                                         _field1+=" "+BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET);
                                     }
-                                    else if (HttpHeaderValues.hasKnownValues(_header))
+                                    else if (HttpHeaderValue.hasKnownValues(_header))
                                     {
-                                        _value=HttpHeaderValues.CACHE.get(buffer,start,length);
+                                        _value=HttpHeaderValue.CACHE.get(buffer,start,length);
                                         _field1=_value.toString();
                                     }
                                     else

@@ -17,7 +17,7 @@ import java.io.File;
 
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -99,7 +99,7 @@ public class WebdavListenerTest
         //PUT a FILE
         ContentExchange singleFileExchange = new ContentExchange();
         singleFileExchange.setURL(_singleFileURL);
-        singleFileExchange.setMethod( HttpMethods.PUT );
+        singleFileExchange.setMethod( HttpMethod.PUT );
         singleFileExchange.setFileForUpload(file);
         singleFileExchange.setRequestHeader( "Content-Type", "application/octet-stream");
         singleFileExchange.setRequestHeader("Content-Length", String.valueOf( file.length() ));
@@ -112,7 +112,7 @@ public class WebdavListenerTest
         //PUT a FILE in a directory hierarchy
         ContentExchange dirFileExchange = new ContentExchange();
         dirFileExchange.setURL(_dirFileURL);
-        dirFileExchange.setMethod( HttpMethods.PUT );
+        dirFileExchange.setMethod( HttpMethod.PUT );
         dirFileExchange.setFileForUpload(file);
         dirFileExchange.setRequestHeader( "Content-Type", "application/octet-stream");
         dirFileExchange.setRequestHeader("Content-Length", String.valueOf( file.length() ));
@@ -125,13 +125,13 @@ public class WebdavListenerTest
         //DELETE the single file
         HttpExchange del = new HttpExchange();
         del.setURL(_singleFileURL);
-        del.setMethod(HttpMethods.DELETE);
+        del.setMethod(HttpMethod.DELETE);
         _httpClient.send(del);
         del.waitForDone();
           
         //DELETE the whole dir
         del.setURL(_dirURL);
-        del.setMethod(HttpMethods.DELETE);  
+        del.setMethod(HttpMethod.DELETE);  
         del.setRequestHeader("Depth", "infinity");
         _httpClient.send(del);
         del.waitForDone();

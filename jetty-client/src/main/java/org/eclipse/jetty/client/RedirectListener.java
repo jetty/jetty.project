@@ -15,10 +15,10 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 
 /**
  * RedirectListener
@@ -46,7 +46,7 @@ public class RedirectListener extends HttpEventListenerWrapper
     }
 
     @Override
-    public void onResponseStatus( Buffer version, int status, Buffer reason )
+    public void onResponseStatus( ByteBuffer version, int status, ByteBuffer reason )
         throws IOException
     {
         _redirected = ((status == HttpStatus.MOVED_PERMANENTLY_301 ||
@@ -64,15 +64,15 @@ public class RedirectListener extends HttpEventListenerWrapper
 
 
     @Override
-    public void onResponseHeader( Buffer name, Buffer value )
+    public void onResponseHeader( ByteBuffer name, ByteBuffer value )
         throws IOException
     {
         if (_redirected)
         {
-            int header = HttpHeaders.CACHE.getOrdinal(name);
+            int header = HttpHeader.CACHE.getOrdinal(name);
             switch (header)
             {
-                case HttpHeaders.LOCATION_ORDINAL:
+                case HttpHeader.LOCATION_ORDINAL:
                     _location = value.toString();
                     break;
             }
@@ -119,7 +119,7 @@ public class RedirectListener extends HttpEventListenerWrapper
                 }
 
                 // destination may have changed
-                boolean isHttps = HttpSchemes.HTTPS.equals(String.valueOf(_exchange.getScheme()));
+                boolean isHttps = HttpScheme.HTTPS.equals(String.valueOf(_exchange.getScheme()));
                 HttpDestination destination=_destination.getHttpClient().getDestination(_exchange.getAddress(),isHttps);
 
                 if (_destination==destination)
@@ -151,7 +151,7 @@ public class RedirectListener extends HttpEventListenerWrapper
                         hostHeader.append( port );
                     }
                     
-                    _exchange.setRequestHeader( HttpHeaders.HOST, hostHeader.toString() );
+                    _exchange.setRequestHeader( HttpHeader.HOST, hostHeader.toString() );
 
                     destination.send(_exchange);
                 }

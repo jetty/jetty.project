@@ -28,12 +28,12 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersions;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -181,7 +181,7 @@ public class Response implements HttpServletResponse
             path = (path == null?"":path);
             int port=uri.getPort();
             if (port<0) 
-                port = HttpSchemes.HTTPS.equalsIgnoreCase(uri.getScheme())?443:80;
+                port = HttpScheme.HTTPS.equalsIgnoreCase(uri.getScheme())?443:80;
             if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
                 request.getServerPort()!=port ||
                 !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
@@ -250,13 +250,13 @@ public class Response implements HttpServletResponse
         if (suffix<0) 
         {          
             return url+ 
-                   ((HttpSchemes.HTTPS.equalsIgnoreCase(uri.getScheme()) || HttpSchemes.HTTP.equalsIgnoreCase(uri.getScheme())) && uri.getPath()==null?"/":"") + //if no path, insert the root path
+                   ((HttpScheme.HTTPS.equalsIgnoreCase(uri.getScheme()) || HttpScheme.HTTP.equalsIgnoreCase(uri.getScheme())) && uri.getPath()==null?"/":"") + //if no path, insert the root path
                    sessionURLPrefix+id;
         }
      
         
         return url.substring(0,suffix)+
-            ((HttpSchemes.HTTPS.equalsIgnoreCase(uri.getScheme()) || HttpSchemes.HTTP.equalsIgnoreCase(uri.getScheme())) && uri.getPath()==null?"/":"")+ //if no path so insert the root path
+            ((HttpScheme.HTTPS.equalsIgnoreCase(uri.getScheme()) || HttpScheme.HTTP.equalsIgnoreCase(uri.getScheme())) && uri.getPath()==null?"/":"")+ //if no path so insert the root path
             sessionURLPrefix+id+url.substring(suffix);
     }
 
@@ -297,11 +297,11 @@ public class Response implements HttpServletResponse
 
         resetBuffer();
         _characterEncoding=null;
-        setHeader(HttpHeaders.EXPIRES,null);
-        setHeader(HttpHeaders.LAST_MODIFIED,null);
-        setHeader(HttpHeaders.CACHE_CONTROL,null);
-        setHeader(HttpHeaders.CONTENT_TYPE,null);
-        setHeader(HttpHeaders.CONTENT_LENGTH,null);
+        setHeader(HttpHeader.EXPIRES,null);
+        setHeader(HttpHeader.LAST_MODIFIED,null);
+        setHeader(HttpHeader.CACHE_CONTROL,null);
+        setHeader(HttpHeader.CONTENT_TYPE,null);
+        setHeader(HttpHeader.CONTENT_LENGTH,null);
 
         _outputState=NONE;
         setStatus(code,message);
@@ -333,7 +333,7 @@ public class Response implements HttpServletResponse
             }
             else
             {
-                setHeader(HttpHeaders.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
+                setHeader(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
                 setContentType(MimeTypes.TEXT_HTML_8859_1);
                 ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(2048);
                 if (message != null)
@@ -378,8 +378,8 @@ public class Response implements HttpServletResponse
         }
         else if (code!=SC_PARTIAL_CONTENT)
         {
-            _connection.getRequestFields().remove(HttpHeaders.CONTENT_TYPE_BUFFER);
-            _connection.getRequestFields().remove(HttpHeaders.CONTENT_LENGTH_BUFFER);
+            _connection.getRequestFields().remove(HttpHeader.CONTENT_TYPE_BUFFER);
+            _connection.getRequestFields().remove(HttpHeader.CONTENT_LENGTH_BUFFER);
             _characterEncoding=null;
             _mimeType=null;
             _cachedMimeType=null;
@@ -468,7 +468,7 @@ public class Response implements HttpServletResponse
         }
         
         resetBuffer();
-        setHeader(HttpHeaders.LOCATION,location);
+        setHeader(HttpHeader.LOCATION,location);
         setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
         complete();
 
@@ -500,7 +500,7 @@ public class Response implements HttpServletResponse
      */
     public void setHeader(String name, String value)
     {
-        if (HttpHeaders.CONTENT_TYPE.equalsIgnoreCase(name))
+        if (HttpHeader.CONTENT_TYPE.equalsIgnoreCase(name))
             setContentType(value);
         else
         {
@@ -512,7 +512,7 @@ public class Response implements HttpServletResponse
                     return;
             }
             _connection.getResponseFields().put(name, value);
-            if (HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(name))
+            if (HttpHeader.CONTENT_LENGTH.equalsIgnoreCase(name))
             {
                 if (value==null)
                     _connection._generator.setContentLength(-1);
@@ -565,7 +565,7 @@ public class Response implements HttpServletResponse
         }
 
         _connection.getResponseFields().add(name, value);
-        if (HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(name))
+        if (HttpHeader.CONTENT_LENGTH.equalsIgnoreCase(name))
             _connection._generator.setContentLength(Long.parseLong(value));
     }
 
@@ -578,7 +578,7 @@ public class Response implements HttpServletResponse
         if (!_connection.isIncluding())
         {
             _connection.getResponseFields().putLongField(name, value);
-            if (HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(name))
+            if (HttpHeader.CONTENT_LENGTH.equalsIgnoreCase(name))
                 _connection._generator.setContentLength(value);
         }
     }
@@ -592,7 +592,7 @@ public class Response implements HttpServletResponse
         if (!_connection.isIncluding())
         {
             _connection.getResponseFields().addLongField(name, value);
-            if (HttpHeaders.CONTENT_LENGTH.equalsIgnoreCase(name))
+            if (HttpHeader.CONTENT_LENGTH.equalsIgnoreCase(name))
                 _connection._generator.setContentLength(value);
         }
     }
@@ -727,9 +727,9 @@ public class Response implements HttpServletResponse
                 {
                     _characterEncoding=null;
                     if (_cachedMimeType!=null)
-                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_cachedMimeType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_cachedMimeType);
                     else
-                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_mimeType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_mimeType);
                 }
             }
             else
@@ -748,14 +748,14 @@ public class Response implements HttpServletResponse
                             if (content_type!=null)
                             {
                                 _contentType=content_type.toString();
-                                _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,content_type);
+                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,content_type);
                             }
                         }
 
                         if (_contentType==null)
                         {
                             _contentType = _mimeType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                         }
                     }
                     else
@@ -774,7 +774,7 @@ public class Response implements HttpServletResponse
                             else
                                 _contentType=_contentType.substring(0,i8)+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ")+_contentType.substring(i2);
                         }
-                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                     }
                 }
             }
@@ -795,7 +795,7 @@ public class Response implements HttpServletResponse
         _connection._generator.setContentLength(len);
         if (len>=0)
         {
-            _connection.getResponseFields().putLongField(HttpHeaders.CONTENT_LENGTH, len);
+            _connection.getResponseFields().putLongField(HttpHeader.CONTENT_LENGTH, len);
             if (_connection._generator.isAllContentWritten())
             {
                 if (_outputState==WRITER)
@@ -827,7 +827,7 @@ public class Response implements HttpServletResponse
         if (isCommitted() || _connection.isIncluding())
         	return;
         _connection._generator.setContentLength(len);
-        _connection.getResponseFields().putLongField(HttpHeaders.CONTENT_LENGTH, len);
+        _connection.getResponseFields().putLongField(HttpHeader.CONTENT_LENGTH, len);
     }
 
     /* ------------------------------------------------------------ */
@@ -850,7 +850,7 @@ public class Response implements HttpServletResponse
             _mimeType=null;
             _cachedMimeType=null;
             _contentType=null;
-            _connection.getResponseFields().remove(HttpHeaders.CONTENT_TYPE_BUFFER);
+            _connection.getResponseFields().remove(HttpHeader.CONTENT_TYPE_BUFFER);
         }
         else
         {
@@ -884,29 +884,29 @@ public class Response implements HttpServletResponse
                                 if (content_type!=null)
                                 {
                                     _contentType=content_type.toString();
-                                    _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,content_type);
+                                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,content_type);
                                 }
                                 else
                                 {
                                     _contentType=_mimeType+";charset="+_characterEncoding;
-                                    _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                                 }
                             }
                             else
                             {
                                 _contentType=_mimeType+";charset="+_characterEncoding;
-                                _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                             }
                         }
                         else if (i2<0)
                         {
                             _contentType=contentType.substring(0,i1)+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                         }
                         else
                         {
                             _contentType=contentType.substring(0,i1)+contentType.substring(i2)+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                         }
                     }
                     else if ((i1==i0+1 && i2<0) || (i1==i0+2 && i2<0 && contentType.charAt(i0+1)==' '))
@@ -921,38 +921,38 @@ public class Response implements HttpServletResponse
                             if (content_type!=null)
                             {
                                 _contentType=content_type.toString();
-                                _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,content_type);
+                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,content_type);
                             }
                             else
                             {
                                 _contentType=contentType;
-                                _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                             }
                         }
                         else
                         {
                             _contentType=contentType;
-                            _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                         }
                     }
                     else if (i2>0)
                     {
                         _characterEncoding = QuotedStringTokenizer.unquote(contentType.substring(i8,i2));
                         _contentType=contentType;
-                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                     }
                     else
                     {
                         _characterEncoding = QuotedStringTokenizer.unquote(contentType.substring(i8));
                         _contentType=contentType;
-                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                     }
                 }
                 else // No encoding in the params.
                 {
                     _cachedMimeType=null;
                     _contentType=_characterEncoding==null?contentType:contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                    _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                 }
             }
             else // No params at all
@@ -968,29 +968,29 @@ public class Response implements HttpServletResponse
                         if (content_type!=null)
                         {
                             _contentType=content_type.toString();
-                            _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,content_type);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,content_type);
                         }
                         else
                         {
                             _contentType=_mimeType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                         }
                     }
                     else
                     {
                         _contentType=contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                     }
                 }
                 else if (_cachedMimeType!=null)
                 {
                     _contentType=_cachedMimeType.toString();
-                    _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_cachedMimeType);
+                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_cachedMimeType);
                 }
                 else
                 {
                     _contentType=contentType;
-                    _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
                 }
             }
         }
@@ -1039,28 +1039,28 @@ public class Response implements HttpServletResponse
         HttpFields response_fields=_connection.getResponseFields();
         
         response_fields.clear();
-        String connection=_connection.getRequestFields().getStringField(HttpHeaders.CONNECTION_BUFFER);
+        String connection=_connection.getRequestFields().getStringField(HttpHeader.CONNECTION_BUFFER);
         if (connection!=null)
         {
             String[] values = connection.split(",");
             for  (int i=0;values!=null && i<values.length;i++)
             {
-                CachedBuffer cb = HttpHeaderValues.CACHE.get(values[0].trim());
+                CachedBuffer cb = HttpHeaderValue.CACHE.get(values[0].trim());
 
                 if (cb!=null)
                 {
                     switch(cb.getOrdinal())
                     {
-                        case HttpHeaderValues.CLOSE_ORDINAL:
-                            response_fields.put(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
+                        case HttpHeaderValue.CLOSE_ORDINAL:
+                            response_fields.put(HttpHeader.CONNECTION_BUFFER,HttpHeaderValue.CLOSE_BUFFER);
                             break;
 
-                        case HttpHeaderValues.KEEP_ALIVE_ORDINAL:
-                            if (HttpVersions.HTTP_1_0.equalsIgnoreCase(_connection.getRequest().getProtocol()))
-                                response_fields.put(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE);
+                        case HttpHeaderValue.KEEP_ALIVE_ORDINAL:
+                            if (HttpVersion.HTTP_1_0.equalsIgnoreCase(_connection.getRequest().getProtocol()))
+                                response_fields.put(HttpHeader.CONNECTION_BUFFER,HttpHeaderValue.KEEP_ALIVE);
                             break;
-                        case HttpHeaderValues.TE_ORDINAL:
-                            response_fields.put(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.TE);
+                        case HttpHeaderValue.TE_ORDINAL:
+                            response_fields.put(HttpHeader.CONNECTION_BUFFER,HttpHeaderValue.TE);
                             break;
                     }
                 }
@@ -1111,7 +1111,7 @@ public class Response implements HttpServletResponse
             return;
 
         _locale = locale;
-        _connection.getResponseFields().put(HttpHeaders.CONTENT_LANGUAGE_BUFFER,locale.toString().replace('_','-'));
+        _connection.getResponseFields().put(HttpHeader.CONTENT_LANGUAGE_BUFFER,locale.toString().replace('_','-'));
 
         if (_explicitEncoding || _outputState!=0 )
             return;
@@ -1143,7 +1143,7 @@ public class Response implements HttpServletResponse
                 }
 
                 _cachedMimeType=MimeTypes.CACHE.get(_mimeType);
-                _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
+                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
             }
         }
     }

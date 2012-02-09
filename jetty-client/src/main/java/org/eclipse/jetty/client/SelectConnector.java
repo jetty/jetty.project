@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.AsyncConnection;
@@ -306,7 +306,7 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
             _endp.close();
         }
 
-        public int fill(Buffer buffer) throws IOException
+        public int fill(ByteBuffer buffer) throws IOException
         {
             return _endp.fill(buffer);
         }
@@ -321,7 +321,7 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
             return _endp.hasProgressed();
         }
 
-        public int flush(Buffer buffer) throws IOException
+        public int flush(ByteBuffer buffer) throws IOException
         {
             return _endp.flush(buffer);
         }
@@ -336,7 +336,7 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
             _endp.cancelTimeout(task);
         }
 
-        public int flush(Buffer header, Buffer buffer, Buffer trailer) throws IOException
+        public int flush(ByteBuffer header, ByteBuffer buffer, ByteBuffer trailer) throws IOException
         {
             return _endp.flush(header,buffer,trailer);
         }

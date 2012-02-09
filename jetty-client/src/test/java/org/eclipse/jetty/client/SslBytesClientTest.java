@@ -14,7 +14,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -73,7 +73,7 @@ public class SslBytesClientTest extends SslBytesTest
     {
         ContentExchange exchange = new ContentExchange(true);
         exchange.setURL("https://localhost:" + proxy.getPort());
-        String method = HttpMethods.GET;
+        String method = HttpMethod.GET;
         exchange.setMethod(method);
         client.send(exchange);
         Assert.assertTrue(proxy.awaitClient(5, TimeUnit.SECONDS));

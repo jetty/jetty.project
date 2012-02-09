@@ -28,7 +28,7 @@
 
 package org.eclipse.jetty.websocket;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 
 
 
@@ -45,11 +45,11 @@ public interface WebSocketParser
     /* ------------------------------------------------------------ */
     public interface FrameHandler
     {
-        void onFrame(byte flags, byte opcode, Buffer buffer);
+        void onFrame(byte flags, byte opcode, ByteBuffer buffer);
         void close(int code,String message);
     }
 
-    Buffer getBuffer();
+    ByteBuffer getBuffer();
 
     /**
      * @return an indication of progress, normally bytes filled plus events parsed, or -1 for EOF
@@ -58,6 +58,6 @@ public interface WebSocketParser
 
     boolean isBufferEmpty();
 
-    void fill(Buffer buffer);
+    void fill(ByteBuffer buffer);
 
 }

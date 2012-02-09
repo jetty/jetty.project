@@ -20,13 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersions;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBuffer;
+import org.eclipse.jetty.io.BufferCache.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.thread.Timeout;
  * <li>The HTTP server address, see {@link #setAddress(Address)}, or {@link #setURI(URI)}, or {@link #setURL(String)})
  * <li>The HTTP request method, URI and HTTP version (see {@link #setMethod(String)}, {@link #setRequestURI(String)}, and {@link #setVersion(int)})
  * <li>The request headers (see {@link #addRequestHeader(String, String)} or {@link #setRequestHeader(String, String)})
- * <li>The request content (see {@link #setRequestContent(Buffer)} or {@link #setRequestContentSource(InputStream)})
+ * <li>The request content (see {@link #setRequestContent(ByteBuffer)} or {@link #setRequestContentSource(InputStream)})
  * <li>The status of the exchange (see {@link #getStatus()})
  * <li>Callbacks to handle state changes (see the onXxx methods such as {@link #onRequestComplete()} or {@link #onResponseComplete()})
  * <li>The ability to intercept callbacks (see {@link #setEventListener(HttpEventListener)}
@@ -88,13 +88,13 @@ public class HttpExchange
     public static final int STATUS_CANCELLED = 11;
 
     // HTTP protocol fields
-    private String _method = HttpMethods.GET;
-    private Buffer _scheme = HttpSchemes.HTTP_BUFFER;
+    private String _method = HttpMethod.GET;
+    private ByteBuffer _scheme = HttpScheme.HTTP_BUFFER;
     private String _uri;
-    private int _version = HttpVersions.HTTP_1_1_ORDINAL;
+    private int _version = HttpVersion.HTTP_1_1_ORDINAL;
     private Address _address;
     private final HttpFields _requestFields = new HttpFields();
-    private Buffer _requestContent;
+    private ByteBuffer _requestContent;
     private InputStream _requestContentSource;
 
     private AtomicInteger _status = new AtomicInteger(STATUS_START);
@@ -459,7 +459,7 @@ public class HttpExchange
      * @param scheme
      *            the scheme of the URL (for example 'http')
      */
-    public void setScheme(Buffer scheme)
+    public void setScheme(ByteBuffer scheme)
     {
         _scheme = scheme;
     }
@@ -472,10 +472,10 @@ public class HttpExchange
     {
         if (scheme != null)
         {
-            if (HttpSchemes.HTTP.equalsIgnoreCase(scheme))
-                setScheme(HttpSchemes.HTTP_BUFFER);
-            else if (HttpSchemes.HTTPS.equalsIgnoreCase(scheme))
-                setScheme(HttpSchemes.HTTPS_BUFFER);
+            if (HttpScheme.HTTP.equalsIgnoreCase(scheme))
+                setScheme(HttpScheme.HTTP_BUFFER);
+            else if (HttpScheme.HTTPS.equalsIgnoreCase(scheme))
+                setScheme(HttpScheme.HTTPS_BUFFER);
             else
                 setScheme(new ByteArrayBuffer(scheme));
         }
@@ -484,7 +484,7 @@ public class HttpExchange
     /**
      * @return the scheme of the URL
      */
-    public Buffer getScheme()
+    public ByteBuffer getScheme()
     {
         return _scheme;
     }
@@ -504,7 +504,7 @@ public class HttpExchange
      */
     public void setVersion(String version)
     {
-        CachedBuffer v = HttpVersions.CACHE.get(version);
+        CachedBuffer v = HttpVersion.CACHE.get(version);
         if (v == null)
             _version = 10;
         else
@@ -642,7 +642,7 @@ public class HttpExchange
      * @param value
      *            the header value
      */
-    public void addRequestHeader(Buffer name, Buffer value)
+    public void addRequestHeader(ByteBuffer name, ByteBuffer value)
     {
         getRequestFields().add(name,value);
     }
@@ -668,7 +668,7 @@ public class HttpExchange
      * @param value
      *            the header value
      */
-    public void setRequestHeader(Buffer name, Buffer value)
+    public void setRequestHeader(ByteBuffer name, ByteBuffer value)
     {
         getRequestFields().put(name,value);
     }
@@ -679,7 +679,7 @@ public class HttpExchange
      */
     public void setRequestContentType(String value)
     {
-        getRequestFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,value);
+        getRequestFields().put(HttpHeader.CONTENT_TYPE_BUFFER,value);
     }
 
     /**
@@ -694,7 +694,7 @@ public class HttpExchange
      * @param requestContent
      *            the request content
      */
-    public void setRequestContent(Buffer requestContent)
+    public void setRequestContent(ByteBuffer requestContent)
     {
         _requestContent = requestContent;
     }
@@ -718,7 +718,7 @@ public class HttpExchange
         return _requestContentSource;
     }
 
-    public Buffer getRequestContentChunk(Buffer buffer) throws IOException
+    public ByteBuffer getRequestContentChunk(ByteBuffer buffer) throws IOException
     {
         synchronized (this)
         {
@@ -742,7 +742,7 @@ public class HttpExchange
     /**
      * @return the request content
      */
-    public Buffer getRequestContent()
+    public ByteBuffer getRequestContent()
     {
         return _requestContent;
     }
@@ -932,7 +932,7 @@ public class HttpExchange
      * @throws IOException
      *             allowed to be thrown by overriding code
      */
-    protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
     {
     }
 
@@ -946,7 +946,7 @@ public class HttpExchange
      * @throws IOException
      *             allowed to be thrown by overriding code
      */
-    protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+    protected void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
     {
     }
 
@@ -968,7 +968,7 @@ public class HttpExchange
      * @throws IOException
      *             allowed to be thrown by overriding code
      */
-    protected void onResponseContent(Buffer content) throws IOException
+    protected void onResponseContent(ByteBuffer content) throws IOException
     {
     }
 
@@ -1167,12 +1167,12 @@ public class HttpExchange
             }
         }
 
-        public void onResponseContent(Buffer content) throws IOException
+        public void onResponseContent(ByteBuffer content) throws IOException
         {
             HttpExchange.this.onResponseContent(content);
         }
 
-        public void onResponseHeader(Buffer name, Buffer value) throws IOException
+        public void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
         {
             HttpExchange.this.onResponseHeader(name,value);
         }
@@ -1182,7 +1182,7 @@ public class HttpExchange
             HttpExchange.this.onResponseHeaderComplete();
         }
 
-        public void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+        public void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
         {
             HttpExchange.this.onResponseStatus(version,status,reason);
         }

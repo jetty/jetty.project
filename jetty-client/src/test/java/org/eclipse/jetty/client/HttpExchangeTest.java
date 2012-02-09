@@ -33,9 +33,9 @@ import org.eclipse.jetty.client.helperClasses.HttpServerAndClientCreator;
 import org.eclipse.jetty.client.helperClasses.ServerAndClientCreator;
 import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
@@ -162,7 +162,7 @@ public class HttpExchangeTest
 
                 @Override
                 /* ------------------------------------------------------------ */
-                protected void onResponseStatus(Buffer version, int status, Buffer reason)
+                protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason)
                 {
                     if (verbose)
                         System.err.println(n+" ] "+version+" "+status+" "+reason);
@@ -171,7 +171,7 @@ public class HttpExchangeTest
 
                 /* ------------------------------------------------------------ */
                 @Override
-                protected void onResponseHeader(Buffer name, Buffer value)
+                protected void onResponseHeader(ByteBuffer name, ByteBuffer value)
                 {
                     if (verbose)
                         System.err.println(n+" ] "+name+": "+value);
@@ -189,7 +189,7 @@ public class HttpExchangeTest
 
                 /* ------------------------------------------------------------ */
                 @Override
-                protected void onResponseContent(Buffer content)
+                protected void onResponseContent(ByteBuffer content)
                 {
                     len += content.length();
                     if (verbose)
@@ -278,7 +278,7 @@ public class HttpExchangeTest
         {
             ContentExchange httpExchange=new ContentExchange();
             httpExchange.setURI(getBaseURI());
-            httpExchange.setMethod(HttpMethods.POST);
+            httpExchange.setMethod(HttpMethod.POST);
             httpExchange.setRequestContent(new ByteArrayBuffer("<hello />"));
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
@@ -298,7 +298,7 @@ public class HttpExchangeTest
             ContentExchange httpExchange=new ContentExchange();
             URI uri = getBaseURI().resolve("?i=" + i);
             httpExchange.setURI(uri);
-            httpExchange.setMethod(HttpMethods.GET);
+            httpExchange.setMethod(HttpMethod.GET);
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
             //httpExchange.waitForStatus(HttpExchange.STATUS_COMPLETED);
@@ -320,7 +320,7 @@ public class HttpExchangeTest
             ContentExchange httpExchange=new ContentExchange();
             URI uri = getBaseURI().resolve("?i=" + i);
             httpExchange.setURI(uri);
-            httpExchange.setMethod(HttpMethods.GET);
+            httpExchange.setMethod(HttpMethod.GET);
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
 
@@ -396,7 +396,7 @@ public class HttpExchangeTest
             int total;
 
             @Override
-            protected synchronized void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+            protected synchronized void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
             {
                 if (verbose)
                     System.err.println("] "+version+" "+status+" "+reason);
@@ -404,7 +404,7 @@ public class HttpExchangeTest
             }
 
             @Override
-            protected synchronized void onResponseHeader(Buffer name, Buffer value) throws IOException
+            protected synchronized void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
             {
                 if (verbose)
                     System.err.println("] "+name+": "+value);
@@ -412,7 +412,7 @@ public class HttpExchangeTest
             }
 
             @Override
-            protected synchronized void onResponseContent(Buffer content) throws IOException
+            protected synchronized void onResponseContent(ByteBuffer content) throws IOException
             {
                 if (verbose)
                 {
@@ -440,8 +440,8 @@ public class HttpExchangeTest
 
         };
 
-        Buffer babuf = new ByteArrayBuffer(size*36*1024);
-        Buffer niobuf = new DirectNIOBuffer(size*36*1024);
+        ByteBuffer babuf = new ByteArrayBuffer(size*36*1024);
+        ByteBuffer niobuf = new DirectNIOBuffer(size*36*1024);
 
         byte[] bytes="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes();
 
@@ -452,7 +452,7 @@ public class HttpExchangeTest
         }
 
         httpExchange.setURI(getBaseURI());
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(babuf);
         _httpClient.send(httpExchange);
@@ -479,7 +479,7 @@ public class HttpExchangeTest
 
         httpExchange.reset();
         httpExchange.setURI(getBaseURI());
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
         httpExchange.setRequestContentType("application/data");
         httpExchange.setRequestContent(niobuf);
         _httpClient.send(httpExchange);
@@ -511,7 +511,7 @@ public class HttpExchangeTest
     {
         ContentExchange httpExchange=new ContentExchange();
         httpExchange.setURI(getBaseURI());
-        httpExchange.setMethod(HttpMethods.POST);
+        httpExchange.setMethod(HttpMethod.POST);
 
         final String data="012345678901234567890123456789012345678901234567890123456789";
 
@@ -588,7 +588,7 @@ public class HttpExchangeTest
 
             ContentExchange httpExchange=new ContentExchange();
             httpExchange.setAddress(new Address("jetty.eclipse.org",8080));
-            httpExchange.setMethod(HttpMethods.GET);
+            httpExchange.setMethod(HttpMethod.GET);
             httpExchange.setRequestURI("/jetty-6");
             _httpClient.send(httpExchange);
             int status = httpExchange.waitForDone();
@@ -620,7 +620,7 @@ public class HttpExchangeTest
             assertNotNull(connections[i]);
             HttpExchange ex = new ContentExchange();
             ex.setURI(getBaseURI().resolve("?i=" + i));
-            ex.setMethod(HttpMethods.GET);
+            ex.setMethod(HttpMethod.GET);
             connections[i].send(ex);
         }
 
@@ -648,7 +648,7 @@ public class HttpExchangeTest
         ContentExchange httpExchange = new ContentExchange(true);
         httpExchange.setURL(getBaseURI().toASCIIString());
         httpExchange.setRequestURI("*");
-        httpExchange.setMethod(HttpMethods.OPTIONS);
+        httpExchange.setMethod(HttpMethod.OPTIONS);
     //    httpExchange.setRequestHeader("Connection","close");
         _httpClient.send(httpExchange);
 

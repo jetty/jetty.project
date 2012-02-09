@@ -36,7 +36,7 @@ import java.util.List;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -100,7 +100,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             {
 
                 // take any available bytes from the parser buffer, which may have already been read
-                Buffer buffer=_parser.getBuffer();
+                ByteBuffer buffer=_parser.getBuffer();
                 if (buffer!=null && buffer.length()>0)
                 {
                     int l=buffer.length();
@@ -299,7 +299,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
     }
 
     /* ------------------------------------------------------------ */
-    public void fillBuffersFrom(Buffer buffer)
+    public void fillBuffersFrom(ByteBuffer buffer)
     {
         _parser.fill(buffer);
     }
@@ -417,7 +417,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
             _websocket=websocket;
         }
 
-        public void onFrame(byte flags, byte opcode, Buffer buffer)
+        public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
         {
             try
             {

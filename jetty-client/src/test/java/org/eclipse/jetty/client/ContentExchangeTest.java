@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
@@ -116,7 +116,7 @@ public class ContentExchangeTest
     
         ContentExchange putExchange = new ContentExchange();
         putExchange.setURL(getBaseUrl() + "output.txt");
-        putExchange.setMethod(HttpMethods.PUT);
+        putExchange.setMethod(HttpMethod.PUT);
         putExchange.setRequestContent(new ByteArrayBuffer(_content.getBytes()));
     
         _client.send(putExchange);
@@ -141,7 +141,7 @@ public class ContentExchangeTest
     
         ContentExchange getExchange = new ContentExchange();
         getExchange.setURL(getBaseUrl() + "input.txt");
-        getExchange.setMethod(HttpMethods.GET);
+        getExchange.setMethod(HttpMethod.GET);
     
         _client.send(getExchange);
         int state = getExchange.waitForDone();
@@ -167,7 +167,7 @@ public class ContentExchangeTest
     
         ContentExchange getExchange = new ContentExchange();
         getExchange.setURL(getBaseUrl() + "input.txt");
-        getExchange.setMethod(HttpMethods.HEAD);
+        getExchange.setMethod(HttpMethod.HEAD);
     
         _client.send(getExchange);
         getExchange.waitForDone();
@@ -187,7 +187,7 @@ public class ContentExchangeTest
     
         ContentExchange postExchange = new ContentExchange();
         postExchange.setURL(getBaseUrl() + "test");
-        postExchange.setMethod(HttpMethods.POST);
+        postExchange.setMethod(HttpMethod.POST);
         postExchange.setRequestContent(new ByteArrayBuffer(_content.getBytes()));
    
         _client.send(postExchange);

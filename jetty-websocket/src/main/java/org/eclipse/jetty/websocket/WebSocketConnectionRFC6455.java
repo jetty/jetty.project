@@ -36,7 +36,7 @@ import java.util.List;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -408,7 +408,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
     }
 
     /* ------------------------------------------------------------ */
-    public void fillBuffersFrom(Buffer buffer)
+    public void fillBuffersFrom(ByteBuffer buffer)
     {
         _parser.fill(buffer);
     }
@@ -662,7 +662,7 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         private ByteArrayBuffer _aggregate;
         private byte _opcode=-1;
 
-        public void onFrame(final byte flags, final byte opcode, final Buffer buffer)
+        public void onFrame(final byte flags, final byte opcode, final ByteBuffer buffer)
         {
             boolean lastFrame = isLastFrame(flags);
 

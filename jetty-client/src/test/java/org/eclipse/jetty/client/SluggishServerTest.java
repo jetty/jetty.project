@@ -11,9 +11,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
@@ -74,7 +74,7 @@ public class SluggishServerTest
             setURL(URL+port);
             setRequestContentSource(new SluggishStream(request));
             setRequestContentType("application/octet-stream");
-            setRequestHeader(HttpHeaders.TRANSFER_ENCODING,HttpHeaderValues.CHUNKED);
+            setRequestHeader(HttpHeader.TRANSFER_ENCODING,HttpHeaderValue.CHUNKED);
         }
 
         public byte[] getRequestBody()
@@ -95,14 +95,14 @@ public class SluggishServerTest
         }
 
         @Override
-        protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+        protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
         {
             //System.err.printf("<<< %s %d %s%n",version,status,reason);
             super.onResponseStatus(version,status,reason);
         }
 
         @Override
-        protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+        protected void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
         {
             //System.err.printf("<<< %s: %s%n",name,value);
             super.onResponseHeader(name,value);

@@ -29,18 +29,18 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersions;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.io.ByteBuffer;
+import org.eclipse.jetty.io.BufferCache.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -437,7 +437,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 {
                     _uri.getPort();
                     info=URIUtil.canonicalPath(_uri.getDecodedPath());
-                    if (info==null && !_request.getMethod().equals(HttpMethods.CONNECT))
+                    if (info==null && !_request.getMethod().equals(HttpMethod.CONNECT))
                         throw new HttpException(400);
                     _request.setPathInfo(info);
 
@@ -720,7 +720,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
          *      org.eclipse.io.Buffer, org.eclipse.io.Buffer)
          */
         @Override
-        public void startRequest(Buffer method, Buffer uri, Buffer version) throws IOException
+        public void startRequest(ByteBuffer method, ByteBuffer uri, ByteBuffer version) throws IOException
         {
             uri=uri.asImmutableBuffer();
 
@@ -738,13 +738,13 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             try
             {
                 _head=false;
-                switch (HttpMethods.CACHE.getOrdinal(method))
+                switch (HttpMethod.CACHE.getOrdinal(method))
                 {
-                  case HttpMethods.CONNECT_ORDINAL:
+                  case HttpMethod.CONNECT_ORDINAL:
                       _uri.parseConnect(uri.array(), uri.getIndex(), uri.length());
                       break;
 
-                  case HttpMethods.HEAD_ORDINAL:
+                  case HttpMethod.HEAD_ORDINAL:
                       _head=true;
                       _uri.parse(uri.array(), uri.getIndex(), uri.length());
                       break;
@@ -757,16 +757,16 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
                 if (version==null)
                 {
-                    _request.setProtocol(HttpVersions.HTTP_0_9);
-                    _version=HttpVersions.HTTP_0_9_ORDINAL;
+                    _request.setProtocol(HttpVersion.HTTP_0_9);
+                    _version=HttpVersion.HTTP_0_9_ORDINAL;
                 }
                 else
                 {
-                    version= HttpVersions.CACHE.get(version);
+                    version= HttpVersion.CACHE.get(version);
                     if (version==null)
                         throw new HttpException(HttpStatus.BAD_REQUEST_400,null);
-                    _version = HttpVersions.CACHE.getOrdinal(version);
-                    if (_version <= 0) _version = HttpVersions.HTTP_1_0_ORDINAL;
+                    _version = HttpVersion.CACHE.getOrdinal(version);
+                    if (_version <= 0) _version = HttpVersion.HTTP_1_0_ORDINAL;
                     _request.setProtocol(version.toString());
                 }
             }
@@ -783,25 +783,25 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#parsedHeaderValue(org.eclipse.io.Buffer)
          */
         @Override
-        public void parsedHeader(Buffer name, Buffer value)
+        public void parsedHeader(ByteBuffer name, ByteBuffer value)
         {
-            int ho = HttpHeaders.CACHE.getOrdinal(name);
+            int ho = HttpHeader.CACHE.getOrdinal(name);
             switch (ho)
             {
-                case HttpHeaders.HOST_ORDINAL:
+                case HttpHeader.HOST_ORDINAL:
                     // TODO check if host matched a host in the URI.
                     _host = true;
                     break;
 
-                case HttpHeaders.EXPECT_ORDINAL:
-                    value = HttpHeaderValues.CACHE.lookup(value);
-                    switch(HttpHeaderValues.CACHE.getOrdinal(value))
+                case HttpHeader.EXPECT_ORDINAL:
+                    value = HttpHeaderValue.CACHE.lookup(value);
+                    switch(HttpHeaderValue.CACHE.getOrdinal(value))
                     {
-                        case HttpHeaderValues.CONTINUE_ORDINAL:
+                        case HttpHeaderValue.CONTINUE_ORDINAL:
                             _expect100Continue=_generator instanceof HttpGenerator;
                             break;
 
-                        case HttpHeaderValues.PROCESSING_ORDINAL:
+                        case HttpHeaderValue.PROCESSING_ORDINAL:
                             _expect102Processing=_generator instanceof HttpGenerator;
                             break;
 
@@ -809,17 +809,17 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                             String[] values = value.toString().split(",");
                             for  (int i=0;values!=null && i<values.length;i++)
                             {
-                                CachedBuffer cb=HttpHeaderValues.CACHE.get(values[i].trim());
+                                CachedBuffer cb=HttpHeaderValue.CACHE.get(values[i].trim());
                                 if (cb==null)
                                     _expect=true;
                                 else
                                 {
                                     switch(cb.getOrdinal())
                                     {
-                                        case HttpHeaderValues.CONTINUE_ORDINAL:
+                                        case HttpHeaderValue.CONTINUE_ORDINAL:
                                             _expect100Continue=_generator instanceof HttpGenerator;
                                             break;
-                                        case HttpHeaderValues.PROCESSING_ORDINAL:
+                                        case HttpHeaderValue.PROCESSING_ORDINAL:
                                             _expect102Processing=_generator instanceof HttpGenerator;
                                             break;
                                         default:
@@ -830,12 +830,12 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     }
                     break;
 
-                case HttpHeaders.ACCEPT_ENCODING_ORDINAL:
-                case HttpHeaders.USER_AGENT_ORDINAL:
-                    value = HttpHeaderValues.CACHE.lookup(value);
+                case HttpHeader.ACCEPT_ENCODING_ORDINAL:
+                case HttpHeader.USER_AGENT_ORDINAL:
+                    value = HttpHeaderValue.CACHE.lookup(value);
                     break;
 
-                case HttpHeaders.CONTENT_TYPE_ORDINAL:
+                case HttpHeader.CONTENT_TYPE_ORDINAL:
                     value = MimeTypes.CACHE.lookup(value);
                     _charset=MimeTypes.getCharsetFromContentType(value);
                     break;
@@ -854,16 +854,16 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             _generator.setVersion(_version);
             switch (_version)
             {
-                case HttpVersions.HTTP_0_9_ORDINAL:
+                case HttpVersion.HTTP_0_9_ORDINAL:
                     break;
-                case HttpVersions.HTTP_1_0_ORDINAL:
+                case HttpVersion.HTTP_1_0_ORDINAL:
                     _generator.setHead(_head);
                     if (_parser.isPersistent())
                     {
-                        _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.KEEP_ALIVE_BUFFER);
+                        _responseFields.add(HttpHeader.CONNECTION_BUFFER,HttpHeaderValue.KEEP_ALIVE_BUFFER);
                         _generator.setPersistent(true);
                     }
-                    else if (HttpMethods.CONNECT.equals(_request.getMethod()))
+                    else if (HttpMethod.CONNECT.equals(_request.getMethod()))
                     {
                         _generator.setPersistent(true);
                         _parser.setPersistent(true);
@@ -873,12 +873,12 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                         _generator.setDate(_request.getTimeStampBuffer());
                     break;
 
-                case HttpVersions.HTTP_1_1_ORDINAL:
+                case HttpVersion.HTTP_1_1_ORDINAL:
                     _generator.setHead(_head);
 
                     if (!_parser.isPersistent())
                     {
-                        _responseFields.add(HttpHeaders.CONNECTION_BUFFER,HttpHeaderValues.CLOSE_BUFFER);
+                        _responseFields.add(HttpHeader.CONNECTION_BUFFER,HttpHeaderValue.CLOSE_BUFFER);
                         _generator.setPersistent(false);
                     }
                     if (_server.getSendDateHeader())
@@ -888,7 +888,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     {
                         LOG.debug("!host {}",this);
                         _generator.setResponse(HttpStatus.BAD_REQUEST_400, null);
-                        _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
+                        _responseFields.put(HttpHeader.CONNECTION_BUFFER, HttpHeaderValue.CLOSE_BUFFER);
                         _generator.completeHeader(_responseFields, true);
                         _generator.complete();
                         return;
@@ -898,7 +898,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                     {
                         LOG.debug("!expectation {}",this);
                         _generator.setResponse(HttpStatus.EXPECTATION_FAILED_417, null);
-                        _responseFields.put(HttpHeaders.CONNECTION_BUFFER, HttpHeaderValues.CLOSE_BUFFER);
+                        _responseFields.put(HttpHeader.CONNECTION_BUFFER, HttpHeaderValue.CLOSE_BUFFER);
                         _generator.completeHeader(_responseFields, true);
                         _generator.complete();
                         return;
@@ -923,7 +923,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
          * @see org.eclipse.jetty.server.server.HttpParser.EventHandler#content(int, org.eclipse.io.Buffer)
          */
         @Override
-        public void content(Buffer ref) throws IOException
+        public void content(ByteBuffer ref) throws IOException
         {
             if (_delayedHandling)
             {
@@ -956,7 +956,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
          *      org.eclipse.io.Buffer)
          */
         @Override
-        public void startResponse(Buffer version, int status, Buffer reason)
+        public void startResponse(ByteBuffer version, int status, ByteBuffer reason)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Bad request!: "+version+" "+status+" "+reason);
@@ -1020,7 +1020,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         }
 
         /* ------------------------------------------------------------ */
-        public void sendResponse(Buffer response) throws IOException
+        public void sendResponse(ByteBuffer response) throws IOException
         {
             ((HttpGenerator)super._generator).sendResponse(response);
         }
@@ -1040,42 +1040,42 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             if (content instanceof HttpContent)
             {
                 HttpContent httpContent = (HttpContent) content;
-                Buffer contentType = httpContent.getContentType();
-                if (contentType != null && !_responseFields.containsKey(HttpHeaders.CONTENT_TYPE_BUFFER))
+                ByteBuffer contentType = httpContent.getContentType();
+                if (contentType != null && !_responseFields.containsKey(HttpHeader.CONTENT_TYPE_BUFFER))
                 {
                     String enc = _response.getSetCharacterEncoding();
                     if(enc==null)
-                        _responseFields.add(HttpHeaders.CONTENT_TYPE_BUFFER, contentType);
+                        _responseFields.add(HttpHeader.CONTENT_TYPE_BUFFER, contentType);
                     else
                     {
                         if(contentType instanceof CachedBuffer)
                         {
                             CachedBuffer content_type = ((CachedBuffer)contentType).getAssociate(enc);
                             if(content_type!=null)
-                                _responseFields.put(HttpHeaders.CONTENT_TYPE_BUFFER, content_type);
+                                _responseFields.put(HttpHeader.CONTENT_TYPE_BUFFER, content_type);
                             else
                             {
-                                _responseFields.put(HttpHeaders.CONTENT_TYPE_BUFFER,
+                                _responseFields.put(HttpHeader.CONTENT_TYPE_BUFFER,
                                         contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(enc,";= "));
                             }
                         }
                         else
                         {
-                            _responseFields.put(HttpHeaders.CONTENT_TYPE_BUFFER,
+                            _responseFields.put(HttpHeader.CONTENT_TYPE_BUFFER,
                                     contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(enc,";= "));
                         }
                     }
                 }
                 if (httpContent.getContentLength() > 0)
-                    _responseFields.putLongField(HttpHeaders.CONTENT_LENGTH_BUFFER, httpContent.getContentLength());
-                Buffer lm = httpContent.getLastModified();
+                    _responseFields.putLongField(HttpHeader.CONTENT_LENGTH_BUFFER, httpContent.getContentLength());
+                ByteBuffer lm = httpContent.getLastModified();
                 long lml=httpContent.getResource().lastModified();
                 if (lm != null)
-                    _responseFields.put(HttpHeaders.LAST_MODIFIED_BUFFER, lm);
+                    _responseFields.put(HttpHeader.LAST_MODIFIED_BUFFER, lm);
                 else if (httpContent.getResource()!=null)
                 {
                     if (lml!=-1)
-                        _responseFields.putDateField(HttpHeaders.LAST_MODIFIED_BUFFER, lml);
+                        _responseFields.putDateField(HttpHeader.LAST_MODIFIED_BUFFER, lml);
                 }
 
                 boolean direct=_connector instanceof NIOConnector && ((NIOConnector)_connector).getUseDirectBuffers() && !(_connector instanceof SslConnector);
@@ -1086,14 +1086,14 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
             else if (content instanceof Resource)
             {
                 resource=(Resource)content;
-                _responseFields.putDateField(HttpHeaders.LAST_MODIFIED_BUFFER, resource.lastModified());
+                _responseFields.putDateField(HttpHeader.LAST_MODIFIED_BUFFER, resource.lastModified());
                 content=resource.getInputStream();
             }
 
             // Process content.
-            if (content instanceof Buffer)
+            if (content instanceof ByteBuffer)
             {
-                super._generator.addContent((Buffer) content, Generator.LAST);
+                super._generator.addContent((ByteBuffer) content, Generator.LAST);
                 commitResponse(Generator.LAST);
             }
             else if (content instanceof InputStream)
@@ -1103,7 +1103,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                 try
                 {
                     int max = super._generator.prepareUncheckedAddContent();
-                    Buffer buffer = super._generator.getUncheckedBuffer();
+                    ByteBuffer buffer = super._generator.getUncheckedBuffer();
 
                     int len=buffer.readFrom(in,max);
 

@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -103,7 +103,7 @@ public class HttpGetRedirectTest
         
         ContentExchange getExchange = new ContentExchange();
         getExchange.setURL(_requestUrl);
-        getExchange.setMethod(HttpMethods.GET);
+        getExchange.setMethod(HttpMethod.GET);
 
         _client.send(getExchange);
         int state = getExchange.waitForDone();

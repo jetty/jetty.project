@@ -30,7 +30,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.TypeUtil;
@@ -58,7 +58,7 @@ public class WebSocketParserD00 implements WebSocketParser
     private final EndPoint _endp;
     private final FrameHandler _handler;
     private int _state;
-    private Buffer _buffer;
+    private ByteBuffer _buffer;
     private byte _opcode;
     private int _length;
 
@@ -84,7 +84,7 @@ public class WebSocketParserD00 implements WebSocketParser
     }
 
     /* ------------------------------------------------------------ */
-    public Buffer getBuffer()
+    public ByteBuffer getBuffer()
     {
         return _buffer;
     }
@@ -189,7 +189,7 @@ public class WebSocketParserD00 implements WebSocketParser
                         if (_buffer.markIndex()<0)
                         if (_buffer.length()<_length)
                             break charloop;
-                        Buffer data=_buffer.sliceFromMark(_length);
+                        ByteBuffer data=_buffer.sliceFromMark(_length);
                         _buffer.skip(_length);
                         _state=STATE_START;
                         progress++;
@@ -208,7 +208,7 @@ public class WebSocketParserD00 implements WebSocketParser
     }
 
     /* ------------------------------------------------------------ */
-    public void fill(Buffer buffer)
+    public void fill(ByteBuffer buffer)
     {
         if (buffer!=null && buffer.length()>0)
         {

@@ -21,9 +21,9 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpHeaderValues;
-import org.eclipse.jetty.io.Buffer;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.io.ByteBuffer;
+import org.eclipse.jetty.io.BufferCache.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.StringUtil;
@@ -50,7 +50,7 @@ public class WebSocketParserD00Test
     @Test
     public void testCache() throws Exception
     {
-        assertEquals(HttpHeaderValues.UPGRADE_ORDINAL ,((CachedBuffer)HttpHeaderValues.CACHE.lookup("Upgrade")).getOrdinal());
+        assertEquals(HttpHeaderValue.UPGRADE_ORDINAL ,((CachedBuffer)HttpHeaderValue.CACHE.lookup("Upgrade")).getOrdinal());
     }
 
     @Test
@@ -144,7 +144,7 @@ public class WebSocketParserD00Test
     {
         public List<String> _data = new ArrayList<String>();
 
-        public void onFrame(byte flags, byte opcode, Buffer buffer)
+        public void onFrame(byte flags, byte opcode, ByteBuffer buffer)
         {
             _data.add(buffer.toString(StringUtil.__UTF8));
         }

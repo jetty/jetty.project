@@ -30,7 +30,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 
@@ -46,7 +46,7 @@ public class WebSocketGeneratorRFC6455 implements WebSocketGenerator
 {
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
-    private Buffer _buffer;
+    private ByteBuffer _buffer;
     private final byte[] _mask=new byte[4];
     private int _m;
     private boolean _opsent;
@@ -67,7 +67,7 @@ public class WebSocketGeneratorRFC6455 implements WebSocketGenerator
         _maskGen=maskGen;
     }
 
-    public synchronized Buffer getBuffer()
+    public synchronized ByteBuffer getBuffer()
     {
         return _buffer;
     }
@@ -261,7 +261,7 @@ public class WebSocketGeneratorRFC6455 implements WebSocketGenerator
         // Do NOT use synchronized (this)
         // because it's very easy to deadlock when debugging is enabled.
         // We do a best effort to print the right toString() and that's it.
-        Buffer buffer = _buffer;
+        ByteBuffer buffer = _buffer;
         return String.format("%s@%x closed=%b buffer=%d",
                 getClass().getSimpleName(),
                 hashCode(),

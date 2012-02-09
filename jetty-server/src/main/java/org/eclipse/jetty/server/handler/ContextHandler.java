@@ -57,7 +57,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
@@ -1745,7 +1745,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         {
             if (_mimeTypes == null)
                 return null;
-            Buffer mime = _mimeTypes.getMimeByExtension(file);
+            ByteBuffer mime = _mimeTypes.getMimeByExtension(file);
             if (mime != null)
                 return mime.toString();
             return null;

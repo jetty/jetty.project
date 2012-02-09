@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Matcher;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
@@ -112,9 +111,9 @@ public class HttpFieldsTest
         buffer.flip();
         String out = BufferUtil.toString(buffer);
         
-        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeaders.CONNECTION+": "+HttpHeaderValues.KEEP_ALIVE));
-        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeaders.TRANSFER_ENCODING+": "+HttpHeaderValues.CHUNKED));
-        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeaders.CONTENT_ENCODING+": "+HttpHeaderValues.GZIP));
+        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE));
+        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED));
+        Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP));
         
         
         

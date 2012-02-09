@@ -30,7 +30,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 
@@ -46,7 +46,7 @@ public class WebSocketGeneratorD06 implements WebSocketGenerator
 {
     final private WebSocketBuffers _buffers;
     final private EndPoint _endp;
-    private Buffer _buffer;
+    private ByteBuffer _buffer;
     private final byte[] _mask=new byte[4];
     private int _m;
     private boolean _opsent;

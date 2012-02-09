@@ -26,7 +26,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -186,7 +186,7 @@ public class Http100ContinueTest
     public void configureExchange(ContentExchange exchange)
     {
         exchange.setURL(_requestUrl);
-        exchange.setMethod(HttpMethods.GET);
+        exchange.setMethod(HttpMethod.GET);
         exchange.addRequestHeader("User-Agent","Jetty-Client/7.0");
         exchange.addRequestHeader("Expect","100-continue"); //server to send CONTINUE 100
     }

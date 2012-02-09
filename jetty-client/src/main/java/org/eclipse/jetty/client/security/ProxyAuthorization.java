@@ -17,8 +17,8 @@ package org.eclipse.jetty.client.security;
 import java.io.IOException;
 
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.http.HttpHeaders;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.StringUtil;
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ProxyAuthorization implements Authentication
 {
-    private Buffer _authorization;
+    private ByteBuffer _authorization;
     
     public ProxyAuthorization(String username,String password) throws IOException
     {
@@ -47,6 +47,6 @@ public class ProxyAuthorization implements Authentication
      */
     public void setCredentials( HttpExchange exchange ) throws IOException
     {
-        exchange.setRequestHeader( HttpHeaders.PROXY_AUTHORIZATION_BUFFER, _authorization);
+        exchange.setRequestHeader( HttpHeader.PROXY_AUTHORIZATION_BUFFER, _authorization);
     }
 }

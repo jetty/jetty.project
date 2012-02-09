@@ -19,7 +19,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringMap;
 
 
-public enum HttpHeaders
+public enum HttpHeader
 {
     /* ------------------------------------------------------------ */
     /** General Fields.
@@ -105,10 +105,10 @@ public enum HttpHeaders
 
 
     /* ------------------------------------------------------------ */
-    public final static StringMap<HttpHeaders> CACHE= new StringMap<HttpHeaders>(true);
+    public final static StringMap<HttpHeader> CACHE= new StringMap<HttpHeader>(true);
     static
     {
-        for (HttpHeaders header : HttpHeaders.values())
+        for (HttpHeader header : HttpHeader.values())
             CACHE.put(header.toString(),header);
     }
     
@@ -116,7 +116,7 @@ public enum HttpHeaders
     private final ByteBuffer _buffer;
 
     /* ------------------------------------------------------------ */
-    HttpHeaders(String s)
+    HttpHeader(String s)
     {
         _string=s;
         _buffer=BufferUtil.toBuffer(s);
@@ -136,7 +136,7 @@ public enum HttpHeaders
     
     public static void main (String[] args)
     {
-        for (HttpHeaders h : HttpHeaders.values())
+        for (HttpHeader h : HttpHeader.values())
         {
             System.err.println("\n\n"+h);
             CACHE.get(h.toString());

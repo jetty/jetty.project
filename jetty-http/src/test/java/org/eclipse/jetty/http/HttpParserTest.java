@@ -16,11 +16,8 @@ package org.eclipse.jetty.http;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.SimpleBuffers;
-import org.eclipse.jetty.io.bio.StringEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;

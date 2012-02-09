@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -93,7 +93,7 @@ public class DumpHandler extends AbstractHandler
         }
         
         baseRequest.setHandled(true);
-        response.setHeader(HttpHeaders.CONTENT_TYPE,MimeTypes.TEXT_HTML);
+        response.setHeader(HttpHeader.CONTENT_TYPE,MimeTypes.TEXT_HTML);
         
         OutputStream out = response.getOutputStream();
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);

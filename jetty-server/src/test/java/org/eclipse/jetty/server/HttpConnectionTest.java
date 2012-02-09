@@ -29,7 +29,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpHeaders;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -443,7 +443,7 @@ public class HttpConnectionTest
                 try
                 {
                     baseRequest.setHandled(true);
-                    response.setHeader(HttpHeaders.CONTENT_TYPE,MimeTypes.TEXT_HTML);
+                    response.setHeader(HttpHeader.CONTENT_TYPE,MimeTypes.TEXT_HTML);
                     response.setHeader("LongStr", longstr);
                     PrintWriter writer = response.getWriter();
                     writer.write("<html><h1>FOO</h1></html>");

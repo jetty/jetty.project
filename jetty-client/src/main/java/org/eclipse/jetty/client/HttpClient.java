@@ -28,7 +28,7 @@ import org.eclipse.jetty.client.security.RealmResolver;
 import org.eclipse.jetty.client.security.SecurityListener;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpBuffersImpl;
-import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.util.Attributes;
@@ -154,7 +154,7 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     /* ------------------------------------------------------------------------------- */
     public void send(HttpExchange exchange) throws IOException
     {
-        boolean ssl = HttpSchemes.HTTPS_BUFFER.equalsIgnoreCase(exchange.getScheme());
+        boolean ssl = HttpScheme.HTTPS_BUFFER.equalsIgnoreCase(exchange.getScheme());
         exchange.setStatus(HttpExchange.STATUS_WAITING_FOR_CONNECTION);
         HttpDestination destination = getDestination(exchange.getAddress(), ssl);
         destination.send(exchange);

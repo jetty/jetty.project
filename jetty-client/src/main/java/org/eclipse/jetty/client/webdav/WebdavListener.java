@@ -20,9 +20,9 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpEventListenerWrapper;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.security.SecurityListener;
-import org.eclipse.jetty.http.HttpMethods;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -54,14 +54,14 @@ public class WebdavListener extends HttpEventListenerWrapper
         _exchange=ex;
 
         // We'll only enable webdav if this is a PUT request
-        if ( HttpMethods.PUT.equalsIgnoreCase( _exchange.getMethod() ) )
+        if ( HttpMethod.PUT.equalsIgnoreCase( _exchange.getMethod() ) )
         {
             _webdavEnabled = true;
         }
     }
 
     @Override
-    public void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+    public void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
     {
         if ( !_webdavEnabled )
         {
@@ -252,7 +252,7 @@ public class WebdavListener extends HttpEventListenerWrapper
         
         PropfindExchange propfindExchange = new PropfindExchange();
         propfindExchange.setAddress( _exchange.getAddress() );
-        propfindExchange.setMethod( HttpMethods.GET ); // PROPFIND acts wonky, just use get
+        propfindExchange.setMethod( HttpMethod.GET ); // PROPFIND acts wonky, just use get
         propfindExchange.setScheme( _exchange.getScheme() );
         propfindExchange.setEventListener( new SecurityListener( _destination, propfindExchange ) );
         propfindExchange.setConfigureListeners( false );
@@ -303,7 +303,7 @@ public class WebdavListener extends HttpEventListenerWrapper
     {
         WebdavSupportedExchange supportedExchange = new WebdavSupportedExchange();
         supportedExchange.setAddress( _exchange.getAddress() );
-        supportedExchange.setMethod( HttpMethods.OPTIONS );
+        supportedExchange.setMethod( HttpMethod.OPTIONS );
         supportedExchange.setScheme( _exchange.getScheme() );
         supportedExchange.setEventListener( new SecurityListener( _destination, supportedExchange ) );
         supportedExchange.setConfigureListeners( false );

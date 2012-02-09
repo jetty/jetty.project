@@ -18,7 +18,7 @@ import java.io.IOException;
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 
 public class HttpInput extends ServletInputStream
 {
@@ -40,7 +40,7 @@ public class HttpInput extends ServletInputStream
     public int read() throws IOException
     {
         int c=-1;
-        Buffer content=_parser.blockForContent(_connection.getMaxIdleTime());
+        ByteBuffer content=_parser.blockForContent(_connection.getMaxIdleTime());
         if (content!=null)
             c= 0xff & content.get();
         return c;
@@ -54,7 +54,7 @@ public class HttpInput extends ServletInputStream
     public int read(byte[] b, int off, int len) throws IOException
     {
         int l=-1;
-        Buffer content=_parser.blockForContent(_connection.getMaxIdleTime());
+        ByteBuffer content=_parser.blockForContent(_connection.getMaxIdleTime());
         if (content!=null)
             l= content.get(b, off, len);
         return l;

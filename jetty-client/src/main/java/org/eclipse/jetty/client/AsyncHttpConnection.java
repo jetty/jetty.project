@@ -18,7 +18,7 @@ import java.io.IOException;
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -36,7 +36,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
 
     private boolean _requestComplete;
-    private Buffer _requestContentChunk;
+    private ByteBuffer _requestContentChunk;
     private final AsyncEndPoint _asyncEndp;
 
     AsyncHttpConnection(Buffers requestBuffers, Buffers responseBuffers, EndPoint endp)
@@ -106,7 +106,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                             {
                                 LOG.debug("addChunk");
                                 progress=true;
-                                Buffer chunk=_requestContentChunk;
+                                ByteBuffer chunk=_requestContentChunk;
                                 _requestContentChunk=exchange.getRequestContentChunk(null);
                                 _generator.addContent(chunk,_requestContentChunk==null);
                             }

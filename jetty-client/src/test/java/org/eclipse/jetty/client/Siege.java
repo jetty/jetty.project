@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.io.ByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
@@ -79,7 +79,7 @@ public class Siege
 
         /* ------------------------------------------------------------ */
         @Override
-        protected void onResponseContent(Buffer content) throws IOException
+        protected void onResponseContent(ByteBuffer content) throws IOException
         {
             _bytes+=content.length();
             super.onResponseContent(content);
@@ -87,10 +87,10 @@ public class Siege
 
         /* ------------------------------------------------------------ */
         /**
-         * @see org.eclipse.jetty.client.HttpExchange#onResponseHeader(org.eclipse.jetty.io.Buffer, org.eclipse.jetty.io.Buffer)
+         * @see org.eclipse.jetty.client.HttpExchange#onResponseHeader(org.eclipse.jetty.io.ByteBuffer, org.eclipse.jetty.io.ByteBuffer)
          */
         @Override
-        protected void onResponseHeader(Buffer name, Buffer value) throws IOException
+        protected void onResponseHeader(ByteBuffer name, ByteBuffer value) throws IOException
         {
             super.onResponseHeader(name,value);                
             if ("Set-Cookie".equalsIgnoreCase(name.toString()))
@@ -115,10 +115,10 @@ public class Siege
 
         /* ------------------------------------------------------------ */
         /**
-         * @see org.eclipse.jetty.client.HttpExchange#onResponseStatus(org.eclipse.jetty.io.Buffer, int, org.eclipse.jetty.io.Buffer)
+         * @see org.eclipse.jetty.client.HttpExchange#onResponseStatus(org.eclipse.jetty.io.ByteBuffer, int, org.eclipse.jetty.io.ByteBuffer)
          */
         @Override
-        protected void onResponseStatus(Buffer version, int status, Buffer reason) throws IOException
+        protected void onResponseStatus(ByteBuffer version, int status, ByteBuffer reason) throws IOException
         {
             _status=status;
             super.onResponseStatus(version,status,reason);
@@ -137,7 +137,7 @@ public class Siege
             String uri=_uris.get(_u++);
             
             reset();
-            setMethod(HttpMethods.GET);
+            setMethod(HttpMethod.GET);
             setURL(uri);
 
             try
