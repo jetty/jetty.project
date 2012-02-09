@@ -24,10 +24,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ParseVersusCacheBenchmarkTest
 {
+    @Ignore
     @Test
     public void testParseVersusCache() throws Exception
     {
