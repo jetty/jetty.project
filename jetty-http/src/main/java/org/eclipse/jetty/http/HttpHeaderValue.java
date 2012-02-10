@@ -35,14 +35,16 @@ public enum HttpHeaderValue
     TE("TE"),
     BYTES("bytes"),
     NO_CACHE("no-cache"),
-    UPGRADE("Upgrade");
+    UPGRADE("Upgrade"),
+    UNKNOWN("::UNKNOWN::");
 
     /* ------------------------------------------------------------ */
     public final static StringMap<HttpHeaderValue> CACHE= new StringMap<HttpHeaderValue>(true);
     static
     {
         for (HttpHeaderValue value : HttpHeaderValue.values())
-            CACHE.put(value.toString(),value);
+            if (value!=UNKNOWN)
+                CACHE.put(value.toString(),value);
     }
 
     private final String _string;

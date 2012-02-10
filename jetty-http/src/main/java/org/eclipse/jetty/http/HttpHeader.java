@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringMap;
+import org.eclipse.jetty.util.StringUtil;
 
 
 public enum HttpHeader
@@ -101,7 +102,9 @@ public enum HttpHeader
     SET_COOKIE("Set-Cookie"),
     SET_COOKIE2("Set-Cookie2"),
     MIME_VERSION("MIME-Version"),
-    IDENTITY("identity");
+    IDENTITY("identity"),
+    
+    UNKNOWN("::UNKNOWN::");
 
 
     /* ------------------------------------------------------------ */
@@ -109,23 +112,40 @@ public enum HttpHeader
     static
     {
         for (HttpHeader header : HttpHeader.values())
-            CACHE.put(header.toString(),header);
+            if (header!=UNKNOWN)
+                CACHE.put(header.toString(),header);
     }
     
     private final String _string;
+    private final byte[] _bytes;
+    private final byte[] _bytesColonSpace;
     private final ByteBuffer _buffer;
 
     /* ------------------------------------------------------------ */
     HttpHeader(String s)
     {
         _string=s;
-        _buffer=BufferUtil.toBuffer(s);
+        _bytes=StringUtil.getBytes(s);
+        _bytesColonSpace=StringUtil.getBytes(s+": ");
+        _buffer=ByteBuffer.wrap(_bytes);
     }
 
     /* ------------------------------------------------------------ */
     public ByteBuffer toBuffer()
     {
         return _buffer.asReadOnlyBuffer();
+    }
+
+    /* ------------------------------------------------------------ */
+    public byte[] toBytes()
+    {
+        return _bytes;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public byte[] toBytesColonSpace()
+    {
+        return _bytesColonSpace;
     }
 
     /* ------------------------------------------------------------ */

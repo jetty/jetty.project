@@ -1048,6 +1048,7 @@ public class HttpFields
             _next = null;
         }
         
+        /* ------------------------------------------------------------ */
         private byte[] toSanitisedBytes(String s)
         {
             byte[] bytes = s.getBytes(StringUtil.__ISO_8859_1_CHARSET);
@@ -1090,6 +1091,12 @@ public class HttpFields
             }
 
             BufferUtil.putCRLF(buffer);
+        }
+        
+        /* ------------------------------------------------------------ */
+        public void putValueTo(ByteBuffer buffer) throws IOException
+        {
+            buffer.put(toSanitisedBytes(_value));
         }
 
         /* ------------------------------------------------------------ */

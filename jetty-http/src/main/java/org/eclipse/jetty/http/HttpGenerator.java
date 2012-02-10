@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 
+import javax.swing.text.View;
+
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -32,9 +34,8 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *
  */
-public class HttpGenerator extends AbstractGenerator
+public class HttpGenerator 
 {
-    private static final Logger LOG = Log.getLogger(HttpGenerator.class);
 
     // Build cache of response lines for status
     private static class Status
@@ -75,14 +76,37 @@ public class HttpGenerator extends AbstractGenerator
         }
     }
 
-    /* ------------------------------------------------------------------------------- */
-    public static byte[] getReasonBuffer(int code)
-    {
-        Status status = code<__status.length?__status[code]:null;
-        if (status!=null)
-            return status._reason;
-        return null;
-    }
+
+    private static final Logger LOG = Log.getLogger(HttpGenerator.class);
+
+    // states
+    
+    enum State { HEADER, CONTENT, FLUSHING, END };
+
+    public static final byte[] NO_BYTES = {};
+
+    // data
+
+    protected State _state = State.HEADER;
+
+    protected int _status = 0;
+    protected HttpVersion _version = HttpVersion.HTTP_1_1;
+    protected  String _reason;
+    protected  String _method;
+    protected  String _uri;
+
+    protected long _contentWritten = 0;
+    protected long _contentLength = HttpTokens.UNKNOWN_CONTENT;
+    protected boolean _last = false;
+    protected boolean _head = false;
+    protected boolean _noContent = false;
+    protected Boolean _persistent = null;
+
+
+    protected ByteBuffer _date;
+
+    private boolean _sendServerVersion;
+    
 
 
     // common _content
@@ -92,6 +116,7 @@ public class HttpGenerator extends AbstractGenerator
     private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\015\012");
     private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");
     private static final byte[] CONNECTION_ = StringUtil.getBytes("Connection: ");
+    private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1+" ");
     private static final byte[] CRLF = StringUtil.getBytes("\015\012");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
     private static byte[] SERVER = StringUtil.getBytes("Server: Jetty(7.0.x)\015\012");
@@ -111,41 +136,26 @@ public class HttpGenerator extends AbstractGenerator
     private boolean _bufferChunked = false;
 
 
+    
+    
+    
     /* ------------------------------------------------------------------------------- */
-    /**
-     * Constructor.
-     *
-     * @param buffers buffer pool
-     * @param io the end point to use
-     */
-    public HttpGenerator(Buffers buffers, EndPoint io)
-    {
-        super(buffers,io);
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Override
     public void reset()
     {
-        if (_persistent!=null && !_persistent && _endp!=null && !_endp.isOutputShutdown())
-        {
-            try
-            {
-                _endp.shutdownOutput();
-            }
-            catch(IOException e)
-            {
-                LOG.ignore(e);
-            }
-        }
-        super.reset();
-        if (_buffer!=null)
-            _buffer.clear();
-        if (_header!=null)
-            _header.clear();
-        if (_content!=null)
-            _content=null;
-        _bypass = false;
+        _state = State.HEADER;
+        _status = 0;
+        _version = HttpVersion.HTTP_1_1;
+        _reason = null;
+        _last = false;
+        _head = false;
+        _noContent=false;
+        _persistent = null;
+        _contentWritten = 0;
+        _contentLength = HttpTokens.UNKNOWN_CONTENT;
+        _date = null;
+
+        _method=null;
+    
         _needCRLF = false;
         _needEOC = false;
         _bufferChunked=false;
@@ -153,6 +163,264 @@ public class HttpGenerator extends AbstractGenerator
         _uri=null;
         _noContent=false;
     }
+    
+    /* ------------------------------------------------------------------------------- */
+    public void resetBuffer()
+    {
+        if(_state.ordinal()>=State.FLUSHING.ordinal())
+            throw new IllegalStateException("Flushed");
+
+        _last = false;
+        _persistent=null;
+        _contentWritten = 0;
+        _contentLength = HttpTokens.UNKNOWN_CONTENT;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean getSendServerVersion ()
+    {
+        return _sendServerVersion;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setSendServerVersion (boolean sendServerVersion)
+    {
+        _sendServerVersion = sendServerVersion;
+    }
+
+    /* ------------------------------------------------------------ */
+    public State getState()
+    {
+        return _state;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isState(State state)
+    {
+        return _state == state;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isComplete()
+    {
+        return _state == State.END;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isIdle()
+    {
+        return _state == State.HEADER && _method==null && _status==0;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isCommitted()
+    {
+        return _state != State.HEADER;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the head.
+     */
+    public boolean isHead()
+    {
+        return _head;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setContentLength(long value)
+    {
+        if (value<0)
+            _contentLength=HttpTokens.UNKNOWN_CONTENT;
+        else
+            _contentLength=value;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param head The head to set.
+     */
+    public void setHead(boolean head)
+    {
+        _head = head;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return <code>false</code> if the connection should be closed after a request has been read,
+     * <code>true</code> if it should be used for additional requests.
+     */
+    public boolean isPersistent()
+    {
+        return _persistent!=null
+        ?_persistent.booleanValue()
+        :(isRequest()?true:_version.ordinal()>HttpVersion.HTTP_1_0.ordinal());
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setPersistent(boolean persistent)
+    {
+        _persistent=persistent;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param version The version of the client the response is being sent to (NB. Not the version
+     *            in the response, which is the version of the server).
+     */
+    public void setVersion(HttpVersion version)
+    {
+        if (_state != State.HEADER)
+            throw new IllegalStateException("STATE!=START "+_state);
+        _version = version;
+        if (_version==HttpVersion.HTTP_0_9 && _method!=null)
+            _noContent=true;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpVersion getVersion()
+    {
+        return _version;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.Generator#setDate(org.eclipse.jetty.io.ByteBuffer)
+     */
+    public void setDate(ByteBuffer timeStampBuffer)
+    {
+        _date=timeStampBuffer;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public void setRequest(String method, String uri)
+    {
+        _method=method;
+        _uri=uri;
+        if (_version==HttpVersion.HTTP_0_9)
+            _noContent=true;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param status The status code to send.
+     * @param reason the status message to send.
+     */
+    public void setResponse(int status, String reason)
+    {
+        if (_state != State.HEADER) throw new IllegalStateException("STATE!=START");
+        _method=null;
+        _status = status;
+        _reason=reason;
+        if (_reason!=null)
+        {
+            if (_reason.length()>1024)
+                _reason=reason.substring(0,1024);
+            _reason=_reason.replace('\r','?').replace('\n','?');
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isWritten()
+    {
+        return _contentWritten>0;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isAllContentWritten()
+    {
+        return _contentLength>=0 && _contentWritten>=_contentLength;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Complete the message.
+     *
+     * @throws IOException
+     */
+    public void complete() throws IOException
+    {
+        if (_state == State.END)
+            return;
+
+        if (_state == State.HEADER)
+        {
+            throw new IllegalStateException("State==HEADER");
+        }
+
+        if (_contentLength >= 0 && _contentLength != _contentWritten && !_head)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ContentLength written=="+_contentWritten+" != contentLength=="+_contentLength);
+            _persistent = false;
+        }
+
+        if (_state.ordinal() < State.FLUSHING.ordinal())
+        {
+            _state = State.FLUSHING;
+            if (_contentLength == HttpTokens.CHUNKED_CONTENT)
+                _needEOC = true;
+        }
+    }
+
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Utility method to send an error response. If the builder is not committed, this call is
+     * equivalent to a setResponse, addContent and complete call.
+     *
+     * @param code The error code
+     * @param reason The error reason
+     * @param content Contents of the error page
+     * @param close True if the connection should be closed
+     * @throws IOException if there is a problem flushing the response
+     */
+    public void sendError(int code, String reason, String content, boolean close) throws IOException
+    {
+        if (close)
+            _persistent=false;
+        if (isCommitted())
+        {
+            LOG.debug("sendError on committed: {} {}",code,reason);
+        }
+        else
+        {
+            LOG.debug("sendError: {} {}",code,reason);
+            setResponse(code, reason);
+            if (content != null)
+            {
+                completeHeader(null, false);
+                addContent(new View(BufferUtil.allocate(content)), Generator.LAST);
+            }
+            else
+            {
+                completeHeader(null, true);
+            }
+            complete();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the contentWritten.
+     */
+    public long getContentWritten()
+    {
+        return _contentWritten;
+    }
+   
+
+    /* ------------------------------------------------------------------------------- */
+    public static byte[] getReasonBuffer(int code)
+    {
+        Status status = code<__status.length?__status[code]:null;
+        if (status!=null)
+            return status._reason;
+        return null;
+    }
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -170,7 +438,7 @@ public class HttpGenerator extends AbstractGenerator
         if (_noContent)
             throw new IllegalStateException("NO CONTENT");
 
-        if (_last || _state==STATE_END)
+        if (_last || _state==State.END)
         {
             LOG.warn("Ignoring extra content {}",content);
             content.clear();
@@ -186,7 +454,7 @@ public class HttpGenerator extends AbstractGenerator
             flushBuffer();
             if (_content != null && _content.hasRemaining())
             {
-                ByteBuffer nc=_buffers.getBuffer(_content.remaining()+content.length());
+                ByteBuffer nc=_buffers.getBuffer(_content.remaining()+content.remaining());
                 nc.put(_content);
                 nc.put(content);
                 content=nc;
@@ -194,7 +462,7 @@ public class HttpGenerator extends AbstractGenerator
         }
 
         _content = content;
-        _contentWritten += content.length();
+        _contentWritten += content.remaining();
 
         // Handle the _content
         if (_head)
@@ -228,14 +496,14 @@ public class HttpGenerator extends AbstractGenerator
      */
     public void sendResponse(ByteBuffer response) throws IOException
     {
-        if (_noContent || _state!=STATE_HEADER || _content!=null && _content.hasRemaining() || _bufferChunked || _head )
+        if (_noContent || _state!=State.HEADER || _content!=null && _content.hasRemaining() || _bufferChunked || _head )
             throw new IllegalStateException();
 
         _last = true;
 
         _content = response;
         _bypass = true;
-        _state = STATE_FLUSHING;
+        _state = State.FLUSHING;
 
         // TODO this is not exactly right, but should do.
         _contentLength =_contentWritten = response.length();
@@ -255,7 +523,7 @@ public class HttpGenerator extends AbstractGenerator
         if (_noContent)
             throw new IllegalStateException("NO CONTENT");
 
-        if (_last || _state==STATE_END)
+        if (_last || _state==State.END)
         {
             LOG.warn("Ignoring extra content {}",Byte.valueOf(b));
             return false;
@@ -286,54 +554,9 @@ public class HttpGenerator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
-    /** Prepare buffer for unchecked writes.
-     * Prepare the generator buffer to receive unchecked writes
-     * @return the available space in the buffer.
-     * @throws IOException
-     */
-    @Override
-    public int prepareUncheckedAddContent() throws IOException
-    {
-        if (_noContent)
-            return -1;
-
-        if (_last || _state==STATE_END)
-            return -1;
-
-        // Handle any unfinished business?
-        ByteBuffer content = _content;
-        if (content != null && content.length()>0 || _bufferChunked)
-        {
-            flushBuffer();
-            if (content != null && content.length()>0 || _bufferChunked)
-                throw new IllegalStateException("FULL");
-        }
-
-        // we better check we have a buffer
-        if (_buffer == null)
-            _buffer = _buffers.getBuffer();
-
-        _contentWritten-=_buffer.remaining();
-
-        // Handle the _content
-        if (_head)
-            return Integer.MAX_VALUE;
-
-        return _buffer.space()-(_contentLength == HttpTokens.CHUNKED_CONTENT?CHUNK_SPACE:0);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isBufferFull()
-    {
-        // Should we flush the buffers?
-        return super.isBufferFull() || _bufferChunked || _bypass  || (_contentLength == HttpTokens.CHUNKED_CONTENT && _buffer != null && _buffer.space() < CHUNK_SPACE);
-    }
-
-    /* ------------------------------------------------------------ */
     public void send1xx(int code) throws IOException
     {
-        if (_state != STATE_HEADER)
+        if (_state != State.HEADER)
             return;
 
         if (code<100||code>199)
@@ -369,24 +592,21 @@ public class HttpGenerator extends AbstractGenerator
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public boolean isRequest()
     {
         return _method!=null;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public boolean isResponse()
     {
         return _method==null;
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException
+    public void completeHeader(ByteBuffer buffer, HttpFields fields, boolean allContentAdded) throws IOException
     {
-        if (_state != STATE_HEADER)
+        if (_state != State.HEADER)
             return;
 
         // handle a reset
@@ -397,9 +617,6 @@ public class HttpGenerator extends AbstractGenerator
             throw new IllegalStateException("last?");
         _last = _last | allContentAdded;
 
-        // get a header buffer
-        if (_header == null)
-            _header = _buffers.getHeader();
 
         boolean has_server = false;
 
@@ -409,72 +626,71 @@ public class HttpGenerator extends AbstractGenerator
             {
                 _persistent=true;
 
-                if (_version == HttpVersion.HTTP_0_9_ORDINAL)
+                if (_version == HttpVersion.HTTP_0_9)
                 {
                     _contentLength = HttpTokens.NO_CONTENT;
-                    _header.put(_method);
-                    _header.put((byte)' ');
-                    _header.put(_uri.getBytes("UTF-8")); // TODO check
-                    _header.put(HttpTokens.CRLF);
-                    _state = STATE_FLUSHING;
+                    buffer.put(_method);
+                    buffer.put((byte)' ');
+                    buffer.put(_uri.getBytes("UTF-8")); // TODO check
+                    buffer.put(HttpTokens.CRLF);
+                    _state = State.FLUSHING;
                     _noContent=true;
                     return;
                 }
                 else
                 {
-                    _header.put(_method);
-                    _header.put((byte)' ');
-                    _header.put(_uri.getBytes("UTF-8")); // TODO check
-                    _header.put((byte)' ');
-                    _header.put(_version==HttpVersion.HTTP_1_0_ORDINAL?HttpVersion.HTTP_1_0_BUFFER:HttpVersion.HTTP_1_1_BUFFER);
-                    _header.put(HttpTokens.CRLF);
+                    buffer.put(_method);
+                    buffer.put((byte)' ');
+                    buffer.put(_uri.getBytes("UTF-8")); // TODO check
+                    buffer.put((byte)' ');
+                    buffer.put((_version==HttpVersion.HTTP_1_0?HttpVersion.HTTP_1_0:HttpVersion.HTTP_1_1).toBytes());
+                    buffer.put(HttpTokens.CRLF);
                 }
             }
             else
             {
                 // Responses
-                if (_version == HttpVersion.HTTP_0_9_ORDINAL)
+                if (_version == HttpVersion.HTTP_0_9)
                 {
                     _persistent = false;
                     _contentLength = HttpTokens.EOF_CONTENT;
-                    _state = STATE_CONTENT;
+                    _state = State.CONTENT;
                     return;
                 }
                 else
                 {
                     if (_persistent==null)
-                        _persistent= (_version > HttpVersion.HTTP_1_0_ORDINAL);
+                        _persistent= (_version.ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
                     // add response line
                     Status status = _status<__status.length?__status[_status]:null;
 
                     if (status==null)
                     {
-                        _header.put(HttpVersion.HTTP_1_1_BUFFER);
-                        _header.put((byte) ' ');
-                        _header.put((byte) ('0' + _status / 100));
-                        _header.put((byte) ('0' + (_status % 100) / 10));
-                        _header.put((byte) ('0' + (_status % 10)));
-                        _header.put((byte) ' ');
+                        buffer.put(HTTP_1_1_SPACE);
+                        buffer.put((byte) ('0' + _status / 100));
+                        buffer.put((byte) ('0' + (_status % 100) / 10));
+                        buffer.put((byte) ('0' + (_status % 10)));
+                        buffer.put((byte) ' ');
                         if (_reason==null)
                         {
-                            _header.put((byte) ('0' + _status / 100));
-                            _header.put((byte) ('0' + (_status % 100) / 10));
-                            _header.put((byte) ('0' + (_status % 10)));
+                            buffer.put((byte) ('0' + _status / 100));
+                            buffer.put((byte) ('0' + (_status % 100) / 10));
+                            buffer.put((byte) ('0' + (_status % 10)));
                         }
                         else
-                            _header.put(_reason);
-                        _header.put(HttpTokens.CRLF);
+                            buffer.put(_reason);
+                        buffer.put(HttpTokens.CRLF);
                     }
                     else
                     {
                         if (_reason==null)
-                            _header.put(status._responseLine);
+                            buffer.put(status._responseLine);
                         else
                         {
-                            _header.put(status._schemeCode);
-                            _header.put(_reason);
-                            _header.put(HttpTokens.CRLF);
+                            buffer.put(status._schemeCode);
+                            buffer.put(_reason);
+                            buffer.put(HttpTokens.CRLF);
                         }
                     }
 
@@ -488,8 +704,8 @@ public class HttpGenerator extends AbstractGenerator
 
                         if (_status!=101 )
                         {
-                            _header.put(HttpTokens.CRLF);
-                            _state = STATE_CONTENT;
+                            buffer.put(HttpTokens.CRLF);
+                            _state = State.CONTENT;
                             return;
                         }
                     }
@@ -506,11 +722,9 @@ public class HttpGenerator extends AbstractGenerator
             // Add headers
             if (_status>=200 && _date!=null)
             {
-                _header.put(HttpHeader.DATE_BUFFER);
-                _header.put((byte)':');
-                _header.put((byte)' ');
-                _header.put(_date);
-                _header.put(CRLF);
+                buffer.put(HttpHeader.DATE.toBytesColonSpace());
+                buffer.put(_date);
+                buffer.put(CRLF);
             }
 
             // key field values
@@ -530,9 +744,12 @@ public class HttpGenerator extends AbstractGenerator
                     if (field==null)
                         continue;
 
-                    switch (field.getNameOrdinal())
-                    {
-                        case HttpHeader.CONTENT_LENGTH_ORDINAL:
+                    HttpHeader header = HttpHeader.CACHE.get(field.getName());
+                    HttpHeaderValue value = null;
+                    
+                    switch (header==null?HttpHeader.UNKNOWN:header)
+                      {
+                        case CONTENT_LENGTH:
                             content_length = field;
                             _contentLength = field.getLongValue();
 
@@ -540,42 +757,72 @@ public class HttpGenerator extends AbstractGenerator
                                 content_length = null;
 
                             // write the field to the header buffer
-                            field.putTo(_header);
+                            field.putTo(buffer);
                             break;
 
-                        case HttpHeader.CONTENT_TYPE_ORDINAL:
-                            if (BufferUtil.isPrefix(MimeTypes.MULTIPART_BYTERANGES_BUFFER, field.getValueBuffer())) _contentLength = HttpTokens.SELF_DEFINING_CONTENT;
+                        case CONTENT_TYPE:
+                            if (field.getValue().startsWith(MimeTypes.Type.MULTIPART_BYTERANGES.toString()))
+                                _contentLength = HttpTokens.SELF_DEFINING_CONTENT;
 
                             // write the field to the header buffer
                             content_type=true;
-                            field.putTo(_header);
+                            field.putTo(buffer);
                             break;
 
-                        case HttpHeader.TRANSFER_ENCODING_ORDINAL:
-                            if (_version == HttpVersion.HTTP_1_1_ORDINAL)
+                        case TRANSFER_ENCODING:
+                            if (_version == HttpVersion.HTTP_1_1)
                                 transfer_encoding = field;
                             // Do NOT add yet!
                             break;
 
-                        case HttpHeader.CONNECTION_ORDINAL:
+                        case CONNECTION:
                             if (isRequest())
-                                field.putTo(_header);
+                                field.putTo(buffer);
 
-                            int connection_value = field.getValueOrdinal();
-                            switch (connection_value)
+                            value = HttpHeaderValue.CACHE.get(field.getValue());
+                            
+                            switch (value==null?HttpHeaderValue.UNKNOWN:value)
                             {
-                                case -1:
+                                case UPGRADE:
+                                {
+                                    // special case for websocket connection ordering
+                                    if (isResponse())
+                                    {
+                                        field.putTo(buffer);
+                                        continue;
+                                    }
+                                }
+                                case CLOSE:
+                                {
+                                    close=true;
+                                    if (isResponse())
+                                        _persistent=false;
+                                    if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT)
+                                        _contentLength = HttpTokens.EOF_CONTENT;
+                                    break;
+                                }
+                                case KEEP_ALIVE:
+                                {
+                                    if (_version == HttpVersion.HTTP_1_0)
+                                    {
+                                        keep_alive = true;
+                                        if (isResponse())
+                                            _persistent=true;
+                                    }
+                                    break;
+                                }
+
+                                default:
                                 {
                                     String[] values = field.getValue().split(",");
                                     for  (int i=0;values!=null && i<values.length;i++)
                                     {
-                                        CachedBuffer cb = HttpHeaderValue.CACHE.get(values[i].trim());
-
-                                        if (cb!=null)
+                                        HttpHeaderValue v = HttpHeaderValue.CACHE.get(field.getValue());
+                                        if (v!=null)
                                         {
-                                            switch(cb.getOrdinal())
+                                            switch(v)
                                             {
-                                                case HttpHeaderValue.CLOSE_ORDINAL:
+                                                case CLOSE:
                                                     close=true;
                                                     if (isResponse())
                                                         _persistent=false;
@@ -584,8 +831,8 @@ public class HttpGenerator extends AbstractGenerator
                                                         _contentLength = HttpTokens.EOF_CONTENT;
                                                     break;
 
-                                                case HttpHeaderValue.KEEP_ALIVE_ORDINAL:
-                                                    if (_version == HttpVersion.HTTP_1_0_ORDINAL)
+                                                case KEEP_ALIVE:
+                                                    if (_version == HttpVersion.HTTP_1_0)
                                                     {
                                                         keep_alive = true;
                                                         if (isResponse())
@@ -613,58 +860,29 @@ public class HttpGenerator extends AbstractGenerator
 
                                     break;
                                 }
-                                case HttpHeaderValue.UPGRADE_ORDINAL:
-                                {
-                                    // special case for websocket connection ordering
-                                    if (isResponse())
-                                    {
-                                        field.putTo(_header);
-                                        continue;
-                                    }
-                                }
-                                case HttpHeaderValue.CLOSE_ORDINAL:
-                                {
-                                    close=true;
-                                    if (isResponse())
-                                        _persistent=false;
-                                    if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT)
-                                        _contentLength = HttpTokens.EOF_CONTENT;
-                                    break;
-                                }
-                                case HttpHeaderValue.KEEP_ALIVE_ORDINAL:
-                                {
-                                    if (_version == HttpVersion.HTTP_1_0_ORDINAL)
-                                    {
-                                        keep_alive = true;
-                                        if (isResponse())
-                                            _persistent=true;
-                                    }
-                                    break;
-                                }
-                                default:
-                                {
-                                    if (connection==null)
-                                        connection=new StringBuilder();
-                                    else
-                                        connection.append(',');
-                                    connection.append(field.getValue());
-                                }
                             }
 
                             // Do NOT add yet!
                             break;
 
-                        case HttpHeader.SERVER_ORDINAL:
+                        case SERVER:
                             if (getSendServerVersion())
                             {
                                 has_server=true;
-                                field.putTo(_header);
+                                field.putTo(buffer);
                             }
                             break;
 
-                        default:
+                        case UNKNOWN:
                             // write the field to the header buffer
-                            field.putTo(_header);
+                            field.putTo(buffer);
+                            break;
+                            
+                        default:
+                            buffer.put(header.toBytesColonSpace());
+                            field.putValueTo(buffer);
+                            buffer.put(CRLF);
+                            
                     }
                 }
             }
@@ -694,11 +912,11 @@ public class HttpGenerator extends AbstractGenerator
                         if (content_length == null && (isResponse() || _contentLength>0 || content_type ) && !_noContent)
                         {
                             // known length but not actually set.
-                            _header.put(HttpHeader.CONTENT_LENGTH_BUFFER);
-                            _header.put(HttpTokens.COLON);
-                            _header.put((byte) ' ');
-                            BufferUtil.putDecLong(_header, _contentLength);
-                            _header.put(HttpTokens.CRLF);
+                            buffer.put(HttpHeader.CONTENT_LENGTH.toBytes());
+                            buffer.put(HttpTokens.COLON);
+                            buffer.put((byte) ' ');
+                            BufferUtil.putDecLong(buffer, _contentLength);
+                            buffer.put(HttpTokens.CRLF);
                         }
                     }
                     else
@@ -715,7 +933,7 @@ public class HttpGenerator extends AbstractGenerator
 
                 case HttpTokens.NO_CONTENT:
                     if (content_length == null && isResponse() && _status >= 200 && _status != 204 && _status != 304)
-                        _header.put(CONTENT_LENGTH_0);
+                        buffer.put(CONTENT_LENGTH_0);
                     break;
 
                 case HttpTokens.EOF_CONTENT:
@@ -738,12 +956,12 @@ public class HttpGenerator extends AbstractGenerator
                 {
                     String c = transfer_encoding.getValue();
                     if (c.endsWith(HttpHeaderValue.CHUNKED))
-                        transfer_encoding.putTo(_header);
+                        transfer_encoding.putTo(buffer);
                     else
                         throw new IllegalArgumentException("BAD TE");
                 }
                 else
-                    _header.put(TRANSFER_ENCODING_CHUNKED);
+                    buffer.put(TRANSFER_ENCODING_CHUNKED);
             }
 
             // Handle connection if need be
@@ -757,197 +975,47 @@ public class HttpGenerator extends AbstractGenerator
             {
                 if (!_persistent && (close || _version > HttpVersion.HTTP_1_0_ORDINAL))
                 {
-                    _header.put(CONNECTION_CLOSE);
+                    buffer.put(CONNECTION_CLOSE);
                     if (connection!=null)
                     {
-                        _header.setPutIndex(_header.putIndex()-2);
-                        _header.put((byte)',');
-                        _header.put(connection.toString().getBytes());
-                        _header.put(CRLF);
+                        buffer.setPutIndex(buffer.putIndex()-2);
+                        buffer.put((byte)',');
+                        buffer.put(connection.toString().getBytes());
+                        buffer.put(CRLF);
                     }
                 }
                 else if (keep_alive)
                 {
-                    _header.put(CONNECTION_KEEP_ALIVE);
+                    buffer.put(CONNECTION_KEEP_ALIVE);
                     if (connection!=null)
                     {
-                        _header.setPutIndex(_header.putIndex()-2);
-                        _header.put((byte)',');
-                        _header.put(connection.toString().getBytes());
-                        _header.put(CRLF);
+                        buffer.setPutIndex(buffer.putIndex()-2);
+                        buffer.put((byte)',');
+                        buffer.put(connection.toString().getBytes());
+                        buffer.put(CRLF);
                     }
                 }
                 else if (connection!=null)
                 {
-                    _header.put(CONNECTION_);
-                    _header.put(connection.toString().getBytes());
-                    _header.put(CRLF);
+                    buffer.put(CONNECTION_);
+                    buffer.put(connection.toString().getBytes());
+                    buffer.put(CRLF);
                 }
             }
 
             if (!has_server && _status>199 && getSendServerVersion())
-                _header.put(SERVER);
+                buffer.put(SERVER);
 
             // end the header.
-            _header.put(HttpTokens.CRLF);
-            _state = STATE_CONTENT;
+            buffer.put(HttpTokens.CRLF);
+            _state = State.CONTENT;
 
         }
         catch(ArrayIndexOutOfBoundsException e)
         {
-            throw new RuntimeException("Header>"+_header.capacity(),e);
+            throw new RuntimeException("Header>"+buffer.capacity(),e);
         }
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Complete the message.
-     *
-     * @throws IOException
-     */
-    @Override
-    public void complete() throws IOException
-    {
-        if (_state == STATE_END)
-            return;
-
-        super.complete();
-
-        if (_state < STATE_FLUSHING)
-        {
-            _state = STATE_FLUSHING;
-            if (_contentLength == HttpTokens.CHUNKED_CONTENT)
-                _needEOC = true;
-        }
-
-        flushBuffer();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public int flushBuffer() throws IOException
-    {
-        try
-        {
-
-            if (_state == STATE_HEADER)
-                throw new IllegalStateException("State==HEADER");
-
-            prepareBuffers();
-
-            if (_endp == null)
-            {
-                if (_needCRLF && _buffer!=null)
-                    _buffer.put(HttpTokens.CRLF);
-                if (_needEOC && _buffer!=null && !_head)
-                    _buffer.put(LAST_CHUNK);
-                _needCRLF=false;
-                _needEOC=false;
-                return 0;
-            }
-
-            int total= 0;
-
-            int len = -1;
-            int to_flush = flushMask();
-            int last_flush;
-
-            do
-            {
-                last_flush=to_flush;
-                switch (to_flush)
-                {
-                    case 7:
-                        throw new IllegalStateException(); // should never happen!
-                    case 6:
-                        len = _endp.flush(_header, _buffer, null);
-                        break;
-                    case 5:
-                        len = _endp.flush(_header, _content, null);
-                        break;
-                    case 4:
-                        len = _endp.flush(_header);
-                        break;
-                    case 3:
-                        len = _endp.flush(_buffer, _content, null);
-                        break;
-                    case 2:
-                        len = _endp.flush(_buffer);
-                        break;
-                    case 1:
-                        len = _endp.flush(_content);
-                        break;
-                    case 0:
-                    {
-                        len=0;
-                        // Nothing more we can write now.
-                        if (_header != null)
-                            _header.clear();
-
-                        _bypass = false;
-                        _bufferChunked = false;
-
-                        if (_buffer != null)
-                        {
-                            _buffer.clear();
-                            if (_contentLength == HttpTokens.CHUNKED_CONTENT)
-                            {
-                                // reserve some space for the chunk header
-                                _buffer.setPutIndex(CHUNK_SPACE);
-                                _buffer.setGetIndex(CHUNK_SPACE);
-
-                                // Special case handling for small left over buffer from
-                                // an addContent that caused a buffer flush.
-                                if (_content != null && _content.remaining() < _buffer.space() && _state != STATE_FLUSHING)
-                                {
-                                    _buffer.put(_content);
-                                    _content.clear();
-                                    _content=null;
-                                }
-                            }
-                        }
-
-                        // Are we completely finished for now?
-                        if (!_needCRLF && !_needEOC && (_content==null || _content.remaining()==0))
-                        {
-                            if (_state == STATE_FLUSHING)
-                                _state = STATE_END;
-
-                            if (_state==STATE_END && _persistent != null && !_persistent && _status!=100 && _method==null)
-                                _endp.shutdownOutput();
-                        }
-                        else
-                            // Try to prepare more to write.
-                            prepareBuffers();
-                    }
-
-                }
-
-                if (len > 0)
-                    total+=len;
-
-                to_flush = flushMask();
-            }
-            // loop while progress is being made (OR we have prepared some buffers that might make progress)
-            while (len>0 || (to_flush!=0 && last_flush==0));
-
-            return total;
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-            throw (e instanceof EofException) ? e:new EofException(e);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    private int flushMask()
-    {
-        return  ((_header != null && _header.remaining() > 0)?4:0)
-        | ((_buffer != null && _buffer.remaining() > 0)?2:0)
-        | ((_bypass && _content != null && _content.remaining() > 0)?1:0);
-    }
-
     /* ------------------------------------------------------------ */
     private void prepareBuffers()
     {
@@ -1084,28 +1152,11 @@ public class HttpGenerator extends AbstractGenerator
 
     }
 
-    public int getBytesBuffered()
-    {
-        return(_header==null?0:_header.remaining())+
-        (_buffer==null?0:_buffer.remaining())+
-        (_content==null?0:_content.remaining());
-    }
-
-    public boolean isEmpty()
-    {
-        return (_header==null||_header.remaining()==0) &&
-        (_buffer==null||_buffer.remaining()==0) &&
-        (_content==null||_content.remaining()==0);
-    }
-
     @Override
     public String toString()
     {
-        return String.format("%s{s=%d,h=%d,b=%d,c=%d}",
+        return String.format("%s{s=%d}",
                 getClass().getSimpleName(),
-                _state,
-                _header == null ? -1 : _header.remaining(),
-                _buffer == null ? -1 : _buffer.remaining(),
-                _content == null ? -1 : _content.remaining());
+                _state);
     }
 }

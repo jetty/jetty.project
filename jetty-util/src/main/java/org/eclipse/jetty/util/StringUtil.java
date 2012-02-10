@@ -352,14 +352,7 @@ public class StringUtil
     /* ------------------------------------------------------------ */
     public static String toUTF8String(byte[] b,int offset,int length)
     {
-        try
-        {
-            return new String(b,offset,length,__UTF8);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
+        return new String(b,offset,length,__UTF8_CHARSET);
     }
 
     /* ------------------------------------------------------------ */
@@ -418,15 +411,7 @@ public class StringUtil
     
     public static byte[] getBytes(String s)
     {
-        try
-        {
-            return s.getBytes(__ISO_8859_1);
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-            return s.getBytes();
-        }
+        return s.getBytes(__ISO_8859_1_CHARSET);
     }
     
     public static byte[] getBytes(String s,String charset)

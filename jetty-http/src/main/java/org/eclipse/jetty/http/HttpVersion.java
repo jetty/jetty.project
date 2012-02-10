@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringMap;
+import org.eclipse.jetty.util.StringUtil;
 
 
 /* ------------------------------------------------------------------------------- */
@@ -35,6 +36,7 @@ public enum HttpVersion
     }
     
     private final String _string;
+    private final byte[] _bytes;
     private final ByteBuffer _buffer;
     private final int _version;
 
@@ -42,8 +44,15 @@ public enum HttpVersion
     HttpVersion(String s,int version)
     {
         _string=s;
-        _buffer=BufferUtil.toBuffer(s);
+        _bytes=StringUtil.getBytes(s);
+        _buffer=ByteBuffer.wrap(_bytes);
         _version=version;
+    }
+
+    /* ------------------------------------------------------------ */
+    public byte[] toBytes()
+    {
+        return _bytes;
     }
 
     /* ------------------------------------------------------------ */
