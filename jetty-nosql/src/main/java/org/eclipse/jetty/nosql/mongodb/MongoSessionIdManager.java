@@ -61,7 +61,9 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
     final static DBObject __version_1 = new BasicDBObject(MongoSessionManager.__VERSION,1);
     final static DBObject __valid_false = new BasicDBObject(MongoSessionManager.__VALID,false);
+    final static DBObject __valid_true = new BasicDBObject(MongoSessionManager.__VALID,true);
 
+    
     final DBCollection _sessions;
     protected Server _server;
     private Timer _scavengeTimer;
@@ -434,10 +436,10 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         /*
          * optimize this query to only return the valid variable
          */
-        DBObject o = _sessions.findOne(new BasicDBObject("id",sessionId), __valid_false);
+        DBObject o = _sessions.findOne(new BasicDBObject("id",sessionId), __valid_true);
         
         if ( o != null )
-        {
+        {                    
             Boolean valid = (Boolean)o.get(MongoSessionManager.__VALID);
             
             if ( valid == null )
