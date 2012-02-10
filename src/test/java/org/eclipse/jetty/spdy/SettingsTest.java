@@ -48,7 +48,7 @@ public class SettingsTest extends AbstractTest
                 latch.countDown();
             }
         };
-        Session session = startClient(startServer(serverSessionFrameListener), null);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), null);
 
         session.settings(SPDY.V2, clientSettingsInfo);
 
@@ -83,7 +83,7 @@ public class SettingsTest extends AbstractTest
             }
         };
 
-        startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
+        startClient(startSPDYServer(serverSessionFrameListener), clientSessionFrameListener);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

@@ -54,7 +54,7 @@ public class HeadersTest extends AbstractTest
             }
         };
 
-        Session session = startClient(startServer(serverSessionFrameListener), null);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), null);
 
         final CountDownLatch latch = new CountDownLatch(1);
         session.syn(SPDY.V2, new SynInfo(false), new Stream.FrameListener.Adapter()

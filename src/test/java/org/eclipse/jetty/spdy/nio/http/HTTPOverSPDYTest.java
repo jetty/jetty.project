@@ -18,17 +18,15 @@ package org.eclipse.jetty.spdy.nio.http;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.spdy.AbstractTest;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -36,43 +34,18 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
-import org.eclipse.jetty.spdy.nio.SPDYClient;
+import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.nio.SPDYServerConnector;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class HTTPOverSPDYTest
+public class HTTPOverSPDYTest extends AbstractTest
 {
-    private Server server;
-    private SPDYServerConnector connector;
-    private SPDYClient.Factory clientFactory;
-    private Session session;
-
-    public void start(Handler handler, Session.FrameListener listener) throws Exception
+    @Override
+    protected SPDYServerConnector newSPDYServerConnector(ServerSessionFrameListener listener)
     {
-        server = new Server();
-        connector = new SPDYServerConnector(null);
-        server.addConnector(connector);
-        connector.putAsyncConnectionFactory("spdy/2", new HTTPOverSPDYAsyncConnectionFactory(connector));
-        server.setHandler(handler);
-        server.start();
-
-        clientFactory = new SPDYClient.Factory();
-        clientFactory.start();
-        SPDYClient client = clientFactory.newSPDYClient();
-        session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), listener).get(5, TimeUnit.SECONDS);
-    }
-
-    @After
-    public void stop() throws Exception
-    {
-        session.goAway(SPDY.V2);
-        clientFactory.stop();
-        clientFactory.join();
-        server.stop();
-        server.join();
+        return new HTTPSPDYServerConnector();
     }
 
     @Ignore
@@ -80,7 +53,7 @@ public class HTTPOverSPDYTest
     public void test100Continue() throws Exception
     {
         final String data = "data";
-        start(new AbstractHandler()
+        Session session = startClient(startHTTPServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
@@ -95,7 +68,7 @@ public class HTTPOverSPDYTest
 
                 httpResponse.setStatus(200);
             }
-        }, null);
+        }), null);
 
         Headers headers = new Headers();
         headers.put("method", "POST");
@@ -127,7 +100,7 @@ public class HTTPOverSPDYTest
     {
         final String path = "/foo";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        Session session = startClient(startHTTPServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -140,7 +113,7 @@ public class HTTPOverSPDYTest
                 Assert.assertEquals("localhost:" + connector.getLocalPort(), httpRequest.getHeader("host"));
                 handlerLatch.countDown();
             }
-        }, null);
+        }), null);
 
         Headers headers = new Headers();
         headers.put("method", "GET");
@@ -169,7 +142,7 @@ public class HTTPOverSPDYTest
         final String query = "p=1";
         final String uri = path + "?" + query;
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        Session session = startClient(startHTTPServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -182,7 +155,7 @@ public class HTTPOverSPDYTest
                 Assert.assertEquals(query, httpRequest.getQueryString());
                 handlerLatch.countDown();
             }
-        }, null);
+        }), null);
 
         Headers headers = new Headers();
         headers.put("method", "GET");
@@ -209,7 +182,7 @@ public class HTTPOverSPDYTest
     {
         final String path = "/foo";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        Session session = startClient(startHTTPServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -221,7 +194,7 @@ public class HTTPOverSPDYTest
                 Assert.assertEquals(path, httpRequest.getRequestURI());
                 handlerLatch.countDown();
             }
-        }, null);
+        }), null);
 
         Headers headers = new Headers();
         headers.put("method", "HEAD");
@@ -249,7 +222,7 @@ public class HTTPOverSPDYTest
         final String path = "/foo";
         final String data = "a=1&b=2";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        Session session = startClient(startHTTPServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -261,7 +234,7 @@ public class HTTPOverSPDYTest
                 Assert.assertEquals("2", httpRequest.getParameter("b"));
                 handlerLatch.countDown();
             }
-        }, null);
+        }), null);
 
         Headers headers = new Headers();
         headers.put("method", "POST");
@@ -293,7 +266,7 @@ public class HTTPOverSPDYTest
         final String data1 = "a=1&";
         final String data2 = "b=2";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        Session session = startClient(startHTTPServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -305,7 +278,7 @@ public class HTTPOverSPDYTest
                 Assert.assertEquals("2", httpRequest.getParameter("b"));
                 handlerLatch.countDown();
             }
-        }, null);
+        }), null);
 
         Headers headers = new Headers();
         headers.put("method", "POST");
@@ -340,7 +313,7 @@ public class HTTPOverSPDYTest
         final String data1 = "a=1&";
         final String data2 = "b=2";
         final CountDownLatch handlerLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        Session session = startClient(startHTTPServer(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
@@ -352,7 +325,7 @@ public class HTTPOverSPDYTest
                 Assert.assertEquals("2", httpRequest.getParameter("b"));
                 handlerLatch.countDown();
             }
-        }, null);
+        }), null);
 
         Headers headers = new Headers();
         headers.put("method", "POST");

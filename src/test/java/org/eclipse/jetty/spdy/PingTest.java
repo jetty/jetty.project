@@ -43,7 +43,7 @@ public class PingTest extends AbstractTest
                 latch.countDown();
             }
         };
-        Session session = startClient(startServer(null), clientSessionFrameListener);
+        Session session = startClient(startSPDYServer(null), clientSessionFrameListener);
         PingInfo pingInfo = session.ping(SPDY.V2);
         Assert.assertEquals(1, pingInfo.getPingId() % 2);
 
@@ -76,7 +76,7 @@ public class PingTest extends AbstractTest
                 pingLatch.countDown();
             }
         };
-        startClient(startServer(serverSessionFrameListener), null);
+        startClient(startSPDYServer(serverSessionFrameListener), null);
 
         Assert.assertTrue(pingLatch.await(5, TimeUnit.SECONDS));
     }

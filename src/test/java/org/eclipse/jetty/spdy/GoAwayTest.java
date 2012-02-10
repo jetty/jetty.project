@@ -61,7 +61,7 @@ public class GoAwayTest extends AbstractTest
                 latch.countDown();
             }
         };
-        Session session = startClient(startServer(serverSessionFrameListener), null);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), null);
 
         session.syn(SPDY.V2, new SynInfo(true), null);
 
@@ -94,7 +94,7 @@ public class GoAwayTest extends AbstractTest
                 latch.countDown();
             }
         };
-        Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), clientSessionFrameListener);
 
         Stream stream1 = session.syn(SPDY.V2, new SynInfo(true), null);
 
@@ -138,7 +138,7 @@ public class GoAwayTest extends AbstractTest
                 ref.get().syn(SPDY.V2, new SynInfo(true), null);
             }
         };
-        Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), clientSessionFrameListener);
         ref.set(session);
 
         session.syn(SPDY.V2, new SynInfo(true), null);
@@ -190,7 +190,7 @@ public class GoAwayTest extends AbstractTest
                 goAwayLatch.countDown();
             }
         };
-        Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), clientSessionFrameListener);
 
         // First stream is processed ok
         final CountDownLatch reply1Latch = new CountDownLatch(1);

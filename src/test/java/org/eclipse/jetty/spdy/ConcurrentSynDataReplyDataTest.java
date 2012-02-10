@@ -64,7 +64,7 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
                 };
             }
         };
-        final Session session = startClient(startServer(serverSessionFrameListener), null);
+        final Session session = startClient(startSPDYServer(serverSessionFrameListener), null);
 
         final int iterations = 50;
         final int count = 50;

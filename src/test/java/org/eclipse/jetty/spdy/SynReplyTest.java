@@ -65,7 +65,7 @@ public class SynReplyTest extends AbstractTest
             }
         };
 
-        Session session = startClient(startServer(serverSessionFrameListener), null);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), null);
 
         final CountDownLatch streamCreatedLatch = new CountDownLatch(1);
         final CountDownLatch streamRemovedLatch = new CountDownLatch(1);
@@ -154,7 +154,7 @@ public class SynReplyTest extends AbstractTest
             }
         };
 
-        Session session = startClient(startServer(serverSessionFrameListener), null);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), null);
 
         final CountDownLatch streamRemovedLatch = new CountDownLatch(1);
         session.addListener(new Session.StreamListener.Adapter()
@@ -210,7 +210,7 @@ public class SynReplyTest extends AbstractTest
             }
         };
 
-        Session session = startClient(startServer(serverSessionFrameListener), null);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch1 = new CountDownLatch(1);
@@ -318,7 +318,7 @@ public class SynReplyTest extends AbstractTest
             }
         };
 
-        startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
+        startClient(startSPDYServer(serverSessionFrameListener), clientSessionFrameListener);
 
         Assert.assertTrue(synLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
@@ -348,7 +348,7 @@ public class SynReplyTest extends AbstractTest
                 latch.countDown();
             }
         };
-        Session session = startClient(startServer(serverSessionFrameListener), null);
+        Session session = startClient(startSPDYServer(serverSessionFrameListener), null);
 
         Stream stream = session.syn(SPDY.V2, new SynInfo(true), null);
 

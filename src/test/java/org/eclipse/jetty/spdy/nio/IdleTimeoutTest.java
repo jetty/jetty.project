@@ -149,7 +149,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testClientEnforcingIdleTimeout() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        InetSocketAddress address = startServer(new ServerSessionFrameListener.Adapter()
+        InetSocketAddress address = startSPDYServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
             public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
@@ -183,7 +183,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testClientEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(1);
-        InetSocketAddress address = startServer(new ServerSessionFrameListener.Adapter()
+        InetSocketAddress address = startSPDYServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
@@ -211,7 +211,7 @@ public class IdleTimeoutTest extends AbstractTest
     {
         final long maxIdleTime = 1000;
         final CountDownLatch latch = new CountDownLatch(1);
-        InetSocketAddress address = startServer(new ServerSessionFrameListener.Adapter()
+        InetSocketAddress address = startSPDYServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
             public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)

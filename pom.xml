@@ -14,6 +14,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jetty.version>7.6.1-SNAPSHOT</jetty.version>
         <jetty.npn.version>1.0.0-SNAPSHOT</jetty.npn.version>
+        <slf4j.version>1.6.4</slf4j.version>
     </properties>
 
     <build>
@@ -47,7 +48,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.9</version>
+                <version>2.11</version>
                 <configuration>
                     <argLine>
                         -Xbootclasspath/a:${settings.localRepository}/org/eclipse/jetty/jetty-npn-boot/${jetty.npn.version}/jetty-npn-boot-${jetty.npn.version}.jar
@@ -72,7 +73,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.6.4</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -83,7 +84,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.6.1</version>
+            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

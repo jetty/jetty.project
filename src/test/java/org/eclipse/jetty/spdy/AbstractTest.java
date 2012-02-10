@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy;
 
 import java.net.InetSocketAddress;
 
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -49,12 +50,23 @@ public abstract class AbstractTest
     protected SPDYClient.Factory clientFactory;
     protected SPDYServerConnector connector;
 
-    protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
+    protected InetSocketAddress startSPDYServer(ServerSessionFrameListener listener) throws Exception
     {
         server = new Server();
         connector = newSPDYServerConnector(listener);
         connector.setPort(0);
         server.addConnector(connector);
+        server.start();
+        return new InetSocketAddress("localhost", connector.getLocalPort());
+    }
+
+    protected InetSocketAddress startHTTPServer(Handler handler) throws Exception
+    {
+        server = new Server();
+        connector = newSPDYServerConnector(null);
+        connector.setPort(0);
+        server.addConnector(connector);
+        server.setHandler(handler);
         server.start();
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
