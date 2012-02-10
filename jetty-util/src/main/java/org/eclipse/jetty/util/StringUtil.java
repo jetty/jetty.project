@@ -414,6 +414,11 @@ public class StringUtil
         return s.getBytes(__ISO_8859_1_CHARSET);
     }
     
+    public static byte[] getUtf8Bytes(String s)
+    {
+        return s.getBytes(__UTF8_CHARSET);
+    }
+    
     public static byte[] getBytes(String s,String charset)
     {
         try

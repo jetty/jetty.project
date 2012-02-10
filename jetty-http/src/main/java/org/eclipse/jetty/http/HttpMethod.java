@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringMap;
+import org.eclipse.jetty.util.StringUtil;
 
 
 /* ------------------------------------------------------------------------------- */
@@ -44,13 +45,21 @@ public enum HttpMethod
 
     /* ------------------------------------------------------------ */
     private final ByteBuffer _buffer;
+    private final byte[] _bytes;
 
     /* ------------------------------------------------------------ */
     HttpMethod()
     {
-        _buffer=BufferUtil.toBuffer(toString());
+        _bytes=StringUtil.getBytes(toString());
+        _buffer=ByteBuffer.wrap(_bytes);
     }
 
+    /* ------------------------------------------------------------ */
+    public byte[] toBytes()
+    {
+        return _bytes;
+    }
+    
     /* ------------------------------------------------------------ */
     public ByteBuffer toBuffer()
     {

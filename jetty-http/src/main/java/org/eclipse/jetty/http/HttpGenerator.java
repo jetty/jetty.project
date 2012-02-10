@@ -91,9 +91,9 @@ public class HttpGenerator
 
     protected int _status = 0;
     protected HttpVersion _version = HttpVersion.HTTP_1_1;
-    protected  String _reason;
-    protected  String _method;
-    protected  String _uri;
+    protected  byte[] _reason;
+    protected  byte[] _method;
+    protected  byte[] _uri;
 
     protected long _contentWritten = 0;
     protected long _contentLength = HttpTokens.UNKNOWN_CONTENT;
@@ -159,7 +159,6 @@ public class HttpGenerator
         _needCRLF = false;
         _needEOC = false;
         _bufferChunked=false;
-        _method=null;
         _uri=null;
         _noContent=false;
     }
@@ -297,11 +296,24 @@ public class HttpGenerator
      */
     public void setRequest(String method, String uri)
     {
-        _method=method;
-        _uri=uri;
-        if (_version==HttpVersion.HTTP_0_9)
-            _noContent=true;
+        if (_state != State.HEADER)
+            throw new IllegalStateException("STATE!=START "+_state);
+        _method=StringUtil.getBytes(method);
+        _uri=StringUtil.getUtf8Bytes(uri);
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public void setRequest(HttpMethod method, String uri,HttpVersion version)
+    {
+        if (_state != State.HEADER)
+            throw new IllegalStateException("STATE!=START "+_state);
+        _method=method.toBytes();
+        _uri=StringUtil.getUtf8Bytes(uri);
+        setVersion(version);
+    }
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -313,12 +325,16 @@ public class HttpGenerator
         if (_state != State.HEADER) throw new IllegalStateException("STATE!=START");
         _method=null;
         _status = status;
-        _reason=reason;
-        if (_reason!=null)
+        if (reason==null)
+            _reason=null;
+        else
         {
-            if (_reason.length()>1024)
-                _reason=reason.substring(0,1024);
-            _reason=_reason.replace('\r','?').replace('\n','?');
+            if (reason.length()>1024)
+                reason=reason.substring(0,1024);
+            _reason=StringUtil.getBytes(reason);
+            for (int i=_reason.length;i-->0;)
+                if (_reason[i]=='\r' || _reason[i]=='\n')
+                    _reason[i]='?';
         }
     }
 
@@ -618,6 +634,9 @@ public class HttpGenerator
         _last = _last | allContentAdded;
 
 
+        if (isRequest() && _version==HttpVersion.HTTP_0_9)
+            _noContent=true;
+        
         boolean has_server = false;
 
         try
@@ -631,7 +650,7 @@ public class HttpGenerator
                     _contentLength = HttpTokens.NO_CONTENT;
                     buffer.put(_method);
                     buffer.put((byte)' ');
-                    buffer.put(_uri.getBytes("UTF-8")); // TODO check
+                    buffer.put(_uri); 
                     buffer.put(HttpTokens.CRLF);
                     _state = State.FLUSHING;
                     _noContent=true;
@@ -641,7 +660,7 @@ public class HttpGenerator
                 {
                     buffer.put(_method);
                     buffer.put((byte)' ');
-                    buffer.put(_uri.getBytes("UTF-8")); // TODO check
+                    buffer.put(_uri); 
                     buffer.put((byte)' ');
                     buffer.put((_version==HttpVersion.HTTP_1_0?HttpVersion.HTTP_1_0:HttpVersion.HTTP_1_1).toBytes());
                     buffer.put(HttpTokens.CRLF);
@@ -697,10 +716,6 @@ public class HttpGenerator
                     if (_status<200 && _status>=100 )
                     {
                         _noContent=true;
-                        _content=null;
-                        if (_buffer!=null)
-                            _buffer.clear();
-                        // end the header.
 
                         if (_status!=101 )
                         {
@@ -712,9 +727,6 @@ public class HttpGenerator
                     else if (_status==204 || _status==304)
                     {
                         _noContent=true;
-                        _content=null;
-                        if (_buffer!=null)
-                            _buffer.clear();
                     }
                 }
             }
@@ -922,7 +934,7 @@ public class HttpGenerator
                     else
                     {
                         // No idea, so we must assume that a body is coming
-                        _contentLength = (!_persistent || _version < HttpVersion.HTTP_1_1_ORDINAL ) ? HttpTokens.EOF_CONTENT : HttpTokens.CHUNKED_CONTENT;
+                        _contentLength = (!_persistent || _version.ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? HttpTokens.EOF_CONTENT : HttpTokens.CHUNKED_CONTENT;
                         if (isRequest() && _contentLength==HttpTokens.EOF_CONTENT)
                         {
                             _contentLength=HttpTokens.NO_CONTENT;
@@ -952,10 +964,10 @@ public class HttpGenerator
             if (_contentLength == HttpTokens.CHUNKED_CONTENT)
             {
                 // try to use user supplied encoding as it may have other values.
-                if (transfer_encoding != null && HttpHeaderValue.CHUNKED_ORDINAL != transfer_encoding.getValueOrdinal())
+                if (transfer_encoding != null && !HttpHeaderValue.CHUNKED.toString().equalsIgnoreCase(transfer_encoding.getValue()))
                 {
                     String c = transfer_encoding.getValue();
-                    if (c.endsWith(HttpHeaderValue.CHUNKED))
+                    if (c.endsWith(HttpHeaderValue.CHUNKED.toString()))
                         transfer_encoding.putTo(buffer);
                     else
                         throw new IllegalArgumentException("BAD TE");
@@ -973,12 +985,13 @@ public class HttpGenerator
 
             if (isResponse())
             {
-                if (!_persistent && (close || _version > HttpVersion.HTTP_1_0_ORDINAL))
+                if (!_persistent && (close || _version.ordinal() > HttpVersion.HTTP_1_0.ordinal()))
                 {
-                    buffer.put(CONNECTION_CLOSE);
-                    if (connection!=null)
+                    if (connection==null)
+                        buffer.put(CONNECTION_CLOSE);
+                    else
                     {
-                        buffer.setPutIndex(buffer.putIndex()-2);
+                        buffer.put(CONNECTION_CLOSE,0,CONNECTION_CLOSE.length-2);
                         buffer.put((byte)',');
                         buffer.put(connection.toString().getBytes());
                         buffer.put(CRLF);
@@ -986,10 +999,11 @@ public class HttpGenerator
                 }
                 else if (keep_alive)
                 {
-                    buffer.put(CONNECTION_KEEP_ALIVE);
-                    if (connection!=null)
+                    if (connection==null)
+                        buffer.put(CONNECTION_KEEP_ALIVE);
+                    else
                     {
-                        buffer.setPutIndex(buffer.putIndex()-2);
+                        buffer.put(CONNECTION_KEEP_ALIVE,0,CONNECTION_CLOSE.length-2);
                         buffer.put((byte)',');
                         buffer.put(connection.toString().getBytes());
                         buffer.put(CRLF);

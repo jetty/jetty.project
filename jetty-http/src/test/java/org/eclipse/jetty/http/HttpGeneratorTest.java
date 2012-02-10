@@ -24,6 +24,7 @@ import javax.swing.text.View;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
 
 /**
@@ -40,22 +41,40 @@ public class HttpGeneratorTest
     @Test
     public void testRequest() throws Exception
     {
-        ByteBuffer bb=new ByteArrayBuffer(8096);
-        ByteBuffer sb=new ByteArrayBuffer(1500);
+        ByteBuffer header=BufferUtil.allocate(8096);
         HttpFields fields = new HttpFields();
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator hg = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
+        HttpGenerator hg = new HttpGenerator();
 
         fields.add("Host","something");
         fields.add("User-Agent","test");
 
-        hg.setRequest("GET","/index.html");
-        hg.setVersion(11);
-        hg.completeHeader(fields,true);
+        hg.setRequest(HttpMethod.GET,"/index.html",HttpVersion.HTTP_1_1);
+        hg.completeHeader(header,fields,true);
         hg.complete();
 
-        assertTrue(endp.getOut().toString().indexOf("GET /index.html HTTP/1.1")==0);
-        assertTrue(endp.getOut().toString().indexOf("Content-Length")==-1);
+        String out = BufferUtil.toString(header);
+        assertTrue(out.indexOf("GET /index.html HTTP/1.1")==0);
+        assertTrue(out.indexOf("Content-Length")==-1);
+    }
+    
+    @Test
+    public void testRequestWithContent() throws Exception
+    {
+        ByteBuffer header=BufferUtil.allocate(8096);
+        HttpFields fields = new HttpFields();
+        HttpGenerator hg = new HttpGenerator();
+
+        hg.setRequest("GET","/index.html");
+        fields.add("Host","something");
+        fields.add("User-Agent","test");
+
+        hg.setVersion(HttpVersion.HTTP_1_1);
+        hg.completeHeader(header,fields,true);
+        hg.complete();
+
+        String out = BufferUtil.toString(header);
+        assertTrue(out.indexOf("GET /index.html HTTP/1.1")==0);
+        assertTrue(out.indexOf("Content-Length")==-1);
     }
 
     @Test
