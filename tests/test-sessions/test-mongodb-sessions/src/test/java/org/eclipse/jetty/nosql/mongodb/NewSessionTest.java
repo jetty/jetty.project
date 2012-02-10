@@ -13,22 +13,25 @@ package org.eclipse.jetty.nosql.mongodb;
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-import org.eclipse.jetty.server.session.AbstractServerCrossContextSessionTest;
+import org.eclipse.jetty.server.session.AbstractNewSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class ServerCrossContextSessionTest extends AbstractServerCrossContextSessionTest
+/**
+ * NewSessionTest
+ */
+public class NewSessionTest extends AbstractNewSessionTest
 {
-    public AbstractTestServer createServer(int port)
+
+    public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new MongoTestServer(port);
+        return new MongoTestServer(port,max,scavenge);
     }
 
     @Test
-    @Ignore ("requires mongodb server")
-    public void testCrossContextDispatch() throws Exception
+    public void testNewSession() throws Exception
     {
-        super.testCrossContextDispatch();
+        super.testNewSession();
     }
 }

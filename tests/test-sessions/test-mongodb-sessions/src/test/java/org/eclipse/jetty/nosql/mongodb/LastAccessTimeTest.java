@@ -26,7 +26,6 @@ public class LastAccessTimeTest extends AbstractLastAccessTimeTest
     }
 
     @Test
-    @Ignore ("requires mongodb server")
     public void testLastAccessTime() throws Exception
     {
         super.testLastAccessTime();
