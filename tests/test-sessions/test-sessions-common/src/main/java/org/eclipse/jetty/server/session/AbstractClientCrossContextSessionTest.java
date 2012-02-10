@@ -81,7 +81,8 @@ public abstract class AbstractClientCrossContextSessionTest
                 ContentExchange exchangeB = new ContentExchange(true);
                 exchangeB.setMethod(HttpMethods.GET);
                 exchangeB.setURL("http://localhost:" + port + contextB + servletMapping);
-                exchangeB.getRequestFields().add("Cookie", sessionCookie);
+                System.err.println("Cookie = "+sessionCookie);
+                exchangeB.getRequestFields().add("Cookie", sessionCookie);  
                 client.send(exchangeB);
                 exchangeB.waitForDone();
                 assertEquals(HttpServletResponse.SC_OK,exchangeB.getResponseStatus());
