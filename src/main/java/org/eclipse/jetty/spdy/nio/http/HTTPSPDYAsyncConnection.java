@@ -40,7 +40,6 @@ import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -54,7 +53,9 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
     private static final Logger logger = LoggerFactory.getLogger(HTTPSPDYAsyncConnection.class);
     private final SPDYAsyncConnection connection;
     private final Stream stream;
+    private Headers headers;
     private NIOBuffer buffer;
+    private boolean complete;
     private volatile State state = State.INITIAL;
 
     public HTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
@@ -86,7 +87,108 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
     @Override
     public Connection handle() throws IOException
     {
-        return this;
+        setCurrentConnection(this);
+        try
+        {
+            switch (state)
+            {
+                case INITIAL:
+                {
+                    break;
+                }
+                case REQUEST:
+                {
+                    Headers.Header method = headers.get("method");
+                    Headers.Header uri = headers.get("url");
+                    Headers.Header version = headers.get("version");
+
+                    if (method == null || uri == null || version == null)
+                        throw new HttpException(HttpStatus.BAD_REQUEST_400);
+
+                    String m = method.value();
+                    String u = uri.value();
+                    String v = version.value();
+                    logger.debug("HTTP {} {} {}", new Object[]{m, u, v});
+                    startRequest(new ByteArrayBuffer(m), new ByteArrayBuffer(u), new ByteArrayBuffer(v));
+
+                    state = State.HEADERS;
+                    handle();
+                    break;
+                }
+                case HEADERS:
+                {
+                    for (Headers.Header header : headers)
+                    {
+                        String name = header.name();
+                        switch (name)
+                        {
+                            case "method":
+                            case "version":
+                            {
+                                // Skip request line headers
+                                continue;
+                            }
+                            case "url":
+                            {
+                                // Mangle the URL if the host header is missing
+                                String host = parseHost(header.value());
+                                // Jetty needs the host header, although HTTP 1.1 does not
+                                // require it if it can be parsed from an absolute URI
+                                if (host != null)
+                                {
+                                    logger.debug("HTTP {}: {}", "host", host);
+                                    parsedHeader(new ByteArrayBuffer("host"), new ByteArrayBuffer(host));
+                                }
+                                break;
+                            }
+                            case "connection":
+                            case "keep-alive":
+                            case "host":
+                            {
+                                // Spec says to ignore these headers
+                                continue;
+                            }
+                            default:
+                            {
+                                // Spec says headers must be single valued
+                                String value = header.value();
+                                logger.debug("HTTP {}: {}", name, value);
+                                parsedHeader(new ByteArrayBuffer(name), new ByteArrayBuffer(value));
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case HEADERS_COMPLETE:
+                {
+                    headerComplete();
+                    break;
+                }
+                case CONTENT:
+                {
+                    final Buffer buffer = this.buffer;
+                    if (buffer.length() > 0)
+                        content(buffer);
+                    break;
+                }
+                case FINAL:
+                {
+                    // TODO: compute content-length parameter
+                    messageComplete(0);
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+            return this;
+        }
+        finally
+        {
+            setCurrentConnection(null);
+        }
     }
 
     @Override
@@ -97,189 +199,91 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
 
     public void beginRequest(Headers headers) throws IOException
     {
-        switch (state)
+        if (!headers.isEmpty())
         {
-            case INITIAL:
-            {
-                if (!headers.isEmpty())
-                {
-                    Headers.Header method = headers.get("method");
-                    Headers.Header uri = headers.get("url");
-                    Headers.Header version = headers.get("version");
-
-                    if (method == null || uri == null || version == null)
-                        throw new HttpException(HttpStatus.BAD_REQUEST_400);
-
-                    state = State.REQUEST;
-
-                    String m = method.value();
-                    String u = uri.value();
-                    String v = version.value();
-                    logger.debug("HTTP {} {} {}", new Object[]{m, u, v});
-                    startRequest(new ByteArrayBuffer(m), new ByteArrayBuffer(u), new ByteArrayBuffer(v));
-                    headers(headers);
-                }
-                break;
-            }
-            default:
-            {
-                throw new IllegalStateException();
-            }
+            this.headers = headers;
+            state = State.REQUEST;
         }
+        handle();
     }
 
     public void headers(Headers headers) throws IOException
     {
-        switch (state)
-        {
-            case INITIAL:
-            {
-                if (headers.isEmpty())
-                    throw new HttpException(HttpStatus.BAD_REQUEST_400);
-                beginRequest(headers);
-                break;
-            }
-            case REQUEST:
-            {
-                for (Headers.Header header : headers)
-                {
-                    String name = header.name();
-                    switch (name)
-                    {
-                        case "method":
-                        case "version":
-                            // Skip request line headers
-                            continue;
-                        case "url":
-                            // Mangle the URL if the host header is missing
-                            String host = parseHost(header.value());
-                            // Jetty needs the host header, although HTTP 1.1 does not
-                            // require it if it can be parsed from an absolute URI
-                            if (host != null)
-                                parsedHeader(new ByteArrayBuffer("host"), new ByteArrayBuffer(host));
-                            break;
-                        case "connection":
-                        case "keep-alive":
-                        case "host":
-                            // Spec says to ignore these headers
-                            continue;
-                        default:
-                            // Spec says headers must be single valued
-                            String value = header.value();
-                            logger.debug("HTTP {}: {}", name, value);
-                            parsedHeader(new ByteArrayBuffer(name), new ByteArrayBuffer(value));
-                            break;
-                    }
-                }
-                break;
-            }
-        }
+        this.headers = headers;
+        state = state == State.INITIAL ? State.REQUEST : State.HEADERS;
+        handle();
     }
 
     public void content(ByteBuffer byteBuffer, boolean endRequest) throws IOException
     {
-        switch (state)
+        buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
+        complete = endRequest;
+        logger.debug("HTTP {} bytes of content", buffer.length());
+        if (state == State.HEADERS)
         {
-            case REQUEST:
-            {
-                buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
-                state = endRequest ? State.FINAL : State.CONTENT;
-                logger.debug("Accumulated first {} content bytes", byteBuffer.remaining());
-                headerComplete();
-                content(buffer);
-                break;
-            }
-            case CONTENT:
-            {
-                buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
-                state = endRequest ? State.FINAL : State.CONTENT;
-                logger.debug("Accumulated {} content bytes", byteBuffer.remaining());
-                content(buffer);
-                break;
-            }
-            default:
-            {
-                throw new IllegalStateException();
-            }
+            state = State.HEADERS_COMPLETE;
+            handle();
         }
-    }
-
-    private Buffer consumeContent(long maxIdleTime) throws IOException
-    {
-        switch (state)
-        {
-            case CONTENT:
-            {
-                Buffer buffer = this.buffer;
-                logger.debug("Consuming {} content bytes", buffer.length());
-                if (buffer.length() > 0)
-                    return buffer;
-
-                while (true)
-                {
-                    // We need to parse more bytes; this may change the state
-                    // (for example to FINAL state) and change the buffer field
-                    connection.fill();
-
-                    if (state != State.CONTENT)
-                    {
-                        return consumeContent(maxIdleTime);
-                    }
-
-                    // Read again the buffer field, it may have changed by fill() above
-                    buffer = this.buffer;
-                    logger.debug("Consuming {} content bytes", buffer.length());
-                    if (buffer.length() > 0)
-                        return buffer;
-
-                    // Wait for content
-                    logger.debug("Waiting {} ms for content bytes", maxIdleTime);
-                    long begin = System.nanoTime();
-                    boolean expired = !connection.getEndPoint().blockReadable(maxIdleTime);
-                    if (expired)
-                    {
-                        stream.getSession().goAway(stream.getVersion());
-                        throw new EOFException("read timeout");
-                    }
-                    logger.debug("Waited {} ms for content bytes", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin));
-                }
-            }
-            case FINAL:
-            {
-                Buffer buffer = this.buffer;
-                logger.debug("Consuming {} content bytes", buffer.length());
-                if (buffer.length() > 0)
-                    return buffer;
-                return null;
-            }
-            default:
-            {
-                throw new IllegalStateException();
-            }
-        }
+        state = State.CONTENT;
+        handle();
     }
 
     public void endRequest() throws IOException
     {
-        switch (state)
+        if (state == State.HEADERS)
         {
-            case REQUEST:
-            {
-                state = State.FINAL;
-                headerComplete();
-                endRequest();
-                break;
-            }
-            case FINAL:
-            {
-                messageComplete(0);
-                break;
-            }
-            default:
-            {
-                throw new IllegalStateException();
-            }
+            state = State.HEADERS_COMPLETE;
+            handle();
         }
+        state = State.FINAL;
+        handle();
+    }
+
+    private Buffer consumeContent(long maxIdleTime) throws IOException
+    {
+        boolean filled = false;
+        while (true)
+        {
+            State state = this.state;
+            if (state != State.HEADERS_COMPLETE && state != State.CONTENT && state != State.FINAL)
+                throw new IllegalStateException();
+
+            Buffer buffer = this.buffer;
+            logger.debug("Consuming {} content bytes", buffer.length());
+            if (buffer.length() > 0)
+                return buffer;
+
+            if (complete)
+                return null;
+
+            if (filled)
+            {
+                // Wait for content
+                logger.debug("Waiting at most {} ms for content bytes", maxIdleTime);
+                long begin = System.nanoTime();
+                boolean expired = !connection.getEndPoint().blockReadable(maxIdleTime);
+                if (expired)
+                {
+                    stream.getSession().goAway(stream.getVersion());
+                    throw new EOFException("read timeout");
+                }
+                logger.debug("Waited {} ms for content bytes", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin));
+            }
+
+            // We need to parse more bytes; this may change the state
+            // therefore we need to re-read the fields
+            connection.fill();
+            filled = true;
+        }
+    }
+
+    private int availableContent()
+    {
+        // Volatile read to ensure visibility
+        State state = this.state;
+        if (state != State.HEADERS_COMPLETE && state != State.CONTENT)
+            throw new IllegalStateException();
+        return buffer.length();
     }
 
     private String parseHost(String url)
@@ -297,7 +301,7 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
 
     private enum State
     {
-        INITIAL, REQUEST, CONTENT, FINAL
+        INITIAL, REQUEST, HEADERS, HEADERS_COMPLETE, CONTENT, FINAL
     }
 
     /**
@@ -321,7 +325,7 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
         @Override
         public int available() throws IOException
         {
-            return super.available();
+            return availableContent();
         }
     }
 
@@ -390,7 +394,7 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
         public void addContent(Buffer content, boolean last) throws IOException
         {
             // TODO
-            System.out.println("SIMON");
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -399,16 +403,4 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
             // Nothing to do
         }
     }
-
-    /**
-     * Needed only to please the compiler
-     */
-    private static class HTTPSPDYRequest extends Request
-    {
-        private void setConnection(HTTPSPDYAsyncConnection connection)
-        {
-            super.setConnection(connection);
-        }
-    }
 }
-
