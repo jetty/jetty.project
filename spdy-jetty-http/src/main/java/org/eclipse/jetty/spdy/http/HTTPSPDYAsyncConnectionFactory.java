@@ -35,12 +35,12 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTPOverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
+public class HTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
 {
-    private static final Logger logger = LoggerFactory.getLogger(HTTPOverSPDYAsyncConnectionFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(HTTPSPDYAsyncConnectionFactory.class);
     private final Connector connector;
 
-    public HTTPOverSPDYAsyncConnectionFactory(Connector connector)
+    public HTTPSPDYAsyncConnectionFactory(Connector connector)
     {
         this.connector = connector;
     }
@@ -95,9 +95,6 @@ public class HTTPOverSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectio
                     }
                     else
                     {
-                        // TODO
-//                        if (headers.names().contains("expect"))
-//                            forwardHeadersComplete(stream);
                         return this;
                     }
                 }

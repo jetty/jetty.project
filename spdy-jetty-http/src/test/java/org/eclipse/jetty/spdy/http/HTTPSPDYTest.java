@@ -48,7 +48,7 @@ import org.junit.Test;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 
-public class HTTPOverSPDYTest
+public class HTTPSPDYTest
 {
     @Rule
     public final TestWatchman testName = new TestWatchman()

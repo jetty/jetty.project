@@ -7,10 +7,25 @@
         <artifactId>spdy-project</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
+    <modelVersion>4.0.0</modelVersion>
     <artifactId>spdy-jetty</artifactId>
     <name>SPDY :: Jetty Binding</name>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.11</version>
+                <configuration>
+                    <argLine>
+                        -Xbootclasspath/a:${settings.localRepository}/org/eclipse/jetty/jetty-npn-boot/${npn.version}/jetty-npn-boot-${npn.version}.jar
+                        -javaagent:${settings.localRepository}/org/eclipse/jetty/jetty-npn-agent/${npn.version}/jetty-npn-agent-${npn.version}.jar
+                    </argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -19,8 +34,24 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-npn-boot</artifactId>
+            <version>${npn.version}</version>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -12,38 +12,7 @@
     <artifactId>spdy-core</artifactId>
     <name>SPDY :: Core</name>
 
-    <properties>
-        <jetty.version>7.6.1-SNAPSHOT</jetty.version>
-        <jetty.npn.version>1.0.0-SNAPSHOT</jetty.npn.version>
-        <slf4j.version>1.6.4</slf4j.version>
-    </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.11</version>
-                <configuration>
-                    <argLine>
-                        -Xbootclasspath/a:${settings.localRepository}/org/eclipse/jetty/jetty-npn-boot/${jetty.npn.version}/jetty-npn-boot-${jetty.npn.version}.jar
-                        -javaagent:${settings.localRepository}/org/eclipse/jetty/jetty-npn-agent/${jetty.npn.version}/jetty-npn-agent-${jetty.npn.version}.jar
-                    </argLine>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
     <dependencies>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>${jetty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-npn-boot</artifactId>
-            <version>${jetty.npn.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

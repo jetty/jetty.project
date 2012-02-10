@@ -42,6 +42,7 @@ import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYAsyncConnection;
+import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -393,8 +394,8 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
         @Override
         public void addContent(Buffer content, boolean last) throws IOException
         {
-            // TODO
-            throw new UnsupportedOperationException();
+            ByteBuffer buffer = ByteBuffer.wrap(content.asArray());
+            stream.data(new ByteBufferDataInfo(buffer, last));
         }
 
         @Override

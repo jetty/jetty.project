@@ -23,6 +23,6 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
     public HTTPSPDYServerConnector()
     {
         super(null);
-        putAsyncConnectionFactory("spdy/2", new HTTPOverSPDYAsyncConnectionFactory(this));
+        putAsyncConnectionFactory("spdy/2", new HTTPSPDYAsyncConnectionFactory(this));
     }
 }
