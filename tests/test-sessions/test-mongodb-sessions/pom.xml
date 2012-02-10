@@ -23,7 +23,7 @@
     <artifactId>test-sessions-parent</artifactId>
     <version>7.6.1-SNAPSHOT</version>
   </parent>
-  <artifactId>test-mongo-sessions</artifactId>
+  <artifactId>test-mongodb-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Mongo</name>
   <build>
     <plugins>
