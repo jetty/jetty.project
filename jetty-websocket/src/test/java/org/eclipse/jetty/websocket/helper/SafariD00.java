@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 
 public class SafariD00
@@ -45,6 +46,10 @@ public class SafariD00
 
     public SafariD00(URI uri)
     {
+        if (LOG instanceof StdErrLog)
+        {
+            ((StdErrLog)LOG).setLevel(StdErrLog.LEVEL_DEBUG);
+        }
         this.uri = uri;
         this.endpoint = new InetSocketAddress(uri.getHost(),uri.getPort());
     }
@@ -69,7 +74,7 @@ public class SafariD00
     }
 
     /**
-     * Issue an Http websocket (Draft-0) upgrade request using the Safari particulars.
+     * Issue an Http websocket (Draft-0) upgrade request (using an example request captured from OSX/Safari)
      *
      * @throws UnsupportedEncodingException
      */
@@ -120,6 +125,7 @@ public class SafariD00
         // Read expected handshake hixie bytes
         byte hixieHandshakeExpected[] = TypeUtil.fromHexString("c7438d956cf611a6af70603e6fa54809");
         byte hixieHandshake[] = new byte[hixieHandshakeExpected.length];
+        Assert.assertThat("Hixie handshake buffer size", hixieHandshake.length, is(16));
 
         LOG.debug("Reading hixie handshake bytes");
         int readLen = in.read(hixieHandshake,0,hixieHandshake.length);
