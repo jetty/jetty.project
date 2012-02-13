@@ -56,7 +56,7 @@ public class SafariD00
 
     /**
      * Open the Socket to the destination endpoint and
-     *
+     * 
      * @return the open java Socket.
      * @throws IOException
      */
@@ -75,7 +75,7 @@ public class SafariD00
 
     /**
      * Issue an Http websocket (Draft-0) upgrade request (using an example request captured from OSX/Safari)
-     *
+     * 
      * @throws UnsupportedEncodingException
      */
     public void issueHandshake() throws IOException
@@ -125,11 +125,19 @@ public class SafariD00
         // Read expected handshake hixie bytes
         byte hixieHandshakeExpected[] = TypeUtil.fromHexString("c7438d956cf611a6af70603e6fa54809");
         byte hixieHandshake[] = new byte[hixieHandshakeExpected.length];
-        Assert.assertThat("Hixie handshake buffer size", hixieHandshake.length, is(16));
+        Assert.assertThat("Hixie handshake buffer size",hixieHandshake.length,is(16));
 
         LOG.debug("Reading hixie handshake bytes");
-        int readLen = in.read(hixieHandshake,0,hixieHandshake.length);
-        Assert.assertThat("Read hixie handshake bytes",readLen,is(hixieHandshake.length));
+        int bytesRead = 0;
+        while (bytesRead < hixieHandshake.length)
+        {
+            int val = in.read();
+            if (val >= 0)
+            {
+                hixieHandshake[bytesRead++] = (byte)val;
+            }
+        }
+        Assert.assertThat("Read hixie handshake bytes",bytesRead,is(hixieHandshake.length));
     }
 
     public void sendMessage(String... msgs) throws IOException
