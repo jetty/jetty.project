@@ -287,6 +287,26 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
         return buffer.length();
     }
 
+    @Override
+    public void commitResponse(boolean last) throws IOException
+    {
+        // Keep the original behavior since it just delegates to the generator
+        super.commitResponse(last);
+    }
+
+    @Override
+    public void flushResponse() throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void completeResponse() throws IOException
+    {
+        // Keep the original behavior since it just delegates to the generator
+        super.completeResponse();
+    }
+
     private String parseHost(String url)
     {
         try
@@ -365,10 +385,19 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
         @Override
         public void send1xx(int code) throws IOException
         {
-            Headers headers = new Headers();
-            headers.put("status", String.valueOf(code));
-            headers.put("version", "HTTP/1.1");
-            stream.reply(new ReplyInfo(headers, false));
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void sendResponse(Buffer response) throws IOException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void sendError(int code, String reason, String content, boolean close) throws IOException
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -388,20 +417,58 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
                     headers.put(field.getName(), field.getValue());
                 }
             }
-            stream.reply(new ReplyInfo(headers, allContentAdded));
+
+            // We have to query the HttpGenerator and its _buffer to know
+            // whether there is content buffered; if so, send the data frame
+            boolean close = _buffer == null || _buffer.length() == 0;
+            stream.reply(new ReplyInfo(headers, close));
+            if (!close)
+            {
+                ByteBuffer buffer = ((NIOBuffer)_buffer).getByteBuffer();
+                buffer.limit(_buffer.putIndex());
+                buffer.position(_buffer.getIndex());
+                // Update HttpGenerator fields so that they remain consistent
+                _buffer.clear();
+                _state = HttpGenerator.STATE_CONTENT;
+                // Send the data frame
+                stream.data(new ByteBufferDataInfo(buffer, allContentAdded));
+            }
+        }
+
+        @Override
+        public boolean addContent(byte b) throws IOException
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void addContent(Buffer content, boolean last) throws IOException
         {
-            ByteBuffer buffer = ByteBuffer.wrap(content.asArray());
-            stream.data(new ByteBufferDataInfo(buffer, last));
+
+            // TODO: we need to avoid that the HttpParser chunks the content
+            // otherwise we're sending bad data... so perhaps we need to do our own buffering here
+
+            // Keep the original behavior since adding content will
+            // just accumulate bytes until the response is committed.
+            super.addContent(content, last);
+        }
+
+        @Override
+        public int flushBuffer() throws IOException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void blockForOutput(long maxIdleTime) throws IOException
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public void complete() throws IOException
         {
-            // Nothing to do
+            throw new UnsupportedOperationException();
         }
     }
 }
