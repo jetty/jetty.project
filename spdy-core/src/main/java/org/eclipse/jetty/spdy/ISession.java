@@ -28,15 +28,17 @@ public interface ISession extends Session
 
     public void data(IStream stream, DataInfo dataInfo);
 
-    public interface Controller
+    public int getWindowSize();
+
+    public interface Controller<T>
     {
-        public int write(ByteBuffer buffer, Handler handler);
+        public int write(ByteBuffer buffer, Handler<T> handler, T context);
 
         public void close(boolean onlyOutput);
 
-        public interface Handler
+        public interface Handler<C>
         {
-            public void complete();
+            public void complete(C context);
         }
     }
 }

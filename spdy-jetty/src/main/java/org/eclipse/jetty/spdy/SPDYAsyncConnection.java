@@ -35,14 +35,15 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SPDYAsyncConnection extends AbstractConnection implements AsyncConnection, Controller
+public class SPDYAsyncConnection extends AbstractConnection implements AsyncConnection, Controller<StandardSession.FrameBytes>
 {
     private static final Logger logger = LoggerFactory.getLogger(SPDYAsyncConnection.class);
     private final Parser parser;
     private volatile Session session;
     private ByteBuffer readBuffer;
     private ByteBuffer writeBuffer;
-    private Handler writeHandler;
+    private Handler<StandardSession.FrameBytes> writeHandler;
+    private StandardSession.FrameBytes writeContext;
     private volatile boolean writePending;
 
     public SPDYAsyncConnection(AsyncEndPoint endPoint, Parser parser)
@@ -93,7 +94,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
         if (readBuffer == null)
         {
             // TODO: use buffer pool ?
-            NIOBuffer jettyBuffer = new DirectNIOBuffer(1024);
+            NIOBuffer jettyBuffer = new DirectNIOBuffer(4096);
             AsyncEndPoint endPoint = getEndPoint();
             filled = endPoint.fill(jettyBuffer);
             logger.debug("Filled {} from {}", filled, endPoint);
@@ -115,13 +116,13 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
         int result = 0;
         // Volatile read to ensure visibility of buffer and handler
         if (writePending)
-            result = write(writeBuffer, writeHandler);
+            result = write(writeBuffer, writeHandler, writeContext);
         logger.debug("Flushed {} to {}", result, getEndPoint());
         return result;
     }
 
     @Override
-    public int write(ByteBuffer buffer, ISession.Controller.Handler handler)
+    public int write(ByteBuffer buffer, ISession.Controller.Handler<StandardSession.FrameBytes> handler, StandardSession.FrameBytes context)
     {
         int remaining = buffer.remaining();
         Buffer jettyBuffer = buffer.isDirect() ? new DirectNIOBuffer(buffer, false) : new IndirectNIOBuffer(buffer, false);
@@ -129,7 +130,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
         try
         {
             int written = endPoint.flush(jettyBuffer);
-            logger.debug("Written {} bytes", written);
+            logger.debug("Written {} bytes, {} remaining", written, jettyBuffer.length());
         }
         catch (IOException x)
         {
@@ -147,7 +148,8 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
             // Save buffer and handler in order to finish the write later in flush()
             this.writeBuffer = buffer;
             this.writeHandler = handler;
-            // Volatile write to ensure visibility of buffer and handler
+            this.writeContext = context;
+            // Volatile write to ensure visibility of write fields
             writePending = true;
             endPoint.scheduleWrite();
         }
@@ -157,10 +159,11 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
             {
                 this.writeBuffer = null;
                 this.writeHandler = null;
-                // Volatile write to ensure visibility of buffer and handler
+                this.writeContext = null;
+                // Volatile write to ensure visibility of write fields
                 writePending = false;
             }
-            handler.complete();
+            handler.complete(context);
         }
 
         return remaining - buffer.remaining();

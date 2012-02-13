@@ -42,9 +42,9 @@ public class StandardStream implements IStream
 {
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
-    private final AtomicInteger windowSize = new AtomicInteger(65535);
     private final ISession session;
     private final SynStreamFrame frame;
+    private final AtomicInteger windowSize;
     private volatile FrameListener frameListener;
     private volatile boolean opened;
     private volatile boolean halfClosed;
@@ -54,6 +54,7 @@ public class StandardStream implements IStream
     {
         this.session = session;
         this.frame = frame;
+        this.windowSize = new AtomicInteger(session.getWindowSize());
         this.halfClosed = frame.isClose();
     }
 
@@ -85,7 +86,7 @@ public class StandardStream implements IStream
     public void updateWindowSize(int delta)
     {
         int size = windowSize.addAndGet(delta);
-        logger.debug("Updated window size by {}, new size {}", delta, size);
+        logger.debug("Updated window size by {}, new window size {}", delta, size);
     }
 
     @Override
@@ -287,7 +288,8 @@ public class StandardStream implements IStream
     @Override
     public void data(DataInfo dataInfo)
     {
-        updateCloseState(dataInfo.isClose());
+        // Cannot update the close state here, because the data that we send may
+        // be flow controlled, so we need the stream to update the window size.
         session.data(this, dataInfo);
     }
 

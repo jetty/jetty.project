@@ -55,13 +55,13 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StandardSession implements ISession, Parser.Listener, ISession.Controller.Handler
+public class StandardSession implements ISession, Parser.Listener, ISession.Controller.Handler<StandardSession.FrameBytes>
 {
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final Queue<FrameBytes> queue = new LinkedList<>();
-    private final Controller controller;
+    private final Controller<FrameBytes> controller;
     private final AtomicInteger streamIds;
     private final AtomicInteger pingIds;
     private final FrameListener frameListener;
@@ -71,7 +71,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     private volatile int lastStreamId;
     private boolean flushing;
 
-    public StandardSession(Controller controller, int initialStreamId, FrameListener frameListener, Generator generator)
+    public StandardSession(Controller<FrameBytes> controller, int initialStreamId, FrameListener frameListener, Generator generator)
     {
         this.controller = controller;
         this.streamIds = new AtomicInteger(initialStreamId);
@@ -616,31 +616,40 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
+    public int getWindowSize()
+    {
+        // TODO: make this configurable through SETTINGS frame
+        return 65535;
+    }
+
+    @Override
     public void flush()
     {
         FrameBytes frameBytes;
+        ByteBuffer buffer;
         synchronized (queue)
         {
             if (flushing)
                 return;
+
             frameBytes = queue.poll();
             if (frameBytes == null)
                 return;
+
+            buffer = frameBytes.getByteBuffer();
+            if (buffer == null)
+            {
+                enqueue(frameBytes);
+                logger.debug("Flush skipped, {} frame(s) in queue", queue.size());
+                return;
+            }
+
             flushing = true;
             logger.debug("Flushing {}, {} frame(s) in queue", frameBytes, queue.size());
         }
 
-        ByteBuffer buffer = frameBytes.getByteBuffer();
-        if (buffer == null)
-        {
-            enqueue(frameBytes);
-            return;
-        }
-
         logger.debug("Writing {} frame bytes of {}", buffer.remaining(), frameBytes);
-        write(buffer, this);
-
-        frameBytes.complete();
+        write(buffer, this, frameBytes);
     }
 
     private void enqueue(FrameBytes frameBytes)
@@ -653,21 +662,23 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public void complete()
+    public void complete(FrameBytes context)
     {
+        logger.debug("Completed write of {}, {} frame(s) in queue", context, queue.size());
         synchronized (queue)
         {
             flushing = false;
         }
+        context.complete();
         flush();
     }
 
-    protected void write(final ByteBuffer buffer, Controller.Handler handler)
+    protected void write(final ByteBuffer buffer, Controller.Handler<FrameBytes> handler, FrameBytes frameBytes)
     {
-        controller.write(buffer, handler);
+        controller.write(buffer, handler, frameBytes);
     }
 
-    private abstract class FrameBytes
+    protected abstract static class FrameBytes
     {
         protected abstract ByteBuffer getByteBuffer();
 
@@ -745,6 +756,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
             }
             else
             {
+                stream.updateCloseState(data.isClose());
                 if (stream.isClosed())
                     removeStream(stream);
             }
