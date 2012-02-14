@@ -16,7 +16,7 @@
 
 package org.eclipse.jetty.spdy.http;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -47,13 +48,12 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 
-public class HTTPSPDYTest
+public class ServerHTTPSPDYTest
 {
     @Rule
     public final TestWatchman testName = new TestWatchman()
@@ -118,53 +118,6 @@ public class HTTPSPDYTest
             server.stop();
             server.join();
         }
-    }
-
-    @Ignore
-    @Test
-    public void test100Continue() throws Exception
-    {
-        final String data = "data";
-        Session session = startClient(startHTTPServer(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
-            {
-                request.setHandled(true);
-                httpResponse.sendError(100);
-
-                BufferedReader reader = httpRequest.getReader();
-                String read = reader.readLine();
-                Assert.assertEquals(data, read);
-                Assert.assertNull(reader.readLine());
-
-                httpResponse.setStatus(200);
-            }
-        }), null);
-
-        Headers headers = new Headers();
-        headers.put("method", "POST");
-        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/100");
-        headers.put("version", "HTTP/1.1");
-        headers.put("expect", "100-continue");
-
-        final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, false), new Stream.FrameListener.Adapter()
-        {
-            @Override
-            public void onReply(Stream stream, ReplyInfo replyInfo)
-            {
-                Assert.assertTrue(replyInfo.getHeaders().get("status").value().contains("100"));
-                replyLatch.countDown();
-
-                // Now send the data
-                stream.data(new StringDataInfo(data, true));
-            }
-        });
-
-        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
-
-        Thread.sleep(500_000);
     }
 
     @Test
@@ -464,15 +417,125 @@ public class HTTPSPDYTest
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 Assert.assertTrue(dataInfo.isClose());
-                ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(buffer);
-                buffer.flip();
-                Assert.assertEquals(data, Charset.forName("UTF-8").decode(buffer).toString());
+                Assert.assertEquals(data, dataInfo.asString("UTF-8"));
                 dataLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithOneByteResponseContent() throws Exception
+    {
+        final char data = 'x';
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.setStatus(HttpServletResponse.SC_OK);
+                ServletOutputStream output = httpResponse.getOutputStream();
+                output.write(data);
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/foo");
+        headers.put("version", "HTTP/1.1");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertFalse(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                Assert.assertTrue(dataInfo.isClose());
+                ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
+                dataInfo.getBytes(buffer);
+                buffer.flip();
+                Assert.assertEquals(1, buffer.remaining());
+                Assert.assertEquals(data, buffer.get());
+                dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithSmallResponseContentInTwoChunks() throws Exception
+    {
+        final String data1 = "0123456789ABCDEF";
+        final String data2 = "FEDCBA9876543210";
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.setStatus(HttpServletResponse.SC_OK);
+                ServletOutputStream output = httpResponse.getOutputStream();
+                output.write(data1.getBytes("UTF-8"));
+                output.flush();
+                output.write(data2.getBytes("UTF-8"));
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/foo");
+        headers.put("version", "HTTP/1.1");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(2);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            private final AtomicInteger replyFrames = new AtomicInteger();
+            private final AtomicInteger dataFrames = new AtomicInteger();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertEquals(1, replyFrames.incrementAndGet());
+                Assert.assertFalse(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                int data = dataFrames.incrementAndGet();
+                Assert.assertTrue(data >= 1 && data <= 2);
+                if (data == 1)
+                    Assert.assertEquals(data1, dataInfo.asString("UTF8"));
+                else
+                    Assert.assertEquals(data2, dataInfo.asString("UTF8"));
+                dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -504,6 +567,8 @@ public class HTTPSPDYTest
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
+            private final AtomicInteger contentBytes = new AtomicInteger();
+
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -516,27 +581,24 @@ public class HTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                Assert.assertTrue(dataInfo.isClose());
-                ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(buffer);
-                buffer.flip();
-                Assert.assertEquals(data, Charset.forName("UTF-8").decode(buffer).toString());
-                dataLatch.countDown();
+                contentBytes.addAndGet(dataInfo.getBytesCount());
+                if (dataInfo.isClose())
+                {
+                    Assert.assertEquals(data.length, contentBytes.get());
+                    dataLatch.countDown();
+                }
             }
         });
-        Assert.assertTrue(handlerLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
     public void testGETWithBigResponseContentInTwoWrites() throws Exception
     {
-        // TODO
-        Assert.fail();
-
         final byte[] data = new byte[128 * 1024];
-        Arrays.fill(data, (byte)'x');
+        Arrays.fill(data, (byte)'y');
         final CountDownLatch handlerLatch = new CountDownLatch(1);
         Session session = startClient(startHTTPServer(new AbstractHandler()
         {
@@ -547,6 +609,7 @@ public class HTTPSPDYTest
                 request.setHandled(true);
                 httpResponse.setStatus(HttpServletResponse.SC_OK);
                 ServletOutputStream output = httpResponse.getOutputStream();
+                output.write(data);
                 output.write(data);
                 handlerLatch.countDown();
             }
@@ -560,6 +623,8 @@ public class HTTPSPDYTest
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
+            private final AtomicInteger contentBytes = new AtomicInteger();
+
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -572,21 +637,81 @@ public class HTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                Assert.assertTrue(dataInfo.isClose());
-                ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(buffer);
-                buffer.flip();
-                Assert.assertEquals(data, Charset.forName("UTF-8").decode(buffer).toString());
-                dataLatch.countDown();
+                contentBytes.addAndGet(dataInfo.getBytesCount());
+                if (dataInfo.isClose())
+                {
+                    Assert.assertEquals(2 * data.length, contentBytes.get());
+                    dataLatch.countDown();
+                }
             }
         });
-        Assert.assertTrue(handlerLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
-    public void testGETWithSmallResponseContentInTwoChunks() throws Exception
+    public void testGETWithOutputStreamFlushedAndClosed() throws Exception
+    {
+        final String data = "0123456789ABCDEF";
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.setStatus(HttpServletResponse.SC_OK);
+                ServletOutputStream output = httpResponse.getOutputStream();
+                output.write(data.getBytes("UTF-8"));
+                output.flush();
+                output.close();
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/foo");
+        headers.put("version", "HTTP/1.1");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertFalse(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                ByteBuffer byteBuffer = ByteBuffer.allocate(dataInfo.getBytesCount());
+                dataInfo.getBytes(byteBuffer);
+                byteBuffer.flip();
+                while (byteBuffer.hasRemaining())
+                    buffer.write(byteBuffer.get());
+                if (dataInfo.isClose())
+                {
+                    Assert.assertEquals(data, new String(buffer.toByteArray(), Charset.forName("UTF-8")));
+                    dataLatch.countDown();
+                }
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithResponseResetBuffer() throws Exception
     {
         final String data1 = "0123456789ABCDEF";
         final String data2 = "FEDCBA9876543210";
@@ -600,8 +725,10 @@ public class HTTPSPDYTest
                 request.setHandled(true);
                 httpResponse.setStatus(HttpServletResponse.SC_OK);
                 ServletOutputStream output = httpResponse.getOutputStream();
+                // Write some
                 output.write(data1.getBytes("UTF-8"));
-                output.flush();
+                // But then change your mind and reset the buffer
+                httpResponse.resetBuffer();
                 output.write(data2.getBytes("UTF-8"));
                 handlerLatch.countDown();
             }
@@ -615,6 +742,8 @@ public class HTTPSPDYTest
         final CountDownLatch dataLatch = new CountDownLatch(1);
         session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
+            private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
@@ -627,21 +756,213 @@ public class HTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                Assert.assertTrue(dataInfo.isClose());
-                ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(buffer);
-                buffer.flip();
-                Assert.assertEquals(data1, Charset.forName("UTF-8").decode(buffer).toString());
-                dataLatch.countDown();
+                ByteBuffer byteBuffer = ByteBuffer.allocate(dataInfo.getBytesCount());
+                dataInfo.getBytes(byteBuffer);
+                byteBuffer.flip();
+                while (byteBuffer.hasRemaining())
+                    buffer.write(byteBuffer.get());
+                if (dataInfo.isClose())
+                {
+                    Assert.assertEquals(data2, new String(buffer.toByteArray(), Charset.forName("UTF-8")));
+                    dataLatch.countDown();
+                }
             }
         });
-        Assert.assertTrue(handlerLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
-    // TODO: add tests for chunked content
+    @Test
+    public void testGETWithRedirect() throws Exception
+    {
+        final String suffix = "/redirect";
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                String location = httpResponse.encodeRedirectURL(String.format("%s://%s:%d%s",
+                        request.getScheme(), request.getLocalAddr(), request.getLocalPort(), target + suffix));
+                httpResponse.sendRedirect(location);
+                handlerLatch.countDown();
+            }
+        }), null);
 
-    // Note that I do not care much about the state of the generator, as long as I can avoid
-    // that the generator writes, that SPDY writes chunked bytes, and - if possible - data copying
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/foo");
+        headers.put("version", "HTTP/1.1");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            private final AtomicInteger replies = new AtomicInteger();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertEquals(1, replies.incrementAndGet());
+                Assert.assertTrue(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("302"));
+                Assert.assertTrue(replyHeaders.get("location").value().endsWith(suffix));
+                replyLatch.countDown();
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithSendError() throws Exception
+    {
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.sendError(HttpServletResponse.SC_NOT_FOUND);
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/foo");
+        headers.put("version", "HTTP/1.1");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            private final AtomicInteger replies = new AtomicInteger();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertEquals(1, replies.incrementAndGet());
+                Assert.assertFalse(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("404"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                Assert.assertTrue(dataInfo.isClose());
+                dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithException() throws Exception
+    {
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                throw new NullPointerException();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/foo");
+        headers.put("version", "HTTP/1.1");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            private final AtomicInteger replies = new AtomicInteger();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertEquals(1, replies.incrementAndGet());
+                Assert.assertTrue(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("500"));
+                replyLatch.countDown();
+            }
+        });
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithSmallResponseChunked() throws Exception
+    {
+        final String pangram1 = "the quick brown fox jumps over the lazy dog";
+        final String pangram2 = "qualche vago ione tipo zolfo, bromo, sodio";
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                httpResponse.setHeader("Transfer-Encoding", "chunked");
+                ServletOutputStream output = httpResponse.getOutputStream();
+                output.write(pangram1.getBytes("UTF-8"));
+                httpResponse.setHeader("EXTRA", "X");
+                output.flush();
+                output.write(pangram2.getBytes("UTF-8"));
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "http://localhost:" + connector.getLocalPort() + "/foo");
+        headers.put("version", "HTTP/1.1");
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(2);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            private final AtomicInteger replyFrames = new AtomicInteger();
+            private final AtomicInteger dataFrames = new AtomicInteger();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertEquals(1, replyFrames.incrementAndGet());
+                Assert.assertFalse(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                Assert.assertTrue(replyHeaders.get("extra").value().contains("X"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                int count = dataFrames.incrementAndGet();
+                if (count == 1)
+                {
+                    Assert.assertFalse(dataInfo.isClose());
+                    Assert.assertEquals(pangram1, dataInfo.asString("UTF-8"));
+                }
+                else if (count == 2)
+                {
+                    Assert.assertTrue(dataInfo.isClose());
+                    Assert.assertEquals(pangram2, dataInfo.asString("UTF-8"));
+                }
+                dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
 }

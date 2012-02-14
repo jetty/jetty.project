@@ -35,12 +35,12 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
+public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
 {
-    private static final Logger logger = LoggerFactory.getLogger(HTTPSPDYAsyncConnectionFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnectionFactory.class);
     private final Connector connector;
 
-    public HTTPSPDYAsyncConnectionFactory(Connector connector)
+    public ServerHTTPSPDYAsyncConnectionFactory(Connector connector)
     {
         this.connector = connector;
     }
@@ -73,8 +73,8 @@ public class HTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFac
 
             try
             {
-                HTTPSPDYAsyncConnection connection = new HTTPSPDYAsyncConnection(connector,
-                        new HTTPSPDYAsyncEndPoint(stream), connector.getServer(),
+                ServerHTTPSPDYAsyncConnection connection = new ServerHTTPSPDYAsyncConnection(connector,
+                        new EmptyAsyncEndPoint(), connector.getServer(),
                         (SPDYAsyncConnection)endPoint.getConnection(), stream);
                 stream.setAttribute("connection", connection);
 
@@ -124,7 +124,7 @@ public class HTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFac
 
             try
             {
-                HTTPSPDYAsyncConnection connection = (HTTPSPDYAsyncConnection)stream.getAttribute("connection");
+                ServerHTTPSPDYAsyncConnection connection = (ServerHTTPSPDYAsyncConnection)stream.getAttribute("connection");
                 connection.headers(headersInfo.getHeaders());
 
                 if (headersInfo.isClose())
@@ -151,7 +151,7 @@ public class HTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFac
                 dataInfo.getBytes(buffer);
                 buffer.flip();
 
-                HTTPSPDYAsyncConnection connection = (HTTPSPDYAsyncConnection)stream.getAttribute("connection");
+                ServerHTTPSPDYAsyncConnection connection = (ServerHTTPSPDYAsyncConnection)stream.getAttribute("connection");
                 connection.content(buffer, dataInfo.isClose());
 
                 if (dataInfo.isClose())
@@ -178,16 +178,6 @@ public class HTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFac
         private void close(Stream stream)
         {
             stream.getSession().goAway(stream.getVersion());
-        }
-    }
-
-    private class HTTPSPDYAsyncEndPoint extends EmptyAsyncEndPoint
-    {
-        private final Stream stream;
-
-        private HTTPSPDYAsyncEndPoint(Stream stream)
-        {
-            this.stream = stream;
         }
     }
 }

@@ -49,9 +49,9 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements AsyncConnection
+public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implements AsyncConnection
 {
-    private static final Logger logger = LoggerFactory.getLogger(HTTPSPDYAsyncConnection.class);
+    private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnection.class);
     private final SPDYAsyncConnection connection;
     private final Stream stream;
     private Headers headers;
@@ -59,7 +59,7 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
     private boolean complete;
     private volatile State state = State.INITIAL;
 
-    public HTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
+    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
     {
         super(connector, endPoint, server);
         this.connection = connection;
@@ -144,6 +144,8 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
                             }
                             case "connection":
                             case "keep-alive":
+                            case "proxy-connection":
+                            case "transfer-encoding":
                             case "host":
                             {
                                 // Spec says to ignore these headers
@@ -297,7 +299,8 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
     @Override
     public void flushResponse() throws IOException
     {
-        throw new UnsupportedOperationException();
+        // Just commit the response, if necessary: flushing buffers will be taken care of in complete()
+        commitResponse(false);
     }
 
     @Override
@@ -377,6 +380,8 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
      */
     private class HTTPSPDYGenerator extends HttpGenerator
     {
+        private boolean closed;
+
         private HTTPSPDYGenerator(Buffers buffers, EndPoint endPoint)
         {
             super(buffers, endPoint);
@@ -385,19 +390,24 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
         @Override
         public void send1xx(int code) throws IOException
         {
+            // TODO: not supported yet, but unlikely to be called
             throw new UnsupportedOperationException();
         }
 
         @Override
         public void sendResponse(Buffer response) throws IOException
         {
+            // Do not think this method is ever used.
+            // Jetty calls it from Request.setAttribute() only if the attribute
+            // "org.eclipse.jetty.server.ResponseBuffer", seems like a hack.
             throw new UnsupportedOperationException();
         }
 
         @Override
         public void sendError(int code, String reason, String content, boolean close) throws IOException
         {
-            throw new UnsupportedOperationException();
+            // Keep original behavior because it's delegating to other methods that we override.
+            super.sendError(code, reason, content, close);
         }
 
         @Override
@@ -422,53 +432,100 @@ public class HTTPSPDYAsyncConnection extends AbstractHttpConnection implements A
             // whether there is content buffered; if so, send the data frame
             boolean close = _buffer == null || _buffer.length() == 0;
             stream.reply(new ReplyInfo(headers, close));
-            if (!close)
+
+            if (close)
             {
-                ByteBuffer buffer = ((NIOBuffer)_buffer).getByteBuffer();
-                buffer.limit(_buffer.putIndex());
-                buffer.position(_buffer.getIndex());
+                closed = true;
+                // Update HttpGenerator fields so that they remain consistent
+                _state = HttpGenerator.STATE_END;
+            }
+            else
+            {
+                closed = allContentAdded || isAllContentWritten();
+                ByteBuffer buffer = ByteBuffer.wrap(_buffer.asArray());
+                // Send the data frame
+                stream.data(new ByteBufferDataInfo(buffer, closed));
                 // Update HttpGenerator fields so that they remain consistent
                 _buffer.clear();
-                _state = HttpGenerator.STATE_CONTENT;
-                // Send the data frame
-                stream.data(new ByteBufferDataInfo(buffer, allContentAdded));
+                _state = closed ? HttpGenerator.STATE_END : HttpGenerator.STATE_CONTENT;
             }
         }
 
         @Override
         public boolean addContent(byte b) throws IOException
         {
-            throw new UnsupportedOperationException();
+            // In HttpGenerator, writing one byte only has a different path than
+            // writing a buffer. Here we normalize these path to keep it simpler.
+            addContent(new ByteArrayBuffer(new byte[]{b}), false);
+            return false;
         }
 
         @Override
         public void addContent(Buffer content, boolean last) throws IOException
         {
-
-            // TODO: we need to avoid that the HttpParser chunks the content
-            // otherwise we're sending bad data... so perhaps we need to do our own buffering here
-
             // Keep the original behavior since adding content will
             // just accumulate bytes until the response is committed.
             super.addContent(content, last);
         }
 
         @Override
+        public void flush(long maxIdleTime) throws IOException
+        {
+            while (_content != null && _content.length() > 0)
+            {
+                _content.skip(_buffer.put(_content));
+                ByteBuffer buffer = ByteBuffer.wrap(_buffer.asArray());
+                _buffer.clear();
+                closed = _content.length() == 0 && _last;
+                stream.data(new ByteBufferDataInfo(buffer, closed));
+
+                boolean expired = !connection.getEndPoint().blockWritable(maxIdleTime);
+                if (expired)
+                {
+                    stream.getSession().goAway(stream.getVersion());
+                    throw new EOFException("write timeout");
+                }
+            }
+        }
+
+        @Override
         public int flushBuffer() throws IOException
         {
+            // Must never be called because it's where the HttpGenerator writes
+            // the HTTP content to the EndPoint (we should write SPDY instead).
+            // If it's called it's our bug.
             throw new UnsupportedOperationException();
         }
 
         @Override
         public void blockForOutput(long maxIdleTime) throws IOException
         {
-            throw new UnsupportedOperationException();
+            // The semantic of this method is weird: not only it has to block
+            // but also need to flush. Since we have a blocking flush method
+            // we delegate to that, because it has the same semantic.
+            flush(maxIdleTime);
         }
 
         @Override
         public void complete() throws IOException
         {
-            throw new UnsupportedOperationException();
+            if (_buffer != null && _buffer.length() > 0)
+            {
+                ByteBuffer buffer = ByteBuffer.wrap(_buffer.asArray());
+                // Update HttpGenerator fields so that they remain consistent
+                _buffer.clear();
+                _state = STATE_END;
+                // Send the data frame
+                stream.data(new ByteBufferDataInfo(buffer, true));
+            }
+            else if (!closed)
+            {
+                ByteBuffer buffer = ByteBuffer.allocate(0);
+                closed = true;
+                _state = STATE_END;
+                // Send the data frame
+                stream.data(new ByteBufferDataInfo(buffer, true));
+            }
         }
     }
 }
