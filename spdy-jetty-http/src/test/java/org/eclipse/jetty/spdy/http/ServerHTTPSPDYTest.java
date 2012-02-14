@@ -30,6 +30,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -474,11 +475,9 @@ public class ServerHTTPSPDYTest
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 Assert.assertTrue(dataInfo.isClose());
-                ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(buffer);
-                buffer.flip();
-                Assert.assertEquals(1, buffer.remaining());
-                Assert.assertEquals(data, buffer.get());
+                byte[] bytes = dataInfo.asBytes();
+                Assert.assertEquals(1, bytes.length);
+                Assert.assertEquals(data, bytes[0]);
                 dataLatch.countDown();
             }
         });
@@ -981,5 +980,61 @@ public class ServerHTTPSPDYTest
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testGETWithMediumContentByPassed() throws Exception
+    {
+        final byte[] data = new byte[2048];
+        final CountDownLatch handlerLatch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                // We use this trick that's present in Jetty code: if we add a request attribute
+                // called "org.eclipse.jetty.server.sendContent", then it will trigger the
+                // content bypass that we want to test
+                request.setAttribute("org.eclipse.jetty.server.sendContent", new ByteArrayBuffer(data));
+                handlerLatch.countDown();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "GET");
+        headers.put("url", "/foo");
+        headers.put("version", "HTTP/1.1");
+        headers.put("host", "localhost:" + connector.getLocalPort());
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        {
+            private final AtomicInteger replyFrames = new AtomicInteger();
+            private final AtomicInteger dataFrames = new AtomicInteger();
+
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertEquals(1, replyFrames.incrementAndGet());
+                Assert.assertFalse(replyInfo.isClose());
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                Assert.assertEquals(1, dataFrames.incrementAndGet());
+                Assert.assertTrue(dataInfo.isClose());
+                Assert.assertArrayEquals(data, dataInfo.asBytes());
+                dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(handlerLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(500, TimeUnit.SECONDS));
     }
 }

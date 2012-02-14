@@ -78,6 +78,16 @@ public abstract class DataInfo
         return Charset.forName(charset).decode(buffer).toString();
     }
 
+    public byte[] asBytes()
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(getBytesCount());
+        getBytes(buffer);
+        buffer.flip();
+        byte[] result = new byte[buffer.remaining()];
+        buffer.get(result);
+        return result;
+    }
+
     public boolean isConsumed()
     {
         return consumed;
