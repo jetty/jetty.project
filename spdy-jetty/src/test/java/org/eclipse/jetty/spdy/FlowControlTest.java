@@ -36,13 +36,14 @@ public class FlowControlTest extends AbstractTest
     @Test
     public void testServerFlowControlOneBigWrite() throws Exception
     {
+        final int length = 128 * 1024;
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
             public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
-                stream.data(new BytesDataInfo(new byte[128 * 1024], true));
+                stream.data(new BytesDataInfo(new byte[length], true));
                 return null;
             }
         }), null);
@@ -60,20 +61,22 @@ public class FlowControlTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(dataLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(length, bytes.get());
     }
 
     @Test
     public void testServerFlowControlTwoBigWrites() throws Exception
     {
+        final int length = 128 * 1024;
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
             public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
-                stream.data(new BytesDataInfo(new byte[128 * 1024], false));
-                stream.data(new BytesDataInfo(new byte[128 * 1024], true));
+                stream.data(new BytesDataInfo(new byte[length], false));
+                stream.data(new BytesDataInfo(new byte[length], true));
                 return null;
             }
         }), null);
@@ -91,6 +94,72 @@ public class FlowControlTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(dataLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(2 * length, bytes.get());
+    }
+
+    @Test
+    public void testClientFlowControlOneBigWrite() throws Exception
+    {
+        final AtomicInteger bytes = new AtomicInteger();
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                stream.reply(new ReplyInfo(false));
+                return new Stream.FrameListener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        bytes.addAndGet(dataInfo.getBytesCount());
+                        if (dataInfo.isClose())
+                            dataLatch.countDown();
+                    }
+                };
+            }
+        }), null);
+
+        Stream stream = session.syn(SPDY.V2, new SynInfo(true), null);
+        int length = 128 * 1024;
+        stream.data(new BytesDataInfo(new byte[length], true));
+
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(length, bytes.get());
+    }
+
+    @Test
+    public void testClientFlowControlTwoBigWrites() throws Exception
+    {
+        final AtomicInteger bytes = new AtomicInteger();
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                stream.reply(new ReplyInfo(false));
+                return new Stream.FrameListener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        bytes.addAndGet(dataInfo.getBytesCount());
+                        if (dataInfo.isClose())
+                            dataLatch.countDown();
+                    }
+                };
+            }
+        }), null);
+
+        Stream stream = session.syn(SPDY.V2, new SynInfo(true), null);
+        int length = 128 * 1024;
+        stream.data(new BytesDataInfo(new byte[length], false));
+        stream.data(new BytesDataInfo(new byte[length], true));
+
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertEquals(2 * length, bytes.get());
     }
 }

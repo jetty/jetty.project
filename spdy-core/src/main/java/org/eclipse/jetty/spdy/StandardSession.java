@@ -18,9 +18,9 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -60,7 +60,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
-    private final Queue<FrameBytes> queue = new LinkedList<>();
+    private final Deque<FrameBytes> queue = new LinkedList<>();
     private final Controller<FrameBytes> controller;
     private final AtomicInteger streamIds;
     private final AtomicInteger pingIds;
@@ -592,7 +592,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
             updateLastStreamId(stream);
         ByteBuffer buffer = generator.control(frame);
         logger.debug("Posting {} on {}", frame, stream);
-        enqueue(new ControlFrameBytes(frame, buffer));
+        enqueueLast(new ControlFrameBytes(frame, buffer));
     }
 
     private void updateLastStreamId(IStream stream)
@@ -611,7 +611,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     public void data(IStream stream, DataInfo dataInfo)
     {
         logger.debug("Posting {} on {}", dataInfo, stream);
-        enqueue(new DataFrameBytes(stream, dataInfo));
+        enqueueLast(new DataFrameBytes(stream, dataInfo));
         flush();
     }
 
@@ -639,7 +639,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
             buffer = frameBytes.getByteBuffer();
             if (buffer == null)
             {
-                enqueue(frameBytes);
+                enqueueFirst(frameBytes);
                 logger.debug("Flush skipped, {} frame(s) in queue", queue.size());
                 return;
             }
@@ -652,24 +652,32 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         write(buffer, this, frameBytes);
     }
 
-    private void enqueue(FrameBytes frameBytes)
+    private void enqueueLast(FrameBytes frameBytes)
     {
         // TODO: handle priority; e.g. use queues to prioritize the buffers ?
         synchronized (queue)
         {
-            queue.offer(frameBytes);
+            queue.offerLast(frameBytes);
+        }
+    }
+
+    private void enqueueFirst(FrameBytes frameBytes)
+    {
+        synchronized (queue)
+        {
+            queue.offerFirst(frameBytes);
         }
     }
 
     @Override
-    public void complete(FrameBytes context)
+    public void complete(FrameBytes frameBytes)
     {
-        logger.debug("Completed write of {}, {} frame(s) in queue", context, queue.size());
         synchronized (queue)
         {
+            logger.debug("Completed write of {}, {} frame(s) in queue", frameBytes, queue.size());
             flushing = false;
         }
-        context.complete();
+        frameBytes.complete();
         flush();
     }
 
@@ -678,14 +686,14 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         controller.write(buffer, handler, frameBytes);
     }
 
-    protected abstract static class FrameBytes
+    public interface FrameBytes
     {
-        protected abstract ByteBuffer getByteBuffer();
+        public abstract ByteBuffer getByteBuffer();
 
         public abstract void complete();
     }
 
-    private class ControlFrameBytes extends FrameBytes
+    private class ControlFrameBytes implements FrameBytes
     {
         private final ControlFrame frame;
         private final ByteBuffer buffer;
@@ -697,7 +705,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         }
 
         @Override
-        protected ByteBuffer getByteBuffer()
+        public ByteBuffer getByteBuffer()
         {
             return buffer;
         }
@@ -720,7 +728,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         }
     }
 
-    private class DataFrameBytes extends FrameBytes
+    private class DataFrameBytes implements FrameBytes
     {
         private final IStream stream;
         private final DataInfo data;
@@ -733,7 +741,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         }
 
         @Override
-        protected ByteBuffer getByteBuffer()
+        public ByteBuffer getByteBuffer()
         {
             int windowSize = stream.getWindowSize();
             if (windowSize <= 0)
@@ -752,7 +760,9 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
 
             if (!data.isConsumed())
             {
-                enqueue(this);
+                // If we could not write a full data frame, then we need first
+                // to finish it, and then process the others (to avoid data garbling)
+                enqueueFirst(this);
             }
             else
             {
@@ -765,7 +775,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         @Override
         public String toString()
         {
-            return "data on " + stream;
+            return String.format("data@%x consumed=%b on %s", hashCode(), data.isConsumed(), stream);
         }
     }
 }
