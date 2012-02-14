@@ -71,12 +71,14 @@ public abstract class DataFrameParser
                     byte currByte = buffer.get();
                     --cursor;
                     length += (currByte & 0xFF) << 8 * cursor;
-                    if (cursor == 0)
-                    {
-                        remaining = length;
-                        state = State.DATA;
-                    }
-                    break;
+                    if (cursor > 0)
+                        break;
+                    remaining = length;
+                    state = State.DATA;
+                    // Fall down if length == 0: we can't loop because the buffer
+                    // may be empty but we need to invoke the application anyway
+                    if (length > 0)
+                        break;
                 }
                 case DATA:
                 {
@@ -85,6 +87,8 @@ public abstract class DataFrameParser
                     // unlikely that we will get that 16 MiB chunk.
                     // However, TCP may further split the flow control window, so we may
                     // only have part of the data at this point.
+
+                    // TODO: introduce synthetic frames instead of accumulating data
 
                     int length = Math.min(remaining, buffer.remaining());
                     int limit = buffer.limit();

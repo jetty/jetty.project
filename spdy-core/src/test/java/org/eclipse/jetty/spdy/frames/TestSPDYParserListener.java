@@ -25,6 +25,8 @@ import org.eclipse.jetty.spdy.parser.Parser;
 public class TestSPDYParserListener implements Parser.Listener
 {
     private ControlFrame controlFrame;
+    private DataFrame dataFrame;
+    private ByteBuffer data;
 
     @Override
     public void onControlFrame(ControlFrame frame)
@@ -35,6 +37,8 @@ public class TestSPDYParserListener implements Parser.Listener
     @Override
     public void onDataFrame(DataFrame frame, ByteBuffer data)
     {
+        this.dataFrame = frame;
+        this.data = data;
     }
 
     @Override
@@ -50,5 +54,15 @@ public class TestSPDYParserListener implements Parser.Listener
     public ControlFrame getControlFrame()
     {
         return controlFrame;
+    }
+
+    public DataFrame getDataFrame()
+    {
+        return dataFrame;
+    }
+
+    public ByteBuffer getData()
+    {
+        return data;
     }
 }
