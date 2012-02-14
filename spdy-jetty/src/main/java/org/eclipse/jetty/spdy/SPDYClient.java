@@ -193,7 +193,7 @@ public class SPDYClient
             selector = new ClientSelectorManager();
             addBean(selector);
 
-            factories.put("spdy/2", new ClientSPDY2AsyncConnectionFactory());
+            factories.put("spdy/2", new ClientSPDYAsyncConnectionFactory());
         }
 
         public SPDYClient newSPDYClient()
@@ -306,7 +306,7 @@ public class SPDYClient
                     }
                     else
                     {
-                        AsyncConnectionFactory connectionFactory = new ClientSPDY2AsyncConnectionFactory();
+                        AsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
                         AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, attachment);
                         endPoint.setConnection(connection);
                         return connection;
@@ -408,7 +408,7 @@ public class SPDYClient
         }
     }
 
-    private static class ClientSPDY2AsyncConnectionFactory implements AsyncConnectionFactory
+    private static class ClientSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     {
         @Override
         public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
