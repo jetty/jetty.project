@@ -32,7 +32,7 @@ public class GoAwayGenerateParseTest
     {
         int lastStreamId = 13;
         int statusCode = 1;
-        GoAwayFrame frame1 = new GoAwayFrame(SPDY.V2, lastStreamId, statusCode);
+        GoAwayFrame frame1 = new GoAwayFrame(SPDY.V3, lastStreamId, statusCode);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -47,7 +47,7 @@ public class GoAwayGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.GO_AWAY, frame2.getType());
         GoAwayFrame goAway = (GoAwayFrame)frame2;
-        Assert.assertEquals(SPDY.V2, goAway.getVersion());
+        Assert.assertEquals(SPDY.V3, goAway.getVersion());
         Assert.assertEquals(lastStreamId, goAway.getLastStreamId());
         Assert.assertEquals(0, goAway.getFlags());
         Assert.assertEquals(statusCode, goAway.getStatusCode());
@@ -58,7 +58,7 @@ public class GoAwayGenerateParseTest
     {
         int lastStreamId = 13;
         int statusCode = 1;
-        GoAwayFrame frame1 = new GoAwayFrame(SPDY.V2, lastStreamId, statusCode);
+        GoAwayFrame frame1 = new GoAwayFrame(SPDY.V3, lastStreamId, statusCode);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -74,7 +74,7 @@ public class GoAwayGenerateParseTest
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.GO_AWAY, frame2.getType());
         GoAwayFrame goAway = (GoAwayFrame)frame2;
-        Assert.assertEquals(SPDY.V2, goAway.getVersion());
+        Assert.assertEquals(SPDY.V3, goAway.getVersion());
         Assert.assertEquals(lastStreamId, goAway.getLastStreamId());
         Assert.assertEquals(0, goAway.getFlags());
         Assert.assertEquals(statusCode, goAway.getStatusCode());

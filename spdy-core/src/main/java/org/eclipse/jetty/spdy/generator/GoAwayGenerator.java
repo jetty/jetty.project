@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.StreamException;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 
@@ -35,9 +36,23 @@ public class GoAwayGenerator extends ControlFrameGenerator
         generateControlFrameHeader(goAway, frameBodyLength, buffer);
 
         buffer.putInt(goAway.getLastStreamId() & 0x7F_FF_FF_FF);
-        buffer.putInt(goAway.getStatusCode());
+        writeStatusCode(goAway, buffer);
 
         buffer.flip();
         return buffer;
+    }
+
+    private void writeStatusCode(GoAwayFrame goAway, ByteBuffer buffer)
+    {
+        switch (goAway.getVersion())
+        {
+            case SPDY.V2:
+                break;
+            case SPDY.V3:
+                buffer.putInt(goAway.getStatusCode());
+                break;
+            default:
+                throw new IllegalStateException();
+        }
     }
 }

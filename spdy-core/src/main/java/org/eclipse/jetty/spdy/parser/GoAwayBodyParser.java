@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.StreamException;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
 
 public class GoAwayBodyParser extends ControlFrameBodyParser
@@ -46,7 +47,19 @@ public class GoAwayBodyParser extends ControlFrameBodyParser
                     if (buffer.remaining() >= 4)
                     {
                         lastStreamId = buffer.getInt() & 0x7F_FF_FF_FF;
-                        state = State.STATUS_CODE;
+                        switch (controlFrameParser.getVersion())
+                        {
+                            case SPDY.V2:
+                            {
+                                onGoAway();
+                                return true;
+                            }
+                            case SPDY.V3:
+                            {
+                                state = State.STATUS_CODE;
+                                break;
+                            }
+                        }
                     }
                     else
                     {
@@ -63,7 +76,19 @@ public class GoAwayBodyParser extends ControlFrameBodyParser
                     if (cursor == 0)
                     {
                         lastStreamId &= 0x7F_FF_FF_FF;
-                        state = State.STATUS_CODE;
+                        switch (controlFrameParser.getVersion())
+                        {
+                            case SPDY.V2:
+                            {
+                                onGoAway();
+                                return true;
+                            }
+                            case SPDY.V3:
+                            {
+                                state = State.STATUS_CODE;
+                                break;
+                            }
+                        }
                     }
                     break;
                 }
