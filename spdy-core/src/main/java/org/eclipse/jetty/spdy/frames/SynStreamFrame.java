@@ -68,6 +68,6 @@ public class SynStreamFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return super.toString() + " stream=" + getStreamId() + " close=" + isClose();
+        return String.format("%s stream=%d close=%b", super.toString(), getStreamId(), isClose());
     }
 }

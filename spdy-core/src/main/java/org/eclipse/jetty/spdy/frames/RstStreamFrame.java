@@ -44,6 +44,6 @@ public class RstStreamFrame extends ControlFrame
     public String toString()
     {
         StreamStatus streamStatus = StreamStatus.from(getVersion(), getStatusCode());
-        return super.toString() + " stream=" + getStreamId() + " status=" + (streamStatus == null ? getStatusCode() : streamStatus);
+        return String.format("%s stream=%d status=%s", super.toString(), getStreamId(), streamStatus == null ? getStatusCode() : streamStatus);
     }
 }

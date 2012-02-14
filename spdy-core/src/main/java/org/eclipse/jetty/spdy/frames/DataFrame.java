@@ -61,6 +61,6 @@ public class DataFrame
     @Override
     public String toString()
     {
-        return "DATA stream=" + getStreamId() + " length=" + getLength() + " close=" + isClose() + " compress=" + isCompress();
+        return String.format("DATA frame stream=%d length=%d close=%b compress=%b", getStreamId(), getLength(), isClose(), isCompress());
     }
 }

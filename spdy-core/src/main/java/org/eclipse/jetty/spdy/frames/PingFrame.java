@@ -34,6 +34,6 @@ public class PingFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return super.toString() + " ping=" + getPingId();
+        return String.format("%s ping=%d", super.toString(), getPingId());
     }
 }

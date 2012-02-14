@@ -71,6 +71,6 @@ public class HeadersFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return super.toString() + " stream=" + getStreamId() + " close=" + isClose() + " reset_compression=" + isResetCompression();
+        return String.format("%s stream=%d close=%b reset_compression=%b", super.toString(), getStreamId(), isClose(), isResetCompression());
     }
 }

@@ -44,6 +44,6 @@ public class GoAwayFrame extends ControlFrame
     public String toString()
     {
         SessionStatus sessionStatus = SessionStatus.from(getStatusCode());
-        return super.toString() + " last_stream=" + getLastStreamId() + " status=" + (sessionStatus == null ? getStatusCode() : sessionStatus);
+        return String.format("%s last_stream=%d status=%s", super.toString(), getLastStreamId(), sessionStatus == null ? getStatusCode() : sessionStatus);
     }
 }

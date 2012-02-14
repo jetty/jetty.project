@@ -49,6 +49,6 @@ public abstract class ControlFrame
     @Override
     public String toString()
     {
-        return getType() + " v" + getVersion();
+        return String.format("%s frame v%s", getType(), getVersion());
     }
 }

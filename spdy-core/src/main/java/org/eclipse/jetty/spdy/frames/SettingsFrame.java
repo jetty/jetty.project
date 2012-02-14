@@ -43,6 +43,6 @@ public class SettingsFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return super.toString() + " clear_persisted=" + isClearPersisted() + " settings=" + getSettings();
+        return String.format("%s clear_persisted=%b settings=%s", super.toString(), isClearPersisted(), getSettings());
     }
 }

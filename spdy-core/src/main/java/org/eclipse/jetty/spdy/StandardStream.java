@@ -225,7 +225,7 @@ public class StandardStream implements IStream
         {
             if (frameListener != null)
             {
-                logger.debug("Invoking reply callback with frame {} on listener {}", synReply, frameListener);
+                logger.debug("Invoking reply callback with {} on listener {}", synReply, frameListener);
                 frameListener.onReply(this, new ReplyInfo(synReply.getHeaders(), synReply.isClose()));
             }
         }
@@ -242,7 +242,7 @@ public class StandardStream implements IStream
         {
             if (frameListener != null)
             {
-                logger.debug("Invoking headers callback with frame {} on listener {}", frame, frameListener);
+                logger.debug("Invoking headers callback with {} on listener {}", frame, frameListener);
                 frameListener.onHeaders(this, new HeadersInfo(frame.getHeaders(), frame.isClose(), frame.isResetCompression()));
             }
         }
@@ -259,7 +259,7 @@ public class StandardStream implements IStream
         {
             if (frameListener != null)
             {
-                logger.debug("Invoking data callback with frame {} on listener {}", frame, frameListener);
+                logger.debug("Invoking data callback with {} on listener {}", frame, frameListener);
                 frameListener.onData(this, new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress()));
             }
         }

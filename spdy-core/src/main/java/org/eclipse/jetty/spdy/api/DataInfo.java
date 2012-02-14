@@ -82,6 +82,6 @@ public abstract class DataInfo
     @Override
     public String toString()
     {
-        return "DATA length=" + getBytesCount() + " close=" + isClose() + " compress=" + isCompress();
+        return String.format("DATA @%x length=%d close=%b compress=%b", hashCode(), getBytesCount(), isClose(), isCompress());
     }
 }

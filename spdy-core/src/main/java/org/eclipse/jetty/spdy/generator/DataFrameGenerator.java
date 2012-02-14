@@ -27,7 +27,7 @@ public class DataFrameGenerator
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(DataFrame.HEADER_LENGTH + windowSize);
         buffer.position(DataFrame.HEADER_LENGTH);
-        // Guaranteed to always be > 0
+        // Guaranteed to always be >= 0
         int read = dataInfo.getBytes(buffer);
 
         buffer.putInt(0, streamId & 0x7F_FF_FF_FF);

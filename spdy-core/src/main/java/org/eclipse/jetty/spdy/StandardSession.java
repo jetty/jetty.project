@@ -505,7 +505,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         {
             if (frameListener != null)
             {
-                logger.debug("Invoking syn callback with frame {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
                 SynInfo synInfo = new SynInfo(frame.getHeaders(), frame.isClose(), frame.isUnidirectional(), frame.getAssociatedStreamId(), frame.getPriority());
                 return frameListener.onSyn(stream, synInfo);
             }
@@ -523,7 +523,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         {
             if (frameListener != null)
             {
-                logger.debug("Invoking rst callback with frame {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
                 RstInfo rstInfo = new RstInfo(frame.getStreamId(), StreamStatus.from(frame.getVersion(), frame.getStatusCode()));
                 frameListener.onRst(this, rstInfo);
             }
@@ -540,7 +540,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         {
             if (frameListener != null)
             {
-                logger.debug("Invoking settings callback with frame {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
                 SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
                 frameListener.onSettings(this, settingsInfo);
             }
@@ -557,7 +557,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         {
             if (frameListener != null)
             {
-                logger.debug("Invoking ping callback with frame {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
                 PingInfo pingInfo = new PingInfo(frame.getPingId());
                 frameListener.onPing(this, pingInfo);
             }
@@ -574,7 +574,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         {
             if (frameListener != null)
             {
-                logger.debug("Invoking go away callback with frame {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
                 GoAwayInfo goAwayInfo = new GoAwayInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
                 frameListener.onGoAway(this, goAwayInfo);
             }
@@ -775,7 +775,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         @Override
         public String toString()
         {
-            return String.format("data@%x consumed=%b on %s", hashCode(), data.isConsumed(), stream);
+            return String.format("DATA bytes @%x consumed=%b on %s", data.hashCode(), data.isConsumed(), stream);
         }
     }
 }

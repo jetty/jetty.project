@@ -41,6 +41,6 @@ public class WindowUpdateFrame extends ControlFrame
     @Override
     public String toString()
     {
-        return super.toString() + " stream=" + getStreamId() + " delta=" + getWindowDelta();
+        return String.format("%s stream=%d delta=%d", super.toString(), getStreamId(), getWindowDelta());
     }
 }
