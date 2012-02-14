@@ -18,8 +18,6 @@ package org.eclipse.jetty.spdy.http;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
@@ -109,7 +107,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     String m = method.value();
                     String u = uri.value();
                     String v = version.value();
-                    logger.debug("HTTP {} {} {}", new Object[]{m, u, v});
+                    logger.debug("HTTP > {} {} {}", new Object[]{m, u, v});
                     startRequest(new ByteArrayBuffer(m), new ByteArrayBuffer(u), new ByteArrayBuffer(v));
 
                     state = State.HEADERS;
@@ -125,28 +123,15 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                         {
                             case "method":
                             case "version":
+                            case "url":
                             {
                                 // Skip request line headers
                                 continue;
-                            }
-                            case "url":
-                            {
-                                // Mangle the URL if the host header is missing
-                                String host = parseHost(header.value());
-                                // Jetty needs the host header, although HTTP 1.1 does not
-                                // require it if it can be parsed from an absolute URI
-                                if (host != null)
-                                {
-                                    logger.debug("HTTP {}: {}", "host", host);
-                                    parsedHeader(new ByteArrayBuffer("host"), new ByteArrayBuffer(host));
-                                }
-                                break;
                             }
                             case "connection":
                             case "keep-alive":
                             case "proxy-connection":
                             case "transfer-encoding":
-                            case "host":
                             {
                                 // Spec says to ignore these headers
                                 continue;
@@ -155,7 +140,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                             {
                                 // Spec says headers must be single valued
                                 String value = header.value();
-                                logger.debug("HTTP {}: {}", name, value);
+                                logger.debug("HTTP > {}: {}", name, value);
                                 parsedHeader(new ByteArrayBuffer(name), new ByteArrayBuffer(value));
                                 break;
                             }
@@ -221,7 +206,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     {
         buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
         complete = endRequest;
-        logger.debug("HTTP {} bytes of content", buffer.length());
+        logger.debug("HTTP > {} bytes of content", buffer.length());
         if (state == State.HEADERS)
         {
             state = State.HEADERS_COMPLETE;
@@ -308,19 +293,6 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     {
         // Keep the original behavior since it just delegates to the generator
         super.completeResponse();
-    }
-
-    private String parseHost(String url)
-    {
-        try
-        {
-            URI uri = new URI(url);
-            return uri.getHost() + (uri.getPort() > 0 ? ":" + uri.getPort() : "");
-        }
-        catch (URISyntaxException x)
-        {
-            return null;
-        }
     }
 
     private enum State
@@ -414,41 +386,56 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         public void completeHeader(HttpFields fields, boolean allContentAdded) throws IOException
         {
             Headers headers = new Headers();
+            String version = "HTTP/1.1";
+            headers.put("version", version);
             StringBuilder status = new StringBuilder().append(_status);
             if (_reason != null)
                 status.append(" ").append(_reason.toString("UTF-8"));
             headers.put("status", status.toString());
-            headers.put("version", "HTTP/1.1");
+            logger.debug("HTTP < {} {}", version, status);
+
             if (fields != null)
             {
                 for (int i = 0; i < fields.size(); ++i)
                 {
                     HttpFields.Field field = fields.getField(i);
-                    headers.put(field.getName(), field.getValue());
+                    String name = field.getName().toLowerCase();
+                    String value = field.getValue();
+                    headers.put(name, value);
+                    logger.debug("HTTP < {}: {}", name, value);
                 }
             }
 
-            // We have to query the HttpGenerator and its _buffer to know
+            // We have to query the HttpGenerator and its buffers to know
             // whether there is content buffered; if so, send the data frame
-            boolean close = _buffer == null || _buffer.length() == 0;
-            stream.reply(new ReplyInfo(headers, close));
-
-            if (close)
+            Buffer content = getContentBuffer();
+            stream.reply(new ReplyInfo(headers, content == null));
+            if (content != null)
+            {
+                closed = allContentAdded || isAllContentWritten();
+                ByteBuffer buffer = ByteBuffer.wrap(content.asArray());
+                logger.debug("HTTP < {} bytes of content", buffer.remaining());
+                // Send the data frame
+                stream.data(new ByteBufferDataInfo(buffer, closed));
+                // Update HttpGenerator fields so that they remain consistent
+                content.clear();
+                _state = closed ? HttpGenerator.STATE_END : HttpGenerator.STATE_CONTENT;
+            }
+            else
             {
                 closed = true;
                 // Update HttpGenerator fields so that they remain consistent
                 _state = HttpGenerator.STATE_END;
             }
-            else
-            {
-                closed = allContentAdded || isAllContentWritten();
-                ByteBuffer buffer = ByteBuffer.wrap(_buffer.asArray());
-                // Send the data frame
-                stream.data(new ByteBufferDataInfo(buffer, closed));
-                // Update HttpGenerator fields so that they remain consistent
-                _buffer.clear();
-                _state = closed ? HttpGenerator.STATE_END : HttpGenerator.STATE_CONTENT;
-            }
+        }
+
+        private Buffer getContentBuffer()
+        {
+            if (_buffer != null && _buffer.length() > 0)
+                return _buffer;
+            if (_bypass && _content != null && _content.length() > 0)
+                return _content;
+            return null;
         }
 
         @Override
@@ -475,6 +462,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             {
                 _content.skip(_buffer.put(_content));
                 ByteBuffer buffer = ByteBuffer.wrap(_buffer.asArray());
+                logger.debug("HTTP < {} bytes of content", buffer.remaining());
                 _buffer.clear();
                 closed = _content.length() == 0 && _last;
                 stream.data(new ByteBufferDataInfo(buffer, closed));
@@ -509,11 +497,13 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         @Override
         public void complete() throws IOException
         {
-            if (_buffer != null && _buffer.length() > 0)
+            Buffer content = getContentBuffer();
+            if (content != null)
             {
-                ByteBuffer buffer = ByteBuffer.wrap(_buffer.asArray());
+                ByteBuffer buffer = ByteBuffer.wrap(content.asArray());
+                logger.debug("HTTP < {} bytes of content", buffer.remaining());
                 // Update HttpGenerator fields so that they remain consistent
-                _buffer.clear();
+                content.clear();
                 _state = STATE_END;
                 // Send the data frame
                 stream.data(new ByteBufferDataInfo(buffer, true));
