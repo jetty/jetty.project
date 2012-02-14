@@ -17,6 +17,7 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 public abstract class DataInfo
 {
@@ -68,6 +69,14 @@ public abstract class DataInfo
     public abstract int getBytesCount();
 
     public abstract int getBytes(ByteBuffer output);
+
+    public String asString(String charset)
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(getBytesCount());
+        getBytes(buffer);
+        buffer.flip();
+        return Charset.forName(charset).decode(buffer).toString();
+    }
 
     public boolean isConsumed()
     {
