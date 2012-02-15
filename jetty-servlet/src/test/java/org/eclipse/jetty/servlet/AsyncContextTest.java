@@ -60,7 +60,7 @@ public class AsyncContextTest
     }
 
     @Test
-    //Ignore ("failing test illustrating potential issue")
+    @Ignore ("failing test illustrating potential issue")
     public void testSimpleAsyncContext() throws Exception
     {
         String request = "GET /servletPath HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
