@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -48,7 +49,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
-        putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(listener));
+        putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, listener));
     }
 
     public AsyncConnectionFactory putAsyncConnectionFactory(String protocol, AsyncConnectionFactory factory)

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionStatus;
@@ -62,9 +61,9 @@ public class GoAwayTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        session.syn(SPDY.V2, new SynInfo(true), null);
+        session.syn(new SynInfo(true), null);
 
-        session.goAway(SPDY.V2);
+        session.goAway();
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -78,7 +77,7 @@ public class GoAwayTest extends AbstractTest
             public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
-                stream.getSession().goAway(SPDY.V2);
+                stream.getSession().goAway();
                 return null;
             }
         };
@@ -95,7 +94,7 @@ public class GoAwayTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
 
-        Stream stream1 = session.syn(SPDY.V2, new SynInfo(true), null);
+        Stream stream1 = session.syn(new SynInfo(true), null);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         GoAwayInfo goAwayInfo = ref.get();
@@ -119,7 +118,7 @@ public class GoAwayTest extends AbstractTest
                 if (synCount == 1)
                 {
                     stream.reply(new ReplyInfo(true));
-                    stream.getSession().goAway(SPDY.V2);
+                    stream.getSession().goAway();
                 }
                 else
                 {
@@ -134,13 +133,13 @@ public class GoAwayTest extends AbstractTest
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
             {
-                ref.get().syn(SPDY.V2, new SynInfo(true), null);
+                ref.get().syn(new SynInfo(true), null);
             }
         };
         Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
         ref.set(session);
 
-        session.syn(SPDY.V2, new SynInfo(true), null);
+        session.syn(new SynInfo(true), null);
 
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
     }
@@ -165,7 +164,7 @@ public class GoAwayTest extends AbstractTest
                 }
                 else
                 {
-                    stream.getSession().goAway(SPDY.V2);
+                    stream.getSession().goAway();
                     closeLatch.countDown();
                     return new Stream.FrameListener.Adapter()
                     {
@@ -193,7 +192,7 @@ public class GoAwayTest extends AbstractTest
 
         // First stream is processed ok
         final CountDownLatch reply1Latch = new CountDownLatch(1);
-        Stream stream1 = session.syn(SPDY.V2, new SynInfo(true), new Stream.FrameListener.Adapter()
+        Stream stream1 = session.syn(new SynInfo(true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -204,7 +203,7 @@ public class GoAwayTest extends AbstractTest
         Assert.assertTrue(reply1Latch.await(5, TimeUnit.SECONDS));
 
         // Second stream is closed in the middle
-        Stream stream2 = session.syn(SPDY.V2, new SynInfo(false), null);
+        Stream stream2 = session.syn(new SynInfo(false), null);
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
 
         // There is a race between the data we want to send, and the client

@@ -57,12 +57,14 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 public class SPDYClient
 {
     private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
+    private final short version;
     private final Factory factory;
     private SocketAddress bindAddress;
     private long maxIdleTime;
 
-    protected SPDYClient(Factory factory)
+    protected SPDYClient(short version, Factory factory)
     {
+        this.version = version;
         this.factory = factory;
     }
 
@@ -196,9 +198,9 @@ public class SPDYClient
             factories.put("spdy/2", new ClientSPDYAsyncConnectionFactory());
         }
 
-        public SPDYClient newSPDYClient()
+        public SPDYClient newSPDYClient(short version)
         {
-            return new SPDYClient(this);
+            return new SPDYClient(version, this);
         }
 
         public void join() throws InterruptedException
@@ -422,7 +424,7 @@ public class SPDYClient
             SPDYAsyncConnection connection = new SPDYAsyncConnection(endPoint, parser);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(connection, 1, sessionFuture.listener, generator);
+            StandardSession session = new StandardSession(sessionFuture.client.version, connection, 1, sessionFuture.listener, generator);
             parser.addListener(session);
             sessionFuture.connected(session);
             connection.setSession(session);

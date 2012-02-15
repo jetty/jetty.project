@@ -28,15 +28,17 @@ import org.eclipse.jetty.spdy.parser.Parser;
 
 public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 {
+    private final short version;
     private final ServerSessionFrameListener listener;
 
-    public ServerSPDYAsyncConnectionFactory()
+    public ServerSPDYAsyncConnectionFactory(short version)
     {
-        this(null);
+        this(version, null);
     }
 
-    public ServerSPDYAsyncConnectionFactory(ServerSessionFrameListener listener)
+    public ServerSPDYAsyncConnectionFactory(short version, ServerSessionFrameListener listener)
     {
+        this.version = version;
         this.listener = listener;
     }
 
@@ -54,7 +56,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         ServerSPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, parser, listener);
         endPoint.setConnection(connection);
 
-        final StandardSession session = new StandardSession(connection, 2, listener, generator);
+        final StandardSession session = new StandardSession(version, connection, 2, listener, generator);
         parser.addListener(session);
         connection.setSession(session);
 

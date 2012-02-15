@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.SynInfo;
@@ -50,7 +49,7 @@ public class FlowControlTest extends AbstractTest
 
         final AtomicInteger bytes = new AtomicInteger();
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
@@ -83,7 +82,7 @@ public class FlowControlTest extends AbstractTest
 
         final AtomicInteger bytes = new AtomicInteger();
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
@@ -122,7 +121,7 @@ public class FlowControlTest extends AbstractTest
             }
         }), null);
 
-        Stream stream = session.syn(SPDY.V2, new SynInfo(true), null);
+        Stream stream = session.syn(new SynInfo(true), null);
         int length = 128 * 1024;
         stream.data(new BytesDataInfo(new byte[length], true));
 
@@ -154,7 +153,7 @@ public class FlowControlTest extends AbstractTest
             }
         }), null);
 
-        Stream stream = session.syn(SPDY.V2, new SynInfo(true), null);
+        Stream stream = session.syn(new SynInfo(true), null);
         int length = 128 * 1024;
         stream.data(new BytesDataInfo(new byte[length], false));
         stream.data(new BytesDataInfo(new byte[length], true));

@@ -71,7 +71,7 @@ public class ServerUsageTest
                 // However, the API may allow to initiate the stream like in bwtp
 
                 SynInfo synInfo = new SynInfo(new Headers(), false, true, 0, (byte)0);
-                Stream stream = session.syn(SPDY.V2, synInfo, null);
+                Stream stream = session.syn(synInfo, null);
                 // The point here is that we have no idea if the client accepted our stream
                 // So we return a stream, we may be able to send the headers frame, but later
                 // the client sends a rst frame.
@@ -93,7 +93,7 @@ public class ServerUsageTest
             {
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener
-                Stream pushStream = session.syn(stream.getVersion(), new SynInfo(new Headers(), false, true, stream.getId(), (byte)0), null);
+                Stream pushStream = session.syn(new SynInfo(new Headers(), false, true, stream.getId(), (byte)0), null);
                 pushStream.data(new StringDataInfo("foo", false));
                 return null;
             }

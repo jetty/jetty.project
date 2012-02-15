@@ -25,7 +25,7 @@ import java.util.List;
  * <pre>
  * Session session = ...;
  * SynInfo synInfo = new SynInfo(true);
- * session.syn(SPDY.V2, synInfo, new Stream.FrameListener.Adapter()
+ * session.syn(synInfo, new Stream.FrameListener.Adapter()
  * {
  *     public void onReply(Stream stream, ReplyInfo replyInfo)
  *     {
@@ -58,36 +58,37 @@ public interface Session
     /**
      * <p>Sends a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
      *
-     * @param version the SPDY protocol version to use
      * @param synInfo  the metadata to send on stream creation
      * @param frameListener the listener to invoke when events happen on the stream just created
      * @return the stream just created
      */
-    public Stream syn(short version, SynInfo synInfo, Stream.FrameListener frameListener);
+    public Stream syn(SynInfo synInfo, Stream.FrameListener frameListener);
 
     /**
      * <p>Sends a RST_STREAM to abort a stream.</p>
      *
-     * @param version the SPDY protocol version to use
      * @param rstInfo the metadata to reset the stream
      */
-    public void rst(short version, RstInfo rstInfo);
+    public void rst(RstInfo rstInfo);
 
     /**
      * <p>Sends a SETTINGS to configure the SPDY connection.</p>
      *
-     * @param version the SPDY protocol version to use
      * @param settingsInfo the metadata to send
      */
-    public void settings(short version, SettingsInfo settingsInfo);
+    public void settings(SettingsInfo settingsInfo);
 
     /**
      * <p>Sends a PING, normally to measure round-trip time.</p>
      *
-     * @param version the SPDY protocol version to use
      * @return the metadata sent
      */
-    public PingInfo ping(short version);
+    public PingInfo ping();
+
+    /**
+     * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
+     */
+    public void goAway();
 
     /**
      * <p>Initiates the flush of data to the other peer.</p>
@@ -100,13 +101,6 @@ public interface Session
      * @return the streams currently active in this session
      */
     public List<Stream> getStreams();
-
-    /**
-     * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
-     *
-     * @param version the SPDY protocol version to use
-     */
-    public void goAway(short version);
 
     /**
      * <p>A {@link FrameListener} is the passive counterpart of a {@link Session} and receives events happening

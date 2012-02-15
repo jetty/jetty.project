@@ -40,8 +40,9 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
     private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnectionFactory.class);
     private final Connector connector;
 
-    public ServerHTTPSPDYAsyncConnectionFactory(Connector connector)
+    public ServerHTTPSPDYAsyncConnectionFactory(short version, Connector connector)
     {
+        super(version);
         this.connector = connector;
     }
 
@@ -177,7 +178,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
         private void close(Stream stream)
         {
-            stream.getSession().goAway(stream.getVersion());
+            stream.getSession().goAway();
         }
     }
 }

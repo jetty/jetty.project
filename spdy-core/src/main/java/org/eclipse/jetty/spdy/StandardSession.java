@@ -31,7 +31,6 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionStatus;
@@ -61,6 +60,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final Deque<FrameBytes> queue = new LinkedList<>();
+    private final short version;
     private final Controller<FrameBytes> controller;
     private final AtomicInteger streamIds;
     private final AtomicInteger pingIds;
@@ -71,8 +71,9 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     private volatile int lastStreamId;
     private boolean flushing;
 
-    public StandardSession(Controller<FrameBytes> controller, int initialStreamId, FrameListener frameListener, Generator generator)
+    public StandardSession(short version, Controller<FrameBytes> controller, int initialStreamId, FrameListener frameListener, Generator generator)
     {
+        this.version = version;
         this.controller = controller;
         this.streamIds = new AtomicInteger(initialStreamId);
         this.pingIds = new AtomicInteger(initialStreamId);
@@ -93,7 +94,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public Stream syn(short version, SynInfo synInfo, Stream.FrameListener frameListener)
+    public Stream syn(SynInfo synInfo, Stream.FrameListener frameListener)
     {
         // Synchronization is necessary.
         // SPEC v3, 2.3.1 requires that the stream creation be monotonically crescent
@@ -131,7 +132,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public void rst(short version, RstInfo rstInfo)
+    public void rst(RstInfo rstInfo)
     {
         try
         {
@@ -149,7 +150,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public void settings(short version, SettingsInfo settingsInfo)
+    public void settings(SettingsInfo settingsInfo)
     {
         SettingsFrame frame = new SettingsFrame(version, settingsInfo.getFlags(), settingsInfo.getSettings());
         settings(frame);
@@ -170,7 +171,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public PingInfo ping(short version)
+    public PingInfo ping()
     {
         int pingId = pingIds.getAndAdd(2);
         PingFrame frame = new PingFrame(version, pingId);
@@ -193,15 +194,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public List<Stream> getStreams()
-    {
-        List<Stream> result = new ArrayList<>();
-        result.addAll(streams.values());
-        return result;
-    }
-
-    @Override
-    public void goAway(short version)
+    public void goAway()
     {
         if (goAwaySent.compareAndSet(false, true))
         {
@@ -225,6 +218,14 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
             // Should never happen, but just in case we rethrow
             throw new SPDYException(x);
         }
+    }
+
+    @Override
+    public List<Stream> getStreams()
+    {
+        List<Stream> result = new ArrayList<>();
+        result.addAll(streams.values());
+        return result;
     }
 
     @Override
@@ -307,8 +308,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         IStream stream = streams.get(streamId);
         if (stream == null)
         {
-            // There is no stream, therefore no version, so we hardcode version 2.
-            rst(SPDY.V2, new RstInfo(streamId, StreamStatus.INVALID_STREAM));
+            rst(new RstInfo(streamId, StreamStatus.INVALID_STREAM));
         }
         else
         {
@@ -348,7 +348,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         if (existing != null)
         {
             logger.debug("Detected duplicate {}, resetting", stream);
-            rst(existing.getVersion(), new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR));
+            rst(new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR));
         }
         else
         {

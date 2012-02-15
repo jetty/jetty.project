@@ -28,7 +28,6 @@ import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.spdy.ISession.Controller;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -232,7 +231,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     @Override
     public void onIdleExpired(long idleForMs)
     {
-        session.goAway(SPDY.V2);
+        session.goAway();
     }
 
     protected Session getSession()

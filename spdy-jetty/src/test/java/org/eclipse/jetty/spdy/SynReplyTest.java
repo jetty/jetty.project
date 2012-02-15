@@ -30,7 +30,6 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamStatus;
@@ -85,7 +84,7 @@ public class SynReplyTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(SPDY.V2, new SynInfo(new Headers(), true), new Stream.FrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(new Headers(), true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -167,7 +166,7 @@ public class SynReplyTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(SPDY.V2, new SynInfo(new Headers(), false), new Stream.FrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(new Headers(), false), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -215,7 +214,7 @@ public class SynReplyTest extends AbstractTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch1 = new CountDownLatch(1);
         final CountDownLatch dataLatch2 = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(true), new Stream.FrameListener.Adapter()
         {
             private AtomicInteger dataCount = new AtomicInteger();
 
@@ -266,7 +265,7 @@ public class SynReplyTest extends AbstractTest
             @Override
             public void onConnect(Session session)
             {
-                Stream stream = session.syn(SPDY.V2, new SynInfo(false), new Stream.FrameListener.Adapter()
+                Stream stream = session.syn(new SynInfo(false), new Stream.FrameListener.Adapter()
                 {
                     @Override
                     public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -350,7 +349,7 @@ public class SynReplyTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        Stream stream = session.syn(SPDY.V2, new SynInfo(true), null);
+        Stream stream = session.syn(new SynInfo(true), null);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         RstInfo rstInfo = ref.get();

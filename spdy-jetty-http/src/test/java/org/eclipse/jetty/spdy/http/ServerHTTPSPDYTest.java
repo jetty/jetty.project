@@ -98,7 +98,7 @@ public class ServerHTTPSPDYTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
-        return clientFactory.newSPDYClient().connect(socketAddress, frameListener).get();
+        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, frameListener).get();
     }
 
     protected SPDYClient.Factory newSPDYClientFactory(ThreadPool threadPool)
@@ -147,7 +147,7 @@ public class ServerHTTPSPDYTest
         headers.put("version", "HTTP/1.1");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -190,7 +190,7 @@ public class ServerHTTPSPDYTest
         headers.put("version", "HTTP/1.1");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -230,7 +230,7 @@ public class ServerHTTPSPDYTest
         headers.put("version", "HTTP/1.1");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -272,7 +272,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(SPDY.V2, new SynInfo(headers, false), new Stream.FrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(headers, false), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -317,7 +317,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(SPDY.V2, new SynInfo(headers, false), new Stream.FrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(headers, false), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -365,7 +365,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         headers.put("content-type", "application/x-www-form-urlencoded");
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(SPDY.V2, new SynInfo(headers, false), new Stream.FrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(headers, false), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -410,7 +410,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -460,7 +460,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -515,7 +515,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final AtomicInteger replyFrames = new AtomicInteger();
             private final AtomicInteger dataFrames = new AtomicInteger();
@@ -574,7 +574,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final AtomicInteger contentBytes = new AtomicInteger();
 
@@ -631,7 +631,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final AtomicInteger contentBytes = new AtomicInteger();
 
@@ -688,7 +688,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
@@ -752,7 +752,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
@@ -810,7 +810,7 @@ public class ServerHTTPSPDYTest
         headers.put("version", "HTTP/1.1");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final AtomicInteger replies = new AtomicInteger();
 
@@ -852,7 +852,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final AtomicInteger replies = new AtomicInteger();
 
@@ -887,7 +887,7 @@ public class ServerHTTPSPDYTest
             public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
                     throws IOException, ServletException
             {
-                throw new NullPointerException();
+                throw new NullPointerException("thrown_explicitly_by_the_test");
             }
         }), null);
 
@@ -897,7 +897,7 @@ public class ServerHTTPSPDYTest
         headers.put("version", "HTTP/1.1");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final AtomicInteger replies = new AtomicInteger();
 
@@ -944,7 +944,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(2);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final AtomicInteger replyFrames = new AtomicInteger();
             private final AtomicInteger dataFrames = new AtomicInteger();
@@ -1009,7 +1009,7 @@ public class ServerHTTPSPDYTest
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(SPDY.V2, new SynInfo(headers, true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new Stream.FrameListener.Adapter()
         {
             private final AtomicInteger replyFrames = new AtomicInteger();
             private final AtomicInteger dataFrames = new AtomicInteger();
@@ -1033,8 +1033,8 @@ public class ServerHTTPSPDYTest
                 dataLatch.countDown();
             }
         });
-        Assert.assertTrue(handlerLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(replyLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 }

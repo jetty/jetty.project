@@ -30,7 +30,6 @@ import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
@@ -94,7 +93,7 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
                 @Override
                 public Object call() throws Exception
                 {
-                    process(session, SPDY.V2, headers, iterations);
+                    process(session, headers, iterations);
                     return null;
                 }
             });
@@ -108,12 +107,12 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
         threadPool.shutdown();
     }
 
-    private void process(Session session, short version, Headers headers, int iterations) throws InterruptedException
+    private void process(Session session, Headers headers, int iterations) throws InterruptedException
     {
         for (int i = 0; i < iterations; ++i)
         {
             final CountDownLatch latch = new CountDownLatch(2);
-            Stream stream = session.syn(version, new SynInfo(headers, false), new Stream.FrameListener.Adapter()
+            Stream stream = session.syn(new SynInfo(headers, false), new Stream.FrameListener.Adapter()
             {
                 @Override
                 public void onReply(Stream stream, ReplyInfo replyInfo)

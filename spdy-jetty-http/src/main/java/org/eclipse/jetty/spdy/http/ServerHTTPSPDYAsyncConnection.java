@@ -252,7 +252,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 boolean expired = !connection.getEndPoint().blockReadable(maxIdleTime);
                 if (expired)
                 {
-                    stream.getSession().goAway(stream.getVersion());
+                    stream.getSession().goAway();
                     throw new EOFException("read timeout");
                 }
                 logger.debug("Waited {} ms for content bytes", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin));
@@ -470,7 +470,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 boolean expired = !connection.getEndPoint().blockWritable(maxIdleTime);
                 if (expired)
                 {
-                    stream.getSession().goAway(stream.getVersion());
+                    stream.getSession().goAway();
                     throw new EOFException("write timeout");
                 }
             }

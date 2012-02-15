@@ -179,7 +179,7 @@ public class StandardStream implements IStream
     {
         if (!opened)
         {
-            session.rst(getVersion(), new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             return;
         }
 
@@ -214,7 +214,7 @@ public class StandardStream implements IStream
         catch (StreamException x)
         {
             logger.debug("Could not send window update on stream " + this, x);
-            session.rst(getVersion(), new RstInfo(getId(), x.getStreamStatus()));
+            session.rst(new RstInfo(getId(), x.getStreamStatus()));
         }
     }
 
@@ -281,7 +281,7 @@ public class StandardStream implements IStream
         catch (StreamException x)
         {
             logger.debug("Could not send reply on stream " + this, x);
-            session.rst(getVersion(), new RstInfo(getId(), x.getStreamStatus()));
+            session.rst(new RstInfo(getId(), x.getStreamStatus()));
         }
     }
 
@@ -305,7 +305,7 @@ public class StandardStream implements IStream
         catch (StreamException x)
         {
             logger.debug("Could not send headers on stream " + this, x);
-            session.rst(getVersion(), new RstInfo(getId(), x.getStreamStatus()));
+            session.rst(new RstInfo(getId(), x.getStreamStatus()));
         }
     }
 
@@ -318,6 +318,6 @@ public class StandardStream implements IStream
     @Override
     public String toString()
     {
-        return "stream=" + getId() + " v" + getVersion() + " closed=" + (isClosed() ? "true" : isHalfClosed() ? "half" : "false");
+        return String.format("stream=%d v%d closed=%b", getId(), getVersion(), isClosed() ? "true" : isHalfClosed() ? "half" : "false");
     }
 }

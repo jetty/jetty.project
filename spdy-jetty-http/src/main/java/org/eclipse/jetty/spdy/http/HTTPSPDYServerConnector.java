@@ -17,12 +17,13 @@
 package org.eclipse.jetty.spdy.http;
 
 import org.eclipse.jetty.spdy.SPDYServerConnector;
+import org.eclipse.jetty.spdy.api.SPDY;
 
 public class HTTPSPDYServerConnector extends SPDYServerConnector
 {
     public HTTPSPDYServerConnector()
     {
         super(null);
-        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(this));
+        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, this));
     }
 }
