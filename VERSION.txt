@@ -1,4 +1,16 @@
-jetty-7.6.1-SNAPSHOT
+jetty-7.6.1.v20120215 - 15 February 2012
+ + 369121 simplified test
+ + 370120 jvm arguments added via start.ini and --exec are missing spaces
+ + 370137 SslContextFactory does not respect order for
+   [included|excluded]Protocols() and [included|excluded]CipherSuites().
+ + 370368 resolve stack overflow in mongo db session manager
+ + 370386 Remove META-INF from jetty distro
+ + 371040 nosqlsession needs to call correct super contructor for new sessions
+ + 371041 valid was not being set to new mongo db sessions, and the call to
+   mongodb api was wrong in isIdInUse
+ + 371162 NPE protection for nested security handlers
+ + JETTY-1484 Add option for HashSessionManager to delete session files if it
+   can't restore them
 
 jetty-7.6.0.v20120127 - 27 January 2012
  + 368773 allow authentication to be set by non securityHandler handlers
