@@ -30,8 +30,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
  */
 public class MongoTestServer extends AbstractTestServer
 {
-    
-    static MongoSessionIdManager _idManager;
+    static int __workers=0;
     private boolean _saveAllAttributes = false; // false save dirty, true save all
     
     public MongoTestServer(int port)
@@ -54,45 +53,19 @@ public class MongoTestServer extends AbstractTestServer
 
     public SessionIdManager newSessionIdManager(String config)
     {
-        if ( _idManager != null )
-        {
-            try
-            {
-                _idManager.stop();
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-            
-            _idManager.setScavengeDelay(_scavengePeriod + 1000);
-            _idManager.setScavengePeriod(_maxInactivePeriod);       
-            
-            try
-            {
-                _idManager.start();
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-            
-            return _idManager;
-        }
-        
         try
         {
             System.err.println("MongoTestServer:SessionIdManager:" + _maxInactivePeriod + "/" + _scavengePeriod);
-            _idManager = new MongoSessionIdManager(_server);
-            
-            _idManager.setScavengeDelay((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));
-            _idManager.setScavengePeriod(_maxInactivePeriod);                  
-            
-            return _idManager;
+            MongoSessionIdManager idManager = new MongoSessionIdManager(_server);
+            idManager.setWorkerName("w"+(__workers++));
+            idManager.setScavengeDelay((int)TimeUnit.SECONDS.toMillis(_scavengePeriod));
+            idManager.setScavengePeriod(_maxInactivePeriod);                  
+
+            return idManager;
         }
         catch (Exception e)
         {
-            throw new IllegalStateException();
+            throw new RuntimeException(e);
         }
     }
 

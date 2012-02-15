@@ -117,8 +117,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     protected AbstractSession newSession(HttpServletRequest request)
     {
         long created=System.currentTimeMillis();
-        String clusterId=getSessionIdManager().newSessionId(request,created);
-        return new NoSqlSession(this,created,created,clusterId);
+        return new NoSqlSession(this,request);
     }
 
     /* ------------------------------------------------------------ */

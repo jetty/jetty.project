@@ -1,8 +1,6 @@
 ==============================================================
  Jetty Web Container
- Copyright 1995-2009 Mort Bay Consulting Pty Ltd
-           2009-2012 Webtide LLC
-           2011-2012 Intalio Inc
+ Copyright 1995-2012 Mort Bay Consulting Pty Ltd.
 ==============================================================
 
 The Jetty Web Container is Copyright Mort Bay Consulting Pty Ltd

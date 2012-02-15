@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * @TODO Implement proposed deflate frame draft
+ * TODO Implement proposed deflate frame draft
  */
 public class DeflateFrameExtension extends AbstractExtension
 {
