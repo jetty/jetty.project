@@ -88,6 +88,14 @@ public abstract class DataInfo
         return result;
     }
 
+    public ByteBuffer asByteBuffer()
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(getBytesCount());
+        getBytes(buffer);
+        buffer.flip();
+        return buffer;
+    }
+
     public boolean isConsumed()
     {
         return consumed;

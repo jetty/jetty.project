@@ -54,10 +54,7 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        ByteBuffer buffer = ByteBuffer.allocateDirect(dataInfo.getBytesCount());
-                        dataInfo.getBytes(buffer);
-                        Assert.assertTrue(dataInfo.isConsumed());
-                        buffer.flip();
+                        ByteBuffer buffer = dataInfo.asByteBuffer();
                         stream.data(new ByteBufferDataInfo(buffer, true));
                     }
                 };

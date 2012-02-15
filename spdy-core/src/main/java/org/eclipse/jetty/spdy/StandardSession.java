@@ -81,6 +81,11 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         this.generator = generator;
     }
 
+    public short getVersion()
+    {
+        return version;
+    }
+
     @Override
     public void addListener(Listener listener)
     {

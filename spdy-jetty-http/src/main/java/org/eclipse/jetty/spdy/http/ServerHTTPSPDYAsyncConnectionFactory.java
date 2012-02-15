@@ -148,9 +148,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
             try
             {
-                ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(buffer);
-                buffer.flip();
+                ByteBuffer buffer = dataInfo.asByteBuffer();
 
                 ServerHTTPSPDYAsyncConnection connection = (ServerHTTPSPDYAsyncConnection)stream.getAttribute("connection");
                 connection.content(buffer, dataInfo.isClose());

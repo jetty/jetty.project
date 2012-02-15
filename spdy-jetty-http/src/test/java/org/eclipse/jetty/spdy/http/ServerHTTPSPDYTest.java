@@ -704,9 +704,7 @@ public class ServerHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                ByteBuffer byteBuffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(byteBuffer);
-                byteBuffer.flip();
+                ByteBuffer byteBuffer = dataInfo.asByteBuffer();
                 while (byteBuffer.hasRemaining())
                     buffer.write(byteBuffer.get());
                 if (dataInfo.isClose())
@@ -768,9 +766,7 @@ public class ServerHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                ByteBuffer byteBuffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(byteBuffer);
-                byteBuffer.flip();
+                ByteBuffer byteBuffer = dataInfo.asByteBuffer();
                 while (byteBuffer.hasRemaining())
                     buffer.write(byteBuffer.get());
                 if (dataInfo.isClose())

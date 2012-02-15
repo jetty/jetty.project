@@ -65,12 +65,6 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public short getVersion()
-    {
-        return frame.getVersion();
-    }
-
-    @Override
     public byte getPriority()
     {
         return frame.getPriority();
@@ -207,7 +201,7 @@ public class StandardStream implements IStream
                 // TODO: if the read buffer is small, but the default window size is big,
                 // we will send many window update frames... perhaps we can delay
                 // window update frames until we have a bigger delta to send
-                WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(getVersion(), getId(), delta);
+                WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(session.getVersion(), getId(), delta);
                 session.control(this, windowUpdateFrame);
             }
         }
@@ -275,7 +269,7 @@ public class StandardStream implements IStream
         try
         {
             updateCloseState(replyInfo.isClose());
-            SynReplyFrame frame = new SynReplyFrame(getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
+            SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
             session.control(this, frame);
         }
         catch (StreamException x)
@@ -299,7 +293,7 @@ public class StandardStream implements IStream
         try
         {
             updateCloseState(headersInfo.isClose());
-            HeadersFrame frame = new HeadersFrame(getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
+            HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
             session.control(this, frame);
         }
         catch (StreamException x)
@@ -318,6 +312,6 @@ public class StandardStream implements IStream
     @Override
     public String toString()
     {
-        return String.format("stream=%d v%d closed=%b", getId(), getVersion(), isClosed() ? "true" : isHalfClosed() ? "half" : "false");
+        return String.format("stream=%d v%d closed=%b", getId(), session.getVersion(), isClosed() ? "true" : isHalfClosed() ? "half" : "false");
     }
 }

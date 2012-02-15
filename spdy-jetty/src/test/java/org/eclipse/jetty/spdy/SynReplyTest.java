@@ -228,19 +228,16 @@ public class SynReplyTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                final ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                dataInfo.getBytes(buffer);
-                buffer.flip();
                 int dataCount = this.dataCount.incrementAndGet();
                 if (dataCount == 1)
                 {
-                    String chunk1 = Charset.forName("UTF-8").decode(buffer).toString();
+                    String chunk1 = dataInfo.asString("UTF-8");
                     Assert.assertEquals(data1, chunk1);
                     dataLatch1.countDown();
                 }
                 else if (dataCount == 2)
                 {
-                    String chunk2 = Charset.forName("UTF-8").decode(buffer).toString();
+                    String chunk2 = dataInfo.asString("UTF-8");
                     Assert.assertEquals(data2, chunk2);
                     dataLatch2.countDown();
                 }
@@ -276,10 +273,7 @@ public class SynReplyTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                        dataInfo.getBytes(buffer);
-                        buffer.flip();
-                        String data = Charset.forName("UTF-8").decode(buffer).toString();
+                        String data = dataInfo.asString("UTF-8");
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }

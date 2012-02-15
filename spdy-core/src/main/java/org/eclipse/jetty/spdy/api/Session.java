@@ -42,9 +42,15 @@ import java.util.List;
 public interface Session
 {
     /**
+     * @return the SPDY protocol version used by this session
+     */
+    public short getVersion();
+
+    /**
      * <p>Registers the given {@code listener} to be notified of session events.</p>
      *
      * @param listener the listener to register
+     * @see #removeListener(Listener)
      */
     public void addListener(Listener listener);
 
@@ -52,6 +58,7 @@ public interface Session
      * <p>Deregisters the give {@code listener} from being notified of session events.</p>
      *
      * @param listener the listener to deregister
+     * @see #addListener(Listener)
      */
     public void removeListener(Listener listener);
 
@@ -104,7 +111,7 @@ public interface Session
 
     /**
      * <p>A {@link FrameListener} is the passive counterpart of a {@link Session} and receives events happening
-     * on a SPDY connection.</p>
+     * on a SPDY session.</p>
      *
      * @see Session
      */
@@ -123,7 +130,10 @@ public interface Session
          *     {
          *         stream.reply(new ReplyInfo(false));
          *         stream.data(new StringDataInfo("foo", true));
+         *         return null; // Not interested in further stream events
          *     }
+         *
+         *     ...
          * }
          * </pre>
          * <p>Alternatively, if the stream creation requires reading data sent from the other peer:</p>
@@ -135,7 +145,7 @@ public interface Session
          *     if (!stream.isHalfClosed()) // The other peer will send data
          *     {
          *         stream.reply(new ReplyInfo(true));
-         *         return new Stream.FrameListener.Adapter()
+         *         return new Stream.FrameListener.Adapter() // Interested in stream events
          *         {
          *             public void onData(Stream stream, DataInfo dataInfo)
          *             {
@@ -143,6 +153,8 @@ public interface Session
          *             }
          *         };
          *     }
+         *
+         *     ...
          * }
          * </pre>
          *
