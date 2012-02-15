@@ -1,3 +1,5 @@
+jetty-8.1.2-SNAPSHOT
+
 jetty-8.1.1.v20120215 - 15 February 2012
  + 369121 simplified test
  + 370120 jvm arguments added via start.ini and --exec are missing spaces
