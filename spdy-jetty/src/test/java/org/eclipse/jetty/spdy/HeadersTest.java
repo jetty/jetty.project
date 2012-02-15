@@ -24,6 +24,7 @@ import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
@@ -37,10 +38,10 @@ public class HeadersTest extends AbstractTest
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
-                return new Stream.FrameListener.Adapter()
+                return new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onHeaders(Stream stream, HeadersInfo headersInfo)
@@ -56,7 +57,7 @@ public class HeadersTest extends AbstractTest
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        session.syn(new SynInfo(false), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)

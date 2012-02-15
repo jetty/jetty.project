@@ -33,9 +33,11 @@ import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
@@ -64,20 +66,20 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     private final Controller<FrameBytes> controller;
     private final AtomicInteger streamIds;
     private final AtomicInteger pingIds;
-    private final FrameListener frameListener;
+    private final SessionFrameListener listener;
     private final Generator generator;
     private final AtomicBoolean goAwaySent = new AtomicBoolean();
     private final AtomicBoolean goAwayReceived = new AtomicBoolean();
     private volatile int lastStreamId;
     private boolean flushing;
 
-    public StandardSession(short version, Controller<FrameBytes> controller, int initialStreamId, FrameListener frameListener, Generator generator)
+    public StandardSession(short version, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
     {
         this.version = version;
         this.controller = controller;
         this.streamIds = new AtomicInteger(initialStreamId);
         this.pingIds = new AtomicInteger(initialStreamId);
-        this.frameListener = frameListener;
+        this.listener = listener;
         this.generator = generator;
     }
 
@@ -99,7 +101,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public Stream syn(SynInfo synInfo, Stream.FrameListener frameListener)
+    public Stream syn(SynInfo synInfo, StreamFrameListener listener)
     {
         // Synchronization is necessary.
         // SPEC v3, 2.3.1 requires that the stream creation be monotonically crescent
@@ -118,7 +120,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
             {
                 int streamId = streamIds.getAndAdd(2);
                 SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, 0, synInfo.getPriority(), synInfo.getHeaders());
-                IStream stream = createStream(synStream, frameListener);
+                IStream stream = createStream(synStream, listener);
                 try
                 {
                     // May throw if wrong version or headers too big
@@ -358,8 +360,8 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         else
         {
             stream.handle(synStream);
-            Stream.FrameListener frameListener = notifyOnSyn(stream, synStream);
-            stream.setFrameListener(frameListener);
+            StreamFrameListener listener = notifyOnSyn(stream, synStream);
+            stream.setStreamFrameListener(listener);
 
             flush();
 
@@ -369,10 +371,10 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         }
     }
 
-    private IStream createStream(SynStreamFrame synStream, Stream.FrameListener frameListener)
+    private IStream createStream(SynStreamFrame synStream, StreamFrameListener listener)
     {
         IStream stream = new StandardStream(this, synStream);
-        stream.setFrameListener(frameListener);
+        stream.setStreamFrameListener(listener);
         if (streams.putIfAbsent(synStream.getStreamId(), stream) != null)
         {
             // If this happens we have a bug since we did not check that the peer's streamId was valid
@@ -504,20 +506,20 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
         flush();
     }
 
-    private Stream.FrameListener notifyOnSyn(Stream stream, SynStreamFrame frame)
+    private StreamFrameListener notifyOnSyn(Stream stream, SynStreamFrame frame)
     {
         try
         {
-            if (frameListener != null)
+            if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, listener);
                 SynInfo synInfo = new SynInfo(frame.getHeaders(), frame.isClose(), frame.isUnidirectional(), frame.getAssociatedStreamId(), frame.getPriority());
-                return frameListener.onSyn(stream, synInfo);
+                return listener.onSyn(stream, synInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + frameListener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
         return null;
     }
@@ -526,16 +528,16 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         try
         {
-            if (frameListener != null)
+            if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, listener);
                 RstInfo rstInfo = new RstInfo(frame.getStreamId(), StreamStatus.from(frame.getVersion(), frame.getStatusCode()));
-                frameListener.onRst(this, rstInfo);
+                listener.onRst(this, rstInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + frameListener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
     }
 
@@ -543,16 +545,16 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         try
         {
-            if (frameListener != null)
+            if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, listener);
                 SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
-                frameListener.onSettings(this, settingsInfo);
+                listener.onSettings(this, settingsInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + frameListener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
     }
 
@@ -560,16 +562,16 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         try
         {
-            if (frameListener != null)
+            if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, listener);
                 PingInfo pingInfo = new PingInfo(frame.getPingId());
-                frameListener.onPing(this, pingInfo);
+                listener.onPing(this, pingInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + frameListener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
     }
 
@@ -577,16 +579,16 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         try
         {
-            if (frameListener != null)
+            if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, frameListener);
+                logger.debug("Invoking callback with {} on listener {}", frame, listener);
                 GoAwayInfo goAwayInfo = new GoAwayInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
-                frameListener.onGoAway(this, goAwayInfo);
+                listener.onGoAway(this, goAwayInfo);
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + frameListener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
     }
 

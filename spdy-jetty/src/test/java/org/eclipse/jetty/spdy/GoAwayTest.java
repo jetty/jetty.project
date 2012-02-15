@@ -27,8 +27,10 @@ import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -45,7 +47,7 @@ public class GoAwayTest extends AbstractTest
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
                 return null;
@@ -74,7 +76,7 @@ public class GoAwayTest extends AbstractTest
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
                 stream.getSession().goAway();
@@ -83,7 +85,7 @@ public class GoAwayTest extends AbstractTest
         };
         final AtomicReference<GoAwayInfo> ref = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
-        Session.FrameListener clientSessionFrameListener = new Session.FrameListener.Adapter()
+        SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
@@ -112,7 +114,7 @@ public class GoAwayTest extends AbstractTest
             private final AtomicInteger syns = new AtomicInteger();
 
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 int synCount = syns.incrementAndGet();
                 if (synCount == 1)
@@ -128,7 +130,7 @@ public class GoAwayTest extends AbstractTest
             }
         };
         final AtomicReference<Session> ref = new AtomicReference<>();
-        Session.FrameListener clientSessionFrameListener = new Session.FrameListener.Adapter()
+        SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
@@ -154,7 +156,7 @@ public class GoAwayTest extends AbstractTest
             private AtomicInteger syns = new AtomicInteger();
 
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
                 int synCount = syns.incrementAndGet();
@@ -166,7 +168,7 @@ public class GoAwayTest extends AbstractTest
                 {
                     stream.getSession().goAway();
                     closeLatch.countDown();
-                    return new Stream.FrameListener.Adapter()
+                    return new StreamFrameListener.Adapter()
                     {
                         @Override
                         public void onData(Stream stream, DataInfo dataInfo)
@@ -179,7 +181,7 @@ public class GoAwayTest extends AbstractTest
         };
         final AtomicReference<GoAwayInfo> goAwayRef = new AtomicReference<>();
         final CountDownLatch goAwayLatch = new CountDownLatch(1);
-        Session.FrameListener clientSessionFrameListener = new Session.FrameListener.Adapter()
+        SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
@@ -192,7 +194,7 @@ public class GoAwayTest extends AbstractTest
 
         // First stream is processed ok
         final CountDownLatch reply1Latch = new CountDownLatch(1);
-        Stream stream1 = session.syn(new SynInfo(true), new Stream.FrameListener.Adapter()
+        Stream stream1 = session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)

@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
@@ -72,7 +73,7 @@ public class SettingsTest extends AbstractTest
         };
 
         final CountDownLatch latch = new CountDownLatch(1);
-        Session.FrameListener clientSessionFrameListener = new Session.FrameListener.Adapter()
+        SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
             public void onSettings(Session session, SettingsInfo clientSettingsInfo)

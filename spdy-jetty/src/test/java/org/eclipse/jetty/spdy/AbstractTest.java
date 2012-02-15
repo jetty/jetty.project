@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -64,7 +65,7 @@ public abstract class AbstractTest
         return new SPDYServerConnector(listener);
     }
 
-    protected Session startClient(InetSocketAddress socketAddress, Session.FrameListener frameListener) throws Exception
+    protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
     {
         if (clientFactory == null)
         {
@@ -73,7 +74,7 @@ public abstract class AbstractTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
-        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, frameListener).get();
+        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, listener).get();
     }
 
     protected SPDYClient.Factory newSPDYClientFactory(ThreadPool threadPool)

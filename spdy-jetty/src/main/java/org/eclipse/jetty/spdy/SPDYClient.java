@@ -46,7 +46,7 @@ import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.spdy.api.Session;
-import org.eclipse.jetty.spdy.api.Session.FrameListener;
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -86,7 +86,7 @@ public class SPDYClient
         this.bindAddress = bindAddress;
     }
 
-    public Future<Session> connect(InetSocketAddress address, FrameListener listener) throws IOException
+    public Future<Session> connect(InetSocketAddress address, SessionFrameListener listener) throws IOException
     {
         if (!factory.isStarted())
             throw new IllegalStateException(Factory.class.getSimpleName() + " is not started");
@@ -339,12 +339,12 @@ public class SPDYClient
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final SPDYClient client;
-        private final FrameListener listener;
+        private final SessionFrameListener listener;
         private boolean cancelled;
         private Throwable failure;
         private Session session;
 
-        private SessionFuture(SPDYClient client, FrameListener listener)
+        private SessionFuture(SPDYClient client, SessionFrameListener listener)
         {
             this.client = client;
             this.listener = listener;

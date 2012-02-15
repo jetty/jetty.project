@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 
@@ -28,7 +29,7 @@ public interface IStream extends Stream
 
     public void updateWindowSize(int delta);
 
-    public void setFrameListener(FrameListener frameListener);
+    public void setStreamFrameListener(StreamFrameListener listener);
 
     public void updateCloseState(boolean close);
 

@@ -32,6 +32,7 @@ import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -46,10 +47,10 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(synInfo.getHeaders(), false));
-                return new Stream.FrameListener.Adapter()
+                return new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
@@ -109,7 +110,7 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
         for (int i = 0; i < iterations; ++i)
         {
             final CountDownLatch latch = new CountDownLatch(2);
-            Stream stream = session.syn(new SynInfo(headers, false), new Stream.FrameListener.Adapter()
+            Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
             {
                 @Override
                 public void onReply(Stream stream, ReplyInfo replyInfo)

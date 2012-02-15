@@ -34,10 +34,10 @@ import java.util.List;
  * });
  * </pre>
  * <p>A {@link Session} is the active part of the endpoint, and by calling its API applications can generate
- * events on the connection; conversely {@link FrameListener} is the passive part of the endpoint, and
+ * events on the connection; conversely {@link SessionFrameListener} is the passive part of the endpoint, and
  * has callbacks that are invoked when events happen on the connection.</p>
  *
- * @see FrameListener
+ * @see SessionFrameListener
  */
 public interface Session
 {
@@ -66,10 +66,10 @@ public interface Session
      * <p>Sends a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
      *
      * @param synInfo  the metadata to send on stream creation
-     * @param frameListener the listener to invoke when events happen on the stream just created
+     * @param listener the listener to invoke when events happen on the stream just created
      * @return the stream just created
      */
-    public Stream syn(SynInfo synInfo, Stream.FrameListener frameListener);
+    public Stream syn(SynInfo synInfo, StreamFrameListener listener);
 
     /**
      * <p>Sends a RST_STREAM to abort a stream.</p>
@@ -108,126 +108,6 @@ public interface Session
      * @return the streams currently active in this session
      */
     public List<Stream> getStreams();
-
-    /**
-     * <p>A {@link FrameListener} is the passive counterpart of a {@link Session} and receives events happening
-     * on a SPDY session.</p>
-     *
-     * @see Session
-     */
-    public interface FrameListener extends EventListener
-    {
-        /**
-         * <p>Callback invoked when a request to create a stream has been received.</p>
-         * <p>Application code should implement this method and reply to the stream creation, eventually
-         * sending data:</p>
-         * <pre>
-         * public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
-         * {
-         *     // Do something with the metadata contained in synInfo
-         *
-         *     if (stream.isHalfClosed()) // The other peer will not send data
-         *     {
-         *         stream.reply(new ReplyInfo(false));
-         *         stream.data(new StringDataInfo("foo", true));
-         *         return null; // Not interested in further stream events
-         *     }
-         *
-         *     ...
-         * }
-         * </pre>
-         * <p>Alternatively, if the stream creation requires reading data sent from the other peer:</p>
-         * <pre>
-         * public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
-         * {
-         *     // Do something with the metadata contained in synInfo
-         *
-         *     if (!stream.isHalfClosed()) // The other peer will send data
-         *     {
-         *         stream.reply(new ReplyInfo(true));
-         *         return new Stream.FrameListener.Adapter() // Interested in stream events
-         *         {
-         *             public void onData(Stream stream, DataInfo dataInfo)
-         *             {
-         *                 // Do something with the incoming data in dataInfo
-         *             }
-         *         };
-         *     }
-         *
-         *     ...
-         * }
-         * </pre>
-         *
-         * @param stream  the stream just created
-         * @param synInfo the metadata sent on stream creation
-         * @return a listener for stream events, or null if there is no interest in being notified of stream events
-         */
-        public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo);
-
-        /**
-         * <p>Callback invoked when a stream error happens.</p>
-         *
-         * @param session the session
-         * @param rstInfo the metadata of the stream error
-         */
-        public void onRst(Session session, RstInfo rstInfo);
-
-        /**
-         * <p>Callback invoked when a request to configure the SPDY connection has been received.</p>
-         *
-         * @param session the session
-         * @param settingsInfo the metadata sent to configure
-         */
-        public void onSettings(Session session, SettingsInfo settingsInfo);
-
-        /**
-         * <p>Callback invoked when a ping request has completed its round-trip.</p>
-         *
-         * @param session the session
-         * @param pingInfo the metadata received
-         */
-        public void onPing(Session session, PingInfo pingInfo);
-
-        /**
-         * <p>Callback invoked when the other peer signals that it is closing the connection.</p>
-         *
-         * @param session the session
-         * @param goAwayInfo the metadata sent
-         */
-        public void onGoAway(Session session, GoAwayInfo goAwayInfo);
-
-        /**
-         * <p>Empty implementation of {@link FrameListener}</p>
-         */
-        public static class Adapter implements FrameListener
-        {
-            @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
-            {
-                return null;
-            }
-
-            @Override
-            public void onRst(Session session, RstInfo rstInfo)
-            {
-            }
-
-            @Override
-            public void onSettings(Session session, SettingsInfo settingsInfo)
-            {
-            }
-
-            @Override
-            public void onPing(Session session, PingInfo pingInfo)
-            {
-            }
-
-            @Override
-            public void onGoAway(Session session, GoAwayInfo goAwayInfo)
-            {
-            }
-        }
-    }
 
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>

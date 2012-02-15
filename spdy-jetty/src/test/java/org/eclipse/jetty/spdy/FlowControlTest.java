@@ -25,6 +25,7 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
@@ -39,7 +40,7 @@ public class FlowControlTest extends AbstractTest
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
                 stream.data(new BytesDataInfo(new byte[length], true));
@@ -49,7 +50,7 @@ public class FlowControlTest extends AbstractTest
 
         final AtomicInteger bytes = new AtomicInteger();
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
@@ -71,7 +72,7 @@ public class FlowControlTest extends AbstractTest
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
                 stream.data(new BytesDataInfo(new byte[length], false));
@@ -82,7 +83,7 @@ public class FlowControlTest extends AbstractTest
 
         final AtomicInteger bytes = new AtomicInteger();
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(true), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
@@ -105,10 +106,10 @@ public class FlowControlTest extends AbstractTest
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
-                return new Stream.FrameListener.Adapter()
+                return new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
@@ -137,10 +138,10 @@ public class FlowControlTest extends AbstractTest
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
-                return new Stream.FrameListener.Adapter()
+                return new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)

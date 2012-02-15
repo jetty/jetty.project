@@ -17,12 +17,13 @@
 package org.eclipse.jetty.spdy.api.server;
 
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
 
-public interface ServerSessionFrameListener extends Session.FrameListener
+public interface ServerSessionFrameListener extends SessionFrameListener
 {
     public void onConnect(Session session);
 
-    public static class Adapter extends Session.FrameListener.Adapter implements ServerSessionFrameListener
+    public static class Adapter extends SessionFrameListener.Adapter implements ServerSessionFrameListener
     {
         @Override
         public void onConnect(Session session)

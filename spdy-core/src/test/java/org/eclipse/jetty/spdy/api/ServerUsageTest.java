@@ -29,7 +29,7 @@ public class ServerUsageTest
         new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo streamInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
             {
                 Headers synHeaders = streamInfo.getHeaders();
                 // Do something with headers, for example extract them and perform an http request via Jetty's LocalConnector
@@ -89,7 +89,7 @@ public class ServerUsageTest
         new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public Stream.FrameListener onSyn(Stream stream, SynInfo streamInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
             {
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener

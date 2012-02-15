@@ -28,6 +28,7 @@ import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
@@ -45,7 +46,7 @@ public class StandardStream implements IStream
     private final ISession session;
     private final SynStreamFrame frame;
     private final AtomicInteger windowSize;
-    private volatile FrameListener frameListener;
+    private volatile StreamFrameListener listener;
     private volatile boolean opened;
     private volatile boolean halfClosed;
     private volatile boolean closed;
@@ -113,9 +114,9 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public void setFrameListener(FrameListener frameListener)
+    public void setStreamFrameListener(StreamFrameListener listener)
     {
-        this.frameListener = frameListener;
+        this.listener = listener;
     }
 
     @Override
@@ -214,52 +215,52 @@ public class StandardStream implements IStream
 
     private void notifyOnReply(SynReplyFrame synReply)
     {
-        final FrameListener frameListener = this.frameListener;
+        final StreamFrameListener listener = this.listener;
         try
         {
-            if (frameListener != null)
+            if (listener != null)
             {
-                logger.debug("Invoking reply callback with {} on listener {}", synReply, frameListener);
-                frameListener.onReply(this, new ReplyInfo(synReply.getHeaders(), synReply.isClose()));
+                logger.debug("Invoking reply callback with {} on listener {}", synReply, listener);
+                listener.onReply(this, new ReplyInfo(synReply.getHeaders(), synReply.isClose()));
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + frameListener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
     }
 
     private void notifyOnHeaders(HeadersFrame frame)
     {
-        final FrameListener frameListener = this.frameListener;
+        final StreamFrameListener listener = this.listener;
         try
         {
-            if (frameListener != null)
+            if (listener != null)
             {
-                logger.debug("Invoking headers callback with {} on listener {}", frame, frameListener);
-                frameListener.onHeaders(this, new HeadersInfo(frame.getHeaders(), frame.isClose(), frame.isResetCompression()));
+                logger.debug("Invoking headers callback with {} on listener {}", frame, listener);
+                listener.onHeaders(this, new HeadersInfo(frame.getHeaders(), frame.isClose(), frame.isResetCompression()));
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + frameListener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
     }
 
     private void notifyOnData(DataFrame frame, ByteBuffer data)
     {
-        final FrameListener frameListener = this.frameListener;
+        final StreamFrameListener listener = this.listener;
         try
         {
-            if (frameListener != null)
+            if (listener != null)
             {
-                logger.debug("Invoking data callback with {} on listener {}", frame, frameListener);
-                frameListener.onData(this, new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress()));
+                logger.debug("Invoking data callback with {} on listener {}", frame, listener);
+                listener.onData(this, new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress()));
             }
         }
         catch (Exception x)
         {
-            logger.info("Exception while notifying listener " + frameListener, x);
+            logger.info("Exception while notifying listener " + listener, x);
         }
     }
 

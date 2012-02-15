@@ -16,8 +16,6 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.util.EventListener;
-
 /**
  * <p>A {@link Stream} represents an bidirectional exchange of data on top of a {@link Session}.</p>
  * <p>Differently from socket streams, where the input and output streams are permanently associated
@@ -29,10 +27,10 @@ import java.util.EventListener;
  * may be opened. Differently from HTTP, though, multiple SPDY streams may be opened concurrently
  * on the same SPDY session.</p>
  * <p>Like {@link Session}, {@link Stream} is the active part and by calling its API applications
- * can generate events on the stream; conversely, {@link FrameListener} is the passive part, and its
+ * can generate events on the stream; conversely, {@link StreamFrameListener} is the passive part, and its
  * callbacks are invoked when events happen on the stream</p>
  *
- * @see FrameListener
+ * @see StreamFrameListener
  */
 public interface Stream
 {
@@ -55,7 +53,7 @@ public interface Stream
      * <p>Sends a SYN_REPLY frame in response to a SYN_STREAM frame.</p>
      *
      * @param replyInfo the metadata to send
-     * @see Session.FrameListener#onSyn(Stream, SynInfo)
+     * @see SessionFrameListener#onSyn(Stream, SynInfo)
      */
     public void reply(ReplyInfo replyInfo);
 
@@ -110,64 +108,4 @@ public interface Stream
      * @see #setAttribute(String, Object)
      */
     public Object removeAttribute(String key);
-
-    /**
-     * <p>A {@link FrameListener} is the passive counterpart of a {@link Stream} and receives
-     * events happening on a SPDY stream.</p>
-     *
-     * @see Stream
-     */
-    public interface FrameListener extends EventListener
-    {
-        /**
-         * <p>Callback invoked when a reply to a stream creation has been received.</p>
-         * <p>Application code may implement this method to send more data to the other end:</p>
-         * <pre>
-         * public void onReply(Stream stream, ReplyInfo replyInfo)
-         * {
-         *     stream.data(new StringDataInfo("content"), true);
-         * }
-         * </pre>
-         * @param stream the stream
-         * @param replyInfo the reply metadata
-         */
-        public void onReply(Stream stream, ReplyInfo replyInfo);
-
-        /**
-         * <p>Callback invoked when headers are received on a stream.</p>
-         *
-         * @param stream the stream
-         * @param headersInfo the headers metadata
-         */
-        public void onHeaders(Stream stream, HeadersInfo headersInfo);
-
-        /**
-         * <p>Callback invoked when data are received on a stream.</p>
-         *
-         * @param stream the stream
-         * @param dataInfo the data metadata
-         */
-        public void onData(Stream stream, DataInfo dataInfo);
-
-        /**
-         * <p>Empty implementation of {@link FrameListener}</p>
-         */
-        public static class Adapter implements FrameListener
-        {
-            @Override
-            public void onReply(Stream stream, ReplyInfo replyInfo)
-            {
-            }
-
-            @Override
-            public void onHeaders(Stream stream, HeadersInfo headersInfo)
-            {
-            }
-
-            @Override
-            public void onData(Stream stream, DataInfo dataInfo)
-            {
-            }
-        }
-    }
 }

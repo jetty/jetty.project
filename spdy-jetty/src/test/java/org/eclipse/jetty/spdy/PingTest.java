@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.PingInfo;
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class PingTest extends AbstractTest
     {
         final AtomicReference<PingInfo> ref = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
-        Session.FrameListener clientSessionFrameListener = new Session.FrameListener.Adapter()
+        SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
             public void onPing(Session session, PingInfo pingInfo)

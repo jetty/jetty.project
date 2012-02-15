@@ -30,7 +30,7 @@ public class ClientUsageTest
     {
         Session session = new StandardSession(SPDY.V2, null, 1, null, null);
 
-        session.syn(new SynInfo(false), new Stream.FrameListener.Adapter()
+        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -49,7 +49,7 @@ public class ClientUsageTest
     {
         Session session = new StandardSession(SPDY.V2, null, 1, null, null);
 
-        Stream stream = session.syn(new SynInfo(false), new Stream.FrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
         {
             // The good of passing the listener here is that you can safely accumulate info
             // from the headers to be used in the data, e.g. content-type, charset
