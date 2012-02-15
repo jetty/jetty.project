@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.ResultHandler;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -44,7 +45,7 @@ public class PingTest extends AbstractTest
             }
         };
         Session session = startClient(startServer(null), clientSessionFrameListener);
-        PingInfo pingInfo = session.ping();
+        PingInfo pingInfo = session.ping().get();
         Assert.assertEquals(1, pingInfo.getPingId() % 2);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -64,8 +65,14 @@ public class PingTest extends AbstractTest
             @Override
             public void onConnect(Session session)
             {
-                PingInfo pingInfo = session.ping();
-                this.pingId = pingInfo.getPingId();
+                session.ping(new ResultHandler<PingInfo>()
+                {
+                    @Override
+                    public void completed(PingInfo pingInfo)
+                    {
+                        pingId = pingInfo.getPingId();
+                    }
+                });
             }
 
             @Override

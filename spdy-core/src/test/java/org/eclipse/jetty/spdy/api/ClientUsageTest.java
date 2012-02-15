@@ -30,7 +30,7 @@ public class ClientUsageTest
     {
         Session session = new StandardSession(SPDY.V2, null, 1, null, null);
 
-        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -45,60 +45,107 @@ public class ClientUsageTest
     }
 
     @Test
-    public void testClientRequestWithBodyAndResponseWithBody() throws Exception
+    public void testClientRequestWithBodyResponseNoBody() throws Exception
     {
         Session session = new StandardSession(SPDY.V2, null, 1, null, null);
 
         Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
         {
-            // The good of passing the listener here is that you can safely accumulate info
-            // from the headers to be used in the data, e.g. content-type, charset
-            // In BWTP the listener was attached to the session, not passed to syn(), so could
-            // not accumulate if not adding attributes to the stream (which is a good idea anyway)
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                // Do something with the response
+                replyInfo.getHeaders().get("host");
+
+                // Then issue another similar request
+                stream.getSession().syn(new SynInfo(true), this);
+            }
+        }).get();
+        // Send-and-forget the data
+        stream.data(new StringDataInfo("data", true));
+    }
+
+    @Test
+    public void testAsyncClientRequestWithBodyResponseNoBody() throws Exception
+    {
+        Session session = new StandardSession(SPDY.V2, null, 1, null, null);
+
+        final String context = "context";
+        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                // Do something with the response
+                replyInfo.getHeaders().get("host");
+
+                // Then issue another similar request
+                stream.getSession().syn(new SynInfo(true), this);
+            }
+        }, new ResultHandler<Stream>()
+        {
+            @Override
+            public void completed(Stream stream)
+            {
+                // Differently from JDK 7 AIO, there is no need to
+                // have an explicit parameter for the context since
+                // that is captured while the handler is created anyway,
+                // and it is used only by the handler as parameter
+
+                // The style below is fire-and-forget, since
+                // we do not pass the handler nor we call get()
+                // to wait for the data to be sent
+                stream.data(new StringDataInfo(context, true));
+            }
+        });
+    }
+
+    @Test
+    public void testAsyncClientRequestWithBodyAndResponseWithBody() throws Exception
+    {
+        Session session = new StandardSession(SPDY.V2, null, 1, null, null);
+
+        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+        {
+            // The good of passing the listener to syn() is that applications can safely
+            // accumulate info from the reply headers to be used in the data callback,
+            // e.g. content-type, charset, etc.
 
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                // This style is similar to the new async channel API in JDK 7
-
                 // Do something with the response
-                int contentLength = replyInfo.getHeaders().get("content-length").valueAsInt();
-                //                stream.setAttribute("content-length", contentLength);
+                Headers headers = replyInfo.getHeaders();
+                int contentLength = headers.get("content-length").valueAsInt();
+                stream.setAttribute("content-length", contentLength);
+                if (!replyInfo.isClose())
+                    stream.setAttribute("builder", new StringBuilder());
 
-                // Then issue another similar request
+                // May issue another similar request while waiting for data
                 stream.getSession().syn(new SynInfo(true), this);
             }
 
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                //                StringBuilder builder = new StringBuilder();
-                //                builder.append(Charset.forName("UTF-8").decode(data));
+                StringBuilder builder = (StringBuilder)stream.getAttribute("builder");
+                builder.append(dataInfo.asString("UTF-8"));
                 if (dataInfo.isClose())
                 {
-                    //                    System.err.println("data = " + builder);
-                    //                    assert builder.toString().getBytes().length == stream.getAttribute("content-length");
+                    int receivedLength = builder.toString().getBytes(Charset.forName("UTF-8")).length;
+                    assert receivedLength == (Integer)stream.getAttribute("content-length");
                 }
 
             }
+        }, new ResultHandler<Stream>()
+        {
+            @Override
+            public void completed(Stream stream)
+            {
+                stream.data(new BytesDataInfo("wee".getBytes(Charset.forName("UTF-8")), false));
+                stream.data(new StringDataInfo("foo", false));
+                stream.data(new ByteBufferDataInfo(Charset.forName("UTF-8").encode("bar"), true));
+            }
         });
-
-        stream.data(new BytesDataInfo("wee".getBytes(Charset.forName("UTF-8")), false));
-        stream.data(new StringDataInfo("foo", false));
-        stream.data(new ByteBufferDataInfo(Charset.forName("UTF-8").encode("bar"), false));
-//        stream.data(new InputStreamDataInfo(new ByteArrayInputStream("baz".getBytes(Charset.forName("UTF-8"))), false));
-
-        //
-        // In CometD the style is different, but in bayeux the frame IS the message,
-        // while in SPDY the message is composed of several frames of different types
-        // e.g. synReply+data vs a single bayeux message
-        // That is why the listeners in Bayeux are simpler: you can only receive messages
-
-        // However, we can mimic Bayeux's behavior with SPDY if we add another layer on top of it
-        // that produces a Message that has an input stream (so that arbitrarily long bodies can be
-        // read without exhausting the memory).
-
-
-
     }
 }

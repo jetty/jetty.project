@@ -122,7 +122,7 @@ public class FlowControlTest extends AbstractTest
             }
         }), null);
 
-        Stream stream = session.syn(new SynInfo(true), null);
+        Stream stream = session.syn(new SynInfo(true), null).get();
         int length = 128 * 1024;
         stream.data(new BytesDataInfo(new byte[length], true));
 
@@ -154,7 +154,7 @@ public class FlowControlTest extends AbstractTest
             }
         }), null);
 
-        Stream stream = session.syn(new SynInfo(true), null);
+        Stream stream = session.syn(new SynInfo(true), null).get();
         int length = 128 * 1024;
         stream.data(new BytesDataInfo(new byte[length], false));
         stream.data(new BytesDataInfo(new byte[length], true));

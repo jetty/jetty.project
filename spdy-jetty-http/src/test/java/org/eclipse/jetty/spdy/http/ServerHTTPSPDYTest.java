@@ -284,7 +284,7 @@ public class ServerHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
                 replyLatch.countDown();
             }
-        });
+        }).get();
         stream.data(new StringDataInfo(data, true));
 
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
@@ -329,7 +329,7 @@ public class ServerHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
                 replyLatch.countDown();
             }
-        });
+        }).get();
         // Sleep between the data frames so that they will be read in 2 reads
         stream.data(new StringDataInfo(data1, false));
         Thread.sleep(1000);
@@ -377,7 +377,7 @@ public class ServerHTTPSPDYTest
                 Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
                 replyLatch.countDown();
             }
-        });
+        }).get();
         // Send the data frames consecutively, so the server reads both frames in one read
         stream.data(new StringDataInfo(data1, false));
         stream.data(new StringDataInfo(data2, true));

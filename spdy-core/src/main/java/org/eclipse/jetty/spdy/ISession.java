@@ -19,14 +19,15 @@ package org.eclipse.jetty.spdy;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 
 public interface ISession extends Session
 {
-    public void control(IStream stream, ControlFrame frame) throws StreamException;
+    public void control(IStream stream, ControlFrame frame, Handler handler) throws StreamException;
 
-    public void data(IStream stream, DataInfo dataInfo);
+    public void data(IStream stream, DataInfo dataInfo, Handler handler);
 
     public int getWindowSize();
 

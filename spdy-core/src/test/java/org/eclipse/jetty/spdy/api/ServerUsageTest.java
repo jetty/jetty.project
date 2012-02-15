@@ -32,7 +32,8 @@ public class ServerUsageTest
             public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
             {
                 Headers synHeaders = streamInfo.getHeaders();
-                // Do something with headers, for example extract them and perform an http request via Jetty's LocalConnector
+                // Do something with headers, for example extract them and
+                // perform an http request via Jetty's LocalConnector
 
                 // Get the http response, fill headers and data
                 Headers replyHeaders = new Headers();
@@ -68,17 +69,21 @@ public class ServerUsageTest
                 // C <--       SYN_REPLY(id=1)        --- S
                 // C <-- SYN_STREAM(id=2,uni,assId=1) --- S
                 //
-                // However, the API may allow to initiate the stream like in bwtp
+                // However, the API may allow to initiate the stream
 
-                SynInfo synInfo = new SynInfo(new Headers(), false, true, 0, (byte)0);
-                Stream stream = session.syn(synInfo, null);
-                // The point here is that we have no idea if the client accepted our stream
-                // So we return a stream, we may be able to send the headers frame, but later
-                // the client sends a rst frame.
-                // We have to atomically set some flag on the stream to signal it's closed
-                // and any operation on it will throw
-
-                stream.headers(new HeadersInfo(new Headers(), false, false));
+                session.syn(new SynInfo(false), null, new ResultHandler<Stream>()
+                {
+                    @Override
+                    public void completed(Stream stream)
+                    {
+                        // The point here is that we have no idea if the client accepted our stream
+                        // So we return a stream, we may be able to send the headers frame, but later
+                        // the client sends a rst frame.
+                        // We have to atomically set some flag on the stream to signal it's closed
+                        // and any operation on it will throw
+                        stream.headers(new HeadersInfo(new Headers(), true));
+                    }
+                });
             }
         };
     }
@@ -91,10 +96,19 @@ public class ServerUsageTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo streamInfo)
             {
+                // Need to send the reply first
+                stream.reply(new ReplyInfo(false));
+
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener
-                Stream pushStream = session.syn(new SynInfo(new Headers(), false, true, stream.getId(), (byte)0), null);
-                pushStream.data(new StringDataInfo("foo", false));
+                session.syn(new SynInfo(new Headers(), false, true, stream.getId(), (byte)0), null, new ResultHandler<Stream>()
+                {
+                    @Override
+                    public void completed(Stream pushStream)
+                    {
+                        pushStream.data(new StringDataInfo("foo", false));
+                    }
+                });
                 return null;
             }
         };

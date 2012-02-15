@@ -105,7 +105,7 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
         threadPool.shutdown();
     }
 
-    private void process(Session session, Headers headers, int iterations) throws InterruptedException
+    private void process(Session session, Headers headers, int iterations) throws Exception
     {
         for (int i = 0; i < iterations; ++i)
         {
@@ -128,7 +128,7 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
                     Assert.assertTrue(dataInfo.isConsumed());
                     latch.countDown();
                 }
-            });
+            }).get();
             stream.data(new StringDataInfo("data_" + stream.getId(), true));
             Assert.assertTrue("process() failed for stream=" + stream.getId(), latch.await(5, TimeUnit.SECONDS));
         }

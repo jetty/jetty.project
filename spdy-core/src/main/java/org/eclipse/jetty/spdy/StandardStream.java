@@ -19,10 +19,12 @@ package org.eclipse.jetty.spdy;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -203,7 +205,7 @@ public class StandardStream implements IStream
                 // we will send many window update frames... perhaps we can delay
                 // window update frames until we have a bigger delta to send
                 WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(session.getVersion(), getId(), delta);
-                session.control(this, windowUpdateFrame);
+                session.control(this, windowUpdateFrame, new Promise<>());
             }
         }
         catch (StreamException x)
@@ -265,41 +267,67 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public void reply(ReplyInfo replyInfo)
+    public Future<Void> reply(ReplyInfo replyInfo)
+    {
+        Promise<Void> result = new Promise<>();
+        reply(replyInfo, result);
+        return result;
+    }
+
+    @Override
+    public void reply(ReplyInfo replyInfo, Handler handler)
     {
         try
         {
             updateCloseState(replyInfo.isClose());
             SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-            session.control(this, frame);
+            session.control(this, frame, handler);
         }
         catch (StreamException x)
         {
             logger.debug("Could not send reply on stream " + this, x);
+            handler.failed(x);
             session.rst(new RstInfo(getId(), x.getStreamStatus()));
         }
     }
 
     @Override
-    public void data(DataInfo dataInfo)
+    public Future<Void> data(DataInfo dataInfo)
     {
-        // Cannot update the close state here, because the data that we send may
-        // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo);
+        Promise<Void> result = new Promise<>();
+        data(dataInfo, result);
+        return result;
     }
 
     @Override
-    public void headers(HeadersInfo headersInfo)
+    public void data(DataInfo dataInfo, Handler handler)
+    {
+        // Cannot update the close state here, because the data that we send may
+        // be flow controlled, so we need the stream to update the window size.
+        session.data(this, dataInfo, handler);
+    }
+
+    @Override
+    public Future<Void> headers(HeadersInfo headersInfo)
+    {
+        Promise<Void> result = new Promise<>();
+        headers(headersInfo, result);
+        return result;
+    }
+
+    @Override
+    public void headers(HeadersInfo headersInfo, Handler handler)
     {
         try
         {
             updateCloseState(headersInfo.isClose());
             HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-            session.control(this, frame);
+            session.control(this, frame, handler);
         }
         catch (StreamException x)
         {
             logger.debug("Could not send headers on stream " + this, x);
+            handler.failed(x);
             session.rst(new RstInfo(getId(), x.getStreamStatus()));
         }
     }

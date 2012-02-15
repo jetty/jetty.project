@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.api;
 
 import java.util.EventListener;
 import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * <p>A {@link Session} represents the client-side endpoint of a SPDY connection to a single origin server.</p>
@@ -63,39 +64,100 @@ public interface Session
     public void removeListener(Listener listener);
 
     /**
-     * <p>Sends a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
+     * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
+     * <p>Callers may use the returned future to wait for the stream to be created, and
+     * use the stream, for example, to send data frames.</p>
      *
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
-     * @return the stream just created
+     * @return a future for the stream that will be created
+     * @see #syn(SynInfo, StreamFrameListener, ResultHandler)
      */
-    public Stream syn(SynInfo synInfo, StreamFrameListener listener);
+    public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
 
     /**
-     * <p>Sends a RST_STREAM to abort a stream.</p>
+     * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * stream has been created and use the stream, for example, to send data frames.</p>
+     *
+     * @param synInfo  the metadata to send on stream creation
+     * @param listener the listener to invoke when events happen on the stream just created
+     * @param handler  the completion handler that gets notified of stream creation
+     * @see #syn(SynInfo, StreamFrameListener)
+     */
+    public void syn(SynInfo synInfo, StreamFrameListener listener, ResultHandler<Stream> handler);
+
+    /**
+     * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
+     * <p>Callers may use the returned future to wait for the reset to be sent.</p>
      *
      * @param rstInfo the metadata to reset the stream
+     * @return a future to wait for the reset to be sent
      */
-    public void rst(RstInfo rstInfo);
+    public Future<Void> rst(RstInfo rstInfo);
 
     /**
-     * <p>Sends a SETTINGS to configure the SPDY connection.</p>
+     * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * reset has been actually sent.</p>
+     *
+     * @param rstInfo the metadata to reset the stream
+     * @param handler  the completion handler that gets notified of reset's send
+     */
+    public void rst(RstInfo rstInfo, Handler handler);
+
+    /**
+     * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
+     * <p>Callers may use the returned future to wait for the settings to be sent.</p>
      *
      * @param settingsInfo the metadata to send
+     * @return a future to wait for the settings to be sent
      */
-    public void settings(SettingsInfo settingsInfo);
+    public Future<Void> settings(SettingsInfo settingsInfo);
 
     /**
-     * <p>Sends a PING, normally to measure round-trip time.</p>
+     * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * settings has been actually sent.</p>
      *
-     * @return the metadata sent
+     * @param settingsInfo the metadata to send
+     * @param handler  the completion handler that gets notified of settings' send
      */
-    public PingInfo ping();
+    public void settings(SettingsInfo settingsInfo, Handler handler);
+
+    /**
+     * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
+     * <p>Callers may use the returned future to wait for the ping to be sent.</p>
+     *
+     * @return a future for the metadata sent
+     */
+    public Future<PingInfo> ping();
+
+    /**
+     * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * ping has been actually sent.</p>
+     *
+     * @param handler  the completion handler that gets notified of ping's send
+     */
+    public void ping(ResultHandler<PingInfo> handler);
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
+     * <p>Callers may use the returned future to wait for the go away to be sent.</p>
+     *
+     * @return a future to wait for the go away to be sent
      */
-    public void goAway();
+    public Future<Void> goAway();
+
+    /**
+     * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * go away has been actually sent.</p>
+     *
+     * @param handler  the completion handler that gets notified of go away's send
+     */
+    public void goAway(Handler handler);
 
     /**
      * <p>Initiates the flush of data to the other peer.</p>
@@ -151,4 +213,27 @@ public interface Session
             }
         }
     }
+/*
+    public static abstract class SynHandler extends Promise<Stream>
+    {
+        @Override
+        public final void completed()
+        {
+            // Applications should not override this method, but the one below
+        }
+
+        public abstract void completed(Stream stream);
+    }
+
+    public static abstract class PingHandler extends Promise<PingInfo>
+    {
+        @Override
+        public final void completed()
+        {
+            // Applications should not override this method, but the one below
+        }
+
+        public abstract void completed(PingInfo stream);
+    }
+*/
 }

@@ -24,12 +24,15 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.PingInfo;
+import org.eclipse.jetty.spdy.api.ResultHandler;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
@@ -101,7 +104,15 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public Stream syn(SynInfo synInfo, StreamFrameListener listener)
+    public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener)
+    {
+        Promise<Stream> result = new Promise<>();
+        syn(synInfo, listener, result);
+        return result;
+    }
+
+    @Override
+    public void syn(SynInfo synInfo, StreamFrameListener listener, final ResultHandler<Stream> handler)
     {
         // Synchronization is necessary.
         // SPEC v3, 2.3.1 requires that the stream creation be monotonically crescent
@@ -120,111 +131,164 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
             {
                 int streamId = streamIds.getAndAdd(2);
                 SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, 0, synInfo.getPriority(), synInfo.getHeaders());
-                IStream stream = createStream(synStream, listener);
+                final IStream stream = createStream(synStream, listener);
                 try
                 {
                     // May throw if wrong version or headers too big
-                    control(stream, synStream);
+                    control(stream, synStream, new Handler()
+                    {
+                        @Override
+                        public void completed()
+                        {
+                            handler.completed(stream);
+                        }
+
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            handler.failed(x);
+                        }
+                    });
                     flush();
                 }
                 catch (StreamException x)
                 {
                     removeStream(stream);
+                    handler.failed(x);
                     throw new SPDYException(x);
                 }
-
-                return stream;
             }
         }
     }
 
     @Override
-    public void rst(RstInfo rstInfo)
+    public Future<Void> rst(RstInfo rstInfo)
+    {
+        Promise<Void> result = new Promise<>();
+        rst(rstInfo, result);
+        return result;
+    }
+
+    @Override
+    public void rst(RstInfo rstInfo, Handler handler)
     {
         try
         {
             // SPEC v3, 2.2.2
-            if (!goAwaySent.get())
+            if (goAwaySent.get())
+            {
+                handler.completed();
+            }
+            else
             {
                 RstStreamFrame frame = new RstStreamFrame(version, rstInfo.getStreamId(), rstInfo.getStreamStatus().getCode(version));
-                control(null, frame);
+                control(null, frame, handler);
+                flush();
             }
         }
         catch (StreamException x)
         {
             logger.info("Could not send reset on stream " + rstInfo.getStreamId(), x);
+            handler.failed(x);
         }
     }
 
     @Override
-    public void settings(SettingsInfo settingsInfo)
+    public Future<Void> settings(SettingsInfo settingsInfo)
     {
-        SettingsFrame frame = new SettingsFrame(version, settingsInfo.getFlags(), settingsInfo.getSettings());
-        settings(frame);
-        flush();
+        Promise<Void> result = new Promise<>();
+        settings(settingsInfo, result);
+        return result;
     }
 
-    private void settings(SettingsFrame frame)
+    @Override
+    public void settings(SettingsInfo settingsInfo, Handler handler)
     {
         try
         {
-            control(null, frame);
+            SettingsFrame frame = new SettingsFrame(version, settingsInfo.getFlags(), settingsInfo.getSettings());
+            control(null, frame, handler);
+            flush();
         }
         catch (StreamException x)
         {
             // Should never happen, but just in case we rethrow
+            handler.failed(x);
             throw new SPDYException(x);
         }
     }
 
     @Override
-    public PingInfo ping()
+    public Future<PingInfo> ping()
     {
-        int pingId = pingIds.getAndAdd(2);
-        PingFrame frame = new PingFrame(version, pingId);
-        ping(frame);
-        flush();
-        return new PingInfo(pingId);
+        Promise<PingInfo> result = new Promise<>();
+        ping(result);
+        return result;
     }
 
-    private void ping(PingFrame frame)
+    @Override
+    public void ping(final ResultHandler<PingInfo> handler)
     {
         try
         {
-            control(null, frame);
+            int pingId = pingIds.getAndAdd(2);
+            final PingInfo pingInfo = new PingInfo(pingId);
+            PingFrame frame = new PingFrame(version, pingId);
+            control(null, frame, new Handler()
+            {
+                @Override
+                public void completed()
+                {
+                    handler.completed(pingInfo);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    handler.failed(x);
+                }
+            });
+            flush();
         }
         catch (StreamException x)
         {
             // Should never happen, but just in case we rethrow
+            handler.failed(x);
             throw new SPDYException(x);
         }
     }
 
     @Override
-    public void goAway()
+    public Future<Void> goAway()
+    {
+        Promise<Void> result = new Promise<>();
+        goAway(result);
+        return result;
+    }
+
+    @Override
+    public void goAway(Handler handler)
     {
         if (goAwaySent.compareAndSet(false, true))
         {
             if (!goAwayReceived.get())
             {
-                GoAwayFrame frame = new GoAwayFrame(version, lastStreamId, SessionStatus.OK.getCode());
-                goAway(frame);
-                flush();
+                try
+                {
+                    GoAwayFrame frame = new GoAwayFrame(version, lastStreamId, SessionStatus.OK.getCode());
+                    control(null, frame, handler);
+                    flush();
+                    return;
+                }
+                catch (StreamException x)
+                {
+                    // Should never happen, but just in case we rethrow
+                    handler.failed(x);
+                    throw new SPDYException(x);
+                }
             }
         }
-    }
-
-    private void goAway(GoAwayFrame frame)
-    {
-        try
-        {
-            control(null, frame);
-        }
-        catch (StreamException x)
-        {
-            // Should never happen, but just in case we rethrow
-            throw new SPDYException(x);
-        }
+        handler.completed();
     }
 
     @Override
@@ -465,12 +529,19 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
 
     private void onPing(PingFrame frame)
     {
-        int pingId = frame.getPingId();
-        if (pingId % 2 == pingIds.get() % 2)
-            notifyOnPing(frame);
-        else
-            ping(frame);
-        flush();
+        try
+        {
+            int pingId = frame.getPingId();
+            if (pingId % 2 == pingIds.get() % 2)
+                notifyOnPing(frame);
+            else
+                control(null, frame, new Promise<>());
+            flush();
+        }
+        catch (StreamException x)
+        {
+            throw new SPDYException(x);
+        }
     }
 
     private void onGoAway(GoAwayFrame frame)
@@ -593,13 +664,13 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public void control(IStream stream, ControlFrame frame) throws StreamException
+    public void control(IStream stream, ControlFrame frame, Handler handler) throws StreamException
     {
         if (stream != null)
             updateLastStreamId(stream);
         ByteBuffer buffer = generator.control(frame);
         logger.debug("Posting {} on {}", frame, stream);
-        enqueueLast(new ControlFrameBytes(frame, buffer));
+        enqueueLast(new ControlFrameBytes(frame, buffer, handler));
     }
 
     private void updateLastStreamId(IStream stream)
@@ -615,10 +686,10 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     }
 
     @Override
-    public void data(IStream stream, DataInfo dataInfo)
+    public void data(IStream stream, DataInfo dataInfo, Handler handler)
     {
         logger.debug("Posting {} on {}", dataInfo, stream);
-        enqueueLast(new DataFrameBytes(stream, dataInfo));
+        enqueueLast(new DataFrameBytes(stream, dataInfo, handler));
         flush();
     }
 
@@ -704,11 +775,13 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         private final ControlFrame frame;
         private final ByteBuffer buffer;
+        private final Handler handler;
 
-        private ControlFrameBytes(ControlFrame frame, ByteBuffer buffer)
+        private ControlFrameBytes(ControlFrame frame, ByteBuffer buffer, Handler handler)
         {
             this.frame = frame;
             this.buffer = buffer;
+            this.handler = handler;
         }
 
         @Override
@@ -726,6 +799,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
                 // Recipients will know the last good stream id and act accordingly.
                 controller.close(false);
             }
+            handler.completed();
         }
 
         @Override
@@ -739,12 +813,14 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
     {
         private final IStream stream;
         private final DataInfo data;
+        private final Handler handler;
         private int dataLength;
 
-        private DataFrameBytes(IStream stream, DataInfo data)
+        private DataFrameBytes(IStream stream, DataInfo data, Handler handler)
         {
             this.stream = stream;
             this.data = data;
+            this.handler = handler;
         }
 
         @Override
@@ -776,6 +852,7 @@ public class StandardSession implements ISession, Parser.Listener, ISession.Cont
                 stream.updateCloseState(data.isClose());
                 if (stream.isClosed())
                     removeStream(stream);
+                handler.completed();
             }
         }
 

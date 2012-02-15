@@ -29,6 +29,7 @@ import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.ResultHandler;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -94,7 +95,7 @@ public class SynReplyTest extends AbstractTest
                 Assert.assertTrue(stream.isClosed());
                 replyLatch.countDown();
             }
-        });
+        }).get();
 
         Assert.assertTrue(synLatch.await(5, TimeUnit.SECONDS));
         Session serverSession = sessionRef.get();
@@ -176,7 +177,7 @@ public class SynReplyTest extends AbstractTest
                 Assert.assertTrue(stream.isClosed());
                 replyLatch.countDown();
             }
-        });
+        }).get();
         stream.data(new BytesDataInfo(dataBytes, true));
 
         Assert.assertTrue(synLatch.await(5, TimeUnit.SECONDS));
@@ -264,7 +265,7 @@ public class SynReplyTest extends AbstractTest
             @Override
             public void onConnect(Session session)
             {
-                Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+                session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -279,8 +280,14 @@ public class SynReplyTest extends AbstractTest
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }
+                }, new ResultHandler<Stream>()
+                {
+                    @Override
+                    public void completed(Stream stream)
+                    {
+                        stream.data(new StringDataInfo(serverData, true));
+                    }
                 });
-                stream.data(new StringDataInfo(serverData, true));
             }
         };
 
@@ -345,7 +352,7 @@ public class SynReplyTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        Stream stream = session.syn(new SynInfo(true), null);
+        Stream stream = session.syn(new SynInfo(true), null).get();
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         RstInfo rstInfo = ref.get();
