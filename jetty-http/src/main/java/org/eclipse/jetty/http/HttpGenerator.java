@@ -105,7 +105,7 @@ public class HttpGenerator extends AbstractGenerator
     }
 
     // data
-    private boolean _bypass = false; // True if _content buffer can be written directly to endp and bypass the content buffer
+    protected boolean _bypass = false; // True if _content buffer can be written directly to endp and bypass the content buffer
     private boolean _needCRLF = false;
     private boolean _needEOC = false;
     private boolean _bufferChunked = false;

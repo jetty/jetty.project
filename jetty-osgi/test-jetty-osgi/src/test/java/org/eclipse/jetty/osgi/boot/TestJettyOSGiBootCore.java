@@ -14,8 +14,7 @@
 // ========================================================================
 package org.eclipse.jetty.osgi.boot;
 
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,17 +60,18 @@ public class TestJettyOSGiBootCore
      * Jetty-osgi including webapp support and also jetty-client.
      * Sets the system property jetty.home.bunde=org.eclipse.jetty.osgi.boot
      * to use the jetty server configuration embedded in 
-     * @return
+     * 
+     * @return list of options
      */
     public static List<Option> provisionCoreJetty()
     {
         return Arrays.asList(options(
-                //get the jetty home config from the osgi boot bundle.
+                // get the jetty home config from the osgi boot bundle.
                 PaxRunnerOptions.vmOptions("-Djetty.port=9876 -D" + DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME_BUNDLE + "=org.eclipse.jetty.osgi.boot"),
                 
-               // CoreOptions.equinox(),
+                // CoreOptions.equinox(),
                 
-                mavenBundle().groupId( "org.mortbay.jetty" ).artifactId( "servlet-api" ).versionAsInProject().noStart(),
+                mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.servlet" ).versionAsInProject().noStart(),
                 mavenBundle().groupId( "org.eclipse.osgi" ).artifactId( "org.eclipse.osgi" ).versionAsInProject().noStart(),
                 mavenBundle().groupId( "org.eclipse.osgi" ).artifactId( "org.eclipse.osgi.services" ).versionAsInProject().noStart(),
 
@@ -85,10 +85,11 @@ public class TestJettyOSGiBootCore
                 mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-io" ).versionAsInProject().noStart(),
                 mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-continuation" ).versionAsInProject().noStart(),
                 mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-security" ).versionAsInProject().noStart(),
+                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-websocket" ).versionAsInProject().noStart(),
+                mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlets" ).versionAsInProject().noStart(),
                 
                 mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-client" ).versionAsInProject().noStart()
         ));
-        
     }
     
     @Inject
@@ -154,6 +155,7 @@ public class TestJettyOSGiBootCore
         HttpService http = (HttpService)bundleContext.getService(sr);
         http.registerServlet("/greetings", new HttpServlet() {
             private static final long serialVersionUID = 1L;
+            @Override
             protected void doGet(HttpServletRequest req,
                     HttpServletResponse resp) throws ServletException,
                     IOException {

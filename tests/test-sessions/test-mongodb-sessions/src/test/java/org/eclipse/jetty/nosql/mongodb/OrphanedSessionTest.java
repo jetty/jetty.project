@@ -29,7 +29,6 @@ public class OrphanedSessionTest extends AbstractOrphanedSessionTest
     }
 
     @Test
-    @Ignore ("requires mongodb server")
     public void testOrphanedSession() throws Exception
     {
         super.testOrphanedSession();

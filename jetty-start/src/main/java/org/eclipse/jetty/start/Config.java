@@ -24,10 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-import java.security.Policy;
 import java.text.CollationKey;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -148,13 +145,23 @@ public class Config
     public static final String DEFAULT_SECTION = "";
     static
     {
-        Package pkg = Config.class.getPackage();
-        if (pkg != null && 
-                "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) &&
-                (pkg.getImplementationVersion() != null))
-            _version = pkg.getImplementationVersion();
-        else
-            _version = System.getProperty("jetty.version","Unknown");
+        String ver = System.getProperty("jetty.version", null);
+        
+        if(ver == null) {
+            Package pkg = Config.class.getPackage();
+            if (pkg != null && 
+                    "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) &&
+                    (pkg.getImplementationVersion() != null))
+            {
+                ver = pkg.getImplementationVersion();
+            }
+        }
+
+        if (ver == null)
+        {
+            ver = "Unknown";
+        }
+        _version = ver;
     }
 
     /**
@@ -177,7 +184,6 @@ public class Config
     private static final Map<String, String> __properties = new HashMap<String, String>();
     private final Map<String, Classpath> _classpaths = new HashMap<String, Classpath>();
     private final List<String> _xml = new ArrayList<String>();
-    private String _policyDirectory = null;
     private String _classname = null;
 
     private int argCount = 0;

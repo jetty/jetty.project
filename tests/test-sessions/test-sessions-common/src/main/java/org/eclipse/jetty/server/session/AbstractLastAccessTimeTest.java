@@ -98,13 +98,11 @@ public abstract class AbstractLastAccessTimeTest
                         Thread.sleep(requestInterval);
                     }
 
-                    System.out.println("Waiting for scavenging on node1...");
-
                     // At this point, session1 should be eligible for expiration.
                     // Let's wait for the scavenger to run, waiting 2.5 times the scavenger period
                     Thread.sleep(scavengePeriod * 2500L);
 
-                    // Access again server1, and be sure we can
+                    // Access again server1, and ensure that we can still access the session
                     exchange1 = new ContentExchange(true);
                     exchange1.setMethod(HttpMethods.GET);
                     exchange1.setURL("http://localhost:" + port1 + contextPath + servletMapping);
@@ -112,6 +110,8 @@ public abstract class AbstractLastAccessTimeTest
                     client.send(exchange1);
                     exchange1.waitForDone();
                     assertEquals(HttpServletResponse.SC_OK, exchange1.getResponseStatus());
+                    //test that the session was kept alive by server 2 and still contains what server1 put in it
+                    assertEquals("test", exchange1.getResponseContent());
                     
                 }
                 finally

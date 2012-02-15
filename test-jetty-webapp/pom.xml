@@ -42,9 +42,9 @@
               <descriptors>
                 <descriptor>src/main/assembly/web-bundle.xml</descriptor>
               </descriptors>
-		      <archive>
-				<manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-		      </archive>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+              </archive>
             </configuration>
           </execution>
         </executions>
@@ -63,10 +63,10 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
-	  <supportedProjectTypes>
-	    <supportedProjectType>war</supportedProjectType>
-	  </supportedProjectTypes>
-	</configuration>
+          <supportedProjectTypes>
+            <supportedProjectType>war</supportedProjectType>
+          </supportedProjectTypes>
+        </configuration>
         <executions>
           <execution>
             <id>bundle-manifest</id>
@@ -76,7 +76,7 @@
             </goals>
             <configuration>
               <instructions>
-		<Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
+                <Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
                 <Import-Package>javax.servlet,org.eclipse.jetty.servlets,*</Import-Package>
                 <Export-Package>!com.acme*</Export-Package>
                 <!-- the test webapp is configured via a jetty xml file
@@ -163,8 +163,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
