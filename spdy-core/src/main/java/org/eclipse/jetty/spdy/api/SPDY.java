@@ -16,9 +16,19 @@
 
 package org.eclipse.jetty.spdy.api;
 
+/**
+ * <p>Helper class that holds useful SPDY constants.</p>
+ */
 public class SPDY
 {
+    /**
+     * <p>Constant that indicates the version 2 of the SPDY protocol</p>
+     */
     public static final short V2 = 2;
+
+    /**
+     * <p>Constant that indicates the version 3 of the SPDY protocol</p>
+     */
     public static final short V3 = 3;
 
     private SPDY()
