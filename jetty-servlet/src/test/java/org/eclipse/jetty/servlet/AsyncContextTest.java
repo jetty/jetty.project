@@ -60,14 +60,17 @@ public class AsyncContextTest
     }
 
     @Test
-    @Ignore ("failing test illustrating potential issue")
+    //Ignore ("failing test illustrating potential issue")
     public void testSimpleAsyncContext() throws Exception
     {
         String request = "GET /servletPath HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
                 + "Connection: close\r\n" + "\r\n";
         String responseString = _connector.getResponses(request);
         
+        System.out.println(responseString);
+        
         Assert.assertTrue("check in servlet doGet", responseString.contains("doGet:getServletPath:/servletPath"));
+        Assert.assertTrue("check in servlet doGet via async", responseString.contains("doGet:async:getServletPath:/servletPath"));
         Assert.assertTrue("check in async runnable", responseString.contains("async:run:/servletPath"));
     }
 
@@ -84,9 +87,12 @@ public class AsyncContextTest
 
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            response.getOutputStream().print("doGet:getServletPath:" + request.getServletPath());
-            
+            response.getOutputStream().print("doGet:getServletPath:" + request.getServletPath() + "\n");
+
             AsyncContext asyncContext = request.startAsync();
+            
+            response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
+
             Runnable runable = new AsyncRunnable(asyncContext);
             new Thread(runable).start();
         }
@@ -112,7 +118,7 @@ public class AsyncContextTest
             
             try
             {
-                _context.getResponse().getOutputStream().print("async:run:" + req.getServletPath());
+                _context.getResponse().getOutputStream().print("async:run:" + req.getServletPath() + "\n");
             }
             catch (IOException e)
             {
