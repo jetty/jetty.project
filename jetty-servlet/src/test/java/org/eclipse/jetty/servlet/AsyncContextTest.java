@@ -60,7 +60,7 @@ public class AsyncContextTest
     }
 
     @Test
-    @Ignore ("failing test illustrating potential issue")
+    //Ignore ("failing test illustrating potential issue")
     public void testSimpleAsyncContext() throws Exception
     {
         String request = "GET /servletPath HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
@@ -72,6 +72,13 @@ public class AsyncContextTest
         Assert.assertTrue("check in servlet doGet", responseString.contains("doGet:getServletPath:/servletPath"));
         Assert.assertTrue("check in servlet doGet via async", responseString.contains("doGet:async:getServletPath:/servletPath"));
         Assert.assertTrue("check in async runnable", responseString.contains("async:run:/servletPath"));
+        Assert.assertTrue("async attr check: servlet path", responseString.contains("async:run:attr:servletPath:/servletPath"));
+        // should validate these are indeed correct
+        Assert.assertTrue("async attr check: path info", responseString.contains("async:run:attr:pathInfo:null"));
+        Assert.assertTrue("async attr check: request uri", responseString.contains("async:run:attr:requestURI:/servletPath"));
+        Assert.assertTrue("async attr check: query string", responseString.contains("async:run:attr:queryString:null"));
+        Assert.assertTrue("async attr check: context path", responseString.contains("async:run:attr:contextPath:"));
+
     }
 
     @After
@@ -89,12 +96,15 @@ public class AsyncContextTest
         {
             response.getOutputStream().print("doGet:getServletPath:" + request.getServletPath() + "\n");
 
-            AsyncContext asyncContext = request.startAsync();
+            AsyncContext asyncContext = request.startAsync(request, response);
             
             response.getOutputStream().print("doGet:async:getServletPath:" + ((HttpServletRequest)asyncContext.getRequest()).getServletPath() + "\n");
 
-            Runnable runable = new AsyncRunnable(asyncContext);
-            new Thread(runable).start();
+            //Runnable runable = new AsyncRunnable(asyncContext);
+            //new Thread(runable).start();
+            asyncContext.start(new AsyncRunnable(asyncContext));
+            
+            return;
         }
     }
 
@@ -119,6 +129,12 @@ public class AsyncContextTest
             try
             {
                 _context.getResponse().getOutputStream().print("async:run:" + req.getServletPath() + "\n");
+                _context.getResponse().getOutputStream().print("async:run:attr:servletPath:" + req.getAttribute(AsyncContext.ASYNC_SERVLET_PATH) + "\n");
+                _context.getResponse().getOutputStream().print("async:run:attr:pathInfo:" + req.getAttribute(AsyncContext.ASYNC_PATH_INFO) + "\n");
+                _context.getResponse().getOutputStream().print("async:run:attr:requestURI:" + req.getAttribute(AsyncContext.ASYNC_REQUEST_URI) + "\n");
+                _context.getResponse().getOutputStream().print("async:run:attr:queryString:" + req.getAttribute(AsyncContext.ASYNC_QUERY_STRING) + "\n");
+                _context.getResponse().getOutputStream().print("async:run:attr:contextPath:" + req.getAttribute(AsyncContext.ASYNC_CONTEXT_PATH) + "\n");
+
             }
             catch (IOException e)
             {
