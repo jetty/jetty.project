@@ -8,10 +8,6 @@
   <artifactId>example-jetty-embedded</artifactId>
   <name>Example :: Jetty Embedded</name>
   <description>Jetty Embedded Examples</description>
-  <build>
-    <plugins>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

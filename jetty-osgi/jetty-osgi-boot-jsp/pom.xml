@@ -24,48 +24,25 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.osgi</groupId>
-    	<artifactId>org.eclipse.osgi</artifactId>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.osgi</groupId>
-        <artifactId>org.eclipse.osgi.services</artifactId>
+      <groupId>org.eclipse.osgi</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
     </dependency>
-<!-- switch to 2.2 once it works in OSGi for us
+    <!-- Orbit Servlet Deps -->
     <dependency>
-      <groupId>org.glassfish.web</groupId>
-      <artifactId>jsp-impl</artifactId>
-      <version>2.2</version>
-    </dependency> -->
-    <dependency>
-      <groupId>org.mortbay.jetty</groupId>
-      <artifactId>jsp-2.1-glassfish</artifactId>
-      <version>2.1.v20100127</version>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet</artifactId>
     </dependency>
-    <!--dependency>
-      <groupId>javax.servlet.jsp</groupId>
-      <artifactId>jsp-api</artifactId>
-      <version>2.2</version>
-    </dependency-->
+    <!-- Orbit JSP Deps -->
     <dependency>
-      <groupId>javax.el</groupId>
-      <artifactId>el-api</artifactId>
-      <version>2.2</version>
-    </dependency>
-    <dependency>
-     <groupId>${servlet.spec.groupId}</groupId>
-     <artifactId>${servlet.spec.artifactId}</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jsp</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
-  <!-- can't find the jsp-2.2 jars on maven central.
-    adding glassifish maven repo for now. -->
-  <repositories>
-    <repository>
-      <id>sun</id>
-      <url>http://download.java.net/maven/2/</url>
-    </repository>
-  </repositories>
-
 
   <build>
     <plugins>
@@ -117,6 +94,4 @@
       </plugin>
     </plugins>
   </build>
-
-
 </project>

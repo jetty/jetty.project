@@ -810,8 +810,8 @@ public class HttpExchange
 
     void associate(AbstractHttpConnection connection)
     {
-        if (connection.getEndPoint().getLocalHost() != null)
-            _localAddress = new Address(connection.getEndPoint().getLocalHost(),connection.getEndPoint().getLocalPort());
+        if (connection.getEndPoint().getLocalAddr() != null)
+            _localAddress = new Address(connection.getEndPoint().getLocalAddr(),connection.getEndPoint().getLocalPort());
 
         _connection = connection;
         if (getStatus() == STATUS_CANCELLING)

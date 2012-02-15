@@ -18,6 +18,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.http.HttpBuffers;
@@ -30,7 +31,6 @@ import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -49,8 +49,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * <li>Base acceptor thread</li>
  * <li>Optional reverse proxy headers checking</li>
  * </ul>
- *
- *
  */
 public abstract class AbstractConnector extends AggregateLifeCycle implements HttpBuffers, Connector, Dumpable
 {
@@ -130,7 +128,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /** Set the ThreadPool.
      * The threadpool passed is added via {@link #addBean(Object)} so that 
      * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
-     * @param threadPool the threadPool to set
+     * @param pool the threadPool to set
      */
     public void setThreadPool(ThreadPool pool)
     {
@@ -225,6 +223,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
      * @return Returns the maxIdleTime when resources are low.
      * @deprecated
      */
+    @Deprecated
     public final int getLowResourceMaxIdleTime()
     {
         return getLowResourcesMaxIdleTime();
@@ -236,6 +235,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
      *            The maxIdleTime to set when resources are low.
      * @deprecated
      */
+    @Deprecated
     public final void setLowResourceMaxIdleTime(int maxIdleTime)
     {
         setLowResourcesMaxIdleTime(maxIdleTime);
@@ -639,10 +639,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
      *
      * @param check
      *            true if this connector is checking the x-forwarded-for/host/server headers
-     * @set {@link #setForwardedForHeader(String)}
-     * @set {@link #setForwardedHostHeader(String)}
-     * @set {@link #setForwardedProtoHeader(String)}
-     * @set {@link #setForwardedServerHeader(String)}
+     * @see #setForwardedForHeader(String)
+     * @see #setForwardedHostHeader(String)
+     * @see #setForwardedProtoHeader(String)
+     * @see #setForwardedServerHeader(String)
      */
     public void setForwarded(boolean check)
     {

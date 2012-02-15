@@ -26,7 +26,6 @@ public class RemoveSessionTest extends AbstractRemoveSessionTest
     }
     
     @Test
-    @Ignore ("requires mongodb server")
     public void testRemoveSession() throws Exception
     {
         super.testRemoveSession();

@@ -32,5 +32,6 @@
     <module>test-sessions-common</module>
     <module>test-hash-sessions</module>
     <module>test-jdbc-sessions</module>
+    <module>test-mongodb-sessions</module>
   </modules>
 </project>
