@@ -3,6 +3,7 @@ package org.eclipse.jetty.servlets;
 import static org.hamcrest.Matchers.*;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -10,7 +11,7 @@ import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPOutputStream;
+import java.util.zip.GZIPInputStream;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -26,7 +27,6 @@ import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -81,7 +81,6 @@ public class GzipWithPipeliningTest
     }
     
     @Test
-    @Ignore
     public void testGzipThenImagePipelining() throws Exception
     {
         testingdir.ensureEmpty();
@@ -110,18 +109,16 @@ public class GzipWithPipeliningTest
             Assert.assertThat("Content-Encoding should be gzipped",respHeader,containsString("Content-Encoding: gzip\r\n"));
             Assert.assertThat("Transfer-Encoding should be chunked",respHeader,containsString("Transfer-Encoding: chunked\r\n"));
 
-            // Sha1tracking for First Request
-            FileOutputStream fos = new FileOutputStream(new File(outputDir, "response-1.txt"));
-            MessageDigest digestMain = MessageDigest.getInstance("SHA1");
-            DigestOutputStream digesterMain = new DigestOutputStream(fos,digestMain);
-            GZIPOutputStream gziperMain = new GZIPOutputStream(digesterMain);
+            // Raw output / gzipped, writted to disk (checked for sha1sum later)
+            File rawOutputFile = new File(outputDir, "response-1.gz");
+            FileOutputStream rawOutputStream = new FileOutputStream(rawOutputFile);
 
             long chunkSize = client.readChunkSize();
             System.out.println("Chunk Size: " + chunkSize);
 
             // Read only 20% - intentionally a partial read.
             System.out.println("Attempting to read partial content ...");
-            int readBytes = client.readBody(gziperMain,(int)((float)chunkSize * 0.20f));
+            int readBytes = client.readBody(rawOutputStream,(int)((float)chunkSize * 0.20f));
             System.out.printf("Read %,d bytes%n",readBytes);
 
             // Issue another request
@@ -133,7 +130,7 @@ public class GzipWithPipeliningTest
             chunkSize = chunkSize - readBytes;
             while (chunkSize > 0)
             {
-                readBytes = client.readBody(gziperMain,(int)chunkSize);
+                readBytes = client.readBody(rawOutputStream,(int)chunkSize);
                 System.out.printf("Read %,d bytes%n",readBytes);
                 line = client.readLine();
                 Assert.assertThat("Chunk delim should be an empty line with CR+LF",line,is(""));
@@ -144,7 +141,17 @@ public class GzipWithPipeliningTest
             // Inter-pipeline delim
             line = client.readLine();
             Assert.assertThat("Inter-pipeline delim should be an empty line with CR+LF",line,is(""));
+            
+            // Sha1tracking for 1st Request
+            MessageDigest digestTxt = MessageDigest.getInstance("SHA1");
+            DigestOutputStream digesterTxt = new DigestOutputStream(new NoOpOutputStream(),digestTxt);
 
+            // Decompress 1st request and calculate sha1sum
+            IO.close(rawOutputStream);
+            FileInputStream rawInputStream = new FileInputStream(rawOutputFile);
+            GZIPInputStream ungzipStream = new GZIPInputStream(rawInputStream);
+            IO.copy(ungzipStream, digesterTxt);
+            
             // Read 2nd request http response header
             respHeader = client.readResponseHeader();
             System.out.println("Response Header #2 --\n" + respHeader);
@@ -161,9 +168,8 @@ public class GzipWithPipeliningTest
             client.readBody(digesterImg,contentLength);
 
             // Validate checksums
-            IO.close(gziperMain);
-            IO.close(digesterMain);
-            assertChecksum("lots-of-fantasy-names.txt",digestMain);
+            IO.close(rawOutputStream);
+            assertChecksum("lots-of-fantasy-names.txt",digestTxt);
             IO.close(digesterImg);
             assertChecksum("jetty_logo.png",digestImg);
         }
