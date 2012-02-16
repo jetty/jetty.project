@@ -3,6 +3,7 @@ package org.eclipse.jetty.servlets;
 import static org.hamcrest.Matchers.*;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.DigestOutputStream;
@@ -21,10 +22,12 @@ import org.eclipse.jetty.servlets.gzip.Hex;
 import org.eclipse.jetty.servlets.gzip.NoOpOutputStream;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -32,6 +35,9 @@ import org.junit.Test;
  */
 public class GzipWithPipeliningTest
 {
+    @Rule
+    public TestingDir testingdir = new TestingDir();
+    
     private Server server;
     private URI serverUri;
 
@@ -73,11 +79,14 @@ public class GzipWithPipeliningTest
     {
         server.stop();
     }
-
+    
     @Test
     @Ignore
     public void testGzipThenImagePipelining() throws Exception
     {
+        testingdir.ensureEmpty();
+        File outputDir = testingdir.getDir(); 
+        
         PipelineHelper client = new PipelineHelper(serverUri);
 
         try
@@ -102,8 +111,9 @@ public class GzipWithPipeliningTest
             Assert.assertThat("Transfer-Encoding should be chunked",respHeader,containsString("Transfer-Encoding: chunked\r\n"));
 
             // Sha1tracking for First Request
+            FileOutputStream fos = new FileOutputStream(new File(outputDir, "response-1.txt"));
             MessageDigest digestMain = MessageDigest.getInstance("SHA1");
-            DigestOutputStream digesterMain = new DigestOutputStream(new NoOpOutputStream(),digestMain);
+            DigestOutputStream digesterMain = new DigestOutputStream(fos,digestMain);
             GZIPOutputStream gziperMain = new GZIPOutputStream(digesterMain);
 
             long chunkSize = client.readChunkSize();
