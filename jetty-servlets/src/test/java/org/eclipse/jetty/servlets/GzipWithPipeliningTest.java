@@ -125,7 +125,7 @@ public class GzipWithPipeliningTest
             client.issueGET("/jetty_logo.png",true);
 
             // Finish reading chunks
-            System.out.println("Finish reading reamaining chunks ...");
+            System.out.println("Finish reading remaining chunks ...");
             String line;
             chunkSize = chunkSize - readBytes;
             while (chunkSize > 0)
