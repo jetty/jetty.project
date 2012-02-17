@@ -62,7 +62,7 @@ public class Server extends HandlerWrapper implements Attributes
              Server.class.getPackage().getImplementationVersion()!=null)
             __version=Server.class.getPackage().getImplementationVersion();
         else
-            __version=System.getProperty("jetty.version","8.0.y.z-SNAPSHOT");
+            __version=System.getProperty("jetty.version","8.y.z-SNAPSHOT");
     }
 
     private final Container _container=new Container();
