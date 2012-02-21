@@ -183,7 +183,7 @@ public class PackageAdminServiceTracker implements ServiceListener
     	{
     		return;
     	}
-    	StringTokenizer tokenizer = new StringTokenizer(requiredBundleHeader, ",");
+    	StringTokenizer tokenizer = new ManifestTokenizer(requiredBundleHeader);
     	while (tokenizer.hasMoreTokens())
     	{
     		String tok = tokenizer.nextToken().trim();
@@ -311,6 +311,57 @@ public class PackageAdminServiceTracker implements ServiceListener
     public boolean frameworkHasCompletedAutostarts()
     {
     	return _startLevel == null ? true : _startLevel.getStartLevel() >= _maxStartLevel;
+    }
+
+    private static class ManifestTokenizer extends StringTokenizer {
+
+        public ManifestTokenizer(String header) {
+            super(header, ",");
+        }
+
+        @Override
+        public String nextToken() {
+            String token = super.nextToken();
+
+            while (hasOpenQuote(token) && hasMoreTokens()) {
+                token += "," + super.nextToken();
+            }
+            return token;
+        }
+
+        private boolean hasOpenQuote(String token) {
+            int i = -1;
+            do {
+                int quote = getQuote(token, i+1);
+                if (quote < 0) {
+                    return false;
+                }
+
+                i = token.indexOf(quote, i+1);
+                i = token.indexOf(quote, i+1);
+            } while (i >= 0);
+            return true;
+        }
+
+        private int getQuote(String token, int offset) {
+            int i = token.indexOf('"', offset);
+            int j = token.indexOf('\'', offset);
+            if (i < 0) {
+                if (j < 0) {
+                    return -1;
+                } else {
+                    return '\'';
+                }
+            }
+            if (j < 0) {
+                return '"';
+            }
+            if (i < j) {
+                return '"';
+            }
+            return '\'';
+        }
+
     }
 
 }
