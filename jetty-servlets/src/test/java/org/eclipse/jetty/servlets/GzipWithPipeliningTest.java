@@ -9,9 +9,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
+import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+
+import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -55,7 +58,7 @@ public class GzipWithPipeliningTest
         holder.setInitParameter("resourceBase",MavenTestingUtils.getTestResourcesDir().getAbsolutePath());
         context.addServlet(holder,"/");
 
-        FilterHolder filter = context.addFilter(GzipFilter.class,"/*",0);
+        FilterHolder filter = context.addFilter(GzipFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         filter.setInitParameter("mimeTypes","text/plain");
 
         server.setHandler(context);
