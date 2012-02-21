@@ -372,6 +372,9 @@ public class Server extends HandlerWrapper implements Attributes
             baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING,baseRequest.getQueryString());
 
             baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,state.getSuspendedContext().getContextPath());
+            
+            // Part of #371649 reset here since we skip it in finally
+            baseRequest.setServletPath(null);
 
             final String contextPath=state.getServletContext().getContextPath();
             HttpURI uri = new HttpURI(URIUtil.addPaths(contextPath,path));
