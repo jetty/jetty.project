@@ -100,13 +100,16 @@ public interface HttpContent
             }
             finally
             {
-                try
+                if (inputStream != null)
                 {
-                    inputStream.close();
-                }
-                catch (IOException e)
-                {
-                    LOG.warn("Couldn't close inputStream. Possible file handle leak",e);
+                    try
+                    {
+                        inputStream.close();
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn("Couldn't close inputStream. Possible file handle leak",e);
+                    }
                 }
             }
         }
