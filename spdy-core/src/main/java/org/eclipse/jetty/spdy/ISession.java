@@ -25,9 +25,9 @@ import org.eclipse.jetty.spdy.frames.ControlFrame;
 
 public interface ISession extends Session
 {
-    public void control(IStream stream, ControlFrame frame, Handler handler) throws StreamException;
+    public <C> void control(IStream stream, ControlFrame frame, Handler<C> handler, C context) throws StreamException;
 
-    public void data(IStream stream, DataInfo dataInfo, Handler handler);
+    public <C> void data(IStream stream, DataInfo dataInfo, Handler<C> handler, C context);
 
     public int getWindowSize();
 
@@ -36,10 +36,5 @@ public interface ISession extends Session
         public int write(ByteBuffer buffer, Handler<T> handler, T context);
 
         public void close(boolean onlyOutput);
-
-        public interface Handler<C>
-        {
-            public void complete(C context);
-        }
     }
 }

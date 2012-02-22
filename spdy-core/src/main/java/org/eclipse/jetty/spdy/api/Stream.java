@@ -69,7 +69,7 @@ public interface Stream
      * @param replyInfo the metadata to send
      * @param handler  the completion handler that gets notified of reply sent
      */
-    public void reply(ReplyInfo replyInfo, Handler handler);
+    public void reply(ReplyInfo replyInfo, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a DATA frame on this stream.</p>
@@ -91,7 +91,7 @@ public interface Stream
      * @param dataInfo the metadata to send
      * @param handler  the completion handler that gets notified of data sent
      */
-    public void data(DataInfo dataInfo, Handler handler);
+    public void data(DataInfo dataInfo, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a HEADER frame on this stream.</p>
@@ -113,7 +113,7 @@ public interface Stream
      * @param headersInfo the metadata to send
      * @param handler  the completion handler that gets notified of headers sent
      */
-    public void headers(HeadersInfo headersInfo, Handler handler);
+    public void headers(HeadersInfo headersInfo, Handler<Void> handler);
 
     /**
      * @return whether this stream has been closed by both parties

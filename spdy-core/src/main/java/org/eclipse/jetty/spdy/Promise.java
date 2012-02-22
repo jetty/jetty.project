@@ -22,9 +22,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.spdy.api.ResultHandler;
+import org.eclipse.jetty.spdy.api.Handler;
 
-public class Promise<T> extends ResultHandler<T> implements Future<T>
+public class Promise<T> implements Handler<T>, Future<T>
 {
     private final CountDownLatch latch = new CountDownLatch(1);
     private boolean cancelled;

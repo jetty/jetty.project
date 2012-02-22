@@ -205,7 +205,7 @@ public class StandardStream implements IStream
                 // we will send many window update frames... perhaps we can delay
                 // window update frames until we have a bigger delta to send
                 WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(session.getVersion(), getId(), delta);
-                session.control(this, windowUpdateFrame, new Promise<>());
+                session.control(this, windowUpdateFrame, new Promise<>(), null);
             }
         }
         catch (StreamException x)
@@ -275,13 +275,13 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public void reply(ReplyInfo replyInfo, Handler handler)
+    public void reply(ReplyInfo replyInfo, Handler<Void> handler)
     {
         try
         {
             updateCloseState(replyInfo.isClose());
             SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-            session.control(this, frame, handler);
+            session.control(this, frame, handler, null);
         }
         catch (StreamException x)
         {
@@ -300,11 +300,11 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public void data(DataInfo dataInfo, Handler handler)
+    public void data(DataInfo dataInfo, Handler<Void> handler)
     {
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo, handler);
+        session.data(this, dataInfo, handler, null);
     }
 
     @Override
@@ -316,13 +316,13 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public void headers(HeadersInfo headersInfo, Handler handler)
+    public void headers(HeadersInfo headersInfo, Handler<Void> handler)
     {
         try
         {
             updateCloseState(headersInfo.isClose());
             HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-            session.control(this, frame, handler);
+            session.control(this, frame, handler, null);
         }
         catch (StreamException x)
         {

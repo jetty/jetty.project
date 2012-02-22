@@ -19,8 +19,7 @@
                 <version>2.11</version>
                 <configuration>
                     <argLine>
-                        -Xbootclasspath/a:${settings.localRepository}/org/eclipse/jetty/jetty-npn-boot/${npn.version}/jetty-npn-boot-${npn.version}.jar
-                        -javaagent:${settings.localRepository}/org/eclipse/jetty/jetty-npn-agent/${npn.version}/jetty-npn-agent-${npn.version}.jar
+                        -Xbootclasspath/p:${settings.localRepository}/org/eclipse/jetty/npn-boot/${npn.version}/npn-boot-${npn.version}.jar
                     </argLine>
                 </configuration>
             </plugin>

@@ -82,7 +82,7 @@ public class ClientUsageTest
                 // Then issue another similar request
                 stream.getSession().syn(new SynInfo(true), this);
             }
-        }, new ResultHandler<Stream>()
+        }, new Handler.Adapter<Stream>()
         {
             @Override
             public void completed(Stream stream)
@@ -137,7 +137,7 @@ public class ClientUsageTest
                 }
 
             }
-        }, new ResultHandler<Stream>()
+        }, new Handler.Adapter<Stream>()
         {
             @Override
             public void completed(Stream stream)

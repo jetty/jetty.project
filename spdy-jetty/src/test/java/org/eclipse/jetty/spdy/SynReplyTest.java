@@ -27,9 +27,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.ResultHandler;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
@@ -280,7 +280,7 @@ public class SynReplyTest extends AbstractTest
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }
-                }, new ResultHandler<Stream>()
+                }, new Handler.Adapter<Stream>()
                 {
                     @Override
                     public void completed(Stream stream)

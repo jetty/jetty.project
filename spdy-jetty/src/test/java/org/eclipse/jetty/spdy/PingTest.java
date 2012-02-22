@@ -20,8 +20,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.PingInfo;
-import org.eclipse.jetty.spdy.api.ResultHandler;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -65,7 +65,7 @@ public class PingTest extends AbstractTest
             @Override
             public void onConnect(Session session)
             {
-                session.ping(new ResultHandler<PingInfo>()
+                session.ping(new Handler.Adapter<PingInfo>()
                 {
                     @Override
                     public void completed(PingInfo pingInfo)

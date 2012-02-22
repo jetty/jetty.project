@@ -71,7 +71,7 @@ public interface Session
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
      * @return a future for the stream that will be created
-     * @see #syn(SynInfo, StreamFrameListener, ResultHandler)
+     * @see #syn(SynInfo, StreamFrameListener, Handler)
      */
     public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
 
@@ -85,7 +85,7 @@ public interface Session
      * @param handler  the completion handler that gets notified of stream creation
      * @see #syn(SynInfo, StreamFrameListener)
      */
-    public void syn(SynInfo synInfo, StreamFrameListener listener, ResultHandler<Stream> handler);
+    public void syn(SynInfo synInfo, StreamFrameListener listener, Handler<Stream> handler);
 
     /**
      * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
@@ -104,7 +104,7 @@ public interface Session
      * @param rstInfo the metadata to reset the stream
      * @param handler  the completion handler that gets notified of reset's send
      */
-    public void rst(RstInfo rstInfo, Handler handler);
+    public void rst(RstInfo rstInfo, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
@@ -123,7 +123,7 @@ public interface Session
      * @param settingsInfo the metadata to send
      * @param handler  the completion handler that gets notified of settings' send
      */
-    public void settings(SettingsInfo settingsInfo, Handler handler);
+    public void settings(SettingsInfo settingsInfo, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
@@ -140,7 +140,7 @@ public interface Session
      *
      * @param handler  the completion handler that gets notified of ping's send
      */
-    public void ping(ResultHandler<PingInfo> handler);
+    public void ping(Handler<PingInfo> handler);
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
@@ -157,7 +157,7 @@ public interface Session
      *
      * @param handler  the completion handler that gets notified of go away's send
      */
-    public void goAway(Handler handler);
+    public void goAway(Handler<Void> handler);
 
     /**
      * <p>Initiates the flush of data to the other peer.</p>
@@ -213,27 +213,4 @@ public interface Session
             }
         }
     }
-/*
-    public static abstract class SynHandler extends Promise<Stream>
-    {
-        @Override
-        public final void completed()
-        {
-            // Applications should not override this method, but the one below
-        }
-
-        public abstract void completed(Stream stream);
-    }
-
-    public static abstract class PingHandler extends Promise<PingInfo>
-    {
-        @Override
-        public final void completed()
-        {
-            // Applications should not override this method, but the one below
-        }
-
-        public abstract void completed(PingInfo stream);
-    }
-*/
 }

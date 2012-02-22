@@ -16,28 +16,23 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.util.concurrent.TimeUnit;
-
-public abstract class Handler
+public interface Handler<C>
 {
-    private final int timeout;
-    private final TimeUnit timeUnit;
+    public abstract void completed(C context);
 
-    protected Handler()
+    public void failed(Throwable x);
+
+    public static class Adapter<C> implements Handler<C>
     {
-        this(0, TimeUnit.MILLISECONDS);
-    }
+        @Override
+        public void completed(C context)
+        {
+        }
 
-    protected Handler(int timeout, TimeUnit timeUnit)
-    {
-        this.timeout = timeout;
-        this.timeUnit = timeUnit;
-    }
-
-    public abstract void completed();
-
-    public void failed(Throwable x)
-    {
-        throw new SPDYException(x);
+        @Override
+        public void failed(Throwable x)
+        {
+            throw new SPDYException(x);
+        }
     }
 }

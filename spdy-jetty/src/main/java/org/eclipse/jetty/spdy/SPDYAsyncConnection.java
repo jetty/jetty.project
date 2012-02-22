@@ -28,7 +28,7 @@ import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
 import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.spdy.ISession.Controller;
-import org.eclipse.jetty.spdy.api.SPDYException;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.slf4j.Logger;
@@ -121,7 +121,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     }
 
     @Override
-    public int write(ByteBuffer buffer, ISession.Controller.Handler<StandardSession.FrameBytes> handler, StandardSession.FrameBytes context)
+    public int write(ByteBuffer buffer, Handler<StandardSession.FrameBytes> handler, StandardSession.FrameBytes context)
     {
         int remaining = buffer.remaining();
         Buffer jettyBuffer = buffer.isDirect() ? new DirectNIOBuffer(buffer, false) : new IndirectNIOBuffer(buffer, false);
@@ -131,10 +131,10 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
             int written = endPoint.flush(jettyBuffer);
             logger.debug("Written {} bytes, {} remaining", written, jettyBuffer.length());
         }
-        catch (IOException x)
+        catch (Exception x)
         {
             close(false);
-            throw new SPDYException(x);
+            handler.failed(x);
         }
         finally
         {
@@ -162,7 +162,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
                 // Volatile write to ensure visibility of write fields
                 writePending = false;
             }
-            handler.complete(context);
+            handler.completed(context);
         }
 
         return remaining - buffer.remaining();
