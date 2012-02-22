@@ -20,7 +20,6 @@ import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.junit.Assume;
 import org.junit.Before;
 
 public class SSLSynReplyTest extends SynReplyTest
@@ -42,14 +41,6 @@ public class SSLSynReplyTest extends SynReplyTest
     @Before
     public void init()
     {
-        try
-        {
-            getClass().getClassLoader().loadClass("org.eclipse.jetty.npn.Agent");
-        }
-        catch (ClassNotFoundException x)
-        {
-            Assume.assumeNoException(x);
-        }
         NextProtoNego.debug = true;
     }
 }
