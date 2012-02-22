@@ -576,6 +576,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @return Returns the Override Descriptor.
      * @deprecated use {@link #getOverrideDescriptors()}
      */
+    @Deprecated
     public String getOverrideDescriptor()
     {
         if (_overrideDescriptors.size()!=1)
@@ -687,20 +688,26 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private void loadServerClasses()
     {
         if (_serverClasses != null)
+        {
             return;
+        }
 
-        //look for a Server attribute with the list of Server classes
-        //to apply to every web application. If not present, use our defaults.
+        // look for a Server attribute with the list of Server classes
+        // to apply to every web application. If not present, use our defaults.
         Server server = getServer();
         if (server != null)
         {
             Object serverClasses = server.getAttribute(SERVER_SRV_CLASSES);
-            if (serverClasses != null || serverClasses instanceof String[])
+            if (serverClasses != null && serverClasses instanceof String[])
+            {
                 _serverClasses = new ClasspathPattern((String[])serverClasses);
+            }
         }
 
         if (_serverClasses == null)
+        {
             _serverClasses = new ClasspathPattern(__dftServerClasses);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -874,6 +881,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param overrideDescriptor The overrideDescritpor to set.
      * @deprecated use {@link #setOverrideDescriptors(List)}
      */
+    @Deprecated
     public void setOverrideDescriptor(String overrideDescriptor)
     {
         _overrideDescriptors.clear();
@@ -961,7 +969,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public void addEventListener(EventListener listener)
     {
-        setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(), listener, EventListener.class));
+        setEventListeners(LazyList.addToArray(getEventListeners(), listener, EventListener.class));
     }
 
 
@@ -1218,6 +1226,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public class Context extends ServletContextHandler.Context
     {
         /* ------------------------------------------------------------ */
+        @Override
         public URL getResource(String path) throws MalformedURLException
         {
             Resource resource=WebAppContext.this.getResource(path);
