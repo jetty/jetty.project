@@ -592,7 +592,7 @@ public class ServerHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                contentBytes.addAndGet(dataInfo.getBytesCount());
+                contentBytes.addAndGet(dataInfo.getContentLength());
                 if (dataInfo.isClose())
                 {
                     Assert.assertEquals(data.length, contentBytes.get());
@@ -649,7 +649,7 @@ public class ServerHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                contentBytes.addAndGet(dataInfo.getBytesCount());
+                contentBytes.addAndGet(dataInfo.getContentLength());
                 if (dataInfo.isClose())
                 {
                     Assert.assertEquals(2 * data.length, contentBytes.get());

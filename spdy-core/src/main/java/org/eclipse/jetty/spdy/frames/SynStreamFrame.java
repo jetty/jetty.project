@@ -57,7 +57,7 @@ public class SynStreamFrame extends ControlFrame
 
     public boolean isClose()
     {
-        return (getFlags() & SynInfo.FLAG_FIN) == SynInfo.FLAG_FIN;
+        return (getFlags() & SynInfo.FLAG_CLOSE) == SynInfo.FLAG_CLOSE;
     }
 
     public boolean isUnidirectional()

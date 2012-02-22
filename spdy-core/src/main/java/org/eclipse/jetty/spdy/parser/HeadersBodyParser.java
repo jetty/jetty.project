@@ -80,7 +80,7 @@ public class HeadersBodyParser extends ControlFrameBodyParser
                     if (headersBlockParser.parse(version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
-                        if (flags != 0 && flags != HeadersInfo.FLAG_FIN && flags != HeadersInfo.FLAG_RESET_COMPRESSION)
+                        if (flags != 0 && flags != HeadersInfo.FLAG_CLOSE && flags != HeadersInfo.FLAG_RESET_COMPRESSION)
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.HEADERS);
 
                         HeadersFrame frame = new HeadersFrame(version, flags, streamId, new Headers(headers, true));

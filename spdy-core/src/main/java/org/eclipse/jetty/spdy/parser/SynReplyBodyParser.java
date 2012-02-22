@@ -120,7 +120,7 @@ public class SynReplyBodyParser extends ControlFrameBodyParser
                     if (headersBlockParser.parse(version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
-                        if (flags != 0 && flags != ReplyInfo.FLAG_FIN)
+                        if (flags != 0 && flags != ReplyInfo.FLAG_CLOSE)
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.SYN_REPLY);
 
                         SynReplyFrame frame = new SynReplyFrame(version, flags, streamId, new Headers(headers, true));

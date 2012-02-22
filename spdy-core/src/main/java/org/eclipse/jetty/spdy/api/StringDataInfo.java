@@ -19,6 +19,9 @@ package org.eclipse.jetty.spdy.api;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+/**
+ * <p>Specialized {@link DataInfo} for {@link String} content.</p>
+ */
 public class StringDataInfo extends DataInfo
 {
     private byte[] bytes;
@@ -36,13 +39,13 @@ public class StringDataInfo extends DataInfo
     }
 
     @Override
-    public int getBytesCount()
+    public int getContentLength()
     {
         return bytes.length - offset;
     }
 
     @Override
-    public int getBytes(ByteBuffer output)
+    public int getContent(ByteBuffer output)
     {
         int remaining = output.remaining();
         int length = Math.min(bytes.length - offset, remaining);

@@ -16,15 +16,25 @@
 
 package org.eclipse.jetty.spdy.api;
 
+/**
+ * <p>A container for PING frames data.</p>
+ */
 public class PingInfo
 {
     private final int pingId;
 
+    /**
+     * <p>Creates a {@link PingInfo} with the given ping id</p>
+     * @param pingId the ping id
+     */
     public PingInfo(int pingId)
     {
         this.pingId = pingId;
     }
 
+    /**
+     * @return the ping id
+     */
     public int getPingId()
     {
         return pingId;

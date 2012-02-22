@@ -16,20 +16,50 @@
 
 package org.eclipse.jetty.spdy.api;
 
+/**
+ * <p>A container for HEADERS frame metadata and headers.</p>
+ */
 public class HeadersInfo
 {
-    public static final byte FLAG_FIN = 1;
+    /**
+     * <p>Flag that indicates that this {@link HeadersInfo} is the last frame in the stream.</p>
+     *
+     * @see #isClose()
+     * @see #getFlags()
+     */
+    public static final byte FLAG_CLOSE = 1;
+    /**
+     * <p>Flag that indicates that the compression of the stream must be reset.</p>
+     *
+     * @see #isResetCompression()
+     * @see #getFlags()
+     */
     public static final byte FLAG_RESET_COMPRESSION = 2;
 
     private final boolean close;
     private final boolean resetCompression;
     private final Headers headers;
 
+    /**
+     * <p>Creates a new {@link HeadersInfo} instance with the given headers,
+     * the given close flag and no reset compression flag</p>
+     *
+     * @param headers the {@link Headers}
+     * @param close the value of the close flag
+     */
     public HeadersInfo(Headers headers, boolean close)
     {
         this(headers, close, false);
     }
 
+    /**
+     * <p>Creates a new {@link HeadersInfo} instance with the given headers,
+     * the given close flag and the given reset compression flag</p>
+     *
+     * @param headers the {@link Headers}
+     * @param close the value of the close flag
+     * @param resetCompression the value of the reset compression flag
+     */
     public HeadersInfo(Headers headers, boolean close, boolean resetCompression)
     {
         this.headers = headers;
@@ -37,24 +67,38 @@ public class HeadersInfo
         this.resetCompression = resetCompression;
     }
 
+    /**
+     * @return the value of the close flag
+     */
     public boolean isClose()
     {
         return close;
     }
 
+    /**
+     * @return the value of the reset compression flag
+     */
     public boolean isResetCompression()
     {
         return resetCompression;
     }
 
+    /**
+     * @return the {@link Headers}
+     */
     public Headers getHeaders()
     {
         return headers;
     }
 
+    /**
+     * @return the close and reset compression flags as integer
+     * @see #FLAG_CLOSE
+     * @see #FLAG_RESET_COMPRESSION
+     */
     public byte getFlags()
     {
-        byte flags = isClose() ? FLAG_FIN : 0;
+        byte flags = isClose() ? FLAG_CLOSE : 0;
         flags += isResetCompression() ? FLAG_RESET_COMPRESSION : 0;
         return flags;
     }

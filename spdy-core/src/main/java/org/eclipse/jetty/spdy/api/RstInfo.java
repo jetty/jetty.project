@@ -16,22 +16,37 @@
 
 package org.eclipse.jetty.spdy.api;
 
+/**
+ * <p>A container for RST_STREAM frames data: the stream id and the stream status.</p>
+ */
 public class RstInfo
 {
     private final int streamId;
     private final StreamStatus streamStatus;
 
+    /**
+     * <p>Creates a new {@link RstInfo} with the given stream id and stream status</p>
+     *
+     * @param streamId  the stream id
+     * @param streamStatus the stream status
+     */
     public RstInfo(int streamId, StreamStatus streamStatus)
     {
         this.streamId = streamId;
         this.streamStatus = streamStatus;
     }
 
+    /**
+     * @return the stream id
+     */
     public int getStreamId()
     {
         return streamId;
     }
 
+    /**
+     * @return the stream status
+     */
     public StreamStatus getStreamStatus()
     {
         return streamStatus;

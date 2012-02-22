@@ -18,6 +18,9 @@ package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
 
+/**
+ * <p>Specialized {@link DataInfo} for {@link ByteBuffer} content.</p>
+ */
 public class ByteBufferDataInfo extends DataInfo
 {
     private ByteBuffer buffer;
@@ -34,13 +37,13 @@ public class ByteBufferDataInfo extends DataInfo
     }
 
     @Override
-    public int getBytesCount()
+    public int getContentLength()
     {
         return buffer.remaining();
     }
 
     @Override
-    public int getBytes(ByteBuffer output)
+    public int getContent(ByteBuffer output)
     {
         int length = output.remaining();
         if (buffer.remaining() > length)

@@ -16,12 +16,36 @@
 
 package org.eclipse.jetty.spdy.api;
 
+/**
+ * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
+ * <p>Instances of this class capture a context that is made available on completion
+ * and failure callbacks.</p>
+ *
+ * @param <C> the type of the context object
+ */
 public interface Handler<C>
 {
+    /**
+     * <p>Callback invoked when the operation completes.</p>
+     *
+     * @param context the context
+     * @see #failed(Throwable, Object)
+     */
     public abstract void completed(C context);
 
-    public void failed(Throwable x);
+    /**
+     * <p>Callback invoked when the operation fails.</p>
+     *
+     * @param x the reason for the operation failure
+     * @param context the context
+     */
+    public void failed(Throwable x, C context);
 
+    /**
+     * <p>Empty implementation of {@link Handler}</p>
+     *
+     * @param <C> the type of the context object
+     */
     public static class Adapter<C> implements Handler<C>
     {
         @Override
@@ -30,7 +54,7 @@ public interface Handler<C>
         }
 
         @Override
-        public void failed(Throwable x)
+        public void failed(Throwable x, C context)
         {
             throw new SPDYException(x);
         }

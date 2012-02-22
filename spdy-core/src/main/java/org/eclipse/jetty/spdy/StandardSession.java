@@ -140,7 +140,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 catch (StreamException x)
                 {
                     removeStream(stream);
-                    handler.failed(x);
+                    handler.failed(x, stream);
                 }
             }
         }
@@ -174,7 +174,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         catch (StreamException x)
         {
             logger.info("Could not send reset on stream " + rstInfo.getStreamId(), x);
-            handler.failed(x);
+            handler.failed(x, null);
         }
     }
 
@@ -197,7 +197,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
         catch (StreamException x)
         {
-            handler.failed(x);
+            handler.failed(x, null);
         }
     }
 
@@ -212,17 +212,17 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void ping(final Handler<PingInfo> handler)
     {
+        int pingId = pingIds.getAndAdd(2);
+        PingInfo pingInfo = new PingInfo(pingId);
         try
         {
-            int pingId = pingIds.getAndAdd(2);
-            final PingInfo pingInfo = new PingInfo(pingId);
             PingFrame frame = new PingFrame(version, pingId);
             control(null, frame, handler, pingInfo);
             flush();
         }
         catch (StreamException x)
         {
-            handler.failed(x);
+            handler.failed(x, pingInfo);
         }
     }
 
@@ -250,7 +250,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 }
                 catch (StreamException x)
                 {
-                    handler.failed(x);
+                    handler.failed(x, null);
                 }
             }
         }
@@ -730,7 +730,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public void failed(Throwable x)
+    public void failed(Throwable x, FrameBytes frameBytes)
     {
         throw new SPDYException(x);
     }

@@ -40,8 +40,8 @@ public class HeadersBlockGenerator
     {
         // TODO: ByteArrayOutputStream is quite inefficient, but grows on demand; optimize using ByteBuffer ?
         Charset iso1 = Charset.forName("ISO-8859-1");
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream(headers.getSize() * 64);
-        writeCount(version, buffer, headers.getSize());
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream(headers.size() * 64);
+        writeCount(version, buffer, headers.size());
         for (Headers.Header header : headers)
         {
             String name = header.name();

@@ -50,7 +50,7 @@ public class DataFrame
 
     public boolean isClose()
     {
-        return (flags & DataInfo.FLAG_FIN) == DataInfo.FLAG_FIN;
+        return (flags & DataInfo.FLAG_CLOSE) == DataInfo.FLAG_CLOSE;
     }
 
     public boolean isCompress()

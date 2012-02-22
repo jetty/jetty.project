@@ -28,14 +28,14 @@ public class DataFrameGenerator
         ByteBuffer buffer = ByteBuffer.allocateDirect(DataFrame.HEADER_LENGTH + windowSize);
         buffer.position(DataFrame.HEADER_LENGTH);
         // Guaranteed to always be >= 0
-        int read = dataInfo.getBytes(buffer);
+        int read = dataInfo.getContent(buffer);
 
         buffer.putInt(0, streamId & 0x7F_FF_FF_FF);
         buffer.putInt(4, read & 0x00_FF_FF_FF);
 
         // TODO: compression can be done here, as long as we have one DataFrameGenerator per stream
         // since the compression context for data is per-stream, without dictionary
-        byte flags = dataInfo.isConsumed() && dataInfo.isClose() ? DataInfo.FLAG_FIN : 0;
+        byte flags = dataInfo.isConsumed() && dataInfo.isClose() ? DataInfo.FLAG_CLOSE : 0;
         buffer.put(4, flags);
 
         buffer.flip();

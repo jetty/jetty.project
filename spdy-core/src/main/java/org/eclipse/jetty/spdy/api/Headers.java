@@ -24,15 +24,32 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * <p>A container for name/value pairs, known as headers.</p>
+ * <p>A {@link Header} is composed of a case-insensitive name string and
+ * of a case-sensitive set of value strings.</p>
+ * <p>The implementation of this class is not thread safe.</p>
+ */
 public class Headers implements Iterable<Headers.Header>
 {
     private final Map<String, Header> headers;
 
+    /**
+     * <p>Creates an empty modifiable {@link Headers} instance.</p>
+     * @see #Headers(Headers, boolean)
+     */
     public Headers()
     {
         headers = new LinkedHashMap<>();
     }
 
+    /**
+     * <p>Creates a {@link Headers} instance by copying the headers from the given
+     * {@link Headers} and making it (im)mutable depending on the given {@code immutable} parameter</p>
+     *
+     * @param original the {@link Headers} to copy headers from
+     * @param immutable whether this instance is immutable
+     */
     public Headers(Headers original, boolean immutable)
     {
         Map<String, Header> copy = new LinkedHashMap<>();
@@ -57,19 +74,32 @@ public class Headers implements Iterable<Headers.Header>
         return headers.hashCode();
     }
 
+    /**
+     * @return a set of header names
+     */
     public Set<String> names()
     {
-        Set<String> result = new LinkedHashSet<String>();
+        Set<String> result = new LinkedHashSet<>();
         for (Header header : headers.values())
             result.add(header.name);
         return result;
     }
 
+    /**
+     * @param name the header name
+     * @return the {@link Header} with the given name, or null if no such header exists
+     */
     public Header get(String name)
     {
         return headers.get(name.trim().toLowerCase());
     }
 
+    /**
+     * <p>Inserts or replaces the given name/value pair as a single-valued {@link Header}.</p>
+     *
+     * @param name the header name
+     * @param value the header value
+     */
     public void put(String name, String value)
     {
         name = name.trim();
@@ -77,12 +107,23 @@ public class Headers implements Iterable<Headers.Header>
         headers.put(name.toLowerCase(), header);
     }
 
-    public void put(String name, Header header)
+    /**
+     * <p>Inserts or replaces the given {@link Header}, mapped to the {@link Header#name() header's name}</p>
+     *
+     * @param header the header to add
+     */
+    public void put(Header header)
     {
-        name = name.trim();
-        headers.put(name.toLowerCase(), header);
+        headers.put(header.name().toLowerCase(), header);
     }
 
+    /**
+     * <p>Adds the given value to a header with the given name, creating a {@link Header} is none exists
+     * for the given name.</p>
+     *
+     * @param name the header name
+     * @param value the header value to add
+     */
     public void add(String name, String value)
     {
         name = name.trim();
@@ -99,27 +140,46 @@ public class Headers implements Iterable<Headers.Header>
         }
     }
 
+    /**
+     * <p>Removes the {@link Header} with the given name</p>
+     *
+     * @param name the name of the header to remove
+     * @return the removed header, or null if no such header existed
+     */
     public Header remove(String name)
     {
         name = name.trim();
         return headers.remove(name.toLowerCase());
     }
 
+    /**
+     * <p>Empties this {@link Headers} instance from all headers</p>
+     * @see #isEmpty()
+     */
     public void clear()
     {
         headers.clear();
     }
 
+    /**
+     * @return whether this {@link Headers} instance is empty
+     */
     public boolean isEmpty()
     {
         return headers.isEmpty();
     }
 
-    public int getSize()
+    /**
+     * @return the number of headers
+     */
+    public int size()
     {
         return headers.size();
     }
 
+    /**
+     * @return an iterator over the {@link Header} present in this instance
+     */
     @Override
     public Iterator<Header> iterator()
     {
@@ -132,6 +192,10 @@ public class Headers implements Iterable<Headers.Header>
         return headers.toString();
     }
 
+    /**
+     * <p>A named list of string values.</p>
+     * <p>The name is case-sensitive and there must be at least one value.</p>
+     */
     public static class Header
     {
         private final String name;
@@ -165,11 +229,17 @@ public class Headers implements Iterable<Headers.Header>
             return result;
         }
 
+        /**
+         * @return the header's name
+         */
         public String name()
         {
             return name;
         }
 
+        /**
+         * @return the first header's value
+         */
         public String value()
         {
             return values[0];
@@ -189,11 +259,17 @@ public class Headers implements Iterable<Headers.Header>
             return value == null ? null : Integer.valueOf(value);
         }
 
+        /**
+         * @return the header's values
+         */
         public String[] values()
         {
             return values;
         }
 
+        /**
+         * @return whether the header has multiple values
+         */
         public boolean hasMultipleValues()
         {
             return values.length > 1;

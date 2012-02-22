@@ -134,7 +134,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
         catch (Exception x)
         {
             close(false);
-            handler.failed(x);
+            handler.failed(x, context);
         }
         finally
         {

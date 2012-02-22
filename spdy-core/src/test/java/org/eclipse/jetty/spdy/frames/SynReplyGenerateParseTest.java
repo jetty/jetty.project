@@ -32,7 +32,7 @@ public class SynReplyGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        byte flags = ReplyInfo.FLAG_FIN;
+        byte flags = ReplyInfo.FLAG_CLOSE;
         int streamId = 13;
         Headers headers = new Headers();
         headers.put("a", "b");
@@ -60,7 +60,7 @@ public class SynReplyGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        byte flags = ReplyInfo.FLAG_FIN;
+        byte flags = ReplyInfo.FLAG_CLOSE;
         int streamId = 13;
         Headers headers = new Headers();
         headers.put("a", "b");

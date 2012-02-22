@@ -32,7 +32,7 @@ public class SynStreamGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        byte flags = SynInfo.FLAG_FIN;
+        byte flags = SynInfo.FLAG_CLOSE;
         int streamId = 13;
         int associatedStreamId = 11;
         byte priority = 3;
@@ -65,7 +65,7 @@ public class SynStreamGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        byte flags = SynInfo.FLAG_FIN;
+        byte flags = SynInfo.FLAG_CLOSE;
         int streamId = 13;
         int associatedStreamId = 11;
         byte priority = 3;

@@ -19,18 +19,62 @@ package org.eclipse.jetty.spdy.api;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * <p>An enumeration of stream statuses.</p>
+ */
 public enum StreamStatus
 {
+    /**
+     * <p>The stream status indicating a protocol error</p>
+     */
     PROTOCOL_ERROR(1, 1),
+    /**
+     * <p>The stream status indicating that the stream is not valid</p>
+     */
     INVALID_STREAM(2, 2),
+    /**
+     * <p>The stream status indicating that the stream has been refused</p>
+     */
     REFUSED_STREAM(3, 3),
+    /**
+     * <p>The stream status indicating that the implementation does not support the SPDY version of the stream</p>
+     */
     UNSUPPORTED_VERSION(4, 4),
+    /**
+     * <p>The stream status indicating that the stream is no longer needed</p>
+     */
     CANCEL_STREAM(5, 5),
-    INTERNAL_ERROR(6, -1),
+    /**
+     * <p>The stream status indicating an implementation error</p>
+     */
+    INTERNAL_ERROR(6, 11),
+    /**
+     * <p>The stream status indicating a flow control error</p>
+     */
     FLOW_CONTROL_ERROR(7, 6),
+    /**
+     * <p>The stream status indicating a stream opened more than once</p>
+     */
     STREAM_IN_USE(-1, 7),
-    STREAM_ALREADY_CLOSED(-1, 8);
+    /**
+     * <p>The stream status indicating data on a stream already closed</p>
+     */
+    STREAM_ALREADY_CLOSED(-1, 8),
+    /**
+     * <p>The stream status indicating credentials not valid</p>
+     */
+    INVALID_CREDENTIALS(-1, 9),
+    /**
+     * <p>The stream status indicating that the implementation could not support a frame too large</p>
+     */
+    FRAME_TOO_LARGE(-1, 10);
 
+    /**
+     * @param version the SPDY protocol version
+     * @param code the stream status code
+     * @return a {@link StreamStatus} from the given version and code,
+     * or null if no such status exists
+     */
     public static StreamStatus from(short version, int code)
     {
         switch (version)
@@ -57,6 +101,10 @@ public enum StreamStatus
             Mapper.v3Codes.put(v3Code, this);
     }
 
+    /**
+     * @param version the SPDY protocol version
+     * @return the stream status code
+     */
     public int getCode(short version)
     {
         switch (version)

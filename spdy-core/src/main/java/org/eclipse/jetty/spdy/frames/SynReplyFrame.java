@@ -43,7 +43,7 @@ public class SynReplyFrame extends ControlFrame
 
     public boolean isClose()
     {
-        return (getFlags() & ReplyInfo.FLAG_FIN) == ReplyInfo.FLAG_FIN;
+        return (getFlags() & ReplyInfo.FLAG_CLOSE) == ReplyInfo.FLAG_CLOSE;
     }
 
     @Override

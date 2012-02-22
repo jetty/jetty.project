@@ -19,10 +19,25 @@ package org.eclipse.jetty.spdy.api.server;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 
+/**
+ * <p>Specific, server-side, {@link SessionFrameListener}.</p>
+ * <p>In addition to {@link SessionFrameListener}, this listener adds method
+ * {@link #onConnect(Session)} that is called when a client first connects to the
+ * server and may be used by a server-side application to send a SETTINGS frame
+ * to configure the connection before the client can open any stream.</p>
+ */
 public interface ServerSessionFrameListener extends SessionFrameListener
 {
+    /**
+     * <p>Callback invoked when a client opens a connection.</p>
+     *
+     * @param session the session
+     */
     public void onConnect(Session session);
 
+    /**
+     * <p>Empty implementation of {@link ServerSessionFrameListener}</p>
+     */
     public static class Adapter extends SessionFrameListener.Adapter implements ServerSessionFrameListener
     {
         @Override

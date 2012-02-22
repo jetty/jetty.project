@@ -37,7 +37,7 @@ public class ServerUsageTest
 
                 // Get the http response, fill headers and data
                 Headers replyHeaders = new Headers();
-                replyHeaders.put("host", synHeaders.get("host"));
+                replyHeaders.put(synHeaders.get("host"));
                 // Sends a reply
                 stream.reply(new ReplyInfo(replyHeaders, false));
 

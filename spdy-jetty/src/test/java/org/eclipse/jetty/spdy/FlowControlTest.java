@@ -55,7 +55,7 @@ public class FlowControlTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                bytes.addAndGet(dataInfo.getBytesCount());
+                bytes.addAndGet(dataInfo.getContentLength());
                 if (dataInfo.isClose())
                     dataLatch.countDown();
             }
@@ -88,7 +88,7 @@ public class FlowControlTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                bytes.addAndGet(dataInfo.getBytesCount());
+                bytes.addAndGet(dataInfo.getContentLength());
                 if (dataInfo.isClose())
                     dataLatch.countDown();
             }
@@ -114,7 +114,7 @@ public class FlowControlTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        bytes.addAndGet(dataInfo.getBytesCount());
+                        bytes.addAndGet(dataInfo.getContentLength());
                         if (dataInfo.isClose())
                             dataLatch.countDown();
                     }
@@ -146,7 +146,7 @@ public class FlowControlTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        bytes.addAndGet(dataInfo.getBytesCount());
+                        bytes.addAndGet(dataInfo.getContentLength());
                         if (dataInfo.isClose())
                             dataLatch.countDown();
                     }

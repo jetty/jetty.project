@@ -18,7 +18,7 @@ package org.eclipse.jetty.spdy.api;
 
 /**
  * <p>An unrecoverable exception that signals to the application that
- * something wrong happened</p>
+ * something wrong happened.</p>
  */
 public class SPDYException extends RuntimeException
 {

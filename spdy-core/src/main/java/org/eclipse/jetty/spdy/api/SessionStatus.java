@@ -19,11 +19,25 @@ package org.eclipse.jetty.spdy.api;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * <p>An enumeration of session statuses.</p>
+ */
 public enum SessionStatus
 {
+    /**
+     * <p>The session status indicating no errors</p>
+     */
     OK(0),
+    /**
+     * <p>The session status indicating a protocol error</p>
+     */
     PROTOCOL_ERROR(1);
 
+    /**
+     * @param code the session status code
+     * @return a {@link SessionStatus} from the given code,
+     * or null if no status exists
+     */
     public static SessionStatus from(int code)
     {
         return Mapper.codes.get(code);
@@ -37,6 +51,9 @@ public enum SessionStatus
         Mapper.codes.put(code, this);
     }
 
+    /**
+     * @return the code of this {@link SessionStatus}
+     */
     public int getCode()
     {
         return code;

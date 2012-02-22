@@ -58,7 +58,7 @@ public class DataGenerateParseTest
 
         Assert.assertNotNull(frame2);
         Assert.assertEquals(streamId, frame2.getStreamId());
-        Assert.assertEquals(DataInfo.FLAG_FIN, frame2.getFlags());
+        Assert.assertEquals(DataInfo.FLAG_CLOSE, frame2.getFlags());
         Assert.assertEquals(length, frame2.getLength());
         Assert.assertEquals(length, listener.getData().remaining());
     }
@@ -84,7 +84,7 @@ public class DataGenerateParseTest
 
         Assert.assertNotNull(frame2);
         Assert.assertEquals(streamId, frame2.getStreamId());
-        Assert.assertEquals(DataInfo.FLAG_FIN, frame2.getFlags());
+        Assert.assertEquals(DataInfo.FLAG_CLOSE, frame2.getFlags());
         Assert.assertEquals(length, frame2.getLength());
         Assert.assertEquals(length, listener.getData().remaining());
     }

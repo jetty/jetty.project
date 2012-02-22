@@ -123,8 +123,8 @@ public class ConcurrentSynDataReplyDataTest extends AbstractTest
                 public void onData(Stream stream, DataInfo dataInfo)
                 {
                     Assert.assertEquals(1, latch.getCount());
-                    ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                    dataInfo.getBytes(buffer);
+                    ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getContentLength());
+                    dataInfo.getContent(buffer);
                     Assert.assertTrue(dataInfo.isConsumed());
                     latch.countDown();
                 }

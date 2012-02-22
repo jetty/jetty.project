@@ -34,7 +34,14 @@ public class Promise<T> implements Handler<T>, Future<T>
     @Override
     public void completed(T result)
     {
-        fulfilled(result);
+        this.promise = result;
+        latch.countDown();
+    }
+
+    public void failed(Throwable x, T context)
+    {
+        this.failure = x;
+        latch.countDown();
     }
 
     @Override
@@ -77,17 +84,5 @@ public class Promise<T> implements Handler<T>, Future<T>
         if (failure != null)
             throw new ExecutionException(failure);
         return promise;
-    }
-
-    public void failed(Throwable x)
-    {
-        this.failure = x;
-        latch.countDown();
-    }
-
-    public void fulfilled(T promise)
-    {
-        this.promise = promise;
-        latch.countDown();
     }
 }

@@ -60,7 +60,7 @@ public class HeadersFrame extends ControlFrame
 
     public boolean isClose()
     {
-        return (getFlags() & HeadersInfo.FLAG_FIN) == HeadersInfo.FLAG_FIN;
+        return (getFlags() & HeadersInfo.FLAG_CLOSE) == HeadersInfo.FLAG_CLOSE;
     }
 
     public boolean isResetCompression()

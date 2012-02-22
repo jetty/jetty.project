@@ -139,7 +139,7 @@ public class SynReplyTest extends AbstractTest
                         ByteBuffer buffer = ByteBuffer.allocate(2);
                         while (!dataInfo.isConsumed())
                         {
-                            dataInfo.getBytes(buffer);
+                            dataInfo.getContent(buffer);
                             buffer.flip();
                             bytes.write(buffer.array(), buffer.arrayOffset(), buffer.remaining());
                             buffer.clear();
@@ -309,8 +309,8 @@ public class SynReplyTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getBytesCount());
-                        dataInfo.getBytes(buffer);
+                        ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getContentLength());
+                        dataInfo.getContent(buffer);
                         buffer.flip();
                         String data = Charset.forName("UTF-8").decode(buffer).toString();
                         Assert.assertEquals(serverData, data);
