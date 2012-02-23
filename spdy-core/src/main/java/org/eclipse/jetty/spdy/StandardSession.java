@@ -140,7 +140,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 catch (StreamException x)
                 {
                     removeStream(stream);
-                    handler.failed(x, stream);
+                    handler.failed(x);
                 }
             }
         }
@@ -174,7 +174,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         catch (StreamException x)
         {
             logger.info("Could not send reset on stream " + rstInfo.getStreamId(), x);
-            handler.failed(x, null);
+            handler.failed(x);
         }
     }
 
@@ -197,7 +197,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
         catch (StreamException x)
         {
-            handler.failed(x, null);
+            handler.failed(x);
         }
     }
 
@@ -222,7 +222,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
         catch (StreamException x)
         {
-            handler.failed(x, pingInfo);
+            handler.failed(x);
         }
     }
 
@@ -250,7 +250,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 }
                 catch (StreamException x)
                 {
-                    handler.failed(x, null);
+                    handler.failed(x);
                 }
             }
         }
@@ -730,7 +730,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public void failed(Throwable x, FrameBytes frameBytes)
+    public void failed(Throwable x)
     {
         throw new SPDYException(x);
     }
