@@ -28,6 +28,11 @@ import java.util.List;
 public class IntrospectionUtil
 {
     
+    private IntrospectionUtil()
+    {
+        // util class w/o public constructor
+    }
+
     public static boolean isJavaBeanCompliantSetter (Method method)
     {
         if (method == null)
@@ -195,17 +200,27 @@ public class IntrospectionUtil
     
     public static boolean isTypeCompatible (Class<?> formalType, Class<?> actualType, boolean strict)
     {
-        if (formalType==null && actualType != null)
-            return false;
-        if (formalType!=null && actualType==null)
-            return false;
-        if (formalType==null && actualType==null)
+        if (formalType == null && actualType == null)
+        {
             return true;
-       
+        }
+        if (formalType == null && actualType != null)
+        {
+            return false;
+        }
+        if (formalType != null && actualType == null)
+        {
+            return false;
+        }
+
         if (strict)
+        {
             return formalType.equals(actualType);
+        }
         else
+        {
             return formalType.isAssignableFrom(actualType);
+        }
     }
 
     
