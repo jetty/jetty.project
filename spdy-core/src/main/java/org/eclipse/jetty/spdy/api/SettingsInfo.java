@@ -75,8 +75,10 @@ public class SettingsInfo
         public static final int UPLOAD_BANDWIDTH = 1;
         public static final int DOWNLOAD_BANDWIDTH = 2;
         public static final int ROUND_TRIP_TIME = 3;
-        public static final int MAX_STREAMS = 4;
-        public static final int CONGESTION_WINDOW = 5;
+        public static final int MAX_CONCURRENT_STREAMS = 4;
+        public static final int CURRENT_CONGESTION_WINDOW = 5;
+        public static final int DOWNLOAD_RETRANSMISSION_RATE = 6;
+        public static final int INITIAL_WINDOW_SIZE = 7;
 
         public static final int FLAG_PERSIST = 1 << 24;
         public static final int FLAG_PERSISTED = 2 << 24;
@@ -135,5 +137,9 @@ public class SettingsInfo
         {
             return "[" + getFlags() + "," + getId() + "]";
         }
+    }
+
+    public static class Setting
+    {
     }
 }

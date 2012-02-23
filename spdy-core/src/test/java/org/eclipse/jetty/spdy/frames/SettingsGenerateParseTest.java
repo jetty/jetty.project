@@ -35,7 +35,7 @@ public class SettingsGenerateParseTest
     {
         byte flags = SettingsInfo.CLEAR_PERSISTED;
         Map<SettingsInfo.Key, Integer> pairs = new HashMap<>();
-        pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.MAX_STREAMS), 100);
+        pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.MAX_CONCURRENT_STREAMS), 100);
         pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSISTED | SettingsInfo.Key.ROUND_TRIP_TIME), 500);
         SettingsFrame frame1 = new SettingsFrame(SPDY.V2, flags, pairs);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
@@ -62,7 +62,7 @@ public class SettingsGenerateParseTest
     {
         byte flags = SettingsInfo.CLEAR_PERSISTED;
         Map<SettingsInfo.Key, Integer> pairs = new HashMap<>();
-        pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.MAX_STREAMS), 100);
+        pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.MAX_CONCURRENT_STREAMS), 100);
         pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSISTED | SettingsInfo.Key.ROUND_TRIP_TIME), 500);
         SettingsFrame frame1 = new SettingsFrame(SPDY.V2, flags, pairs);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());

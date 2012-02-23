@@ -36,7 +36,7 @@ public class SettingsTest extends AbstractTest
         Map<SettingsInfo.Key,Integer> settings = new HashMap<>();
         settings.put(new SettingsInfo.Key(SettingsInfo.Key.UPLOAD_BANDWIDTH), 1024 * 1024);
         settings.put(new SettingsInfo.Key(SettingsInfo.Key.DOWNLOAD_BANDWIDTH), 1024 * 1024);
-        settings.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSISTED | SettingsInfo.Key.CONGESTION_WINDOW), 1024);
+        settings.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSISTED | SettingsInfo.Key.CURRENT_CONGESTION_WINDOW), 1024);
         final SettingsInfo clientSettingsInfo = new SettingsInfo(settings);
         final CountDownLatch latch = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
@@ -61,7 +61,7 @@ public class SettingsTest extends AbstractTest
         Map<SettingsInfo.Key,Integer> settings = new HashMap<>();
         settings.put(new SettingsInfo.Key(SettingsInfo.Key.UPLOAD_BANDWIDTH), 1024 * 1024);
         settings.put(new SettingsInfo.Key(SettingsInfo.Key.DOWNLOAD_BANDWIDTH), 1024 * 1024);
-        settings.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.CONGESTION_WINDOW), 1024);
+        settings.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.CURRENT_CONGESTION_WINDOW), 1024);
         final SettingsInfo serverSettingsInfo = new SettingsInfo(settings);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
@@ -86,5 +86,23 @@ public class SettingsTest extends AbstractTest
         startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void test() throws Exception
+    {
+        startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public void onConnect(Session session)
+            {
+                Map<SettingsInfo.Key, Integer> settings = new HashMap<>();
+                settings.put(new SettingsInfo.Key(0x01_00_00_04), 25);
+                settings.put(new SettingsInfo.Key(0x00_00_07_00), 49152);
+                SettingsInfo settingsInfo = new SettingsInfo(settings, true);
+                session.settings(settingsInfo);
+            }
+        });
+        new CountDownLatch(1).await();
     }
 }

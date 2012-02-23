@@ -66,9 +66,7 @@ public class SettingsBodyParser extends ControlFrameBodyParser
                     --cursor;
                     count += (currByte & 0xFF) << 8 * cursor;
                     if (cursor == 0)
-                    {
                         state = State.KEY;
-                    }
                     break;
                 }
                 case KEY:
