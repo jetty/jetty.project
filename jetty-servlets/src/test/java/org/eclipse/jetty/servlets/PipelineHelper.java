@@ -197,6 +197,14 @@ public class PipelineHelper
         while (left > 0)
         {
             int val = inputStream.read();
+            try
+            {
+                Thread.sleep(10);
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
             if (val == (-1))
             {
                 Assert.fail(String.format("Encountered an early EOL (expected another %,d bytes)",left));

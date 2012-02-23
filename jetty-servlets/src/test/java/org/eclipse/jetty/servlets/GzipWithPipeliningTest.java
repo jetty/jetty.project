@@ -122,7 +122,7 @@ public class GzipWithPipeliningTest
             System.out.printf("Read %,d bytes%n",readBytes);
 
             // Issue another request
-            client.issueGET("/jetty_logo.png",true, true);
+            client.issueGET("/jetty_logo.png",true, false);
 
             // Finish reading chunks
             System.out.println("Finish reading remaining chunks ...");
