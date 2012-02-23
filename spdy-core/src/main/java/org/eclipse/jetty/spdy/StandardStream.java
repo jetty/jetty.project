@@ -286,7 +286,7 @@ public class StandardStream implements IStream
         catch (StreamException x)
         {
             logger.debug("Could not send reply on stream " + this, x);
-            handler.failed(x, null);
+            handler.failed(x);
             session.rst(new RstInfo(getId(), x.getStreamStatus()));
         }
     }
@@ -327,7 +327,7 @@ public class StandardStream implements IStream
         catch (StreamException x)
         {
             logger.debug("Could not send headers on stream " + this, x);
-            handler.failed(x, null);
+            handler.failed(x);
             session.rst(new RstInfo(getId(), x.getStreamStatus()));
         }
     }
