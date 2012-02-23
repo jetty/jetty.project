@@ -64,7 +64,7 @@ public class PipelineHelper
      *            to turn on acceptance of GZIP compressed responses
      * @throws IOException
      */
-    public void issueGET(String path, boolean acceptGzipped) throws IOException
+    public void issueGET(String path, boolean acceptGzipped, boolean close) throws IOException
     {
         LOG.debug("Issuing GET on " + path);
         StringBuilder req = new StringBuilder();
@@ -79,7 +79,15 @@ public class PipelineHelper
             req.append("Accept-Encoding: gzip, deflate\r\n");
         }
         req.append("Cookie: JSESSIONID=spqx8v8szylt1336t96vc6mw0\r\n");
-        req.append("Connection: keep-alive\r\n");
+        if ( close )
+        {
+            req.append("Connection: close\r\n");
+        }
+        else
+        {
+            req.append("Connection: keep-alive\r\n");
+        }
+        
         req.append("\r\n");
 
         LOG.debug("Request:" + req);
