@@ -291,6 +291,15 @@ public class SPDYClient
                             }
 
                             @Override
+                            public void unsupported()
+                            {
+                                // Server does not support NPN, but this is a SPDY client, so hardcode SPDY
+                                ClientSPDYAsyncConnectionFactory connectionFactory = new ClientSPDYAsyncConnectionFactory();
+                                AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, attachment);
+                                sslEndPoint.setConnection(connection);
+                            }
+
+                            @Override
                             public String selectProtocol(List<String> protocols)
                             {
                                 String protocol = client.selectProtocol(protocols);

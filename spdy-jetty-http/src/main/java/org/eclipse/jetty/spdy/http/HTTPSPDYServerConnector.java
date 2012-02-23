@@ -25,5 +25,6 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
     {
         super(null);
         putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, this));
+        setDefaultProtocol("http/1.1");
     }
 }

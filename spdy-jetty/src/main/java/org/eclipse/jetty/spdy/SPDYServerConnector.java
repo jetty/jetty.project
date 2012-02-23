@@ -38,6 +38,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final SslContextFactory sslContextFactory;
+    private volatile String defaultProtocol = "spdy/2";
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
     {
@@ -92,6 +93,16 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
+    public String getDefaultProtocol()
+    {
+        return defaultProtocol;
+    }
+
+    public void setDefaultProtocol(String defaultProtocol)
+    {
+        this.defaultProtocol = defaultProtocol;
+    }
+
     @Override
     protected AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint)
     {
@@ -104,6 +115,12 @@ public class SPDYServerConnector extends SelectChannelConnector
 
             NextProtoNego.put(engine, new NextProtoNego.ServerProvider()
             {
+                @Override
+                public void unsupported()
+                {
+                    protocolSelected(getDefaultProtocol());
+                }
+
                 @Override
                 public List<String> protocols()
                 {
