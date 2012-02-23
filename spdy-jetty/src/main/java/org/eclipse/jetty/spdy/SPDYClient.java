@@ -29,11 +29,7 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -97,7 +93,7 @@ public class SPDYClient
         channel.socket().setTcpNoDelay(true);
         channel.configureBlocking(false);
 
-        SessionFuture result = new SessionFuture(this, listener);
+        SessionPromise result = new SessionPromise(this, listener);
 
         channel.connect(address);
         factory.selector.register(channel, result);
@@ -135,7 +131,7 @@ public class SPDYClient
         return null;
     }
 
-    protected AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
+    public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
     {
         for (Map.Entry<String, AsyncConnectionFactory> entry : factories.entrySet())
         {
@@ -148,6 +144,16 @@ public class SPDYClient
                 return entry.getValue();
         }
         return null;
+    }
+
+    public void putAsyncConnectionFactory(String protocol, AsyncConnectionFactory factory)
+    {
+        factories.put(protocol, factory);
+    }
+
+    public AsyncConnectionFactory removeAsyncConnectionFactory(String protocol)
+    {
+        return factories.remove(protocol);
     }
 
     protected SSLEngine newSSLEngine(SslContextFactory sslContextFactory, SocketChannel channel)
@@ -232,9 +238,9 @@ public class SPDYClient
             @Override
             protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
             {
-                SessionFuture attachment = (SessionFuture)key.attachment();
+                SessionPromise attachment = (SessionPromise)key.attachment();
 
-                long maxIdleTime = attachment.getMaxIdleTime();
+                long maxIdleTime = attachment.client.getMaxIdleTime();
                 if (maxIdleTime < 0)
                     maxIdleTime = getMaxIdleTime();
                 SelectChannelEndPoint result = new SelectChannelEndPoint(channel, selectSet, key, (int)maxIdleTime);
@@ -264,8 +270,8 @@ public class SPDYClient
             @Override
             public AsyncConnection newConnection(final SocketChannel channel, AsyncEndPoint endPoint, final Object attachment)
             {
-                SessionFuture sessionFuture = (SessionFuture)attachment;
-                final SPDYClient client = sessionFuture.client;
+                SessionPromise sessionPromise = (SessionPromise)attachment;
+                final SPDYClient client = sessionPromise.client;
 
                 try
                 {
@@ -314,9 +320,9 @@ public class SPDYClient
                         return connection;
                     }
                 }
-                catch (Exception x)
+                catch (RuntimeException x)
                 {
-                    sessionFuture.failed(x);
+                    sessionPromise.failed(x);
                     throw x;
                 }
             }
@@ -335,78 +341,15 @@ public class SPDYClient
         }
     }
 
-    private static class SessionFuture implements Future<Session>
+    private static class SessionPromise extends Promise<Session>
     {
-        private final CountDownLatch latch = new CountDownLatch(1);
         private final SPDYClient client;
         private final SessionFrameListener listener;
-        private boolean cancelled;
-        private Throwable failure;
-        private Session session;
 
-        private SessionFuture(SPDYClient client, SessionFrameListener listener)
+        private SessionPromise(SPDYClient client, SessionFrameListener listener)
         {
             this.client = client;
             this.listener = listener;
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning)
-        {
-            cancelled = true;
-            latch.countDown();
-            return false;
-        }
-
-        @Override
-        public boolean isCancelled()
-        {
-            return cancelled;
-        }
-
-        @Override
-        public boolean isDone()
-        {
-            return cancelled || latch.getCount() == 0;
-        }
-
-        @Override
-        public Session get() throws InterruptedException, ExecutionException
-        {
-            latch.await();
-            return result();
-        }
-
-        @Override
-        public Session get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
-        {
-            latch.await(timeout, unit);
-            return result();
-        }
-
-        private Session result() throws ExecutionException
-        {
-            Throwable failure = this.failure;
-            if (failure != null)
-                throw new ExecutionException(failure);
-            return session;
-        }
-
-        private long getMaxIdleTime()
-        {
-            return client.getMaxIdleTime();
-        }
-
-        private void failed(Throwable x)
-        {
-            this.failure = x;
-            latch.countDown();
-        }
-
-        private void connected(Session session)
-        {
-            this.session = session;
-            latch.countDown();
         }
     }
 
@@ -415,7 +358,7 @@ public class SPDYClient
         @Override
         public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
         {
-            SessionFuture sessionFuture = (SessionFuture)attachment;
+            SessionPromise sessionPromise = (SessionPromise)attachment;
 
             CompressionFactory compressionFactory = new StandardCompressionFactory();
             Parser parser = new Parser(compressionFactory.newDecompressor());
@@ -424,9 +367,9 @@ public class SPDYClient
             SPDYAsyncConnection connection = new SPDYAsyncConnection(endPoint, parser);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(sessionFuture.client.version, connection, 1, sessionFuture.listener, generator);
+            StandardSession session = new StandardSession(sessionPromise.client.version, connection, 1, sessionPromise.listener, generator);
             parser.addListener(session);
-            sessionFuture.connected(session);
+            sessionPromise.completed(session);
             connection.setSession(session);
 
             return connection;

@@ -52,6 +52,14 @@ public class SPDYServerConnector extends SelectChannelConnector
         putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, listener));
     }
 
+    public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
+    {
+        synchronized (factories)
+        {
+            return factories.get(protocol);
+        }
+    }
+
     public AsyncConnectionFactory putAsyncConnectionFactory(String protocol, AsyncConnectionFactory factory)
     {
         synchronized (factories)
@@ -60,14 +68,12 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
-    public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
+    public AsyncConnectionFactory removeAsyncConnectionFactory(String protocol)
     {
-        final Map<String, AsyncConnectionFactory> copy = new LinkedHashMap<>();
         synchronized (factories)
         {
-            copy.putAll(factories);
+            return factories.remove(protocol);
         }
-        return copy.get(protocol);
     }
 
     public Map<String, AsyncConnectionFactory> getAsyncConnectionFactories()
