@@ -16,15 +16,34 @@
 
 package org.eclipse.jetty.spdy.http;
 
+import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTPSPDYServerConnector extends SPDYServerConnector
 {
+    private final AsyncConnectionFactory defaultConnectionFactory;
+
     public HTTPSPDYServerConnector()
     {
-        super(null);
+        this(null);
+    }
+
+    public HTTPSPDYServerConnector(SslContextFactory sslContextFactory)
+    {
+        super(null, sslContextFactory);
+        // Override the "spdy/2" protocol by handling HTTP over SPDY
         putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, this));
-        setDefaultProtocol("http/1.1");
+        // Add the "http/1.1" protocol for browsers that do not support NPN
+        putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
+        // Override the default connection factory for non-SSL connections
+        defaultConnectionFactory = new ServerHTTPAsyncConnectionFactory(this);
+    }
+
+    @Override
+    protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+    {
+        return defaultConnectionFactory;
     }
 }

@@ -38,7 +38,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final SslContextFactory sslContextFactory;
-    private volatile String defaultProtocol = "spdy/2";
+    private final AsyncConnectionFactory defaultConnectionFactory;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
     {
@@ -50,7 +50,8 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
-        putAsyncConnectionFactory("spdy/2", new ServerSPDYAsyncConnectionFactory(SPDY.V2, listener));
+        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, listener);
+        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
     }
 
     public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
@@ -93,14 +94,9 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
     }
 
-    public String getDefaultProtocol()
+    protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
     {
-        return defaultProtocol;
-    }
-
-    public void setDefaultProtocol(String defaultProtocol)
-    {
-        this.defaultProtocol = defaultProtocol;
+        return defaultConnectionFactory;
     }
 
     @Override
@@ -118,7 +114,9 @@ public class SPDYServerConnector extends SelectChannelConnector
                 @Override
                 public void unsupported()
                 {
-                    protocolSelected(getDefaultProtocol());
+                    AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
+                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, null);
+                    sslEndPoint.setConnection(connection);
                 }
 
                 @Override
@@ -145,7 +143,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         }
         else
         {
-            AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory("spdy/2");
+            AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
             AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, null);
             endPoint.setConnection(connection);
             return connection;

@@ -27,8 +27,8 @@ import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
-import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -54,12 +54,13 @@ public class ProtocolNegotiationTest
     protected Server server;
     protected SPDYServerConnector connector;
 
-    protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
+    protected InetSocketAddress startServer(SPDYServerConnector connector) throws Exception
     {
         server = new Server();
-        SslContextFactory sslContextFactory = newSslContextFactory();
-        connector = new SPDYServerConnector(listener, sslContextFactory);
+        if (connector == null)
+            connector = new SPDYServerConnector(null, newSslContextFactory());
         connector.setPort(0);
+        this.connector = connector;
         server.addConnector(connector);
         server.start();
         return new InetSocketAddress("localhost", connector.getLocalPort());
@@ -197,9 +198,15 @@ public class ProtocolNegotiationTest
     @Test
     public void testServerAdvertisingSPDYAndHTTPSpeaksDefaultProtocolWhenNPNMissing() throws Exception
     {
-        InetSocketAddress address = startServer(null);
+        InetSocketAddress address = startServer(new SPDYServerConnector(null, newSslContextFactory())
+        {
+            @Override
+            protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+            {
+                return new ServerHTTPAsyncConnectionFactory(connector);
+            }
+        });
         connector.putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(connector));
-        connector.setDefaultProtocol("http/1.1");
 
         SslContextFactory sslContextFactory = newSslContextFactory();
         sslContextFactory.start();
