@@ -20,23 +20,24 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.zip.ZipException;
 
+import org.eclipse.jetty.spdy.CompressionDictionary;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.StreamStatus;
-import org.eclipse.jetty.spdy.frames.HeadersFrame;
 
 public abstract class HeadersBlockParser
 {
     private final CompressionFactory.Decompressor decompressor;
     private byte[] data;
+    private boolean needsDictionary = true;
 
     protected HeadersBlockParser(CompressionFactory.Decompressor decompressor)
     {
         this.decompressor = decompressor;
     }
 
-    public boolean parse(int version, int length, ByteBuffer buffer) throws StreamException
+    public boolean parse(short version, int length, ByteBuffer buffer) throws StreamException
     {
         // Need to be sure that all the compressed data has arrived
         // Because SPDY uses SYNC_FLUSH mode, and the Java API
@@ -50,7 +51,7 @@ public abstract class HeadersBlockParser
 
         byte[] compressedHeaders = data;
         data = null;
-        ByteBuffer decompressedHeaders = decompress(compressedHeaders);
+        ByteBuffer decompressedHeaders = decompress(version, compressedHeaders);
 
         Charset iso1 = Charset.forName("ISO-8859-1");
 
@@ -151,8 +152,12 @@ public abstract class HeadersBlockParser
 
     protected abstract void onHeader(String name, String[] values);
 
-    private ByteBuffer decompress(byte[] compressed) throws StreamException
+    private ByteBuffer decompress(short version, byte[] compressed) throws StreamException
     {
+        // Differently from compression, decompression always happens
+        // non-concurrently because we read and parse with a single
+        // thread, and therefore there is no need for synchronization.
+
         try
         {
             byte[] decompressed = null;
@@ -165,9 +170,18 @@ public abstract class HeadersBlockParser
                 if (count == 0)
                 {
                     if (decompressed != null)
+                    {
                         return ByteBuffer.wrap(decompressed);
+                    }
+                    else if (needsDictionary)
+                    {
+                        decompressor.setDictionary(CompressionDictionary.get(version));
+                        needsDictionary = false;
+                    }
                     else
-                        decompressor.setDictionary(HeadersFrame.DICTIONARY);
+                    {
+                        throw new IllegalStateException();
+                    }
                 }
                 else
                 {

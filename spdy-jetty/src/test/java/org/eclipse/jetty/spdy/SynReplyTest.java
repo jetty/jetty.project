@@ -360,4 +360,50 @@ public class SynReplyTest extends AbstractTest
         Assert.assertEquals(stream.getId(), rstInfo.getStreamId());
         Assert.assertSame(StreamStatus.PROTOCOL_ERROR, rstInfo.getStreamStatus());
     }
+
+    @Test
+    public void testSynReplyDataSynReplyData() throws Exception
+    {
+        final String data = "foo";
+        ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                Assert.assertTrue(stream.isHalfClosed());
+
+                stream.reply(new ReplyInfo(false));
+                stream.data(new StringDataInfo(data, true));
+
+                return null;
+            }
+        };
+
+        Session session = startClient(startServer(serverSessionFrameListener), null);
+
+        final CountDownLatch replyLatch = new CountDownLatch(2);
+        final CountDownLatch dataLatch = new CountDownLatch(2);
+        StreamFrameListener clientStreamFrameListener = new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Assert.assertFalse(replyInfo.isClose());
+                replyLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                String chunk = dataInfo.asString("UTF-8");
+                Assert.assertEquals(data, chunk);
+                dataLatch.countDown();
+            }
+        };
+        session.syn(new SynInfo(true), clientStreamFrameListener);
+        session.syn(new SynInfo(true), clientStreamFrameListener);
+
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
 }

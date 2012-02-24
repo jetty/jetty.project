@@ -20,20 +20,20 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import org.eclipse.jetty.spdy.CompressionDictionary;
 import org.eclipse.jetty.spdy.CompressionFactory;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.frames.HeadersFrame;
 
 public class HeadersBlockGenerator
 {
     private final CompressionFactory.Compressor compressor;
+    private boolean needsDictionary = true;
 
     public HeadersBlockGenerator(CompressionFactory.Compressor compressor)
     {
         this.compressor = compressor;
-        this.compressor.setDictionary(HeadersFrame.DICTIONARY);
     }
 
     public ByteBuffer generate(short version, Headers headers) throws StreamException
@@ -70,16 +70,22 @@ public class HeadersBlockGenerator
             buffer.write(valueBytes, 0, valueBytes.length);
         }
 
-        return compress(buffer.toByteArray());
+        return compress(version, buffer.toByteArray());
     }
 
-    private ByteBuffer compress(byte[] bytes)
+    private ByteBuffer compress(short version, byte[] bytes)
     {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream(bytes.length);
 
         // The headers compression context is per-session, so we need to synchronize
         synchronized (compressor)
         {
+            if (needsDictionary)
+            {
+                compressor.setDictionary(CompressionDictionary.get(version));
+                needsDictionary = false;
+            }
+
             compressor.setInput(bytes);
 
             // Compressed bytes may be bigger than input bytes, so we need to loop and accumulate them
