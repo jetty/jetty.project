@@ -1,7 +1,5 @@
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,6 +14,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.not;
 
 public class PipelineHelper
 {
@@ -38,7 +38,7 @@ public class PipelineHelper
 
     /**
      * Open the Socket to the destination endpoint and
-     * 
+     *
      * @return the open java Socket.
      * @throws IOException
      */
@@ -57,7 +57,7 @@ public class PipelineHelper
 
     /**
      * Issue a HTTP/1.1 GET request with Connection:keep-alive set.
-     * 
+     *
      * @param path
      *            the path to GET
      * @param acceptGzipped
@@ -87,7 +87,7 @@ public class PipelineHelper
         {
             req.append("Connection: keep-alive\r\n");
         }
-        
+
         req.append("\r\n");
 
         LOG.debug("Request:" + req);
@@ -100,7 +100,7 @@ public class PipelineHelper
 
     public String readResponseHeader() throws IOException
     {
-        // Read Response Header 
+        // Read Response Header
         socket.setSoTimeout(10000);
 
         LOG.debug("Reading http header");
@@ -199,7 +199,8 @@ public class PipelineHelper
             int val = inputStream.read();
             try
             {
-                Thread.sleep(10);
+                if (left % 10 == 0)
+                    Thread.sleep(1);
             }
             catch (InterruptedException e)
             {
