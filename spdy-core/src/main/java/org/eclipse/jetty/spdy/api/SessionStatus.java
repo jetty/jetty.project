@@ -40,7 +40,7 @@ public enum SessionStatus
      */
     public static SessionStatus from(int code)
     {
-        return Mapper.codes.get(code);
+        return Codes.codes.get(code);
     }
 
     private final int code;
@@ -48,7 +48,7 @@ public enum SessionStatus
     private SessionStatus(int code)
     {
         this.code = code;
-        Mapper.codes.put(code, this);
+        Codes.codes.put(code, this);
     }
 
     /**
@@ -59,7 +59,7 @@ public enum SessionStatus
         return code;
     }
 
-    private static class Mapper
+    private static class Codes
     {
         private static final Map<Integer, SessionStatus> codes = new HashMap<>();
     }

@@ -33,7 +33,7 @@ public enum ControlFrameType
 
     public static ControlFrameType from(short code)
     {
-        return Mapper.codes.get(code);
+        return Codes.codes.get(code);
     }
 
     private final short code;
@@ -41,7 +41,7 @@ public enum ControlFrameType
     private ControlFrameType(short code)
     {
         this.code = code;
-        Mapper.codes.put(code, this);
+        Codes.codes.put(code, this);
     }
 
     public short getCode()
@@ -49,7 +49,7 @@ public enum ControlFrameType
         return code;
     }
 
-    private static class Mapper
+    private static class Codes
     {
         private static final Map<Short, ControlFrameType> codes = new HashMap<>();
     }

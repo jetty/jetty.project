@@ -80,9 +80,9 @@ public enum StreamStatus
         switch (version)
         {
             case SPDY.V2:
-                return Mapper.v2Codes.get(code);
+                return Codes.v2Codes.get(code);
             case SPDY.V3:
-                return Mapper.v3Codes.get(code);
+                return Codes.v3Codes.get(code);
             default:
                 throw new IllegalStateException();
         }
@@ -95,10 +95,10 @@ public enum StreamStatus
     {
         this.v2Code = v2Code;
         if (v2Code >= 0)
-            Mapper.v2Codes.put(v2Code, this);
+            Codes.v2Codes.put(v2Code, this);
         this.v3Code = v3Code;
         if (v3Code >= 0)
-            Mapper.v3Codes.put(v3Code, this);
+            Codes.v3Codes.put(v3Code, this);
     }
 
     /**
@@ -118,7 +118,7 @@ public enum StreamStatus
         }
     }
 
-    private static class Mapper
+    private static class Codes
     {
         private static final Map<Integer, StreamStatus> v2Codes = new HashMap<>();
         private static final Map<Integer, StreamStatus> v3Codes = new HashMap<>();
