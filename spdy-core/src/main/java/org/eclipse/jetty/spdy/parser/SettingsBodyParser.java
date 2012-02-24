@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.spdy.StreamException;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.frames.SettingsFrame;
 
@@ -73,7 +74,8 @@ public class SettingsBodyParser extends ControlFrameBodyParser
                 {
                     if (buffer.remaining() >= 4)
                     {
-                        key = new SettingsInfo.Key(buffer.getInt());
+                        int idAndFlags = convertIdAndFlags(controlFrameParser.getVersion(), buffer.getInt());
+                        key = new SettingsInfo.Key(idAndFlags);
                         state = State.VALUE;
                     }
                     else
@@ -90,7 +92,8 @@ public class SettingsBodyParser extends ControlFrameBodyParser
                     value += (currByte & 0xFF) << 8 * cursor;
                     if (cursor == 0)
                     {
-                        key = new SettingsInfo.Key(value);
+                        int idAndFlags = convertIdAndFlags(controlFrameParser.getVersion(), value);
+                        key = new SettingsInfo.Key(idAndFlags);
                         state = State.VALUE;
                     }
                     break;
@@ -130,6 +133,31 @@ public class SettingsBodyParser extends ControlFrameBodyParser
             }
         }
         return false;
+    }
+
+    private int convertIdAndFlags(short version, int idAndFlags)
+    {
+        switch (version)
+        {
+            case SPDY.V2:
+            {
+                // A bug in the Chromium implementation made v2 have
+                // 3 bytes little endian + 1 byte of flags
+                // Here we normalize this to conform with v3
+                int result = idAndFlags & 0x00_FF_00_FF;
+                result += (idAndFlags & 0xFF_00_00_00) >>> 16;
+                result += (idAndFlags & 0x00_00_FF_00) << 16;
+                return result;
+            }
+            case SPDY.V3:
+            {
+                return idAndFlags;
+            }
+            default:
+            {
+                throw new IllegalStateException();
+            }
+        }
     }
 
     private boolean onPair()

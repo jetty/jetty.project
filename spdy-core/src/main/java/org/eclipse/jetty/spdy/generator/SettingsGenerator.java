@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.eclipse.jetty.spdy.StreamException;
+import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.SettingsFrame;
@@ -42,11 +43,36 @@ public class SettingsGenerator extends ControlFrameGenerator
 
         for (Map.Entry<SettingsInfo.Key, Integer> entry : pairs.entrySet())
         {
-            buffer.putInt(entry.getKey().getKey());
+            int idAndFlags = convertIdAndFlags(frame.getVersion(), entry.getKey().getKey());
+            buffer.putInt(idAndFlags);
             buffer.putInt(entry.getValue());
         }
 
         buffer.flip();
         return buffer;
+    }
+
+    private int convertIdAndFlags(short version, int idAndFlags)
+    {
+        switch (version)
+        {
+            case SPDY.V2:
+            {
+                // A bug in the Chromium implementation made v2 have
+                // 3 bytes little endian + 1 byte of flags
+                int result = idAndFlags & 0x00_FF_00_FF;
+                result += (idAndFlags & 0xFF_00_00_00) >>> 16;
+                result += (idAndFlags & 0x00_00_FF_00) << 16;
+                return result;
+            }
+            case SPDY.V3:
+            {
+                return idAndFlags;
+            }
+            default:
+            {
+                throw new IllegalStateException();
+            }
+        }
     }
 }

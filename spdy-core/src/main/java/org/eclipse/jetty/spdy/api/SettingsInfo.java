@@ -135,7 +135,7 @@ public class SettingsInfo
         @Override
         public String toString()
         {
-            return "[" + getFlags() + "," + getId() + "]";
+            return String.format("[id=%d,flags=%d]", getFlags(), getId());
         }
     }
 
