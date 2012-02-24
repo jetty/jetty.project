@@ -102,7 +102,7 @@ public class GzipWithPipeliningTest
             client.connect();
 
             // Request text that will be gzipped + chunked in the response
-            client.issueGET("/lots-of-fantasy-names.txt",true);
+            client.issueGET("/lots-of-fantasy-names.txt",true, false);
 
             respHeader = client.readResponseHeader();
             System.out.println("Response Header #1 --\n" + respHeader);
@@ -122,7 +122,7 @@ public class GzipWithPipeliningTest
             System.out.printf("Read %,d bytes%n",readBytes);
 
             // Issue another request
-            client.issueGET("/jetty_logo.png",true);
+            client.issueGET("/jetty_logo.png",true, false);
 
             // Finish reading chunks
             System.out.println("Finish reading remaining chunks ...");
