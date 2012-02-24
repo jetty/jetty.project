@@ -1,7 +1,5 @@
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,6 +14,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.not;
 
 public class PipelineHelper
 {
@@ -38,7 +38,7 @@ public class PipelineHelper
 
     /**
      * Open the Socket to the destination endpoint and
-     * 
+     *
      * @return the open java Socket.
      * @throws IOException
      */
@@ -57,14 +57,14 @@ public class PipelineHelper
 
     /**
      * Issue a HTTP/1.1 GET request with Connection:keep-alive set.
-     * 
+     *
      * @param path
      *            the path to GET
      * @param acceptGzipped
      *            to turn on acceptance of GZIP compressed responses
      * @throws IOException
      */
-    public void issueGET(String path, boolean acceptGzipped) throws IOException
+    public void issueGET(String path, boolean acceptGzipped, boolean close) throws IOException
     {
         LOG.debug("Issuing GET on " + path);
         StringBuilder req = new StringBuilder();
@@ -79,7 +79,15 @@ public class PipelineHelper
             req.append("Accept-Encoding: gzip, deflate\r\n");
         }
         req.append("Cookie: JSESSIONID=spqx8v8szylt1336t96vc6mw0\r\n");
-        req.append("Connection: keep-alive\r\n");
+        if ( close )
+        {
+            req.append("Connection: close\r\n");
+        }
+        else
+        {
+            req.append("Connection: keep-alive\r\n");
+        }
+
         req.append("\r\n");
 
         LOG.debug("Request:" + req);
@@ -92,7 +100,7 @@ public class PipelineHelper
 
     public String readResponseHeader() throws IOException
     {
-        // Read Response Header 
+        // Read Response Header
         socket.setSoTimeout(10000);
 
         LOG.debug("Reading http header");
@@ -189,6 +197,15 @@ public class PipelineHelper
         while (left > 0)
         {
             int val = inputStream.read();
+            try
+            {
+                if (left % 10 == 0)
+                    Thread.sleep(1);
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
             if (val == (-1))
             {
                 Assert.fail(String.format("Encountered an early EOL (expected another %,d bytes)",left));

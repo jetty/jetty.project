@@ -38,6 +38,7 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
     private static final Logger LOG = Log.getLogger(AsyncHttpConnection.class);
     private int _total_no_progress;
     private final AsyncEndPoint _asyncEndp;
+    private boolean _readInterested = true;
 
     public AsyncHttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
@@ -103,29 +104,44 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
                 {
                     some_progress|=progress;
                     //  Is this request/response round complete and are fully flushed?
-                    if (_parser.isComplete() && _generator.isComplete())
+                    boolean parserComplete = _parser.isComplete();
+                    boolean generatorComplete = _generator.isComplete();
+                    boolean complete = parserComplete && generatorComplete;
+                    if (parserComplete)
                     {
-                        // Reset the parser/generator
-                        progress=true;
-
-                        // look for a switched connection instance?
-                        if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+                        if (generatorComplete)
                         {
-                            Connection switched=(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
-                            if (switched!=null)
-                                connection=switched;
+                            // Reset the parser/generator
+                            progress=true;
+
+                            // look for a switched connection instance?
+                            if (_response.getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+                            {
+                                Connection switched=(Connection)_request.getAttribute("org.eclipse.jetty.io.Connection");
+                                if (switched!=null)
+                                    connection=switched;
+                            }
+
+                            reset();
+
+                            // TODO Is this still required?
+                            if (!_generator.isPersistent() && !_endp.isOutputShutdown())
+                            {
+                                LOG.warn("Safety net oshut!!!  IF YOU SEE THIS, PLEASE RAISE BUGZILLA");
+                                _endp.shutdownOutput();
+                            }
                         }
-
-                        reset();
-
-                        // TODO Is this still required?
-                        if (!_generator.isPersistent() && !_endp.isOutputShutdown())
+                        else
                         {
-                            LOG.warn("Safety net oshut!!!  IF YOU SEE THIS, PLEASE RAISE BUGZILLA");
-                            _endp.shutdownOutput();
+                            // We have finished parsing, but not generating so
+                            // we must not be interested in reading until we
+                            // have finished generating and we reset the generator
+                            _readInterested = false;
+                            LOG.debug("Disabled read interest while writing response {}", _endp);
                         }
                     }
-                    else if (_request.getAsyncContinuation().isAsyncStarted())
+
+                    if (!complete && _request.getAsyncContinuation().isAsyncStarted())
                     {
                         // The request is suspended, so even though progress has been made,
                         // exit the while loop by setting progress to false
@@ -177,10 +193,23 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
             // then no more can happen, so close.
             _endp.close();
         }
-        
+
         // Make idle parser seek EOF
         if (_parser.isIdle())
             _parser.setPersistent(false);
     }
 
+    @Override
+    public void reset()
+    {
+        _readInterested = true;
+        LOG.debug("Enabled read interest {}", _endp);
+        super.reset();
+    }
+
+    @Override
+    public boolean isSuspended()
+    {
+        return !_readInterested || super.isSuspended();
+    }
 }

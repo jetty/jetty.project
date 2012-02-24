@@ -15,9 +15,6 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.helper;
 
-import static org.hamcrest.Matchers.*;
-
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -34,6 +31,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.is;
 
 public class SafariD00
 {
@@ -56,7 +55,7 @@ public class SafariD00
 
     /**
      * Open the Socket to the destination endpoint and
-     * 
+     *
      * @return the open java Socket.
      * @throws IOException
      */
@@ -75,7 +74,7 @@ public class SafariD00
 
     /**
      * Issue an Http websocket (Draft-0) upgrade request (using an example request captured from OSX/Safari)
-     * 
+     *
      * @throws UnsupportedEncodingException
      */
     public void issueHandshake() throws IOException
@@ -103,23 +102,22 @@ public class SafariD00
         out.write(buf,0,buf.length);
         out.flush();
 
-        // Read HTTP 101 Upgrade / Handshake Response
-        InputStreamReader reader = new InputStreamReader(in);
-        BufferedReader br = new BufferedReader(reader);
-
         socket.setSoTimeout(10000);
 
-        LOG.debug("Reading http header");
-        boolean foundEnd = false;
-        String line;
-        while (!foundEnd)
+        // Read HTTP 101 Upgrade / Handshake Response
+        InputStreamReader reader = new InputStreamReader(in);
+
+        LOG.debug("Reading http headers");
+        int crlfs = 0;
+        while (true)
         {
-            line = br.readLine();
-            // System.out.printf("RESP: %s%n",line);
-            if (line.length() == 0)
-            {
-                foundEnd = true;
-            }
+            int read = in.read();
+            if (read == '\r' || read == '\n')
+                ++crlfs;
+            else
+                crlfs = 0;
+            if (crlfs == 4)
+                break;
         }
 
         // Read expected handshake hixie bytes
