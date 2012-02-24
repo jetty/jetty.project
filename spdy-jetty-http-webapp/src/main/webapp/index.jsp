@@ -7,7 +7,7 @@
         function submit()
         {
             var xhr = new XMLHttpRequest();
-            xhr.open("POST", "/form.jsp", false);
+            xhr.open("POST", "${pageContext.request.contextPath}/form.jsp", false);
             xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
             xhr.send("param=1");
             window.document.getElementById("form").innerHTML = xhr.responseText;
@@ -21,7 +21,7 @@
 </div>
 <div id="image">
     <p>Below there should be an image</p>
-    <img src="${requestScope.contextPath}/logo.jpg"  alt="logo" />
+    <img src="${pageContext.request.contextPath}/logo.jpg"  alt="logo" />
 </div>
 <div>
     <jsp:include page="included.jsp" />

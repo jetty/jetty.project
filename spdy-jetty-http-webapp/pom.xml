@@ -20,11 +20,14 @@
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>${jetty.version}</version>
                 <configuration>
-                    <connectors>
-                        <connector implementation="org.eclipse.jetty.spdy.http.HTTPSPDYServerConnector">
-                            <port>8080</port>
-                        </connector>
-                    </connectors>
+                    <stopPort>8888</stopPort>
+                    <stopKey>quit</stopKey>
+                    <jvmArgs>
+                        -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005
+                        -Dlog4j.configuration=file://${basedir}/src/main/resources/log4j.properties
+                        -Xbootclasspath/p:${settings.localRepository}/org/eclipse/jetty/npn-boot/${npn.version}/npn-boot-${npn.version}.jar
+                    </jvmArgs>
+                    <jettyXml>${basedir}/src/main/config/jetty-spdy.xml</jettyXml>
                     <webAppConfig>
                         <contextPath>/</contextPath>
                     </webAppConfig>
