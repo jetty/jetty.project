@@ -17,11 +17,10 @@
 package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.api.SettingsInfo;
+import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.SettingsFrame;
 
@@ -30,22 +29,25 @@ public class SettingsGenerator extends ControlFrameGenerator
     @Override
     public ByteBuffer generate(ControlFrame frame) throws StreamException
     {
-        SettingsFrame settings = (SettingsFrame)frame;
+        SettingsFrame settingsFrame = (SettingsFrame)frame;
 
-        Map<SettingsInfo.Key, Integer> pairs = settings.getSettings();
-        int size = pairs.size();
+        Settings settings = settingsFrame.getSettings();
+        int size = settings.size();
         int frameBodyLength = 4 + 8 * size;
         int totalLength = ControlFrame.HEADER_LENGTH + frameBodyLength;
         ByteBuffer buffer = ByteBuffer.allocate(totalLength);
-        generateControlFrameHeader(settings, frameBodyLength, buffer);
+        generateControlFrameHeader(settingsFrame, frameBodyLength, buffer);
 
         buffer.putInt(size);
 
-        for (Map.Entry<SettingsInfo.Key, Integer> entry : pairs.entrySet())
+        for (Settings.Setting setting : settings)
         {
-            int idAndFlags = convertIdAndFlags(frame.getVersion(), entry.getKey().getKey());
+            int id = setting.getId().getCode();
+            int flags = setting.getFlag().getCode();
+            int idAndFlags = (id << 8) + flags;
+            idAndFlags = convertIdAndFlags(frame.getVersion(), idAndFlags);
             buffer.putInt(idAndFlags);
-            buffer.putInt(entry.getValue());
+            buffer.putInt(setting.getValue());
         }
 
         buffer.flip();

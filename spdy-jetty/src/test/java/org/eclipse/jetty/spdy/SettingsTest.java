@@ -16,13 +16,12 @@
 
 package org.eclipse.jetty.spdy;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
+import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
@@ -31,12 +30,32 @@ import org.junit.Test;
 public class SettingsTest extends AbstractTest
 {
     @Test
+    public void testSettingsUsage() throws Exception
+    {
+        Settings settings = new Settings();
+        int streamsValue = 100;
+        settings.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, Settings.Flag.PERSIST, streamsValue));
+        int windowValue = 32768;
+        settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowValue));
+
+        Settings.Setting setting1 = settings.get(Settings.ID.MAX_CONCURRENT_STREAMS);
+        Assert.assertSame(Settings.ID.MAX_CONCURRENT_STREAMS, setting1.getId());
+        Assert.assertSame(Settings.Flag.PERSIST, setting1.getFlag());
+        Assert.assertEquals(streamsValue, setting1.getValue());
+
+        Settings.Setting setting2 = settings.get(Settings.ID.INITIAL_WINDOW_SIZE);
+        Assert.assertSame(Settings.ID.INITIAL_WINDOW_SIZE, setting2.getId());
+        Assert.assertSame(Settings.Flag.NONE, setting2.getFlag());
+        Assert.assertEquals(windowValue, setting2.getValue());
+    }
+
+    @Test
     public void testSettings() throws Exception
     {
-        Map<SettingsInfo.Key,Integer> settings = new HashMap<>();
-        settings.put(new SettingsInfo.Key(SettingsInfo.Key.UPLOAD_BANDWIDTH), 1024 * 1024);
-        settings.put(new SettingsInfo.Key(SettingsInfo.Key.DOWNLOAD_BANDWIDTH), 1024 * 1024);
-        settings.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSISTED | SettingsInfo.Key.CURRENT_CONGESTION_WINDOW), 1024);
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.UPLOAD_BANDWIDTH, 1024 * 1024));
+        settings.put(new Settings.Setting(Settings.ID.DOWNLOAD_BANDWIDTH, 1024 * 1024));
+        settings.put(new Settings.Setting(Settings.ID.CURRENT_CONGESTION_WINDOW, Settings.Flag.PERSISTED, 1024));
         final SettingsInfo clientSettingsInfo = new SettingsInfo(settings);
         final CountDownLatch latch = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
@@ -44,7 +63,8 @@ public class SettingsTest extends AbstractTest
             @Override
             public void onSettings(Session session, SettingsInfo serverSettingsInfo)
             {
-                Assert.assertEquals(clientSettingsInfo, serverSettingsInfo);
+                Assert.assertEquals(clientSettingsInfo.getFlags(), serverSettingsInfo.getFlags());
+                Assert.assertEquals(clientSettingsInfo.getSettings(), serverSettingsInfo.getSettings());
                 latch.countDown();
             }
         };
@@ -58,10 +78,10 @@ public class SettingsTest extends AbstractTest
     @Test
     public void testServerSettings() throws Exception
     {
-        Map<SettingsInfo.Key,Integer> settings = new HashMap<>();
-        settings.put(new SettingsInfo.Key(SettingsInfo.Key.UPLOAD_BANDWIDTH), 1024 * 1024);
-        settings.put(new SettingsInfo.Key(SettingsInfo.Key.DOWNLOAD_BANDWIDTH), 1024 * 1024);
-        settings.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.CURRENT_CONGESTION_WINDOW), 1024);
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.UPLOAD_BANDWIDTH, 1024 * 1024));
+        settings.put(new Settings.Setting(Settings.ID.DOWNLOAD_BANDWIDTH, 1024 * 1024));
+        settings.put(new Settings.Setting(Settings.ID.CURRENT_CONGESTION_WINDOW, Settings.Flag.PERSIST, 1024));
         final SettingsInfo serverSettingsInfo = new SettingsInfo(settings);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
@@ -78,7 +98,8 @@ public class SettingsTest extends AbstractTest
             @Override
             public void onSettings(Session session, SettingsInfo clientSettingsInfo)
             {
-                Assert.assertEquals(serverSettingsInfo, clientSettingsInfo);
+                Assert.assertEquals(serverSettingsInfo.getFlags(), clientSettingsInfo.getFlags());
+                Assert.assertEquals(serverSettingsInfo.getSettings(), clientSettingsInfo.getSettings());
                 latch.countDown();
             }
         };

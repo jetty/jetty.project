@@ -17,11 +17,10 @@
 package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
@@ -34,10 +33,10 @@ public class SettingsGenerateParseTest
     public void testGenerateParse() throws Exception
     {
         byte flags = SettingsInfo.CLEAR_PERSISTED;
-        Map<SettingsInfo.Key, Integer> pairs = new HashMap<>();
-        pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.MAX_CONCURRENT_STREAMS), 100);
-        pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSISTED | SettingsInfo.Key.ROUND_TRIP_TIME), 500);
-        SettingsFrame frame1 = new SettingsFrame(SPDY.V2, flags, pairs);
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, Settings.Flag.PERSIST, 100));
+        settings.put(new Settings.Setting(Settings.ID.ROUND_TRIP_TIME, Settings.Flag.PERSISTED, 500));
+        SettingsFrame frame1 = new SettingsFrame(SPDY.V2, flags, settings);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -51,20 +50,20 @@ public class SettingsGenerateParseTest
 
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.SETTINGS, frame2.getType());
-        SettingsFrame settings = (SettingsFrame)frame2;
-        Assert.assertEquals(SPDY.V2, settings.getVersion());
-        Assert.assertEquals(flags, settings.getFlags());
-        Assert.assertEquals(pairs, settings.getSettings());
+        SettingsFrame settingsFrame = (SettingsFrame)frame2;
+        Assert.assertEquals(SPDY.V2, settingsFrame.getVersion());
+        Assert.assertEquals(flags, settingsFrame.getFlags());
+        Assert.assertEquals(settings, settingsFrame.getSettings());
     }
 
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
         byte flags = SettingsInfo.CLEAR_PERSISTED;
-        Map<SettingsInfo.Key, Integer> pairs = new HashMap<>();
-        pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSIST | SettingsInfo.Key.MAX_CONCURRENT_STREAMS), 100);
-        pairs.put(new SettingsInfo.Key(SettingsInfo.Key.FLAG_PERSISTED | SettingsInfo.Key.ROUND_TRIP_TIME), 500);
-        SettingsFrame frame1 = new SettingsFrame(SPDY.V2, flags, pairs);
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.DOWNLOAD_RETRANSMISSION_RATE, 100));
+        settings.put(new Settings.Setting(Settings.ID.ROUND_TRIP_TIME, 500));
+        SettingsFrame frame1 = new SettingsFrame(SPDY.V2, flags, settings);
         Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
@@ -79,9 +78,9 @@ public class SettingsGenerateParseTest
 
         Assert.assertNotNull(frame2);
         Assert.assertEquals(ControlFrameType.SETTINGS, frame2.getType());
-        SettingsFrame settings = (SettingsFrame)frame2;
-        Assert.assertEquals(SPDY.V2, settings.getVersion());
-        Assert.assertEquals(flags, settings.getFlags());
-        Assert.assertEquals(pairs, settings.getSettings());
+        SettingsFrame settingsFrame = (SettingsFrame)frame2;
+        Assert.assertEquals(SPDY.V2, settingsFrame.getVersion());
+        Assert.assertEquals(flags, settingsFrame.getFlags());
+        Assert.assertEquals(settings, settingsFrame.getSettings());
     }
 }

@@ -16,15 +16,14 @@
 
 package org.eclipse.jetty.spdy.frames;
 
-import java.util.Map;
-
+import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 
 public class SettingsFrame extends ControlFrame
 {
-    private final Map<SettingsInfo.Key, Integer> settings;
+    private final Settings settings;
 
-    public SettingsFrame(short version, byte flags, Map<SettingsInfo.Key, Integer> settings)
+    public SettingsFrame(short version, byte flags, Settings settings)
     {
         super(version, ControlFrameType.SETTINGS, flags);
         this.settings = settings;
@@ -35,7 +34,7 @@ public class SettingsFrame extends ControlFrame
         return (getFlags() & SettingsInfo.CLEAR_PERSISTED) == SettingsInfo.CLEAR_PERSISTED;
     }
 
-    public Map<SettingsInfo.Key, Integer> getSettings()
+    public Settings getSettings()
     {
         return settings;
     }

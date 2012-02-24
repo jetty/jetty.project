@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYClient;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -88,7 +89,15 @@ public class ServerHTTPSPDYTest
 
     protected SPDYServerConnector newHTTPSPDYServerConnector()
     {
-        return new HTTPSPDYServerConnector();
+        // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
+        return new HTTPSPDYServerConnector()
+        {
+            @Override
+            protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
+            {
+                return new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, this);
+            }
+        };
     }
 
     protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception

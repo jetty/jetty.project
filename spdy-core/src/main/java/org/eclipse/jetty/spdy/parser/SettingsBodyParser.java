@@ -17,22 +17,20 @@
 package org.eclipse.jetty.spdy.parser;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.api.SettingsInfo;
+import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.frames.SettingsFrame;
 
 public class SettingsBodyParser extends ControlFrameBodyParser
 {
-    private final Map<SettingsInfo.Key, Integer> settings = new HashMap<>();
+    private final Settings settings = new Settings();
     private final ControlFrameParser controlFrameParser;
     private State state = State.COUNT;
     private int cursor;
     private int count;
-    private SettingsInfo.Key key;
+    private int idAndFlags;
     private int value;
 
     public SettingsBodyParser(ControlFrameParser controlFrameParser)
@@ -74,8 +72,7 @@ public class SettingsBodyParser extends ControlFrameBodyParser
                 {
                     if (buffer.remaining() >= 4)
                     {
-                        int idAndFlags = convertIdAndFlags(controlFrameParser.getVersion(), buffer.getInt());
-                        key = new SettingsInfo.Key(idAndFlags);
+                        idAndFlags = convertIdAndFlags(controlFrameParser.getVersion(), buffer.getInt());
                         state = State.VALUE;
                     }
                     else
@@ -92,8 +89,7 @@ public class SettingsBodyParser extends ControlFrameBodyParser
                     value += (currByte & 0xFF) << 8 * cursor;
                     if (cursor == 0)
                     {
-                        int idAndFlags = convertIdAndFlags(controlFrameParser.getVersion(), value);
-                        key = new SettingsInfo.Key(idAndFlags);
+                        idAndFlags = convertIdAndFlags(controlFrameParser.getVersion(), value);
                         state = State.VALUE;
                     }
                     break;
@@ -162,9 +158,11 @@ public class SettingsBodyParser extends ControlFrameBodyParser
 
     private boolean onPair()
     {
-        settings.put(key, value);
+        int id = (idAndFlags & 0xFF_FF_FF_00) >>> 8;
+        int flags = idAndFlags & 0xFF;
+        settings.put(new Settings.Setting(Settings.ID.from(id), Settings.Flag.from(flags), value));
         state = State.KEY;
-        key = null;
+        idAndFlags = 0;
         value = 0;
         --count;
         if (count == 0)
@@ -177,7 +175,7 @@ public class SettingsBodyParser extends ControlFrameBodyParser
 
     private void onSettings()
     {
-        SettingsFrame frame = new SettingsFrame(controlFrameParser.getVersion(), controlFrameParser.getFlags(), new HashMap<>(settings));
+        SettingsFrame frame = new SettingsFrame(controlFrameParser.getVersion(), controlFrameParser.getFlags(), new Settings(settings, true));
         controlFrameParser.onControlFrame(frame);
         reset();
     }
@@ -188,7 +186,7 @@ public class SettingsBodyParser extends ControlFrameBodyParser
         state = State.COUNT;
         cursor = 0;
         count = 0;
-        key = null;
+        idAndFlags = 0;
         value = 0;
     }
 

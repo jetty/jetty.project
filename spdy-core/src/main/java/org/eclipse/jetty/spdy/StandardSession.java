@@ -37,6 +37,7 @@ import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.SessionStatus;
+import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
@@ -74,6 +75,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private final AtomicBoolean goAwayReceived = new AtomicBoolean();
     private final AtomicInteger lastStreamId = new AtomicInteger();
     private boolean flushing;
+    private volatile int windowSize = 65536;
 
     public StandardSession(short version, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
     {
@@ -489,6 +491,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private void onSettings(SettingsFrame frame)
     {
+        Settings.Setting windowSizeSetting = frame.getSettings().get(Settings.ID.INITIAL_WINDOW_SIZE);
+        if (windowSizeSetting != null)
+            this.windowSize = windowSizeSetting.getValue();
         notifyOnSettings(frame);
         flush();
     }
@@ -666,8 +671,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public int getWindowSize()
     {
-        // TODO: make this configurable through SETTINGS frame
-        return 65535;
+        return windowSize;
     }
 
     @Override
