@@ -62,6 +62,5 @@ public class EmptyAsyncConnection extends AbstractConnection implements AsyncCon
     @Override
     public void onInputShutdown() throws IOException
     {
-        // TODO
     }
 }

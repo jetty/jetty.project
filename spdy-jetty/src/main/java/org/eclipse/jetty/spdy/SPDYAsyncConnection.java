@@ -73,7 +73,10 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
                 progress |= endPoint.hasProgressed();
 
                 if (!progress && filled < 0)
+                {
+                    onInputShutdown();
                     close(false);
+                }
             }
             return this;
         }
@@ -201,7 +204,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     @Override
     public AsyncEndPoint getEndPoint()
     {
-        return (AsyncEndPoint) super.getEndPoint();
+        return (AsyncEndPoint)super.getEndPoint();
     }
 
     @Override
@@ -219,13 +222,11 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     @Override
     public void onClose()
     {
-        // TODO
     }
 
     @Override
     public void onInputShutdown() throws IOException
     {
-        // TODO
     }
 
     @Override
