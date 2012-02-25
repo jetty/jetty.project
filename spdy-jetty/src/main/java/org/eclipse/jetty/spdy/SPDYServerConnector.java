@@ -18,9 +18,13 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -30,6 +34,7 @@ import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -37,6 +42,7 @@ public class SPDYServerConnector extends SelectChannelConnector
 {
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
+    private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final SslContextFactory sslContextFactory;
     private final AsyncConnectionFactory defaultConnectionFactory;
 
@@ -52,6 +58,13 @@ public class SPDYServerConnector extends SelectChannelConnector
             addBean(sslContextFactory);
         defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, listener);
         putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        closeSessions();
+        super.doStop();
     }
 
     public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)
@@ -115,7 +128,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                 public void unsupported()
                 {
                     AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, null);
+                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, this);
                     sslEndPoint.setConnection(connection);
                 }
 
@@ -129,7 +142,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                 public void protocolSelected(String protocol)
                 {
                     AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory(protocol);
-                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, null);
+                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, this);
                     sslEndPoint.setConnection(connection);
                 }
             });
@@ -144,7 +157,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         else
         {
             AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-            AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, null);
+            AsyncConnection connection = connectionFactory.newAsyncConnection(channel, endPoint, this);
             endPoint.setConnection(connection);
             return connection;
         }
@@ -169,5 +182,30 @@ public class SPDYServerConnector extends SelectChannelConnector
         {
             throw new RuntimeException(x);
         }
+    }
+
+    protected boolean sessionOpened(Session session)
+    {
+        // Add sessions only if the connector is not stopping
+        return isRunning() && sessions.offer(session);
+    }
+
+    protected boolean sessionClosed(Session session)
+    {
+        // Remove sessions only if the connector is not stopping
+        // to avoid concurrent removes during iterations
+        return isRunning() && sessions.remove(session);
+    }
+
+    private void closeSessions()
+    {
+        for (Session session : sessions)
+            session.goAway();
+        sessions.clear();
+    }
+
+    protected Collection<Session> getSessions()
+    {
+        return Collections.unmodifiableCollection(sessions);
     }
 }

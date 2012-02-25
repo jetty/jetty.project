@@ -26,9 +26,13 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -168,6 +172,7 @@ public class SPDYClient
     public static class Factory extends AggregateLifeCycle
     {
         private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
+        private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
         private final ThreadPool threadPool;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
@@ -209,6 +214,13 @@ public class SPDYClient
             return new SPDYClient(version, this);
         }
 
+        @Override
+        protected void doStop() throws Exception
+        {
+            closeConnections();
+            super.doStop();
+        }
+
         public void join() throws InterruptedException
         {
             threadPool.join();
@@ -225,6 +237,31 @@ public class SPDYClient
                 }
             }
             return null;
+        }
+
+        private boolean sessionOpened(Session session)
+        {
+            // Add sessions only if the factory is not stopping
+            return isRunning() && sessions.offer(session);
+        }
+
+        private boolean sessionClosed(Session session)
+        {
+            // Remove sessions only if the factory is not stopping
+            // to avoid concurrent removes during iterations
+            return isRunning() && sessions.remove(session);
+        }
+
+        private void closeConnections()
+        {
+            for (Session session : sessions)
+                session.goAway();
+            sessions.clear();
+        }
+
+        protected Collection<Session> getSessions()
+        {
+            return Collections.unmodifiableCollection(sessions);
         }
 
         private class ClientSelectorManager extends SelectorManager
@@ -373,7 +410,9 @@ public class SPDYClient
             Parser parser = new Parser(compressionFactory.newDecompressor());
             Generator generator = new Generator(compressionFactory.newCompressor());
 
-            SPDYAsyncConnection connection = new SPDYAsyncConnection(endPoint, parser);
+            Factory factory = sessionPromise.client.factory;
+
+            SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, parser, factory);
             endPoint.setConnection(connection);
 
             StandardSession session = new StandardSession(sessionPromise.client.version, connection, 1, sessionPromise.listener, generator);
@@ -381,7 +420,27 @@ public class SPDYClient
             sessionPromise.completed(session);
             connection.setSession(session);
 
+            factory.sessionOpened(session);
+
             return connection;
+        }
+
+        private class ClientSPDYAsyncConnection extends SPDYAsyncConnection
+        {
+            private final Factory factory;
+
+            public ClientSPDYAsyncConnection(AsyncEndPoint endPoint, Parser parser, Factory factory)
+            {
+                super(endPoint, parser);
+                this.factory = factory;
+            }
+
+            @Override
+            public void onClose()
+            {
+                super.onClose();
+                factory.sessionClosed(getSession());
+            }
         }
     }
 }
