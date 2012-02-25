@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 
 public abstract class DataFrameParser
@@ -27,9 +28,13 @@ public abstract class DataFrameParser
     private int streamId;
     private byte flags;
     private int length;
-    private int remaining;
-    private ByteBuffer data;
 
+    /**
+     * <p>Parses the given {@link ByteBuffer} for a data frame.</p>
+     *
+     * @param buffer the {@link ByteBuffer} to parse
+     * @return true if the data frame has been fully parsed, false otherwise
+     */
     public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
@@ -73,7 +78,6 @@ public abstract class DataFrameParser
                     length += (currByte & 0xFF) << 8 * cursor;
                     if (cursor > 0)
                         break;
-                    remaining = length;
                     state = State.DATA;
                     // Fall down if length == 0: we can't loop because the buffer
                     // may be empty but we need to invoke the application anyway
@@ -88,37 +92,23 @@ public abstract class DataFrameParser
                     // However, TCP may further split the flow control window, so we may
                     // only have part of the data at this point.
 
-                    // TODO: introduce synthetic frames instead of accumulating data
-
-                    int length = Math.min(remaining, buffer.remaining());
+                    int size = Math.min(length, buffer.remaining());
                     int limit = buffer.limit();
-                    buffer.limit(buffer.position() + length);
+                    buffer.limit(buffer.position() + size);
                     ByteBuffer bytes = buffer.slice();
                     buffer.limit(limit);
-                    buffer.position(buffer.position() + length);
-                    remaining -= length;
-                    if (remaining == 0)
+                    buffer.position(buffer.position() + size);
+                    length -= size;
+                    if (length == 0)
                     {
-                        if (data == null)
-                        {
-                            onData(bytes);
-                            return true;
-                        }
-                        else
-                        {
-                            accumulate(bytes);
-                            onData(data);
-                            return true;
-                        }
+                        onData(bytes);
+                        return true;
                     }
                     else
                     {
-                        // We got only part of the frame data bytes, so we need to copy
-                        // the current data and wait for the remaining to arrive.
-                        if (data == null)
-                            data = bytes;
-                        else
-                            accumulate(bytes);
+                        // We got only part of the frame data bytes,
+                        // so we generate a synthetic data frame
+                        onSyntheticData(bytes);
                     }
                     break;
                 }
@@ -131,19 +121,18 @@ public abstract class DataFrameParser
         return false;
     }
 
-    private void accumulate(ByteBuffer bytes)
-    {
-        ByteBuffer local = ByteBuffer.allocate(data.remaining() + bytes.remaining());
-        local.put(data).put(bytes);
-        local.flip();
-        data = local;
-    }
-
     private void onData(ByteBuffer bytes)
     {
         DataFrame frame = new DataFrame(streamId, flags, bytes.remaining());
         onDataFrame(frame, bytes);
         reset();
+    }
+
+    private void onSyntheticData(ByteBuffer bytes)
+    {
+        DataFrame frame = new DataFrame(streamId, (byte)(flags & ~DataInfo.FLAG_CLOSE), bytes.remaining());
+        onDataFrame(frame, bytes);
+        // Do not reset, we're expecting more data
     }
 
     protected abstract void onDataFrame(DataFrame frame, ByteBuffer data);
@@ -155,8 +144,6 @@ public abstract class DataFrameParser
         streamId = 0;
         flags = 0;
         length = 0;
-        remaining = 0;
-        data = null;
     }
 
     private enum State
