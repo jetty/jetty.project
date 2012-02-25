@@ -183,9 +183,6 @@ public class StandardStream implements IStream
         updateCloseState(dataFrame.isClose());
         int length = data.remaining();
 
-        // TODO: here we should do decompression if the frame contains compressed data
-        // because the decompressor is per-stream in case of data frames
-
         notifyOnData(dataFrame, data);
         if (!isClosed())
         {
