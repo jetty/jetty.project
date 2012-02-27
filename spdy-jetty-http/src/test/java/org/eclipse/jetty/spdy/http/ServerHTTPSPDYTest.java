@@ -18,7 +18,6 @@ package org.eclipse.jetty.spdy.http;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -31,107 +30,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.spdy.AsyncConnectionFactory;
-import org.eclipse.jetty.spdy.SPDYClient;
-import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
-import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
 
-public class ServerHTTPSPDYTest
+public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
-    @Rule
-    public final TestWatchman testName = new TestWatchman()
-    {
-        @Override
-        public void starting(FrameworkMethod method)
-        {
-            super.starting(method);
-            System.err.printf("Running %s.%s()%n",
-                    method.getMethod().getDeclaringClass().getName(),
-                    method.getName());
-        }
-    };
-
-    protected Server server;
-    protected SPDYClient.Factory clientFactory;
-    protected SPDYServerConnector connector;
-
-    protected InetSocketAddress startHTTPServer(Handler handler) throws Exception
-    {
-        server = new Server();
-        connector = newHTTPSPDYServerConnector();
-        connector.setPort(0);
-        server.addConnector(connector);
-        server.setHandler(handler);
-        server.start();
-        return new InetSocketAddress("localhost", connector.getLocalPort());
-    }
-
-    protected SPDYServerConnector newHTTPSPDYServerConnector()
-    {
-        // For these tests, we need the connector to speak HTTP over SPDY even in non-SSL
-        return new HTTPSPDYServerConnector()
-        {
-            @Override
-            protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
-            {
-                return new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, this);
-            }
-        };
-    }
-
-    protected Session startClient(InetSocketAddress socketAddress, SessionFrameListener listener) throws Exception
-    {
-        if (clientFactory == null)
-        {
-            QueuedThreadPool threadPool = new QueuedThreadPool();
-            threadPool.setName(threadPool.getName() + "-client");
-            clientFactory = newSPDYClientFactory(threadPool);
-            clientFactory.start();
-        }
-        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, listener).get();
-    }
-
-    protected SPDYClient.Factory newSPDYClientFactory(ThreadPool threadPool)
-    {
-        return new SPDYClient.Factory(threadPool);
-    }
-
-    @After
-    public void destroy() throws Exception
-    {
-        if (clientFactory != null)
-        {
-            clientFactory.stop();
-            clientFactory.join();
-        }
-        if (server != null)
-        {
-            server.stop();
-            server.join();
-        }
-    }
-
     @Test
     public void testSimpleGET() throws Exception
     {

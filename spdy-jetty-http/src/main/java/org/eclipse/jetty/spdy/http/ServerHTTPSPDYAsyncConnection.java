@@ -19,6 +19,8 @@ package org.eclipse.jetty.spdy.http;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpException;
@@ -50,12 +52,14 @@ import org.slf4j.LoggerFactory;
 public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implements AsyncConnection
 {
     private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnection.class);
+    private final Queue<Runnable> queue = new LinkedList<>();
     private final SPDYAsyncConnection connection;
     private final Stream stream;
     private Headers headers;
     private NIOBuffer buffer;
     private boolean complete;
     private volatile State state = State.INITIAL;
+    private boolean dispatched;
 
     public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
     {
@@ -81,6 +85,31 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     public AsyncEndPoint getEndPoint()
     {
         return (AsyncEndPoint)super.getEndPoint();
+    }
+
+    public void post(Runnable task)
+    {
+        synchronized (queue)
+        {
+            queue.offer(task);
+            dispatch();
+        }
+    }
+
+    private void dispatch()
+    {
+        synchronized (queue)
+        {
+            if (dispatched)
+                return;
+
+            Runnable task = queue.poll();
+            if (task != null)
+            {
+                dispatched = true;
+                getServer().getThreadPool().dispatch(task);
+            }
+        }
     }
 
     @Override
@@ -176,6 +205,12 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         finally
         {
             setCurrentConnection(null);
+
+            synchronized (queue)
+            {
+                dispatched = false;
+                dispatch();
+            }
         }
     }
 
