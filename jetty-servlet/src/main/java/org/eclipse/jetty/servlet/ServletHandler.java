@@ -45,7 +45,6 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.AbstractHttpConnection;
-import org.eclipse.jetty.server.AsyncContext;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.Request;
@@ -352,7 +351,7 @@ public class ServletHandler extends ScopedHandler
         // Get the base requests
         final String old_servlet_path=baseRequest.getServletPath();
         final String old_path_info=baseRequest.getPathInfo();
-        
+
         DispatcherType type = baseRequest.getDispatcherType();
        
         ServletHolder servlet_holder=null;
@@ -377,7 +376,7 @@ public class ServletHandler extends ScopedHandler
                     baseRequest.setAttribute(Dispatcher.INCLUDE_PATH_INFO, path_info);
                 }
                 else
-                {        
+                {
                     baseRequest.setServletPath(servlet_path);
                     baseRequest.setPathInfo(path_info);
                 }
@@ -398,21 +397,6 @@ public class ServletHandler extends ScopedHandler
             old_scope=baseRequest.getUserIdentityScope();
             baseRequest.setUserIdentityScope(servlet_holder);
 
-            /* 
-             * this is an interim solution for Bug 371635
-             * 
-             * these will always be set now, when they ought to only be set on the dispatch
-             */
-            if ( baseRequest.getAttribute(AsyncContext.ASYNC_SERVLET_PATH) == null )
-            {
-                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,baseRequest.getServletPath());
-            }
-            
-            if ( baseRequest.getAttribute(AsyncContext.ASYNC_PATH_INFO) == null )
-            {
-                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO,baseRequest.getPathInfo());
-            }
-            
             // start manual inline of nextScope(target,baseRequest,request,response);
             if (never())
                 nextScope(target,baseRequest,request,response);
@@ -426,18 +410,13 @@ public class ServletHandler extends ScopedHandler
         }
         finally
         {
-            // #371649 if we have started async then we need to protect this state
-            if (!baseRequest.getAsyncContinuation().isAsyncStarted())
+            if (old_scope!=null)
+                baseRequest.setUserIdentityScope(old_scope);
+
+            if (!(DispatcherType.INCLUDE.equals(type)))
             {
-
-                if (old_scope != null)
-                    baseRequest.setUserIdentityScope(old_scope);
-
-                if (!(DispatcherType.INCLUDE.equals(type)))
-                {
-                    baseRequest.setServletPath(old_servlet_path);
-                    baseRequest.setPathInfo(old_path_info);
-                }
+                baseRequest.setServletPath(old_servlet_path);
+                baseRequest.setPathInfo(old_path_info); 
             }
         }
     }

@@ -309,7 +309,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     else
                     {
                         _event._dispatchContext=null;
-                        _event._path=null;
+                        _event._pathInContext=null;
                     }
 
                     _state=__ASYNCSTARTED;
@@ -710,14 +710,14 @@ public class AsyncContinuation implements AsyncContext, Continuation
     public void dispatch(ServletContext context, String path)
     {
         _event._dispatchContext=context;
-        _event._path=path;
+        _event._pathInContext=path;
         dispatch();
     }
 
     /* ------------------------------------------------------------ */
     public void dispatch(String path)
     {
-        _event._path=path;
+        _event._pathInContext=path;
         dispatch();
     }
 
@@ -892,13 +892,43 @@ public class AsyncContinuation implements AsyncContext, Continuation
         private final ServletRequest _request;
         private final ServletResponse _response;
         private ServletContext _dispatchContext;
-        private String _path;
+        private String _pathInContext;
         
         public AsyncEventState(ServletContext context, ServletRequest request, ServletResponse response)
         {
             _suspendedContext=context;
             _request=request;
             _response=response;
+            
+            
+            // Get the base request So we can remember the initial paths
+            Request r=_connection.getRequest();
+ 
+            // If we haven't been async dispatched before
+            if (r.getAttribute(AsyncContext.ASYNC_REQUEST_URI)==null)
+            {
+                // We are setting these attributes during startAsync, when the spec implies that 
+                // they are only available after a call to AsyncContext.dispatch(...);
+                
+                // have we been forwarded before?
+                String uri=(String)r.getAttribute(Dispatcher.FORWARD_REQUEST_URI);
+                if (uri!=null)
+                {
+                    r.setAttribute(AsyncContext.ASYNC_REQUEST_URI,uri);
+                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,(String)r.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
+                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,(String)r.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
+                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,(String)r.getAttribute(Dispatcher.FORWARD_PATH_INFO));
+                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,(String)r.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+                }
+                else
+                {
+                    r.setAttribute(AsyncContext.ASYNC_REQUEST_URI,r.getRequestURI());
+                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,r.getContextPath());
+                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,r.getServletPath());
+                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,r.getPathInfo());
+                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,r.getQueryString());
+                }
+            }
         }
         
         public ServletContext getSuspendedContext()
@@ -926,9 +956,13 @@ public class AsyncContinuation implements AsyncContext, Continuation
             return _response;
         }
         
+        /* ------------------------------------------------------------ */
+        /**
+         * @return The path in the context
+         */
         public String getPath()
         {
-            return _path;
+            return _pathInContext;
         }
 
         @Override

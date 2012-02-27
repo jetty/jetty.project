@@ -74,7 +74,7 @@ public class AsyncContextTest
         
         Assert.assertEquals("servlet gets right path","doGet:getServletPath:/servletPath", br.readLine());
         Assert.assertEquals("async context gets right path in get","doGet:async:getServletPath:/servletPath", br.readLine());
-        Assert.assertEquals("async context gets right path in async","async:run:/servletPath", br.readLine());
+        Assert.assertEquals("async context gets right path in async","async:run:attr:servletPath:/servletPath", br.readLine());
     }
     
     @Test
@@ -95,7 +95,6 @@ public class AsyncContextTest
         
         Assert.assertEquals("servlet gets right path","doGet:getServletPath:/servletPath2", br.readLine());
         Assert.assertEquals("async context gets right path in get","doGet:async:getServletPath:/servletPath2", br.readLine());
-        Assert.assertEquals("async context gets right path in async","async:run:/servletPath2", br.readLine());
         Assert.assertEquals("servlet path attr is original","async:run:attr:servletPath:/servletPath", br.readLine());
         Assert.assertEquals("path info attr is correct","async:run:attr:pathInfo:null", br.readLine());
         Assert.assertEquals("query string attr is correct","async:run:attr:queryString:dispatch=true", br.readLine());
@@ -123,7 +122,7 @@ public class AsyncContextTest
         
         Assert.assertEquals("servlet gets right path","doGet:getServletPath:/servletPath", br.readLine());
         Assert.assertEquals("async context gets right path in get","doGet:async:getServletPath:/servletPath", br.readLine());
-        Assert.assertEquals("async context gets right path in async","async:run:/servletPath", br.readLine());
+        Assert.assertEquals("async context gets right path in async","async:run:attr:servletPath:/servletPath", br.readLine());
     }
     
     @Test
@@ -148,7 +147,6 @@ public class AsyncContextTest
         
         Assert.assertEquals("servlet gets right path","doGet:getServletPath:/servletPath2", br.readLine());
         Assert.assertEquals("async context gets right path in get","doGet:async:getServletPath:/servletPath2", br.readLine());
-        Assert.assertEquals("async context gets right path in async","async:run:/servletPath2", br.readLine());
         Assert.assertEquals("servlet path attr is original","async:run:attr:servletPath:/servletPath", br.readLine());
         Assert.assertEquals("path info attr is correct","async:run:attr:pathInfo:null", br.readLine());
         Assert.assertEquals("query string attr is correct","async:run:attr:queryString:dispatch=true", br.readLine());
@@ -234,7 +232,6 @@ public class AsyncContextTest
                         
             try
             {
-                _continuation.getResponse().getOutputStream().print("async:run:" + req.getServletPath() + "\n");
                 _continuation.getResponse().getOutputStream().print("async:run:attr:servletPath:" + req.getAttribute(AsyncContext.ASYNC_SERVLET_PATH) + "\n");
                 _continuation.getResponse().getOutputStream().print("async:run:attr:pathInfo:" + req.getAttribute(AsyncContext.ASYNC_PATH_INFO) + "\n");              
                 _continuation.getResponse().getOutputStream().print("async:run:attr:queryString:" + req.getAttribute(AsyncContext.ASYNC_QUERY_STRING) + "\n");              
