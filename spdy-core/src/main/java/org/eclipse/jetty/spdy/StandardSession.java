@@ -640,7 +640,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         if (stream != null)
             updateLastStreamId(stream);
         ByteBuffer buffer = generator.control(frame);
-        logger.debug("Posting {} on {}", frame, stream);
+        logger.debug("Posting {}", frame);
         enqueueLast(new ControlFrameBytes<>(frame, buffer, handler, context));
     }
 
