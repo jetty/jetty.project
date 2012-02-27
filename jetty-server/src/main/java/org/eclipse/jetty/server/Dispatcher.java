@@ -287,10 +287,8 @@ public class Dispatcher implements RequestDispatcher
                 
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
                 
-                if (!request.isAsyncStarted())
-                {
+                if (!baseRequest.getAsyncContinuation().isAsyncStarted())
                     commitResponse(response,baseRequest);
-                }
             }
         }
         finally
@@ -308,6 +306,7 @@ public class Dispatcher implements RequestDispatcher
     }
 
 
+    /* ------------------------------------------------------------ */
     private void commitResponse(ServletResponse response, Request baseRequest) throws IOException
     {
         if (baseRequest.getResponse().isWriting())
