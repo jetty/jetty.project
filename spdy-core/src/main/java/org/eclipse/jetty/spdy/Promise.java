@@ -24,6 +24,12 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.spdy.api.Handler;
 
+/**
+ * <p>A {@link Promise} is a {@link Future} that allows a result or a failure to be set,
+ * so that the {@link Future} will be {@link #isDone() done}.</p>
+ *
+ * @param <T> the type of the result object
+ */
 public class Promise<T> implements Handler<T>, Future<T>
 {
     private final CountDownLatch latch = new CountDownLatch(1);
