@@ -137,7 +137,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 {
                     // May throw if wrong version or headers too big
                     control(stream, synStream, handler, stream);
-                    flush();
                 }
                 catch (StreamException x)
                 {
@@ -170,7 +169,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             {
                 RstStreamFrame frame = new RstStreamFrame(version, rstInfo.getStreamId(), rstInfo.getStreamStatus().getCode(version));
                 control(null, frame, handler, null);
-                flush();
             }
         }
         catch (StreamException x)
@@ -195,7 +193,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             SettingsFrame frame = new SettingsFrame(version, settingsInfo.getFlags(), settingsInfo.getSettings());
             control(null, frame, handler, null);
-            flush();
         }
         catch (StreamException x)
         {
@@ -220,7 +217,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             PingFrame frame = new PingFrame(version, pingId);
             control(null, frame, handler, pingInfo);
-            flush();
         }
         catch (StreamException x)
         {
@@ -247,7 +243,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 {
                     GoAwayFrame frame = new GoAwayFrame(version, lastStreamId.get(), SessionStatus.OK.getCode());
                     control(null, frame, handler, null);
-                    flush();
                     return;
                 }
                 catch (StreamException x)
@@ -504,10 +499,14 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             int pingId = frame.getPingId();
             if (pingId % 2 == pingIds.get() % 2)
+            {
                 notifyOnPing(frame);
+                flush();
+            }
             else
+            {
                 control(null, frame, new Promise<>(), null);
-            flush();
+            }
         }
         catch (StreamException x)
         {
@@ -642,6 +641,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         ByteBuffer buffer = generator.control(frame);
         logger.debug("Posting {}", frame);
         enqueueLast(new ControlFrameBytes<>(frame, buffer, handler, context));
+        flush();
     }
 
     private void updateLastStreamId(IStream stream)

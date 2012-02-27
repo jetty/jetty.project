@@ -279,6 +279,7 @@ public class StandardStream implements IStream
             updateCloseState(replyInfo.isClose());
             SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
             session.control(this, frame, handler, null);
+            session.flush();
         }
         catch (StreamException x)
         {
@@ -338,6 +339,6 @@ public class StandardStream implements IStream
     @Override
     public String toString()
     {
-        return String.format("stream=%d v%d closed=%b", getId(), session.getVersion(), isClosed() ? "true" : isHalfClosed() ? "half" : "false");
+        return String.format("stream=%d v%d closed=%s", getId(), session.getVersion(), isClosed() ? "true" : isHalfClosed() ? "half" : "false");
     }
 }
