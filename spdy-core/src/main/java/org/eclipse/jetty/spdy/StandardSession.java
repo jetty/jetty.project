@@ -17,6 +17,7 @@
 package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -25,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,6 +69,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final Deque<FrameBytes> queue = new LinkedList<>();
+    private final ScheduledExecutorService scheduler;
     private final short version;
     private final Controller<FrameBytes> controller;
     private final AtomicInteger streamIds;
@@ -78,8 +82,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private boolean flushing;
     private volatile int windowSize = 65536;
 
-    public StandardSession(short version, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
+    public StandardSession(ScheduledExecutorService scheduler, short version, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
     {
+        this.scheduler = scheduler;
         this.version = version;
         this.controller = controller;
         this.streamIds = new AtomicInteger(initialStreamId);
@@ -137,7 +142,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 try
                 {
                     // May throw if wrong version or headers too big
-                    control(stream, synStream, handler, stream);
+                    control(stream, synStream, timeout, unit, handler, stream);
                 }
                 catch (StreamException x)
                 {
@@ -169,7 +174,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             else
             {
                 RstStreamFrame frame = new RstStreamFrame(version, rstInfo.getStreamId(), rstInfo.getStreamStatus().getCode(version));
-                control(null, frame, handler, null);
+                control(null, frame, timeout, unit, handler, null);
             }
         }
         catch (StreamException x)
@@ -193,7 +198,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         try
         {
             SettingsFrame frame = new SettingsFrame(version, settingsInfo.getFlags(), settingsInfo.getSettings());
-            control(null, frame, handler, null);
+            control(null, frame, timeout, unit, handler, null);
         }
         catch (StreamException x)
         {
@@ -217,7 +222,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         try
         {
             PingFrame frame = new PingFrame(version, pingId);
-            control(null, frame, handler, pingInfo);
+            control(null, frame, timeout, unit, handler, pingInfo);
         }
         catch (StreamException x)
         {
@@ -243,7 +248,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 try
                 {
                     GoAwayFrame frame = new GoAwayFrame(version, lastStreamId.get(), SessionStatus.OK.getCode());
-                    control(null, frame, handler, null);
+                    control(null, frame, timeout, unit, handler, null);
                     return;
                 }
                 catch (StreamException x)
@@ -368,10 +373,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public void onSessionException(SessionException x)
     {
         // TODO: must send a GOAWAY with the x.sessionStatus, then close
-
-        // Check for null to support tests
-        if (controller != null)
-            controller.close(true);
+        close();
     }
 
     private void onSyn(SynStreamFrame synStream)
@@ -506,7 +508,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             }
             else
             {
-                control(null, frame, new Promise<>(), null);
+                control(null, frame, 0, TimeUnit.MILLISECONDS, new Promise<>(), null);
             }
         }
         catch (StreamException x)
@@ -525,8 +527,15 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             // SPDY does not require to send back a response to a GO_AWAY.
             // We notified the application of the last good stream id,
             // tried our best to flush remaining data, and close.
-            controller.close(false);
+            close();
         }
+    }
+
+    protected void close()
+    {
+        // Check for null to support tests
+        if (controller != null)
+            controller.close(false);
     }
 
     private void onHeaders(HeadersFrame frame)
@@ -635,13 +644,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public <C> void control(IStream stream, ControlFrame frame, Handler<C> handler, C context) throws StreamException
+    public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context) throws StreamException
     {
         if (stream != null)
             updateLastStreamId(stream);
         ByteBuffer buffer = generator.control(frame);
-        logger.debug("Posting {}", frame);
-        enqueueLast(new ControlFrameBytes<>(frame, buffer, handler, context));
+        logger.debug("Queuing {} on {}", frame, stream);
+        ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(frame, buffer, handler, context);
+        if (timeout > 0)
+            frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
+        enqueueLast(frameBytes);
         flush();
     }
 
@@ -662,10 +674,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public <C> void data(IStream stream, DataInfo dataInfo, Handler<C> handler, C context)
+    public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Handler<C> handler, C context)
     {
-        logger.debug("Posting {} on {}", dataInfo, stream);
-        enqueueLast(new DataFrameBytes<>(stream, dataInfo, handler, context));
+        logger.debug("Queuing {} on {}", dataInfo, stream);
+        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(stream, dataInfo, handler, context);
+        if (timeout > 0)
+            frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
+        enqueueLast(frameBytes);
         flush();
     }
 
@@ -742,7 +757,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     protected void write(final ByteBuffer buffer, Handler<FrameBytes> handler, FrameBytes frameBytes)
     {
-        controller.write(buffer, handler, frameBytes);
+        if (controller != null)
+            controller.write(buffer, handler, frameBytes);
     }
 
     public interface FrameBytes
@@ -752,12 +768,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         public abstract void complete();
     }
 
-    private class ControlFrameBytes<C> implements FrameBytes
+    private class ControlFrameBytes<C> implements FrameBytes, Runnable
     {
         private final ControlFrame frame;
         private final ByteBuffer buffer;
         private final Handler<C> handler;
         private final C context;
+        private volatile ScheduledFuture<?> task;
 
         private ControlFrameBytes(ControlFrame frame, ByteBuffer buffer, Handler<C> handler, C context)
         {
@@ -776,13 +793,25 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public void complete()
         {
+            ScheduledFuture<?> task = this.task;
+            if (task != null)
+                task.cancel(false);
+
             if (frame.getType() == ControlFrameType.GO_AWAY)
             {
                 // After sending a GO_AWAY we need to hard close the connection.
                 // Recipients will know the last good stream id and act accordingly.
-                controller.close(false);
+                close();
             }
+
             handler.completed(context);
+        }
+
+        @Override
+        public void run()
+        {
+            close();
+            handler.failed(new InterruptedByTimeoutException());
         }
 
         @Override
@@ -792,13 +821,14 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private class DataFrameBytes<C> implements FrameBytes
+    private class DataFrameBytes<C> implements FrameBytes, Runnable
     {
         private final IStream stream;
         private final DataInfo data;
         private final Handler<C> handler;
         private final C context;
         private int dataLength;
+        private volatile ScheduledFuture<?> task;
 
         private DataFrameBytes(IStream stream, DataInfo data, Handler<C> handler, C context)
         {
@@ -834,11 +864,23 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             }
             else
             {
+                ScheduledFuture<?> task = this.task;
+                if (task != null)
+                    task.cancel(false);
+
                 stream.updateCloseState(data.isClose());
                 if (stream.isClosed())
                     removeStream(stream);
+
                 handler.completed(context);
             }
+        }
+
+        @Override
+        public void run()
+        {
+            close();
+            handler.failed(new InterruptedByTimeoutException());
         }
 
         @Override

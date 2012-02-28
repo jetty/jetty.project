@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.http;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -41,9 +42,9 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
     private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnectionFactory.class);
     private final Connector connector;
 
-    public ServerHTTPSPDYAsyncConnectionFactory(short version, Connector connector)
+    public ServerHTTPSPDYAsyncConnectionFactory(ScheduledExecutorService scheduler, short version, Connector connector)
     {
-        super(version);
+        super(scheduler, version);
         this.connector = connector;
     }
 

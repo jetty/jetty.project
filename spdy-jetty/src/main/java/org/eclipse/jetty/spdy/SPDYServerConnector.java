@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -43,6 +46,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final SslContextFactory sslContextFactory;
     private final AsyncConnectionFactory defaultConnectionFactory;
 
@@ -56,15 +60,28 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
-        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, listener);
+        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(scheduler, SPDY.V2, listener);
         putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
+    }
+
+    protected ScheduledExecutorService getScheduler()
+    {
+        return scheduler;
     }
 
     @Override
     protected void doStop() throws Exception
     {
         closeSessions();
+        scheduler.shutdown();
         super.doStop();
+    }
+
+    @Override
+    public void join() throws InterruptedException
+    {
+        scheduler.awaitTermination(0, TimeUnit.MILLISECONDS);
+        super.join();
     }
 
     public AsyncConnectionFactory getAsyncConnectionFactory(String protocol)

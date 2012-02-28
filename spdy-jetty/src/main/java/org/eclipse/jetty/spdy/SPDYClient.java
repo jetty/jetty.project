@@ -33,7 +33,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 
@@ -173,6 +175,7 @@ public class SPDYClient
     {
         private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+        private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         private final ThreadPool threadPool;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
@@ -415,7 +418,7 @@ public class SPDYClient
             SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, parser, factory);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(sessionPromise.client.version, connection, 1, sessionPromise.listener, generator);
+            StandardSession session = new StandardSession(factory.scheduler, sessionPromise.client.version, connection, 1, sessionPromise.listener, generator);
             parser.addListener(session);
             sessionPromise.completed(session);
             connection.setSession(session);

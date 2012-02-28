@@ -203,7 +203,7 @@ public class StandardStream implements IStream
                 // we will send many window update frames... perhaps we can delay
                 // window update frames until we have a bigger delta to send
                 WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(session.getVersion(), getId(), delta);
-                session.control(this, windowUpdateFrame, new Promise<>(), null);
+                session.control(this, windowUpdateFrame, 0, TimeUnit.MILLISECONDS, new Promise<>(), null);
             }
         }
         catch (StreamException x)
@@ -279,7 +279,7 @@ public class StandardStream implements IStream
         {
             updateCloseState(replyInfo.isClose());
             SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-            session.control(this, frame, handler, null);
+            session.control(this, frame, timeout, unit, handler, null);
             session.flush();
         }
         catch (StreamException x)
@@ -303,7 +303,7 @@ public class StandardStream implements IStream
     {
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
-        session.data(this, dataInfo, handler, null);
+        session.data(this, dataInfo, timeout, unit, handler, null);
     }
 
     @Override
@@ -321,7 +321,7 @@ public class StandardStream implements IStream
         {
             updateCloseState(headersInfo.isClose());
             HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-            session.control(this, frame, handler, null);
+            session.control(this, frame, timeout, unit, handler, null);
         }
         catch (StreamException x)
         {
