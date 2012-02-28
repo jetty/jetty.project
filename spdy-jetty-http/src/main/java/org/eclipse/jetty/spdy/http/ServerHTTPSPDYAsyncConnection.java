@@ -91,6 +91,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     {
         synchronized (queue)
         {
+            logger.debug("Posting task {}", task);
             queue.offer(task);
             dispatch();
         }
@@ -103,11 +104,23 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             if (dispatched)
                 return;
 
-            Runnable task = queue.poll();
+            final Runnable task = queue.poll();
             if (task != null)
             {
                 dispatched = true;
-                getServer().getThreadPool().dispatch(task);
+                logger.debug("Dispatching task {}", task);
+                getServer().getThreadPool().dispatch(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        logger.debug("Executing task {}", task);
+                        task.run();
+                        logger.debug("Completing task {}", task);
+                        dispatched = false;
+                        dispatch();
+                    }
+                });
             }
         }
     }
@@ -205,12 +218,6 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         finally
         {
             setCurrentConnection(null);
-
-            synchronized (queue)
-            {
-                dispatched = false;
-                dispatch();
-            }
         }
     }
 
