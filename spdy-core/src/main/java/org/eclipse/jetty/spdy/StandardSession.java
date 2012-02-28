@@ -368,6 +368,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public void onStreamException(StreamException x)
     {
         // TODO: must send a RST_STREAM on the proper stream... too little information in StreamException
+        throw new SPDYException(x);
     }
 
     @Override
