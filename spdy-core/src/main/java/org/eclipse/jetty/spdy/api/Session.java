@@ -179,13 +179,6 @@ public interface Session
     public void goAway(long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
-     * <p>Initiates the flush of data to the other peer.</p>
-     * <p>Note that the flush may do nothing if, for example, there is nothing to flush, or
-     * if the data to be flushed belong to streams that have their flow-control stalled.</p>
-     */
-    public void flush();
-
-    /**
      * @return the streams currently active in this session
      */
     public List<Stream> getStreams();

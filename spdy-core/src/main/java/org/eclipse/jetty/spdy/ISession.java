@@ -26,6 +26,13 @@ import org.eclipse.jetty.spdy.frames.ControlFrame;
 
 public interface ISession extends Session
 {
+    /**
+     * <p>Initiates the flush of data to the other peer.</p>
+     * <p>Note that the flush may do nothing if, for example, there is nothing to flush, or
+     * if the data to be flushed belong to streams that have their flow-control stalled.</p>
+     */
+    public void flush();
+
     public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context);
 
     public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Handler<C> handler, C context);
