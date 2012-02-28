@@ -17,6 +17,7 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.StandardSession;
 import org.junit.Ignore;
@@ -82,7 +83,7 @@ public class ClientUsageTest
                 // Then issue another similar request
                 stream.getSession().syn(new SynInfo(true), this);
             }
-        }, new Handler.Adapter<Stream>()
+        }, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
         {
             @Override
             public void completed(Stream stream)
@@ -137,7 +138,7 @@ public class ClientUsageTest
                 }
 
             }
-        }, new Handler.Adapter<Stream>()
+        }, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
         {
             @Override
             public void completed(Stream stream)

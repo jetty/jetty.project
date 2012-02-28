@@ -65,7 +65,7 @@ public class PingTest extends AbstractTest
             @Override
             public void onConnect(Session session)
             {
-                session.ping(new Handler.Adapter<PingInfo>()
+                session.ping(0, TimeUnit.MILLISECONDS, new Handler.Adapter<PingInfo>()
                 {
                     @Override
                     public void completed(PingInfo pingInfo)

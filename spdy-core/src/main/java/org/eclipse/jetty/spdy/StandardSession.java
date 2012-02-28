@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -108,12 +109,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener)
     {
         Promise<Stream> result = new Promise<>();
-        syn(synInfo, listener, result);
+        syn(synInfo, listener, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void syn(SynInfo synInfo, StreamFrameListener listener, final Handler<Stream> handler)
+    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, final Handler<Stream> handler)
     {
         // Synchronization is necessary.
         // SPEC v3, 2.3.1 requires that the stream creation be monotonically crescent
@@ -151,12 +152,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public Future<Void> rst(RstInfo rstInfo)
     {
         Promise<Void> result = new Promise<>();
-        rst(rstInfo, result);
+        rst(rstInfo, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void rst(RstInfo rstInfo, Handler<Void> handler)
+    public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         try
         {
@@ -182,12 +183,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public Future<Void> settings(SettingsInfo settingsInfo)
     {
         Promise<Void> result = new Promise<>();
-        settings(settingsInfo, result);
+        settings(settingsInfo, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void settings(SettingsInfo settingsInfo, Handler<Void> handler)
+    public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         try
         {
@@ -204,12 +205,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public Future<PingInfo> ping()
     {
         Promise<PingInfo> result = new Promise<>();
-        ping(result);
+        ping(0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void ping(final Handler<PingInfo> handler)
+    public void ping(long timeout, TimeUnit unit, final Handler<PingInfo> handler)
     {
         int pingId = pingIds.getAndAdd(2);
         PingInfo pingInfo = new PingInfo(pingId);
@@ -228,12 +229,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public Future<Void> goAway()
     {
         Promise<Void> result = new Promise<>();
-        goAway(result);
+        goAway(0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void goAway(Handler<Void> handler)
+    public void goAway(long timeout, TimeUnit unit, Handler<Void> handler)
     {
         if (goAwaySent.compareAndSet(false, true))
         {

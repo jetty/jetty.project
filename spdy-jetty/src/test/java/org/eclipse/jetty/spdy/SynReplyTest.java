@@ -280,7 +280,7 @@ public class SynReplyTest extends AbstractTest
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }
-                }, new Handler.Adapter<Stream>()
+                }, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
                 {
                     @Override
                     public void completed(Stream stream)

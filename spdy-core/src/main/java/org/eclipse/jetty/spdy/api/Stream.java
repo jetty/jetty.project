@@ -17,6 +17,7 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>A {@link Stream} represents an bidirectional exchange of data on top of a {@link Session}.</p>
@@ -57,6 +58,7 @@ public interface Stream
      *
      * @param replyInfo the metadata to send
      * @return a future to wait for the reply to be sent
+     * @see #reply(ReplyInfo, long, TimeUnit, Handler)
      * @see SessionFrameListener#onSyn(Stream, SynInfo)
      */
     public Future<Void> reply(ReplyInfo replyInfo);
@@ -67,9 +69,12 @@ public interface Stream
      * reply has been actually sent.</p>
      *
      * @param replyInfo the metadata to send
-     * @param handler  the completion handler that gets notified of reply sent
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler   the completion handler that gets notified of reply sent
+     * @see #reply(ReplyInfo)
      */
-    public void reply(ReplyInfo replyInfo, Handler<Void> handler);
+    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a DATA frame on this stream.</p>
@@ -78,6 +83,7 @@ public interface Stream
      *
      * @param dataInfo the metadata to send
      * @return a future to wait for the data to be sent
+     * @see #data(DataInfo, long, TimeUnit, Handler)
      * @see #reply(ReplyInfo)
      */
     public Future<Void> data(DataInfo dataInfo);
@@ -89,9 +95,12 @@ public interface Stream
      * data has been actually sent.</p>
      *
      * @param dataInfo the metadata to send
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
      * @param handler  the completion handler that gets notified of data sent
+     * @see #data(DataInfo)
      */
-    public void data(DataInfo dataInfo, Handler<Void> handler);
+    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a HEADER frame on this stream.</p>
@@ -100,6 +109,7 @@ public interface Stream
      *
      * @param headersInfo the metadata to send
      * @return a future to wait for the headers to be sent
+     * @see #headers(HeadersInfo, long, TimeUnit, Handler)
      * @see #reply(ReplyInfo)
      */
     public Future<Void> headers(HeadersInfo headersInfo);
@@ -111,9 +121,12 @@ public interface Stream
      * headers have been actually sent.</p>
      *
      * @param headersInfo the metadata to send
-     * @param handler  the completion handler that gets notified of headers sent
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler     the completion handler that gets notified of headers sent
+     * @see #headers(HeadersInfo)
      */
-    public void headers(HeadersInfo headersInfo, Handler<Void> handler);
+    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * @return whether this stream has been closed by both parties
@@ -123,7 +136,9 @@ public interface Stream
 
     /**
      * @return whether this stream has been closed by one party only
-     * @see #isClosed()
+     * @see #isClosed()     * @param timeout     the timeout for the stream creation
+     * @param unit        the timeout's unit
+
      */
     public boolean isHalfClosed();
 
@@ -135,7 +150,7 @@ public interface Stream
     public Object getAttribute(String key);
 
     /**
-     * @param key the attribute key
+     * @param key   the attribute key
      * @param value an arbitrary object to associate with the given key to this stream
      * @see #getAttribute(String)
      * @see #removeAttribute(String)

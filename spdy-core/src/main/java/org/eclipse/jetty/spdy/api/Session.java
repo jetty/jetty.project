@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy.api;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>A {@link Session} represents the client-side endpoint of a SPDY connection to a single origin server.</p>
@@ -71,7 +72,7 @@ public interface Session
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
      * @return a future for the stream that will be created
-     * @see #syn(SynInfo, StreamFrameListener, Handler)
+     * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Handler)
      */
     public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
 
@@ -82,10 +83,12 @@ public interface Session
      *
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
      * @param handler  the completion handler that gets notified of stream creation
      * @see #syn(SynInfo, StreamFrameListener)
      */
-    public void syn(SynInfo synInfo, StreamFrameListener listener, Handler<Stream> handler);
+    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
 
     /**
      * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
@@ -93,6 +96,7 @@ public interface Session
      *
      * @param rstInfo the metadata to reset the stream
      * @return a future to wait for the reset to be sent
+     * @see #rst(RstInfo, long, TimeUnit, Handler)
      */
     public Future<Void> rst(RstInfo rstInfo);
 
@@ -102,9 +106,12 @@ public interface Session
      * reset has been actually sent.</p>
      *
      * @param rstInfo the metadata to reset the stream
-     * @param handler  the completion handler that gets notified of reset's send
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler the completion handler that gets notified of reset's send
+     * @see #rst(RstInfo)
      */
-    public void rst(RstInfo rstInfo, Handler<Void> handler);
+    public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a SETTINGS to configure the SPDY connection.</p>
@@ -112,6 +119,7 @@ public interface Session
      *
      * @param settingsInfo the metadata to send
      * @return a future to wait for the settings to be sent
+     * @see #settings(SettingsInfo, long, TimeUnit, Handler)
      */
     public Future<Void> settings(SettingsInfo settingsInfo);
 
@@ -121,15 +129,19 @@ public interface Session
      * settings has been actually sent.</p>
      *
      * @param settingsInfo the metadata to send
-     * @param handler  the completion handler that gets notified of settings' send
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler      the completion handler that gets notified of settings' send
+     * @see #settings(SettingsInfo)
      */
-    public void settings(SettingsInfo settingsInfo, Handler<Void> handler);
+    public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Sends asynchronously a PING, normally to measure round-trip time.</p>
      * <p>Callers may use the returned future to wait for the ping to be sent.</p>
      *
      * @return a future for the metadata sent
+     * @see #ping(long, TimeUnit, Handler)
      */
     public Future<PingInfo> ping();
 
@@ -138,15 +150,19 @@ public interface Session
      * <p>Callers may pass a non-null completion handler to be notified of when the
      * ping has been actually sent.</p>
      *
-     * @param handler  the completion handler that gets notified of ping's send
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler the completion handler that gets notified of ping's send
+     * @see #ping()
      */
-    public void ping(Handler<PingInfo> handler);
+    public void ping(long timeout, TimeUnit unit, Handler<PingInfo> handler);
 
     /**
      * <p>Closes gracefully this session, sending a GO_AWAY frame and then closing the TCP connection.</p>
      * <p>Callers may use the returned future to wait for the go away to be sent.</p>
      *
      * @return a future to wait for the go away to be sent
+     * @see #goAway(long, TimeUnit, Handler)
      */
     public Future<Void> goAway();
 
@@ -155,9 +171,12 @@ public interface Session
      * <p>Callers may pass a non-null completion handler to be notified of when the
      * go away has been actually sent.</p>
      *
-     * @param handler  the completion handler that gets notified of go away's send
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler the completion handler that gets notified of go away's send
+     * @see #goAway()
      */
-    public void goAway(Handler<Void> handler);
+    public void goAway(long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
      * <p>Initiates the flush of data to the other peer.</p>

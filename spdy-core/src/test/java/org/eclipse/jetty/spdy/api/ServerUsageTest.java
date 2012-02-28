@@ -16,6 +16,8 @@
 
 package org.eclipse.jetty.spdy.api;
 
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -71,7 +73,7 @@ public class ServerUsageTest
                 //
                 // However, the API may allow to initiate the stream
 
-                session.syn(new SynInfo(false), null, new Handler.Adapter<Stream>()
+                session.syn(new SynInfo(false), null, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
                 {
                     @Override
                     public void completed(Stream stream)
@@ -101,7 +103,7 @@ public class ServerUsageTest
 
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener
-                session.syn(new SynInfo(new Headers(), false, true, stream.getId(), (byte)0), null, new Handler.Adapter<Stream>()
+                session.syn(new SynInfo(new Headers(), false, true, stream.getId(), (byte)0), null, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
                 {
                     @Override
                     public void completed(Stream pushStream)

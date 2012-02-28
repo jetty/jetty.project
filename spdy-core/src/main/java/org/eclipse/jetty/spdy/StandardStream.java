@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
@@ -267,12 +268,12 @@ public class StandardStream implements IStream
     public Future<Void> reply(ReplyInfo replyInfo)
     {
         Promise<Void> result = new Promise<>();
-        reply(replyInfo, result);
+        reply(replyInfo, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void reply(ReplyInfo replyInfo, Handler<Void> handler)
+    public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         try
         {
@@ -293,12 +294,12 @@ public class StandardStream implements IStream
     public Future<Void> data(DataInfo dataInfo)
     {
         Promise<Void> result = new Promise<>();
-        data(dataInfo, result);
+        data(dataInfo, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void data(DataInfo dataInfo, Handler<Void> handler)
+    public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
@@ -309,12 +310,12 @@ public class StandardStream implements IStream
     public Future<Void> headers(HeadersInfo headersInfo)
     {
         Promise<Void> result = new Promise<>();
-        headers(headersInfo, result);
+        headers(headersInfo, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
-    public void headers(HeadersInfo headersInfo, Handler<Void> handler)
+    public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         try
         {
