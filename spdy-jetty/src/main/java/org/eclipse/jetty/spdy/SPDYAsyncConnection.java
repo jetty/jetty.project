@@ -39,7 +39,6 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     private static final Logger logger = LoggerFactory.getLogger(SPDYAsyncConnection.class);
     private final Parser parser;
     private volatile Session session;
-    private ByteBuffer readBuffer;
     private ByteBuffer writeBuffer;
     private Handler<StandardSession.FrameBytes> writeHandler;
     private StandardSession.FrameBytes writeContext;
@@ -88,28 +87,18 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
 
     public int fill() throws IOException
     {
-        // In order to support reentrant parsing, we save the read buffer
-        // so that reentrant calls can finish to consume the read buffer
-        // or eventually read more bytes and parse them.
+        // TODO: use buffer pool
+        NIOBuffer jettyBuffer = new DirectNIOBuffer(4096);
+        AsyncEndPoint endPoint = getEndPoint();
+        int filled = endPoint.fill(jettyBuffer);
+        logger.debug("Filled {} from {}", filled, endPoint);
+        if (filled <= 0)
+            return filled;
 
-        int filled = 0;
-        if (readBuffer == null)
-        {
-            // TODO: use buffer pool ?
-            NIOBuffer jettyBuffer = new DirectNIOBuffer(4096);
-            AsyncEndPoint endPoint = getEndPoint();
-            filled = endPoint.fill(jettyBuffer);
-            logger.debug("Filled {} from {}", filled, endPoint);
-            if (filled <= 0)
-                return filled;
-
-            ByteBuffer buffer = jettyBuffer.getByteBuffer();
-            buffer.limit(jettyBuffer.putIndex());
-            buffer.position(jettyBuffer.getIndex());
-            this.readBuffer = buffer;
-        }
-        parser.parse(readBuffer);
-        readBuffer = null;
+        ByteBuffer buffer = jettyBuffer.getByteBuffer();
+        buffer.limit(jettyBuffer.putIndex());
+        buffer.position(jettyBuffer.getIndex());
+        parser.parse(buffer);
         return filled;
     }
 
