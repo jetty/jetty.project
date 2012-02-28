@@ -28,12 +28,14 @@ public class DataFrameGenerator
         ByteBuffer buffer = ByteBuffer.allocateDirect(DataFrame.HEADER_LENGTH + windowSize);
         buffer.position(DataFrame.HEADER_LENGTH);
         // Guaranteed to always be >= 0
-        int read = dataInfo.getContent(buffer);
+        int read = dataInfo.readInto(buffer);
 
         buffer.putInt(0, streamId & 0x7F_FF_FF_FF);
         buffer.putInt(4, read & 0x00_FF_FF_FF);
 
-        byte flags = dataInfo.isConsumed() && dataInfo.isClose() ? DataInfo.FLAG_CLOSE : 0;
+        byte flags = dataInfo.getFlags();
+        if (dataInfo.available() > 0)
+            flags &= ~DataInfo.FLAG_CLOSE;
         buffer.put(4, flags);
 
         buffer.flip();

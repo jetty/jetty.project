@@ -16,17 +16,13 @@
 
 package org.eclipse.jetty.spdy.api;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 /**
  * <p>Specialized {@link DataInfo} for {@link String} content.</p>
  */
-public class StringDataInfo extends DataInfo
+public class StringDataInfo extends BytesDataInfo
 {
-    private byte[] bytes;
-    private int offset;
-
     public StringDataInfo(String string, boolean close)
     {
         this(string, close, false);
@@ -34,31 +30,6 @@ public class StringDataInfo extends DataInfo
 
     public StringDataInfo(String string, boolean close, boolean compress)
     {
-        super(close, compress);
-        setString(string);
-    }
-
-    @Override
-    public int getContentLength()
-    {
-        return bytes.length - offset;
-    }
-
-    @Override
-    public int getContent(ByteBuffer output)
-    {
-        int remaining = output.remaining();
-        int length = Math.min(bytes.length - offset, remaining);
-        output.put(bytes, offset, length);
-        offset += length;
-        if (offset == bytes.length)
-            setConsumed(true);
-        return length;
-    }
-
-    public void setString(String string)
-    {
-        this.bytes = string.getBytes(Charset.forName("UTF-8"));
-        this.offset = 0;
+        super(string.getBytes(Charset.forName("UTF-8")), close, compress);
     }
 }

@@ -43,12 +43,8 @@ public class ServerUsageTest
                 // Sends a reply
                 stream.reply(new ReplyInfo(replyHeaders, false));
 
-                // Sends data and shows how DataInfo can be reused
+                // Sends data
                 StringDataInfo dataInfo = new StringDataInfo("foo", false);
-                stream.data(dataInfo);
-                dataInfo.setClose(true);
-                dataInfo.setCompress(false);
-                dataInfo.setString("bar");
                 stream.data(dataInfo);
                 // Stream is now closed
                 return null;

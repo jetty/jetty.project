@@ -514,7 +514,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                contentBytes.addAndGet(dataInfo.getContentLength());
+                contentBytes.addAndGet(dataInfo.available());
                 if (dataInfo.isClose())
                 {
                     Assert.assertEquals(data.length, contentBytes.get());
@@ -571,7 +571,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                contentBytes.addAndGet(dataInfo.getContentLength());
+                contentBytes.addAndGet(dataInfo.available());
                 if (dataInfo.isClose())
                 {
                     Assert.assertEquals(2 * data.length, contentBytes.get());

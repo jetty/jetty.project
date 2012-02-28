@@ -16,14 +16,22 @@
 
 package org.eclipse.jetty.spdy;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
+import org.eclipse.jetty.spdy.api.Settings;
+import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
@@ -36,9 +44,17 @@ public class FlowControlTest extends AbstractTest
     @Test
     public void testServerFlowControlOneBigWrite() throws Exception
     {
-        final int length = 128 * 1024;
+        final int windowSize = 1536;
+        final int length = 5 * windowSize;
+        final CountDownLatch settingsLatch = new CountDownLatch(1);
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
+            @Override
+            public void onSettings(Session session, SettingsInfo settingsInfo)
+            {
+                settingsLatch.countDown();
+            }
+
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
@@ -48,118 +64,246 @@ public class FlowControlTest extends AbstractTest
             }
         }), null);
 
-        final AtomicInteger bytes = new AtomicInteger();
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowSize));
+        session.settings(new SettingsInfo(settings));
+
+        Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
+        final Exchanger<DataInfo> exchanger = new Exchanger<>();
         session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
+            private AtomicInteger dataFrames = new AtomicInteger();
+
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                bytes.addAndGet(dataInfo.getContentLength());
-                if (dataInfo.isClose())
-                    dataLatch.countDown();
+                try
+                {
+                    int dataFrames = this.dataFrames.incrementAndGet();
+                    if (dataFrames == 1)
+                    {
+                        // Do not consume nor read from the data frame.
+                        // We should then be flow-control stalled
+                        exchanger.exchange(dataInfo);
+                    }
+                    else if (dataFrames == 2)
+                    {
+                        // Read but not consume, we should be flow-control stalled
+                        dataInfo.readInto(ByteBuffer.allocate(dataInfo.length()));
+                        exchanger.exchange(dataInfo);
+                    }
+                    else if (dataFrames == 3)
+                    {
+                        // Consume partially, we should be flow-control stalled
+                        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.length() / 2));
+                        exchanger.exchange(dataInfo);
+                    }
+                    else if (dataFrames == 4 || dataFrames == 5)
+                    {
+                        // Consume totally
+                        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.length()));
+                        exchanger.exchange(dataInfo);
+                    }
+                    else
+                    {
+                        Assert.fail();
+                    }
+                }
+                catch (InterruptedException x)
+                {
+                    throw new SPDYException(x);
+                }
             }
         });
 
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(length, bytes.get());
-    }
-
-    @Test
-    public void testServerFlowControlTwoBigWrites() throws Exception
-    {
-        final int length = 128 * 1024;
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        DataInfo dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        // Check that we are flow control stalled
+        expectException(TimeoutException.class, new Callable<DataInfo>()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public DataInfo call() throws Exception
             {
-                stream.reply(new ReplyInfo(false));
-                stream.data(new BytesDataInfo(new byte[length], false));
-                stream.data(new BytesDataInfo(new byte[length], true));
-                return null;
-            }
-        }), null);
-
-        final AtomicInteger bytes = new AtomicInteger();
-        final CountDownLatch dataLatch = new CountDownLatch(1);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
-        {
-            @Override
-            public void onData(Stream stream, DataInfo dataInfo)
-            {
-                bytes.addAndGet(dataInfo.getContentLength());
-                if (dataInfo.isClose())
-                    dataLatch.countDown();
+                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
             }
         });
+        Assert.assertEquals(windowSize, dataInfo.available());
+        Assert.assertEquals(0, dataInfo.consumed());
+        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available()));
 
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(2 * length, bytes.get());
+        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        // Check that we are flow control stalled
+        expectException(TimeoutException.class, new Callable<DataInfo>()
+        {
+            @Override
+            public DataInfo call() throws Exception
+            {
+                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
+            }
+        });
+        Assert.assertEquals(0, dataInfo.available());
+        Assert.assertEquals(0, dataInfo.consumed());
+        dataInfo.consume(dataInfo.length());
+
+        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        // Check that we are flow control stalled
+        expectException(TimeoutException.class, new Callable<DataInfo>()
+        {
+            @Override
+            public DataInfo call() throws Exception
+            {
+                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
+            }
+        });
+        Assert.assertEquals(dataInfo.length() / 2, dataInfo.consumed());
+        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available()));
+
+        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
+        // Check that we are not flow control stalled
+        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
     }
 
     @Test
     public void testClientFlowControlOneBigWrite() throws Exception
     {
-        final AtomicInteger bytes = new AtomicInteger();
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        final int windowSize = 1536;
+        final Exchanger<DataInfo> exchanger = new Exchanger<>();
+        final CountDownLatch settingsLatch = new CountDownLatch(1);
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
+            @Override
+            public void onConnect(Session session)
+            {
+                Settings settings = new Settings();
+                settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowSize));
+                session.settings(new SettingsInfo(settings));
+            }
+
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
                 return new StreamFrameListener.Adapter()
                 {
+                    private AtomicInteger dataFrames = new AtomicInteger();
+
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        bytes.addAndGet(dataInfo.getContentLength());
-                        if (dataInfo.isClose())
-                            dataLatch.countDown();
+                        try
+                        {
+                            int dataFrames = this.dataFrames.incrementAndGet();
+                            if (dataFrames == 1)
+                            {
+                                // Do not consume nor read from the data frame.
+                                // We should then be flow-control stalled
+                                exchanger.exchange(dataInfo);
+                            }
+                            else if (dataFrames == 2)
+                            {
+                                // Read but not consume, we should be flow-control stalled
+                                dataInfo.readInto(ByteBuffer.allocate(dataInfo.length()));
+                                exchanger.exchange(dataInfo);
+                            }
+                            else if (dataFrames == 3)
+                            {
+                                // Consume partially, we should be flow-control stalled
+                                dataInfo.drainInto(ByteBuffer.allocate(dataInfo.length() / 2));
+                                exchanger.exchange(dataInfo);
+                            }
+                            else if (dataFrames == 4 || dataFrames == 5)
+                            {
+                                // Consume totally
+                                dataInfo.drainInto(ByteBuffer.allocate(dataInfo.length()));
+                                exchanger.exchange(dataInfo);
+                            }
+                            else
+                            {
+                                Assert.fail();
+                            }
+                        }
+                        catch (InterruptedException x)
+                        {
+                            throw new SPDYException(x);
+                        }
                     }
                 };
             }
-        }), null);
+        }), new SessionFrameListener.Adapter()
+        {
+            @Override
+            public void onSettings(Session session, SettingsInfo settingsInfo)
+            {
+                settingsLatch.countDown();
+            }
+        });
 
-        Stream stream = session.syn(new SynInfo(true), null).get();
-        int length = 128 * 1024;
+        Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
+        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        final int length = 5 * windowSize;
         stream.data(new BytesDataInfo(new byte[length], true));
 
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(length, bytes.get());
+        DataInfo dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        // Check that we are flow control stalled
+        expectException(TimeoutException.class, new Callable<DataInfo>()
+        {
+            @Override
+            public DataInfo call() throws Exception
+            {
+                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
+            }
+        });
+        Assert.assertEquals(windowSize, dataInfo.available());
+        Assert.assertEquals(0, dataInfo.consumed());
+        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available()));
+
+        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        // Check that we are flow control stalled
+        expectException(TimeoutException.class, new Callable<DataInfo>()
+        {
+            @Override
+            public DataInfo call() throws Exception
+            {
+                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
+            }
+        });
+        Assert.assertEquals(0, dataInfo.available());
+        Assert.assertEquals(0, dataInfo.consumed());
+        dataInfo.consume(dataInfo.length());
+
+        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        // Check that we are flow control stalled
+        expectException(TimeoutException.class, new Callable<DataInfo>()
+        {
+            @Override
+            public DataInfo call() throws Exception
+            {
+                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
+            }
+        });
+        Assert.assertEquals(dataInfo.length() / 2, dataInfo.consumed());
+        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available()));
+
+        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
+        // Check that we are not flow control stalled
+        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
     }
 
-    @Test
-    public void testClientFlowControlTwoBigWrites() throws Exception
+    private void expectException(Class<? extends Exception> exception, Callable command)
     {
-        final AtomicInteger bytes = new AtomicInteger();
-        final CountDownLatch dataLatch = new CountDownLatch(1);
-        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        try
         {
-            @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
-            {
-                stream.reply(new ReplyInfo(false));
-                return new StreamFrameListener.Adapter()
-                {
-                    @Override
-                    public void onData(Stream stream, DataInfo dataInfo)
-                    {
-                        bytes.addAndGet(dataInfo.getContentLength());
-                        if (dataInfo.isClose())
-                            dataLatch.countDown();
-                    }
-                };
-            }
-        }), null);
-
-        Stream stream = session.syn(new SynInfo(true), null).get();
-        int length = 128 * 1024;
-        stream.data(new BytesDataInfo(new byte[length], false));
-        stream.data(new BytesDataInfo(new byte[length], true));
-
-        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertEquals(2 * length, bytes.get());
+            command.call();
+            Assert.fail();
+        }
+        catch (Exception x)
+        {
+            Assert.assertSame(exception, x.getClass());
+        }
     }
 }

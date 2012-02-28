@@ -153,14 +153,16 @@ public class StandardStream implements IStream
                 opened = true;
                 SynReplyFrame synReply = (SynReplyFrame)frame;
                 updateCloseState(synReply.isClose());
-                notifyOnReply(synReply);
+                ReplyInfo replyInfo = new ReplyInfo(synReply.getHeaders(), synReply.isClose());
+                notifyOnReply(replyInfo);
                 break;
             }
             case HEADERS:
             {
                 HeadersFrame headers = (HeadersFrame)frame;
                 updateCloseState(headers.isClose());
-                notifyOnHeaders(headers);
+                HeadersInfo headersInfo = new HeadersInfo(headers.getHeaders(), headers.isClose(), headers.isResetCompression());
+                notifyOnHeaders(headersInfo);
                 break;
             }
             case WINDOW_UPDATE:
@@ -192,15 +194,18 @@ public class StandardStream implements IStream
         }
 
         updateCloseState(dataFrame.isClose());
-        int length = data.remaining();
 
-        notifyOnData(dataFrame, data);
-        if (!isClosed())
+        ByteBufferDataInfo dataInfo = new ByteBufferDataInfo(data, dataFrame.isClose(), dataFrame.isCompress())
         {
-            // Send the window update after having notified
-            // the application listeners because they may block
-            windowUpdate(length);
-        }
+            @Override
+            public void consume(int delta)
+            {
+                super.consume(delta);
+                if (consumed() == length() && !isClosed())
+                    windowUpdate(length());
+            }
+        };
+        notifyOnData(dataInfo);
         session.flush();
     }
 
@@ -263,15 +268,15 @@ public class StandardStream implements IStream
         }
     }
 
-    private void notifyOnReply(SynReplyFrame synReply)
+    private void notifyOnReply(ReplyInfo replyInfo)
     {
         final StreamFrameListener listener = this.listener;
         try
         {
             if (listener != null)
             {
-                logger.debug("Invoking reply callback with {} on listener {}", synReply, listener);
-                listener.onReply(this, new ReplyInfo(synReply.getHeaders(), synReply.isClose()));
+                logger.debug("Invoking reply callback with {} on listener {}", replyInfo, listener);
+                listener.onReply(this, replyInfo);
             }
         }
         catch (Exception x)
@@ -280,7 +285,7 @@ public class StandardStream implements IStream
         }
     }
 
-    private void notifyOnHeaders(HeadersFrame frame)
+    private void notifyOnHeaders(HeadersInfo headersInfo)
     {
         final StreamFrameListener listener = this.listener;
         try
@@ -288,7 +293,7 @@ public class StandardStream implements IStream
             if (listener != null)
             {
                 logger.debug("Invoking headers callback with {} on listener {}", frame, listener);
-                listener.onHeaders(this, new HeadersInfo(frame.getHeaders(), frame.isClose(), frame.isResetCompression()));
+                listener.onHeaders(this, headersInfo);
             }
         }
         catch (Exception x)
@@ -297,15 +302,16 @@ public class StandardStream implements IStream
         }
     }
 
-    private void notifyOnData(DataFrame frame, ByteBuffer data)
+    private void notifyOnData(DataInfo dataInfo)
     {
         final StreamFrameListener listener = this.listener;
         try
         {
             if (listener != null)
             {
-                logger.debug("Invoking data callback with {} on listener {}", frame, listener);
-                listener.onData(this, new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress()));
+                logger.debug("Invoking data callback with {} on listener {}", dataInfo, listener);
+                listener.onData(this, dataInfo);
+                logger.debug("Invoked data callback with {} on listener {}", dataInfo, listener);
             }
         }
         catch (Exception x)

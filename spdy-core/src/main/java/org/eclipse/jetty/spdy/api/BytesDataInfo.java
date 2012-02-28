@@ -34,30 +34,28 @@ public class BytesDataInfo extends DataInfo
     public BytesDataInfo(byte[] bytes, boolean close, boolean compress)
     {
         super(close, compress);
-        setBytes(bytes);
+        this.bytes = bytes;
     }
 
     @Override
-    public int getContentLength()
+    public int length()
     {
-        return bytes.length - offset;
+        return bytes.length;
     }
 
     @Override
-    public int getContent(ByteBuffer output)
+    public int available()
     {
-        int remaining = output.remaining();
-        int length = Math.min(bytes.length - offset, remaining);
+        return length() - offset;
+    }
+
+    @Override
+    public int readInto(ByteBuffer output)
+    {
+        int space = output.remaining();
+        int length = Math.min(available(), space);
         output.put(bytes, offset, length);
         offset += length;
-        if (offset == bytes.length)
-            setConsumed(true);
         return length;
-    }
-
-    public void setBytes(byte[] bytes)
-    {
-        this.bytes = bytes;
-        this.offset = 0;
     }
 }

@@ -23,7 +23,8 @@ import java.nio.ByteBuffer;
  */
 public class ByteBufferDataInfo extends DataInfo
 {
-    private ByteBuffer buffer;
+    private final ByteBuffer buffer;
+    private final int length;
 
     public ByteBufferDataInfo(ByteBuffer buffer, boolean close)
     {
@@ -33,37 +34,38 @@ public class ByteBufferDataInfo extends DataInfo
     public ByteBufferDataInfo(ByteBuffer buffer, boolean close, boolean compress)
     {
         super(close, compress);
-        setByteBuffer(buffer);
+        this.buffer = buffer;
+        this.length = buffer.remaining();
     }
 
     @Override
-    public int getContentLength()
+    public int length()
+    {
+        return length;
+    }
+
+    @Override
+    public int available()
     {
         return buffer.remaining();
     }
 
     @Override
-    public int getContent(ByteBuffer output)
+    public int readInto(ByteBuffer output)
     {
-        int length = output.remaining();
-        if (buffer.remaining() > length)
+        int space = output.remaining();
+        if (available() > space)
         {
             int limit = buffer.limit();
-            buffer.limit(buffer.position() + length);
+            buffer.limit(buffer.position() + space);
             output.put(buffer);
             buffer.limit(limit);
         }
         else
         {
-            length = buffer.remaining();
+            space = buffer.remaining();
             output.put(buffer);
         }
-        setConsumed(!buffer.hasRemaining());
-        return length;
-    }
-
-    public void setByteBuffer(ByteBuffer buffer)
-    {
-        this.buffer = buffer;
+        return space;
     }
 }

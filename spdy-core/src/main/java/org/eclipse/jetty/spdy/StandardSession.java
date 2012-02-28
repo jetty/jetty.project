@@ -398,7 +398,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 public void run()
                 {
                     stream.handle(frame);
-                    StreamFrameListener listener = notifyOnSyn(stream, frame);
+                    SynInfo synInfo = new SynInfo(frame.getHeaders(), frame.isClose(),
+                            frame.isUnidirectional(), frame.getAssociatedStreamId(), frame.getPriority());
+                    StreamFrameListener listener = notifyOnSyn(stream, synInfo);
                     stream.setStreamFrameListener(listener);
                     flush();
                     // The onSyn() listener may have sent a frame that closed the stream
@@ -512,7 +514,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 if (stream != null)
                     stream.handle(frame);
 
-                notifyOnRst(frame);
+                RstInfo rstInfo = new RstInfo(frame.getStreamId(), StreamStatus.from(frame.getVersion(), frame.getStatusCode()));
+                notifyOnRst(rstInfo);
                 flush();
 
                 if (stream != null)
@@ -525,13 +528,17 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         Settings.Setting windowSizeSetting = frame.getSettings().get(Settings.ID.INITIAL_WINDOW_SIZE);
         if (windowSizeSetting != null)
-            this.windowSize = windowSizeSetting.value();
+        {
+            windowSize = windowSizeSetting.value();
+            logger.debug("Updated window size to {}", windowSize);
+        }
         execute(new Runnable()
         {
             @Override
             public void run()
             {
-                notifyOnSettings(frame);
+                SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
+                notifyOnSettings(settingsInfo);
                 flush();
             }
         });
@@ -549,7 +556,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                     @Override
                     public void run()
                     {
-                        notifyOnPing(frame);
+                        PingInfo pingInfo = new PingInfo(frame.getPingId());
+                        notifyOnPing(pingInfo);
                         flush();
                     }
                 });
@@ -574,7 +582,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 @Override
                 public void run()
                 {
-                    notifyOnGoAway(frame);
+                    GoAwayInfo goAwayInfo = new GoAwayInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
+                    notifyOnGoAway(goAwayInfo);
                     flush();
                     // SPDY does not require to send back a response to a GO_AWAY.
                     // We notified the application of the last good stream id,
@@ -627,14 +636,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             controller.close(false);
     }
 
-    private StreamFrameListener notifyOnSyn(Stream stream, SynStreamFrame frame)
+    private StreamFrameListener notifyOnSyn(Stream stream, SynInfo synInfo)
     {
         try
         {
             if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, listener);
-                SynInfo synInfo = new SynInfo(frame.getHeaders(), frame.isClose(), frame.isUnidirectional(), frame.getAssociatedStreamId(), frame.getPriority());
+                logger.debug("Invoking callback with {} on listener {}", synInfo, listener);
                 return listener.onSyn(stream, synInfo);
             }
         }
@@ -645,14 +653,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         return null;
     }
 
-    private void notifyOnRst(RstStreamFrame frame)
+    private void notifyOnRst(RstInfo rstInfo)
     {
         try
         {
             if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, listener);
-                RstInfo rstInfo = new RstInfo(frame.getStreamId(), StreamStatus.from(frame.getVersion(), frame.getStatusCode()));
+                logger.debug("Invoking callback with {} on listener {}", rstInfo, listener);
                 listener.onRst(this, rstInfo);
             }
         }
@@ -662,14 +669,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private void notifyOnSettings(SettingsFrame frame)
+    private void notifyOnSettings(SettingsInfo settingsInfo)
     {
         try
         {
             if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, listener);
-                SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
+                logger.debug("Invoking callback with {} on listener {}", settingsInfo, listener);
                 listener.onSettings(this, settingsInfo);
             }
         }
@@ -679,14 +685,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private void notifyOnPing(final PingFrame frame)
+    private void notifyOnPing(final PingInfo pingInfo)
     {
         try
         {
             if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, listener);
-                PingInfo pingInfo = new PingInfo(frame.getPingId());
+                logger.debug("Invoking callback with {} on listener {}", pingInfo, listener);
                 listener.onPing(this, pingInfo);
             }
         }
@@ -696,14 +701,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private void notifyOnGoAway(GoAwayFrame frame)
+    private void notifyOnGoAway(GoAwayInfo goAwayInfo)
     {
         try
         {
             if (listener != null)
             {
-                logger.debug("Invoking callback with {} on listener {}", frame, listener);
-                GoAwayInfo goAwayInfo = new GoAwayInfo(frame.getLastStreamId(), SessionStatus.from(frame.getStatusCode()));
+                logger.debug("Invoking callback with {} on listener {}", goAwayInfo, listener);
                 listener.onGoAway(this, goAwayInfo);
             }
         }
@@ -955,7 +959,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             stream.updateWindowSize(-dataLength);
 
-            if (!data.isConsumed())
+            if (data.available() > 0)
             {
                 // If we could not write a full data frame, then we need first
                 // to finish it, and then process the others (to avoid data garbling)
@@ -985,7 +989,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public String toString()
         {
-            return String.format("DATA bytes @%x consumed=%b on %s", data.hashCode(), data.isConsumed(), stream);
+            return String.format("DATA bytes @%x available=%d consumed=%d on %s", data.hashCode(), data.available(), data.consumed(), stream);
         }
     }
 

@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.api;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>A container for DATA frames metadata and content bytes.</p>
@@ -45,9 +46,9 @@ public abstract class DataInfo
      */
     public final static byte FLAG_COMPRESS = 2;
 
+    private final AtomicInteger consumed = new AtomicInteger();
     private boolean close;
     private boolean compress;
-    private boolean consumed;
 
     /**
      * <p>Creates a new {@link DataInfo} with the given close flag and no compression flag.</p>
@@ -120,22 +121,53 @@ public abstract class DataInfo
     }
 
     /**
-     * @return the length of the content bytes
-     * @see #getContent(ByteBuffer)
+     * @return the total number of content bytes
+     * @see #available()
      */
-    public abstract int getContentLength();
+    public abstract int length();
+
+    /**
+     * <p>Returns the available content bytes that can be read via {@link #readInto(ByteBuffer)}.</p>
+     * <p>Each invocation to {@link #readInto(ByteBuffer)} modifies the value returned by this method,
+     * until no more content bytes are available.</p>
+     *
+     * @return the available content bytes
+     * @see #readInto(ByteBuffer)
+     */
+    public abstract int available();
 
     /**
      * <p>Copies the content bytes of this {@link DataInfo} into the given {@link ByteBuffer}.</p>
      * <p>If the given {@link ByteBuffer} cannot contain the whole content of this {@link DataInfo}
-     * then this {@link DataInfo} will not be {@link #isConsumed() consumed}, and further content
+     * then {@link #available()} will return a positive value, and further content
      * may be retrieved by invoking again this method.</p>
      *
      * @param output the {@link ByteBuffer} to copy to bytes into
      * @return the number of bytes copied
-     * @see #getContentLength()
+     * @see #available()
      */
-    public abstract int getContent(ByteBuffer output);
+    public abstract int readInto(ByteBuffer output);
+
+    public int drainInto(ByteBuffer output)
+    {
+        int read = readInto(output);
+        consume(read);
+        return read;
+    }
+
+    public void consume(int delta)
+    {
+        int read = length() - available();
+        int newConsumed = consumed() + delta;
+        if (newConsumed > read)
+            throw new IllegalStateException("Consuming without reading: consumed " + newConsumed + " but only read " + read);
+        consumed.addAndGet(delta);
+    }
+
+    public int consumed()
+    {
+        return consumed.get();
+    }
 
     /**
      * @param charset the charset used to convert the bytes
@@ -143,8 +175,8 @@ public abstract class DataInfo
      */
     public String asString(String charset)
     {
-        ByteBuffer buffer = ByteBuffer.allocate(getContentLength());
-        getContent(buffer);
+        ByteBuffer buffer = ByteBuffer.allocate(available());
+        readInto(buffer);
         buffer.flip();
         return Charset.forName(charset).decode(buffer).toString();
     }
@@ -154,8 +186,8 @@ public abstract class DataInfo
      */
     public byte[] asBytes()
     {
-        ByteBuffer buffer = ByteBuffer.allocate(getContentLength());
-        getContent(buffer);
+        ByteBuffer buffer = ByteBuffer.allocate(available());
+        readInto(buffer);
         buffer.flip();
         byte[] result = new byte[buffer.remaining()];
         buffer.get(result);
@@ -167,31 +199,15 @@ public abstract class DataInfo
      */
     public ByteBuffer asByteBuffer()
     {
-        ByteBuffer buffer = ByteBuffer.allocate(getContentLength());
-        getContent(buffer);
+        ByteBuffer buffer = ByteBuffer.allocate(available());
+        readInto(buffer);
         buffer.flip();
         return buffer;
-    }
-
-    /**
-     * @return whether this {@link DataInfo}'s content has been consumed
-     */
-    public boolean isConsumed()
-    {
-        return consumed;
-    }
-
-    /**
-     * @param consumed whether this {@link DataInfo}'s content has been consumed
-     */
-    protected void setConsumed(boolean consumed)
-    {
-        this.consumed = consumed;
     }
 
     @Override
     public String toString()
     {
-        return String.format("DATA @%x length=%d close=%b compress=%b", hashCode(), getContentLength(), isClose(), isCompress());
+        return String.format("DATA @%x available=%d consumed=%d close=%b compress=%b", hashCode(), available(), consumed(), isClose(), isCompress());
     }
 }

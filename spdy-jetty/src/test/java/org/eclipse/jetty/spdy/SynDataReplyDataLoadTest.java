@@ -123,9 +123,9 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                 public void onData(Stream stream, DataInfo dataInfo)
                 {
                     Assert.assertEquals(1, latch.getCount());
-                    ByteBuffer buffer = ByteBuffer.allocate(dataInfo.getContentLength());
-                    dataInfo.getContent(buffer);
-                    Assert.assertTrue(dataInfo.isConsumed());
+                    ByteBuffer buffer = ByteBuffer.allocate(dataInfo.available());
+                    dataInfo.readInto(buffer);
+                    Assert.assertEquals(0, dataInfo.available());
                     latch.countDown();
                 }
             }).get();
