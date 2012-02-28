@@ -48,6 +48,7 @@ public class SynReplyTest extends AbstractTest
     public void testSynReply() throws Exception
     {
         final AtomicReference<Session> sessionRef = new AtomicReference<>();
+        final CountDownLatch sessionLatch = new CountDownLatch(1);
         final CountDownLatch synLatch = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
@@ -55,6 +56,7 @@ public class SynReplyTest extends AbstractTest
             public void onConnect(Session session)
             {
                 sessionRef.set(session);
+                sessionLatch.countDown();
             }
 
             @Override
@@ -68,6 +70,10 @@ public class SynReplyTest extends AbstractTest
         };
 
         Session session = startClient(startServer(serverSessionFrameListener), null);
+
+        Assert.assertTrue(sessionLatch.await(5, TimeUnit.SECONDS));
+        Session serverSession = sessionRef.get();
+        Assert.assertNotNull(serverSession);
 
         final CountDownLatch streamCreatedLatch = new CountDownLatch(1);
         final CountDownLatch streamRemovedLatch = new CountDownLatch(1);
@@ -95,11 +101,9 @@ public class SynReplyTest extends AbstractTest
                 Assert.assertTrue(stream.isClosed());
                 replyLatch.countDown();
             }
-        }).get();
+        }).get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(synLatch.await(5, TimeUnit.SECONDS));
-        Session serverSession = sessionRef.get();
-        Assert.assertNotNull(serverSession);
 
         Assert.assertTrue(streamCreatedLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
@@ -114,21 +118,15 @@ public class SynReplyTest extends AbstractTest
     {
         final byte[] dataBytes = "foo".getBytes(Charset.forName("UTF-8"));
 
-        final AtomicReference<Session> sessionRef = new AtomicReference<>();
         final CountDownLatch synLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public void onConnect(Session session)
-            {
-                sessionRef.set(session);
-            }
-
-            @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 Assert.assertFalse(stream.isHalfClosed());
+                Assert.assertFalse(stream.isClosed());
                 synLatch.countDown();
                 return new StreamFrameListener.Adapter()
                 {
@@ -148,7 +146,7 @@ public class SynReplyTest extends AbstractTest
                         Assert.assertTrue(stream.isHalfClosed());
                         Assert.assertFalse(stream.isClosed());
 
-                        stream.reply(new ReplyInfo(new Headers(), true));
+                        stream.reply(new ReplyInfo(true));
                         Assert.assertTrue(stream.isClosed());
                         dataLatch.countDown();
                     }
@@ -169,20 +167,17 @@ public class SynReplyTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(new Headers(), false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
-                Assert.assertTrue(stream.isClosed());
                 replyLatch.countDown();
             }
-        }).get();
+        }).get(5, TimeUnit.SECONDS);
         stream.data(new BytesDataInfo(dataBytes, true));
 
         Assert.assertTrue(synLatch.await(5, TimeUnit.SECONDS));
-        Session serverSession = sessionRef.get();
-        Assert.assertNotNull(serverSession);
 
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
@@ -192,27 +187,30 @@ public class SynReplyTest extends AbstractTest
     }
 
     @Test
-    public void testSynReplyDataFlushData() throws Exception
+    public void testSynReplyDataData() throws Exception
     {
         final String data1 = "foo";
         final String data2 = "bar";
-        ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(final Stream stream, SynInfo synInfo)
             {
                 Assert.assertTrue(stream.isHalfClosed());
 
                 stream.reply(new ReplyInfo(false));
-                stream.data(new StringDataInfo(data1, false));
-                stream.getSession().flush();
-                stream.data(new StringDataInfo(data2, true));
+                stream.data(new StringDataInfo(data1, false), 5, TimeUnit.SECONDS, new Handler.Adapter<Void>()
+                {
+                    @Override
+                    public void completed(Void context)
+                    {
+                        stream.data(new StringDataInfo(data2, true));
+                    }
+                });
 
                 return null;
             }
-        };
-
-        Session session = startClient(startServer(serverSessionFrameListener), null);
+        }), null);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch1 = new CountDownLatch(1);
@@ -352,7 +350,7 @@ public class SynReplyTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        Stream stream = session.syn(new SynInfo(true), null).get();
+        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         RstInfo rstInfo = ref.get();
