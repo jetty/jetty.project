@@ -310,8 +310,10 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     if (_event==null || request!=_event.getRequest() || response != _event.getResponse() || context != _event.getServletContext())
                         _event=new AsyncEventState(context,request,response);
                     else
+                    {
                         _event._dispatchContext=null;
-
+                        _event._pathInContext=null;
+                    }
                     _state=__ASYNCSTARTED;
                     break;
 
@@ -818,13 +820,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            HttpServletRequest r = (HttpServletRequest)request;
-            System.err.printf("Suspend %s %s | %s %s%n",r.getServletPath(),r.getPathInfo(),r.getAttribute(Dispatcher.FORWARD_SERVLET_PATH), r.getAttribute(Dispatcher.FORWARD_PATH_INFO));
             doSuspend(context,request,response);
             if ( request instanceof HttpServletRequest)
                 _event._pathInContext=URIUtil.addPaths(((HttpServletRequest)request).getServletPath(),((HttpServletRequest)request).getPathInfo());
-            else
-                _event._pathInContext=null;
         }
     }
 
