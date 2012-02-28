@@ -33,15 +33,15 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     private final short version;
     private final ServerSessionFrameListener listener;
 
-    public ServerSPDYAsyncConnectionFactory(ScheduledExecutorService scheduler, short version)
+    public ServerSPDYAsyncConnectionFactory(short version, ScheduledExecutorService scheduler)
     {
-        this(scheduler, version, null);
+        this(version, scheduler, null);
     }
 
-    public ServerSPDYAsyncConnectionFactory(ScheduledExecutorService scheduler, short version, ServerSessionFrameListener listener)
+    public ServerSPDYAsyncConnectionFactory(short version, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
     {
-        this.scheduler = scheduler;
         this.version = version;
+        this.scheduler = scheduler;
         this.listener = listener;
     }
 
@@ -61,7 +61,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, parser, listener, connector);
         endPoint.setConnection(connection);
 
-        final StandardSession session = new StandardSession(scheduler, version, connection, 2, listener, generator);
+        final StandardSession session = new StandardSession(version, scheduler, connection, 2, listener, generator);
         parser.addListener(session);
         connection.setSession(session);
 

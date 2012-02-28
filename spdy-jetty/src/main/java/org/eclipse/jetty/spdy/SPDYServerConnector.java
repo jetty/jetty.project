@@ -60,7 +60,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
-        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(scheduler, SPDY.V2, listener);
+        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, scheduler, listener);
         putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
     }
 

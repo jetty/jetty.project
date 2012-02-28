@@ -42,9 +42,9 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
     private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnectionFactory.class);
     private final Connector connector;
 
-    public ServerHTTPSPDYAsyncConnectionFactory(ScheduledExecutorService scheduler, short version, Connector connector)
+    public ServerHTTPSPDYAsyncConnectionFactory(short version, ScheduledExecutorService scheduler, Connector connector)
     {
-        super(scheduler, version);
+        super(version, scheduler);
         this.connector = connector;
     }
 

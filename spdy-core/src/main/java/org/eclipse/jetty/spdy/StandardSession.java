@@ -82,10 +82,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private boolean flushing;
     private volatile int windowSize = 65536;
 
-    public StandardSession(ScheduledExecutorService scheduler, short version, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
+    public StandardSession(short version, ScheduledExecutorService scheduler, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
     {
-        this.scheduler = scheduler;
         this.version = version;
+        this.scheduler = scheduler;
         this.controller = controller;
         this.streamIds = new AtomicInteger(initialStreamId);
         this.pingIds = new AtomicInteger(initialStreamId);

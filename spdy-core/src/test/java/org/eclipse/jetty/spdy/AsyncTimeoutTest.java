@@ -44,7 +44,7 @@ public class AsyncTimeoutTest
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(scheduler, SPDY.V2, new TestController(), 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, scheduler, new TestController(), 1, null, generator)
         {
             @Override
             public void flush()
@@ -87,7 +87,7 @@ public class AsyncTimeoutTest
 
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(scheduler, SPDY.V2, new TestController(), 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, scheduler, new TestController(), 1, null, generator)
         {
             private final AtomicInteger flushes = new AtomicInteger();
 
