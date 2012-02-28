@@ -133,6 +133,6 @@ public class SynInfo
     @Override
     public String toString()
     {
-        return String.format("SYN close=%b %s", close, headers);
+        return String.format("SYN close=%b headers=%s", close, headers);
     }
 }
