@@ -201,6 +201,16 @@ public class StandardStream implements IStream
             public void consume(int delta)
             {
                 super.consume(delta);
+
+                // This is the algorithm for flow control.
+                // This method may be called multiple times
+                // with delta=1, but we only send a window
+                // update when the whole dataInfo has been
+                // consumed.
+                // Other policies may be to send window
+                // updates when consumed() is greater than
+                // a certain threshold, etc. but for now
+                // the policy is not pluggable for simplicity.
                 if (consumed() == length() && !isClosed())
                     windowUpdate(length());
             }
