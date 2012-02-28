@@ -203,14 +203,13 @@ public class StandardStream implements IStream
                 super.consume(delta);
 
                 // This is the algorithm for flow control.
-                // This method may be called multiple times
-                // with delta=1, but we only send a window
-                // update when the whole dataInfo has been
-                // consumed.
-                // Other policies may be to send window
-                // updates when consumed() is greater than
-                // a certain threshold, etc. but for now
-                // the policy is not pluggable for simplicity.
+                // This method may be called multiple times with delta=1, but we only send a window
+                // update when the whole dataInfo has been consumed.
+                // Other policies may be to send window updates when consumed() is greater than
+                // a certain threshold, etc. but for now the policy is not pluggable for simplicity.
+                // Note that the frequency of window updates depends on the read buffer, that
+                // should not be too smaller than the window size to avoid frequent window updates.
+                // Therefore, a pluggable policy should be able to modify the read buffer capacity.
                 if (consumed() == length() && !isClosed())
                     windowUpdate(length());
             }
@@ -260,21 +259,10 @@ public class StandardStream implements IStream
 
     private void windowUpdate(int delta)
     {
-        try
+        if (delta > 0)
         {
-            if (delta > 0)
-            {
-                // TODO: if the read buffer is small, but the default window size is big,
-                // we will send many window update frames... perhaps we can delay
-                // window update frames until we have a bigger delta to send
-                WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(session.getVersion(), getId(), delta);
-                session.control(this, windowUpdateFrame, 0, TimeUnit.MILLISECONDS, new Promise<>(), null);
-            }
-        }
-        catch (StreamException x)
-        {
-            logger.debug("Could not send window update on stream " + this, x);
-            session.rst(new RstInfo(getId(), x.getStreamStatus()));
+            WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(session.getVersion(), getId(), delta);
+            session.control(this, windowUpdateFrame, 0, TimeUnit.MILLISECONDS, new Promise<>(), null);
         }
     }
 
@@ -341,18 +329,9 @@ public class StandardStream implements IStream
     @Override
     public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
-        try
-        {
-            updateCloseState(replyInfo.isClose());
-            SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
-            session.control(this, frame, timeout, unit, handler, null);
-        }
-        catch (StreamException x)
-        {
-            logger.debug("Could not send reply on stream " + this, x);
-            handler.failed(x);
-            session.rst(new RstInfo(getId(), x.getStreamStatus()));
-        }
+        updateCloseState(replyInfo.isClose());
+        SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
+        session.control(this, frame, timeout, unit, handler, null);
     }
 
     @Override
@@ -382,18 +361,9 @@ public class StandardStream implements IStream
     @Override
     public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
-        try
-        {
-            updateCloseState(headersInfo.isClose());
-            HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
-            session.control(this, frame, timeout, unit, handler, null);
-        }
-        catch (StreamException x)
-        {
-            logger.debug("Could not send headers on stream " + this, x);
-            handler.failed(x);
-            session.rst(new RstInfo(getId(), x.getStreamStatus()));
-        }
+        updateCloseState(headersInfo.isClose());
+        HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
+        session.control(this, frame, timeout, unit, handler, null);
     }
 
     @Override

@@ -142,16 +142,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 int streamId = streamIds.getAndAdd(2);
                 SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, 0, synInfo.getPriority(), synInfo.getHeaders());
                 final IStream stream = createStream(synStream, listener);
-                try
-                {
-                    // May throw if wrong version or headers too big
-                    control(stream, synStream, timeout, unit, handler, stream);
-                }
-                catch (StreamException x)
-                {
-                    removeStream(stream);
-                    handler.failed(x);
-                }
+                control(stream, synStream, timeout, unit, handler, stream);
             }
         }
     }
@@ -167,23 +158,15 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void rst(RstInfo rstInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
-        try
+        // SPEC v3, 2.2.2
+        if (goAwaySent.get())
         {
-            // SPEC v3, 2.2.2
-            if (goAwaySent.get())
-            {
-                handler.completed(null);
-            }
-            else
-            {
-                RstStreamFrame frame = new RstStreamFrame(version, rstInfo.getStreamId(), rstInfo.getStreamStatus().getCode(version));
-                control(null, frame, timeout, unit, handler, null);
-            }
+            handler.completed(null);
         }
-        catch (StreamException x)
+        else
         {
-            logger.info("Could not send reset on stream " + rstInfo.getStreamId(), x);
-            handler.failed(x);
+            RstStreamFrame frame = new RstStreamFrame(version, rstInfo.getStreamId(), rstInfo.getStreamStatus().getCode(version));
+            control(null, frame, timeout, unit, handler, null);
         }
     }
 
@@ -198,15 +181,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void settings(SettingsInfo settingsInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
-        try
-        {
-            SettingsFrame frame = new SettingsFrame(version, settingsInfo.getFlags(), settingsInfo.getSettings());
-            control(null, frame, timeout, unit, handler, null);
-        }
-        catch (StreamException x)
-        {
-            handler.failed(x);
-        }
+        SettingsFrame frame = new SettingsFrame(version, settingsInfo.getFlags(), settingsInfo.getSettings());
+        control(null, frame, timeout, unit, handler, null);
     }
 
     @Override
@@ -222,15 +198,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         int pingId = pingIds.getAndAdd(2);
         PingInfo pingInfo = new PingInfo(pingId);
-        try
-        {
-            PingFrame frame = new PingFrame(version, pingId);
-            control(null, frame, timeout, unit, handler, pingInfo);
-        }
-        catch (StreamException x)
-        {
-            handler.failed(x);
-        }
+        PingFrame frame = new PingFrame(version, pingId);
+        control(null, frame, timeout, unit, handler, pingInfo);
     }
 
     @Override
@@ -248,16 +217,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             if (!goAwayReceived.get())
             {
-                try
-                {
-                    GoAwayFrame frame = new GoAwayFrame(version, lastStreamId.get(), SessionStatus.OK.getCode());
-                    control(null, frame, timeout, unit, handler, null);
-                    return;
-                }
-                catch (StreamException x)
-                {
-                    handler.failed(x);
-                }
+                GoAwayFrame frame = new GoAwayFrame(version, lastStreamId.get(), SessionStatus.OK.getCode());
+                control(null, frame, timeout, unit, handler, null);
+                return;
             }
         }
         handler.completed(null);
@@ -555,30 +517,23 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private void onPing(final PingFrame frame)
     {
-        try
+        int pingId = frame.getPingId();
+        if (pingId % 2 == pingIds.get() % 2)
         {
-            int pingId = frame.getPingId();
-            if (pingId % 2 == pingIds.get() % 2)
+            execute(new Runnable()
             {
-                execute(new Runnable()
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        PingInfo pingInfo = new PingInfo(frame.getPingId());
-                        notifyOnPing(pingInfo);
-                        flush();
-                    }
-                });
-            }
-            else
-            {
-                control(null, frame, 0, TimeUnit.MILLISECONDS, new Promise<>(), null);
-            }
+                    PingInfo pingInfo = new PingInfo(frame.getPingId());
+                    notifyOnPing(pingInfo);
+                    flush();
+                }
+            });
         }
-        catch (StreamException x)
+        else
         {
-            throw new SPDYException(x);
+            control(null, frame, 0, TimeUnit.MILLISECONDS, new Promise<>(), null);
         }
     }
 
