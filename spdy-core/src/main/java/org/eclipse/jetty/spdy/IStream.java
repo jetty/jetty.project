@@ -36,4 +36,6 @@ public interface IStream extends Stream
     public void handle(ControlFrame frame);
 
     public void handle(DataFrame dataFrame, ByteBuffer data);
+
+    public void post(Runnable task);
 }

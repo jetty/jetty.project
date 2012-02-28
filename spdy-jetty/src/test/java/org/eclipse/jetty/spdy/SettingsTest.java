@@ -39,14 +39,14 @@ public class SettingsTest extends AbstractTest
         settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowValue));
 
         Settings.Setting setting1 = settings.get(Settings.ID.MAX_CONCURRENT_STREAMS);
-        Assert.assertSame(Settings.ID.MAX_CONCURRENT_STREAMS, setting1.getId());
-        Assert.assertSame(Settings.Flag.PERSIST, setting1.getFlag());
-        Assert.assertEquals(streamsValue, setting1.getValue());
+        Assert.assertSame(Settings.ID.MAX_CONCURRENT_STREAMS, setting1.id());
+        Assert.assertSame(Settings.Flag.PERSIST, setting1.flag());
+        Assert.assertEquals(streamsValue, setting1.value());
 
         Settings.Setting setting2 = settings.get(Settings.ID.INITIAL_WINDOW_SIZE);
-        Assert.assertSame(Settings.ID.INITIAL_WINDOW_SIZE, setting2.getId());
-        Assert.assertSame(Settings.Flag.NONE, setting2.getFlag());
-        Assert.assertEquals(windowValue, setting2.getValue());
+        Assert.assertSame(Settings.ID.INITIAL_WINDOW_SIZE, setting2.id());
+        Assert.assertSame(Settings.Flag.NONE, setting2.flag());
+        Assert.assertEquals(windowValue, setting2.value());
     }
 
     @Test

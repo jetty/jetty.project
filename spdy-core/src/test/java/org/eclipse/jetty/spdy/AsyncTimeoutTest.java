@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +43,10 @@ public class AsyncTimeoutTest
         final long timeout = 1000;
         final TimeUnit unit = TimeUnit.MILLISECONDS;
 
+        Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, scheduler, new TestController(), 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), 1, null, generator)
         {
             @Override
             public void flush()
@@ -85,9 +87,10 @@ public class AsyncTimeoutTest
         final long timeout = 1000;
         final TimeUnit unit = TimeUnit.MILLISECONDS;
 
+        Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, scheduler, new TestController(), 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), 1, null, generator)
         {
             private final AtomicInteger flushes = new AtomicInteger();
 

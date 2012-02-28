@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
@@ -29,18 +30,20 @@ import org.eclipse.jetty.spdy.parser.Parser;
 
 public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 {
+    private final Executor threadPool;
     private final ScheduledExecutorService scheduler;
     private final short version;
     private final ServerSessionFrameListener listener;
 
-    public ServerSPDYAsyncConnectionFactory(short version, ScheduledExecutorService scheduler)
+    public ServerSPDYAsyncConnectionFactory(short version, Executor threadPool, ScheduledExecutorService scheduler)
     {
-        this(version, scheduler, null);
+        this(version, threadPool, scheduler, null);
     }
 
-    public ServerSPDYAsyncConnectionFactory(short version, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
+    public ServerSPDYAsyncConnectionFactory(short version, Executor threadPool, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
     {
         this.version = version;
+        this.threadPool = threadPool;
         this.scheduler = scheduler;
         this.listener = listener;
     }
@@ -61,7 +64,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, parser, listener, connector);
         endPoint.setConnection(connection);
 
-        final StandardSession session = new StandardSession(version, scheduler, connection, 2, listener, generator);
+        final StandardSession session = new StandardSession(version, threadPool, scheduler, connection, 2, listener, generator);
         parser.addListener(session);
         connection.setSession(session);
 

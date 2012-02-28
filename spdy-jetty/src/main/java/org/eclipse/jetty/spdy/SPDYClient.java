@@ -33,8 +33,10 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -54,7 +56,6 @@ import org.eclipse.jetty.spdy.parser.Parser;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class SPDYClient
 {
@@ -176,7 +177,7 @@ public class SPDYClient
         private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        private final ThreadPool threadPool;
+        private final Executor threadPool;
         private final SslContextFactory sslContextFactory;
         private final SelectorManager selector;
 
@@ -190,12 +191,12 @@ public class SPDYClient
             this(null, sslContextFactory);
         }
 
-        public Factory(ThreadPool threadPool)
+        public Factory(Executor threadPool)
         {
             this(threadPool, null);
         }
 
-        public Factory(ThreadPool threadPool, SslContextFactory sslContextFactory)
+        public Factory(Executor threadPool, SslContextFactory sslContextFactory)
         {
             if (threadPool == null)
                 threadPool = new QueuedThreadPool();
@@ -222,11 +223,6 @@ public class SPDYClient
         {
             closeConnections();
             super.doStop();
-        }
-
-        public void join() throws InterruptedException
-        {
-            threadPool.join();
         }
 
         protected String selectProtocol(List<String> serverProtocols)
@@ -272,7 +268,15 @@ public class SPDYClient
             @Override
             public boolean dispatch(Runnable task)
             {
-                return threadPool.dispatch(task);
+                try
+                {
+                    threadPool.execute(task);
+                    return true;
+                }
+                catch (RejectedExecutionException x)
+                {
+                    return false;
+                }
             }
 
             @Override
@@ -418,7 +422,7 @@ public class SPDYClient
             SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, parser, factory);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(sessionPromise.client.version, factory.scheduler, connection, 1, sessionPromise.listener, generator);
+            StandardSession session = new StandardSession(sessionPromise.client.version, factory.threadPool, factory.scheduler, connection, 1, sessionPromise.listener, generator);
             parser.addListener(session);
             sessionPromise.completed(session);
             connection.setSession(session);

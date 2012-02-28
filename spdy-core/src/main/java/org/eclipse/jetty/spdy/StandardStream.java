@@ -17,7 +17,9 @@
 package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +48,7 @@ public class StandardStream implements IStream
 {
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
+    private final Queue<Runnable> queue = new LinkedList<>();
     private final ISession session;
     private final SynStreamFrame frame;
     private final AtomicInteger windowSize;
@@ -53,6 +56,7 @@ public class StandardStream implements IStream
     private volatile boolean opened;
     private volatile boolean halfClosed;
     private volatile boolean closed;
+    private boolean dispatched;
 
     public StandardStream(ISession session, SynStreamFrame frame)
     {
@@ -165,11 +169,17 @@ public class StandardStream implements IStream
                 updateWindowSize(windowUpdate.getWindowDelta());
                 break;
             }
+            case RST_STREAM:
+            {
+                // TODO:
+                break;
+            }
             default:
             {
                 throw new IllegalStateException();
             }
         }
+        session.flush();
     }
 
     @Override
@@ -190,6 +200,46 @@ public class StandardStream implements IStream
             // Send the window update after having notified
             // the application listeners because they may block
             windowUpdate(length);
+        }
+        session.flush();
+    }
+
+    @Override
+    public void post(Runnable task)
+    {
+        synchronized (queue)
+        {
+            logger.debug("Posting task {}", task);
+            queue.offer(task);
+            dispatch();
+        }
+    }
+
+    private void dispatch()
+    {
+        synchronized (queue)
+        {
+            if (dispatched)
+                return;
+
+            final Runnable task = queue.poll();
+            if (task != null)
+            {
+                dispatched = true;
+                logger.debug("Dispatching task {}", task);
+                session.execute(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        logger.debug("Executing task {}", task);
+                        task.run();
+                        logger.debug("Completing task {}", task);
+                        dispatched = false;
+                        dispatch();
+                    }
+                });
+            }
         }
     }
 
@@ -280,7 +330,6 @@ public class StandardStream implements IStream
             updateCloseState(replyInfo.isClose());
             SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
             session.control(this, frame, timeout, unit, handler, null);
-            session.flush();
         }
         catch (StreamException x)
         {

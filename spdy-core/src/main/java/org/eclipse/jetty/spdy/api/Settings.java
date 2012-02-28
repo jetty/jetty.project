@@ -43,7 +43,7 @@ public class Settings implements Iterable<Settings.Setting>
 
     public void put(Setting setting)
     {
-        settings.put(setting.getId(), setting);
+        settings.put(setting.id(), setting);
     }
 
     public Setting remove(ID id)
@@ -172,17 +172,17 @@ public class Settings implements Iterable<Settings.Setting>
             this.value = value;
         }
 
-        public ID getId()
+        public ID id()
         {
             return id;
         }
 
-        public Flag getFlag()
+        public Flag flag()
         {
             return flag;
         }
 
-        public int getValue()
+        public int value()
         {
             return value;
         }
@@ -210,7 +210,7 @@ public class Settings implements Iterable<Settings.Setting>
         @Override
         public String toString()
         {
-            return String.format("[id=%s,flags=%s:value=%d]", getId(), getFlag(), getValue());
+            return String.format("[id=%s,flags=%s:value=%d]", id(), flag(), value());
         }
     }
 }

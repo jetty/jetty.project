@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class SPDYServerConnector extends SelectChannelConnector
 {
@@ -47,8 +49,9 @@ public class SPDYServerConnector extends SelectChannelConnector
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final ServerSessionFrameListener listener;
     private final SslContextFactory sslContextFactory;
-    private final AsyncConnectionFactory defaultConnectionFactory;
+    private AsyncConnectionFactory defaultConnectionFactory;
 
     public SPDYServerConnector(ServerSessionFrameListener listener)
     {
@@ -57,16 +60,38 @@ public class SPDYServerConnector extends SelectChannelConnector
 
     public SPDYServerConnector(ServerSessionFrameListener listener, SslContextFactory sslContextFactory)
     {
+        this.listener = listener;
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
-        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, scheduler, listener);
-        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
+    }
+
+    protected Executor getExecutor()
+    {
+        final ThreadPool threadPool = getThreadPool();
+        if (threadPool instanceof Executor)
+            return (Executor)threadPool;
+        return new Executor()
+        {
+            @Override
+            public void execute(Runnable command)
+            {
+                threadPool.dispatch(command);
+            }
+        };
     }
 
     protected ScheduledExecutorService getScheduler()
     {
         return scheduler;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, getExecutor(), scheduler, listener);
+        putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
     }
 
     @Override

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -69,6 +70,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final Deque<FrameBytes> queue = new LinkedList<>();
+    private final Executor threadPool;
     private final ScheduledExecutorService scheduler;
     private final short version;
     private final Controller<FrameBytes> controller;
@@ -82,9 +84,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private boolean flushing;
     private volatile int windowSize = 65536;
 
-    public StandardSession(short version, ScheduledExecutorService scheduler, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
+    public StandardSession(short version, Executor threadPool, ScheduledExecutorService scheduler, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
     {
         this.version = version;
+        this.threadPool = threadPool;
         this.scheduler = scheduler;
         this.controller = controller;
         this.streamIds = new AtomicInteger(initialStreamId);
@@ -353,8 +356,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         else
         {
             stream.handle(frame, data);
-            flush();
-
             if (stream.isClosed())
             {
                 updateLastStreamId(stream);
@@ -376,28 +377,34 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         close();
     }
 
-    private void onSyn(SynStreamFrame synStream)
+    private void onSyn(final SynStreamFrame frame)
     {
-        IStream stream = new StandardStream(this, synStream);
+        final IStream stream = new StandardStream(this, frame);
         logger.debug("Opening {}", stream);
-        int streamId = synStream.getStreamId();
-        Stream existing = streams.putIfAbsent(streamId, stream);
+        int streamId = frame.getStreamId();
+        IStream existing = streams.putIfAbsent(streamId, stream);
         if (existing != null)
         {
-            logger.debug("Detected duplicate {}, resetting", stream);
-            rst(new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR));
+            RstInfo rstInfo = new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR);
+            logger.debug("Duplicate stream, {}", rstInfo);
+            rst(rstInfo);
         }
         else
         {
-            stream.handle(synStream);
-            StreamFrameListener listener = notifyOnSyn(stream, synStream);
-            stream.setStreamFrameListener(listener);
-
-            flush();
-
-            // The onSyn() listener may have sent a frame that closed the stream
-            if (stream.isClosed())
-                removeStream(stream);
+            stream.post(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    stream.handle(frame);
+                    StreamFrameListener listener = notifyOnSyn(stream, frame);
+                    stream.setStreamFrameListener(listener);
+                    flush();
+                    // The onSyn() listener may have sent a frame that closed the stream
+                    if (stream.isClosed())
+                        removeStream(stream);
+                }
+            });
         }
     }
 
@@ -465,46 +472,86 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private void onReply(SynReplyFrame frame)
+    private void onReply(final SynReplyFrame frame)
     {
         int streamId = frame.getStreamId();
-        IStream stream = streams.get(streamId);
-        stream.handle(frame);
-        flush();
-        if (stream.isClosed())
-            removeStream(stream);
+        final IStream stream = streams.get(streamId);
+        if (stream == null)
+        {
+            RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
+            logger.debug("Unknown stream {}", rstInfo);
+            rst(rstInfo);
+        }
+        else
+        {
+            stream.post(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    stream.handle(frame);
+                    if (stream.isClosed())
+                        removeStream(stream);
+                }
+            });
+        }
     }
 
-    private void onRst(RstStreamFrame frame)
+    private void onRst(final RstStreamFrame frame)
     {
-        // TODO: implement logic to clean up unidirectional streams associated with this stream
-
-        notifyOnRst(frame);
-
         int streamId = frame.getStreamId();
-        IStream stream = streams.get(streamId);
-        if (stream != null)
-            removeStream(stream);
+        final IStream stream = streams.get(streamId);
+        execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                // TODO: implement logic to clean up unidirectional streams associated with this stream
+
+                if (stream != null)
+                    stream.handle(frame);
+
+                notifyOnRst(frame);
+                flush();
+
+                if (stream != null)
+                    removeStream(stream);
+            }
+        });
     }
 
-    private void onSettings(SettingsFrame frame)
+    private void onSettings(final SettingsFrame frame)
     {
         Settings.Setting windowSizeSetting = frame.getSettings().get(Settings.ID.INITIAL_WINDOW_SIZE);
         if (windowSizeSetting != null)
-            this.windowSize = windowSizeSetting.getValue();
-        notifyOnSettings(frame);
-        flush();
+            this.windowSize = windowSizeSetting.value();
+        execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                notifyOnSettings(frame);
+                flush();
+            }
+        });
     }
 
-    private void onPing(PingFrame frame)
+    private void onPing(final PingFrame frame)
     {
         try
         {
             int pingId = frame.getPingId();
             if (pingId % 2 == pingIds.get() % 2)
             {
-                notifyOnPing(frame);
-                flush();
+                execute(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        notifyOnPing(frame);
+                        flush();
+                    }
+                });
             }
             else
             {
@@ -517,18 +564,59 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private void onGoAway(GoAwayFrame frame)
+    private void onGoAway(final GoAwayFrame frame)
     {
         if (goAwayReceived.compareAndSet(false, true))
         {
-            notifyOnGoAway(frame);
-            flush();
-
-            // SPDY does not require to send back a response to a GO_AWAY.
-            // We notified the application of the last good stream id,
-            // tried our best to flush remaining data, and close.
-            close();
+            execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    notifyOnGoAway(frame);
+                    flush();
+                    // SPDY does not require to send back a response to a GO_AWAY.
+                    // We notified the application of the last good stream id,
+                    // tried our best to flush remaining data, and close.
+                    close();
+                }
+            });
         }
+    }
+
+    private void onHeaders(final HeadersFrame frame)
+    {
+        int streamId = frame.getStreamId();
+        final IStream stream = streams.get(streamId);
+        if (stream == null)
+        {
+            RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
+            logger.debug("Unknown stream, {}", rstInfo);
+            rst(rstInfo);
+        }
+        else
+        {
+            stream.post(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    stream.handle(frame);
+                    if (stream.isClosed())
+                        removeStream(stream);
+                }
+            });
+        }
+    }
+
+    private void onWindowUpdate(WindowUpdateFrame frame)
+    {
+        // TODO: review flow control
+
+        int streamId = frame.getStreamId();
+        IStream stream = streams.get(streamId);
+        if (stream != null)
+            stream.handle(frame);
     }
 
     protected void close()
@@ -536,25 +624,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         // Check for null to support tests
         if (controller != null)
             controller.close(false);
-    }
-
-    private void onHeaders(HeadersFrame frame)
-    {
-        int streamId = frame.getStreamId();
-        IStream stream = streams.get(streamId);
-        stream.handle(frame);
-        flush();
-        if (stream.isClosed())
-            removeStream(stream);
-    }
-
-    private void onWindowUpdate(WindowUpdateFrame frame)
-    {
-        int streamId = frame.getStreamId();
-        IStream stream = streams.get(streamId);
-        if (stream != null)
-            stream.handle(frame);
-        flush();
     }
 
     private StreamFrameListener notifyOnSyn(Stream stream, SynStreamFrame frame)
@@ -647,7 +716,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context) throws StreamException
     {
         if (stream != null)
-            updateLastStreamId(stream);
+            updateLastStreamId(stream); // TODO: not sure this is right
         ByteBuffer buffer = generator.control(frame);
         logger.debug("Queuing {} on {}", frame, stream);
         ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(frame, buffer, handler, context);
@@ -682,6 +751,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
         enqueueLast(frameBytes);
         flush();
+    }
+
+    @Override
+    public void execute(Runnable task)
+    {
+        threadPool.execute(task);
     }
 
     @Override
@@ -889,4 +964,5 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             return String.format("DATA bytes @%x consumed=%b on %s", data.hashCode(), data.isConsumed(), stream);
         }
     }
+
 }

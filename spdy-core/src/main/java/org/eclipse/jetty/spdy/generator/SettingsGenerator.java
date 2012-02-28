@@ -42,12 +42,12 @@ public class SettingsGenerator extends ControlFrameGenerator
 
         for (Settings.Setting setting : settings)
         {
-            int id = setting.getId().getCode();
-            int flags = setting.getFlag().getCode();
+            int id = setting.id().getCode();
+            int flags = setting.flag().getCode();
             int idAndFlags = (id << 8) + flags;
             idAndFlags = convertIdAndFlags(frame.getVersion(), idAndFlags);
             buffer.putInt(idAndFlags);
-            buffer.putInt(setting.getValue());
+            buffer.putInt(setting.value());
         }
 
         buffer.flip();

@@ -16,10 +16,11 @@
 
 package org.eclipse.jetty.spdy;
 
+import java.util.concurrent.Executor;
+
 import org.eclipse.jetty.npn.NextProtoNego;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.Before;
 
 public class SSLSynReplyTest extends SynReplyTest
@@ -32,7 +33,7 @@ public class SSLSynReplyTest extends SynReplyTest
     }
 
     @Override
-    protected SPDYClient.Factory newSPDYClientFactory(ThreadPool threadPool)
+    protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
         SslContextFactory sslContextFactory = newSslContextFactory();
         return new SPDYClient.Factory(threadPool, sslContextFactory);

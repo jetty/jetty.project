@@ -33,12 +33,18 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
     public HTTPSPDYServerConnector(SslContextFactory sslContextFactory)
     {
         super(null, sslContextFactory);
-        // Override the "spdy/2" protocol by handling HTTP over SPDY
-        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getScheduler(), this));
-        // Add the "http/1.1" protocol for browsers that do not support NPN
-        putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
         // Override the default connection factory for non-SSL connections
         defaultConnectionFactory = new ServerHTTPAsyncConnectionFactory(this);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        // Override the "spdy/2" protocol by handling HTTP over SPDY
+        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getExecutor(), getScheduler(), this));
+        // Add the "http/1.1" protocol for browsers that do not support NPN
+        putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
     }
 
     @Override

@@ -51,4 +51,10 @@ public class RstInfo
     {
         return streamStatus;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("RST stream=%d %s", streamId, streamStatus);
+    }
 }

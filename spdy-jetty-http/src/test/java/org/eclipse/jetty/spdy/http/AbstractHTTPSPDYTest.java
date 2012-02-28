@@ -17,6 +17,7 @@
 package org.eclipse.jetty.spdy.http;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -27,7 +28,6 @@ import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.rules.TestWatchman;
@@ -71,7 +71,7 @@ public abstract class AbstractHTTPSPDYTest
             @Override
             protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
             {
-                return new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getScheduler(), this);
+                return new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getExecutor(), getScheduler(), this);
             }
         };
     }
@@ -88,7 +88,7 @@ public abstract class AbstractHTTPSPDYTest
         return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, listener).get();
     }
 
-    protected SPDYClient.Factory newSPDYClientFactory(ThreadPool threadPool)
+    protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)
     {
         return new SPDYClient.Factory(threadPool);
     }
@@ -99,7 +99,6 @@ public abstract class AbstractHTTPSPDYTest
         if (clientFactory != null)
         {
             clientFactory.stop();
-            clientFactory.join();
         }
         if (server != null)
         {
