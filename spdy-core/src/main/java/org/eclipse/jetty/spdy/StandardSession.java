@@ -337,7 +337,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public void onDataFrame(DataFrame frame, ByteBuffer data)
+    public void onDataFrame(final DataFrame frame, final ByteBuffer data)
     {
         logger.debug("Processing {}, {} data bytes", frame, data.remaining());
 
@@ -348,19 +348,28 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
 
         int streamId = frame.getStreamId();
-        IStream stream = streams.get(streamId);
+        final IStream stream = streams.get(streamId);
         if (stream == null)
         {
-            rst(new RstInfo(streamId, StreamStatus.INVALID_STREAM));
+            RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
+            logger.debug("Unknown stream {}", rstInfo);
+            rst(rstInfo);
         }
         else
         {
-            stream.handle(frame, data);
-            if (stream.isClosed())
+            stream.post(new Runnable()
             {
-                updateLastStreamId(stream);
-                removeStream(stream);
-            }
+                @Override
+                public void run()
+                {
+                    stream.handle(frame, data);
+                    if (stream.isClosed())
+                    {
+                        updateLastStreamId(stream);
+                        removeStream(stream);
+                    }
+                }
+            });
         }
     }
 
