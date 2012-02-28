@@ -717,12 +717,20 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         if (stream != null)
             updateLastStreamId(stream); // TODO: not sure this is right
-        ByteBuffer buffer = generator.control(frame);
-        logger.debug("Queuing {} on {}", frame, stream);
-        ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(frame, buffer, handler, context);
-        if (timeout > 0)
-            frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
-        enqueueLast(frameBytes);
+
+        // Synchronization is necessary, since we may have concurrent replies
+        // and those needs to be generated and enqueued atomically in order
+        // to maintain a correct compression context
+        synchronized (this)
+        {
+            ByteBuffer buffer = generator.control(frame);
+            logger.debug("Queuing {} on {}", frame, stream);
+            ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(frame, buffer, handler, context);
+            if (timeout > 0)
+                frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
+            enqueueLast(frameBytes);
+        }
+
         flush();
     }
 
