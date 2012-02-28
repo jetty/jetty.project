@@ -128,7 +128,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                 public void unsupported()
                 {
                     AsyncConnectionFactory connectionFactory = getDefaultAsyncConnectionFactory();
-                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, this);
+                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
                     sslEndPoint.setConnection(connection);
                 }
 
@@ -142,7 +142,7 @@ public class SPDYServerConnector extends SelectChannelConnector
                 public void protocolSelected(String protocol)
                 {
                     AsyncConnectionFactory connectionFactory = getAsyncConnectionFactory(protocol);
-                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, this);
+                    AsyncConnection connection = connectionFactory.newAsyncConnection(channel, sslEndPoint, SPDYServerConnector.this);
                     sslEndPoint.setConnection(connection);
                 }
             });
