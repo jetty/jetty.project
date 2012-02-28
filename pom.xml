@@ -6,7 +6,7 @@
     <version>19</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>8.1.1-SNAPSHOT</version>
+  <version>8.1.2-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -281,9 +281,20 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
             <docfilessubdirs>true</docfilessubdirs>
-            <detectLinks>true</detectLinks>
+            <detectLinks>false</detectLinks>
             <detectJavaApiLink>true</detectJavaApiLink>
-          </configuration>
+            <excludePackageNames>org.slf4j.*;org.mortbay.*</excludePackageNames>
+            <links>
+              <link>http://download.eclipse.org/jetty/stable-7/apidocs/</link>
+            </links>
+            <tags>
+              <tag>
+                <name>org.apache.xbean.XBean</name>
+                <placement>a</placement>
+                <head>Apache XBean:</head>
+              </tag>
+            </tags>
+            </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.aggregate</groupId>
     <artifactId>jetty-aggregate-project</artifactId>
-    <version>8.1.1-SNAPSHOT</version>
+    <version>8.1.2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-all</artifactId>
@@ -37,7 +37,7 @@
             <configuration>
               <classifier>sources</classifier>
               <includes>**/*</includes>
-              <excludes>META-INF/**</excludes>
+              <excludes>META-INF/**,**/Servlet3Continuation*,**/Jetty6Continuation*</excludes>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeArtifactIds>javax</excludeArtifactIds>
               <excludeGroupIds>javax,org.eclipse.jetty.orbit</excludeGroupIds>
@@ -169,6 +169,12 @@
       <artifactId>jetty-nested</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>

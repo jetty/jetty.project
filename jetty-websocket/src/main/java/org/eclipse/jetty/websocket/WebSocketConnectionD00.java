@@ -129,6 +129,7 @@ public class WebSocketConnectionD00 extends AbstractConnection implements WebSoc
                     int filled=_endp.fill(_hixieBytes);
                     if (filled<0)
                     {
+                        _endp.flush();
                         _endp.close();
                         break;
                     }

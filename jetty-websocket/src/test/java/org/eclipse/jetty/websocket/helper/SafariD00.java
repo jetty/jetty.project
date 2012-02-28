@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.eclipse.jetty.websocket.helper;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,12 +27,16 @@ import java.net.URI;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 
 import static org.hamcrest.Matchers.is;
 
 public class SafariD00
 {
+    private static final Logger LOG = Log.getLogger(SafariD00.class);
     private URI uri;
     private SocketAddress endpoint;
     private Socket socket;
@@ -42,6 +45,10 @@ public class SafariD00
 
     public SafariD00(URI uri)
     {
+        if (LOG instanceof StdErrLog)
+        {
+            ((StdErrLog)LOG).setLevel(StdErrLog.LEVEL_DEBUG);
+        }
         this.uri = uri;
         this.endpoint = new InetSocketAddress(uri.getHost(),uri.getPort());
     }
@@ -54,7 +61,9 @@ public class SafariD00
      */
     public Socket connect() throws IOException
     {
+        LOG.info("Connecting to endpoint: " + endpoint);
         socket = new Socket();
+        socket.setTcpNoDelay(true);
         socket.connect(endpoint,1000);
 
         out = socket.getOutputStream();
@@ -64,12 +73,13 @@ public class SafariD00
     }
 
     /**
-     * Issue an Http websocket (Draft-0) upgrade request using the Safari particulars.
+     * Issue an Http websocket (Draft-0) upgrade request (using an example request captured from OSX/Safari)
      *
      * @throws UnsupportedEncodingException
      */
     public void issueHandshake() throws IOException
     {
+        LOG.debug("Issuing Handshake");
         StringBuilder req = new StringBuilder();
         req.append("GET ").append(uri.getPath()).append(" HTTP/1.1\r\n");
         req.append("Upgrade: WebSocket\r\n");
@@ -80,7 +90,7 @@ public class SafariD00
         req.append("Sec-WebSocket-Key2: 3? C;7~0 8   \" 3 2105 6  `_ {\r\n");
         req.append("\r\n");
 
-        // System.out.printf("--- Request ---%n%s",req);
+        LOG.debug("Request:" + req);
 
         byte reqBytes[] = req.toString().getBytes("UTF-8");
         byte hixieBytes[] = TypeUtil.fromHexString("e739617916c9daf3");
@@ -92,30 +102,40 @@ public class SafariD00
         out.write(buf,0,buf.length);
         out.flush();
 
+        socket.setSoTimeout(10000);
+
         // Read HTTP 101 Upgrade / Handshake Response
         InputStreamReader reader = new InputStreamReader(in);
-        BufferedReader br = new BufferedReader(reader);
 
-        socket.setSoTimeout(5000);
-
-        boolean foundEnd = false;
-        String line;
-        while (!foundEnd)
+        LOG.debug("Reading http headers");
+        int crlfs = 0;
+        while (true)
         {
-            line = br.readLine();
-            // System.out.printf("RESP: %s%n",line);
-            if (line.length() == 0)
-            {
-                foundEnd = true;
-            }
+            int read = in.read();
+            if (read == '\r' || read == '\n')
+                ++crlfs;
+            else
+                crlfs = 0;
+            if (crlfs == 4)
+                break;
         }
 
         // Read expected handshake hixie bytes
         byte hixieHandshakeExpected[] = TypeUtil.fromHexString("c7438d956cf611a6af70603e6fa54809");
         byte hixieHandshake[] = new byte[hixieHandshakeExpected.length];
+        Assert.assertThat("Hixie handshake buffer size",hixieHandshake.length,is(16));
 
-        int readLen = in.read(hixieHandshake,0,hixieHandshake.length);
-        Assert.assertThat("Read hixie handshake bytes",readLen,is(hixieHandshake.length));
+        LOG.debug("Reading hixie handshake bytes");
+        int bytesRead = 0;
+        while (bytesRead < hixieHandshake.length)
+        {
+            int val = in.read();
+            if (val >= 0)
+            {
+                hixieHandshake[bytesRead++] = (byte)val;
+            }
+        }
+        Assert.assertThat("Read hixie handshake bytes",bytesRead,is(hixieHandshake.length));
     }
 
     public void sendMessage(String... msgs) throws IOException
@@ -123,6 +143,7 @@ public class SafariD00
         int len = 0;
         for (String msg : msgs)
         {
+            LOG.debug("sending message: " + msg);
             len += (msg.length() + 2);
         }
 
@@ -141,6 +162,7 @@ public class SafariD00
 
     public void disconnect() throws IOException
     {
+        LOG.debug("disconnect");
         socket.close();
     }
 }

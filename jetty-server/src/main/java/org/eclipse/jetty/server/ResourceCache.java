@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpContent.ResourceAsHttpContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
@@ -172,7 +173,7 @@ public class ResourceCache
      * @param pathInContext The key into the cache
      * @return The entry matching <code>pathInContext</code>, or a new entry 
      * if no matching entry was found. If the content exists but is not cachable, 
-     * then a {@link HttpContent.ResourceAsHttpContent} instance is return. If 
+     * then a {@link ResourceAsHttpContent} instance is return. If 
      * the resource does not exist, then null is returned.
      * @throws IOException Problem loading the resource
      */
@@ -337,6 +338,7 @@ public class ResourceCache
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return "ResourceCache["+_parent+","+_factory+"]@"+hashCode();

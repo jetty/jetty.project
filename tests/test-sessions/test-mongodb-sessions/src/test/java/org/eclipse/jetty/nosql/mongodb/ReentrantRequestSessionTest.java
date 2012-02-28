@@ -29,7 +29,6 @@ public class ReentrantRequestSessionTest extends AbstractReentrantRequestSession
     }
 
     @Test
-    @Ignore ("requires mongodb server")
     public void testReentrantRequestSession() throws Exception
     {
         super.testReentrantRequestSession();

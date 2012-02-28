@@ -358,7 +358,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of content to read or -1 for no limit
      * @param maxLength maximum number of keys to read or -1 for no limit
      */
     public static void decode88591To(InputStream in, MultiMap map, int maxLength, int maxKeys)
@@ -444,7 +443,6 @@ public class UrlEncoded extends MultiMap implements Cloneable
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum length of content to read or -1 for no limit
      * @param maxLength maximum number of keys to read or -1 for no limit
      */
     public static void decodeUtf8To(InputStream in, MultiMap map, int maxLength, int maxKeys)
