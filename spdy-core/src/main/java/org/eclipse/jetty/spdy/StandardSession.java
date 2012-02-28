@@ -325,11 +325,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 public void run()
                 {
                     stream.handle(frame, data);
+                    updateLastStreamId(stream);
                     if (stream.isClosed())
-                    {
-                        updateLastStreamId(stream);
                         removeStream(stream);
-                    }
                 }
             });
         }
@@ -687,7 +685,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         try
         {
             if (stream != null)
-                updateLastStreamId(stream); // TODO: not sure this is right
+                updateLastStreamId(stream);
 
             // Synchronization is necessary, since we may have concurrent replies
             // and those needs to be generated and enqueued atomically in order
