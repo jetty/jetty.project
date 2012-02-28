@@ -46,7 +46,6 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethods;
@@ -1885,7 +1884,7 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _async.suspend(_context,this,_connection._response);
+        _async.suspend();
         return _async;
     }
 

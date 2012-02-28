@@ -19,14 +19,17 @@ import java.util.List;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationThrowable;
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout;
@@ -291,7 +294,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* (non-Javadoc)
      * @see javax.servlet.ServletRequest#suspend(long)
      */
-    protected void suspend(final ServletContext context,
+    private void doSuspend(final ServletContext context,
             final ServletRequest request,
             final ServletResponse response)
     {
@@ -307,10 +310,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     if (_event==null || request!=_event.getRequest() || response != _event.getResponse() || context != _event.getServletContext())
                         _event=new AsyncEventState(context,request,response);
                     else
-                    {
                         _event._dispatchContext=null;
-                        _event._pathInContext=null;
-                    }
 
                     _state=__ASYNCSTARTED;
                     break;
@@ -319,7 +319,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     throw new IllegalStateException(this.getStatusString());
             }
         }
-        
     }
 
     /* ------------------------------------------------------------ */
@@ -810,6 +809,26 @@ public class AsyncContinuation implements AsyncContext, Continuation
         dispatch();
     }
     
+
+
+    /* ------------------------------------------------------------ */
+    protected void suspend(final ServletContext context,
+            final ServletRequest request,
+            final ServletResponse response)
+    {
+        synchronized (this)
+        {
+            HttpServletRequest r = (HttpServletRequest)request;
+            System.err.printf("Suspend %s %s | %s %s%n",r.getServletPath(),r.getPathInfo(),r.getAttribute(Dispatcher.FORWARD_SERVLET_PATH), r.getAttribute(Dispatcher.FORWARD_PATH_INFO));
+            doSuspend(context,request,response);
+            if ( request instanceof HttpServletRequest)
+                _event._pathInContext=URIUtil.addPaths(((HttpServletRequest)request).getServletPath(),((HttpServletRequest)request).getPathInfo());
+            else
+                _event._pathInContext=null;
+        }
+    }
+
+    
     /* ------------------------------------------------------------ */
     /**
      * @see Continuation#suspend()
@@ -817,7 +836,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     public void suspend(ServletResponse response)
     {
         _responseWrapped=!(response instanceof Response);
-        AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),response); 
+        doSuspend(_connection.getRequest().getServletContext(),_connection.getRequest(),response); 
     }
 
     /* ------------------------------------------------------------ */
@@ -827,7 +846,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     public void suspend()
     {
         _responseWrapped=false;
-        AsyncContinuation.this.suspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
+        doSuspend(_connection.getRequest().getServletContext(),_connection.getRequest(),_connection.getResponse());       
     }
 
     /* ------------------------------------------------------------ */
@@ -915,10 +934,10 @@ public class AsyncContinuation implements AsyncContext, Continuation
                 if (uri!=null)
                 {
                     r.setAttribute(AsyncContext.ASYNC_REQUEST_URI,uri);
-                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,(String)r.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
-                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,(String)r.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
-                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,(String)r.getAttribute(Dispatcher.FORWARD_PATH_INFO));
-                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,(String)r.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+                    r.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,r.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
+                    r.setAttribute(AsyncContext.ASYNC_SERVLET_PATH,r.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
+                    r.setAttribute(AsyncContext.ASYNC_PATH_INFO,r.getAttribute(Dispatcher.FORWARD_PATH_INFO));
+                    r.setAttribute(AsyncContext.ASYNC_QUERY_STRING,r.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
                 }
                 else
                 {
