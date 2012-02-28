@@ -177,21 +177,20 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
         try
         {
             AsyncEndPoint endPoint = getEndPoint();
-            if (onlyOutput)
+            try
             {
-                try
+                // We need to gently close first, to allow
+                // SSL close alerts to be sent by Jetty
+                logger.debug("Shutting down output {}", endPoint);
+                endPoint.shutdownOutput();
+                if (!onlyOutput)
                 {
-                    logger.debug("Shutting down output {}", endPoint);
-                    endPoint.shutdownOutput();
-                }
-                catch (IOException x)
-                {
+                    logger.debug("Closing {}", endPoint);
                     endPoint.close();
                 }
             }
-            else
+            catch (IOException x)
             {
-                logger.debug("Closing {}", endPoint);
                 endPoint.close();
             }
         }
