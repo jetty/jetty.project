@@ -22,7 +22,6 @@ import java.nio.charset.Charset;
 
 import org.eclipse.jetty.spdy.CompressionDictionary;
 import org.eclipse.jetty.spdy.CompressionFactory;
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 
@@ -36,7 +35,7 @@ public class HeadersBlockGenerator
         this.compressor = compressor;
     }
 
-    public ByteBuffer generate(short version, Headers headers) throws StreamException
+    public ByteBuffer generate(short version, Headers headers)
     {
         // TODO: ByteArrayOutputStream is quite inefficient, but grows on demand; optimize using ByteBuffer ?
         Charset iso1 = Charset.forName("ISO-8859-1");
@@ -107,7 +106,7 @@ public class HeadersBlockGenerator
         return ByteBuffer.wrap(buffer.toByteArray());
     }
 
-    private void writeCount(short version, ByteArrayOutputStream buffer, int value) throws StreamException
+    private void writeCount(short version, ByteArrayOutputStream buffer, int value)
     {
         switch (version)
         {
@@ -134,12 +133,12 @@ public class HeadersBlockGenerator
         }
     }
 
-    private void writeNameLength(short version, ByteArrayOutputStream buffer, int length) throws StreamException
+    private void writeNameLength(short version, ByteArrayOutputStream buffer, int length)
     {
         writeCount(version, buffer, length);
     }
 
-    private void writeValueLength(short version, ByteArrayOutputStream buffer, int length) throws StreamException
+    private void writeValueLength(short version, ByteArrayOutputStream buffer, int length)
     {
         writeCount(version, buffer, length);
     }

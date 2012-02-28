@@ -18,7 +18,6 @@ package org.eclipse.jetty.spdy.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.frames.SettingsFrame;
@@ -39,7 +38,7 @@ public class SettingsBodyParser extends ControlFrameBodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer) throws StreamException
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {

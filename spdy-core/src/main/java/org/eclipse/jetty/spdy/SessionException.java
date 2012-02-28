@@ -18,7 +18,7 @@ package org.eclipse.jetty.spdy;
 
 import org.eclipse.jetty.spdy.api.SessionStatus;
 
-public class SessionException extends Exception
+public class SessionException extends RuntimeException
 {
     private final SessionStatus sessionStatus;
 

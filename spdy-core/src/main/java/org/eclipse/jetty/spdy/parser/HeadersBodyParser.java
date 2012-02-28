@@ -19,7 +19,6 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
@@ -41,7 +40,7 @@ public class HeadersBodyParser extends ControlFrameBodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer) throws StreamException
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -77,7 +76,7 @@ public class HeadersBodyParser extends ControlFrameBodyParser
                 {
                     short version = controlFrameParser.getVersion();
                     int length = controlFrameParser.getLength() - 4;
-                    if (headersBlockParser.parse(version, length, buffer))
+                    if (headersBlockParser.parse(streamId, version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
                         if (flags != 0 && flags != HeadersInfo.FLAG_CLOSE && flags != HeadersInfo.FLAG_RESET_COMPRESSION)

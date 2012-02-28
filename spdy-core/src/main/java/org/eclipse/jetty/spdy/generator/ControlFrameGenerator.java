@@ -18,12 +18,11 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 
 public abstract class ControlFrameGenerator
 {
-    public abstract ByteBuffer generate(ControlFrame frame) throws StreamException;
+    public abstract ByteBuffer generate(ControlFrame frame);
 
     protected void generateControlFrameHeader(ControlFrame frame, int frameLength, ByteBuffer buffer)
     {

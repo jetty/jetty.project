@@ -110,7 +110,7 @@ public class Parser
         }
     }
 
-    protected void notifySPDYSessionException(SessionException x)
+    protected void notifySessionException(SessionException x)
     {
         logger.debug("SPDY session exception", x);
         for (Listener listener : listeners)
@@ -165,7 +165,7 @@ public class Parser
         }
         catch (SessionException x)
         {
-            notifySPDYSessionException(x);
+            notifySessionException(x);
         }
         catch (StreamException x)
         {
@@ -173,7 +173,7 @@ public class Parser
         }
         catch (Throwable x)
         {
-            notifySPDYSessionException(new SessionException(SessionStatus.PROTOCOL_ERROR, x));
+            notifySessionException(new SessionException(SessionStatus.PROTOCOL_ERROR, x));
         }
         finally
         {

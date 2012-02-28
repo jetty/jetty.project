@@ -18,7 +18,6 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
@@ -27,7 +26,7 @@ import org.eclipse.jetty.spdy.frames.SettingsFrame;
 public class SettingsGenerator extends ControlFrameGenerator
 {
     @Override
-    public ByteBuffer generate(ControlFrame frame) throws StreamException
+    public ByteBuffer generate(ControlFrame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
 

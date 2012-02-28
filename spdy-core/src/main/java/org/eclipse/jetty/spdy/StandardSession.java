@@ -367,15 +367,15 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void onStreamException(StreamException x)
     {
-        // TODO: must send a RST_STREAM on the proper stream... too little information in StreamException
-        throw new SPDYException(x);
+        logger.info("Caught stream exception", x);
+        rst(new RstInfo(x.getStreamId(), x.getStreamStatus()));
     }
 
     @Override
     public void onSessionException(SessionException x)
     {
-        // TODO: must send a GOAWAY with the x.sessionStatus, then close
-        close();
+        logger.info("Caught session exception", x);
+        goAway();
     }
 
     private void onSyn(final SynStreamFrame frame)
@@ -714,25 +714,32 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context) throws StreamException
+    public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context)
     {
-        if (stream != null)
-            updateLastStreamId(stream); // TODO: not sure this is right
-
-        // Synchronization is necessary, since we may have concurrent replies
-        // and those needs to be generated and enqueued atomically in order
-        // to maintain a correct compression context
-        synchronized (this)
+        try
         {
-            ByteBuffer buffer = generator.control(frame);
-            logger.debug("Queuing {} on {}", frame, stream);
-            ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(frame, buffer, handler, context);
-            if (timeout > 0)
-                frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
-            enqueueLast(frameBytes);
-        }
+            if (stream != null)
+                updateLastStreamId(stream); // TODO: not sure this is right
 
-        flush();
+            // Synchronization is necessary, since we may have concurrent replies
+            // and those needs to be generated and enqueued atomically in order
+            // to maintain a correct compression context
+            synchronized (this)
+            {
+                ByteBuffer buffer = generator.control(frame);
+                logger.debug("Queuing {} on {}", frame, stream);
+                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(frame, buffer, handler, context);
+                if (timeout > 0)
+                    frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
+                enqueueLast(frameBytes);
+            }
+
+            flush();
+        }
+        catch (Throwable x)
+        {
+            handler.failed(x);
+        }
     }
 
     private void updateLastStreamId(IStream stream)
@@ -925,14 +932,22 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public ByteBuffer getByteBuffer()
         {
-            int windowSize = stream.getWindowSize();
-            if (windowSize <= 0)
+            try
+            {
+                int windowSize = stream.getWindowSize();
+                if (windowSize <= 0)
+                    return null;
+
+                ByteBuffer buffer = generator.data(stream.getId(), windowSize, data);
+                dataLength = buffer.remaining() - DataFrame.HEADER_LENGTH;
+
+                return buffer;
+            }
+            catch (Throwable x)
+            {
+                handler.failed(x);
                 return null;
-
-            ByteBuffer buffer = generator.data(stream.getId(), windowSize, data);
-            dataLength = buffer.remaining() - DataFrame.HEADER_LENGTH;
-
-            return buffer;
+            }
         }
 
         @Override

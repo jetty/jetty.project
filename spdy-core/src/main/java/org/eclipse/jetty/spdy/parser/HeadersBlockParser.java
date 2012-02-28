@@ -22,8 +22,10 @@ import java.util.zip.ZipException;
 
 import org.eclipse.jetty.spdy.CompressionDictionary;
 import org.eclipse.jetty.spdy.CompressionFactory;
+import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 
 public abstract class HeadersBlockParser
@@ -37,7 +39,7 @@ public abstract class HeadersBlockParser
         this.decompressor = decompressor;
     }
 
-    public boolean parse(short version, int length, ByteBuffer buffer) throws StreamException
+    public boolean parse(int streamId, short version, int length, ByteBuffer buffer)
     {
         // Need to be sure that all the compressed data has arrived
         // Because SPDY uses SYNC_FLUSH mode, and the Java API
@@ -62,14 +64,14 @@ public abstract class HeadersBlockParser
         {
             int nameLength = readNameLength(version, decompressedHeaders);
             if (nameLength == 0)
-                throw new StreamException(StreamStatus.PROTOCOL_ERROR, "Invalid header name length");
+                throw new StreamException(streamId, StreamStatus.PROTOCOL_ERROR, "Invalid header name length");
             byte[] nameBytes = new byte[nameLength];
             decompressedHeaders.get(nameBytes);
             String name = new String(nameBytes, iso1);
 
             int valueLength = readValueLength(version, decompressedHeaders);
             if (valueLength == 0)
-                throw new StreamException(StreamStatus.PROTOCOL_ERROR, "Invalid header value length");
+                throw new StreamException(streamId, StreamStatus.PROTOCOL_ERROR, "Invalid header value length");
             byte[] valueBytes = new byte[valueLength];
             decompressedHeaders.get(valueBytes);
             String value = new String(valueBytes, iso1);
@@ -78,7 +80,7 @@ public abstract class HeadersBlockParser
             // Check if there are multiple NULs (section 2.6.9)
             for (String v : values)
                 if (v.length() == 0)
-                    throw new StreamException(StreamStatus.PROTOCOL_ERROR, "Invalid multi valued header");
+                    throw new StreamException(streamId, StreamStatus.PROTOCOL_ERROR, "Invalid multi valued header");
 
             onHeader(name, values);
         }
@@ -127,7 +129,7 @@ public abstract class HeadersBlockParser
         }
     }
 
-    private int readCount(int version, ByteBuffer buffer) throws StreamException
+    private int readCount(int version, ByteBuffer buffer)
     {
         switch (version)
         {
@@ -140,19 +142,19 @@ public abstract class HeadersBlockParser
         }
     }
 
-    private int readNameLength(int version, ByteBuffer buffer) throws StreamException
+    private int readNameLength(int version, ByteBuffer buffer)
     {
         return readCount(version, buffer);
     }
 
-    private int readValueLength(int version, ByteBuffer buffer) throws StreamException
+    private int readValueLength(int version, ByteBuffer buffer)
     {
         return readCount(version, buffer);
     }
 
     protected abstract void onHeader(String name, String[] values);
 
-    private ByteBuffer decompress(short version, byte[] compressed) throws StreamException
+    private ByteBuffer decompress(short version, byte[] compressed)
     {
         // Differently from compression, decompression always happens
         // non-concurrently because we read and parse with a single
@@ -221,7 +223,9 @@ public abstract class HeadersBlockParser
         }
         catch (ZipException x)
         {
-            throw new StreamException(StreamStatus.PROTOCOL_ERROR, x);
+            // We had a compression problem, and since the compression context
+            // is per-connection, we need to tear down the connection
+            throw new SessionException(SessionStatus.PROTOCOL_ERROR, x);
         }
     }
 }

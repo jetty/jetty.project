@@ -18,8 +18,6 @@ package org.eclipse.jetty.spdy.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.StreamException;
-
 public class UnknownControlFrameBodyParser extends ControlFrameBodyParser
 {
     private int remaining;
@@ -30,7 +28,7 @@ public class UnknownControlFrameBodyParser extends ControlFrameBodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer) throws StreamException
+    public boolean parse(ByteBuffer buffer)
     {
         int consumed = Math.min(remaining, buffer.remaining());
         buffer.position(buffer.position() + consumed);

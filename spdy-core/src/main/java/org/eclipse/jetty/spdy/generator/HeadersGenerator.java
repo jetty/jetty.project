@@ -18,8 +18,8 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.StreamException;
-import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.SessionException;
+import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
 
@@ -33,7 +33,7 @@ public class HeadersGenerator extends ControlFrameGenerator
     }
 
     @Override
-    public ByteBuffer generate(ControlFrame frame) throws StreamException
+    public ByteBuffer generate(ControlFrame frame)
     {
         HeadersFrame headers = (HeadersFrame)frame;
         short version = headers.getVersion();
@@ -44,7 +44,11 @@ public class HeadersGenerator extends ControlFrameGenerator
 
         int frameLength = frameBodyLength + headersBuffer.remaining();
         if (frameLength > 0xFF_FF_FF)
-            throw new StreamException(StreamStatus.PROTOCOL_ERROR, "Too many headers");
+        {
+            // Too many headers, but unfortunately we have already modified the compression
+            // context, so we have no other choice than tear down the connection.
+            throw new SessionException(SessionStatus.PROTOCOL_ERROR, "Too many headers");
+        }
 
         int totalLength = ControlFrame.HEADER_LENGTH + frameLength;
 

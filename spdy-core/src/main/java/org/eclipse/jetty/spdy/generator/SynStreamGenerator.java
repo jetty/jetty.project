@@ -18,8 +18,10 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
@@ -34,7 +36,7 @@ public class SynStreamGenerator extends ControlFrameGenerator
     }
 
     @Override
-    public ByteBuffer generate(ControlFrame frame) throws StreamException
+    public ByteBuffer generate(ControlFrame frame)
     {
         SynStreamFrame synStream = (SynStreamFrame)frame;
         short version = synStream.getVersion();
@@ -45,16 +47,21 @@ public class SynStreamGenerator extends ControlFrameGenerator
 
         int frameLength = frameBodyLength + headersBuffer.remaining();
         if (frameLength > 0xFF_FF_FF)
-            throw new StreamException(StreamStatus.PROTOCOL_ERROR, "Too many headers");
+        {
+            // Too many headers, but unfortunately we have already modified the compression
+            // context, so we have no other choice than tear down the connection.
+            throw new SessionException(SessionStatus.PROTOCOL_ERROR, "Too many headers");
+        }
 
         int totalLength = ControlFrame.HEADER_LENGTH + frameLength;
 
         ByteBuffer buffer = ByteBuffer.allocate(totalLength);
         generateControlFrameHeader(synStream, frameLength, buffer);
 
-        buffer.putInt(synStream.getStreamId() & 0x7F_FF_FF_FF);
+        int streamId = synStream.getStreamId();
+        buffer.putInt(streamId & 0x7F_FF_FF_FF);
         buffer.putInt(synStream.getAssociatedStreamId() & 0x7F_FF_FF_FF);
-        writePriority(version, synStream.getPriority(), buffer);
+        writePriority(streamId, version, synStream.getPriority(), buffer);
 
         buffer.put(headersBuffer);
 
@@ -62,7 +69,7 @@ public class SynStreamGenerator extends ControlFrameGenerator
         return buffer;
     }
 
-    private void writePriority(short version, byte priority, ByteBuffer buffer) throws StreamException
+    private void writePriority(int streamId, short version, byte priority, ByteBuffer buffer)
     {
         switch (version)
         {
@@ -73,7 +80,7 @@ public class SynStreamGenerator extends ControlFrameGenerator
                 priority <<= 5;
                 break;
             default:
-                throw new StreamException(StreamStatus.UNSUPPORTED_VERSION);
+                throw new StreamException(streamId, StreamStatus.UNSUPPORTED_VERSION);
         }
         buffer.put(priority);
         buffer.put((byte)0);

@@ -18,9 +18,9 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.StreamException;
+import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 
@@ -34,7 +34,7 @@ public class SynReplyGenerator extends ControlFrameGenerator
     }
 
     @Override
-    public ByteBuffer generate(ControlFrame frame) throws StreamException
+    public ByteBuffer generate(ControlFrame frame)
     {
         SynReplyFrame synReply = (SynReplyFrame)frame;
         short version = synReply.getVersion();
@@ -45,7 +45,11 @@ public class SynReplyGenerator extends ControlFrameGenerator
 
         int frameLength = frameBodyLength + headersBuffer.remaining();
         if (frameLength > 0xFF_FF_FF)
-            throw new StreamException(StreamStatus.PROTOCOL_ERROR, "Too many headers");
+        {
+            // Too many headers, but unfortunately we have already modified the compression
+            // context, so we have no other choice than tear down the connection.
+            throw new SessionException(SessionStatus.PROTOCOL_ERROR, "Too many headers");
+        }
 
         int totalLength = ControlFrame.HEADER_LENGTH + frameLength;
 
@@ -61,7 +65,7 @@ public class SynReplyGenerator extends ControlFrameGenerator
         return buffer;
     }
 
-    private int getFrameDataLength(short version) throws StreamException
+    private int getFrameDataLength(short version)
     {
         switch (version)
         {
@@ -76,7 +80,7 @@ public class SynReplyGenerator extends ControlFrameGenerator
         }
     }
 
-    private void writeAdditional(short version, ByteBuffer buffer) throws StreamException
+    private void writeAdditional(short version, ByteBuffer buffer)
     {
         switch (version)
         {

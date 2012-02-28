@@ -19,7 +19,6 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.SynInfo;
@@ -44,7 +43,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer) throws StreamException
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -122,7 +121,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                 {
                     short version = controlFrameParser.getVersion();
                     int length = controlFrameParser.getLength() - 10;
-                    if (headersBlockParser.parse(version, length, buffer))
+                    if (headersBlockParser.parse(streamId, version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
                         // TODO: can it be both FIN and UNIDIRECTIONAL ?
@@ -146,7 +145,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
         return false;
     }
 
-    private byte readPriority(short version, byte currByte) throws StreamException
+    private byte readPriority(short version, byte currByte)
     {
         // Right shift retains the sign bit when operated on a byte,
         // so we use an int to perform the shifts

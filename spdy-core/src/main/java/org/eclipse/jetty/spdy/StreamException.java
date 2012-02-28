@@ -18,25 +18,34 @@ package org.eclipse.jetty.spdy;
 
 import org.eclipse.jetty.spdy.api.StreamStatus;
 
-public class StreamException extends Exception
+public class StreamException extends RuntimeException
 {
+    private final int streamId;
     private final StreamStatus streamStatus;
 
-    public StreamException(StreamStatus streamStatus)
+    public StreamException(int streamId, StreamStatus streamStatus)
     {
+        this.streamId = streamId;
         this.streamStatus = streamStatus;
     }
 
-    public StreamException(StreamStatus streamStatus, String message)
+    public StreamException(int streamId, StreamStatus streamStatus, String message)
     {
         super(message);
+        this.streamId = streamId;
         this.streamStatus = streamStatus;
     }
 
-    public StreamException(StreamStatus streamStatus, Throwable x)
+    public StreamException(int streamId, StreamStatus streamStatus, Throwable x)
     {
         super(x);
+        this.streamId = streamId;
         this.streamStatus = streamStatus;
+    }
+
+    public int getStreamId()
+    {
+        return streamId;
     }
 
     public StreamStatus getStreamStatus()

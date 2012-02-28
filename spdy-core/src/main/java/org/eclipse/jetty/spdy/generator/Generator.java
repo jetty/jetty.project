@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
@@ -46,7 +45,7 @@ public class Generator
         dataFrameGenerator = new DataFrameGenerator();
     }
 
-    public ByteBuffer control(ControlFrame frame) throws StreamException
+    public ByteBuffer control(ControlFrame frame)
     {
         ControlFrameGenerator generator = generators.get(frame.getType());
         return generator.generate(frame);

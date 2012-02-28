@@ -19,7 +19,6 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -42,7 +41,7 @@ public class SynReplyBodyParser extends ControlFrameBodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer) throws StreamException
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -117,7 +116,7 @@ public class SynReplyBodyParser extends ControlFrameBodyParser
                 {
                     short version = controlFrameParser.getVersion();
                     int length = controlFrameParser.getLength() - getSynReplyDataLength(version);
-                    if (headersBlockParser.parse(version, length, buffer))
+                    if (headersBlockParser.parse(streamId, version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
                         if (flags != 0 && flags != ReplyInfo.FLAG_CLOSE)
@@ -140,7 +139,7 @@ public class SynReplyBodyParser extends ControlFrameBodyParser
         return false;
     }
 
-    private int getSynReplyDataLength(short version) throws StreamException
+    private int getSynReplyDataLength(short version)
     {
         switch (version)
         {

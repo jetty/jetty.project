@@ -26,7 +26,7 @@ import org.eclipse.jetty.spdy.frames.ControlFrame;
 
 public interface ISession extends Session
 {
-    public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context) throws StreamException;
+    public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context);
 
     public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Handler<C> handler, C context);
 

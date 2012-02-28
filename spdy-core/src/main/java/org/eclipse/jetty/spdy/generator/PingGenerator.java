@@ -18,14 +18,13 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.PingFrame;
 
 public class PingGenerator extends ControlFrameGenerator
 {
     @Override
-    public ByteBuffer generate(ControlFrame frame) throws StreamException
+    public ByteBuffer generate(ControlFrame frame)
     {
         PingFrame ping = (PingFrame)frame;
 
