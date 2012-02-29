@@ -1005,7 +1005,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         }
         finally
         {
-
             if (old_context != _scontext)
             {
                 // reset the classloader
@@ -1018,13 +1017,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 baseRequest.setContext(old_context);
                 __context.set(old_context);
                 baseRequest.setContextPath(old_context_path);
-                
-                // #371649 if we have started async then we need to protect this state
-                if (!baseRequest.getAsyncContinuation().isAsyncStarted())
-                {
-                    baseRequest.setServletPath(old_servlet_path);
-                    baseRequest.setPathInfo(old_path_info);
-                }
+                baseRequest.setServletPath(old_servlet_path);
+                baseRequest.setPathInfo(old_path_info);
             }
         }
     }
