@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -74,7 +75,7 @@ public abstract class AbstractTest
             clientFactory = newSPDYClientFactory(threadPool);
             clientFactory.start();
         }
-        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, listener).get();
+        return clientFactory.newSPDYClient(SPDY.V2).connect(socketAddress, listener).get(5, TimeUnit.SECONDS);
     }
 
     protected SPDYClient.Factory newSPDYClientFactory(Executor threadPool)

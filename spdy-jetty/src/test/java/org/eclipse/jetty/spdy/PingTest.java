@@ -45,7 +45,7 @@ public class PingTest extends AbstractTest
             }
         };
         Session session = startClient(startServer(null), clientSessionFrameListener);
-        PingInfo pingInfo = session.ping().get();
+        PingInfo pingInfo = session.ping().get(5, TimeUnit.SECONDS);
         Assert.assertEquals(1, pingInfo.getPingId() % 2);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));

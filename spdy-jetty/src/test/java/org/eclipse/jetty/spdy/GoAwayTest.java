@@ -96,7 +96,7 @@ public class GoAwayTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
 
-        Stream stream1 = session.syn(new SynInfo(true), null).get();
+        Stream stream1 = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         GoAwayInfo goAwayInfo = ref.get();
@@ -129,17 +129,15 @@ public class GoAwayTest extends AbstractTest
                 return null;
             }
         };
-        final AtomicReference<Session> ref = new AtomicReference<>();
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
             public void onGoAway(Session session, GoAwayInfo goAwayInfo)
             {
-                ref.get().syn(new SynInfo(true), null);
+                session.syn(new SynInfo(true), null);
             }
         };
         Session session = startClient(startServer(serverSessionFrameListener), clientSessionFrameListener);
-        ref.set(session);
 
         session.syn(new SynInfo(true), null);
 
@@ -201,11 +199,11 @@ public class GoAwayTest extends AbstractTest
             {
                 reply1Latch.countDown();
             }
-        }).get();
+        }).get(5, TimeUnit.SECONDS);
         Assert.assertTrue(reply1Latch.await(5, TimeUnit.SECONDS));
 
         // Second stream is closed in the middle
-        Stream stream2 = session.syn(new SynInfo(false), null).get();
+        Stream stream2 = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
 
         // There is a race between the data we want to send, and the client

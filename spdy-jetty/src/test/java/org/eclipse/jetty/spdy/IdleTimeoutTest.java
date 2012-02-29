@@ -173,7 +173,7 @@ public class IdleTimeoutTest extends AbstractTest
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         long maxIdleTime = 1000;
         client.setMaxIdleTime(maxIdleTime);
-        Session session = client.connect(address, null).get();
+        Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
         session.syn(new SynInfo(true), null);
 
@@ -200,7 +200,7 @@ public class IdleTimeoutTest extends AbstractTest
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         long maxIdleTime = 1000;
         client.setMaxIdleTime(maxIdleTime);
-        Session session = client.connect(address, null).get();
+        Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
         session.syn(new SynInfo(true), null);
 
@@ -234,7 +234,7 @@ public class IdleTimeoutTest extends AbstractTest
         clientFactory.start();
         SPDYClient client = clientFactory.newSPDYClient(SPDY.V2);
         client.setMaxIdleTime(maxIdleTime);
-        Session session = client.connect(address, null).get();
+        Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
         session.syn(new SynInfo(true), new StreamFrameListener.Adapter()

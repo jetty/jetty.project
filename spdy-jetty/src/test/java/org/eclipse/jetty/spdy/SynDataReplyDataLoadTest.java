@@ -100,7 +100,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
         ExecutorService threadPool = Executors.newFixedThreadPool(count);
         List<Future<Object>> futures = threadPool.invokeAll(tasks);
         for (Future<Object> future : futures)
-            future.get();
+            future.get(5, TimeUnit.SECONDS);
         Assert.assertTrue(latch.await(count * iterations * 100, TimeUnit.MILLISECONDS));
         threadPool.shutdown();
     }
@@ -128,7 +128,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                     Assert.assertEquals(0, dataInfo.available());
                     latch.countDown();
                 }
-            }).get();
+            }).get(5, TimeUnit.SECONDS);
             stream.data(new StringDataInfo("data_" + stream.getId(), true));
             Assert.assertTrue("process() failed for stream=" + stream.getId(), latch.await(5, TimeUnit.SECONDS));
         }

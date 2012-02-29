@@ -61,7 +61,7 @@ public class ClientUsageTest
                 // Then issue another similar request
                 stream.getSession().syn(new SynInfo(true), this);
             }
-        }).get();
+        }).get(5, TimeUnit.SECONDS);
         // Send-and-forget the data
         stream.data(new StringDataInfo("data", true));
     }
