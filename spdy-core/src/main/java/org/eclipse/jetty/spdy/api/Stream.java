@@ -16,11 +16,12 @@
 
 package org.eclipse.jetty.spdy.api;
 
+import java.nio.channels.WritePendingException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <p>A {@link Stream} represents an bidirectional exchange of data on top of a {@link Session}.</p>
+ * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
  * <p>Differently from socket streams, where the input and output streams are permanently associated
  * with the socket (and hence with the connection that the socket represents), there can be multiple
  * SPDY streams for a SPDY session.</p>
@@ -31,7 +32,39 @@ import java.util.concurrent.TimeUnit;
  * on the same SPDY session.</p>
  * <p>Like {@link Session}, {@link Stream} is the active part and by calling its API applications
  * can generate events on the stream; conversely, {@link StreamFrameListener} is the passive part, and its
- * callbacks are invoked when events happen on the stream</p>
+ * callbacks are invoked when events happen on the stream.</p>
+ * <p>A {@link Stream} can send multiple data frames one after the other but implementations use a
+ * flow control mechanism that only sends the data frames if the other end has signalled that it can
+ * accept the frame.</p>
+ * <p>Data frames should be sent sequentially only when the previous frame has been completely sent.
+ * The reason for this requirement is to avoid potentially confusing code such as:</p>
+ * <pre>
+ * // WRONG CODE, DO NOT USE IT
+ * final Stream stream = ...;
+ * stream.data(StringDataInfo("chunk1", false), 5, TimeUnit.SECONDS, new Handler&lt;Void&gt;() { ... });
+ * stream.data(StringDataInfo("chunk2", true), 1, TimeUnit.SECONDS, new Handler&lt;Void&gt;() { ... });
+ * </pre>
+ * <p>where the second call to {@link #data(DataInfo, long, TimeUnit, Handler)} has a timeout smaller
+ * than the previous call.</p>
+ * <p>The behavior of such style of invocations is unspecified (it may even throw an exception - similar
+ * to {@link WritePendingException}).</p>
+ * <p>The correct sending of data frames is the following:</p>
+ * <pre>
+ * final Stream stream = ...;
+ * ...
+ * // Blocking version
+ * stream.data(new StringDataInfo("chunk1", false)).get(1, TimeUnit.SECONDS);
+ * stream.data(new StringDataInfo("chunk2", true)).get(1, TimeUnit.SECONDS);
+ *
+ * // Asynchronous version
+ * stream.data(new StringDataInfo("chunk1", false), 1, TimeUnit.SECONDS, new Handler.Adapter&lt;Void&gt;()
+ * {
+ *     public void completed(Void context)
+ *     {
+ *         stream.data(new StringDataInfo("chunk2", true));
+ *     }
+ * });
+ * </pre>
  *
  * @see StreamFrameListener
  */
