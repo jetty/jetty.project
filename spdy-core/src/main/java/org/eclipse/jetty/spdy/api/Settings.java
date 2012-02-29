@@ -90,19 +90,22 @@ public class Settings implements Iterable<Settings.Setting>
         return settings.toString();
     }
 
-    public static enum ID
+    public static final class ID
     {
-        UPLOAD_BANDWIDTH(1),
-        DOWNLOAD_BANDWIDTH(2),
-        ROUND_TRIP_TIME(3),
-        MAX_CONCURRENT_STREAMS(4),
-        CURRENT_CONGESTION_WINDOW(5),
-        DOWNLOAD_RETRANSMISSION_RATE(6),
-        INITIAL_WINDOW_SIZE(7);
+        public static ID UPLOAD_BANDWIDTH = new ID(1);
+        public static ID DOWNLOAD_BANDWIDTH = new ID(2);
+        public static ID ROUND_TRIP_TIME = new ID(3);
+        public static ID MAX_CONCURRENT_STREAMS = new ID(4);
+        public static ID CURRENT_CONGESTION_WINDOW = new ID(5);
+        public static ID DOWNLOAD_RETRANSMISSION_RATE = new ID(6);
+        public static ID INITIAL_WINDOW_SIZE = new ID(7);
 
-        public static ID from(int code)
+        public synchronized static ID from(int code)
         {
-            return Codes.codes.get(code);
+            ID id = Codes.codes.get(code);
+            if (id == null)
+                id = new ID(code);
+            return id;
         }
 
         private final int code;
@@ -113,9 +116,15 @@ public class Settings implements Iterable<Settings.Setting>
             Codes.codes.put(code, this);
         }
 
-        public int getCode()
+        public int code()
         {
             return code;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.valueOf(code);
         }
 
         private static class Codes
@@ -126,31 +135,31 @@ public class Settings implements Iterable<Settings.Setting>
 
     public static enum Flag
     {
-        NONE(0),
-        PERSIST(1),
-        PERSISTED(2);
+        NONE((byte)0),
+        PERSIST((byte)1),
+        PERSISTED((byte)2);
 
-        public static Flag from(int code)
+        public static Flag from(byte code)
         {
             return Codes.codes.get(code);
         }
 
-        private final int code;
+        private final byte code;
 
-        private Flag(int code)
+        private Flag(byte code)
         {
             this.code = code;
             Codes.codes.put(code, this);
         }
 
-        public int getCode()
+        public byte code()
         {
             return code;
         }
 
         private static class Codes
         {
-            private static final Map<Integer, Flag> codes = new HashMap<>();
+            private static final Map<Byte, Flag> codes = new HashMap<>();
         }
     }
 

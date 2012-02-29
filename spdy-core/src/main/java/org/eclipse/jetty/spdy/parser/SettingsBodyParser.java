@@ -49,7 +49,7 @@ public class SettingsBodyParser extends ControlFrameBodyParser
                     if (buffer.remaining() >= 4)
                     {
                         count = buffer.getInt();
-                        state = State.KEY;
+                        state = State.ID_FLAGS;
                     }
                     else
                     {
@@ -64,10 +64,10 @@ public class SettingsBodyParser extends ControlFrameBodyParser
                     --cursor;
                     count += (currByte & 0xFF) << 8 * cursor;
                     if (cursor == 0)
-                        state = State.KEY;
+                        state = State.ID_FLAGS;
                     break;
                 }
-                case KEY:
+                case ID_FLAGS:
                 {
                     if (buffer.remaining() >= 4)
                     {
@@ -76,12 +76,12 @@ public class SettingsBodyParser extends ControlFrameBodyParser
                     }
                     else
                     {
-                        state = State.KEY_BYTES;
+                        state = State.ID_FLAGS_BYTES;
                         cursor = 4;
                     }
                     break;
                 }
-                case KEY_BYTES:
+                case ID_FLAGS_BYTES:
                 {
                     byte currByte = buffer.get();
                     --cursor;
@@ -136,12 +136,14 @@ public class SettingsBodyParser extends ControlFrameBodyParser
         {
             case SPDY.V2:
             {
-                // A bug in the Chromium implementation made v2 have
-                // 3 bytes little endian + 1 byte of flags
-                // Here we normalize this to conform with v3
-                int result = idAndFlags & 0x00_FF_00_FF;
-                result += (idAndFlags & 0xFF_00_00_00) >>> 16;
-                result += (idAndFlags & 0x00_00_FF_00) << 16;
+                // A bug in the Chromium implementation forces v2 to have
+                // 3 ID bytes little endian + 1 byte of flags
+                // Here we normalize this to conform with v3, which is
+                // 1 bytes of flag + 3 ID bytes big endian
+                int result = (idAndFlags & 0x00_00_00_FF) << 24;
+                result += (idAndFlags & 0x00_00_FF_00) << 8;
+                result += (idAndFlags & 0x00_FF_00_00) >>> 8;
+                result += (idAndFlags & 0xFF_00_00_00) >>> 24;
                 return result;
             }
             case SPDY.V3:
@@ -157,10 +159,10 @@ public class SettingsBodyParser extends ControlFrameBodyParser
 
     private boolean onPair()
     {
-        int id = (idAndFlags & 0xFF_FF_FF_00) >>> 8;
-        int flags = idAndFlags & 0xFF;
+        int id = idAndFlags & 0x00_FF_FF_FF;
+        byte flags = (byte)((idAndFlags & 0xFF_00_00_00) >>> 24);
         settings.put(new Settings.Setting(Settings.ID.from(id), Settings.Flag.from(flags), value));
-        state = State.KEY;
+        state = State.ID_FLAGS;
         idAndFlags = 0;
         value = 0;
         --count;
@@ -191,6 +193,6 @@ public class SettingsBodyParser extends ControlFrameBodyParser
 
     private enum State
     {
-        COUNT, COUNT_BYTES, KEY, KEY_BYTES, VALUE, VALUE_BYTES
+        COUNT, COUNT_BYTES, ID_FLAGS, ID_FLAGS_BYTES, VALUE, VALUE_BYTES
     }
 }

@@ -41,10 +41,9 @@ public class SettingsGenerator extends ControlFrameGenerator
 
         for (Settings.Setting setting : settings)
         {
-            int id = setting.id().getCode();
-            int flags = setting.flag().getCode();
-            int idAndFlags = (id << 8) + flags;
-            idAndFlags = convertIdAndFlags(frame.getVersion(), idAndFlags);
+            int id = setting.id().code();
+            byte flags = setting.flag().code();
+            int idAndFlags = convertIdAndFlags(frame.getVersion(), id, flags);
             buffer.putInt(idAndFlags);
             buffer.putInt(setting.value());
         }
@@ -53,14 +52,16 @@ public class SettingsGenerator extends ControlFrameGenerator
         return buffer;
     }
 
-    private int convertIdAndFlags(short version, int idAndFlags)
+    private int convertIdAndFlags(short version, int id, byte flags)
     {
         switch (version)
         {
             case SPDY.V2:
             {
-                // A bug in the Chromium implementation made v2 have
-                // 3 bytes little endian + 1 byte of flags
+                // In v2 the format is 24 bits of ID + 8 bits of flag
+                int idAndFlags = (id << 8) + flags;
+                // A bug in the Chromium implementation forces v2 to have
+                // the 3 ID bytes little endian, so we swap first and third
                 int result = idAndFlags & 0x00_FF_00_FF;
                 result += (idAndFlags & 0xFF_00_00_00) >>> 16;
                 result += (idAndFlags & 0x00_00_FF_00) << 16;
@@ -68,7 +69,8 @@ public class SettingsGenerator extends ControlFrameGenerator
             }
             case SPDY.V3:
             {
-                return idAndFlags;
+                // In v3 the format is 8 bits of flags + 24 bits of ID
+                return (flags << 24) + (id & 0xFF_FF_FF);
             }
             default:
             {
