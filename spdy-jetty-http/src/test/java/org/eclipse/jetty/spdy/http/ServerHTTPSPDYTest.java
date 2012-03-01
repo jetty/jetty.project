@@ -349,7 +349,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 Assert.assertTrue(dataInfo.isClose());
-                Assert.assertEquals(data, dataInfo.asString("UTF-8"));
+                Assert.assertEquals(data, dataInfo.asString("UTF-8", true));
                 dataLatch.countDown();
             }
         });
@@ -399,7 +399,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 Assert.assertTrue(dataInfo.isClose());
-                byte[] bytes = dataInfo.asBytes();
+                byte[] bytes = dataInfo.asBytes(true);
                 Assert.assertEquals(1, bytes.length);
                 Assert.assertEquals(data, bytes[0]);
                 dataLatch.countDown();
@@ -460,9 +460,9 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 int data = dataFrames.incrementAndGet();
                 Assert.assertTrue(data >= 1 && data <= 2);
                 if (data == 1)
-                    Assert.assertEquals(data1, dataInfo.asString("UTF8"));
+                    Assert.assertEquals(data1, dataInfo.asString("UTF8", true));
                 else
-                    Assert.assertEquals(data2, dataInfo.asString("UTF8"));
+                    Assert.assertEquals(data2, dataInfo.asString("UTF8", true));
                 dataLatch.countDown();
             }
         });
@@ -628,7 +628,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                ByteBuffer byteBuffer = dataInfo.asByteBuffer();
+                ByteBuffer byteBuffer = dataInfo.asByteBuffer(true);
                 while (byteBuffer.hasRemaining())
                     buffer.write(byteBuffer.get());
                 if (dataInfo.isClose())
@@ -690,7 +690,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                ByteBuffer byteBuffer = dataInfo.asByteBuffer();
+                ByteBuffer byteBuffer = dataInfo.asByteBuffer(true);
                 while (byteBuffer.hasRemaining())
                     buffer.write(byteBuffer.get());
                 if (dataInfo.isClose())
@@ -887,12 +887,12 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 if (count == 1)
                 {
                     Assert.assertFalse(dataInfo.isClose());
-                    Assert.assertEquals(pangram1, dataInfo.asString("UTF-8"));
+                    Assert.assertEquals(pangram1, dataInfo.asString("UTF-8", true));
                 }
                 else if (count == 2)
                 {
                     Assert.assertTrue(dataInfo.isClose());
-                    Assert.assertEquals(pangram2, dataInfo.asString("UTF-8"));
+                    Assert.assertEquals(pangram2, dataInfo.asString("UTF-8", true));
                 }
                 dataLatch.countDown();
             }
@@ -949,7 +949,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertEquals(1, dataFrames.incrementAndGet());
                 Assert.assertTrue(dataInfo.isClose());
-                Assert.assertArrayEquals(data, dataInfo.asBytes());
+                Assert.assertArrayEquals(data, dataInfo.asBytes(true));
                 dataLatch.countDown();
             }
         });

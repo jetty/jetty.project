@@ -130,7 +130,7 @@ public class ClientUsageTest
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 StringBuilder builder = (StringBuilder)stream.getAttribute("builder");
-                builder.append(dataInfo.asString("UTF-8"));
+                builder.append(dataInfo.asString("UTF-8", true));
                 if (dataInfo.isClose())
                 {
                     int receivedLength = builder.toString().getBytes(Charset.forName("UTF-8")).length;

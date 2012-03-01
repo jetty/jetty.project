@@ -28,6 +28,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  * type, via {@link Stream#data(DataInfo)}. The last instance must have the
  * {@link #isClose() close flag} set, so that the client knows that no more content is
  * expected.</p>
+ * <p>Receivers of {@link DataInfo} via {@link StreamFrameListener#onData(Stream, DataInfo)}
+ * have two different APIs to read the data content bytes: a {@link #readInto(ByteBuffer) read}
+ * API that does not interact with flow control, and a {@link #drainInto(ByteBuffer) drain}
+ * API that interacts with flow control.</p>
+ * <p>Flow control is defined so that when the sender wants to sends a number of bytes larger
+ * than the {@link Settings.ID#INITIAL_WINDOW_SIZE} value, it will stop sending as soon as it
+ * has sent a number of bytes equal to the window size. The receiver has to <em>consume</em>
+ * the data bytes that it received in order to tell the sender to send more bytes.</p>
+ * <p>Consuming the data bytes can be done only via {@link #drainInto(ByteBuffer)} or by a combination
+ * of {@link #readInto(ByteBuffer)} and {@link #consume(int)} (possibly at different times).</p>
  */
 public abstract class DataInfo
 {
@@ -139,15 +149,23 @@ public abstract class DataInfo
     /**
      * <p>Copies the content bytes of this {@link DataInfo} into the given {@link ByteBuffer}.</p>
      * <p>If the given {@link ByteBuffer} cannot contain the whole content of this {@link DataInfo}
-     * then {@link #available()} will return a positive value, and further content
-     * may be retrieved by invoking again this method.</p>
+     * then after the read {@link #available()} will return a positive value, and further content
+     * may be retrieved by invoking again this method with a new output buffer.</p>
      *
      * @param output the {@link ByteBuffer} to copy to bytes into
      * @return the number of bytes copied
      * @see #available()
+     * @see #drainInto(ByteBuffer)
      */
     public abstract int readInto(ByteBuffer output);
 
+    /**
+     * <p>Reads and consumes the content bytes of this {@link DataInfo} into the given {@link ByteBuffer}.</p>
+     *
+     * @param output the {@link ByteBuffer} to copy to bytes into
+     * @return the number of bytes copied
+     * @see #consume(int)
+     */
     public int drainInto(ByteBuffer output)
     {
         int read = readInto(output);
@@ -155,8 +173,15 @@ public abstract class DataInfo
         return read;
     }
 
+    /**
+     * <p>Consumes the given number of bytes from this {@link DataInfo}.</p>
+     *
+     * @param delta the number of bytes consumed
+     */
     public void consume(int delta)
     {
+        if (delta < 0)
+            throw new IllegalArgumentException();
         int read = length() - available();
         int newConsumed = consumed() + delta;
         if (newConsumed > read)
@@ -164,31 +189,33 @@ public abstract class DataInfo
         consumed.addAndGet(delta);
     }
 
+    /**
+     * @return the number of bytes consumed
+     */
     public int consumed()
     {
         return consumed.get();
     }
 
     /**
+     *
      * @param charset the charset used to convert the bytes
+     * @param consume whether to consume the content
      * @return a String with the content of this {@link DataInfo}
      */
-    public String asString(String charset)
+    public String asString(String charset, boolean consume)
     {
-        ByteBuffer buffer = ByteBuffer.allocate(available());
-        readInto(buffer);
-        buffer.flip();
+        ByteBuffer buffer = asByteBuffer(consume);
         return Charset.forName(charset).decode(buffer).toString();
     }
 
     /**
      * @return a byte array with the content of this {@link DataInfo}
+     * @param consume whether to consume the content
      */
-    public byte[] asBytes()
+    public byte[] asBytes(boolean consume)
     {
-        ByteBuffer buffer = ByteBuffer.allocate(available());
-        readInto(buffer);
-        buffer.flip();
+        ByteBuffer buffer = asByteBuffer(consume);
         byte[] result = new byte[buffer.remaining()];
         buffer.get(result);
         return result;
@@ -196,11 +223,15 @@ public abstract class DataInfo
 
     /**
      * @return a {@link ByteBuffer} with the content of this {@link DataInfo}
+     * @param consume whether to consume the content
      */
-    public ByteBuffer asByteBuffer()
+    public ByteBuffer asByteBuffer(boolean consume)
     {
         ByteBuffer buffer = ByteBuffer.allocate(available());
-        readInto(buffer);
+        if (consume)
+            drainInto(buffer);
+        else
+            readInto(buffer);
         buffer.flip();
         return buffer;
     }

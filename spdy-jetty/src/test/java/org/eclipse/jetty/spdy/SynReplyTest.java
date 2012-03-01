@@ -232,13 +232,13 @@ public class SynReplyTest extends AbstractTest
                 int dataCount = this.dataCount.incrementAndGet();
                 if (dataCount == 1)
                 {
-                    String chunk1 = dataInfo.asString("UTF-8");
+                    String chunk1 = dataInfo.asString("UTF-8", true);
                     Assert.assertEquals(data1, chunk1);
                     dataLatch1.countDown();
                 }
                 else if (dataCount == 2)
                 {
-                    String chunk2 = dataInfo.asString("UTF-8");
+                    String chunk2 = dataInfo.asString("UTF-8", true);
                     Assert.assertEquals(data2, chunk2);
                     dataLatch2.countDown();
                 }
@@ -274,7 +274,7 @@ public class SynReplyTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        String data = dataInfo.asString("UTF-8");
+                        String data = dataInfo.asString("UTF-8", true);
                         Assert.assertEquals(clientData, data);
                         clientDataLatch.countDown();
                     }
@@ -393,7 +393,7 @@ public class SynReplyTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                String chunk = dataInfo.asString("UTF-8");
+                String chunk = dataInfo.asString("UTF-8", true);
                 Assert.assertEquals(data, chunk);
                 dataLatch.countDown();
             }

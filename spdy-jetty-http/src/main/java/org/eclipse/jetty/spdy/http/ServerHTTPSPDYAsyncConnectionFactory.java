@@ -159,7 +159,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             logger.debug("Received {} on {}", dataInfo, stream);
 
             final ServerHTTPSPDYAsyncConnection connection = (ServerHTTPSPDYAsyncConnection)stream.getAttribute("connection");
-            final ByteBuffer buffer = dataInfo.asByteBuffer();
+            final ByteBuffer buffer = dataInfo.asByteBuffer(true);
             final boolean isClose = dataInfo.isClose();
 
             connection.post(new Runnable()
