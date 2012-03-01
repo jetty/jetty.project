@@ -46,7 +46,7 @@ public class AsyncTimeoutTest
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), new TestIdleListener(), 1, null, generator)
         {
             @Override
             public void flush()
@@ -90,7 +90,7 @@ public class AsyncTimeoutTest
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), new TestIdleListener(), 1, null, generator)
         {
             private final AtomicInteger flushes = new AtomicInteger();
 
@@ -141,6 +141,14 @@ public class AsyncTimeoutTest
 
         @Override
         public void close(boolean onlyOutput)
+        {
+        }
+    }
+
+    private static class TestIdleListener implements IdleListener
+    {
+        @Override
+        public void onIdle(boolean idle)
         {
         }
     }
