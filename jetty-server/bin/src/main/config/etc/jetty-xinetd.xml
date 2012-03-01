@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Configuration for starting up Jetty using inetd/xinetd          -->
+<!-- This feature requires at least Java 5                           -->
+<!--                                                                 -->
+<!-- Making it a mixin for convenience, but note that if used        -->
+<!-- with jetty.xml, Jetty will use multiple connectors              -->
+<!-- =============================================================== -->
+
+<!-- Sample xinetd configuration (restart xinetd after adding the configuration file)
+
+service jetty
+{
+    disable     = no
+
+    id          = jetty
+    type        = UNLISTED     
+    wait        = yes          
+    socket_type = stream
+
+    # change this
+    user        = username
+    group       = groupname
+    port        = 2001
+
+    # sample script for running jetty as a service
+    # replace $JETTY_HOME with /path/to/jetty_home/
+    server      = $JETTY_HOME/bin/jetty-xinetd.sh
+}
+
+-->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+    <Call name="addConnector">
+      <Arg>
+          <!-- Inherited channel (from inetd/xinetd) -->
+          <New class="org.eclipse.jetty.server.nio.InheritedChannelConnector">
+
+
+            <!-- Optional. Fallback in case System.inheritedChannel() does not give a ServerSocketChannel 
+            <Set name="port"><Property name="jetty.service.port" default="8082"/></Set>
+            -->
+
+            <!-- sane defaults -->
+            <Set name="maxIdleTime">300000</Set>
+            <Set name="Acceptors">2</Set>
+            <Set name="statsOn">false</Set>
+      	    <Set name="lowResourcesConnections">20000</Set>
+	        <Set name="lowResourcesMaxIdleTime">5000</Set>
+          </New>
+      </Arg>
+    </Call>
+</Configure>
+

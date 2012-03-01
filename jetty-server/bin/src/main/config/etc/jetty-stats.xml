@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Mixin the Statistics Handler                                    -->
+<!-- =============================================================== -->
+
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <Get id="oldhandler" name="handler"/>
+
+    <Set name="handler">
+     <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler">
+      <Set name="handler"><Ref id="oldhandler"/></Set>
+     </New>
+    </Set>
+    
+</Configure>

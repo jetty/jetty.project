@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<!-- =============================================================== -->
+<!-- Mixin configuration for Block socket connector                  -->
+<!--                                                                 -->
+<!-- =============================================================== -->
+
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!-- Use this connector if NIO is not available.  -->
+    <Call name="addConnector">
+      <Arg>
+          <New class="org.eclipse.jetty.server.bio.SocketConnector">
+            <Set name="port"><Property name="jetty.bio.port" default="8081"/></Set>
+            <Set name="maxIdleTime">50000</Set>
+            <Set name="lowResourceMaxIdleTime">1500</Set>
+          </New>
+      </Arg>
+    </Call>
+
+</Configure>

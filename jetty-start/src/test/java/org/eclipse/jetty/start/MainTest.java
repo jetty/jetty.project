@@ -14,6 +14,11 @@
 package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.containsString;
+<<<<<<< HEAD
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
+=======
+>>>>>>> 369349: fix --exec classpath issue, spaces in directory names fix
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 
@@ -97,13 +102,47 @@ public class MainTest
         Classpath classpath = nastyWayToCreateAClasspathObject("/jetty/home with spaces/");
         CommandLineBuilder cmd = main.buildCommandLine(classpath,xmls);
         Assert.assertThat("CommandLineBuilder shouldn't be null",cmd,notNullValue());
+<<<<<<< HEAD
+
+        List<String> commandArgs = cmd.getArgs();
+        Assert.assertThat("commandArgs should contain 11 elements",commandArgs.size(),equalTo(11));
+        Assert.assertThat("args does not contain -cp",commandArgs,hasItems("-cp"));
+        Assert.assertThat("Classpath should be correctly quoted and match expected value",commandArgs,
+                hasItems("/jetty/home with spaces/somejar.jar:/jetty/home with spaces/someotherjar.jar"));
+        Assert.assertThat("args does not contain --exec",commandArgs,hasItems("--exec"));
+        Assert.assertThat("CommandLine should contain jvmArgs",commandArgs,hasItems("-Xms1024m"));
+        Assert.assertThat("CommandLine should contain jvmArgs",commandArgs,hasItems("-Xmx1024m"));
+        Assert.assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty.xml"));
+        Assert.assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty-jmx.xml"));
+        Assert.assertThat("CommandLine should contain xmls",commandArgs,hasItems("jetty-logging.xml"));
+
+        String commandLine = cmd.toString();
+        Assert.assertThat("cmd.toString() should be properly escaped",commandLine,containsString("--exec "
+                + "-Xms1024m -Xmx1024m -Djetty.home=/Users/tbecker/Documents/workspaces/workspace/jetty-trunk/jetty-start/src/test/resources/jetty.home "
+                + "-cp /jetty/home\\ with\\ spaces/somejar.jar:/jetty/home\\ with\\ spaces/someotherjar.jar"));
+        Assert.assertThat("cmd.toString() doesn't contain xml config files",commandLine,containsString(" jetty.xml jetty-jmx.xml jetty-logging.xml"));
+    }
+=======
         String commandLine = cmd.toString();
         Assert.assertThat("CommandLine shouldn't be null",commandLine,notNullValue());
         Assert.assertThat("Classpath should be correctly quoted and match expected value",commandLine,
                 containsString("-cp /jetty/home with spaces/somejar.jar:/jetty/home with spaces/someotherjar.jar"));
         Assert.assertThat("CommandLine should contain jvmArgs",commandLine,containsString("--exec -Xms1024m -Xmx1024m"));
         Assert.assertThat("CommandLine should contain xmls",commandLine,containsString("jetty.xml jetty-jmx.xml jetty-logging.xml"));
+>>>>>>> 369349: fix --exec classpath issue, spaces in directory names fix
 
+    private Classpath nastyWayToCreateAClasspathObject(String jettyHome) throws NoSuchFieldException, IllegalAccessException
+    {
+        Classpath classpath = new Classpath();
+        Field classpathElements = Classpath.class.getDeclaredField("_elements");
+        classpathElements.setAccessible(true);
+        File file = new File(jettyHome + "somejar.jar");
+        File file2 = new File(jettyHome + "someotherjar.jar");
+        Vector<File> elements = new Vector<File>();
+        elements.add(file);
+        elements.add(file2);
+        classpathElements.set(classpath,elements);
+        return classpath;
     }
 
     private Classpath nastyWayToCreateAClasspathObject(String jettyHome) throws NoSuchFieldException, IllegalAccessException
