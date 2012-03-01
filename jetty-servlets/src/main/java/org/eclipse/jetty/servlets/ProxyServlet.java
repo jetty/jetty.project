@@ -57,7 +57,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Asynchronous Proxy Servlet.
- *
+ * 
  * Forward requests to another server either as a standard web proxy (as defined by RFC2616) or as a transparent proxy.
  * <p>
  * This servlet needs the jetty-util and jetty-client classes to be available to the web application.
@@ -79,7 +79,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  * <li>whiteList - comma-separated list of allowed proxy destinations
  * <li>blackList - comma-separated list of forbidden proxy destinations
  * </ul>
- *
+ * 
  * @see org.eclipse.jetty.server.handler.ConnectHandler
  */
 public class ProxyServlet implements Servlet
@@ -109,7 +109,7 @@ public class ProxyServlet implements Servlet
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see javax.servlet.Servlet#init(javax.servlet.ServletConfig)
      */
     public void init(ServletConfig config) throws ServletException
@@ -160,11 +160,9 @@ public class ProxyServlet implements Servlet
         }
     }
 
-
     /**
-     * Create and return a logger based on the ServletConfig for use in the
-     * proxy servlet
-     *
+     * Create and return a logger based on the ServletConfig for use in the proxy servlet
+     * 
      * @param config
      * @return Logger
      */
@@ -175,10 +173,9 @@ public class ProxyServlet implements Servlet
 
     /**
      * Create and return an HttpClient based on ServletConfig
-     *
-     * By default this implementation will create an instance of the
-     * HttpClient for use by this proxy servlet.
-     *
+     * 
+     * By default this implementation will create an instance of the HttpClient for use by this proxy servlet.
+     * 
      * @param config
      * @return HttpClient
      * @throws Exception
@@ -210,42 +207,42 @@ public class ProxyServlet implements Servlet
 
         t = config.getInitParameter("timeout");
 
-        if ( t != null )
+        if (t != null)
         {
             client.setTimeout(Long.parseLong(t));
         }
 
         t = config.getInitParameter("idleTimeout");
 
-        if ( t != null )
+        if (t != null)
         {
             client.setIdleTimeout(Long.parseLong(t));
         }
 
         t = config.getInitParameter("requestHeaderSize");
 
-        if ( t != null )
+        if (t != null)
         {
             client.setRequestHeaderSize(Integer.parseInt(t));
         }
 
         t = config.getInitParameter("requestBufferSize");
 
-        if ( t != null )
+        if (t != null)
         {
             client.setRequestBufferSize(Integer.parseInt(t));
         }
 
         t = config.getInitParameter("responseHeaderSize");
 
-        if ( t != null )
+        if (t != null)
         {
             client.setResponseHeaderSize(Integer.parseInt(t));
         }
 
         t = config.getInitParameter("responseBufferSize");
 
-        if ( t != null )
+        if (t != null)
         {
             client.setResponseBufferSize(Integer.parseInt(t));
         }
@@ -258,7 +255,7 @@ public class ProxyServlet implements Servlet
     /* ------------------------------------------------------------ */
     /**
      * Helper function to process a parameter value containing a list of new entries and initialize the specified host map.
-     *
+     * 
      * @param list
      *            comma-separated list of new entries
      * @param hostMap
@@ -298,7 +295,7 @@ public class ProxyServlet implements Servlet
     /* ------------------------------------------------------------ */
     /**
      * Check the request hostname and path against white- and blacklist.
-     *
+     * 
      * @param host
      *            hostname to check
      * @param path
@@ -350,7 +347,7 @@ public class ProxyServlet implements Servlet
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see javax.servlet.Servlet#getServletConfig()
      */
     public ServletConfig getServletConfig()
@@ -361,7 +358,7 @@ public class ProxyServlet implements Servlet
     /* ------------------------------------------------------------ */
     /**
      * Get the hostHeader.
-     *
+     * 
      * @return the hostHeader
      */
     public String getHostHeader()
@@ -372,7 +369,7 @@ public class ProxyServlet implements Servlet
     /* ------------------------------------------------------------ */
     /**
      * Set the hostHeader.
-     *
+     * 
      * @param hostHeader
      *            the hostHeader to set
      */
@@ -384,7 +381,7 @@ public class ProxyServlet implements Servlet
     /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see javax.servlet.Servlet#service(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
     public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
@@ -530,7 +527,6 @@ public class ProxyServlet implements Servlet
                 exchange.setURL(url.toString());
                 exchange.setVersion(request.getProtocol());
 
-
                 if (debug != 0)
                     _log.debug(debug + " " + request.getMethod() + " " + url + " " + request.getProtocol());
 
@@ -604,19 +600,18 @@ public class ProxyServlet implements Servlet
                 if (hasContent)
                     exchange.setRequestContentSource(in);
 
-                customizeExchange(exchange, request);
+                customizeExchange(exchange,request,response);
 
                 /*
-                 * we need to set the timeout on the continuation to take into
-                 * account the timeout of the HttpClient and the HttpExchange
+                 * we need to set the timeout on the continuation to take into account the timeout of the HttpClient and the HttpExchange
                  */
-                long ctimeout = (_client.getTimeout() > exchange.getTimeout()) ? _client.getTimeout() : exchange.getTimeout();
+                long ctimeout = (_client.getTimeout() > exchange.getTimeout())?_client.getTimeout():exchange.getTimeout();
 
                 // continuation fudge factor of 1000, underlying components
                 // should fail/expire first from exchange
-                if ( ctimeout == 0 )
+                if (ctimeout == 0)
                 {
-                    continuation.setTimeout(0);  // ideally never times out
+                    continuation.setTimeout(0); // ideally never times out
                 }
                 else
                 {
@@ -685,7 +680,7 @@ public class ProxyServlet implements Servlet
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see javax.servlet.Servlet#getServletInfo()
      */
     public String getServletInfo()
@@ -693,22 +688,36 @@ public class ProxyServlet implements Servlet
         return "Proxy Servlet";
     }
 
-
     /**
      * Extension point for subclasses to customize an exchange. Useful for setting timeouts etc. The default implementation does nothing.
-     *
+     * 
      * @param exchange
      * @param request
+     * @deprecated you should override {@link #customizeExchange(HttpExchange, HttpServletRequest, HttpServletResponse)} instead of this.
      */
+    @Deprecated
     protected void customizeExchange(HttpExchange exchange, HttpServletRequest request)
     {
 
     }
 
     /**
+     * Extension point for subclasses to customize an exchange. Useful for setting timeouts etc. The default implementation calls
+     * {@link #customizeExchange(HttpExchange, HttpServletRequest)} for backward compatibility.
+     * 
+     * @param exchange
+     * @param request
+     * @param response
+     */
+    protected void customizeExchange(HttpExchange exchange, HttpServletRequest request, HttpServletResponse response)
+    {
+        customizeExchange(exchange,request);
+    }
+
+    /**
      * Extension point for subclasses to customize the Continuation after it's initial creation in the service method. Useful for setting timeouts etc. The
      * default implementation does nothing.
-     *
+     * 
      * @param continuation
      */
     protected void customizeContinuation(Continuation continuation)
@@ -719,7 +728,7 @@ public class ProxyServlet implements Servlet
     /**
      * Extension point for custom handling of an HttpExchange's onConnectionFailed method. The default implementation delegates to
      * {@link #handleOnException(Throwable, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)}
-     *
+     * 
      * @param ex
      * @param request
      * @param response
@@ -732,7 +741,7 @@ public class ProxyServlet implements Servlet
     /**
      * Extension point for custom handling of an HttpExchange's onException method. The default implementation sets the response status to
      * HttpServletResponse.SC_INTERNAL_SERVER_ERROR (503)
-     *
+     * 
      * @param ex
      * @param request
      * @param response
@@ -746,7 +755,7 @@ public class ProxyServlet implements Servlet
         }
         else
             _log.warn(ex);
-        
+
         if (!response.isCommitted())
         {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -756,7 +765,7 @@ public class ProxyServlet implements Servlet
     /**
      * Extension point for custom handling of an HttpExchange's onExpire method. The default implementation sets the response status to
      * HttpServletResponse.SC_GATEWAY_TIMEOUT (504)
-     *
+     * 
      * @param request
      * @param response
      */
@@ -770,7 +779,7 @@ public class ProxyServlet implements Servlet
 
     /**
      * Transparent Proxy.
-     *
+     * 
      * This convenience extension to ProxyServlet configures the servlet as a transparent proxy. The servlet is configured with init parameters:
      * <ul>
      * <li>ProxyTo - a URI like http://host:80/context to which the request is proxied.
@@ -778,7 +787,7 @@ public class ProxyServlet implements Servlet
      * </ul>
      * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context and the Prefix was /foo, then the request would be proxied
      * to http://host:80/context/bar
-     *
+     * 
      */
     public static class Transparent extends ProxyServlet
     {
