@@ -161,7 +161,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         // SPEC v3, 2.2.2
         if (goAwaySent.get())
         {
-            handler.completed(null);
+            notifyHandlerCompleted(handler, null);
         }
         else
         {
@@ -222,7 +222,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 return;
             }
         }
-        handler.completed(null);
+        notifyHandlerCompleted(handler, null);
     }
 
     @Override
@@ -583,8 +583,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private void onWindowUpdate(WindowUpdateFrame frame)
     {
-        // TODO: review flow control
-
         int streamId = frame.getStreamId();
         IStream stream = streams.get(streamId);
         if (stream != null)
@@ -680,7 +678,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, Handler<C> handler, C context)
+    public <C> void control(IStream stream, ControlFrame frame, long timeout, TimeUnit unit, final Handler<C> handler, C context)
     {
         try
         {
@@ -694,7 +692,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             {
                 ByteBuffer buffer = generator.control(frame);
                 logger.debug("Queuing {} on {}", frame, stream);
-                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(frame, buffer, handler, context);
+                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(handler, context, frame, buffer);
                 if (timeout > 0)
                     frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
                 enqueueLast(frameBytes);
@@ -702,9 +700,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
             flush();
         }
-        catch (Throwable x)
+        catch (final Throwable x)
         {
-            handler.failed(x);
+            execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    notifyHandlerFailed(handler, x);
+                }
+            });
         }
     }
 
@@ -728,7 +733,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Handler<C> handler, C context)
     {
         logger.debug("Queuing {} on {}", dataInfo, stream);
-        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(stream, dataInfo, handler, context);
+        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(handler, context, stream, dataInfo);
         if (timeout > 0)
             frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
         enqueueLast(frameBytes);
@@ -803,7 +808,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             flushing = false;
         }
         frameBytes.complete();
-        flush();
     }
 
     @Override
@@ -818,6 +822,32 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             controller.write(buffer, handler, frameBytes);
     }
 
+    private <C> void notifyHandlerCompleted(Handler<C> handler, C context)
+    {
+        try
+        {
+            if (handler != null)
+                handler.completed(context);
+        }
+        catch (Exception x)
+        {
+            logger.info("Exception while notifying handler " + handler, x);
+        }
+    }
+
+    private void notifyHandlerFailed(Handler handler, Throwable x)
+    {
+        try
+        {
+            if (handler != null)
+                handler.failed(x);
+        }
+        catch (Exception xx)
+        {
+            logger.info("Exception while notifying handler " + handler, xx);
+        }
+    }
+
     public interface FrameBytes
     {
         public abstract ByteBuffer getByteBuffer();
@@ -825,20 +855,71 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         public abstract void complete();
     }
 
-    private class ControlFrameBytes<C> implements FrameBytes, Runnable
+    private abstract class AbstractFrameBytes<C> implements FrameBytes, Runnable
+    {
+        private final Handler<C> handler;
+        private final C context;
+        protected volatile ScheduledFuture<?> task;
+
+        protected AbstractFrameBytes(Handler<C> handler, C context)
+        {
+            this.handler = handler;
+            this.context = context;
+        }
+
+        @Override
+        public void complete()
+        {
+            ScheduledFuture<?> task = this.task;
+            if (task != null)
+                task.cancel(false);
+
+            // We call back the application, which may block or may perform more writes.
+            // If it blocks, we're blocking the whole write path, which is not good.
+            // If it writes more, we may go in StackOverflowError, not good either.
+            // Therefore we invoke the application in another thread.
+            execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    notifyHandlerCompleted(handler, context);
+
+                    // The application may have written more, so we flush
+                    flush();
+                }
+            });
+        }
+
+        protected void fail(final Throwable x)
+        {
+            execute(new Runnable()
+            {
+                public void run()
+                {
+                    notifyHandlerFailed(handler, x);
+                }
+            });
+        }
+
+        @Override
+        public void run()
+        {
+            close();
+            notifyHandlerFailed(handler, new InterruptedByTimeoutException());
+        }
+    }
+
+    private class ControlFrameBytes<C> extends AbstractFrameBytes<C>
     {
         private final ControlFrame frame;
         private final ByteBuffer buffer;
-        private final Handler<C> handler;
-        private final C context;
-        private volatile ScheduledFuture<?> task;
 
-        private ControlFrameBytes(ControlFrame frame, ByteBuffer buffer, Handler<C> handler, C context)
+        private ControlFrameBytes(Handler<C> handler, C context, ControlFrame frame, ByteBuffer buffer)
         {
+            super(handler, context);
             this.frame = frame;
             this.buffer = buffer;
-            this.handler = handler;
-            this.context = context;
         }
 
         @Override
@@ -850,25 +931,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public void complete()
         {
-            ScheduledFuture<?> task = this.task;
-            if (task != null)
-                task.cancel(false);
-
             if (frame.getType() == ControlFrameType.GO_AWAY)
             {
                 // After sending a GO_AWAY we need to hard close the connection.
                 // Recipients will know the last good stream id and act accordingly.
                 close();
             }
-
-            handler.completed(context);
-        }
-
-        @Override
-        public void run()
-        {
-            close();
-            handler.failed(new InterruptedByTimeoutException());
+            super.complete();
         }
 
         @Override
@@ -878,21 +947,17 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private class DataFrameBytes<C> implements FrameBytes, Runnable
+    private class DataFrameBytes<C> extends AbstractFrameBytes<C>
     {
         private final IStream stream;
         private final DataInfo data;
-        private final Handler<C> handler;
-        private final C context;
         private int dataLength;
-        private volatile ScheduledFuture<?> task;
 
-        private DataFrameBytes(IStream stream, DataInfo data, Handler<C> handler, C context)
+        private DataFrameBytes(Handler<C> handler, C context, IStream stream, DataInfo data)
         {
+            super(handler, context);
             this.stream = stream;
             this.data = data;
-            this.handler = handler;
-            this.context = context;
         }
 
         @Override
@@ -911,7 +976,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             }
             catch (Throwable x)
             {
-                handler.failed(x);
+                fail(x);
                 return null;
             }
         }
@@ -929,23 +994,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             }
             else
             {
-                ScheduledFuture<?> task = this.task;
-                if (task != null)
-                    task.cancel(false);
-
                 stream.updateCloseState(data.isClose());
                 if (stream.isClosed())
                     removeStream(stream);
-
-                handler.completed(context);
+                super.complete();
             }
-        }
-
-        @Override
-        public void run()
-        {
-            close();
-            handler.failed(new InterruptedByTimeoutException());
         }
 
         @Override
@@ -954,5 +1007,4 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             return String.format("DATA bytes @%x available=%d consumed=%d on %s", data.hashCode(), data.available(), data.consumed(), stream);
         }
     }
-
 }
