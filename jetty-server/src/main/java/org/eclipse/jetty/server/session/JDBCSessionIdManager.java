@@ -71,6 +71,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected long _lastScavengeTime;
     protected long _scavengeIntervalMs = 1000L * 60 * 10; //10mins
     protected String _blobType; //if not set, is deduced from the type of the database at runtime
+    protected String _longType; //if not set, is deduced from the type of the database at runtime
     
     protected String _createSessionIdTable;
     protected String _createSessionTable;
@@ -81,6 +82,13 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     protected String _insertId;
     protected String _deleteId;
     protected String _queryId;
+    
+    protected  String _insertSession;
+    protected  String _deleteSession;
+    protected  String _selectSession;
+    protected  String _updateSession;
+    protected  String _updateSessionNode;
+    protected  String _updateSessionAccessTime;
     
     protected DatabaseAdaptor _dbAdaptor;
 
@@ -146,6 +154,17 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             return "blob";
         }
         
+        public String getLongType ()
+        {
+            if (_longType != null)
+                return _longType;
+            
+            if (_dbName.startsWith("oracle"))
+                return "number(20)";
+            
+            return "bigint";
+        }
+        
         public InputStream getBlobInputStream (ResultSet result, String columnName)
         throws SQLException
         {
@@ -157,6 +176,18 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             
             Blob blob = result.getBlob(columnName);
             return blob.getBinaryStream();
+        }
+        
+        /**
+         * rowId is a reserved word for Oracle, so change the name of this column
+         * @return
+         */
+        public String getRowIdColumnName ()
+        {
+            if (_dbName != null && _dbName.startsWith("oracle"))
+                return "srowId";
+            
+            return "rowId";
         }
     }
     
@@ -239,6 +270,18 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         return _blobType;
     }
     
+    
+    
+    public String getLongType()
+    {
+        return _longType;
+    }
+
+    public void setLongType(String longType)
+    {
+        this._longType = longType;
+    }
+
     public void setScavengeInterval (long sec)
     {
         if (sec<=0)
@@ -528,7 +571,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             connection.setAutoCommit(true);
             DatabaseMetaData metaData = connection.getMetaData();
             _dbAdaptor = new DatabaseAdaptor(metaData);
-            _sessionTableRowId = (_dbAdaptor.getDBName() != null && _dbAdaptor.getDBName().contains("oracle") ? "srowId":_sessionTableRowId);
+            _sessionTableRowId = _dbAdaptor.getRowIdColumnName();
 
             //checking for table existence is case-sensitive, but table creation is not
             String tableName = _dbAdaptor.convertIdentifier(_sessionIdTable);
@@ -546,10 +589,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             {
                 //table does not exist, so create it
                 String blobType = _dbAdaptor.getBlobType();
+                String longType = _dbAdaptor.getLongType();
                 _createSessionTable = "create table "+_sessionTable+" ("+_sessionTableRowId+" varchar(120), sessionId varchar(120), "+
-                                           " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime bigint, "+
-                                           " lastAccessTime bigint, createTime bigint, cookieTime bigint, "+
-                                           " lastSavedTime bigint, expiryTime bigint, map "+blobType+", primary key("+_sessionTableRowId+"))";
+                                           " contextPath varchar(60), virtualHost varchar(60), lastNode varchar(60), accessTime "+longType+", "+
+                                           " lastAccessTime "+longType+", createTime "+longType+", cookieTime "+longType+", "+
+                                           " lastSavedTime "+longType+", expiryTime "+longType+", map "+blobType+", primary key("+_sessionTableRowId+"))";
                 connection.createStatement().executeUpdate(_createSessionTable);
             }
             
@@ -576,6 +620,28 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
                 if (!index2Exists)
                     statement.executeUpdate("create index "+index2+" on "+_sessionTable+" (sessionId, contextPath)");
             }
+
+            //set up some strings representing the statements for session manipulation
+            _insertSession = "insert into "+_sessionTable+
+            " ("+_sessionTableRowId+", sessionId, contextPath, virtualHost, lastNode, accessTime, lastAccessTime, createTime, cookieTime, lastSavedTime, expiryTime, map) "+
+            " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            _deleteSession = "delete from "+_sessionTable+
+            " where "+_sessionTableRowId+" = ?";
+
+            _selectSession = "select * from "+_sessionTable+
+            " where sessionId = ? and contextPath = ? and virtualHost = ?";
+
+            _updateSession = "update "+_sessionTable+
+            " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ?, map = ? where "+_sessionTableRowId+" = ?";
+
+            _updateSessionNode = "update "+_sessionTable+
+            " set lastNode = ? where "+_sessionTableRowId+" = ?";
+
+            _updateSessionAccessTime = "update "+_sessionTable+
+            " set lastNode = ?, accessTime = ?, lastAccessTime = ?, lastSavedTime = ?, expiryTime = ? where "+_sessionTableRowId+" = ?";
+
+            
         }
         finally
         {
