@@ -16,7 +16,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -41,10 +40,4 @@ public interface ISession extends Session
 
     public int getWindowSize();
 
-    public interface Controller<T>
-    {
-        public int write(ByteBuffer buffer, Handler<T> handler, T context);
-
-        public void close(boolean onlyOutput);
-    }
 }

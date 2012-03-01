@@ -422,7 +422,7 @@ public class SPDYClient
             SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, parser, factory);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(sessionPromise.client.version, factory.threadPool, factory.scheduler, connection, 1, sessionPromise.listener, generator);
+            StandardSession session = new StandardSession(sessionPromise.client.version, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator);
             parser.addListener(session);
             sessionPromise.completed(session);
             connection.setSession(session);

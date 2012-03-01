@@ -246,11 +246,17 @@ public class StandardStream implements IStream
                     @Override
                     public void run()
                     {
-                        logger.debug("Executing task {}", task);
-                        task.run();
-                        logger.debug("Completing task {}", task);
-                        dispatched = false;
-                        dispatch();
+                        try
+                        {
+                            logger.debug("Executing task {}", task);
+                            task.run();
+                        }
+                        finally
+                        {
+                            logger.debug("Completing task {}", task);
+                            dispatched = false;
+                            dispatch();
+                        }
                     }
                 });
             }

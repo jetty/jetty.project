@@ -46,7 +46,7 @@ public class AsyncTimeoutTest
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), null, 1, null, generator)
         {
             @Override
             public void flush()
@@ -90,7 +90,7 @@ public class AsyncTimeoutTest
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), 1, null, generator)
+        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), null, 1, null, generator)
         {
             private final AtomicInteger flushes = new AtomicInteger();
 
@@ -130,7 +130,7 @@ public class AsyncTimeoutTest
         Assert.assertTrue(failedLatch.await(2 * timeout, unit));
     }
 
-    private static class TestController implements ISession.Controller<StandardSession.FrameBytes>
+    private static class TestController implements Controller<StandardSession.FrameBytes>
     {
         @Override
         public int write(ByteBuffer buffer, Handler<StandardSession.FrameBytes> handler, StandardSession.FrameBytes context)

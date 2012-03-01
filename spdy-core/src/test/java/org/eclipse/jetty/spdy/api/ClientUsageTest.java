@@ -29,7 +29,7 @@ public class ClientUsageTest
     @Test
     public void testClientRequestResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, 1, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, 1, null, null);
 
         session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
@@ -48,7 +48,7 @@ public class ClientUsageTest
     @Test
     public void testClientRequestWithBodyResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, 1, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, 1, null, null);
 
         Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
         {
@@ -69,7 +69,7 @@ public class ClientUsageTest
     @Test
     public void testAsyncClientRequestWithBodyResponseNoBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, 1, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, 1, null, null);
 
         final String context = "context";
         session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
@@ -104,7 +104,7 @@ public class ClientUsageTest
     @Test
     public void testAsyncClientRequestWithBodyAndResponseWithBody() throws Exception
     {
-        Session session = new StandardSession(SPDY.V2, null, null, null, 1, null, null);
+        Session session = new StandardSession(SPDY.V2, null, null, null, null, 1, null, null);
 
         session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
         {

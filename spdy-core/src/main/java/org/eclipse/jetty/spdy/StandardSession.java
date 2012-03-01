@@ -74,6 +74,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private final ScheduledExecutorService scheduler;
     private final short version;
     private final Controller<FrameBytes> controller;
+    private final IdleListener idleListener;
     private final AtomicInteger streamIds;
     private final AtomicInteger pingIds;
     private final SessionFrameListener listener;
@@ -84,12 +85,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private boolean flushing;
     private volatile int windowSize = 65536;
 
-    public StandardSession(short version, Executor threadPool, ScheduledExecutorService scheduler, Controller<FrameBytes> controller, int initialStreamId, SessionFrameListener listener, Generator generator)
+    public StandardSession(short version, Executor threadPool, ScheduledExecutorService scheduler, Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener, Generator generator)
     {
         this.version = version;
         this.threadPool = threadPool;
         this.scheduler = scheduler;
         this.controller = controller;
+        this.idleListener = idleListener;
         this.streamIds = new AtomicInteger(initialStreamId);
         this.pingIds = new AtomicInteger(initialStreamId);
         this.listener = listener;
@@ -741,9 +743,24 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public void execute(Runnable task)
+    public void execute(final Runnable task)
     {
-        threadPool.execute(task);
+        idleListener.onIdle(false);
+        threadPool.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    task.run();
+                }
+                finally
+                {
+                    idleListener.onIdle(true);
+                }
+            }
+        });
     }
 
     @Override
