@@ -131,10 +131,11 @@ public abstract class AbstractClientCrossContextSessionTest
         {
             HttpSession session = request.getSession(false);
             if (session == null)
-            {
                 session = request.getSession(true);
-                sessionId = session.getId();
-            }
+
+            sessionId = session.getId();
+
+
 
             // Add something to the session
             session.setAttribute("B", "B");
