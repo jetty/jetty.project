@@ -23,7 +23,6 @@
                     <stopPort>8888</stopPort>
                     <stopKey>quit</stopKey>
                     <jvmArgs>
-                        -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005
                         -Dlog4j.configuration=file://${basedir}/src/main/resources/log4j.properties
                         -Xbootclasspath/p:${settings.localRepository}/org/eclipse/jetty/npn-boot/${npn.version}/npn-boot-${npn.version}.jar
                     </jvmArgs>

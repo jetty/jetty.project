@@ -53,7 +53,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
                     switch (target)
                     {
                         case "/slow":
-                            fastServerLatch.await(500, TimeUnit.SECONDS);
+                            Assert.assertTrue(fastServerLatch.await(10, TimeUnit.SECONDS));
                             slowServerLatch.countDown();
                             break;
                         case "/fast":
@@ -107,9 +107,9 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
             }
         });
 
-        Assert.assertTrue(fastServerLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(slowServerLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(fastClientLatch.await(500, TimeUnit.SECONDS));
-        Assert.assertTrue(slowClientLatch.await(500, TimeUnit.SECONDS));
+        Assert.assertTrue(fastServerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(slowServerLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(fastClientLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(slowClientLatch.await(5, TimeUnit.SECONDS));
     }
 }

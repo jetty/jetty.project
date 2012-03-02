@@ -139,7 +139,7 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public void handle(ControlFrame frame)
+    public void process(ControlFrame frame)
     {
         switch (frame.getType())
         {
@@ -185,7 +185,7 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public void handle(DataFrame dataFrame, ByteBuffer data)
+    public void process(DataFrame frame, ByteBuffer data)
     {
         if (!opened)
         {
@@ -193,9 +193,9 @@ public class StandardStream implements IStream
             return;
         }
 
-        updateCloseState(dataFrame.isClose());
+        updateCloseState(frame.isClose());
 
-        ByteBufferDataInfo dataInfo = new ByteBufferDataInfo(data, dataFrame.isClose(), dataFrame.isCompress())
+        ByteBufferDataInfo dataInfo = new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress())
         {
             @Override
             public void consume(int delta)
@@ -218,57 +218,12 @@ public class StandardStream implements IStream
         session.flush();
     }
 
-    @Override
-    public void post(Runnable task)
-    {
-        synchronized (queue)
-        {
-            logger.debug("Posting task {}", task);
-            queue.offer(task);
-            dispatch();
-        }
-    }
-
-    private void dispatch()
-    {
-        synchronized (queue)
-        {
-            if (dispatched)
-                return;
-
-            final Runnable task = queue.poll();
-            if (task != null)
-            {
-                dispatched = true;
-                logger.debug("Dispatching task {}", task);
-                session.execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            logger.debug("Executing task {}", task);
-                            task.run();
-                        }
-                        finally
-                        {
-                            logger.debug("Completing task {}", task);
-                            dispatched = false;
-                            dispatch();
-                        }
-                    }
-                });
-            }
-        }
-    }
-
     private void windowUpdate(int delta)
     {
         if (delta > 0)
         {
             WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(session.getVersion(), getId(), delta);
-            session.control(this, windowUpdateFrame, 0, TimeUnit.MILLISECONDS, new Promise<>(), null);
+            session.control(this, windowUpdateFrame, 0, TimeUnit.MILLISECONDS, null, null);
         }
     }
 

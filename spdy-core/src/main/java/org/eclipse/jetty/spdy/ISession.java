@@ -36,8 +36,5 @@ public interface ISession extends Session
 
     public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Handler<C> handler, C context);
 
-    public void execute(Runnable task);
-
     public int getWindowSize();
-
 }

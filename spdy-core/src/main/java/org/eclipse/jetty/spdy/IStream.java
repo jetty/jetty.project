@@ -18,24 +18,75 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 
+/**
+ * <p>The internal interface that represents a stream.</p>
+ * <p>{@link IStream} contains additional methods used by a SPDY
+ * implementation (and not by an application).</p>
+ */
 public interface IStream extends Stream
 {
+    /**
+     * <p>Senders of data frames need to know the current window size
+     * to determine whether they can send more data.</p>
+     *
+     * @return the current window size for this stream.
+     * @see #updateWindowSize(int)
+     */
     public int getWindowSize();
 
+    /**
+     * <p>Updates the window size for this stream by the given amount,
+     * that can be positive or negative.</p>
+     * <p>Senders and recipients of data frames update the window size,
+     * respectively, with negative values and positive values.</p>
+     *
+     * @param delta the signed amount the window size needs to be updated
+     * @see #getWindowSize()
+     */
     public void updateWindowSize(int delta);
 
+    /**
+     * @param listener the stream frame listener associated to this stream
+     * as returned by {@link SessionFrameListener#onSyn(Stream, SynInfo)}
+     */
     public void setStreamFrameListener(StreamFrameListener listener);
 
+    /**
+     * <p>A stream can be open, {@link #isHalfClosed() half closed} or
+     * {@link #isClosed() closed} and this method updates the close state
+     * of this stream.</p>
+     * <p>If the stream is open, calling this method with a value of true
+     * puts the stream into half closed state.</p>
+     * <p>If the stream is half closed, calling this method with a value
+     * of true puts the stream into closed state.</p>
+     *
+     * @param close whether the close state should be updated
+     */
     public void updateCloseState(boolean close);
 
-    public void handle(ControlFrame frame);
+    /**
+     * <p>Processes the given control frame,
+     * for example by updating the stream's state or by calling listeners.</p>
+     *
+     * @param frame the control frame to process
+     * @see #process(DataFrame, ByteBuffer)
+     */
+    public void process(ControlFrame frame);
 
-    public void handle(DataFrame dataFrame, ByteBuffer data);
-
-    public void post(Runnable task);
+    /**
+     * <p>Processes the give data frame along with the given byte buffer,
+     * for example by updating the stream's state or by calling listeners.</p>
+     *
+     * @param frame the data frame to process
+     * @param data the byte buffer to process
+     * @see #process(ControlFrame)
+     */
+    public void process(DataFrame frame, ByteBuffer data);
 }
