@@ -18,9 +18,12 @@ package org.eclipse.jetty.spdy.http;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpException;
@@ -43,6 +46,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYAsyncConnection;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
+import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -52,14 +56,17 @@ import org.slf4j.LoggerFactory;
 public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implements AsyncConnection
 {
     private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnection.class);
-    private final Queue<Runnable> queue = new LinkedList<>();
+
+    private final Queue<Runnable> tasks = new LinkedList<>();
+    private final BlockingQueue<DataInfo> dataInfos = new LinkedBlockingQueue<>();
     private final SPDYAsyncConnection connection;
     private final Stream stream;
-    private Headers headers;
-    private NIOBuffer buffer;
-    private boolean complete;
+    private Headers headers; // No need for volatile, guarded by state
+    private DataInfo dataInfo; // No need for volatile, guarded by state
+    private NIOBuffer buffer; // No need for volatile, guarded by state
+    private boolean complete; // No need for volatile, guarded by state
     private volatile State state = State.INITIAL;
-    private boolean dispatched;
+    private boolean dispatched; // Guarded by synchronization on tasks
 
     public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
     {
@@ -87,24 +94,24 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         return (AsyncEndPoint)super.getEndPoint();
     }
 
-    public void post(Runnable task)
+    private void post(Runnable task)
     {
-        synchronized (queue)
+        synchronized (tasks)
         {
             logger.debug("Posting task {}", task);
-            queue.offer(task);
+            tasks.offer(task);
             dispatch();
         }
     }
 
     private void dispatch()
     {
-        synchronized (queue)
+        synchronized (tasks)
         {
             if (dispatched)
                 return;
 
-            final Runnable task = queue.poll();
+            final Runnable task = tasks.poll();
             if (task != null)
             {
                 dispatched = true;
@@ -126,7 +133,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     }
 
     @Override
-    public Connection handle() throws IOException
+    public Connection handle()
     {
         setCurrentConnection(this);
         try
@@ -198,13 +205,12 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 case CONTENT:
                 {
                     final Buffer buffer = this.buffer;
-                    if (buffer.length() > 0)
+                    if (buffer != null && buffer.length() > 0)
                         content(buffer);
                     break;
                 }
                 case FINAL:
                 {
-                    // TODO: compute content-length parameter
                     messageComplete(0);
                     break;
                 }
@@ -215,95 +221,156 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             }
             return this;
         }
+        catch (HttpException x)
+        {
+            respond(stream, x.getStatus());
+            return this;
+        }
+        catch (IOException x)
+        {
+            close(stream);
+            return this;
+        }
         finally
         {
             setCurrentConnection(null);
         }
     }
 
+    private void respond(Stream stream, int status)
+    {
+        Headers headers = new Headers();
+        headers.put("status", String.valueOf(status));
+        headers.put("version", "HTTP/1.1");
+        stream.reply(new ReplyInfo(headers, true));
+    }
+
+    private void close(Stream stream)
+    {
+        stream.getSession().goAway();
+    }
+
     @Override
     public void onInputShutdown() throws IOException
     {
-        // TODO
     }
 
-    public void beginRequest(Headers headers) throws IOException
+    public void beginRequest(final Headers headers)
     {
-        if (!headers.isEmpty())
+        this.headers = headers.isEmpty() ? null : headers;
+        post(new Runnable()
         {
-            this.headers = headers;
-            state = State.REQUEST;
-        }
-        handle();
+            @Override
+            public void run()
+            {
+                if (!headers.isEmpty())
+                    state = State.REQUEST;
+                handle();
+            }
+        });
     }
 
-    public void headers(Headers headers) throws IOException
+    public void headers(Headers headers)
     {
         this.headers = headers;
-        state = state == State.INITIAL ? State.REQUEST : State.HEADERS;
-        handle();
+        post(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                state = state == State.INITIAL ? State.REQUEST : State.HEADERS;
+                handle();
+            }
+        });
     }
 
-    public void content(ByteBuffer byteBuffer, boolean endRequest) throws IOException
+    public void content(final DataInfo dataInfo, boolean endRequest)
     {
-        buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
+        dataInfos.offer(dataInfo);
         complete = endRequest;
-        logger.debug("HTTP > {} bytes of content", buffer.length());
-        if (state == State.HEADERS)
+        post(new Runnable()
         {
-            state = State.HEADERS_COMPLETE;
-            handle();
-        }
-        state = State.CONTENT;
-        handle();
+            @Override
+            public void run()
+            {
+                logger.debug("HTTP > {} bytes of content", dataInfo.length());
+                if (state == State.HEADERS)
+                {
+                    state = State.HEADERS_COMPLETE;
+                    handle();
+                }
+                state = State.CONTENT;
+                handle();
+            }
+        });
     }
 
-    public void endRequest() throws IOException
+    public void endRequest()
     {
-        if (state == State.HEADERS)
+        post(new Runnable()
         {
-            state = State.HEADERS_COMPLETE;
-            handle();
-        }
-        state = State.FINAL;
-        handle();
+            public void run()
+            {
+                if (state == State.HEADERS)
+                {
+                    state = State.HEADERS_COMPLETE;
+                    handle();
+                }
+                state = State.FINAL;
+                handle();
+            }
+        });
     }
 
-    private Buffer consumeContent(long maxIdleTime) throws IOException
+    private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
     {
-        boolean filled = false;
         while (true)
         {
+            // Volatile read to ensure visibility
             State state = this.state;
             if (state != State.HEADERS_COMPLETE && state != State.CONTENT && state != State.FINAL)
                 throw new IllegalStateException();
 
-            Buffer buffer = this.buffer;
-            logger.debug("Consuming {} content bytes", buffer.length());
-            if (buffer.length() > 0)
-                return buffer;
-
-            if (complete)
-                return null;
-
-            if (filled)
+            if (buffer != null)
             {
-                // Wait for content
+                if (buffer.length() > 0)
+                {
+                    logger.debug("Consuming content bytes, {} available", buffer.length());
+                    return buffer;
+                }
+                else
+                {
+                    // The application has consumed the buffer, so consume also the DataInfo
+                    if (dataInfo.consumed() == 0)
+                        dataInfo.consume(dataInfo.length());
+                    dataInfo = null;
+                    buffer = null;
+                    if (complete && dataInfos.isEmpty())
+                        return null;
+                    // Loop to get content bytes from DataInfos
+                }
+            }
+            else
+            {
                 logger.debug("Waiting at most {} ms for content bytes", maxIdleTime);
                 long begin = System.nanoTime();
-                boolean expired = !connection.getEndPoint().blockReadable(maxIdleTime);
-                if (expired)
+                dataInfo = dataInfos.poll(maxIdleTime, TimeUnit.MILLISECONDS);
+                long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+                logger.debug("Waited {} ms for content bytes", elapsed);
+                if (dataInfo != null)
+                {
+                    // Only consume if it's the last DataInfo
+                    boolean consume = dataInfos.isEmpty() && complete;
+                    ByteBuffer byteBuffer = dataInfo.asByteBuffer(consume);
+                    buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
+                    // Loop to return the buffer
+                }
+                else
                 {
                     stream.getSession().goAway();
                     throw new EOFException("read timeout");
                 }
-                logger.debug("Waited {} ms for content bytes", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin));
             }
-
-            // We need to parse more bytes; this may change the state
-            // therefore we need to re-read the fields
-            connection.fill();
-            filled = true;
         }
     }
 
@@ -313,7 +380,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         State state = this.state;
         if (state != State.HEADERS_COMPLETE && state != State.CONTENT)
             throw new IllegalStateException();
-        return buffer.length();
+        return buffer == null ? 0 : buffer.length();
     }
 
     @Override
@@ -344,8 +411,6 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     /**
      * Needed in order to override parser methods that read content.
-     * TODO: DESIGN: having the parser to block for content is messy, since the
-     * TODO: DESIGN: state machine for that should be in the connection/interpreter
      */
     private class HTTPSPDYParser extends HttpParser
     {
@@ -357,7 +422,14 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         @Override
         public Buffer blockForContent(long maxIdleTime) throws IOException
         {
-            return consumeContent(maxIdleTime);
+            try
+            {
+                return consumeContent(maxIdleTime);
+            }
+            catch (InterruptedException x)
+            {
+                throw new InterruptedIOException();
+            }
         }
 
         @Override

@@ -296,7 +296,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             {
                 Assert.assertTrue(replyInfo.isClose());
                 Headers replyHeaders = replyInfo.getHeaders();
-                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                Assert.assertTrue(replyHeaders.toString(), replyHeaders.get("status").value().contains("200"));
                 replyLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
@@ -514,7 +514,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                contentBytes.addAndGet(dataInfo.available());
+                contentBytes.addAndGet(dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available())));
                 if (dataInfo.isClose())
                 {
                     Assert.assertEquals(data.length, contentBytes.get());
@@ -571,7 +571,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-                contentBytes.addAndGet(dataInfo.available());
+                contentBytes.addAndGet(dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available())));
                 if (dataInfo.isClose())
                 {
                     Assert.assertEquals(2 * data.length, contentBytes.get());
