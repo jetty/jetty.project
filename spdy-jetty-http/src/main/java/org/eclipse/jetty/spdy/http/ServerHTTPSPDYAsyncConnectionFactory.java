@@ -37,7 +37,9 @@ import org.slf4j.LoggerFactory;
 
 public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnectionFactory
 {
+    private static final String CONNECTION_ATTRIBUTE = "org.eclipse.jetty.spdy.http.connection";
     private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnectionFactory.class);
+
     private final Connector connector;
 
     public ServerHTTPSPDYAsyncConnectionFactory(short version, Executor threadPool, ScheduledExecutorService scheduler, Connector connector)
@@ -54,8 +56,6 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
     private class HTTPServerFrameListener extends ServerSessionFrameListener.Adapter implements StreamFrameListener
     {
-        private static final String CONNECTION_ATTRIBUTE = "org.eclipse.jetty.spdy.http.connection";
-
         private final AsyncEndPoint endPoint;
 
         public HTTPServerFrameListener(AsyncEndPoint endPoint)
@@ -74,9 +74,11 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
             logger.debug("Received {} on {}", synInfo, stream);
 
+            HTTPSPDYAsyncEndPoint asyncEndPoint = new HTTPSPDYAsyncEndPoint(stream);
             ServerHTTPSPDYAsyncConnection connection = new ServerHTTPSPDYAsyncConnection(connector,
-                    new EmptyAsyncEndPoint(), connector.getServer(),
+                    asyncEndPoint, connector.getServer(),
                     (SPDYAsyncConnection)endPoint.getConnection(), stream);
+            asyncEndPoint.setConnection(connection);
             stream.setAttribute(CONNECTION_ATTRIBUTE, connection);
 
             Headers headers = synInfo.getHeaders();
@@ -125,6 +127,23 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             connection.content(dataInfo, dataInfo.isClose());
             if (dataInfo.isClose())
                 connection.endRequest();
+        }
+    }
+
+    private class HTTPSPDYAsyncEndPoint extends EmptyAsyncEndPoint
+    {
+        private final Stream stream;
+
+        public HTTPSPDYAsyncEndPoint(Stream stream)
+        {
+            this.stream = stream;
+        }
+
+        @Override
+        public void asyncDispatch()
+        {
+            ServerHTTPSPDYAsyncConnection connection = (ServerHTTPSPDYAsyncConnection)stream.getAttribute(CONNECTION_ATTRIBUTE);
+            connection.async();
         }
     }
 }

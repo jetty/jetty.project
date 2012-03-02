@@ -214,6 +214,11 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     messageComplete(0);
                     break;
                 }
+                case ASYNC:
+                {
+                    handleRequest();
+                    break;
+                }
                 default:
                 {
                     throw new IllegalStateException();
@@ -322,6 +327,21 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         });
     }
 
+    public void async()
+    {
+        post(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                State currentState = state;
+                state = State.ASYNC;
+                handle();
+                state = currentState;
+            }
+        });
+    }
+
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
     {
         while (true)
@@ -360,7 +380,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 if (dataInfo != null)
                 {
                     // Only consume if it's the last DataInfo
-                    boolean consume = dataInfos.isEmpty() && complete;
+                    boolean consume = complete && dataInfos.isEmpty();
                     ByteBuffer byteBuffer = dataInfo.asByteBuffer(consume);
                     buffer = byteBuffer.isDirect() ? new DirectNIOBuffer(byteBuffer, false) : new IndirectNIOBuffer(byteBuffer, false);
                     // Loop to return the buffer
@@ -406,7 +426,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     private enum State
     {
-        INITIAL, REQUEST, HEADERS, HEADERS_COMPLETE, CONTENT, FINAL
+        INITIAL, REQUEST, HEADERS, HEADERS_COMPLETE, CONTENT, FINAL, ASYNC
     }
 
     /**

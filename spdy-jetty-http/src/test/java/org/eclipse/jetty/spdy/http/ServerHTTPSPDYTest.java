@@ -18,6 +18,8 @@ package org.eclipse.jetty.spdy.http;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -30,8 +32,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.server.AsyncContext;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -956,5 +960,199 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         Assert.assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPOSTThenSuspendRequestThenReadOneChunkThenComplete() throws Exception
+    {
+        final byte[] data = new byte[2000];
+        final CountDownLatch latch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                final AsyncContext async = request.startAsync();
+                new Thread()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            InputStream input = request.getInputStream();
+                            byte[] buffer = new byte[512];
+                            int read = 0;
+                            while (read < data.length)
+                                read += input.read(buffer);
+                            async.complete();
+                            latch.countDown();
+                        }
+                        catch (IOException x)
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                }.start();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "POST");
+        headers.put("url", "/foo");
+        headers.put("version", "HTTP/1.1");
+        headers.put("host", "localhost:" + connector.getLocalPort());
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                replyLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+        stream.data(new BytesDataInfo(data, true));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPOSTThenSuspendRequestThenReadTwoChunksThenComplete() throws Exception
+    {
+        final byte[] data = new byte[2000];
+        final CountDownLatch latch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                final AsyncContext async = request.startAsync();
+                new Thread()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            InputStream input = request.getInputStream();
+                            byte[] buffer = new byte[512];
+                            int read = 0;
+                            while (read < 2 * data.length)
+                                read += input.read(buffer);
+                            async.complete();
+                            latch.countDown();
+                        }
+                        catch (IOException x)
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                }.start();
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "POST");
+        headers.put("url", "/foo");
+        headers.put("version", "HTTP/1.1");
+        headers.put("host", "localhost:" + connector.getLocalPort());
+        final CountDownLatch replyLatch = new CountDownLatch(1);
+        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                replyLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+        stream.data(new BytesDataInfo(data, false));
+        stream.data(new BytesDataInfo(data, true));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPOSTThenSuspendRequestThenResumeThenRespond() throws Exception
+    {
+        final byte[] data = new byte[1000];
+        final CountDownLatch latch = new CountDownLatch(1);
+        Session session = startClient(startHTTPServer(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, final Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse)
+                    throws IOException, ServletException
+            {
+                request.setHandled(true);
+                if (request.getAsyncContinuation().isInitial())
+                {
+                    InputStream input = request.getInputStream();
+                    byte[] buffer = new byte[256];
+                    int read = 0;
+                    while (read < data.length)
+                        read += input.read(buffer);
+                    final AsyncContext async = request.startAsync();
+                    new Thread()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            try
+                            {
+                                TimeUnit.SECONDS.sleep(1);
+                                async.dispatch();
+                                latch.countDown();
+                            }
+                            catch (InterruptedException x)
+                            {
+                                x.printStackTrace();
+                            }
+                        }
+                    }.start();
+                }
+                else
+                {
+                    OutputStream output = httpResponse.getOutputStream();
+                    output.write(data);
+                }
+            }
+        }), null);
+
+        Headers headers = new Headers();
+        headers.put("method", "POST");
+        headers.put("url", "/foo");
+        headers.put("version", "HTTP/1.1");
+        headers.put("host", "localhost:" + connector.getLocalPort());
+        final CountDownLatch responseLatch = new CountDownLatch(2);
+        Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                Headers replyHeaders = replyInfo.getHeaders();
+                Assert.assertTrue(replyHeaders.get("status").value().contains("200"));
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                if (dataInfo.isClose())
+                    responseLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+        stream.data(new BytesDataInfo(data, true));
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }
