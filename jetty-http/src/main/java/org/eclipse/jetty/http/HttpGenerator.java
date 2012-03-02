@@ -186,10 +186,23 @@ public class HttpGenerator extends AbstractGenerator
             flushBuffer();
             if (_content != null && _content.length()>0)
             {
-                Buffer nc=_buffers.getBuffer(_content.length()+content.length());
-                nc.put(_content);
-                nc.put(content);
-                content=nc;
+                if (_bufferChunked)
+                {
+                    Buffer nc=_buffers.getBuffer(_content.length()+CHUNK_SPACE+content.length());
+                    nc.put(_content);
+                    nc.put(HttpTokens.CRLF);
+                    BufferUtil.putHexInt(nc, content.length());
+                    nc.put(HttpTokens.CRLF);
+                    nc.put(content);
+                    content=nc;
+                }
+                else
+                {
+                    Buffer nc=_buffers.getBuffer(_content.length()+content.length());
+                    nc.put(_content);
+                    nc.put(content);
+                    content=nc;
+                }
             }
         }
 
