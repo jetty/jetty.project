@@ -287,22 +287,8 @@ public class Dispatcher implements RequestDispatcher
                 
                 _contextHandler.handle(_path,baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
                 
-                if (baseRequest.getResponse().isWriting())
-                {
-                    try {response.getWriter().close();}
-                    catch(IllegalStateException e) 
-                    { 
-                        response.getOutputStream().close(); 
-                    }
-                }
-                else
-                {
-                    try {response.getOutputStream().close();}
-                    catch(IllegalStateException e) 
-                    { 
-                        response.getWriter().close(); 
-                    }
-                }
+                if (!baseRequest.getAsyncContinuation().isAsyncStarted())
+                    commitResponse(response,baseRequest);
             }
         }
         finally
@@ -316,6 +302,34 @@ public class Dispatcher implements RequestDispatcher
             baseRequest.setParameters(old_params);
             baseRequest.setQueryString(old_query);
             baseRequest.setDispatcherType(old_type);
+        }
+    }
+
+
+    /* ------------------------------------------------------------ */
+    private void commitResponse(ServletResponse response, Request baseRequest) throws IOException
+    {
+        if (baseRequest.getResponse().isWriting())
+        {
+            try
+            {
+                response.getWriter().close();
+            }
+            catch (IllegalStateException e)
+            {
+                response.getOutputStream().close();
+            }
+        }
+        else
+        {
+            try
+            {
+                response.getOutputStream().close();
+            }
+            catch (IllegalStateException e)
+            {
+                response.getWriter().close();
+            }
         }
     }
 
