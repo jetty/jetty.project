@@ -28,6 +28,9 @@ public class ContextProvider extends ScanningAppProvider
                 if (!dir.exists())
                     return false;
                 String lowername = name.toLowerCase();
+                if (lowername.startsWith("."))
+                    return false;
+                
                 return  (lowername.endsWith(".xml") && !new File(dir,name).isDirectory());
             }
         });
