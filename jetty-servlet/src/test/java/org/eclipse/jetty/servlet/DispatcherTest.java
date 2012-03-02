@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -58,6 +58,7 @@ public class DispatcherTest
     private LocalConnector _connector;
     private ContextHandlerCollection _contextCollection;
     private ServletContextHandler _contextHandler;
+    private ServletContextHandler _contextHandlerWithSpaces;
     private ResourceHandler _resourceHandler;
     
     @Before
@@ -71,6 +72,9 @@ public class DispatcherTest
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
         _contextCollection.addHandler(_contextHandler);
+        _contextHandlerWithSpaces = new ServletContextHandler();
+        _contextHandlerWithSpaces.setContextPath("/context space");
+        _contextCollection.addHandler(_contextHandlerWithSpaces);
         _resourceHandler = new ResourceHandler();
         _resourceHandler.setResourceBase(MavenTestingUtils.getTestResourceDir("dispatchResourceTest").getAbsolutePath());
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
@@ -103,6 +107,23 @@ public class DispatcherTest
 
         String responses = _connector.getResponses("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.1\n" + "Host: localhost\n\n");
 
+        assertEquals(expected, responses);
+    }
+    
+    @Test
+    public void testForwardRequestParameterDecoding() throws Exception
+    {
+        _contextHandlerWithSpaces.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandlerWithSpaces.addServlet(AssertSpacesServlet.class, "/path with spaces/AssertSpacesServlet/*");
+        
+        String expected=
+                "HTTP/1.1 200 OK\r\n"+
+                        "Content-Type: text/html\r\n"+
+                        "Content-Length: 0\r\n"+
+                        "\r\n";
+        
+        String responses = _connector.getResponses("GET /context%20space/ForwardServlet?do=assertspace&parameter=value%20space HTTP/1.1\n" + "Host: localhost\n\n");
+        
         assertEquals(expected, responses);
     }
 
@@ -269,17 +290,30 @@ public class DispatcherTest
     
     public static class ForwardServlet extends HttpServlet implements Servlet
     {
+        private static final long serialVersionUID = 1L;
+
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
 
-            if(request.getParameter("do").equals("include"))
+            if (request.getParameter("do").equals("include"))
+            {
                 dispatcher = getServletContext().getRequestDispatcher("/IncludeServlet/includepath?do=assertforwardinclude");
-            else if(request.getParameter("do").equals("assertincludeforward"))
+            }
+            else if (request.getParameter("do").equals("assertincludeforward"))
+            {
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeForwardServlet/assertpath?do=end");
-            else if(request.getParameter("do").equals("assertforward"))
+            }
+            else if (request.getParameter("do").equals("assertforward"))
+            {
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardServlet?do=end&do=the");
-            dispatcher.forward(request, response);
+            }
+            else if (request.getParameter("do").equals("assertspace"))
+            {
+                dispatcher = getServletContext().getRequestDispatcher("/path%20with%20spaces/AssertSpacesServlet/anotherpath%20withaspace");
+            }
+            dispatcher.forward(request,response);
         }
     }
     
@@ -462,8 +496,26 @@ public class DispatcherTest
         }
     }
     
+    public static class AssertSpacesServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            assertThat("requestUri must not be decoded",request.getRequestURI(),equalTo("/context%20space/path%20with%20spaces/AssertSpacesServlet/anotherpath%20withaspace"));
+            assertThat("contextPath must not be decoded",request.getContextPath(), equalTo("/context%20space"));
+            assertThat("queryString must not be decoded",request.getQueryString(), equalTo("do=assertspace&parameter=value%20space"));
+            assertThat("pathInfo should be decoded",request.getPathInfo(), equalTo("/anotherpath withaspace"));
+            assertThat("servletPath should be decoded",request.getServletPath(), equalTo("/path with spaces/AssertSpacesServlet"));
+            response.setContentType("text/html");
+            response.setStatus(HttpServletResponse.SC_OK);
+        }
+    }
+    
     public static class AssertForwardServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             assertEquals( "/context/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
@@ -491,6 +543,7 @@ public class DispatcherTest
 
     public static class AssertIncludeServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             assertEquals( "/context/AssertIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
@@ -518,6 +571,7 @@ public class DispatcherTest
 
     public static class AssertForwardIncludeServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             // include doesn't hide forward
@@ -554,6 +608,7 @@ public class DispatcherTest
 
     public static class AssertIncludeForwardServlet extends HttpServlet implements Servlet
     {
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             // forward hides include
