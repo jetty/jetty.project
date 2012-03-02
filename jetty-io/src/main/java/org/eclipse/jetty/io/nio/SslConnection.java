@@ -291,7 +291,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 boolean progress=process(null,toFlush);
 
                 // if we received any data,
-                if (!BufferUtil.isEmpty(_unwrapBuf))
+                if (BufferUtil.hasContent(_unwrapBuf))
                 {
                     // transfer from temp buffer to fill buffer
                     BufferUtil.put(_unwrapBuf,toFill);
@@ -302,7 +302,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     return progress;
             }
             // Else if there is some temporary data
-            else if (!BufferUtil.isEmpty(_unwrapBuf))
+            else if (BufferUtil.hasContent(_unwrapBuf))
             {
                 // transfer from temp buffer to fill buffer
                 BufferUtil.put(_unwrapBuf,toFill);
@@ -332,7 +332,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                         _inbound.compact().flip();
 
                     // flush any output data
-                    if (!BufferUtil.isEmpty(_outbound) && (flushed=_endp.flush(_outbound))>0)
+                    if (BufferUtil.hasContent(_outbound) && (flushed=_endp.flush(_outbound))>0)
                     {
                         progress = true;
                         _outbound.compact().flip();
@@ -358,11 +358,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     case NOT_HANDSHAKING:
                     {
                         // Try unwrapping some application data
-                        if (!BufferUtil.isAtCapacity(toFill) && !BufferUtil.isEmpty(_inbound) && unwrap(toFill))
+                        if (!BufferUtil.isAtCapacity(toFill) && BufferUtil.hasContent(_inbound) && unwrap(toFill))
                             progress=true;
 
                         // Try wrapping some application data
-                        if (!BufferUtil.isEmpty(toFlush) && !BufferUtil.isAtCapacity(_outbound) && wrap(toFlush))
+                        if (BufferUtil.hasContent(toFlush) && !BufferUtil.isAtCapacity(_outbound) && wrap(toFlush))
                             progress=true;
                     }
                     break;
@@ -418,7 +418,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             }
 
             // If we are reading into the temp buffer and it has some content, then we should be dispatched.
-            if (toFill==_unwrapBuf && !BufferUtil.isEmpty(_unwrapBuf))
+            if (toFill==_unwrapBuf && BufferUtil.hasContent(_unwrapBuf))
                 _aEndp.asyncDispatch();
         }
         finally
@@ -592,8 +592,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             synchronized (SslConnection.this)
             {
                 return _endp.isInputShutdown() &&
-                !(_unwrapBuf!=null&&!BufferUtil.isEmpty(_unwrapBuf)) &&
-                !(_inbound!=null&&!BufferUtil.isEmpty(_inbound));
+                !(_unwrapBuf!=null&&BufferUtil.hasContent(_unwrapBuf)) &&
+                !(_inbound!=null&&BufferUtil.hasContent(_inbound));
             }
         }
 
@@ -624,9 +624,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
         {
-            if (!BufferUtil.isEmpty(header))
+            if (BufferUtil.hasContent(header))
                 return flush(header);
-            if (!BufferUtil.isEmpty(buffer))
+            if (BufferUtil.hasContent(buffer))
                 return flush(buffer);
             return 0;
         }

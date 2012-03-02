@@ -43,40 +43,82 @@ public class HttpGeneratorTest
     {
         ByteBuffer header=BufferUtil.allocate(8096);
         HttpFields fields = new HttpFields();
-        HttpGenerator hg = new HttpGenerator();
+        HttpGenerator gen = new HttpGenerator();
 
         fields.add("Host","something");
         fields.add("User-Agent","test");
 
-        hg.setRequest(HttpMethod.GET,"/index.html",HttpVersion.HTTP_1_1);
-        hg.completeHeader(header,fields,true);
-        hg.complete();
-
+        gen.setRequest(HttpMethod.GET,"/index.html",HttpVersion.HTTP_1_1);
+        
+        HttpGenerator.Result 
+        result=gen.complete(null,null);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        
+        result=gen.commit(fields,header,null,null,true);
         String out = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        assertEquals(HttpGenerator.Result.NEED_COMPLETE,result);
+        result=gen.complete(null,null);
+        assertEquals(HttpGenerator.Result.OK,result);
+        
         assertTrue(out.indexOf("GET /index.html HTTP/1.1")==0);
         assertTrue(out.indexOf("Content-Length")==-1);
-    }
+        
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        assertEquals(0,gen.getContentWritten());    }
     
     @Test
-    public void testRequestWithContent() throws Exception
+    public void testRequestWithSmallContent() throws Exception
     {
         ByteBuffer header=BufferUtil.allocate(8096);
+        ByteBuffer buffer=BufferUtil.allocate(8096);
+        ByteBuffer content=BufferUtil.toBuffer("Hello World");
         HttpFields fields = new HttpFields();
-        HttpGenerator hg = new HttpGenerator();
+        HttpGenerator gen = new HttpGenerator();
 
-        hg.setRequest("GET","/index.html");
+        gen.setVersion(HttpVersion.HTTP_1_1);
+        gen.setRequest("POST","/index.html");
         fields.add("Host","something");
         fields.add("User-Agent","test");
 
-        hg.setVersion(HttpVersion.HTTP_1_1);
-        hg.completeHeader(header,fields,true);
-        hg.complete();
+        HttpGenerator.Result 
+        
+        result=gen.prepareContent(null,null,content);
+        assertEquals(HttpGenerator.Result.NEED_BUFFER,result);
+        
+        result=gen.prepareContent(null,buffer,content);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals("Hello World",BufferUtil.toString(buffer));
+        assertTrue(BufferUtil.isEmpty(content));
 
+        result=gen.complete(null,buffer);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        result=gen.commit(fields,header,buffer,content,true);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
         String out = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        BufferUtil.clear(buffer);
+        
+        result=gen.complete(null,buffer);
+        assertEquals(HttpGenerator.Result.OK,result);
+        
+        
+        result=gen.commit(fields,header,null,null,true);
+        assertEquals(HttpGenerator.Result.NEED_COMPLETE,result);
+        result=gen.complete(null,null);
+        assertEquals(HttpGenerator.Result.OK,result);
+        
+
         assertTrue(out.indexOf("GET /index.html HTTP/1.1")==0);
         assertTrue(out.indexOf("Content-Length")==-1);
+        
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        assertEquals(0,gen.getContentWritten());    
     }
 
+    
+    
+    
     @Test
     public void testHTTP() throws Exception
     {

@@ -138,15 +138,15 @@ public class SelectChannelEndPointTest
                         progress=true;
                 }
 
-                if (!BufferUtil.isEmpty(_in) && BufferUtil.put(_in,_out)>0)
+                if (BufferUtil.hasContent(_in) && BufferUtil.put(_in,_out)>0)
                     progress=true;
 
-                if (!BufferUtil.isEmpty(_out) && _endp.flush(_out)>0)
+                if (BufferUtil.hasContent(_out) && _endp.flush(_out)>0)
                     progress=true;
 
                 _out.compact().flip();
 
-                if (!!BufferUtil.isEmpty(_out) && _endp.isInputShutdown())
+                if (BufferUtil.isEmpty(_out) && _endp.isInputShutdown())
                     _endp.shutdownOutput();
             }
             return this;

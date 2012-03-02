@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -49,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * 
  */
-public class HttpFields
+public class HttpFields implements Iterable<HttpFields.Field>
 {
     private static final Logger LOG = Log.getLogger(HttpFields.class);
     
@@ -362,7 +363,13 @@ public class HttpFields
     {
         return _fields.get(i);
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public Iterator<Field> iterator()
+    {
+        return _fields.iterator();
+    }
+    
     /* ------------------------------------------------------------ */
     public Field getField(HttpHeader header)
     {

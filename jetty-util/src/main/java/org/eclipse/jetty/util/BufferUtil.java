@@ -68,7 +68,24 @@ public class BufferUtil
         buf.limit(0);
         return buf;
     }
+    
 
+    /* ------------------------------------------------------------ */
+    public static void flipToFill(ByteBuffer buffer)
+    {
+        buffer.position(buffer.limit());
+        buffer.limit(buffer.capacity());
+    }
+
+
+    /* ------------------------------------------------------------ */
+    public static void flipToFlush(ByteBuffer buffer,int position)
+    {
+        buffer.limit(buffer.position());
+        buffer.position(position);
+    }
+    
+    
     /* ------------------------------------------------------------ */
     public static byte[] toArray(ByteBuffer buffer)
     {
@@ -90,16 +107,92 @@ public class BufferUtil
     }
     
     /* ------------------------------------------------------------ */
+    public static boolean hasContent(ByteBuffer buf)
+    {
+        return buf!=null && buf.remaining()>0;
+    }
+    
+    /* ------------------------------------------------------------ */
     public static boolean isAtCapacity(ByteBuffer buf)
     {
         return buf!=null && buf.limit()==buf.capacity();
+    }
+
+    /* ------------------------------------------------------------ */
+    public static long remaining(ByteBuffer buffer)
+    {
+        return buffer==null?0:buffer.remaining();
     }
     
     /* ------------------------------------------------------------ */
     /**
      * Put data from one buffer into another, avoiding over/under flows
-     * @param from
-     * @param to
+     * @param from Buffer to take bytes from
+     * @param to Buffer to put bytes to
+     * @return number of bytes moved
+     */
+    public static int put(ByteBuffer from, ByteBuffer to, long maxBytes)
+    {
+        return put(from,to,maxBytes>=Integer.MAX_VALUE?Integer.MAX_VALUE:(int)maxBytes);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Put data from one buffer into another, avoiding over/under flows
+     * @param from Buffer to take bytes from
+     * @param to Buffer to put bytes to
+     * @return number of bytes moved
+     */
+    public static int put(ByteBuffer from, ByteBuffer to, int maxBytes)
+    {
+        int put;
+        int pos=to.position();
+        try
+        {
+            flipToFill(to);
+
+            maxBytes=Math.min(maxBytes,to.remaining());
+            int remaining=from.remaining();
+            if (remaining>0)
+            {
+                if (remaining<=maxBytes)  
+                {
+                    to.put(from);
+                    put=remaining;
+                }
+                else if (from.hasArray())
+                {
+                    put=maxBytes;
+                    to.put(from.array(),from.arrayOffset()+from.position(),put);
+                    from.position(from.position()+put);
+                }
+                else
+                {
+                    put=maxBytes;
+                    ByteBuffer slice=from.slice();
+                    slice.limit(put);
+                    to.put(slice);
+                    from.position(from.position()+put);
+                }
+            }
+            else
+                put=0;
+
+        }
+        finally
+        {
+            flipToFlush(to,pos);
+        }
+        return put;
+
+    }
+    /* ------------------------------------------------------------ */
+    /**
+     * Put data from one buffer into another, avoiding over/under flows
+     * @param from Buffer to take bytes from
+     * @param to Buffer to put bytes to
+     * @return number of bytes moved
      */
     public static int put(ByteBuffer from, ByteBuffer to)
     {
@@ -107,8 +200,7 @@ public class BufferUtil
         int pos=to.position();
         try
         {
-            to.position(to.limit());
-            to.limit(to.capacity());
+            flipToFill(to);
             
             int remaining=from.remaining();
             if (remaining>0)
@@ -139,8 +231,7 @@ public class BufferUtil
         }
         finally
         {
-            to.limit(to.position());
-            to.position(pos);
+            flipToFlush(to,pos);
         }
         return put;
 
@@ -556,6 +647,8 @@ public class BufferUtil
                 return false;
         return true;
     }
+
+
 
 
 }
