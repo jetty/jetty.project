@@ -17,10 +17,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Buffer;
+import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.PooledBuffers;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.io.View;
 import org.junit.Test;
@@ -110,6 +113,62 @@ public class HttpGeneratorClientTest
 
         String result=endp.getOut().toString().replace("\r\n","|").replace('\r','|').replace('\n','|');
         assertEquals("GET /usr HTTP/1.1|Header: Value|Content-Type: text/plain|Transfer-Encoding: chunked||2C|"+content+"|0||",result);
+    }
+
+    /**
+     * When the endpoint experiences back pressure, check that chunked transfer does not
+     * screw up the chunking by leaving out the second chunk header.
+     */
+    @Test
+    public void testChunkedWithBackPressure() throws Exception 
+    {
+        final AtomicInteger availableChannelBytes = new AtomicInteger(500);
+        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096)
+        {
+            @Override
+            public int flush(Buffer buffer) throws IOException
+            {
+                // Simulate a socket that can only take 500 bytes at a time
+                View view = new View(buffer, buffer.markIndex(), buffer.getIndex(),
+                        Math.min(buffer.putIndex(), buffer.getIndex()+availableChannelBytes.get()), buffer.isReadOnly()?Buffer.READONLY:Buffer.READWRITE);
+                int read = super.flush(view);
+                buffer.skip(read);
+                availableChannelBytes.getAndAdd(-1*read);
+                return read;
+            }
+        };
+        PooledBuffers pool = new PooledBuffers(Type.BYTE_ARRAY,1416,Type.BYTE_ARRAY,8096,Type.BYTE_ARRAY,10240);
+        HttpGenerator generator = new HttpGenerator(pool,endp);
+
+        generator.setRequest("GET","/usr");
+
+        HttpFields fields = new HttpFields();
+        fields.add("Header","Value");
+        fields.add("Content-Type","text/plain");
+
+        String content = "The quick brown fox jumped, ";
+        // addContent only goes into "bypass" mode if the content is longer than 1024 characters.
+        while (content.length() < 1024)
+        {
+            content = content + content;
+        }
+        String content2 = "over the lazy dog";
+
+        generator.completeHeader(fields,false);
+
+        generator.addContent(new ByteArrayBuffer(content).asMutableBuffer(),false);
+        generator.addContent(new ByteArrayBuffer(content2).asMutableBuffer(),false);
+
+        // Now we'll allow more bytes to flow
+        availableChannelBytes.set(5000);
+        generator.flushBuffer();
+        generator.complete();
+        generator.flushBuffer();
+
+        String result=endp.getOut().toString();
+        System.err.println("result:"+result);
+        result=result.replace("\r\n","|").replace('\r','|').replace('\n','|');
+        assertEquals("GET /usr HTTP/1.1|Header: Value|Content-Type: text/plain|Transfer-Encoding: chunked||700|"+content+"|11|"+content2+"|0||",result);
     }
 
     @Test

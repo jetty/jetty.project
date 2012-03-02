@@ -62,7 +62,7 @@ public class Server extends HandlerWrapper implements Attributes
              Server.class.getPackage().getImplementationVersion()!=null)
             __version=Server.class.getPackage().getImplementationVersion();
         else
-            __version=System.getProperty("jetty.version","8.0.y.z-SNAPSHOT");
+            __version=System.getProperty("jetty.version","8.y.z-SNAPSHOT");
     }
 
     private final Container _container=new Container();
@@ -368,11 +368,6 @@ public class Server extends HandlerWrapper implements Attributes
         if (path!=null)
         {
             // this is a dispatch with a path
-            baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI,baseRequest.getRequestURI());
-            baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING,baseRequest.getQueryString());
-
-            baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH,state.getSuspendedContext().getContextPath());
-
             final String contextPath=state.getServletContext().getContextPath();
             HttpURI uri = new HttpURI(URIUtil.addPaths(contextPath,path));
             baseRequest.setUri(uri);

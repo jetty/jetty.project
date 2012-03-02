@@ -18,6 +18,8 @@ import java.io.InputStream;
 
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /* ------------------------------------------------------------ */
@@ -41,6 +43,8 @@ public interface HttpContent
     /* ------------------------------------------------------------ */
     public class ResourceAsHttpContent implements HttpContent
     {
+        private static final Logger LOG = Log.getLogger(ResourceAsHttpContent.class);
+        
         final Resource _resource;
         final Buffer _mimeType;
         final int _maxBuffer;
@@ -80,17 +84,33 @@ public interface HttpContent
         /* ------------------------------------------------------------ */
         public Buffer getIndirectBuffer()
         {
+            InputStream inputStream = null;
             try
             {
-                if (_resource.length()<=0 || _maxBuffer<_resource.length())
+                if (_resource.length() <= 0 || _maxBuffer < _resource.length())
                     return null;
                 ByteArrayBuffer buffer = new ByteArrayBuffer((int)_resource.length());
-                buffer.readFrom(_resource.getInputStream(),(int)_resource.length());
+                inputStream = _resource.getInputStream();
+                buffer.readFrom(inputStream,(int)_resource.length());
                 return buffer;
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 throw new RuntimeException(e);
+            }
+            finally
+            {
+                if (inputStream != null)
+                {
+                    try
+                    {
+                        inputStream.close();
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn("Couldn't close inputStream. Possible file handle leak",e);
+                    }
+                }
             }
         }
 

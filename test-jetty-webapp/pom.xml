@@ -94,11 +94,10 @@
            </execution>
         </executions>
       </plugin>
-<!--      
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
-        <version>7.5.2-SNAPSHOT</version>
+        <version>${project.version}</version>
         <configuration>
           <stopPort>8087</stopPort>
           <stopKey>foo</stopKey>
@@ -109,6 +108,7 @@
               <value>222</value>
             </systemProperty>
           </systemProperties>
+          <useTestScope>true</useTestScope>
           <webAppConfig>
             <contextPath>/test</contextPath>
             <tempDirectory>${project.build.directory}/work</tempDirectory>
@@ -126,7 +126,6 @@
           </loginServices>
         </configuration>
       </plugin>
--->
       <!-- uncomment to precompile jsps -->
       <!--
       <plugin>

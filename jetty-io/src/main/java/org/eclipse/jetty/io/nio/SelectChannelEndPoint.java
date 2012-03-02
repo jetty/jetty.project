@@ -687,6 +687,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         try
         {
+            if (_key!=null)
+                _key.cancel();
+        }
+        catch (Throwable e)
+        {
+            LOG.ignore(e);
+        }
+        
+        try
+        {
             super.close();
         }
         catch (IOException e)

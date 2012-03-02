@@ -641,7 +641,7 @@ public class Main
         }
 
         File xml = new File(xmlFilename);
-        if (xml.exists() && xml.isFile() && xml.isAbsolute())
+        if (xml.exists() && xml.isFile())
         {
             return xml.getAbsolutePath();
         }
