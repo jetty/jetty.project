@@ -570,7 +570,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public void addEventListener(EventListener listener)
     {
-        setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(),listener,EventListener.class));
+        setEventListeners(LazyList.addToArray(getEventListeners(),listener,EventListener.class));
     }
 
     /* ------------------------------------------------------------ */

@@ -61,7 +61,7 @@ public class URIUtil
         
     /* ------------------------------------------------------------ */
     /** Encode a URI path.
-     * @param path The path the encode
+     * @param path The path to encode
      * @param buf StringBuilder to encode path into (or null)
      * @return The StringBuilder or null if no substitutions required.
      */

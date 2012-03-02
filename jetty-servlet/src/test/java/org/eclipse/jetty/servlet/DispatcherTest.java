@@ -13,7 +13,10 @@
 
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -42,7 +45,9 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -58,6 +63,7 @@ public class DispatcherTest
     private LocalConnector _connector;
     private ContextHandlerCollection _contextCollection;
     private ServletContextHandler _contextHandler;
+    private ServletContextHandler _contextHandlerWithSpaces;
     private ResourceHandler _resourceHandler;
     
     @Before
@@ -71,6 +77,9 @@ public class DispatcherTest
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
         _contextCollection.addHandler(_contextHandler);
+        _contextHandlerWithSpaces = new ServletContextHandler();
+        _contextHandlerWithSpaces.setContextPath("/context space");
+        _contextCollection.addHandler(_contextHandlerWithSpaces);
         _resourceHandler = new ResourceHandler();
         _resourceHandler.setResourceBase(MavenTestingUtils.getTestResourceDir("dispatchResourceTest").getAbsolutePath());
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
@@ -97,12 +106,50 @@ public class DispatcherTest
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
-            "Content-Type: text/html\r\n"+
-            "Content-Length: 0\r\n"+
-            "\r\n";
+            "Content-Type: text/html;charset=ISO-8859-1\r\n"+
+            "Content-Length: 20\r\n"+
+            "\r\n"+
+            "AssertForwardServlet";
 
         String responses = _connector.getResponses("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.1\n" + "Host: localhost\n\n");
 
+        assertEquals(expected, responses);
+    }
+    
+    @Test
+    public void testForwardRequestParameterDecoding() throws Exception
+    {
+        _contextHandlerWithSpaces.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandlerWithSpaces.addServlet(AssertSpacesServlet.class, "/path with spaces/AssertSpacesServlet/*");
+        
+        String expected=
+                "HTTP/1.1 200 OK\r\n"+
+                        "Content-Type: text/html;charset=ISO-8859-1\r\n"+
+                        "Content-Length: 19\r\n"+
+                        "\r\n"
+                        +"AssertSpacesServlet";
+        
+        
+        String responses = _connector.getResponses("GET /context%20space/ForwardServlet?do=assertspace&parameter=value%20space HTTP/1.1\n" + "Host: localhost\n\n");
+        
+        assertEquals(expected, responses);
+    }
+    
+    @Test
+    public void testForwardTwiceRequestParameterDecoding() throws Exception
+    {
+        _contextHandlerWithSpaces.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandlerWithSpaces.addServlet(AssertSpacesServlet.class, "/path with spaces/AssertSpacesServlet/*");
+      
+        String expected=
+                "HTTP/1.1 200 OK\r\n"+
+                        "Content-Type: text/html;charset=ISO-8859-1\r\n"+
+                        "Content-Length: 19\r\n"+
+                        "\r\n"
+                        +"AssertSpacesServlet";
+        
+        String responses = _connector.getResponses("GET /context%20space/ForwardServlet?do=forward&parameter=value%20space HTTP/1.1\n" + "Host: localhost\n\n");
+        
         assertEquals(expected, responses);
     }
 
@@ -114,8 +161,9 @@ public class DispatcherTest
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
-            "Content-Length: 0\r\n"+
-            "\r\n";
+            "Content-Length: 20\r\n"+
+            "\r\n"+
+            "AssertIncludeServlet";
 
         String responses = _connector.getResponses("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.1\n" + "Host: localhost\n\n");
 
@@ -131,8 +179,9 @@ public class DispatcherTest
 
         String expected=
             "HTTP/1.1 200 OK\r\n"+
-            "Content-Length: 0\r\n"+
-            "\r\n";
+            "Content-Length: 27\r\n"+
+            "\r\n"+
+            "AssertForwardIncludeServlet";
 
         String responses = _connector.getResponses("GET /context/ForwardServlet/forwardpath?do=include HTTP/1.1\n" + "Host: localhost\n\n");
 
@@ -151,7 +200,11 @@ public class DispatcherTest
             "HTTP/1.1 200 OK\r\n"+
             "Transfer-Encoding: chunked\r\n"+
             "\r\n"+
-            "0\r\n"+
+            "1B\r\n"+
+            "AssertIncludeForwardServlet"+
+            "\r\n"+
+            "0"+
+            "\r\n"+
             "\r\n";
 
         String responses = _connector.getResponses("GET /context/IncludeServlet/includepath?do=forward HTTP/1.1\n" + "Host: localhost\n\n");
@@ -269,17 +322,34 @@ public class DispatcherTest
     
     public static class ForwardServlet extends HttpServlet implements Servlet
     {
+        private static final long serialVersionUID = 1L;
+
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
 
-            if(request.getParameter("do").equals("include"))
+            if (request.getParameter("do").equals("include"))
+            {
                 dispatcher = getServletContext().getRequestDispatcher("/IncludeServlet/includepath?do=assertforwardinclude");
-            else if(request.getParameter("do").equals("assertincludeforward"))
+            }
+            else if (request.getParameter("do").equals("assertincludeforward"))
+            {
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeForwardServlet/assertpath?do=end");
-            else if(request.getParameter("do").equals("assertforward"))
+            }
+            else if (request.getParameter("do").equals("assertforward"))
+            {
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardServlet?do=end&do=the");
-            dispatcher.forward(request, response);
+            }
+            else if (request.getParameter("do").equals("assertspace") || ((Request)request).getDispatcherType().equals(DispatcherType.FORWARD))
+            {
+                dispatcher = getServletContext().getRequestDispatcher("/path with spaces/AssertSpacesServlet/anotherpath withaspace");
+            }
+            else if (request.getParameter("do").equals("forward"))
+            {
+                dispatcher = getServletContext().getRequestDispatcher("/ForwardServlet");
+            }
+            dispatcher.forward(request,response);
         }
     }
     
@@ -462,8 +532,29 @@ public class DispatcherTest
         }
     }
     
+    public static class AssertSpacesServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            assertThat("requestUri must not be decoded",request.getRequestURI(),equalTo("/context%20space/path%20with%20spaces/AssertSpacesServlet/anotherpath%20withaspace"));
+            assertThat("contextPath must not be decoded",request.getContextPath(), equalTo("/context space"));
+            assertThat("queryString must not be decoded",request.getQueryString(), anyOf(equalTo("do=assertspace&parameter=value%20space"),equalTo("do=forward&parameter=value%20space")));
+            assertThat("pathInfo should be decoded",request.getPathInfo(), equalTo("/anotherpath withaspace"));
+            assertThat("servletPath should be decoded",request.getServletPath(), equalTo("/path with spaces/AssertSpacesServlet"));
+            response.setContentType("text/html");
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("AssertSpacesServlet");
+        }
+    }
+    
     public static class AssertForwardServlet extends HttpServlet implements Servlet
     {
+        private static final long serialVersionUID = 1L;
+
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             assertEquals( "/context/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
@@ -486,11 +577,15 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("AssertForwardServlet");
         }
     }
 
     public static class AssertIncludeServlet extends HttpServlet implements Servlet
     {
+        private static final long serialVersionUID = 1L;
+
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             assertEquals( "/context/AssertIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
@@ -499,9 +594,10 @@ public class DispatcherTest
             assertEquals( null, request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
             assertEquals( "do=end&do=the", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
 
-            List expectedAttributeNames = Arrays.asList(Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH,
+            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH,
                     Dispatcher.INCLUDE_SERVLET_PATH, Dispatcher.INCLUDE_QUERY_STRING);
-            List requestAttributeNames = Collections.list(request.getAttributeNames());
+            @SuppressWarnings("unchecked")
+            List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
             assertEquals(null, request.getPathInfo());
@@ -513,11 +609,15 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("AssertIncludeServlet");
         }
     }
 
     public static class AssertForwardIncludeServlet extends HttpServlet implements Servlet
     {
+        private static final long serialVersionUID = 1L;
+
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             // include doesn't hide forward
@@ -533,11 +633,12 @@ public class DispatcherTest
             assertEquals( "/assertpath", request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
             assertEquals( "do=end", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
 
-            List expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
+            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
                     Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING,
                     Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH, Dispatcher.INCLUDE_SERVLET_PATH,
                     Dispatcher.INCLUDE_PATH_INFO, Dispatcher.INCLUDE_QUERY_STRING);
-            List requestAttributeNames = Collections.list(request.getAttributeNames());
+            @SuppressWarnings("unchecked")
+            List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
             assertEquals("/includepath", request.getPathInfo());
@@ -549,11 +650,15 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("AssertForwardIncludeServlet");
         }
      }
 
     public static class AssertIncludeForwardServlet extends HttpServlet implements Servlet
     {
+        private static final long serialVersionUID = 1L;
+
+        @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             // forward hides include
@@ -569,9 +674,10 @@ public class DispatcherTest
             assertEquals( "/includepath", request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
             assertEquals( "do=forward", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING) );
 
-            List expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
+            List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
                     Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING);
-            List requestAttributeNames = Collections.list(request.getAttributeNames());
+            @SuppressWarnings("unchecked")
+            List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
             assertEquals("/assertpath", request.getPathInfo());
@@ -583,6 +689,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("AssertIncludeForwardServlet");
         }
     }
 }

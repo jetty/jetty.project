@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 /* ------------------------------------------------------------ */
@@ -279,7 +280,7 @@ public class Dispatcher implements RequestDispatcher
                     attr._servletPath=old_servlet_path;
                 }     
                 
-                baseRequest.setRequestURI(_uri);
+                baseRequest.setRequestURI(URIUtil.encodePath(_uri));
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(_uri);
