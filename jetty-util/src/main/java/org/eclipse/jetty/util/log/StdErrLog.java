@@ -99,7 +99,7 @@ public class StdErrLog extends AbstractLogger
 
     public StdErrLog(String name, Properties props)
     {
-        if (props!=null)
+        if (props!=null && props!=__props)
             __props.putAll(props);
         this._name = name == null?"":name;
         this._abbrevname = condensePackageString(this._name);
