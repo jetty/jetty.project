@@ -91,7 +91,7 @@
         <executions>
           <execution>
             <id>set-osgi-version</id>
-            <phase>validate</phase> 
+            <phase>validate</phase>
             <goals>
               <goal>parse-version</goal>
             </goals>
@@ -303,7 +303,7 @@
       </plugins>
     </pluginManagement>
   </build>
-  <reporting>   
+  <reporting>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -358,6 +358,7 @@
     <module>jetty-http</module>
     <module>jetty-websocket</module>
     <module>jetty-continuation</module>
+    <module>jetty-npn</module>
     <module>jetty-server</module>
     <module>jetty-client</module>
     <module>jetty-xml</module>
