@@ -17,9 +17,7 @@
 package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -48,21 +46,19 @@ public class StandardStream implements IStream
 {
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
-    private final Queue<Runnable> queue = new LinkedList<>();
-    private final ISession session;
     private final SynStreamFrame frame;
+    private final ISession session;
     private final AtomicInteger windowSize;
     private volatile StreamFrameListener listener;
     private volatile boolean opened;
     private volatile boolean halfClosed;
     private volatile boolean closed;
-    private boolean dispatched;
 
-    public StandardStream(ISession session, SynStreamFrame frame)
+    public StandardStream(SynStreamFrame frame, ISession session, int windowSize)
     {
-        this.session = session;
         this.frame = frame;
-        this.windowSize = new AtomicInteger(session.getWindowSize());
+        this.session = session;
+        this.windowSize = new AtomicInteger(windowSize);
         this.halfClosed = frame.isClose();
     }
 

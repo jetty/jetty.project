@@ -56,7 +56,6 @@ public class EmptyAsyncConnection extends AbstractConnection implements AsyncCon
     @Override
     public void onClose()
     {
-        // TODO
     }
 
     @Override

@@ -30,19 +30,21 @@ import org.eclipse.jetty.spdy.parser.Parser;
 
 public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 {
+    private final ByteBufferPool bufferPool;
     private final Executor threadPool;
     private final ScheduledExecutorService scheduler;
     private final short version;
     private final ServerSessionFrameListener listener;
 
-    public ServerSPDYAsyncConnectionFactory(short version, Executor threadPool, ScheduledExecutorService scheduler)
+    public ServerSPDYAsyncConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler)
     {
-        this(version, threadPool, scheduler, null);
+        this(version, bufferPool, threadPool, scheduler, null);
     }
 
-    public ServerSPDYAsyncConnectionFactory(short version, Executor threadPool, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
+    public ServerSPDYAsyncConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, ServerSessionFrameListener listener)
     {
         this.version = version;
+        this.bufferPool = bufferPool;
         this.threadPool = threadPool;
         this.scheduler = scheduler;
         this.listener = listener;
@@ -53,7 +55,7 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
     {
         CompressionFactory compressionFactory = new StandardCompressionFactory();
         Parser parser = new Parser(compressionFactory.newDecompressor());
-        Generator generator = new Generator(compressionFactory.newCompressor());
+        Generator generator = new Generator(bufferPool, compressionFactory.newCompressor());
 
         ServerSessionFrameListener listener = this.listener;
         if (listener == null)
@@ -61,10 +63,10 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
 
         SPDYServerConnector connector = (SPDYServerConnector)attachment;
 
-        SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, parser, listener, connector);
+        SPDYAsyncConnection connection = new ServerSPDYAsyncConnection(endPoint, bufferPool, parser, listener, connector);
         endPoint.setConnection(connection);
 
-        final StandardSession session = new StandardSession(version, threadPool, scheduler, connection, connection, 2, listener, generator);
+        final StandardSession session = new StandardSession(version, bufferPool, threadPool, scheduler, connection, connection, 2, listener, generator);
         parser.addListener(session);
         connection.setSession(session);
 
@@ -84,9 +86,9 @@ public class ServerSPDYAsyncConnectionFactory implements AsyncConnectionFactory
         private final SPDYServerConnector connector;
         private volatile boolean connected;
 
-        private ServerSPDYAsyncConnection(AsyncEndPoint endPoint, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
+        private ServerSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, ServerSessionFrameListener listener, SPDYServerConnector connector)
         {
-            super(endPoint, parser);
+            super(endPoint, bufferPool, parser);
             this.listener = listener;
             this.connector = connector;
         }

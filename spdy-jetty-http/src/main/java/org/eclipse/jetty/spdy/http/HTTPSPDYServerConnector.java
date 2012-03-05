@@ -42,7 +42,7 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
     {
         super.doStart();
         // Override the "spdy/2" protocol by handling HTTP over SPDY
-        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getExecutor(), getScheduler(), this));
+        putAsyncConnectionFactory("spdy/2", new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this));
         // Add the "http/1.1" protocol for browsers that do not support NPN
         putAsyncConnectionFactory("http/1.1", new ServerHTTPAsyncConnectionFactory(this));
     }

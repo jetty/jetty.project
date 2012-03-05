@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
@@ -45,7 +46,7 @@ public class DataGenerateParseTest
         int length = content.length();
         DataInfo data = new StringDataInfo(content, true);
         int streamId = 13;
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.data(streamId, 2 * length, data);
 
         Assert.assertNotNull(buffer);
@@ -70,7 +71,7 @@ public class DataGenerateParseTest
         int length = content.length();
         DataInfo data = new StringDataInfo(content, true);
         int streamId = 13;
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.data(streamId, 2 * length, data);
 
         Assert.assertNotNull(buffer);
@@ -100,7 +101,7 @@ public class DataGenerateParseTest
         int length = content.length();
         DataInfo data = new StringDataInfo(content, true);
         int streamId = 13;
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.data(streamId, 2 * length, data);
 
         Assert.assertNotNull(buffer);

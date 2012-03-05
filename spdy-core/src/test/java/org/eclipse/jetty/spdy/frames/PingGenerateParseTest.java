@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -32,7 +33,7 @@ public class PingGenerateParseTest
     {
         int pingId = 13;
         PingFrame frame1 = new PingFrame(SPDY.V2, pingId);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);
@@ -56,7 +57,7 @@ public class PingGenerateParseTest
     {
         int pingId = 13;
         PingFrame frame1 = new PingFrame(SPDY.V2, pingId);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);

@@ -21,6 +21,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.spdy.ByteBufferPool;
 import org.eclipse.jetty.spdy.EmptyAsyncEndPoint;
 import org.eclipse.jetty.spdy.SPDYAsyncConnection;
 import org.eclipse.jetty.spdy.ServerSPDYAsyncConnectionFactory;
@@ -42,9 +43,9 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
     private final Connector connector;
 
-    public ServerHTTPSPDYAsyncConnectionFactory(short version, Executor threadPool, ScheduledExecutorService scheduler, Connector connector)
+    public ServerHTTPSPDYAsyncConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, Connector connector)
     {
-        super(version, threadPool, scheduler);
+        super(version, bufferPool, threadPool, scheduler);
         this.connector = connector;
     }
 

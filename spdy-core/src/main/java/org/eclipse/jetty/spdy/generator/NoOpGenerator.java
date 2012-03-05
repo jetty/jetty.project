@@ -18,11 +18,17 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.ByteBufferPool;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.NoOpFrame;
 
 public class NoOpGenerator extends ControlFrameGenerator
 {
+    public NoOpGenerator(ByteBufferPool bufferPool)
+    {
+        super(bufferPool);
+    }
+
     @Override
     public ByteBuffer generate(ControlFrame frame)
     {
@@ -30,7 +36,7 @@ public class NoOpGenerator extends ControlFrameGenerator
 
         int frameBodyLength = 0;
         int totalLength = ControlFrame.HEADER_LENGTH + frameBodyLength;
-        ByteBuffer buffer = ByteBuffer.allocate(totalLength);
+        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
         generateControlFrameHeader(noOp, frameBodyLength, buffer);
 
         buffer.flip();

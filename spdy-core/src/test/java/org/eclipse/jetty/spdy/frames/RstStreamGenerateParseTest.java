@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.StreamStatus;
@@ -34,7 +35,7 @@ public class RstStreamGenerateParseTest
         int streamId = 13;
         int streamStatus = StreamStatus.UNSUPPORTED_VERSION.getCode(SPDY.V2);
         RstStreamFrame frame1 = new RstStreamFrame(SPDY.V2, streamId, streamStatus);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);
@@ -60,7 +61,7 @@ public class RstStreamGenerateParseTest
         int streamId = 13;
         int streamStatus = StreamStatus.UNSUPPORTED_VERSION.getCode(SPDY.V2);
         RstStreamFrame frame1 = new RstStreamFrame(SPDY.V2, streamId, streamStatus);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);

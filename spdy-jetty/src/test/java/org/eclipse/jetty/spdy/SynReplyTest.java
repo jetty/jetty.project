@@ -307,9 +307,7 @@ public class SynReplyTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        ByteBuffer buffer = ByteBuffer.allocate(dataInfo.available());
-                        dataInfo.readInto(buffer);
-                        buffer.flip();
+                        ByteBuffer buffer = dataInfo.asByteBuffer(false);
                         String data = Charset.forName("UTF-8").decode(buffer).toString();
                         Assert.assertEquals(serverData, data);
                         serverDataLatch.countDown();

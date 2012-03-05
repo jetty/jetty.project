@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Settings;
@@ -37,7 +38,7 @@ public class SettingsGenerateParseTest
         settings.put(new Settings.Setting(Settings.ID.MAX_CONCURRENT_STREAMS, Settings.Flag.PERSIST, 100));
         settings.put(new Settings.Setting(Settings.ID.ROUND_TRIP_TIME, Settings.Flag.PERSISTED, 500));
         SettingsFrame frame1 = new SettingsFrame(SPDY.V2, flags, settings);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);
@@ -64,7 +65,7 @@ public class SettingsGenerateParseTest
         settings.put(new Settings.Setting(Settings.ID.DOWNLOAD_RETRANSMISSION_RATE, 100));
         settings.put(new Settings.Setting(Settings.ID.ROUND_TRIP_TIME, 500));
         SettingsFrame frame1 = new SettingsFrame(SPDY.V2, flags, settings);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);

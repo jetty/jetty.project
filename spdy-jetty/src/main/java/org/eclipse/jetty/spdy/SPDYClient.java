@@ -176,6 +176,7 @@ public class SPDYClient
     {
         private final Map<String, AsyncConnectionFactory> factories = new ConcurrentHashMap<>();
         private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+        private final ByteBufferPool bufferPool = new StandardByteBufferPool();
         private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         private final Executor threadPool;
         private final SslContextFactory sslContextFactory;
@@ -412,17 +413,16 @@ public class SPDYClient
         public AsyncConnection newAsyncConnection(SocketChannel channel, AsyncEndPoint endPoint, Object attachment)
         {
             SessionPromise sessionPromise = (SessionPromise)attachment;
+            Factory factory = sessionPromise.client.factory;
 
             CompressionFactory compressionFactory = new StandardCompressionFactory();
             Parser parser = new Parser(compressionFactory.newDecompressor());
-            Generator generator = new Generator(compressionFactory.newCompressor());
+            Generator generator = new Generator(factory.bufferPool, compressionFactory.newCompressor());
 
-            Factory factory = sessionPromise.client.factory;
-
-            SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, parser, factory);
+            SPDYAsyncConnection connection = new ClientSPDYAsyncConnection(endPoint, factory.bufferPool, parser, factory);
             endPoint.setConnection(connection);
 
-            StandardSession session = new StandardSession(sessionPromise.client.version, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator);
+            StandardSession session = new StandardSession(sessionPromise.client.version, factory.bufferPool, factory.threadPool, factory.scheduler, connection, connection, 1, sessionPromise.listener, generator);
             parser.addListener(session);
             sessionPromise.completed(session);
             connection.setSession(session);
@@ -436,9 +436,9 @@ public class SPDYClient
         {
             private final Factory factory;
 
-            public ClientSPDYAsyncConnection(AsyncEndPoint endPoint, Parser parser, Factory factory)
+            public ClientSPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
             {
-                super(endPoint, parser);
+                super(endPoint, bufferPool, parser);
                 this.factory = factory;
             }
 

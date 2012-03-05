@@ -79,6 +79,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final Deque<FrameBytes> queue = new LinkedList<>();
+    private final ByteBufferPool bufferPool;
     private final Executor threadPool;
     private final ScheduledExecutorService scheduler;
     private final short version;
@@ -94,9 +95,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private boolean flushing;
     private volatile int windowSize = 65536;
 
-    public StandardSession(short version, Executor threadPool, ScheduledExecutorService scheduler, Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener, Generator generator)
+    public StandardSession(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, Controller<FrameBytes> controller, IdleListener idleListener, int initialStreamId, SessionFrameListener listener, Generator generator)
     {
         this.version = version;
+        this.bufferPool = bufferPool;
         this.threadPool = threadPool;
         this.scheduler = scheduler;
         this.controller = controller;
@@ -380,7 +382,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private void onSyn(final SynStreamFrame frame)
     {
-        final IStream stream = new StandardStream(this, frame);
+        final IStream stream = newStream(frame);
         logger.debug("Opening {}", stream);
         int streamId = frame.getStreamId();
         IStream existing = streams.putIfAbsent(streamId, stream);
@@ -411,7 +413,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private IStream createStream(SynStreamFrame synStream, StreamFrameListener listener)
     {
-        IStream stream = new StandardStream(this, synStream);
+        IStream stream = newStream(synStream);
         stream.setStreamFrameListener(listener);
         if (streams.putIfAbsent(synStream.getStreamId(), stream) != null)
         {
@@ -424,6 +426,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         notifyStreamCreated(stream);
 
         return stream;
+    }
+
+    private IStream newStream(SynStreamFrame frame)
+    {
+        return new StandardStream(frame, this, windowSize);
     }
 
     private void notifyStreamCreated(IStream stream)
@@ -937,13 +944,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public void complete()
         {
+            bufferPool.release(buffer);
+
+            super.complete();
+
             if (frame.getType() == ControlFrameType.GO_AWAY)
             {
                 // After sending a GO_AWAY we need to hard close the connection.
                 // Recipients will know the last good stream id and act accordingly.
                 close();
             }
-            super.complete();
         }
 
         @Override
@@ -956,14 +966,15 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private class DataFrameBytes<C> extends AbstractFrameBytes<C>
     {
         private final IStream stream;
-        private final DataInfo data;
-        private int dataLength;
+        private final DataInfo dataInfo;
+        private int length;
+        private ByteBuffer buffer;
 
-        private DataFrameBytes(Handler<C> handler, C context, IStream stream, DataInfo data)
+        private DataFrameBytes(Handler<C> handler, C context, IStream stream, DataInfo dataInfo)
         {
             super(handler, context);
             this.stream = stream;
-            this.data = data;
+            this.dataInfo = dataInfo;
         }
 
         @Override
@@ -975,9 +986,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 if (windowSize <= 0)
                     return null;
 
-                ByteBuffer buffer = generator.data(stream.getId(), windowSize, data);
-                dataLength = buffer.remaining() - DataFrame.HEADER_LENGTH;
+                length = dataInfo.length();
+                if (length > windowSize)
+                    length = windowSize;
 
+                buffer = generator.data(stream.getId(), length, dataInfo);
                 return buffer;
             }
             catch (Throwable x)
@@ -990,9 +1003,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public void complete()
         {
-            stream.updateWindowSize(-dataLength);
+            stream.updateWindowSize(-length);
+            bufferPool.release(buffer);
 
-            if (data.available() > 0)
+            if (dataInfo.available() > 0)
             {
                 // If we could not write a full data frame, then we need first
                 // to finish it, and then process the others (to avoid data garbling)
@@ -1000,17 +1014,17 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             }
             else
             {
-                stream.updateCloseState(data.isClose());
+                super.complete();
+                stream.updateCloseState(dataInfo.isClose());
                 if (stream.isClosed())
                     removeStream(stream);
-                super.complete();
             }
         }
 
         @Override
         public String toString()
         {
-            return String.format("DATA bytes @%x available=%d consumed=%d on %s", data.hashCode(), data.available(), data.consumed(), stream);
+            return String.format("DATA bytes @%x available=%d consumed=%d on %s", dataInfo.hashCode(), dataInfo.available(), dataInfo.consumed(), stream);
         }
     }
 }

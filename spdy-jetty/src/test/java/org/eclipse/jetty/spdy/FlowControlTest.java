@@ -90,19 +90,19 @@ public class FlowControlTest extends AbstractTest
                     else if (dataFrames == 2)
                     {
                         // Read but not consume, we should be flow-control stalled
-                        dataInfo.readInto(ByteBuffer.allocate(dataInfo.length()));
+                        dataInfo.asByteBuffer(false);
                         exchanger.exchange(dataInfo);
                     }
                     else if (dataFrames == 3)
                     {
                         // Consume partially, we should be flow-control stalled
-                        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.length() / 2));
+                        dataInfo.consumeInto(ByteBuffer.allocate(dataInfo.length() / 2));
                         exchanger.exchange(dataInfo);
                     }
                     else if (dataFrames == 4 || dataFrames == 5)
                     {
                         // Consume totally
-                        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.length()));
+                        dataInfo.asByteBuffer(true);
                         exchanger.exchange(dataInfo);
                     }
                     else
@@ -129,7 +129,7 @@ public class FlowControlTest extends AbstractTest
         });
         Assert.assertEquals(windowSize, dataInfo.available());
         Assert.assertEquals(0, dataInfo.consumed());
-        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available()));
+        dataInfo.asByteBuffer(true);
 
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         // Check that we are flow control stalled
@@ -156,7 +156,7 @@ public class FlowControlTest extends AbstractTest
             }
         });
         Assert.assertEquals(dataInfo.length() / 2, dataInfo.consumed());
-        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available()));
+        dataInfo.asByteBuffer(true);
 
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
@@ -204,19 +204,19 @@ public class FlowControlTest extends AbstractTest
                             else if (dataFrames == 2)
                             {
                                 // Read but not consume, we should be flow-control stalled
-                                dataInfo.readInto(ByteBuffer.allocate(dataInfo.length()));
+                                dataInfo.asByteBuffer(false);
                                 exchanger.exchange(dataInfo);
                             }
                             else if (dataFrames == 3)
                             {
                                 // Consume partially, we should be flow-control stalled
-                                dataInfo.drainInto(ByteBuffer.allocate(dataInfo.length() / 2));
+                                dataInfo.consumeInto(ByteBuffer.allocate(dataInfo.length() / 2));
                                 exchanger.exchange(dataInfo);
                             }
                             else if (dataFrames == 4 || dataFrames == 5)
                             {
                                 // Consume totally
-                                dataInfo.drainInto(ByteBuffer.allocate(dataInfo.length()));
+                                dataInfo.asByteBuffer(true);
                                 exchanger.exchange(dataInfo);
                             }
                             else
@@ -258,7 +258,7 @@ public class FlowControlTest extends AbstractTest
         });
         Assert.assertEquals(windowSize, dataInfo.available());
         Assert.assertEquals(0, dataInfo.consumed());
-        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available()));
+        dataInfo.asByteBuffer(true);
 
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         // Check that we are flow control stalled
@@ -285,7 +285,7 @@ public class FlowControlTest extends AbstractTest
             }
         });
         Assert.assertEquals(dataInfo.length() / 2, dataInfo.consumed());
-        dataInfo.drainInto(ByteBuffer.allocate(dataInfo.available()));
+        dataInfo.asByteBuffer(true);
 
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         Assert.assertEquals(dataInfo.length(), dataInfo.consumed());

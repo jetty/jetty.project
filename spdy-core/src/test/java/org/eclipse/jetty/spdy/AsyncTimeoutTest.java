@@ -43,10 +43,11 @@ public class AsyncTimeoutTest
         final long timeout = 1000;
         final TimeUnit unit = TimeUnit.MILLISECONDS;
 
+        ByteBufferPool bufferPool = new StandardByteBufferPool();
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
         {
             @Override
             public void flush()
@@ -87,10 +88,11 @@ public class AsyncTimeoutTest
         final long timeout = 1000;
         final TimeUnit unit = TimeUnit.MILLISECONDS;
 
+        ByteBufferPool bufferPool = new StandardByteBufferPool();
         Executor threadPool = Executors.newCachedThreadPool();
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        Generator generator = new Generator(new StandardCompressionFactory.StandardCompressor());
-        Session session = new StandardSession(SPDY.V2, threadPool, scheduler, new TestController(), null, 1, null, generator)
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+        Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
         {
             private final AtomicInteger flushes = new AtomicInteger();
 

@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -33,7 +34,7 @@ public class WindowUpdateGenerateParseTest
         int streamId = 13;
         int windowDelta = 17;
         WindowUpdateFrame frame1 = new WindowUpdateFrame(SPDY.V2, streamId, windowDelta);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);
@@ -59,7 +60,7 @@ public class WindowUpdateGenerateParseTest
         int streamId = 13;
         int windowDelta = 17;
         WindowUpdateFrame frame1 = new WindowUpdateFrame(SPDY.V2, streamId, windowDelta);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);

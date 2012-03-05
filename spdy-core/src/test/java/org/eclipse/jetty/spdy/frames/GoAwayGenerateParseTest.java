@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.frames;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.generator.Generator;
@@ -33,7 +34,7 @@ public class GoAwayGenerateParseTest
         int lastStreamId = 13;
         int statusCode = 1;
         GoAwayFrame frame1 = new GoAwayFrame(SPDY.V3, lastStreamId, statusCode);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);
@@ -59,7 +60,7 @@ public class GoAwayGenerateParseTest
         int lastStreamId = 13;
         int statusCode = 1;
         GoAwayFrame frame1 = new GoAwayFrame(SPDY.V3, lastStreamId, statusCode);
-        Generator generator = new Generator(new StandardCompressionFactory().newCompressor());
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
         Assert.assertNotNull(buffer);

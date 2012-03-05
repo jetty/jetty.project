@@ -30,13 +30,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * expected.</p>
  * <p>Receivers of {@link DataInfo} via {@link StreamFrameListener#onData(Stream, DataInfo)}
  * have two different APIs to read the data content bytes: a {@link #readInto(ByteBuffer) read}
- * API that does not interact with flow control, and a {@link #drainInto(ByteBuffer) drain}
+ * API that does not interact with flow control, and a {@link #consumeInto(ByteBuffer) drain}
  * API that interacts with flow control.</p>
  * <p>Flow control is defined so that when the sender wants to sends a number of bytes larger
  * than the {@link Settings.ID#INITIAL_WINDOW_SIZE} value, it will stop sending as soon as it
  * has sent a number of bytes equal to the window size. The receiver has to <em>consume</em>
  * the data bytes that it received in order to tell the sender to send more bytes.</p>
- * <p>Consuming the data bytes can be done only via {@link #drainInto(ByteBuffer)} or by a combination
+ * <p>Consuming the data bytes can be done only via {@link #consumeInto(ByteBuffer)} or by a combination
  * of {@link #readInto(ByteBuffer)} and {@link #consume(int)} (possibly at different times).</p>
  */
 public abstract class DataInfo
@@ -155,7 +155,7 @@ public abstract class DataInfo
      * @param output the {@link ByteBuffer} to copy to bytes into
      * @return the number of bytes copied
      * @see #available()
-     * @see #drainInto(ByteBuffer)
+     * @see #consumeInto(ByteBuffer)
      */
     public abstract int readInto(ByteBuffer output);
 
@@ -166,7 +166,7 @@ public abstract class DataInfo
      * @return the number of bytes copied
      * @see #consume(int)
      */
-    public int drainInto(ByteBuffer output)
+    public int consumeInto(ByteBuffer output)
     {
         int read = readInto(output);
         consume(read);
@@ -184,8 +184,8 @@ public abstract class DataInfo
             throw new IllegalArgumentException();
         int read = length() - available();
         int newConsumed = consumed() + delta;
-        if (newConsumed > read)
-            throw new IllegalStateException("Consuming without reading: consumed " + newConsumed + " but only read " + read);
+//        if (newConsumed > read)
+//            throw new IllegalStateException("Consuming without reading: consumed " + newConsumed + " but only read " + read);
         consumed.addAndGet(delta);
     }
 
@@ -227,13 +227,18 @@ public abstract class DataInfo
      */
     public ByteBuffer asByteBuffer(boolean consume)
     {
-        ByteBuffer buffer = ByteBuffer.allocate(available());
+        ByteBuffer buffer = allocate(available());
         if (consume)
-            drainInto(buffer);
+            consumeInto(buffer);
         else
             readInto(buffer);
         buffer.flip();
         return buffer;
+    }
+
+    protected ByteBuffer allocate(int size)
+    {
+        return ByteBuffer.allocate(size);
     }
 
     @Override

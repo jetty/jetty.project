@@ -101,14 +101,14 @@ public abstract class DataFrameParser
                     length -= size;
                     if (length == 0)
                     {
-                        onData(bytes);
+                        onDataFrame(bytes);
                         return true;
                     }
                     else
                     {
                         // We got only part of the frame data bytes,
                         // so we generate a synthetic data frame
-                        onSyntheticData(bytes);
+                        onDataFragment(bytes);
                     }
                     break;
                 }
@@ -121,14 +121,14 @@ public abstract class DataFrameParser
         return false;
     }
 
-    private void onData(ByteBuffer bytes)
+    private void onDataFrame(ByteBuffer bytes)
     {
         DataFrame frame = new DataFrame(streamId, flags, bytes.remaining());
         onDataFrame(frame, bytes);
         reset();
     }
 
-    private void onSyntheticData(ByteBuffer bytes)
+    private void onDataFragment(ByteBuffer bytes)
     {
         DataFrame frame = new DataFrame(streamId, (byte)(flags & ~DataInfo.FLAG_CLOSE), bytes.remaining());
         onDataFrame(frame, bytes);

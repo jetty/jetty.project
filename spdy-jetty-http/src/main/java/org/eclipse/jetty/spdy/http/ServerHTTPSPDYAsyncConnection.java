@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implements AsyncConnection
 {
     private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnection.class);
+    private static final ByteBuffer ZERO_BYTES = ByteBuffer.allocate(0);
 
     private final Queue<Runnable> tasks = new LinkedList<>();
     private final BlockingQueue<DataInfo> dataInfos = new LinkedBlockingQueue<>();
@@ -291,7 +292,15 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     public void content(final DataInfo dataInfo, boolean endRequest)
     {
-        dataInfos.offer(dataInfo);
+        dataInfos.offer(new ByteBufferDataInfo(dataInfo.asByteBuffer(false), dataInfo.isClose(), dataInfo.isCompress())
+        {
+            @Override
+            public void consume(int delta)
+            {
+                super.consume(delta);
+                dataInfo.consume(delta);
+            }
+        });
         complete = endRequest;
         post(new Runnable()
         {
@@ -644,11 +653,10 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             }
             else if (!closed)
             {
-                ByteBuffer buffer = ByteBuffer.allocate(0);
                 closed = true;
                 _state = STATE_END;
                 // Send the data frame
-                stream.data(new ByteBufferDataInfo(buffer, true));
+                stream.data(new ByteBufferDataInfo(ZERO_BYTES, true));
             }
         }
     }

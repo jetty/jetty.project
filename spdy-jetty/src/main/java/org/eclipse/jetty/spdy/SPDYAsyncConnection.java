@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 public class SPDYAsyncConnection extends AbstractConnection implements AsyncConnection, Controller<StandardSession.FrameBytes>, IdleListener
 {
     private static final Logger logger = LoggerFactory.getLogger(SPDYAsyncConnection.class);
+    private final ByteBufferPool bufferPool;
     private final Parser parser;
     private volatile Session session;
     private ByteBuffer writeBuffer;
@@ -43,9 +44,10 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
     private StandardSession.FrameBytes writeContext;
     private volatile boolean writePending;
 
-    public SPDYAsyncConnection(AsyncEndPoint endPoint, Parser parser)
+    public SPDYAsyncConnection(AsyncEndPoint endPoint, ByteBufferPool bufferPool, Parser parser)
     {
         super(endPoint);
+        this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);
     }
@@ -78,18 +80,21 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
 
     public int fill() throws IOException
     {
-        // TODO: use buffer pool
-        NIOBuffer jettyBuffer = new DirectNIOBuffer(4096);
+        ByteBuffer buffer = bufferPool.acquire(8192, true);
+        NIOBuffer jettyBuffer = new DirectNIOBuffer(buffer, false);
+        jettyBuffer.setPutIndex(jettyBuffer.getIndex());
         AsyncEndPoint endPoint = getEndPoint();
         int filled = endPoint.fill(jettyBuffer);
         logger.debug("Filled {} from {}", filled, endPoint);
         if (filled <= 0)
             return filled;
 
-        ByteBuffer buffer = jettyBuffer.getByteBuffer();
         buffer.limit(jettyBuffer.putIndex());
         buffer.position(jettyBuffer.getIndex());
         parser.parse(buffer);
+
+        bufferPool.release(buffer);
+
         return filled;
     }
 

@@ -49,7 +49,9 @@ public interface StreamFrameListener extends EventListener
     public void onHeaders(Stream stream, HeadersInfo headersInfo);
 
     /**
-     * <p>Callback invoked when data are received on a stream.</p>
+     * <p>Callback invoked when data bytes are received on a stream.</p>
+     * <p>Implementers should be read or consume the content of the
+     * {@link DataInfo} before this method returns.</p>
      *
      * @param stream the stream
      * @param dataInfo the data metadata

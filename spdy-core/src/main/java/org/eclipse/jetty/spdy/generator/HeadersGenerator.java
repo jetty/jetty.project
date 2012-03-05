@@ -18,6 +18,7 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.ByteBufferPool;
 import org.eclipse.jetty.spdy.SessionException;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
@@ -27,8 +28,9 @@ public class HeadersGenerator extends ControlFrameGenerator
 {
     private final HeadersBlockGenerator headersBlockGenerator;
 
-    public HeadersGenerator(HeadersBlockGenerator headersBlockGenerator)
+    public HeadersGenerator(ByteBufferPool bufferPool, HeadersBlockGenerator headersBlockGenerator)
     {
+        super(bufferPool);
         this.headersBlockGenerator = headersBlockGenerator;
     }
 
@@ -52,7 +54,7 @@ public class HeadersGenerator extends ControlFrameGenerator
 
         int totalLength = ControlFrame.HEADER_LENGTH + frameLength;
 
-        ByteBuffer buffer = ByteBuffer.allocate(totalLength);
+        ByteBuffer buffer = getByteBufferPool().acquire(totalLength, true);
         generateControlFrameHeader(headers, frameLength, buffer);
 
         buffer.putInt(headers.getStreamId() & 0x7F_FF_FF_FF);

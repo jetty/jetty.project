@@ -18,18 +18,22 @@ package org.eclipse.jetty.spdy.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.spdy.ByteBufferPool;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 
 public class DataFrameGenerator
 {
-    public ByteBuffer generate(int streamId, int windowSize, DataInfo dataInfo)
+    private final ByteBufferPool bufferPool;
+
+    public DataFrameGenerator(ByteBufferPool bufferPool)
     {
-        // TODO: use buffer pool
-        int size = dataInfo.length();
-        if (size > windowSize)
-            size = windowSize;
-        ByteBuffer buffer = ByteBuffer.allocateDirect(DataFrame.HEADER_LENGTH + size);
+        this.bufferPool = bufferPool;
+    }
+
+    public ByteBuffer generate(int streamId, int length, DataInfo dataInfo)
+    {
+        ByteBuffer buffer = bufferPool.acquire(DataFrame.HEADER_LENGTH + length, true);
         buffer.position(DataFrame.HEADER_LENGTH);
         // Guaranteed to always be >= 0
         int read = dataInfo.readInto(buffer);

@@ -48,6 +48,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+    private final ByteBufferPool bufferPool = new StandardByteBufferPool();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ServerSessionFrameListener listener;
     private final SslContextFactory sslContextFactory;
@@ -64,6 +65,11 @@ public class SPDYServerConnector extends SelectChannelConnector
         this.sslContextFactory = sslContextFactory;
         if (sslContextFactory != null)
             addBean(sslContextFactory);
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return bufferPool;
     }
 
     protected Executor getExecutor()
@@ -90,7 +96,7 @@ public class SPDYServerConnector extends SelectChannelConnector
     protected void doStart() throws Exception
     {
         super.doStart();
-        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, getExecutor(), scheduler, listener);
+        defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), scheduler, listener);
         putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
     }
 
