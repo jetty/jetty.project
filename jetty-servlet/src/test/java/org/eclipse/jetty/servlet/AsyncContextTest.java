@@ -203,9 +203,13 @@ public class AsyncContextTest
             {
                 final AsyncContext asyncContext;
                 if (request.getParameter("dispatchRequestResponse") != null)
+                {
                     asyncContext = request.startAsync(request,response);
+                }
                 else
+                {
                     asyncContext = request.startAsync();
+                }
 
                 new Thread(new DispatchingRunnable(asyncContext)).start();
             }
