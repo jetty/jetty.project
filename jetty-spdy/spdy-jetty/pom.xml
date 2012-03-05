@@ -37,7 +37,7 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
+            <groupId>org.eclipse.jetty.npn</groupId>
             <artifactId>npn-api</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
