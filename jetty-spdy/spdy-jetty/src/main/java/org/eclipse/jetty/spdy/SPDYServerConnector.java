@@ -42,9 +42,13 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SPDYServerConnector extends SelectChannelConnector
 {
+    private static final Logger logger = LoggerFactory.getLogger(SPDYServerConnector.class);
+
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
@@ -98,6 +102,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         super.doStart();
         defaultConnectionFactory = new ServerSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), scheduler, listener);
         putAsyncConnectionFactory("spdy/2", defaultConnectionFactory);
+        logger.info("SPDY support is experimental. Please report feedback at jetty-dev@eclipse.org");
     }
 
     @Override
