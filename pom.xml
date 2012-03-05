@@ -514,6 +514,16 @@
    -->
   <profiles>
     <profile>
+      <!-- Modules that are only for JDK7+ builds -->
+      <id>JDK7-plus-modules</id>
+      <activation>
+        <jdk>[1.7,)</jdk>
+      </activation>
+      <modules>
+        <module>jetty-spdy</module>
+      </modules>
+    </profile>
+    <profile>
       <!--
         Moves the jetty-aggregate build tree to a profile called 'aggregates'.
         It is active by default, but being in a profile allows it to be
