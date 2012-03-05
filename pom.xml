@@ -524,6 +524,38 @@
       </modules>
     </profile>
     <profile>
+      <id>eclipse-release</id>
+      <activation>
+        <jdk>[1.7,)</jdk>
+      </activation>
+      <modules>
+        <module>jetty-spdy</module>
+      </modules>
+      <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>1.7.0</version>
+                </requireJavaVersion>
+              </rules>    
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+    </profile>
+    <profile>
       <!--
         Moves the jetty-aggregate build tree to a profile called 'aggregates'.
         It is active by default, but being in a profile allows it to be
