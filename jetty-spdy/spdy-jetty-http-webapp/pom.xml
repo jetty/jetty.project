@@ -15,22 +15,20 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <version>${project.version}</version>
-                <configuration>
-                    <stopPort>8888</stopPort>
-                    <stopKey>quit</stopKey>
-                    <jvmArgs>
-                        -Dlog4j.configuration=file://${basedir}/src/main/resources/log4j.properties
-                        -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/jetty-npn-boot/${project.version}/jetty-npn-boot-${project.version}.jar
-                    </jvmArgs>
-                    <jettyXml>${basedir}/src/main/config/jetty-spdy.xml</jettyXml>
-                    <webAppConfig>
-                        <contextPath>/</contextPath>
-                    </webAppConfig>
-                </configuration>
+<plugin>
+    <groupId>org.mortbay.jetty</groupId>
+    <artifactId>jetty-maven-plugin</artifactId>
+    <version>${project.version}</version>
+    <configuration>
+        <stopPort>8888</stopPort>
+        <stopKey>quit</stopKey>
+        <jvmArgs>
+            -Dlog4j.configuration=file://${basedir}/src/main/resources/log4j.properties
+            -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/jetty-npn-boot/${project.version}/jetty-npn-boot-${project.version}.jar
+        </jvmArgs>
+        <jettyXml>${basedir}/src/main/config/jetty-spdy.xml</jettyXml>
+        <contextPath>/</contextPath>
+    </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.eclipse.jetty.spdy</groupId>
