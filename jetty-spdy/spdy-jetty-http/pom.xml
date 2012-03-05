@@ -18,7 +18,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>
-                        -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/jetty-npn-boot/${project.version}/jetty-npn-boot-${project.version}.jar
+                        -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${project.version}/npn-boot-${project.version}.jar
                     </argLine>
                 </configuration>
             </plugin>
@@ -36,8 +36,8 @@
             <artifactId>junit</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-npn</artifactId>
+            <groupId>org.eclipse.jetty.npn</groupId>
+            <artifactId>npn-api</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
