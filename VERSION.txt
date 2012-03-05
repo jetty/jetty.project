@@ -1,4 +1,15 @@
-jetty-7.6.2-SNAPSHOT
+jetty-7.6.3-SNAPSHOT
+
+jetty-7.6.2.v20120302 - 02 March 2012
+ + 370387 SafariWebsocketDraft0Test failure during build.
+ + 371168 Update ClientCrossContextSessionTest
+ + 372093 handle quotes in Require-Bundle manifest string
+ + 372457 Big response + slow clients + pipelined requests cause Jetty spinning
+   and eventually closing connections. Added a TODO for a method renaming that
+   will happen in the next major release (to avoid break implementers).
+ + 372487 JDBCSessionManager does not work with Oracle
+ + 372806 Command line should accept relative paths for xml config files
+ + JETTY-1489 WebAppProvider attempts to deploy .svn folder
 
 jetty-7.6.1.v20120215 - 15 February 2012
  + 369121 simplified test
