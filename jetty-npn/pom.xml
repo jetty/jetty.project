@@ -9,7 +9,8 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>jetty-npn</artifactId>
+    <groupId>org.eclipse.jetty.npn</groupId>
+    <artifactId>npn-api</artifactId>
     <name>Jetty :: Next Protocol Negotiation :: API</name>
 
 </project>
