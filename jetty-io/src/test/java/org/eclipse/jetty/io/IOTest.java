@@ -285,7 +285,7 @@ public class IOTest
         Socket client;
         Socket server;
        
-        connector = new ServerSocket(9123);
+        connector = new ServerSocket(0);
         client = new Socket("127.0.0.1",connector.getLocalPort());
         server = connector.accept();
         client.setTcpNoDelay(true);
