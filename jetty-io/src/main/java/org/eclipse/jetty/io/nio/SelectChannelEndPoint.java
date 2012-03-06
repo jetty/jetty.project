@@ -433,7 +433,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     try
                     {
                         updateKey();
-                        this.wait(timeoutMs>=0?(end-now):10000);
+                        this.wait(timeoutMs>0?(end-now):10000);
                     }
                     catch (InterruptedException e)
                     {
