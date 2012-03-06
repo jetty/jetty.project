@@ -79,7 +79,16 @@ public class SelectChannelConnector extends AbstractNIOConnector
         addBean(_manager,true);
         setAcceptors(Math.max(1,(Runtime.getRuntime().availableProcessors()+3)/4));
     }
-
+    
+    @Override
+    public void setThreadPool(ThreadPool pool)
+    {
+        super.setThreadPool(pool);
+        // preserve start order
+        removeBean(_manager);
+        addBean(_manager,true);
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public void accept(int acceptorID) throws IOException
