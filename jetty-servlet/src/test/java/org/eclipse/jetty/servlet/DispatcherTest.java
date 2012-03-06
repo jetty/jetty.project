@@ -311,7 +311,7 @@ public class DispatcherTest
             }
             else if (request.getParameter("do").equals("assertspace"))
             {
-                dispatcher = getServletContext().getRequestDispatcher("/path%20with%20spaces/AssertSpacesServlet/anotherpath%20withaspace");
+                dispatcher = getServletContext().getRequestDispatcher("/path with spaces/AssertSpacesServlet/anotherpath withaspace");
             }
             dispatcher.forward(request,response);
         }
