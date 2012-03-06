@@ -570,7 +570,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
      */
     public void addEventListener(EventListener listener)
     {
-        setEventListeners((EventListener[])LazyList.addToArray(getEventListeners(),listener,EventListener.class));
+        setEventListeners(LazyList.addToArray(getEventListeners(),listener,EventListener.class));
     }
 
     /* ------------------------------------------------------------ */
@@ -950,7 +950,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
                 if (_contextPath.length() == 1)
                     baseRequest.setContextPath("");
                 else
-                    baseRequest.setContextPath(_contextPath);
+                    baseRequest.setContextPath(URIUtil.encodePath(_contextPath));
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(pathInfo);
             }

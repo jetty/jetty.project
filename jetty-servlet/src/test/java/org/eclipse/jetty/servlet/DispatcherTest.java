@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,7 +44,9 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.DispatcherType;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -123,6 +127,23 @@ public class DispatcherTest
                         "\r\n";
         
         String responses = _connector.getResponses("GET /context%20space/ForwardServlet?do=assertspace&parameter=value%20space HTTP/1.1\n" + "Host: localhost\n\n");
+        
+        assertEquals(expected, responses);
+    }
+    
+    @Test
+    public void testForwardTwiceRequestParameterDecoding() throws Exception
+    {
+        _contextHandlerWithSpaces.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandlerWithSpaces.addServlet(AssertSpacesServlet.class, "/path with spaces/AssertSpacesServlet/*");
+      
+        String expected=
+                "HTTP/1.1 200 OK\r\n"+
+                        "Content-Type: text/html\r\n"+
+                        "Content-Length: 0\r\n"+
+                        "\r\n";
+        
+        String responses = _connector.getResponses("GET /context%20space/ForwardServlet?do=forward&parameter=value%20space HTTP/1.1\n" + "Host: localhost\n\n");
         
         assertEquals(expected, responses);
     }
@@ -309,9 +330,13 @@ public class DispatcherTest
             {
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardServlet?do=end&do=the");
             }
-            else if (request.getParameter("do").equals("assertspace"))
+            else if (request.getParameter("do").equals("assertspace") || ((Request)request).getDispatcherType().equals(DispatcherType.FORWARD))
             {
                 dispatcher = getServletContext().getRequestDispatcher("/path with spaces/AssertSpacesServlet/anotherpath withaspace");
+            }
+            else if (request.getParameter("do").equals("forward"))
+            {
+                dispatcher = getServletContext().getRequestDispatcher("/ForwardServlet");
             }
             dispatcher.forward(request,response);
         }
@@ -505,7 +530,7 @@ public class DispatcherTest
         {
             assertThat("requestUri must not be decoded",request.getRequestURI(),equalTo("/context%20space/path%20with%20spaces/AssertSpacesServlet/anotherpath%20withaspace"));
             assertThat("contextPath must not be decoded",request.getContextPath(), equalTo("/context%20space"));
-            assertThat("queryString must not be decoded",request.getQueryString(), equalTo("do=assertspace&parameter=value%20space"));
+            assertThat("queryString must not be decoded",request.getQueryString(), anyOf(equalTo("do=assertspace&parameter=value%20space"),equalTo("do=forward&parameter=value%20space")));
             assertThat("pathInfo should be decoded",request.getPathInfo(), equalTo("/anotherpath withaspace"));
             assertThat("servletPath should be decoded",request.getServletPath(), equalTo("/path with spaces/AssertSpacesServlet"));
             response.setContentType("text/html");
