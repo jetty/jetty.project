@@ -1,5 +1,9 @@
 package org.eclipse.jetty.servlet;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -8,8 +12,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
+
 import junit.framework.Assert;
 
 import org.eclipse.jetty.continuation.ContinuationSupport;
@@ -48,6 +51,7 @@ public class AsyncContextTest
 
         _contextHandler.setContextPath("/");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()),"/servletPath");
+        _contextHandler.addServlet(new ServletHolder(new TestServlet()),"/path with spaces/servletPath");
         _contextHandler.addServlet(new ServletHolder(new TestServlet2()),"/servletPath2");
         _contextHandler.addServlet(new ServletHolder(new ForwardingServlet()),"/forward");
         _contextHandler.addServlet(new ServletHolder(new AsyncDispatchingServlet()),"/dispatchingServlet");
@@ -91,6 +95,24 @@ public class AsyncContextTest
         Assert.assertEquals("query string attr is correct","async:run:attr:queryString:dispatch=true",br.readLine());
         Assert.assertEquals("context path attr is correct","async:run:attr:contextPath:",br.readLine());
         Assert.assertEquals("request uri attr is correct","async:run:attr:requestURI:/servletPath",br.readLine());
+    }
+    
+    @Test
+    public void testDispatchAsyncContextEncodedPathAndQueryString() throws Exception
+    {
+        String request = "GET /path%20with%20spaces/servletPath?dispatch=true&queryStringWithEncoding=space%20space HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+                + "Connection: close\r\n" + "\r\n";
+        String responseString = _connector.getResponses(request);
+        
+        BufferedReader br = parseHeader(responseString);
+        
+        assertThat("servlet gets right path",br.readLine(),equalTo("doGet:getServletPath:/servletPath2"));
+        assertThat("async context gets right path in get",br.readLine(), equalTo("doGet:async:getServletPath:/servletPath2"));
+        assertThat("servlet path attr is original",br.readLine(),equalTo("async:run:attr:servletPath:/path with spaces/servletPath"));
+        assertThat("path info attr is correct",br.readLine(),equalTo("async:run:attr:pathInfo:null"));
+        assertThat("query string attr is correct",br.readLine(),equalTo("async:run:attr:queryString:dispatch=true&queryStringWithEncoding=space%20space"));
+        assertThat("context path attr is correct",br.readLine(),equalTo("async:run:attr:contextPath:"));
+        assertThat("request uri attr is correct",br.readLine(),equalTo("async:run:attr:requestURI:/path%20with%20spaces/servletPath"));
     }
 
     @Test
