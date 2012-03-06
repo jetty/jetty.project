@@ -6,7 +6,7 @@
     <version>19</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>7.6.2-SNAPSHOT</version>
+  <version>7.6.3-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
@@ -91,7 +91,7 @@
         <executions>
           <execution>
             <id>set-osgi-version</id>
-            <phase>validate</phase> 
+            <phase>validate</phase>
             <goals>
               <goal>parse-version</goal>
             </goals>
@@ -303,7 +303,7 @@
       </plugins>
     </pluginManagement>
   </build>
-  <reporting>   
+  <reporting>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -358,6 +358,7 @@
     <module>jetty-http</module>
     <module>jetty-websocket</module>
     <module>jetty-continuation</module>
+    <module>jetty-npn</module>
     <module>jetty-server</module>
     <module>jetty-client</module>
     <module>jetty-xml</module>
@@ -512,6 +513,48 @@
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
+    <profile>
+      <!-- Modules that are only for JDK7+ builds -->
+      <id>JDK7-plus-modules</id>
+      <activation>
+        <jdk>[1.7,)</jdk>
+      </activation>
+      <modules>
+        <module>jetty-spdy</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>eclipse-release</id>
+      <activation>
+        <jdk>[1.7,)</jdk>
+      </activation>
+      <modules>
+        <module>jetty-spdy</module>
+      </modules>
+      <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>1.7.0</version>
+                </requireJavaVersion>
+              </rules>    
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+    </profile>
     <profile>
       <!--
         Moves the jetty-aggregate build tree to a profile called 'aggregates'.

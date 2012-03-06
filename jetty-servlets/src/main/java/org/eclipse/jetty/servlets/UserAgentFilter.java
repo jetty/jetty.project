@@ -50,7 +50,8 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class UserAgentFilter implements Filter
 {
-    private Pattern _pattern;
+    private static final String __defaultPattern = "(?:Mozilla[^\\(]*\\(compatible;\\s*+([^;]*);.*)|(?:.*?([^\\s]+/[^\\s]+).*)";
+    private Pattern _pattern = Pattern.compile(__defaultPattern);
     private Map _agentCache = new ConcurrentHashMap();
     private int _agentCacheSize=1024;
     private String _attribute;

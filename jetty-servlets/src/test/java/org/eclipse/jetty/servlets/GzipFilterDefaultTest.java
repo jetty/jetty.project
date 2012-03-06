@@ -137,4 +137,26 @@ public class GzipFilterDefaultTest
 
     }
 
+    @Test
+    public void testUserAgentExclusion() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir);
+        
+        FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
+        holder.setInitParameter("excludedAgents", "foo");
+        tester.setUserAgent("foo");
+        
+        int filesize = GzipResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        try
+        {
+            tester.start();
+            tester.assertIsResponseNotGzipCompressed("file.txt", filesize, HttpStatus.OK_200);
+        } 
+        finally
+        {
+            tester.stop();
+        }
+    }
 }

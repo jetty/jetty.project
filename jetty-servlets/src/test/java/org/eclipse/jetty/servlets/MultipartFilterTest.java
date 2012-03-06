@@ -50,11 +50,14 @@ public class MultipartFilterTest
             assertNotNull(req.getParameter("fileup"));
             assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
             assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
- 
+            
             super.doPost(req, resp);
         }
         
     }
+    
+
+    
     @Before
     public void setUp() throws Exception
     {
@@ -245,6 +248,65 @@ public class MultipartFilterTest
         assertTrue(response.getContent().indexOf("brown cow")>=0);
     }
 
+    /*
+     * see the testParameterMap test
+     *
+     */
+    public static class TestServletParameterMap extends DumpServlet
+    {
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            assertEquals("How now brown cow.", req.getParameterMap().get("strupContent-Type: application/octet-stream"));
+                   
+            super.doPost(req, resp);
+        }
+        
+    }
+    
+    /** 
+     * Validate that the getParameterMap() call is correctly unencoding the parameters in the 
+     * map that it returns.
+     * @throws Exception
+     */
+    @Test
+    public void testParameterMap() throws Exception
+    {
+        // generated and parsed test
+        HttpTester request = new HttpTester();
+        HttpTester response = new HttpTester();
+
+        tester.addServlet(TestServletParameterMap.class,"/test2");
+        
+        // test GET
+        request.setMethod("POST");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host","tester");
+        request.setURI("/context/test2");
+        
+        String boundary="XyXyXy";
+        request.setHeader("Content-Type","multipart/form-data; boundary="+boundary);
+        
+        
+        String content = "--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"fileup\"; filename=\"Diplomsko Delo Lektorirano KON&#268;NA.doc\"\r\n"+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "\r\n"+
+        "Content-Disposition: form-data; name=\"strup\""+
+        "Content-Type: application/octet-stream\r\n\r\n"+
+        "How now brown cow."+
+        "\r\n--" + boundary + "--\r\n\r\n";
+        
+        request.setContent(content);
+        
+        response.parse(tester.getResponses(request.generate()));
+        assertTrue(response.getMethod()==null);
+        assertEquals(HttpServletResponse.SC_OK,response.getStatus());
+        assertTrue(response.getContent().indexOf("brown cow")>=0);
+    }
+    
     public static class DumpServlet extends HttpServlet
     {
         private static final long serialVersionUID = 201012011130L;
