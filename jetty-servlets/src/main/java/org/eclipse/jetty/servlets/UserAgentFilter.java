@@ -118,29 +118,38 @@ public class UserAgentFilter implements Filter
         String tag = (String)_agentCache.get(ua);
         
 
-        if (tag==null)
+        if (tag == null)
         {
-            Matcher matcher=_pattern.matcher(ua);
-            if (matcher.matches())
+            if (_pattern != null)
             {
-                if(matcher.groupCount()>0)
+                Matcher matcher = _pattern.matcher(ua);
+                if (matcher.matches())
                 {
-                    for (int g=1;g<=matcher.groupCount();g++)
+                    if (matcher.groupCount() > 0)
                     {
-                        String group=matcher.group(g);
-                        if (group!=null)
-                            tag=tag==null?group:(tag+group);
+                        for (int g = 1; g <= matcher.groupCount(); g++)
+                        {
+                            String group = matcher.group(g);
+                            if (group != null)
+                                tag = tag == null?group:(tag + group);
+                        }
+                    }
+                    else
+                    {
+                        tag = matcher.group();
                     }
                 }
-                else 
-                    tag=matcher.group();
             }
             else
-                tag=ua;
+            {
+                tag = ua;
+            }
 
-            if (_agentCache.size()>=_agentCacheSize)
-                    _agentCache.clear();
-                _agentCache.put(ua,tag);
+            if (_agentCache.size() >= _agentCacheSize)
+            {
+                _agentCache.clear();
+            }
+            _agentCache.put(ua,tag);
 
         }
         return tag;
