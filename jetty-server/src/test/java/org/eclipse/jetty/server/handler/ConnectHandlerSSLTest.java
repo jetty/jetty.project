@@ -178,22 +178,26 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
     private class AlwaysTrustManager implements X509TrustManager
     {
+        @Override
         public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException
         {
         }
 
+        @Override
         public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException
         {
         }
 
+        @Override
         public X509Certificate[] getAcceptedIssuers()
         {
-            return null;
+            return new X509Certificate[]{};
         }
     }
 
     private static class ServerHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
             request.setHandled(true);

@@ -597,12 +597,14 @@ public class ProxyServlet implements Servlet
                 {
                     exchange.addRequestHeader("X-Forwarded-For",request.getRemoteAddr());
                     exchange.addRequestHeader("X-Forwarded-Proto",request.getScheme());
-                    exchange.addRequestHeader("X-Forwarded-Host",request.getServerName());
+                    exchange.addRequestHeader("X-Forwarded-Host",request.getHeader("Host"));
                     exchange.addRequestHeader("X-Forwarded-Server",request.getLocalName());
                 }
 
                 if (hasContent)
+                {
                     exchange.setRequestContentSource(in);
+                }
 
                 customizeExchange(exchange, request);
 

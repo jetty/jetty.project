@@ -106,7 +106,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
         }
 
         if ((_gzStream==null || _gzStream._out==null) && 
-            (_mimeTypes==null && "application/gzip".equalsIgnoreCase(ct) ||
+            (_mimeTypes==null && ct!=null && ct.contains("gzip") ||
              _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
         {
             noGzip();

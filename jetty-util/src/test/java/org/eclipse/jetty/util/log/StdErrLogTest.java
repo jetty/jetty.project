@@ -34,7 +34,7 @@ public class StdErrLogTest
     @Test
     public void testStdErrLogFormat() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog(LogTest.class.getName());
+        StdErrLog log = new StdErrLog(LogTest.class.getName(),new Properties());
         StdErrCapture output = new StdErrCapture(log);
 
         log.info("testing:{},{}","test","format1");
@@ -58,7 +58,7 @@ public class StdErrLogTest
     @Test
     public void testStdErrLogDebug()
     {
-        StdErrLog log = new StdErrLog("xxx");
+        StdErrLog log = new StdErrLog("xxx",new Properties());
         StdErrCapture output = new StdErrCapture(log);
         
         log.setLevel(StdErrLog.LEVEL_DEBUG);
@@ -86,7 +86,7 @@ public class StdErrLogTest
     @Test
     public void testStdErrLogName()
     {
-        StdErrLog log = new StdErrLog("test");
+        StdErrLog log = new StdErrLog("test",new Properties());
         log.setPrintLongNames(true);
         StdErrCapture output = new StdErrCapture(log);
         
@@ -110,7 +110,7 @@ public class StdErrLogTest
         String ths = tout.toString();
         
         // Start test
-        StdErrLog log = new StdErrLog("test");
+        StdErrLog log = new StdErrLog("test",new Properties());
         StdErrCapture output = new StdErrCapture(log);
 
         log.warn("ex",th);
@@ -135,7 +135,7 @@ public class StdErrLogTest
     @Test
     public void testParameterizedMessage_NullValues() throws NullPointerException
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
         log.setLevel(StdErrLog.LEVEL_DEBUG);
         log.setHideStacks(true);
 
@@ -281,7 +281,7 @@ public class StdErrLogTest
     @Test
     public void testWarnFiltering() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
         log.setHideStacks(false);
         
         StdErrCapture output = new StdErrCapture(log);
@@ -320,7 +320,7 @@ public class StdErrLogTest
     @Test
     public void testInfoFiltering() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
         log.setHideStacks(false);
 
         StdErrCapture output = new StdErrCapture(log);
@@ -367,7 +367,7 @@ public class StdErrLogTest
     @Test
     public void testDebugFiltering() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
         log.setHideStacks(true);
 
         StdErrCapture output = new StdErrCapture(log);
@@ -415,7 +415,7 @@ public class StdErrLogTest
     @Test
     public void testIgnores() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
         log.setHideStacks(true);
 
         StdErrCapture output = new StdErrCapture(log);
@@ -440,7 +440,7 @@ public class StdErrLogTest
     
     @Test
     public void testIsDebugEnabled() {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
         log.setHideStacks(true);
         
         log.setLevel(StdErrLog.LEVEL_ALL);
@@ -459,7 +459,7 @@ public class StdErrLogTest
     @Test
     public void testSetGetLevel()
     {
-        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName());
+        StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(),new Properties());
         log.setHideStacks(true);
         
         log.setLevel(StdErrLog.LEVEL_ALL);
@@ -479,7 +479,7 @@ public class StdErrLogTest
     public void testGetChildLogger_Simple()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName);
+        StdErrLog log = new StdErrLog(baseName,new Properties());
         log.setHideStacks(true);
         
         Assert.assertThat("Logger.name", log.getName(), is("jetty"));
@@ -492,7 +492,7 @@ public class StdErrLogTest
     public void testGetChildLogger_Deep()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName);
+        StdErrLog log = new StdErrLog(baseName,new Properties());
         log.setHideStacks(true);
         
         Assert.assertThat("Logger.name", log.getName(), is("jetty"));
@@ -505,7 +505,7 @@ public class StdErrLogTest
     public void testGetChildLogger_Null()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName);
+        StdErrLog log = new StdErrLog(baseName,new Properties());
         log.setHideStacks(true);
         
         Assert.assertThat("Logger.name", log.getName(), is("jetty"));
@@ -520,7 +520,7 @@ public class StdErrLogTest
     public void testGetChildLogger_EmptyName()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName);
+        StdErrLog log = new StdErrLog(baseName,new Properties());
         log.setHideStacks(true);
         
         Assert.assertThat("Logger.name", log.getName(), is("jetty"));
@@ -535,7 +535,7 @@ public class StdErrLogTest
     public void testGetChildLogger_EmptyNameSpaces()
     {
         String baseName = "jetty";
-        StdErrLog log = new StdErrLog(baseName);
+        StdErrLog log = new StdErrLog(baseName,new Properties());
         log.setHideStacks(true);
         
         Assert.assertThat("Logger.name", log.getName(), is("jetty"));
@@ -549,7 +549,7 @@ public class StdErrLogTest
     @Test
     public void testGetChildLogger_NullParent()
     {
-        StdErrLog log = new StdErrLog(null);
+        StdErrLog log = new StdErrLog(null,new Properties());
         
         Assert.assertThat("Logger.name", log.getName(), is(""));
         
@@ -561,7 +561,7 @@ public class StdErrLogTest
     @Test
     public void testToString()
     {
-        StdErrLog log = new StdErrLog("jetty");
+        StdErrLog log = new StdErrLog("jetty",new Properties());
 
         log.setLevel(StdErrLog.LEVEL_ALL);
         Assert.assertThat("Logger.toString", log.toString(), is("StdErrLog:jetty:LEVEL=ALL"));
@@ -582,7 +582,7 @@ public class StdErrLogTest
     @Test
     public void testPrintSource() throws UnsupportedEncodingException
     {
-        StdErrLog log = new StdErrLog("test");
+        StdErrLog log = new StdErrLog("test",new Properties());
         log.setLevel(StdErrLog.LEVEL_DEBUG);
         log.setSource(true);
 

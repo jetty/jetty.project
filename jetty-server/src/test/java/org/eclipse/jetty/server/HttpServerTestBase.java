@@ -39,7 +39,9 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.hamcrest.Matchers;
 import org.junit.Test;
+import org.junit.matchers.JUnitMatchers;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -1048,10 +1050,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             else
                 out.println(avail);
 
-            for (int i=0;i<avail;i++)
+            while (avail>0)
+            {
                 buf+=(char)in.read();
-
-            avail=in.available();
+                avail=in.available();
+            }
+            
+            
             out.println(avail);
             out.println(buf);
             out.close();
@@ -1098,9 +1103,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             // skip header
             while(reader.readLine().length()>0);
-            assertEquals(10,Integer.parseInt(reader.readLine()));
+            assertThat(Integer.parseInt(reader.readLine()),Matchers.greaterThan(0));
             assertEquals(0,Integer.parseInt(reader.readLine()));
-            assertEquals(20,Integer.parseInt(reader.readLine()));
+            assertThat(Integer.parseInt(reader.readLine()),Matchers.greaterThan(0));
             assertEquals(0,Integer.parseInt(reader.readLine()));
             assertEquals("1234567890abcdefghijklmnopqrst",reader.readLine());
 
