@@ -51,16 +51,19 @@ public class SSLCloseTest extends TestCase
     private static AsyncEndPoint __endp;
     private static class CredulousTM implements TrustManager, X509TrustManager
     {
+        @Override
         public X509Certificate[] getAcceptedIssuers()
         {
-            return null;
+            return new X509Certificate[]{};
         }
 
+        @Override
         public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
         {
             return;
         }
 
+        @Override
         public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException
         {
             return;
@@ -129,6 +132,7 @@ public class SSLCloseTest extends TestCase
 
     private static class WriteHandler extends AbstractHandler
     {
+        @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try
