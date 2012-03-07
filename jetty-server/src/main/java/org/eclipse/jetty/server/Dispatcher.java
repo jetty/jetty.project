@@ -275,8 +275,8 @@ public class Dispatcher implements RequestDispatcher
                 {
                     attr._pathInfo=old_path_info;
                     attr._query=old_query;
-                    attr._requestURI=URIUtil.encodePath(old_uri);
-                    attr._contextPath=URIUtil.encodePath(old_context_path);
+                    attr._requestURI=old_uri;
+                    attr._contextPath=old_context_path;
                     attr._servletPath=old_servlet_path;
                 }     
                 
