@@ -19,8 +19,10 @@ package org.eclipse.jetty.spdy.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
+import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
+import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
@@ -77,6 +79,10 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                 }
                 case ASSOCIATED_STREAM_ID:
                 {
+                    // Now we know the streamId, we can do the version check
+                    // and if it is wrong, issue a RST_STREAM
+                    checkVersion(controlFrameParser.getVersion(), streamId);
+
                     if (buffer.remaining() >= 4)
                     {
                         associatedStreamId = buffer.getInt() & 0x7F_FF_FF_FF;
@@ -143,6 +149,12 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
             }
         }
         return false;
+    }
+
+    private void checkVersion(short version, int streamId)
+    {
+        if (version != SPDY.V2 && version != SPDY.V3)
+            throw new StreamException(streamId, StreamStatus.UNSUPPORTED_VERSION);
     }
 
     private byte readPriority(short version, byte currByte)

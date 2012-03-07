@@ -218,19 +218,29 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public Future<Void> goAway()
     {
+        return goAway(SessionStatus.OK);
+    }
+
+    private Future<Void> goAway(SessionStatus sessionStatus)
+    {
         Promise<Void> result = new Promise<>();
-        goAway(0, TimeUnit.MILLISECONDS, result);
+        goAway(sessionStatus, 0, TimeUnit.MILLISECONDS, result);
         return result;
     }
 
     @Override
     public void goAway(long timeout, TimeUnit unit, Handler<Void> handler)
     {
+        goAway(SessionStatus.OK, timeout, unit, handler);
+    }
+
+    private void goAway(SessionStatus sessionStatus, long timeout, TimeUnit unit, Handler<Void> handler)
+    {
         if (goAwaySent.compareAndSet(false, true))
         {
             if (!goAwayReceived.get())
             {
-                GoAwayFrame frame = new GoAwayFrame(version, lastStreamId.get(), SessionStatus.OK.getCode());
+                GoAwayFrame frame = new GoAwayFrame(version, lastStreamId.get(), sessionStatus.getCode());
                 control(null, frame, timeout, unit, handler, null);
                 return;
             }
@@ -369,15 +379,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public void onStreamException(StreamException x)
     {
-        logger.info("Caught stream exception", x);
+        notifyOnException(listener, x);
         rst(new RstInfo(x.getStreamId(), x.getStreamStatus()));
     }
 
     @Override
     public void onSessionException(SessionException x)
     {
-        logger.info("Caught session exception", x);
-        goAway();
+        Throwable cause = x.getCause();
+        notifyOnException(listener, cause == null ? x : cause);
+        goAway(x.getSessionStatus());
     }
 
     private void onSyn(final SynStreamFrame frame)
@@ -599,6 +610,22 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         // Check for null to support tests
         if (controller != null)
             controller.close(false);
+    }
+
+    private void notifyOnException(SessionFrameListener listener, Throwable x)
+    {
+        try
+        {
+            if (listener != null)
+            {
+                logger.debug("Invoking callback with {} on listener {}", x, listener);
+                listener.onException(x);
+            }
+        }
+        catch (Exception xx)
+        {
+            logger.info("Exception while notifying listener " + listener, xx);
+        }
     }
 
     private StreamFrameListener notifyOnSyn(SessionFrameListener listener, Stream stream, SynInfo synInfo)

@@ -38,4 +38,9 @@ public class SessionException extends RuntimeException
         super(cause);
         this.sessionStatus = sessionStatus;
     }
+
+    public SessionStatus getSessionStatus()
+    {
+        return sessionStatus;
+    }
 }
