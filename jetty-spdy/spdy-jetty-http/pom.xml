@@ -14,24 +14,20 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <skip>true</skip>
+          <argLine>-Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${project.version}/npn-boot-${project.version}.jar </argLine>
         </configuration>
       </plugin>
     </plugins>
   </build>
   <profiles>
-    <!-- this profile requires that the codehaus npn-boot artifact be built. -->
     <profile>
-      <id>spdy-tests</id>
+      <id>eclipse-release</id>
       <build>
         <plugins>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <skip>false</skip>
-              <argLine>
-                -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${project.version}/npn-boot-${project.version}.jar 
-              </argLine>
+              <skip>true</skip>           
             </configuration>
           </plugin>
         </plugins>

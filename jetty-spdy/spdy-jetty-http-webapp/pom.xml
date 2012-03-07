@@ -10,10 +10,8 @@
   <artifactId>spdy-jetty-http-webapp</artifactId>
   <packaging>war</packaging>
   <name>Jetty :: SPDY :: Jetty HTTP Web Application</name>
-  <profiles>
-    <!-- this profile requires that the codehaus npn-boot artifact be built. -->
-    <profile>
-      <id>spdy-tests</id>
+  
+  <!--
       <build>
         <plugins>
           <plugin>
@@ -45,6 +43,5 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-  </profiles>
+  -->
 </project>
