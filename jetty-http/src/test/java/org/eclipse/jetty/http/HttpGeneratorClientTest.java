@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,332 +26,444 @@ import javax.swing.text.View;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.SimpleBuffers;
+import org.eclipse.jetty.util.BufferUtil;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Test;
+import org.junit.matchers.JUnitMatchers;
 
 public class HttpGeneratorClientTest
 {
     public final static String CONTENT="The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
     public final static String[] connect={null,"keep-alive","close"};
 
-    @Test
-    public void testContentLength() throws Exception
-    {
-        ByteBuffer bb=new ByteArrayBuffer(8096);
-        ByteBuffer sb=new ByteArrayBuffer(1500);
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
-
-        generator.setRequest("GET","/usr");
-
-        HttpFields fields = new HttpFields();
-        fields.add("Header","Value");
-        fields.add("Content-Type","text/plain");
-
-        String content = "The quick brown fox jumped over the lazy dog";
-        fields.addLongField("Content-Length",content.length());
-
-        generator.completeHeader(fields,false);
-
-        generator.addContent(new ByteArrayBuffer(content),true);
-        generator.flushBuffer();
-        generator.complete();
-        generator.flushBuffer();
-
-        String result=endp.getOut().toString().replace("\r\n","|").replace('\r','|').replace('\n','|');
-        assertEquals("GET /usr HTTP/1.1|Header: Value|Content-Type: text/plain|Content-Length: 44||"+content,result);
-    }
 
     @Test
-    public void testAutoContentLength() throws Exception
+    public void testRequestNoContent() throws Exception
     {
-        ByteBuffer bb=new ByteArrayBuffer(8096);
-        ByteBuffer sb=new ByteArrayBuffer(1500);
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
-
-        generator.setRequest("GET","/usr");
-
+        ByteBuffer header=BufferUtil.allocate(8096);
         HttpFields fields = new HttpFields();
-        fields.add("Header","Value");
-        fields.add("Content-Type","text/plain");
+        HttpGenerator gen = new HttpGenerator();
 
-        String content = "The quick brown fox jumped over the lazy dog";
+        fields.add("Host","something");
+        fields.add("User-Agent","test");
 
-        generator.addContent(new ByteArrayBuffer(content),true);
-        generator.completeHeader(fields,true);
+        gen.setRequest(HttpMethod.GET,"/index.html",HttpVersion.HTTP_1_1);
+        
+        HttpGenerator.Result 
+        result=gen.complete(null,null);
+        assertEquals(HttpGenerator.State.COMPLETING_UNCOMMITTED,gen.getState());
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        
+        result=gen.commit(fields,header,null,null,true);
+        assertEquals(HttpGenerator.Result.NEED_COMPLETE,result);
+        String out = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        assertThat(out,containsString("GET /index.html HTTP/1.1"));
+        assertThat(out,not(containsString("Content-Length")));
+  
+        result=gen.complete(null,null);
+        assertEquals(HttpGenerator.Result.OK,result);
+        
+        
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        assertEquals(0,gen.getContentWritten());    }
+    
+    @Test
+    public void testRequestWithSmallContent() throws Exception
+    {
+        ByteBuffer header=BufferUtil.allocate(4096);
+        ByteBuffer buffer=BufferUtil.allocate(8096);
+        ByteBuffer content=BufferUtil.toBuffer("Hello World");
+        ByteBuffer content1=BufferUtil.toBuffer(". The quick brown fox jumped over the lazy dog.");
+        HttpFields fields = new HttpFields();
+        HttpGenerator gen = new HttpGenerator();
 
-        generator.flushBuffer();
-        generator.complete();
-        generator.flushBuffer();
+        gen.setVersion(HttpVersion.HTTP_1_1);
+        gen.setRequest("POST","/index.html");
+        fields.add("Host","something");
+        fields.add("User-Agent","test");
 
-        String result=endp.getOut().toString().replace("\r\n","|").replace('\r','|').replace('\n','|');
-        assertEquals("GET /usr HTTP/1.1|Header: Value|Content-Type: text/plain|Content-Length: 44||"+content,result);
+        HttpGenerator.Result 
+        
+        result=gen.prepareContent(null,null,content);
+        assertEquals(HttpGenerator.Result.NEED_BUFFER,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        
+        result=gen.prepareContent(null,buffer,content);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        assertEquals("Hello World",BufferUtil.toString(buffer));
+        assertTrue(BufferUtil.isEmpty(content));
+        
+        result=gen.prepareContent(null,buffer,content1);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        assertEquals("Hello World. The quick brown fox jumped over the lazy dog.",BufferUtil.toString(buffer));
+        assertTrue(BufferUtil.isEmpty(content));
+
+        result=gen.complete(null,buffer);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.State.COMPLETING_UNCOMMITTED,gen.getState());
+        
+        result=gen.commit(fields,header,buffer,content,true);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMPLETING,gen.getState());
+        String head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        String body = BufferUtil.toString(buffer);
+        BufferUtil.clear(buffer);
+        
+        result=gen.complete(null,buffer);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        
+        assertThat(head,containsString("POST /index.html HTTP/1.1"));
+        assertThat(head,containsString("Host: something"));
+        assertThat(head,containsString("Content-Length: 58"));
+        assertTrue(head.endsWith("\r\n\r\n"));
+        
+        assertEquals("Hello World. The quick brown fox jumped over the lazy dog.",body);
+        
+        assertEquals(58,gen.getContentWritten());    
     }
 
     @Test
-    public void testChunked() throws Exception
+    public void testRequestWithChunkedContent() throws Exception
     {
-        ByteBuffer bb=new ByteArrayBuffer(8096);
-        ByteBuffer sb=new ByteArrayBuffer(1500);
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator generator = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
-
-        generator.setRequest("GET","/usr");
-
+        ByteBuffer header=BufferUtil.allocate(4096);
+        ByteBuffer buffer=BufferUtil.allocate(16);
+        ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
+        ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
         HttpFields fields = new HttpFields();
-        fields.add("Header","Value");
-        fields.add("Content-Type","text/plain");
+        HttpGenerator gen = new HttpGenerator();
 
-        String content = "The quick brown fox jumped over the lazy dog";
+        gen.setVersion(HttpVersion.HTTP_1_1);
+        gen.setRequest("POST","/index.html");
+        fields.add("Host","something");
+        fields.add("User-Agent","test");
 
-        generator.completeHeader(fields,false);
+        HttpGenerator.Result 
+        
+        result=gen.prepareContent(null,null,content0);
+        assertEquals(HttpGenerator.Result.NEED_BUFFER,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        
+        result=gen.prepareContent(null,buffer,content0);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        assertEquals("Hello World! ",BufferUtil.toString(buffer));
+        assertEquals(0,content0.remaining());
+        
+        result=gen.prepareContent(null,buffer,content1);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        assertEquals("Hello World! The",BufferUtil.toString(buffer));
+        assertEquals(43,content1.remaining());
 
-        generator.addContent(new ByteArrayBuffer(content),false);
-        generator.flushBuffer();
-        generator.complete();
-        generator.flushBuffer();
+        result=gen.commit(fields,header,buffer,content1,false);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMMITTING,gen.getState());
+        assertEquals("Hello World! The",BufferUtil.toString(buffer));
+        assertEquals(43,content1.remaining());
+        assertTrue(gen.isChunking());
 
-        String result=endp.getOut().toString().replace("\r\n","|").replace('\r','|').replace('\n','|');
-        assertEquals("GET /usr HTTP/1.1|Header: Value|Content-Type: text/plain|Transfer-Encoding: chunked||2C|"+content+"|0||",result);
+        String head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        String body = BufferUtil.toString(buffer);
+        BufferUtil.clear(buffer);
+
+        result=gen.commit(fields,header,buffer,content1,false);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        
+        result=gen.prepareContent(null,buffer,content1);
+        assertEquals(HttpGenerator.Result.NEED_CHUNK,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+
+        ByteBuffer chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+        result=gen.prepareContent(chunk,buffer,content1);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertEquals("\r\n10\r\n",BufferUtil.toString(chunk));
+        assertEquals(" quick brown fox",BufferUtil.toString(buffer));
+        assertEquals(27,content1.remaining());
+        body += BufferUtil.toString(chunk)+BufferUtil.toString(buffer);
+        BufferUtil.clear(chunk);
+        BufferUtil.clear(buffer);
+
+        result=gen.prepareContent(chunk,buffer,content1);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertEquals("\r\n10\r\n",BufferUtil.toString(chunk));
+        assertEquals(" jumped over the",BufferUtil.toString(buffer));
+        assertEquals(11,content1.remaining());
+        body += BufferUtil.toString(chunk)+BufferUtil.toString(buffer);
+        BufferUtil.clear(chunk);
+        BufferUtil.clear(buffer);
+
+        result=gen.prepareContent(chunk,buffer,content1);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertEquals("",BufferUtil.toString(chunk));
+        assertEquals(" lazy dog. ",BufferUtil.toString(buffer));
+        assertEquals(0,content1.remaining());
+        
+        result=gen.complete(chunk,buffer);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMPLETING,gen.getState());
+        assertEquals("\r\nB\r\n",BufferUtil.toString(chunk));
+        assertEquals(" lazy dog. ",BufferUtil.toString(buffer));
+        body += BufferUtil.toString(chunk)+BufferUtil.toString(buffer);
+        BufferUtil.clear(chunk);
+        BufferUtil.clear(buffer);
+
+        result=gen.complete(chunk,buffer);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        assertEquals("\r\n0\r\n\r\n",BufferUtil.toString(chunk));
+        assertEquals(0,buffer.remaining());
+        body += BufferUtil.toString(chunk);
+        BufferUtil.clear(chunk);
+        BufferUtil.clear(buffer);
+
+        result=gen.complete(chunk,buffer);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        
+        assertEquals(59,gen.getContentWritten());   
+        
+        // System.err.println(head+body);
+
+        assertThat(head,containsString("POST /index.html HTTP/1.1"));
+        assertThat(head,containsString("Host: something"));
+        assertThat(head,not(containsString("Content-Length")));
+        assertThat(head,containsString("Transfer-Encoding: chunked"));
+        assertTrue(head.endsWith("\r\n\r\n10\r\n"));
     }
 
     @Test
-    public void testHTTP() throws Exception
+    public void testRequestWithLargeChunkedContent() throws Exception
     {
-        ByteBuffer bb=new ByteArrayBuffer(8096);
-        ByteBuffer sb=new ByteArrayBuffer(1500);
+        ByteBuffer header=BufferUtil.allocate(4096);
+        ByteBuffer content0=BufferUtil.toBuffer("Hello Cruel World! ");
+        ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
         HttpFields fields = new HttpFields();
-        ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096);
-        HttpGenerator hb = new HttpGenerator(new SimpleBuffers(sb,bb),endp);
-        Handler handler = new Handler();
-        HttpParser parser=null;
+        HttpGenerator gen = new HttpGenerator();
+        gen.setLargeContent(8);
 
-        // For HTTP version
-        for (int v=9;v<=11;v++)
-        {
-            // For each test result
-            for (int r=0;r<tr.length;r++)
-            {
-                // chunks = 1 to 3
-                for (int chunks=1;chunks<=6;chunks++)
-                {
-                    // For none, keep-alive, close
-                    for (int c=0;c<connect.length;c++)
-                    {
-                        String t="v="+v+",r="+r+",chunks="+chunks+",c="+c+",tr="+tr[r];
-                        // System.err.println(t);
+        gen.setVersion(HttpVersion.HTTP_1_1);
+        gen.setRequest("POST","/index.html");
+        fields.add("Host","something");
+        fields.add("User-Agent","test");
 
-                        hb.reset();
-                        endp.reset();
-                        fields.clear();
+        HttpGenerator.Result 
+        
+        result=gen.prepareContent(null,null,content0);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        
+        result=gen.commit(fields,header,null,content0,false);
+        assertEquals(HttpGenerator.Result.FLUSH_CONTENT,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertTrue(gen.isChunking());
+        
+        String head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        String body = BufferUtil.toString(content0);
+        BufferUtil.clear(content0);
 
-                        // System.out.println("TEST: "+t);
+        result=gen.commit(fields,header,null,content0,false);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        
+        result=gen.prepareContent(null,null,content1);
+        assertEquals(HttpGenerator.Result.NEED_CHUNK,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
 
-                        try
-                        {
-                            tr[r].build(v,hb,connect[c],null,chunks, fields);
-                        }
-                        catch(IllegalStateException e)
-                        {
-                            if (v<10 || v==10 && chunks>2)
-                                continue;
-                            System.err.println(t);
-                            throw e;
-                        }
-                        String request=endp.getOut().toString();
-                        // System.out.println(request+(hb.isPersistent()?"...\n":"---\n"));
+        ByteBuffer chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+        result=gen.prepareContent(chunk,null,content1);
+        assertEquals(HttpGenerator.Result.FLUSH_CONTENT,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertEquals("\r\n2E\r\n",BufferUtil.toString(chunk));
+        
+        body += BufferUtil.toString(chunk)+BufferUtil.toString(content1);
+        BufferUtil.clear(content1);
+        
+        result=gen.complete(chunk,null);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        assertEquals("\r\n0\r\n\r\n",BufferUtil.toString(chunk));
+        body += BufferUtil.toString(chunk);
+        
+        result=gen.complete(chunk,null);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        
+        assertEquals(65,gen.getContentWritten());   
+        
+        // System.err.println(head+body);
 
-                        assertTrue(t,hb.isPersistent());
-
-                        if (v==9)
-                        {
-                            assertEquals(t,"GET /context/path/info\r\n", request);
-                            continue;
-                        }
-
-                        parser=new HttpParser(new ByteArrayBuffer(request.getBytes()), handler);
-                        try
-                        {
-                            parser.parse();
-                        }
-                        catch(IOException e)
-                        {
-                            if (tr[r].body!=null)
-                                throw e;
-                            continue;
-                        }
-
-                        if (tr[r].body!=null)
-                            assertEquals(t,tr[r].body, this.content);
-                        if (v==10)
-                            assertTrue(t,hb.isPersistent() || tr[r].values[1]==null || c==2 || c==0);
-                        else
-                            assertTrue(t,hb.isPersistent() ||  c==2);
-
-                        assertTrue(t,tr[r].values[1]==null || content.length()==Integer.parseInt(tr[r].values[1]));
-                    }
-                }
-            }
-        }
+        assertThat(head,containsString("POST /index.html HTTP/1.1"));
+        assertThat(head,containsString("Host: something"));
+        assertThat(head,not(containsString("Content-Length")));
+        assertThat(head,containsString("Transfer-Encoding: chunked"));
+        assertTrue(head.endsWith("\r\n\r\n13\r\n"));
     }
 
-    private static final String[] headers= { "Content-Type","Content-Length","Connection","Transfer-Encoding","Other"};
-    private static class TR
+
+    @Test
+    public void testRequestWithKnownContent() throws Exception
     {
-        private String[] values=new String[headers.length];
-        private String body;
+        ByteBuffer header=BufferUtil.allocate(4096);
+        ByteBuffer buffer=BufferUtil.allocate(16);
+        ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
+        ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
+        HttpFields fields = new HttpFields();
+        HttpGenerator gen = new HttpGenerator();
 
-        private TR(String ct, String cl ,String content)
-        {
-            values[0]=ct;
-            values[1]=cl;
-            values[4]="value";
-            this.body=content;
-        }
+        gen.setVersion(HttpVersion.HTTP_1_1);
+        gen.setRequest("POST","/index.html");
+        fields.add("Host","something");
+        fields.add("User-Agent","test");
+        fields.add("Content-Length","59");
+        gen.setContentLength(59);
+        
+        HttpGenerator.Result 
+        
+        result=gen.prepareContent(null,null,content0);
+        assertEquals(HttpGenerator.Result.NEED_BUFFER,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        
+        result=gen.prepareContent(null,buffer,content0);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        assertEquals("Hello World! ",BufferUtil.toString(buffer));
+        assertEquals(0,content0.remaining());
+        
+        result=gen.prepareContent(null,buffer,content1);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
+        assertEquals("Hello World! The",BufferUtil.toString(buffer));
+        assertEquals(43,content1.remaining());
 
-        private void build(int version,HttpGenerator hb, String connection, String te, int chunks, HttpFields fields)
-                throws Exception
-        {
-            values[2]=connection;
-            values[3]=te;
+        result=gen.commit(fields,header,buffer,content1,false);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertEquals("Hello World! The",BufferUtil.toString(buffer));
+        assertEquals(43,content1.remaining());
+        assertTrue(!gen.isChunking());
 
-            hb.setRequest(HttpMethod.GET,"/context/path/info");
-            hb.setVersion(version);
+        String head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        String body = BufferUtil.toString(buffer);
+        BufferUtil.clear(buffer);
 
-            for (int i=0;i<headers.length;i++)
-            {
-                if (values[i]==null)
-                    continue;
-                fields.put(new ByteArrayBuffer(headers[i]),new ByteArrayBuffer(values[i]));
-            }
+        result=gen.prepareContent(null,buffer,content1);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertEquals(" quick brown fox",BufferUtil.toString(buffer));
+        assertEquals(27,content1.remaining());
+        body += BufferUtil.toString(buffer);
+        BufferUtil.clear(buffer);
 
-            if (body!=null)
-            {
-                int inc=1+body.length()/chunks;
-                ByteBuffer buf=new ByteArrayBuffer(body);
-                View view = new View(buf);
-                for (int i=1;i<chunks;i++)
-                {
-                    view.setPutIndex(i*inc);
-                    view.setGetIndex((i-1)*inc);
-                    hb.addContent(view,Generator.MORE);
-                    if (hb.isBufferFull() && hb.isState(AbstractGenerator.STATE_HEADER))
-                        hb.completeHeader(fields, Generator.MORE);
-                    if (i%2==0)
-                    {
-                        if (hb.isState(AbstractGenerator.STATE_HEADER))
-                        {
-                            if (version<11)
-                                fields.addLongField("Content-Length",body.length());
-                            hb.completeHeader(fields, Generator.MORE);
-                        }
-                        hb.flushBuffer();
-                    }
-                }
-                view.setPutIndex(buf.putIndex());
-                view.setGetIndex((chunks-1)*inc);
-                hb.addContent(view,Generator.LAST);
-                if(hb.isState(AbstractGenerator.STATE_HEADER))
-                    hb.completeHeader(fields, Generator.LAST);
-            }
-            else
-            {
-                hb.completeHeader(fields, Generator.LAST);
-            }
-            hb.complete();
-            while(!hb.isComplete())
-                hb.flushBuffer();
-        }
+        result=gen.prepareContent(null,buffer,content1);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertEquals(" jumped over the",BufferUtil.toString(buffer));
+        assertEquals(11,content1.remaining());
+        body += BufferUtil.toString(buffer);
+        BufferUtil.clear(buffer);
 
-        @Override
-        public String toString()
-        {
-            return "["+values[0]+","+values[1]+","+(body==null?"none":"_content")+"]";
-        }
+        result=gen.prepareContent(null,buffer,content1);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertEquals(" lazy dog. ",BufferUtil.toString(buffer));
+        assertEquals(0,content1.remaining());
+        
+        result=gen.complete(null,buffer);
+        assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertEquals(HttpGenerator.State.COMPLETING,gen.getState());
+        assertEquals(" lazy dog. ",BufferUtil.toString(buffer));
+        body += BufferUtil.toString(buffer);
+        BufferUtil.clear(buffer);
+
+        result=gen.complete(null,buffer);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        assertEquals(0,buffer.remaining());
+        
+        assertEquals(59,gen.getContentWritten());   
+        
+        // System.err.println(head+body);
+
+        assertThat(head,containsString("POST /index.html HTTP/1.1"));
+        assertThat(head,containsString("Host: something"));
+        assertThat(head,containsString("Content-Length: 59"));
+        assertThat(head,not(containsString("chunked")));
+        assertTrue(head.endsWith("\r\n\r\n"));
     }
 
-    private final TR[] tr =
+    @Test
+    public void testRequestWithKnownLargeContent() throws Exception
     {
-      /* 0 */  new TR(null,null,null),
-      /* 1 */  new TR(null,null,CONTENT),
-      /* 3 */  new TR(null,""+CONTENT.length(),CONTENT),
-      /* 4 */  new TR("text/html",null,null),
-      /* 5 */  new TR("text/html",null,CONTENT),
-      /* 7 */  new TR("text/html",""+CONTENT.length(),CONTENT),
-    };
+        ByteBuffer header=BufferUtil.allocate(4096);
+        ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
+        ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
+        HttpFields fields = new HttpFields();
+        HttpGenerator gen = new HttpGenerator();
+        gen.setLargeContent(8);
 
+        gen.setVersion(HttpVersion.HTTP_1_1);
+        gen.setRequest("POST","/index.html");
+        fields.add("Host","something");
+        fields.add("User-Agent","test");
+        fields.add("Content-Length","59");
+        gen.setContentLength(59);
+        
+        HttpGenerator.Result 
+        
+        result=gen.prepareContent(null,null,content0);
+        assertEquals(HttpGenerator.Result.NEED_COMMIT,result);
+        assertEquals(HttpGenerator.State.START,gen.getState());
 
-    private String content;
-    private String f0;
-    private String f1;
-    private String f2;
-    private String[] hdr;
-    private String[] val;
-    private int h;
+        result=gen.commit(fields,header,null,content0,false);
+        assertEquals(HttpGenerator.Result.FLUSH_CONTENT,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        assertTrue(!gen.isChunking());
 
-    private class Handler extends HttpParser.EventHandler
-    {
-        private int index=0;
+        String head = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+        String body = BufferUtil.toString(content0);
+        BufferUtil.clear(content0);
+        
+        result=gen.commit(fields,header,null,null,false);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        
+        result=gen.prepareContent(null,null,content1);
+        assertEquals(HttpGenerator.Result.FLUSH_CONTENT,result);
+        assertEquals(HttpGenerator.State.COMMITTED,gen.getState());
+        body += BufferUtil.toString(content1);
+        BufferUtil.clear(content1);
+        
+        result=gen.complete(null,null);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
 
-        @Override
-        public void content(ByteBuffer ref)
-        {
-            if (index == 0)
-                content= "";
-            content= content.substring(0, index) + ref;
-            index+=ref.length();
-        }
+        result=gen.complete(null,null);
+        assertEquals(HttpGenerator.Result.OK,result);
+        assertEquals(HttpGenerator.State.END,gen.getState());
+        
+        assertEquals(59,gen.getContentWritten());   
+        
+        // System.err.println(head+body);
 
-        @Override
-        public void startRequest(ByteBuffer tok0, ByteBuffer tok1, ByteBuffer tok2)
-        {
-            h= -1;
-            hdr= new String[9];
-            val= new String[9];
-            f0= tok0.toString();
-            f1= tok1.toString();
-            if (tok2!=null)
-                f2= tok2.toString();
-            else
-                f2=null;
-            index=0;
-            // System.out.println(f0+" "+f1+" "+f2);
-        }
-
-        /* (non-Javadoc)
-         * @see org.eclipse.jetty.EventHandler#startResponse(org.eclipse.io.Buffer, int, org.eclipse.io.Buffer)
-         */
-        @Override
-        public void startResponse(ByteBuffer version, int status, ByteBuffer reason)
-        {
-            h= -1;
-            hdr= new String[9];
-            val= new String[9];
-            f0= version.toString();
-            f1= ""+status;
-            if (reason!=null)
-                f2= reason.toString();
-            else
-                f2=null;
-            index=0;
-        }
-
-        @Override
-        public void parsedHeader(ByteBuffer name,ByteBuffer value)
-        {
-            hdr[++h]= name.toString();
-            val[h]= value.toString();
-        }
-
-        @Override
-        public void headerComplete()
-        {
-            content= null;
-        }
-
-        @Override
-        public void messageComplete(long contentLength)
-        {
-        }
+        assertThat(head,containsString("POST /index.html HTTP/1.1"));
+        assertThat(head,containsString("Host: something"));
+        assertThat(head,containsString("Content-Length: 59"));
+        assertThat(head,not(containsString("chunked")));
+        assertTrue(head.endsWith("\r\n\r\n"));
     }
+    
 }

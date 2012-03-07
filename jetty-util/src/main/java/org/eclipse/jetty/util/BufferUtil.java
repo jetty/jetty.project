@@ -33,13 +33,6 @@ public class BufferUtil
     { (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'A', (byte)'B', (byte)'C', (byte)'D',
             (byte)'E', (byte)'F' };
 
-
-    /* ------------------------------------------------------------ */
-    public static void clear(ByteBuffer buffer)
-    {
-        buffer.position(0);
-        buffer.limit(0);
-    }
     
     /* ------------------------------------------------------------ */
     /** Allocate ByteBuffer in output mode.
@@ -70,10 +63,25 @@ public class BufferUtil
     }
     
 
+
+    /* ------------------------------------------------------------ */
+    public static void clear(ByteBuffer buffer)
+    {
+        buffer.position(0);
+        buffer.limit(0);
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void clearToFill(ByteBuffer buffer)
+    {
+        buffer.position(0);
+        buffer.limit(buffer.capacity());
+    }
+    
     /* ------------------------------------------------------------ */
     public static void flipToFill(ByteBuffer buffer)
     {
-        buffer.position(buffer.limit());
+        buffer.position(buffer.hasRemaining()?buffer.limit():0);
         buffer.limit(buffer.capacity());
     }
 
@@ -128,7 +136,7 @@ public class BufferUtil
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from
-     * @param to Buffer to put bytes to
+     * @param to Buffer to put bytes to. The buffer is flipped before and after the put.
      * @return number of bytes moved
      */
     public static int put(ByteBuffer from, ByteBuffer to, long maxBytes)
@@ -141,7 +149,7 @@ public class BufferUtil
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from
-     * @param to Buffer to put bytes to
+     * @param to Buffer to put bytes to. The buffer is flipped before and after the put.
      * @return number of bytes moved
      */
     public static int put(ByteBuffer from, ByteBuffer to, int maxBytes)
@@ -191,7 +199,7 @@ public class BufferUtil
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from
-     * @param to Buffer to put bytes to
+     * @param to Buffer to put bytes to. The buffer is flipped before and after the put.
      * @return number of bytes moved
      */
     public static int put(ByteBuffer from, ByteBuffer to)

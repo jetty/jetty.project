@@ -1073,13 +1073,12 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
         
         /* ------------------------------------------------------------ */
-        public void putTo(ByteBuffer buffer) throws IOException
+        public void putTo(ByteBuffer buffer) 
         {
             HttpHeader header = HttpHeader.CACHE.get(_name);
             if (header!=null)
             {
-                buffer.put(header.toBuffer());
-                buffer.put(__colon_space);
+                buffer.put(header.toBytesColonSpace());
                 
                 if (HttpHeaderValue.hasKnownValues(header))
                 {
@@ -1089,6 +1088,8 @@ public class HttpFields implements Iterable<HttpFields.Field>
                     else
                         buffer.put(toSanitisedBytes(_value));
                 }
+                else
+                    buffer.put(toSanitisedBytes(_value));
             }
             else
             {
@@ -1101,7 +1102,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
         }
         
         /* ------------------------------------------------------------ */
-        public void putValueTo(ByteBuffer buffer) throws IOException
+        public void putValueTo(ByteBuffer buffer)
         {
             buffer.put(toSanitisedBytes(_value));
         }
