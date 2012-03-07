@@ -100,7 +100,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         {
             for (ServletHolder h : holders)
             {
-                if (h.getClassName().equals(clazz.getName()) && h.getName().equals(servletName))
+                if (h.getClassName().equals(clazz.getName()) && h.getName() != null && servletName.equals(h.getName()))
                 {
                     holder = h;
                     isNew = false;
