@@ -347,6 +347,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     @Override
     protected void doStop() throws Exception
     {
+        removeBean(_loginService);
         super.doStop();
     }
 
