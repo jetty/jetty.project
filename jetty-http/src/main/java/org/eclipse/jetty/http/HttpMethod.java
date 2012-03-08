@@ -54,7 +54,7 @@ public enum HttpMethod
     }
 
     /* ------------------------------------------------------------ */
-    public byte[] toBytes()
+    public byte[] getBytes()
     {
         return _bytes;
     }

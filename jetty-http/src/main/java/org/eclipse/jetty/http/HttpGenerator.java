@@ -74,9 +74,9 @@ public class HttpGenerator
 
     // states
 
-    enum Action { FLUSH, COMPLETE, PREPARE };
-    enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, END };
-    enum Result { NEED_CHUNK,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
+    public enum Action { FLUSH, COMPLETE, PREPARE };
+    public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, END };
+    public enum Result { NEED_CHUNK,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
 
     public static final byte[] NO_BYTES = {};
 
@@ -308,7 +308,7 @@ public class HttpGenerator
     {
         if (_state != State.START)
             throw new IllegalStateException("STATE!=START "+_state);
-        _method=method.toBytes();
+        _method=method.getBytes();
         _uri=StringUtil.getUtf8Bytes(uri);
         setVersion(version);
     }
@@ -705,7 +705,7 @@ public class HttpGenerator
         // Add Date header
         if (_status>=200 && _date!=null)
         {
-            header.put(HttpHeader.DATE.toBytesColonSpace());
+            header.put(HttpHeader.DATE.getBytesColonSpace());
             header.put(_date);
             header.put(CRLF);
         }
@@ -744,7 +744,7 @@ public class HttpGenerator
                             else
                             {
                                 // write the field to the header
-                                header.put(HttpHeader.CONTENT_LENGTH.toBytesColonSpace());
+                                header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
                                 BufferUtil.putDecLong(header,length);
                                 BufferUtil.putCRLF(header);
                                 _contentLength=length;
@@ -802,7 +802,7 @@ public class HttpGenerator
                                 case UPGRADE:
                                 {
                                     // special case for websocket connection ordering
-                                    header.put(HttpHeader.CONNECTION.toBytesColonSpace()).put(HttpHeader.UPGRADE.toBytes());
+                                    header.put(HttpHeader.CONNECTION.getBytesColonSpace()).put(HttpHeader.UPGRADE.getBytes());
                                     break;
                                 }
 
@@ -858,7 +858,7 @@ public class HttpGenerator
                             field.putTo(header);
                         else
                         {
-                            header.put(name.toBytesColonSpace());
+                            header.put(name.getBytesColonSpace());
                             field.putValueTo(header);
                             header.put(CRLF);
                         }
@@ -893,7 +893,7 @@ public class HttpGenerator
                     if (!content_length && (isResponse() || _contentLength>0 || content_type ) && !_noContent)
                     {
                         // known length but not actually set.
-                        header.put(HttpHeader.CONTENT_LENGTH.toBytesColonSpace());
+                        header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
                         BufferUtil.putDecLong(header, _contentLength);
                         header.put(HttpTokens.CRLF);
                     }

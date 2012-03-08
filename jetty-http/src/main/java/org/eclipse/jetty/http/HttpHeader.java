@@ -136,13 +136,13 @@ public enum HttpHeader
     }
 
     /* ------------------------------------------------------------ */
-    public byte[] toBytes()
+    public byte[] getBytes()
     {
         return _bytes;
     }
 
     /* ------------------------------------------------------------ */
-    public byte[] toBytesColonSpace()
+    public byte[] getBytesColonSpace()
     {
         return _bytesColonSpace;
     }
@@ -153,14 +153,6 @@ public enum HttpHeader
     {
         return _string;
     }
-
-    public static void main (String[] args)
-    {
-        for (HttpHeader h : HttpHeader.values())
-        {
-            System.err.println("\n\n"+h);
-            CACHE.get(h.toString());
-        }
-    }
+    
 }
 

@@ -1086,7 +1086,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
             HttpHeader header = HttpHeader.CACHE.get(_name);
             if (header!=null)
             {
-                buffer.put(header.toBytesColonSpace());
+                buffer.put(header.getBytesColonSpace());
 
                 if (HttpHeaderValue.hasKnownValues(header))
                 {
