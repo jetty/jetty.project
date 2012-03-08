@@ -18,6 +18,9 @@ package org.eclipse.jetty.spdy.api;
 
 import java.util.EventListener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * <p>A {@link SessionFrameListener} is the passive counterpart of a {@link Session} and receives events happening
  * on a SPDY session.</p>
@@ -106,10 +109,21 @@ public interface SessionFrameListener extends EventListener
     public void onGoAway(Session session, GoAwayInfo goAwayInfo);
 
     /**
+     * <p>Callback invoked when an exception is thrown during the processing of an event on a
+     * SPDY session.</p>
+     * <p>Examples of such conditions are invalid frames received, corrupted headers compression state, etc.</p>
+     *
+     * @param x the exception that caused the event processing failure
+     */
+    public void onException(Throwable x);
+
+    /**
      * <p>Empty implementation of {@link SessionFrameListener}</p>
      */
     public static class Adapter implements SessionFrameListener
     {
+        private static final Logger logger = LoggerFactory.getLogger(Adapter.class);
+
         @Override
         public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
         {
@@ -134,6 +148,12 @@ public interface SessionFrameListener extends EventListener
         @Override
         public void onGoAway(Session session, GoAwayInfo goAwayInfo)
         {
+        }
+
+        @Override
+        public void onException(Throwable x)
+        {
+            logger.info("", x);
         }
     }
 }

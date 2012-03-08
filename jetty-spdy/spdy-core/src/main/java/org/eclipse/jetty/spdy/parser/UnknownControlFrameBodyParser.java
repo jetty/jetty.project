@@ -20,19 +20,51 @@ import java.nio.ByteBuffer;
 
 public class UnknownControlFrameBodyParser extends ControlFrameBodyParser
 {
+    private final ControlFrameParser controlFrameParser;
+    private State state = State.BODY;
     private int remaining;
 
     public UnknownControlFrameBodyParser(ControlFrameParser controlFrameParser)
     {
-        this.remaining = controlFrameParser.getLength();
+        this.controlFrameParser = controlFrameParser;
     }
 
     @Override
     public boolean parse(ByteBuffer buffer)
     {
-        int consumed = Math.min(remaining, buffer.remaining());
-        buffer.position(buffer.position() + consumed);
-        remaining -= consumed;
-        return remaining == 0;
+        switch (state)
+        {
+            case BODY:
+            {
+                remaining = controlFrameParser.getLength();
+                state = State.CONSUME;
+                // Fall down
+            }
+            case CONSUME:
+            {
+                int consume = Math.min(remaining, buffer.remaining());
+                buffer.position(buffer.position() + consume);
+                remaining -= consume;
+                if (remaining > 0)
+                    return false;
+                reset();
+                return true;
+            }
+            default:
+            {
+                throw new IllegalStateException();
+            }
+        }
+    }
+
+    private void reset()
+    {
+        state = State.BODY;
+        remaining = 0;
+    }
+
+    private enum State
+    {
+        BODY, CONSUME
     }
 }

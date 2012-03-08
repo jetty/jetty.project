@@ -36,13 +36,6 @@ public class StreamException extends RuntimeException
         this.streamStatus = streamStatus;
     }
 
-    public StreamException(int streamId, StreamStatus streamStatus, Throwable x)
-    {
-        super(x);
-        this.streamId = streamId;
-        this.streamStatus = streamStatus;
-    }
-
     public int getStreamId()
     {
         return streamId;

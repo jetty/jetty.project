@@ -20,9 +20,6 @@ import java.nio.ByteBuffer;
 import java.util.EnumMap;
 
 import org.eclipse.jetty.spdy.CompressionFactory;
-import org.eclipse.jetty.spdy.SessionException;
-import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 
@@ -77,7 +74,6 @@ public abstract class ControlFrameParser
                     if (buffer.remaining() >= 2)
                     {
                         version = (short)(buffer.getShort() & 0x7F_FF);
-                        checkVersion(version);
                         state = State.TYPE;
                     }
                     else
@@ -95,7 +91,6 @@ public abstract class ControlFrameParser
                     if (cursor == 0)
                     {
                         version &= 0x7F_FF;
-                        checkVersion(version);
                         state = State.TYPE;
                     }
                     break;
@@ -169,12 +164,6 @@ public abstract class ControlFrameParser
             }
         }
         return false;
-    }
-
-    private void checkVersion(short version)
-    {
-        if (version != SPDY.V2 && version != SPDY.V3)
-            throw new SessionException(SessionStatus.PROTOCOL_ERROR, "Unrecognized version " + version);
     }
 
     private void reset()
