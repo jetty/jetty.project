@@ -859,7 +859,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             // starvation (for the last frames sent) and stack overflow.
             // Therefore every some invocation, we dispatch to a new thread
             Integer invocations = handlerInvocations.get();
-            if (invocations >= 8)
+            if (invocations >= 4)
             {
                 execute(new Runnable()
                 {
@@ -881,7 +881,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 }
                 finally
                 {
-                    handlerInvocations.set(invocations - 1);
+                    handlerInvocations.set(invocations);
                 }
             }
         }
