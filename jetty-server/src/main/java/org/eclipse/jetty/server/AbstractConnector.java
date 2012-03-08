@@ -62,9 +62,9 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     private ThreadPool _threadPool;
     private String _host;
     private int _port = 0;
-    private String _integralScheme = HttpScheme.HTTPS;
+    private String _integralScheme = HttpScheme.HTTPS.toString();
     private int _integralPort = 0;
-    private String _confidentialScheme = HttpScheme.HTTPS;
+    private String _confidentialScheme = HttpScheme.HTTPS.toString();
     private int _confidentialPort = 0;
     private int _acceptQueueSize = 0;
     private int _acceptors = 1;
@@ -73,10 +73,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     private boolean _forwarded;
     private String _hostHeader;
 
-    private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST;
-    private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER;
-    private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR;
-    private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO;
+    private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
+    private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
+    private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
+    private String _forwardedProtoHeader = HttpHeader.X_FORWARDED_PROTO.toString();
     private String _forwardedCipherSuiteHeader;
     private String _forwardedSslSessionIdHeader;
     private boolean _reuseAddress = true;
@@ -420,7 +420,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
             if(ssl_session_id!=null)
             {
                 request.setAttribute("javax.servlet.request.ssl_session_id", ssl_session_id);
-                request.setScheme(HttpScheme.HTTPS);
+                request.setScheme(HttpScheme.HTTPS.toString());
             }
         }
 
@@ -433,7 +433,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         if (_hostHeader != null)
         {
             // Update host header
-            httpFields.put(HttpHeader.HOST_BUFFER,_hostHeader);
+            httpFields.put(HttpHeader.HOST.toString(),_hostHeader);
             request.setServerName(null);
             request.setServerPort(-1);
             request.getServerName();
@@ -441,7 +441,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         else if (forwardedHost != null)
         {
             // Update host header
-            httpFields.put(HttpHeader.HOST_BUFFER,forwardedHost);
+            httpFields.put(HttpHeader.HOST.toString(),forwardedHost);
             request.setServerName(null);
             request.setServerPort(-1);
             request.getServerName();
@@ -558,7 +558,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
      */
     public boolean isConfidential(Request request)
     {
-        return _forwarded && request.getScheme().equalsIgnoreCase(HttpScheme.HTTPS);
+        return _forwarded && request.getScheme().equalsIgnoreCase(HttpScheme.HTTPS.toString());
     }
 
     /* ------------------------------------------------------------ */

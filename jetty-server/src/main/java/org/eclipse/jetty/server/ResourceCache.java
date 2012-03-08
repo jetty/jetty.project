@@ -16,6 +16,8 @@ package org.eclipse.jetty.server;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Comparator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -28,10 +30,7 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
 
-import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.io.View;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -296,10 +295,17 @@ public class ResourceCache
                 LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
                 return null;
             }
-            ByteBuffer buffer = new IndirectNIOBuffer(len);
-            InputStream is = resource.getInputStream();
-            buffer.readFrom(is,len);
-            is.close();
+            ByteBuffer buffer = BufferUtil.allocate(len);
+            int pos=BufferUtil.flipToFill(buffer);
+            if (resource.getFile()!=null)
+                BufferUtil.readFrom(resource.getFile(),buffer);
+            else
+            {
+                InputStream is = resource.getInputStream();
+                BufferUtil.readFrom(is,len,buffer);
+                is.close();
+            }
+            BufferUtil.flipToFlush(buffer,pos);
             return buffer;
         }
         catch(IOException e)
@@ -315,18 +321,27 @@ public class ResourceCache
         try
         {
             if (_useFileMappedBuffer && resource.getFile()!=null) 
-                return new DirectNIOBuffer(resource.getFile());
-
+                return BufferUtil.toBuffer(resource.getFile());
+            
             int len=(int)resource.length();
             if (len<0)
             {
                 LOG.warn("invalid resource: "+String.valueOf(resource)+" "+len);
                 return null;
             }
-            ByteBuffer buffer = new DirectNIOBuffer(len);
-            InputStream is = resource.getInputStream();
-            buffer.readFrom(is,len);
-            is.close();
+            ByteBuffer buffer = BufferUtil.allocateDirect(len);
+
+            int pos=BufferUtil.flipToFill(buffer);
+            if (resource.getFile()!=null)
+                BufferUtil.readFrom(resource.getFile(),buffer);
+            else
+            {
+                InputStream is = resource.getInputStream();
+                BufferUtil.readFrom(is,len,buffer);
+                is.close();
+            }
+            BufferUtil.flipToFlush(buffer,pos);
+            
             return buffer;
         }
         catch(IOException e)
@@ -368,7 +383,7 @@ public class ResourceCache
             _contentType=_mimeTypes.getMimeByExtension(_resource.toString());
             boolean exists=resource.exists();
             _lastModified=exists?resource.lastModified():-1;
-            _lastModifiedBytes=_lastModified<0?null:new ByteArrayBuffer(HttpFields.formatDate(_lastModified));
+            _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(HttpFields.formatDate(_lastModified));
             
             _length=exists?(int)resource.length():0;
             _cachedSize.addAndGet(_length);
@@ -459,7 +474,7 @@ public class ResourceCache
             }
             if (buffer==null)
                 return null;
-            return new View(buffer);
+            return buffer.asReadOnlyBuffer();
         }
         
 
@@ -480,8 +495,7 @@ public class ResourceCache
             }
             if (buffer==null)
                 return null;
-                        
-            return new View(buffer);
+            return buffer.asReadOnlyBuffer();
         }
         
         /* ------------------------------------------------------------ */
@@ -494,8 +508,8 @@ public class ResourceCache
         public InputStream getInputStream() throws IOException
         {
             ByteBuffer indirect = getIndirectBuffer();
-            if (indirect!=null && indirect.array()!=null)
-                return new ByteArrayInputStream(indirect.array(),indirect.getIndex(),indirect.length());
+            if (indirect!=null && indirect.hasArray())
+                return new ByteArrayInputStream(indirect.array(),indirect.arrayOffset()+indirect.position(),indirect.remaining());
            
             return _resource.getInputStream();
         }   

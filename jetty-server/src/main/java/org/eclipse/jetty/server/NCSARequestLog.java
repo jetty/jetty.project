@@ -467,7 +467,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             String addr = null;
             if (_preferProxiedForAddress)
             {
-                addr = request.getHeader(HttpHeader.X_FORWARDED_FOR);
+                addr = request.getHeader(HttpHeader.X_FORWARDED_FOR.toString());
             }
 
             if (addr == null)
@@ -601,7 +601,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
                                Response response,
                                StringBuilder b) throws IOException
     {
-        String referer = request.getHeader(HttpHeader.REFERER);
+        String referer = request.getHeader(HttpHeader.REFERER.toString());
         if (referer == null)
             b.append("\"-\" ");
         else
@@ -611,7 +611,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             b.append("\" ");
         }
 
-        String agent = request.getHeader(HttpHeader.USER_AGENT);
+        String agent = request.getHeader(HttpHeader.USER_AGENT.toString());
         if (agent == null)
             b.append("\"-\" ");
         else

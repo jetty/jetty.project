@@ -23,7 +23,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.http.EncodedHttpURI;
-import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpException;
@@ -37,10 +36,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 
-import org.eclipse.jetty.io.BufferCache.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -100,12 +97,12 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     protected final Server _server;
     protected final HttpURI _uri;
 
-    protected final Parser _parser;
+    protected final HttpParser _parser;
     protected final HttpFields _requestFields;
     protected final Request _request;
     protected volatile ServletInputStream _in;
 
-    protected final Generator _generator;
+    protected final HttpGenerator _generator;
     protected final HttpFields _responseFields;
     protected final Response _response;
     protected volatile Output _out;
@@ -629,7 +626,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
     }
 
     /* ------------------------------------------------------------ */
-    public Generator getGenerator()
+    public HttpGenerator getGenerator()
     {
         return _generator;
     }

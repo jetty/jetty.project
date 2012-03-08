@@ -578,7 +578,6 @@ public class AsyncContinuation implements AsyncContext, Continuation
     }
 
     /* ------------------------------------------------------------ */
-    @Override
     public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException 
     {
         try
