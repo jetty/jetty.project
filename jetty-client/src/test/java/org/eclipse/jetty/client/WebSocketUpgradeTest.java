@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;

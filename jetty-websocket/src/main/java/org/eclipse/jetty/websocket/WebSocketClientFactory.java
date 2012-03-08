@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ConnectedEndPoint;

@@ -294,7 +294,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 if (BufferUtil.hasContent(_unwrapBuf))
                 {
                     // transfer from temp buffer to fill buffer
-                    BufferUtil.put(_unwrapBuf,toFill);
+                    BufferUtil.flipPutFlip(_unwrapBuf,toFill);
                     return true;
                 }
                 else
@@ -305,7 +305,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             else if (BufferUtil.hasContent(_unwrapBuf))
             {
                 // transfer from temp buffer to fill buffer
-                BufferUtil.put(_unwrapBuf,toFill);
+                BufferUtil.flipPutFlip(_unwrapBuf,toFill);
                 return true;
             }
 
@@ -326,7 +326,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 try
                 {
                     // Read any available data
-                    if (!BufferUtil.isAtCapacity(_inbound) && (filled=_endp.fill(_inbound))>0)
+                    if (!BufferUtil.isFull(_inbound) && (filled=_endp.fill(_inbound))>0)
                         progress = true;
                     else
                         _inbound.compact().flip();
@@ -358,11 +358,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                     case NOT_HANDSHAKING:
                     {
                         // Try unwrapping some application data
-                        if (!BufferUtil.isAtCapacity(toFill) && BufferUtil.hasContent(_inbound) && unwrap(toFill))
+                        if (!BufferUtil.isFull(toFill) && BufferUtil.hasContent(_inbound) && unwrap(toFill))
                             progress=true;
 
                         // Try wrapping some application data
-                        if (BufferUtil.hasContent(toFlush) && !BufferUtil.isAtCapacity(_outbound) && wrap(toFlush))
+                        if (BufferUtil.hasContent(toFlush) && !BufferUtil.isFull(_outbound) && wrap(toFlush))
                             progress=true;
                     }
                     break;

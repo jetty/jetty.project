@@ -30,7 +30,7 @@ package org.eclipse.jetty.websocket;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 

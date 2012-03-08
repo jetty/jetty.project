@@ -27,11 +27,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.View;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;

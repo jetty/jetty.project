@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
@@ -34,7 +34,7 @@ public interface HttpContent
     long getContentLength();
     InputStream getInputStream() throws IOException;
     void release();
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
@@ -50,7 +50,7 @@ public interface HttpContent
             _mimeType=mimeType;
             _maxBuffer=-1;
         }
-        
+
         public ResourceAsHttpContent(final Resource resource, final ByteBuffer mimeType, int maxBuffer)
         {
             _resource=resource;
@@ -59,24 +59,28 @@ public interface HttpContent
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public ByteBuffer getContentType()
         {
             return _mimeType;
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public ByteBuffer getLastModified()
         {
             return null;
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public ByteBuffer getDirectBuffer()
         {
             return null;
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public ByteBuffer getIndirectBuffer()
         {
             try
@@ -85,10 +89,10 @@ public interface HttpContent
                     return null;
                 int length=(int)_resource.length();
                 byte[] array = new byte[length];
-                
+
                 int offset=0;
                 InputStream in=_resource.getInputStream();
-                
+
                 do
                 {
                     int filled=in.read(array,offset,length);
@@ -98,7 +102,7 @@ public interface HttpContent
                     offset+=filled;
                 }
                 while(length>0);
-                
+
                 ByteBuffer buffer = ByteBuffer.wrap(array);
                 return buffer;
             }
@@ -109,24 +113,28 @@ public interface HttpContent
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public long getContentLength()
         {
             return _resource.length();
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public InputStream getInputStream() throws IOException
         {
             return _resource.getInputStream();
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public Resource getResource()
         {
             return _resource;
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void release()
         {
             _resource.release();

@@ -28,7 +28,7 @@
 
 package org.eclipse.jetty.websocket;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 
 
 

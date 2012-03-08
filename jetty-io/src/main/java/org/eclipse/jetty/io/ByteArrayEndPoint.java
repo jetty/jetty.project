@@ -180,7 +180,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
         if (_closed)
             throw new IOException("CLOSED");
         if (_in!=null)
-            return BufferUtil.put(_in,buffer);
+            return BufferUtil.flipPutFlip(_in,buffer);
         
         return 0;
     }

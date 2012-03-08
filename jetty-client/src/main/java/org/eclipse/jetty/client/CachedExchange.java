@@ -15,7 +15,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.ByteBuffer;
+
 
 /**
  * An exchange that retains response status and response headers for later use.

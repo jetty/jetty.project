@@ -25,7 +25,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.BufferCache.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;

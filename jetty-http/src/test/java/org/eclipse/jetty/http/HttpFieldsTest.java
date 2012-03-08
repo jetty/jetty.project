@@ -62,7 +62,7 @@ public class HttpFieldsTest
         assertEquals(e.nextElement(), "value0");
         assertEquals(false, e.hasMoreElements());
     }
-    
+
     @Test
     public void testGet() throws Exception
     {
@@ -76,7 +76,7 @@ public class HttpFieldsTest
         assertEquals("value1",header.getStringField("name1"));
         assertEquals("value1",header.getStringField("Name1"));
     }
-    
+
     @Test
     public void testCRLF() throws Exception
     {
@@ -110,13 +110,13 @@ public class HttpFieldsTest
         header.putTo(buffer);
         buffer.flip();
         String out = BufferUtil.toString(buffer);
-        
+
         Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.CONNECTION+": "+HttpHeaderValue.KEEP_ALIVE));
         Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.TRANSFER_ENCODING+": "+HttpHeaderValue.CHUNKED));
         Assert.assertThat(out,JUnitMatchers.containsString(HttpHeader.CONTENT_ENCODING+": "+HttpHeaderValue.GZIP));
-        
-        
-        
+
+
+
     }
 
     @Test
@@ -257,8 +257,8 @@ public class HttpFieldsTest
         assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.getStringField("Expires"));
-       
-        
+
+
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
         String setCookie=fields.getStringField("Set-Cookie");
@@ -273,7 +273,7 @@ public class HttpFieldsTest
         fields.addSetCookie("name","v a l u e",null,null,-1,null,false,false,0);
         setCookie=fields.getStringField("Set-Cookie");
         assertEquals(17,setCookie.indexOf("Version=1"));
-        
+
         fields.clear();
         fields.addSetCookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
         assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\", \\\"aa\\\"]}\"",fields.getStringField("Set-Cookie"));
@@ -291,12 +291,12 @@ public class HttpFieldsTest
         e=fields.getValues("Set-Cookie");
         assertEquals("name=more;Domain=domain",e.nextElement());
         assertEquals("foo=bob;Domain=domain",e.nextElement());
-        
+
         fields=new HttpFields(0);
         fields.addSetCookie("name","value==",null,null,-1,null,false,false,0);
         setCookie=fields.getStringField("Set-Cookie");
         assertEquals("name=value==",setCookie);
-        
+
     }
 
     private Set<String> enum2set(Enumeration<String> e)
@@ -359,10 +359,10 @@ public class HttpFieldsTest
 
         fields.putDateField("Dminus",-1);
         assertEquals("Wed, 31 Dec 1969 23:59:59 GMT",fields.getStringField("Dminus"));
-        
+
         fields.putDateField("Dminus",-1000);
         assertEquals("Wed, 31 Dec 1969 23:59:59 GMT",fields.getStringField("Dminus"));
-        
+
         fields.putDateField("Dancient",Long.MIN_VALUE);
         assertEquals("Sun, 02 Dec 55 16:47:04 GMT",fields.getStringField("Dancient"));
     }

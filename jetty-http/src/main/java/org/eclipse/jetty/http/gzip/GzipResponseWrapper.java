@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 
@@ -36,8 +36,8 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
 {
     public static final int DEFAULT_BUFFER_SIZE = 8192;
     public static final int DEFAULT_MIN_GZIP_SIZE = 256;
-    
-    private HttpServletRequest _request;
+
+    private final HttpServletRequest _request;
     private Set<String> _mimeTypes;
     private int _bufferSize=DEFAULT_BUFFER_SIZE;
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
@@ -74,6 +74,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.ServletResponseWrapper#setBufferSize(int)
      */
+    @Override
     public void setBufferSize(int bufferSize)
     {
         _bufferSize = bufferSize;
@@ -94,6 +95,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.ServletResponseWrapper#setContentType(java.lang.String)
      */
+    @Override
     public void setContentType(String ct)
     {
         super.setContentType(ct);
@@ -105,9 +107,9 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
                 ct=ct.substring(0,colon);
         }
 
-        if ((_gzStream==null || _gzStream._out==null) && 
-            (_mimeTypes==null && "application/gzip".equalsIgnoreCase(ct) ||
-             _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
+        if ((_gzStream==null || _gzStream._out==null) &&
+                (_mimeTypes==null && "application/gzip".equalsIgnoreCase(ct) ||
+                _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
         {
             noGzip();
         }
@@ -117,6 +119,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#setStatus(int, java.lang.String)
      */
+    @Override
     public void setStatus(int sc, String sm)
     {
         super.setStatus(sc,sm);
@@ -128,6 +131,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#setStatus(int)
      */
+    @Override
     public void setStatus(int sc)
     {
         super.setStatus(sc);
@@ -139,11 +143,12 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.ServletResponseWrapper#setContentLength(int)
      */
+    @Override
     public void setContentLength(int length)
     {
         setContentLength((long)length);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void setContentLength(long length)
     {
@@ -168,6 +173,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#addHeader(java.lang.String, java.lang.String)
      */
+    @Override
     public void addHeader(String name, String value)
     {
         if ("content-length".equalsIgnoreCase(name))
@@ -177,11 +183,11 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
                 _gzStream.setContentLength(_contentLength);
         }
         else if ("content-type".equalsIgnoreCase(name))
-        {   
+        {
             setContentType(value);
         }
         else if ("content-encoding".equalsIgnoreCase(name))
-        {   
+        {
             super.addHeader(name,value);
             if (!isCommitted())
             {
@@ -196,6 +202,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#setHeader(java.lang.String, java.lang.String)
      */
+    @Override
     public void setHeader(String name, String value)
     {
         if ("content-length".equalsIgnoreCase(name))
@@ -203,11 +210,11 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
             setContentLength(Long.parseLong(value));
         }
         else if ("content-type".equalsIgnoreCase(name))
-        {   
+        {
             setContentType(value);
         }
         else if ("content-encoding".equalsIgnoreCase(name))
-        {   
+        {
             super.setHeader(name,value);
             if (!isCommitted())
             {
@@ -222,6 +229,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#setIntHeader(java.lang.String, int)
      */
+    @Override
     public void setIntHeader(String name, int value)
     {
         if ("content-length".equalsIgnoreCase(name))
@@ -238,6 +246,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.ServletResponseWrapper#flushBuffer()
      */
+    @Override
     public void flushBuffer() throws IOException
     {
         if (_writer!=null)
@@ -252,6 +261,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.ServletResponseWrapper#reset()
      */
+    @Override
     public void reset()
     {
         super.reset();
@@ -262,11 +272,12 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
         _noGzip=false;
         _contentLength=-1;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.ServletResponseWrapper#resetBuffer()
      */
+    @Override
     public void resetBuffer()
     {
         super.resetBuffer();
@@ -275,31 +286,34 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
         _writer=null;
         _gzStream=null;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#sendError(int, java.lang.String)
      */
+    @Override
     public void sendError(int sc, String msg) throws IOException
     {
         resetBuffer();
         super.sendError(sc,msg);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#sendError(int)
      */
+    @Override
     public void sendError(int sc) throws IOException
     {
         resetBuffer();
         super.sendError(sc);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.http.HttpServletResponseWrapper#sendRedirect(java.lang.String)
      */
+    @Override
     public void sendRedirect(String location) throws IOException
     {
         resetBuffer();
@@ -310,6 +324,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
     /**
      * @see javax.servlet.ServletResponseWrapper#getOutputStream()
      */
+    @Override
     public ServletOutputStream getOutputStream() throws IOException
     {
         if (_gzStream==null)
@@ -319,36 +334,37 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
                 setContentLength(_contentLength);
                 return getResponse().getOutputStream();
             }
-            
+
             _gzStream=newGzipStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minGzipSize);
         }
         else if (_writer!=null)
             throw new IllegalStateException("getWriter() called");
-        
-        return _gzStream;   
+
+        return _gzStream;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @see javax.servlet.ServletResponseWrapper#getWriter()
      */
+    @Override
     public PrintWriter getWriter() throws IOException
     {
         if (_writer==null)
-        { 
+        {
             if (_gzStream!=null)
                 throw new IllegalStateException("getOutputStream() called");
-            
+
             if (getResponse().isCommitted() || _noGzip)
             {
                 setContentLength(_contentLength);
                 return getResponse().getWriter();
             }
-            
+
             _gzStream=newGzipStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minGzipSize);
             _writer=newWriter(_gzStream,getCharacterEncoding());
         }
-        return _writer;   
+        return _writer;
     }
 
     /* ------------------------------------------------------------ */
@@ -370,7 +386,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Finish.
@@ -384,7 +400,7 @@ public class GzipResponseWrapper extends HttpServletResponseWrapper
         if (_gzStream!=null)
             _gzStream.finish();
     }
- 
+
     /* ------------------------------------------------------------ */
     /**
      * Allows derived implementations to replace GzipStream implementation.

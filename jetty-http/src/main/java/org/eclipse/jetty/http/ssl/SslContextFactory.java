@@ -5,6 +5,7 @@ package org.eclipse.jetty.http.ssl;
 /**
  * @deprecated Use org.eclipse.jetty.util.ssl.SslContextFactory
  */
+@Deprecated
 public class SslContextFactory extends org.eclipse.jetty.util.ssl.SslContextFactory
 {
     public SslContextFactory()

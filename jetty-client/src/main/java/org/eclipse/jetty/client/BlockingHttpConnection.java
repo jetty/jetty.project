@@ -18,7 +18,7 @@ import java.io.InterruptedIOException;
 
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

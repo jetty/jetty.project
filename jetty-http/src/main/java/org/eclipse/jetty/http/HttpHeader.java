@@ -4,18 +4,17 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringMap;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -103,7 +102,7 @@ public enum HttpHeader
     SET_COOKIE2("Set-Cookie2"),
     MIME_VERSION("MIME-Version"),
     IDENTITY("identity"),
-    
+
     UNKNOWN("::UNKNOWN::");
 
 
@@ -115,7 +114,7 @@ public enum HttpHeader
             if (header!=UNKNOWN)
                 CACHE.put(header.toString(),header);
     }
-    
+
     private final String _string;
     private final byte[] _bytes;
     private final byte[] _bytesColonSpace;
@@ -141,7 +140,7 @@ public enum HttpHeader
     {
         return _bytes;
     }
-    
+
     /* ------------------------------------------------------------ */
     public byte[] toBytesColonSpace()
     {
@@ -149,11 +148,12 @@ public enum HttpHeader
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return _string;
     }
-    
+
     public static void main (String[] args)
     {
         for (HttpHeader h : HttpHeader.values())

@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;

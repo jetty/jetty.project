@@ -21,7 +21,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

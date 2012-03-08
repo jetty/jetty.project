@@ -18,12 +18,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.AsyncConnection;
-import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
+
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.server.AbstractHttpConnection;

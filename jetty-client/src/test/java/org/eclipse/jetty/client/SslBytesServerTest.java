@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

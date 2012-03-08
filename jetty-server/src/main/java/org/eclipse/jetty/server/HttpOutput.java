@@ -20,7 +20,7 @@ import javax.servlet.ServletOutputStream;
 
 import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.Generator;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;

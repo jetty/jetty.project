@@ -23,7 +23,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;

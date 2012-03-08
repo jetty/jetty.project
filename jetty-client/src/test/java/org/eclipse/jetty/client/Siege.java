@@ -7,7 +7,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 

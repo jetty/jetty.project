@@ -18,7 +18,7 @@ package org.eclipse.jetty.websocket;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.nio.AsyncConnection;
 
 public interface WebSocketConnection extends AsyncConnection

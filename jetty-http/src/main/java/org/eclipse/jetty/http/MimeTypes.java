@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
-/** 
+/**
  * 
  */
 public class MimeTypes
@@ -71,6 +71,7 @@ public class MimeTypes
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public String toString()
         {
             return _string;
@@ -80,18 +81,18 @@ public class MimeTypes
     /* ------------------------------------------------------------ */
     private static final Logger LOG = Log.getLogger(MimeTypes.class);
     private final static StringMap<MimeTypes.Type> CACHE= new StringMap<MimeTypes.Type>(true);
-    private final static StringMap<ByteBuffer> TYPES= new StringMap<ByteBuffer>(true); 
+    private final static StringMap<ByteBuffer> TYPES= new StringMap<ByteBuffer>(true);
     private final static Map<String,ByteBuffer> __dftMimeMap = new HashMap<String,ByteBuffer>();
     private final static Map<String,String> __encodings = new HashMap<String,String>();
-    
+
     static
     {
-        
+
         for (MimeTypes.Type type : MimeTypes.Type.values())
         {
             CACHE.put(type.toString(),type);
             TYPES.put(type.toString(),type.toBuffer());
-            
+
             int charset=type.toString().indexOf(";charset=");
             if (charset>0)
             {
@@ -99,7 +100,7 @@ public class MimeTypes
                 TYPES.put(type.toString().replace(";charset=","; charset="),type.toBuffer());
             }
         }
-        
+
         try
         {
             ResourceBundle mime = ResourceBundle.getBundle("org/eclipse/jetty/http/mime");
@@ -133,13 +134,13 @@ public class MimeTypes
             LOG.debug(e);
         }
 
-        
+
     }
 
 
     /* ------------------------------------------------------------ */
     private final Map<String,ByteBuffer> _mimeMap=new HashMap<String,ByteBuffer>();
-    
+
     /* ------------------------------------------------------------ */
     /** Constructor.
      */
@@ -163,7 +164,7 @@ public class MimeTypes
         if (mimeMap!=null)
         {
             for (String ext : mimeMap.keySet())
-            _mimeMap.put(StringUtil.asciiToLowerCase(ext),normalizeMimeType(mimeMap.get(ext)));
+                _mimeMap.put(StringUtil.asciiToLowerCase(ext),normalizeMimeType(mimeMap.get(ext)));
         }
     }
 
@@ -199,8 +200,8 @@ public class MimeTypes
         {
             if (_mimeMap!=null)
                 type=_mimeMap.get("*");
-             if (type==null)
-                 type=__dftMimeMap.get("*");
+            if (type==null)
+                type=__dftMimeMap.get("*");
         }
 
         return type;
@@ -222,13 +223,13 @@ public class MimeTypes
         MimeTypes.Type t =CACHE.get(type);
         if (t!=null)
             return t.toBuffer();
-        
+
         return BufferUtil.toBuffer(StringUtil.asciiToLowerCase(type));
     }
 
     /* ------------------------------------------------------------ */
     public static String getCharsetFromContentType(ByteBuffer value)
-    {   
+    {
         int i=value.position();
         int end=value.limit();
         int state=0;
@@ -237,14 +238,14 @@ public class MimeTypes
         for (;i<end;i++)
         {
             byte b = value.get(i);
-            
+
             if (quote && state!=10)
             {
                 if ('"'==b)
                     quote=false;
                 continue;
             }
-                
+
             switch(state)
             {
                 case 0:
@@ -266,11 +267,11 @@ public class MimeTypes
                 case 7: if ('t'==b) state=8; else state=0;break;
 
                 case 8: if ('='==b) state=9; else if (' '!=b) state=0; break;
-                
-                case 9: 
-                    if (' '==b) 
+
+                case 9:
+                    if (' '==b)
                         break;
-                    if ('"'==b) 
+                    if ('"'==b)
                     {
                         quote=true;
                         start=i+1;
@@ -280,17 +281,17 @@ public class MimeTypes
                     start=i;
                     state=10;
                     break;
-                    
+
                 case 10:
                     if (!quote && (';'==b || ' '==b )||
-                        (quote && '"'==b ))
+                            (quote && '"'==b ))
                         return StringUtil.normalizeCharset(value,start,i-start);
             }
-        }    
-        
+        }
+
         if (state==10)
             return StringUtil.normalizeCharset(value,start,i-start);
-        
-        return (String)__encodings.get(value);
+
+        return __encodings.get(value);
     }
 }

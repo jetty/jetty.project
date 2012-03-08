@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.BufferCache.ByteBuffer;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;

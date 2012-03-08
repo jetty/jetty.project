@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;

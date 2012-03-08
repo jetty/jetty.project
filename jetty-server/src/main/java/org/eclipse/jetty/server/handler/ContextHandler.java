@@ -57,7 +57,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;

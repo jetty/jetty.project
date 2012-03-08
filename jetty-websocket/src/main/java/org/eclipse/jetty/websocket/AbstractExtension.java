@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.websocket.WebSocketParser.FrameHandler;
 

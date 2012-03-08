@@ -39,7 +39,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.BufferCache.ByteBuffer;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Connection;

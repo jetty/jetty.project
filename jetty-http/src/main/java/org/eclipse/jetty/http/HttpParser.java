@@ -58,7 +58,7 @@ public class HttpParser
     private final ResponseHandler _responseHandler;
     private HttpHeader _header;
     private HttpHeaderValue _value;
-    private int _responseStatus; 
+    private int _responseStatus;
     private boolean _persistent;
 
     /* ------------------------------------------------------------------------------- */
@@ -193,18 +193,18 @@ public class HttpParser
                 break;
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------------------------- */
     /**
      * Parse until next Event.
-     * @return an indication of progress 
+     * @return an indication of progress
      */
     public boolean parseNext(ByteBuffer buffer) throws IOException
     {
         int start=-1;
         State startState=null;
-        
+
         try
         {
             if (_state == State.END)
@@ -221,9 +221,9 @@ public class HttpParser
             byte ch;
             int length=-1;
             boolean at_next=false;
-            
+
             while (_state.ordinal()<State.END.ordinal() && buffer.hasRemaining() && !at_next)
-            {                
+            {
                 ch=buffer.get();
 
                 if (_eol == HttpTokens.CARRIAGE_RETURN && ch == HttpTokens.LINE_FEED)
@@ -307,7 +307,7 @@ public class HttpParser
                         else if (ch < HttpTokens.SPACE && ch>=0)
                         {
                             at_next|=_responseHandler.startResponse(_field0, _responseStatus, null);
-                            
+
                             _eol=ch;
                             _state=State.HEADER;
                             _field0=_field1=null;
@@ -372,7 +372,7 @@ public class HttpParser
                             HttpVersion v=HttpVersion.CACHE.get(buffer,start,buffer.position()-start-1);
                             String version=v==null?BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__ISO_8859_1_CHARSET):v.toString();
                             start=-1;
-                            
+
                             at_next|=_requestHandler.startRequest(_field0, _field1, version);
                             _eol=ch;
                             _persistent=HttpVersion.HTTP_1_1==v;
@@ -387,7 +387,7 @@ public class HttpParser
                         {
                             String reason=BufferUtil.toString(buffer,start,buffer.position()-start-1,StringUtil.__ISO_8859_1_CHARSET);
                             start=-1;
-                           
+
                             at_next|=_responseHandler.startResponse(_field0, _responseStatus, reason);
                             _eol=ch;
                             _state=State.HEADER;
@@ -492,7 +492,7 @@ public class HttpParser
                                 {
                                     _eol=ch;
                                     _contentPosition=0;
-                                    
+
                                     // End of headers!
                                     // work out the _content demarcation
                                     if (_contentLength == HttpTokens.UNKNOWN_CONTENT)
@@ -556,7 +556,7 @@ public class HttpParser
                                 start=length=-1;
                                 _state=State.HEADER;
                                 break;
-                                
+
                             case HttpTokens.COLON:
                                 _header=HttpHeader.CACHE.get(buffer,start,length);
                                 _field0=_header==null?BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET):_header.toString();
@@ -586,7 +586,7 @@ public class HttpParser
                                 start=length=-1;
                                 _state=State.HEADER;
                                 break;
-                                
+
                             case HttpTokens.COLON:
                                 _header=HttpHeader.CACHE.get(buffer,start,length);
                                 _field0=_header==null?BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET):_header.toString();
@@ -705,7 +705,7 @@ public class HttpParser
                     continue;
                 }
                 _eol=0;
-                
+
                 switch (_state)
                 {
                     case EOF_CONTENT:
@@ -820,14 +820,14 @@ public class HttpParser
                         {
                             _state=State.CHUNKED_CONTENT;
                         }
-                        else 
+                        else
                         {
                             chunk=buffer.asReadOnlyBuffer();
 
                             if (chunk.remaining() > remaining)
                                 chunk.limit(chunk.position()+remaining);
                             remaining=chunk.remaining();
-                            
+
                             _contentPosition += remaining;
                             _chunkPosition += remaining;
                             buffer.position(buffer.position()+remaining);
@@ -837,7 +837,7 @@ public class HttpParser
                     }
 
                     case SEEKING_EOF:
-                    {         
+                    {
                         buffer.clear().limit(0);
                         break;
                     }
@@ -859,11 +859,11 @@ public class HttpParser
             {
                 buffer.position(start);
                 _state=startState;
-            }                
+            }
 
         }
     }
-    
+
 
     /* ------------------------------------------------------------------------------- */
     public boolean onEOF() throws IOException
@@ -935,7 +935,7 @@ public class HttpParser
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* Event Handler interface
-     * These methods return true if they want parsing to return to 
+     * These methods return true if they want parsing to return to
      * the caller.
      */
     public interface EventHandler
@@ -962,7 +962,7 @@ public class HttpParser
         public abstract boolean startRequest(String method, String uri, String version)
                 throws IOException;
     }
-    
+
     public interface ResponseHandler extends EventHandler
     {
         /**

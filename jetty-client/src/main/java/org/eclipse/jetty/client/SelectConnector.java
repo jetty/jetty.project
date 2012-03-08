@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.ConnectedEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.nio.AsyncConnection;

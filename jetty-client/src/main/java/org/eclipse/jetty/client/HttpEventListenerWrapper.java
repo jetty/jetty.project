@@ -16,7 +16,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 
 public class HttpEventListenerWrapper implements HttpEventListener
 {

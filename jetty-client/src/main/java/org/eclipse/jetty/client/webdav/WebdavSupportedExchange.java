@@ -16,7 +16,7 @@ package org.eclipse.jetty.client.webdav;
 import java.io.IOException;
 
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

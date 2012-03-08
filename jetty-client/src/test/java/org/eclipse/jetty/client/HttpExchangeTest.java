@@ -35,7 +35,7 @@ import org.eclipse.jetty.client.security.ProxyAuthorization;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;

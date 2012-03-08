@@ -18,7 +18,7 @@ import java.io.IOException;
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.io.ByteBuffer;
+
 
 public class HttpInput extends ServletInputStream
 {

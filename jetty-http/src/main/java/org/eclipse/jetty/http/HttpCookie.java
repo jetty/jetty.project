@@ -4,25 +4,25 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.http;
 
 public class HttpCookie
 {
-    private final String _name;        
-    private final String _value;     
-    private final String _comment;                               
-    private final String _domain;    
-    private final int _maxAge;  
-    private final String _path;       
-    private final boolean _secure;   
-    private final int _version;   
+    private final String _name;
+    private final String _value;
+    private final String _comment;
+    private final String _domain;
+    private final int _maxAge;
+    private final String _path;
+    private final boolean _secure;
+    private final int _version;
     private final boolean _httpOnly;
 
     /* ------------------------------------------------------------ */
@@ -39,7 +39,7 @@ public class HttpCookie
         _secure = false;
         _version = 0;
     }
-    
+
     /* ------------------------------------------------------------ */
     public HttpCookie(String name, String value, String domain, String path)
     {
@@ -53,9 +53,9 @@ public class HttpCookie
         _path = path;
         _secure = false;
         _version = 0;
-        
+
     }
-    
+
     /* ------------------------------------------------------------ */
     public HttpCookie(String name, String value, int maxAge)
     {
@@ -70,7 +70,7 @@ public class HttpCookie
         _secure = false;
         _version = 0;
     }
-    
+
     /* ------------------------------------------------------------ */
     public HttpCookie(String name, String value, String domain, String path, int maxAge, boolean httpOnly, boolean secure)
     {
@@ -85,7 +85,7 @@ public class HttpCookie
         _value = value;
         _version = 0;
     }
-    
+
     /* ------------------------------------------------------------ */
     public HttpCookie(String name, String value, String domain, String path, int maxAge, boolean httpOnly, boolean secure, String comment, int version)
     {
@@ -100,7 +100,7 @@ public class HttpCookie
         _value = value;
         _version = version;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the name.
      * @return the name
@@ -109,7 +109,7 @@ public class HttpCookie
     {
         return _name;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the value.
      * @return the value
@@ -118,7 +118,7 @@ public class HttpCookie
     {
         return _value;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the comment.
      * @return the comment
@@ -127,7 +127,7 @@ public class HttpCookie
     {
         return _comment;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the domain.
      * @return the domain
@@ -136,7 +136,7 @@ public class HttpCookie
     {
         return _domain;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the maxAge.
      * @return the maxAge
@@ -145,7 +145,7 @@ public class HttpCookie
     {
         return _maxAge;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the path.
      * @return the path
@@ -154,7 +154,7 @@ public class HttpCookie
     {
         return _path;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the secure.
      * @return the secure
@@ -163,7 +163,7 @@ public class HttpCookie
     {
         return _secure;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the version.
      * @return the version
@@ -172,7 +172,7 @@ public class HttpCookie
     {
         return _version;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get the isHttpOnly.
      * @return the isHttpOnly
@@ -181,6 +181,6 @@ public class HttpCookie
     {
         return _httpOnly;
     }
-    
-    
+
+
 }

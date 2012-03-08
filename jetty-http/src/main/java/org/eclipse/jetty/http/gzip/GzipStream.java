@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 
@@ -97,11 +97,12 @@ public class GzipStream extends ServletOutputStream
                 _response.setHeader("Content-Length",Long.toString(_contentLength));
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @see java.io.OutputStream#flush()
      */
+    @Override
     public void flush() throws IOException
     {
         if (_out==null || _bOut!=null)
@@ -111,7 +112,7 @@ public class GzipStream extends ServletOutputStream
             else
                 doGzip();
         }
-        
+
         _out.flush();
     }
 
@@ -119,12 +120,13 @@ public class GzipStream extends ServletOutputStream
     /**
      * @see java.io.OutputStream#close()
      */
+    @Override
     public void close() throws IOException
     {
         if (_closed)
             return;
-        
-        if (_request.getAttribute("javax.servlet.include.request_uri")!=null)            
+
+        if (_request.getAttribute("javax.servlet.include.request_uri")!=null)
             flush();
         else
         {
@@ -148,7 +150,7 @@ public class GzipStream extends ServletOutputStream
                 _out.close();
             _closed=true;
         }
-    }  
+    }
 
     /**
      * Finish.
@@ -166,21 +168,22 @@ public class GzipStream extends ServletOutputStream
                 else
                     doGzip();
             }
-            
+
             if (_gzOut!=null && !_closed)
             {
                 _closed=true;
                 _gzOut.close();
             }
         }
-    }  
+    }
 
     /* ------------------------------------------------------------ */
     /**
      * @see java.io.OutputStream#write(int)
      */
+    @Override
     public void write(int b) throws IOException
-    {    
+    {
         checkOut(1);
         _out.write(b);
     }
@@ -189,6 +192,7 @@ public class GzipStream extends ServletOutputStream
     /**
      * @see java.io.OutputStream#write(byte[])
      */
+    @Override
     public void write(byte b[]) throws IOException
     {
         checkOut(b.length);
@@ -199,12 +203,13 @@ public class GzipStream extends ServletOutputStream
     /**
      * @see java.io.OutputStream#write(byte[], int, int)
      */
+    @Override
     public void write(byte b[], int off, int len) throws IOException
     {
         checkOut(len);
         _out.write(b,off,len);
     }
-    
+
     /**
      * Sets the content encoding gzip.
      *
@@ -215,7 +220,7 @@ public class GzipStream extends ServletOutputStream
         _response.setHeader("Content-Encoding", "gzip");
         return _response.containsHeader("Content-Encoding");
     }
-    
+
     /**
      * Do gzip.
      *
@@ -223,11 +228,11 @@ public class GzipStream extends ServletOutputStream
      */
     public void doGzip() throws IOException
     {
-        if (_gzOut==null) 
+        if (_gzOut==null)
         {
             if (_response.isCommitted())
                 throw new IllegalStateException();
-            
+
             if (setContentEncodingGzip())
             {
                 _out=_gzOut=new GZIPOutputStream(_response.getOutputStream(),_bufferSize);
@@ -238,11 +243,11 @@ public class GzipStream extends ServletOutputStream
                     _bOut=null;
                 }
             }
-            else 
+            else
                 doNotGzip();
         }
     }
-    
+
     /**
      * Do not gzip.
      *
@@ -250,7 +255,7 @@ public class GzipStream extends ServletOutputStream
      */
     public void doNotGzip() throws IOException
     {
-        if (_gzOut!=null) 
+        if (_gzOut!=null)
             throw new IllegalStateException();
         if (_out==null || _bOut!=null )
         {
@@ -262,20 +267,20 @@ public class GzipStream extends ServletOutputStream
             if (_bOut!=null)
                 _out.write(_bOut.getBuf(),0,_bOut.getCount());
             _bOut=null;
-        }   
+        }
     }
-    
+
     /**
      * Check out.
      *
      * @param length the length
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    private void checkOut(int length) throws IOException 
+    private void checkOut(int length) throws IOException
     {
-        if (_closed) 
+        if (_closed)
             throw new IOException("CLOSED");
-        
+
         if (_out==null)
         {
             if (_response.isCommitted() || (_contentLength>=0 && _contentLength<_minGzipSize))

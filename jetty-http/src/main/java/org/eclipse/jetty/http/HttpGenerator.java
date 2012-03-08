@@ -13,17 +13,8 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
-import javax.swing.text.View;
-
-import org.eclipse.jetty.http.HttpGenerator.Action;
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -36,7 +27,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *
  */
-public class HttpGenerator 
+public class HttpGenerator
 {
 
     // Build cache of response lines for status
@@ -94,7 +85,7 @@ public class HttpGenerator
     private State _state = State.START;
 
     private int _status = 0;
-    
+
     private final HttpFields _fields;
     private HttpVersion _version = HttpVersion.HTTP_1_1;
     private  byte[] _reason;
@@ -112,7 +103,7 @@ public class HttpGenerator
     private ByteBuffer _date;
 
     private boolean _sendServerVersion;
-    
+
 
 
     // common _content
@@ -142,7 +133,7 @@ public class HttpGenerator
     {
         _fields=fields;
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
@@ -158,7 +149,7 @@ public class HttpGenerator
         _date = null;
 
         _method=null;
-    
+
         _needCRLF = false;
         _uri=null;
         _noContent=false;
@@ -260,8 +251,8 @@ public class HttpGenerator
     public boolean isPersistent()
     {
         return _persistent!=null
-        ?_persistent.booleanValue()
-        :(isRequest()?true:_version.ordinal()>HttpVersion.HTTP_1_0.ordinal());
+                ?_persistent.booleanValue()
+                        :(isRequest()?true:_version.ordinal()>HttpVersion.HTTP_1_0.ordinal());
     }
 
     /* ------------------------------------------------------------ */
@@ -309,7 +300,7 @@ public class HttpGenerator
         _method=StringUtil.getBytes(method);
         _uri=StringUtil.getUtf8Bytes(uri);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      */
@@ -321,7 +312,7 @@ public class HttpGenerator
         _uri=StringUtil.getUtf8Bytes(uri);
         setVersion(version);
     }
-    
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -330,7 +321,7 @@ public class HttpGenerator
      */
     public void setResponse(int status, String reason)
     {
-        if (_state != State.START) 
+        if (_state != State.START)
             throw new IllegalStateException("STATE!=START");
         _method=null;
         _status = status;
@@ -359,13 +350,13 @@ public class HttpGenerator
         return _contentLength>=0 && _contentPrepared>=_contentLength;
     }
 
-    
+
     /* ------------------------------------------------------------ */
     public long getContentWritten()
     {
         return _contentPrepared;
     }
-    
+
     /* ------------------------------------------------------------ */
     public boolean isRequest()
     {
@@ -377,7 +368,7 @@ public class HttpGenerator
     {
         return _method==null;
     }
-    
+
 
     /* ------------------------------------------------------------ */
     public Result generate(ByteBuffer header, ByteBuffer chunk, ByteBuffer buffer, ByteBuffer content, Action action)
@@ -387,7 +378,7 @@ public class HttpGenerator
             return result;
         if (action==null)
             action=Action.PREPARE;
-        
+
         // Do we have content to handle
         if (BufferUtil.hasContent(content))
         {
@@ -426,10 +417,10 @@ public class HttpGenerator
                     return Result.NEED_BUFFER;
 
                 // Copy the content
-                _contentPrepared+=BufferUtil.put(content,buffer);
+                _contentPrepared+=BufferUtil.flipPutFlip(content,buffer);
 
                 // are we full?
-                if (BufferUtil.isAtCapacity(buffer))
+                if (BufferUtil.isFull(buffer))
                 {
                     if (isCommitted())
                     {
@@ -448,7 +439,7 @@ public class HttpGenerator
                 }
             }
         }
-        
+
         // Handle the actions
         if (result==Result.OK)
         {
@@ -609,15 +600,23 @@ public class HttpGenerator
                         if (BufferUtil.hasContent(buffer))
                             result=Result.FLUSH;
                         else
+                        {
+                            if (!_persistent)
+                                result=Result.SHUTDOWN_OUT;
                             _state=State.END;
+                        }
                     }
-                    
+
                     return result;
 
+                case END:
+                    if (!_persistent)
+                        result=Result.SHUTDOWN_OUT;
+                    return Result.OK;
 
                 default:
                     throw new IllegalStateException();
-            }   
+            }
         }
         finally
         {
@@ -632,7 +631,7 @@ public class HttpGenerator
         // if we need CRLF add this to header
         if (_needCRLF)
             BufferUtil.putCRLF(chunk);
-        
+
         // Add the chunk size to the header
         if (remaining>0)
         {
@@ -646,14 +645,14 @@ public class HttpGenerator
             _needCRLF=false;
         }
     }
-    
-    
+
+
     /* ------------------------------------------------------------ */
     private void generateRequestLine(ByteBuffer header)
     {
         header.put(_method);
         header.put((byte)' ');
-        header.put(_uri); 
+        header.put(_uri);
         switch(_version)
         {
             case HTTP_1_0:
@@ -663,7 +662,7 @@ public class HttpGenerator
         }
         header.put(HttpTokens.CRLF);
     }
-    
+
     /* ------------------------------------------------------------ */
     private void generateResponseLine(ByteBuffer header)
     {
@@ -734,7 +733,7 @@ public class HttpGenerator
                         long length = field.getLongValue();
                         if (length>=0)
                         {
-                            long prepared=_contentPrepared+BufferUtil.remaining(content);
+                            long prepared=_contentPrepared+BufferUtil.length(content);
                             if (length < prepared || last && length != prepared)
                             {
                                 LOG.warn("Incorrect ContentLength: "+length+"!="+prepared);
@@ -744,7 +743,7 @@ public class HttpGenerator
                             }
                             else
                             {
-                                // write the field to the header 
+                                // write the field to the header
                                 header.put(HttpHeader.CONTENT_LENGTH.toBytesColonSpace());
                                 BufferUtil.putDecLong(header,length);
                                 BufferUtil.putCRLF(header);
@@ -890,7 +889,7 @@ public class HttpGenerator
                 else if (last)
                 {
                     // we have seen all the _content there is
-                    _contentLength = _contentPrepared+BufferUtil.remaining(content);
+                    _contentLength = _contentPrepared+BufferUtil.length(content);
                     if (!content_length && (isResponse() || _contentLength>0 || content_type ) && !_noContent)
                     {
                         // known length but not actually set.
@@ -1003,7 +1002,7 @@ public class HttpGenerator
             return status._reason;
         return null;
     }
-    
+
     /* ------------------------------------------------------------------------------- */
     @Override
     public String toString()

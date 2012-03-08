@@ -97,7 +97,7 @@ public class HttpURI
     {
         parse2(raw,offset,length);
     }
-    
+
     public HttpURI(URI uri)
     {
         parse(uri.toASCIIString());
@@ -125,7 +125,6 @@ public class HttpURI
         int i=offset;
         int e=offset+length;
         int state=AUTH;
-        int m=offset;
         _end=offset+length;
         _scheme=offset;
         _authority=offset;
@@ -498,17 +497,17 @@ public class HttpURI
             return null;
         int l=_authority-_scheme;
         if (l==5 &&
-            _raw[_scheme]=='h' &&
-            _raw[_scheme+1]=='t' &&
-            _raw[_scheme+2]=='t' &&
-            _raw[_scheme+3]=='p' )
+                _raw[_scheme]=='h' &&
+                _raw[_scheme+1]=='t' &&
+                _raw[_scheme+2]=='t' &&
+                _raw[_scheme+3]=='p' )
             return HttpScheme.HTTP.toString();
         if (l==6 &&
-            _raw[_scheme]=='h' &&
-            _raw[_scheme+1]=='t' &&
-            _raw[_scheme+2]=='t' &&
-            _raw[_scheme+3]=='p' &&
-            _raw[_scheme+4]=='s' )
+                _raw[_scheme]=='h' &&
+                _raw[_scheme+1]=='t' &&
+                _raw[_scheme+2]=='t' &&
+                _raw[_scheme+3]=='p' &&
+                _raw[_scheme+4]=='s' )
             return HttpScheme.HTTPS.toString();
 
         return toUtf8String(_scheme,_authority-_scheme-1);
@@ -639,8 +638,8 @@ public class HttpURI
     }
 
     public void decodeQueryTo(MultiMap parameters, String encoding)
-        throws UnsupportedEncodingException
-    {
+            throws UnsupportedEncodingException
+            {
         if (_query==_fragment)
             return;
 
@@ -648,7 +647,7 @@ public class HttpURI
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
             UrlEncoded.decodeTo(toUtf8String(_query+1,_fragment-_query-1),parameters,encoding);
-    }
+            }
 
     public void clear()
     {

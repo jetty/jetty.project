@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.bio.SocketEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;

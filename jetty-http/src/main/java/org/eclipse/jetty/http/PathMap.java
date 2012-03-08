@@ -131,13 +131,13 @@ public class PathMap<O> extends HashMap<String,O>
     {
         String str = pathSpec.toString();
         if ("".equals(str.trim()))
-        {          
+        {
             MappedEntry entry = new MappedEntry("",object);
             entry.setMapped("");
             _exactMap.put("", entry);
             return super.put("", object);
         }
-        
+
         StringTokenizer tok = new StringTokenizer(str,__pathSpecSeparators);
         O old =null;
 
@@ -175,7 +175,7 @@ public class PathMap<O> extends HashMap<String,O>
                     {
                         _default=entry;
                         _defaultSingletonList=
-                            Collections.singletonList(_default);
+                                Collections.singletonList(_default);
                     }
                 }
                 else
@@ -216,15 +216,15 @@ public class PathMap<O> extends HashMap<String,O>
             return null;
 
         int l=path.length();
-        
+
         //special case
         if (l == 1 && path.charAt(0)=='/')
         {
             entry = _exactMap.get("");
             if (entry != null)
-                return (MappedEntry)entry;
+                return entry;
         }
-        
+
         // try exact match
         entry=_exactMap.get(path,0,l);
         if (entry!=null)
@@ -331,8 +331,8 @@ public class PathMap<O> extends HashMap<String,O>
      */
     public boolean containsMatch(String path)
     {
-    	MappedEntry match = getMatch(path);
-    	return match!=null && !match.equals(_default);
+        MappedEntry match = getMatch(path);
+        return match!=null && !match.equals(_default);
     }
 
     /* --------------------------------------------------------------- */
@@ -380,18 +380,18 @@ public class PathMap<O> extends HashMap<String,O>
      * @return true if match.
      */
     public static boolean match(String pathSpec, String path)
-        throws IllegalArgumentException
-    {
+            throws IllegalArgumentException
+            {
         return match(pathSpec, path, false);
-    }
+            }
 
     /* --------------------------------------------------------------- */
     /**
      * @return true if match.
      */
     public static boolean match(String pathSpec, String path, boolean noDefault)
-    throws IllegalArgumentException
-    {
+            throws IllegalArgumentException
+            {
         char c = pathSpec.charAt(0);
         if (c=='/')
         {
@@ -403,9 +403,9 @@ public class PathMap<O> extends HashMap<String,O>
         }
         else if (c=='*')
             return path.regionMatches(path.length()-pathSpec.length()+1,
-                                      pathSpec,1,pathSpec.length()-1);
+                    pathSpec,1,pathSpec.length()-1);
         return false;
-    }
+            }
 
     /* --------------------------------------------------------------- */
     private static boolean isPathWildcardMatch(String pathSpec, String path)
@@ -443,7 +443,7 @@ public class PathMap<O> extends HashMap<String,O>
         else if (c=='*')
         {
             if (path.regionMatches(path.length()-(pathSpec.length()-1),
-                                   pathSpec,1,pathSpec.length()-1))
+                    pathSpec,1,pathSpec.length()-1))
                 return path;
         }
         return null;
@@ -457,7 +457,7 @@ public class PathMap<O> extends HashMap<String,O>
     {
         if ("".equals(pathSpec))
             return path; //servlet 3 spec sec 12.2 will be '/'
-        
+
         char c = pathSpec.charAt(0);
 
         if (c=='/')
@@ -490,8 +490,8 @@ public class PathMap<O> extends HashMap<String,O>
      * @return base plus path with pathspec removed
      */
     public static String relativePath(String base,
-                                      String pathSpec,
-                                      String path )
+            String pathSpec,
+            String path )
     {
         String info=pathInfo(pathSpec,path);
         if (info==null)
@@ -527,16 +527,19 @@ public class PathMap<O> extends HashMap<String,O>
             this.value=value;
         }
 
+        @Override
         public String getKey()
         {
             return key;
         }
 
+        @Override
         public O getValue()
         {
             return value;
         }
 
+        @Override
         public O setValue(O o)
         {
             throw new UnsupportedOperationException();

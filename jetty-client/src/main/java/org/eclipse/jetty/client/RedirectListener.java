@@ -18,7 +18,7 @@ import java.io.IOException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteBuffer;
+
 
 /**
  * RedirectListener

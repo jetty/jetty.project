@@ -125,7 +125,7 @@ public class SelectChannelEndPointTest
             {
                 progress=false;
                 _in.compact().flip();
-                if (!BufferUtil.isAtCapacity(_in) && _endp.fill(_in)>0)
+                if (!BufferUtil.isFull(_in) && _endp.fill(_in)>0)
                 {
                     progress=true;
                 }
@@ -134,11 +134,11 @@ public class SelectChannelEndPointTest
                 while (_blockAt>0 && _in.remaining()>0 && _in.remaining()<_blockAt)
                 {
                     _endp.blockReadable(10000);
-                    if (!BufferUtil.isAtCapacity(_in) && _endp.fill(_in)>0)
+                    if (!BufferUtil.isFull(_in) && _endp.fill(_in)>0)
                         progress=true;
                 }
 
-                if (BufferUtil.hasContent(_in) && BufferUtil.put(_in,_out)>0)
+                if (BufferUtil.hasContent(_in) && BufferUtil.flipPutFlip(_in,_out)>0)
                     progress=true;
 
                 if (BufferUtil.hasContent(_out) && _endp.flush(_out)>0)

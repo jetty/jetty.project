@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.security.Realm;
 import org.eclipse.jetty.client.security.SimpleRealmResolver;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;

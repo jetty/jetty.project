@@ -21,8 +21,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ByteBuffer;
-import org.eclipse.jetty.io.ByteBuffer;
+
+
 import org.eclipse.jetty.util.StringUtil;
 
 /**

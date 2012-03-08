@@ -21,7 +21,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;

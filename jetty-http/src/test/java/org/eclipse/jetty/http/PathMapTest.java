@@ -39,23 +39,23 @@ public class PathMapTest extends TestCase
         p.put("", "10");
 
         String[][] tests = {
-                        { "/abs/path", "1"},
-                        { "/abs/path/xxx", "8"},
-                        { "/abs/pith", "8"},
-                        { "/abs/path/longer", "2"},
-                        { "/abs/path/", "8"},
-                        { "/abs/path/xxx", "8"},
-                        { "/animal/bird/eagle/bald", "3"},
-                        { "/animal/fish/shark/grey", "4"},
-                        { "/animal/insect/bug", "5"},
-                        { "/animal", "5"},
-                        { "/animal/", "5"},
-                        { "/animal/x", "5"},
-                        { "/animal/*", "5"},
-                        { "/suffix/path.tar.gz", "6"},
-                        { "/suffix/path.gz", "7"},
-                        { "/animal/path.gz", "5"},
-                        { "/Other/path", "8"},};
+                { "/abs/path", "1"},
+                { "/abs/path/xxx", "8"},
+                { "/abs/pith", "8"},
+                { "/abs/path/longer", "2"},
+                { "/abs/path/", "8"},
+                { "/abs/path/xxx", "8"},
+                { "/animal/bird/eagle/bald", "3"},
+                { "/animal/fish/shark/grey", "4"},
+                { "/animal/insect/bug", "5"},
+                { "/animal", "5"},
+                { "/animal/", "5"},
+                { "/animal/x", "5"},
+                { "/animal/*", "5"},
+                { "/suffix/path.tar.gz", "6"},
+                { "/suffix/path.gz", "7"},
+                { "/animal/path.gz", "5"},
+                { "/Other/path", "8"},};
 
         for (String[] test : tests)
         {
@@ -65,7 +65,7 @@ public class PathMapTest extends TestCase
         assertEquals("Get absolute path", "1", p.get("/abs/path"));
         assertEquals("Match absolute path", "/abs/path", p.getMatch("/abs/path").getKey());
         assertEquals("all matches", "[/animal/bird/*=3, /animal/*=5, *.tar.gz=6, *.gz=7, /=8]",
-                                    p.getMatches("/animal/bird/path.tar.gz").toString());
+                p.getMatches("/animal/bird/path.tar.gz").toString());
         assertEquals("Dir matches", "[/animal/fish/*=4, /animal/*=5, /=8]", p.getMatches("/animal/fish/").toString());
         assertEquals("Dir matches", "[/animal/fish/*=4, /animal/*=5, /=8]", p.getMatches("/animal/fish").toString());
         assertEquals("Dir matches", "[/=8]", p.getMatches("/").toString());

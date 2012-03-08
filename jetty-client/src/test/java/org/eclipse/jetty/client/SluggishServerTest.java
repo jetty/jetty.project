@@ -13,7 +13,7 @@ import junit.framework.Assert;
 
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ByteBuffer;
+
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
