@@ -449,7 +449,7 @@ public class HttpParser
                                                 break;
 
                                             case CONNECTION:
-                                                switch(_value)
+                                                switch(_value==null?HttpHeaderValue.UNKNOWN:_value)
                                                 {
                                                     case CLOSE:
                                                         _persistent=false;
@@ -662,7 +662,7 @@ public class HttpParser
                                     else if (HttpHeaderValue.hasKnownValues(_header))
                                     {
                                         _value=HttpHeaderValue.CACHE.get(buffer,start,length);
-                                        _field1=_value.toString();
+                                        _field1=_value!=null?_value.toString():BufferUtil.toString(buffer,start,length,StringUtil.__ISO_8859_1_CHARSET);
                                     }
                                     else
                                     {

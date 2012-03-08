@@ -79,10 +79,19 @@ public class BufferUtil
     }
     
     /* ------------------------------------------------------------ */
-    public static void flipToFill(ByteBuffer buffer)
+    public static int flipToFill(ByteBuffer buffer)
     {
-        buffer.position(buffer.hasRemaining()?buffer.limit():0);
+        int position=buffer.position();
+        int limit=buffer.limit();
+        if (position==limit)
+        {
+            buffer.position(0);
+            buffer.limit(buffer.capacity());
+            return 0;
+        }
+        buffer.position(limit);
         buffer.limit(buffer.capacity());
+        return position;
     }
 
 
@@ -155,11 +164,9 @@ public class BufferUtil
     public static int put(ByteBuffer from, ByteBuffer to, int maxBytes)
     {
         int put;
-        int pos=to.position();
+        int pos=flipToFill(to);
         try
         {
-            flipToFill(to);
-
             maxBytes=Math.min(maxBytes,to.remaining());
             int remaining=from.remaining();
             if (remaining>0)
@@ -205,11 +212,9 @@ public class BufferUtil
     public static int put(ByteBuffer from, ByteBuffer to)
     {
         int put;
-        int pos=to.position();
+        int pos= flipToFill(to);
         try
         {
-            flipToFill(to);
-            
             int remaining=from.remaining();
             if (remaining>0)
             {
@@ -561,9 +566,11 @@ public class BufferUtil
     {
         return ByteBuffer.wrap(s.getBytes(charset));
     }
-
-    public static String toDetailString(ByteBuffer buffer)
+    
+    public static String toSummaryString(ByteBuffer buffer)
     {
+        if (buffer==null)
+            return "null";
         StringBuilder buf = new StringBuilder();
         buf.append("[p=");
         buf.append(buffer.position());
@@ -571,6 +578,26 @@ public class BufferUtil
         buf.append(buffer.limit());
         buf.append(",c=");
         buf.append(buffer.capacity());
+        buf.append(",r=");
+        buf.append(buffer.remaining());
+        buf.append("]");
+        return buf.toString();
+    }
+
+    public static String toDetailString(ByteBuffer buffer)
+    {
+        if (buffer==null)
+            return "null";
+        
+        StringBuilder buf = new StringBuilder();
+        buf.append("[p=");
+        buf.append(buffer.position());
+        buf.append(",l=");
+        buf.append(buffer.limit());
+        buf.append(",c=");
+        buf.append(buffer.capacity());
+        buf.append(",r=");
+        buf.append(buffer.remaining());
         buf.append("]={");
         
         for (int i=0;i<buffer.position();i++)

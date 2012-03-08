@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 
 import javax.swing.text.View;
 
+import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
@@ -81,9 +82,10 @@ public class HttpGenerator
     private static final Logger LOG = Log.getLogger(HttpGenerator.class);
 
     // states
-    
-    enum State { START, COMPLETING_UNCOMMITTED, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, END };
-    enum Result { NEED_COMMIT,NEED_CHUNK,NEED_BUFFER,FLUSH,FLUSH_CONTENT,NEED_COMPLETE,OK,SHUTDOWN_OUT};
+
+    enum Action { FLUSH, COMPLETE, PREPARE };
+    enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, END };
+    enum Result { NEED_CHUNK,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
 
     public static final byte[] NO_BYTES = {};
 
@@ -92,6 +94,8 @@ public class HttpGenerator
     private State _state = State.START;
 
     private int _status = 0;
+    
+    private final HttpFields _fields;
     private HttpVersion _version = HttpVersion.HTTP_1_1;
     private  byte[] _reason;
     private  byte[] _method;
@@ -132,7 +136,13 @@ public class HttpGenerator
 
     // data
     private boolean _needCRLF = false;
-   
+
+    /* ------------------------------------------------------------------------------- */
+    public HttpGenerator(HttpFields fields)
+    {
+        _fields=fields;
+    }
+    
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
@@ -152,6 +162,7 @@ public class HttpGenerator
         _needCRLF = false;
         _uri=null;
         _noContent=false;
+        _fields.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -193,7 +204,7 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     public boolean isCommitted()
     {
-        return _state != State.START;
+        return _state.ordinal() >= State.COMMITTED.ordinal();
     }
 
     /* ------------------------------------------------------------ */
@@ -367,25 +378,115 @@ public class HttpGenerator
         return _method==null;
     }
     
+
     /* ------------------------------------------------------------ */
-    public Result commit(HttpFields fields,ByteBuffer header,ByteBuffer buffer, ByteBuffer content, boolean last) throws IOException
+    public Result generate(ByteBuffer header, ByteBuffer chunk, ByteBuffer buffer, ByteBuffer content, Action action)
     {
+        Result result = Result.OK;
+        if (_state==State.END)
+            return result;
+        if (action==null)
+            action=Action.PREPARE;
+        
+        // Do we have content to handle
+        if (BufferUtil.hasContent(content))
+        {
+            // Do we have too much content?
+            if (_contentLength>0 && content.remaining()>(_contentLength-_contentPrepared))
+            {
+                LOG.warn("Content truncated at {}",new Throwable());
+                content.limit(content.position()+(int)(_contentLength-_contentPrepared));
+            }
 
-        if (isResponse() && _status==0)
-            throw new EofException(); // TODO ???
+            // Can we do a direct flush
+            if (BufferUtil.isEmpty(buffer) && content.remaining()>_largeContent)
+            {
+                if (isCommitted())
+                {
+                    if (isChunking())
+                    {
+                        if (chunk==null)
+                            return Result.NEED_CHUNK;
+                        BufferUtil.clearToFill(chunk);
+                        prepareChunk(chunk,content.remaining());
+                        BufferUtil.flipToFlush(chunk,0);
+                    }
+                    _contentPrepared+=content.remaining();
+                    return Result.FLUSH_CONTENT;
+                }
 
-        int pos=header.position();
+                _state=action==Action.COMPLETE?State.COMMITTING_COMPLETING:State.COMMITTING;
+                result=Result.FLUSH_CONTENT;
+            }
+            else
+            {
+                // we copy content to buffer
+                // if we don't have one, we need one
+                if (buffer==null)
+                    return Result.NEED_BUFFER;
+
+                // Copy the content
+                _contentPrepared+=BufferUtil.put(content,buffer);
+
+                // are we full?
+                if (BufferUtil.isAtCapacity(buffer))
+                {
+                    if (isCommitted())
+                    {
+                        if (isChunking())
+                        {
+                            if (chunk==null)
+                                return Result.NEED_CHUNK;
+                            BufferUtil.clearToFill(chunk);
+                            prepareChunk(chunk,buffer.remaining());
+                            BufferUtil.flipToFlush(chunk,0);
+                        }
+                        return Result.FLUSH;
+                    }
+                    _state=action==Action.COMPLETE?State.COMMITTING_COMPLETING:State.COMMITTING;
+                    result=Result.FLUSH;
+                }
+            }
+        }
+        
+        // Handle the actions
+        if (result==Result.OK)
+        {
+            switch(action)
+            {
+                case COMPLETE:
+                    if (!isCommitted())
+                        _state=State.COMMITTING_COMPLETING;
+                    else if (_state==State.COMMITTED)
+                        _state=State.COMPLETING;
+                    result=BufferUtil.hasContent(buffer)?Result.FLUSH:Result.OK;
+                    break;
+                case FLUSH:
+                    if (!isCommitted())
+                        _state=State.COMMITTING;
+                    result=BufferUtil.hasContent(buffer)?Result.FLUSH:Result.OK;
+                    break;
+            }
+        }
+
+        // flip header if we have one
+        final int pos=header==null?-1:BufferUtil.flipToFill(header);
         try
         {
-            BufferUtil.flipToFill(header);
-
-            switch(_state)
+            // handle by state
+            switch (_state)
             {
                 case START:
-                case COMPLETING_UNCOMMITTED:
-                    
+                    return Result.OK;
+
+                case COMMITTING:
+                case COMMITTING_COMPLETING:
+                {
                     if (isRequest())
                     {
+                        if (header==null || header.capacity()<=CHUNK_SIZE)
+                            return Result.NEED_HEADER;
+
                         if(_version==HttpVersion.HTTP_0_9)
                         {
                             _noContent=true;
@@ -399,13 +500,21 @@ public class HttpGenerator
                     else
                     {
                         // Responses
+
+                        // Do we need a response header?
                         if (_version == HttpVersion.HTTP_0_9)
                         {
                             _persistent = false;
                             _contentLength = HttpTokens.EOF_CONTENT;
                             _state = State.COMMITTED;
-                            return prepareContent(null,buffer,content);
+                            if (result==Result.FLUSH_CONTENT)
+                                _contentPrepared+=content.remaining();
+                            return result;
                         }
+
+                        // yes we need a response header
+                        if (header==null || header.capacity()<=CHUNK_SIZE)
+                            return Result.NEED_HEADER;
 
                         // Are we persistent by default?
                         if (_persistent==null)
@@ -430,69 +539,115 @@ public class HttpGenerator
                             _noContent=true;
                         }
                     }
-                    
-                    generateHeaders(fields,header,content,last);
 
-                    _state = _state==State.COMPLETING_UNCOMMITTED?State.COMMITTING_COMPLETING:State.COMMITTING;
-                    
-                    // fall through to COMMITTING states
-                    
-                case COMMITTING:
-                case COMMITTING_COMPLETING:
+                    boolean completing=action==Action.COMPLETE||_state==State.COMMITTING_COMPLETING;
+                    generateHeaders(header,content,completing);
+                    _state = completing?State.COMPLETING:State.COMMITTED;
 
-                    // Handle any content
-                    if (BufferUtil.hasContent(content))
+                    // handle result
+                    switch(result)
                     {
-                        // Do we have too much content?
-                        if (_contentLength>0 && content.remaining()>(_contentLength-_contentPrepared))
-                        {
-                            LOG.warn("Content truncated at {}",new Throwable());
-                            content.limit(content.position()+(int)(_contentLength-_contentPrepared));
-                        }
-                        
-                        // Can we do a direct flush
-                        if (BufferUtil.isEmpty(buffer) && content.remaining()>_largeContent)
-                        {
-                            _contentPrepared+=content.remaining();
+                        case FLUSH:
+                            if (isChunking())
+                                prepareChunk(header,buffer.remaining());
+                            break;
+                        case FLUSH_CONTENT:
                             if (isChunking())
                                 prepareChunk(header,content.remaining());
-                            return Result.FLUSH_CONTENT;
-                        }
-
-                        // we copy content to buffer
-                        // if we don't have one, we need one
-                        if (buffer==null)
-                            return Result.NEED_BUFFER;
-
-                        _contentPrepared+=BufferUtil.put(content,buffer);
-
-                        if (isChunking())
-                            prepareChunk(header,buffer.remaining());
-                        
-                        return Result.FLUSH;
+                            _contentPrepared+=content.remaining();
+                            break;
+                        case OK:
+                            if (BufferUtil.hasContent(buffer))
+                            {
+                                if (isChunking())
+                                    prepareChunk(header,buffer.remaining());
+                            }
+                            result=Result.FLUSH;
                     }
-                    _state = _state==State.COMMITTING?State.COMMITTED:State.COMPLETING;
-                    
-                    break;
-                    
-                default:
-                    throw new IllegalStateException(this.toString());
-                        
-            }
 
-        }
-        catch(BufferOverflowException e)
-        {
-            throw new RuntimeException("Header>"+header.capacity(),e);
+                    return result;
+                }
+
+
+                case COMMITTED:
+                    return Result.OK;
+
+
+                case COMPLETING:
+                    // handle content with commit
+
+                    if (isChunking())
+                    {
+                        if (chunk==null)
+                            return Result.NEED_CHUNK;
+                        BufferUtil.clearToFill(chunk);
+
+                        switch(result)
+                        {
+                            case FLUSH:
+                                prepareChunk(chunk,buffer.remaining());
+                                break;
+                            case FLUSH_CONTENT:
+                                prepareChunk(chunk,content.remaining());
+                            case OK:
+                                if (BufferUtil.hasContent(buffer))
+                                {
+                                    result=Result.FLUSH;
+                                    prepareChunk(chunk,buffer.remaining());
+                                }
+                                else
+                                {
+                                    result=Result.FLUSH;
+                                    _state=State.END;
+                                    prepareChunk(chunk,0);
+                                }
+                        }
+                        BufferUtil.flipToFlush(chunk,0);
+                    }
+                    else if (result==Result.OK)
+                    {
+                        if (BufferUtil.hasContent(buffer))
+                            result=Result.FLUSH;
+                        else
+                            _state=State.END;
+                    }
+                    
+                    return result;
+
+
+                default:
+                    throw new IllegalStateException();
+            }   
         }
         finally
         {
-            BufferUtil.flipToFlush(header,pos);
+            if (pos>=0)
+                BufferUtil.flipToFlush(header,pos);
         }
-
-        return _state==State.COMPLETING?Result.NEED_COMPLETE:Result.OK;   
     }
 
+    /* ------------------------------------------------------------ */
+    private void prepareChunk(ByteBuffer chunk, int remaining)
+    {
+        // if we need CRLF add this to header
+        if (_needCRLF)
+            BufferUtil.putCRLF(chunk);
+        
+        // Add the chunk size to the header
+        if (remaining>0)
+        {
+            BufferUtil.putHexInt(chunk, remaining);
+            BufferUtil.putCRLF(chunk);
+            _needCRLF=true;
+        }
+        else
+        {
+            chunk.put(LAST_CHUNK);
+            _needCRLF=false;
+        }
+    }
+    
+    
     /* ------------------------------------------------------------ */
     private void generateRequestLine(ByteBuffer header)
     {
@@ -545,7 +700,7 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    private void generateHeaders(HttpFields fields,ByteBuffer header,ByteBuffer content,boolean last)
+    private void generateHeaders(ByteBuffer header,ByteBuffer content,boolean last)
     {
 
         // Add Date header
@@ -566,9 +721,9 @@ public class HttpGenerator
         StringBuilder connection = null;
 
         // Generate fields
-        if (fields != null)
+        if (_fields != null)
         {
-            for (HttpFields.Field field : fields)
+            for (HttpFields.Field field : _fields)
             {
                 HttpHeader name = HttpHeader.CACHE.get(field.getName());
 
@@ -579,8 +734,14 @@ public class HttpGenerator
                         long length = field.getLongValue();
                         if (length>=0)
                         {
-                            if (length < _contentPrepared || last && length != _contentPrepared)
-                                LOG.warn("Incorrect ContentLength ignored ",new Throwable());
+                            long prepared=_contentPrepared+BufferUtil.remaining(content);
+                            if (length < prepared || last && length != prepared)
+                            {
+                                LOG.warn("Incorrect ContentLength: "+length+"!="+prepared);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug(new Throwable());
+                                _contentLength=HttpTokens.UNKNOWN_CONTENT;
+                            }
                             else
                             {
                                 // write the field to the header 
@@ -694,9 +855,14 @@ public class HttpGenerator
                     }
 
                     default:
-                        header.put(name.toBytesColonSpace());
-                        field.putValueTo(header);
-                        header.put(CRLF);
+                        if (name==null)
+                            field.putTo(header);
+                        else
+                        {
+                            header.put(name.toBytesColonSpace());
+                            field.putValueTo(header);
+                            header.put(CRLF);
+                        }
 
                 }
             }
@@ -828,178 +994,6 @@ public class HttpGenerator
 
     }
 
-    /* ------------------------------------------------------------ */
-    public Result prepareContent(ByteBuffer chunk, ByteBuffer buffer, ByteBuffer content)
-    {
-        // Do we have too much content?
-        if (_contentLength>0 && content.remaining()>(_contentLength-_contentPrepared))
-        {
-            LOG.warn("Content truncated at {}",new Throwable());
-            content.limit(content.position()+(int)(_contentLength-_contentPrepared));
-        }
-        
-        switch (_state)
-        {
-            case START:
-                // Can we do a direct flush
-                if (BufferUtil.isEmpty(buffer) && content.remaining()>_largeContent)
-                    return Result.NEED_COMMIT;
-
-                // we copy content to buffer
-                // if we don't have one, we need one
-                if (buffer==null)
-                    return Result.NEED_BUFFER;
-
-                // copy content to buffer
-                _contentPrepared+=BufferUtil.put(content,buffer);
-
-                // are we full?
-                if (BufferUtil.isAtCapacity(buffer))
-                    return Result.NEED_COMMIT;
-
-                return Result.OK;   
-
-            case COMPLETING:
-                return Result.NEED_COMPLETE;
-                
-            case COMMITTED:
-                
-                // Can we do a direct flush
-                if (BufferUtil.isEmpty(buffer) && content.remaining()>_largeContent)
-                {
-                    if (isChunking())
-                    {
-                        if (chunk==null)
-                            return Result.NEED_CHUNK;
-                        BufferUtil.clearToFill(chunk);
-                        prepareChunk(chunk,content.remaining());
-                        BufferUtil.flipToFlush(chunk,0);
-                    }
-                    _contentPrepared+=content.remaining();
-                    return Result.FLUSH_CONTENT;
-                }
-
-                // we copy content to buffer
-                // if we don't have one, we need one
-                if (buffer==null)
-                    return Result.NEED_BUFFER;
-
-                // Copy the content
-                _contentPrepared+=BufferUtil.put(content,buffer);
-
-                // are we full?
-                if (BufferUtil.isAtCapacity(buffer))
-                {
-                    if (isChunking())
-                    {
-                        if (chunk==null)
-                            return Result.NEED_CHUNK;
-                        BufferUtil.clearToFill(chunk);
-                        prepareChunk(chunk,buffer.remaining());
-                        BufferUtil.flipToFlush(chunk,0);
-                    }
-                    return Result.FLUSH;
-                }
-                return Result.OK;   
-                
-            default:
-                throw new IllegalStateException();
-        }   
-    }
-   
-    /* ------------------------------------------------------------ */
-    private void prepareChunk(ByteBuffer chunk, int remaining)
-    {
-        // if we need CRLF add this to header
-        if (_needCRLF)
-            BufferUtil.putCRLF(chunk);
-        
-        // Add the chunk size to the header
-        if (remaining>0)
-        {
-            BufferUtil.putHexInt(chunk, remaining);
-            BufferUtil.putCRLF(chunk);
-            _needCRLF=true;
-        }
-        else
-        {
-            chunk.put(LAST_CHUNK);
-            _needCRLF=false;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @throws IOException
-     */
-    public Result flush(ByteBuffer chunk, ByteBuffer buffer) throws IOException
-    {
-        switch(_state)
-        {
-            case START:
-                return Result.NEED_COMMIT;
-            case COMMITTED:
-                if (isChunking())
-                {
-                    if (chunk==null)
-                        return Result.NEED_CHUNK;
-
-                    if (BufferUtil.hasContent(buffer))
-                    {
-                        BufferUtil.clearToFill(chunk);
-                        prepareChunk(chunk,buffer.remaining());
-                        BufferUtil.flipToFlush(chunk,0);
-                    }
-                }
-        }
-        return Result.FLUSH;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Complete the message.
-     *
-     * @throws IOException
-     */
-    public Result complete(ByteBuffer chunk, ByteBuffer buffer) throws IOException
-    {
-        if (_state == State.END)
-            return Result.OK;
-
-        switch(_state)
-        {
-            case START:
-            case COMPLETING_UNCOMMITTED:
-                _state=State.COMPLETING_UNCOMMITTED;
-                return Result.NEED_COMMIT;
-
-            case COMPLETING:
-            case COMMITTED:
-                _state=State.COMPLETING;
-                if (isChunking())
-                {
-                    if (BufferUtil.hasContent(buffer))
-                    {
-                        if (chunk==null)
-                            return Result.NEED_CHUNK;
-                        BufferUtil.clearToFill(chunk);
-                        prepareChunk(chunk,buffer.remaining());
-                        BufferUtil.flipToFlush(chunk,0);
-                        return Result.FLUSH;
-                    }
-                    _state=State.END;
-                    BufferUtil.clearToFill(chunk);
-                    prepareChunk(chunk,0);
-                    BufferUtil.flipToFlush(chunk,0);
-                    return Result.FLUSH;
-                }
-                else if (BufferUtil.hasContent(buffer))
-                    return Result.FLUSH;
-
-        }
-        _state=State.END;
-        return Result.OK;
-    }
 
     /* ------------------------------------------------------------------------------- */
     public static byte[] getReasonBuffer(int code)
