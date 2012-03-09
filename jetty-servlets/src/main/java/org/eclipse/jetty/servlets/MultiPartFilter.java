@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -287,7 +288,14 @@ public class MultiPartFilter implements Filter
         @Override
         public Map getParameterMap()
         {
-            return Collections.unmodifiableMap(_params.toStringArrayMap());
+            Map<String, String> cmap = new HashMap<String,String>();
+            
+            for ( Object key : _params.keySet() )
+            {
+                cmap.put((String)key,getParameter((String)key));
+            }
+            
+            return Collections.unmodifiableMap(cmap);
         }
         
         /* ------------------------------------------------------------------------------- */

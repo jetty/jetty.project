@@ -39,6 +39,7 @@ public class GzipTester
 {
     private Class<? extends GzipFilter> gzipFilterClass = GzipFilter.class;
     private String encoding = "ISO8859_1";
+    private String userAgent = null;
     private ServletTester servletTester;
     private TestingDir testdir;
 
@@ -64,6 +65,8 @@ public class GzipTester
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding","gzip");
+        if (this.userAgent != null)
+            request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
 
         // Issue the request
@@ -129,6 +132,8 @@ public class GzipTester
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding","gzip");
+        if (this.userAgent != null)
+            request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
 
         // Issue the request
@@ -214,6 +219,8 @@ public class GzipTester
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
         request.setHeader("Accept-Encoding","gzip");
+        if (this.userAgent != null)
+            request.setHeader("User-Agent", this.userAgent);
         if (filename == null)
             request.setURI("/context/");
         else
@@ -386,6 +393,11 @@ public class GzipTester
     public void setEncoding(String encoding)
     {
         this.encoding = encoding;
+    }
+    
+    public void setUserAgent(String ua)
+    {
+        this.userAgent = ua;
     }
 
     public void start() throws Exception

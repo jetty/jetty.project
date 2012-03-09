@@ -27,6 +27,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -135,4 +136,13 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             client.close();
         }
     }
+
+
+    @Override
+    @Ignore
+    public void testAvailable() throws Exception
+    {
+    }
+    
+    
 }
