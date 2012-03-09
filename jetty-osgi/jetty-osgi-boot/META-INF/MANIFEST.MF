@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Jetty OSGi bootstrap
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot
 Bundle-Vendor: Mort Bay Consulting
-Bundle-Version: 8.1.0.qualifier
+Bundle-Version: 8.1.2.qualifier
 Bundle-Activator: org.eclipse.jetty.osgi.boot.JettyBootstrapActivator
 Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  javax.mail.event;version="1.4.0";resolution:=optional,
@@ -14,20 +14,20 @@ Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  javax.servlet.http;version="2.6",
  javax.transaction;version="1.1.0";resolution:=optional,
  javax.transaction.xa;version="1.1.0";resolution:=optional,
- org.eclipse.jetty.annotations;version="8.1.0";resolution:=optional,
- org.eclipse.jetty.deploy;version="8.1.0",
- org.eclipse.jetty.deploy.providers;version="8.1.0",
- org.eclipse.jetty.http;version="8.1.0",
- org.eclipse.jetty.nested;version="8.1.0";resolution:=optional,
- org.eclipse.jetty.server;version="8.1.0",
- org.eclipse.jetty.server.handler;version="8.1.0",
- org.eclipse.jetty.servlet;version="8.1.0",
- org.eclipse.jetty.util;version="8.1.0",
- org.eclipse.jetty.util.component;version="8.1.0",
- org.eclipse.jetty.util.log;version="8.1.0",
- org.eclipse.jetty.util.resource;version="8.1.0",
- org.eclipse.jetty.webapp;version="8.1.0",
- org.eclipse.jetty.xml;version="8.1.0",
+ org.eclipse.jetty.annotations;version="8.1.2";resolution:=optional,
+ org.eclipse.jetty.deploy;version="8.1.2",
+ org.eclipse.jetty.deploy.providers;version="8.1.2",
+ org.eclipse.jetty.http;version="8.1.2",
+ org.eclipse.jetty.nested;version="8.1.2";resolution:=optional,
+ org.eclipse.jetty.server;version="8.1.2",
+ org.eclipse.jetty.server.handler;version="8.1.2",
+ org.eclipse.jetty.servlet;version="8.1.2",
+ org.eclipse.jetty.util;version="8.1.2",
+ org.eclipse.jetty.util.component;version="8.1.2",
+ org.eclipse.jetty.util.log;version="8.1.2",
+ org.eclipse.jetty.util.resource;version="8.1.2",
+ org.eclipse.jetty.webapp;version="8.1.2",
+ org.eclipse.jetty.xml;version="8.1.2",
  org.osgi.framework,
  org.osgi.service.cm;version="1.2.0",
  org.osgi.service.packageadmin,
@@ -41,8 +41,8 @@ Import-Package: javax.mail;version="1.4.0";resolution:=optional,
  org.xml.sax.helpers
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-Classpath: .
-Export-Package: org.eclipse.jetty.osgi.boot;version="8.1.0",
- org.eclipse.jetty.osgi.nested;version="8.1.0",
- org.eclipse.jetty.osgi.boot.utils;version="8.1.0",
- org.eclipse.jetty.osgi.annotations;version="8.1.0"
+Export-Package: org.eclipse.jetty.osgi.boot;version="8.1.2",
+ org.eclipse.jetty.osgi.nested;version="8.1.2",
+ org.eclipse.jetty.osgi.boot.utils;version="8.1.2",
+ org.eclipse.jetty.osgi.annotations;version="8.1.2"
 DynamicImport-Package: org.eclipse.jetty.*;version="[8.1,9)"
