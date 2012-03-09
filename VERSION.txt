@@ -1,3 +1,5 @@
+jetty-7.6.3-SNAPSHOT
+
 jetty-7.6.2.v20120308 - 08 March 2012
  + 370387 SafariWebsocketDraft0Test failure during build.
  + 371168 Update ClientCrossContextSessionTest
