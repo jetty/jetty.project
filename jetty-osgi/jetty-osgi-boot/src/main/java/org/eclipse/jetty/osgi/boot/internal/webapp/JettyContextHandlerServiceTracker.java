@@ -20,6 +20,7 @@ import java.util.Map;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -195,7 +196,21 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     String defaultWebXmlPath = (String)sr.getProperty(OSGiWebappConstants.SERVICE_PROP_DEFAULT_WEB_XML_PATH);
                     if (defaultWebXmlPath == null)
                     {
-                        defaultWebXmlPath = webapp.getDefaultsDescriptor();
+                        String jettyHome = System.getProperty(DefaultJettyAtJettyHomeHelper.SYS_PROP_JETTY_HOME);
+                        if (jettyHome != null)
+                        {
+                            File etc = new File(jettyHome, "etc");
+                            if (etc.exists() && etc.isDirectory())
+                            {
+                                File webDefault = new File (etc, "webdefault.xml");
+                                if (webDefault.exists())
+                                    defaultWebXmlPath = webDefault.getAbsolutePath();
+                                else
+                                    defaultWebXmlPath = webapp.getDefaultsDescriptor();
+                            }
+                            else
+                                defaultWebXmlPath = webapp.getDefaultsDescriptor();
+                        }
                     }
                     String war = (String)sr.getProperty("war");
                     try
