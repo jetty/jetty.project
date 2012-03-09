@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Jetty-OSGi-Logback integration
 Fragment-Host: org.eclipse.jetty.osgi.boot
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot.logback;singleton:=true
-Bundle-Version: 7.3.0.qualifier
+Bundle-Version: 7.6.2.qualifier
 Bundle-Vendor: Mort Bay Consulting
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Import-Package: ch.qos.logback.classic,

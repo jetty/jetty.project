@@ -1,16 +1,16 @@
 Bundle-ManifestVersion: 2
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Bundle-SymbolicName: org.eclipse.jetty.osgi.httpservice
-Bundle-Version: 7.4.2.qualifier
+Bundle-Version: 7.6.2.qualifier
 Bundle-Vendor: Mort Bay Consulting
 Bundle-Name: OSGi HttpService provided by equinox HttpServiceServlet deployed on jetty
 Jetty-ContextFilePath: contexts/httpservice.xml
 Import-Package: javax.servlet;version="2.5.0",
  javax.servlet.http;version="2.5.0",
  org.eclipse.equinox.http.servlet,
- org.eclipse.jetty.server;version="7.0.0",
- org.eclipse.jetty.server.handler;version="7.0.0",
- org.eclipse.jetty.servlet;version="7.4.0",
- org.eclipse.jetty.util.component;version="7.0.0"
-Export-Package: org.eclipse.jetty.osgi.httpservice;version="7.4.2"
+ org.eclipse.jetty.server;version="7.6.2",
+ org.eclipse.jetty.server.handler;version="7.6.2",
+ org.eclipse.jetty.servlet;version="7.6.2",
+ org.eclipse.jetty.util.component;version="7.6.2"
+Export-Package: org.eclipse.jetty.osgi.httpservice;version="7.6.2"
 

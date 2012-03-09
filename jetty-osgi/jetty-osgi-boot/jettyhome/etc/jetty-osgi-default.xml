@@ -22,14 +22,6 @@
         <Set name="minThreads">10</Set>
         <Set name="maxThreads">200</Set>
       </New>
-
-      <!-- Optional Java 5 bounded threadpool with job queue 
-      <New class="org.eclipse.jetty.util.thread.ExecutorThreadPool">     
-        <Arg name="coreSize" type="int">25</Arg>
-        <Arg name="maxSize" type="int">50</Arg>
-        <Arg name="maxIdleMs" type="long">30000</Arg>
-      </New>
-      -->
     </Set>
 
 
@@ -118,7 +110,7 @@
                     contain custom tag libraries (*.tld files)
                     if those bundles don't exist or can't be loaded no errors or warning will be issued!
                     this default value is to plug the tld files of the reference implementation of JSF -->
-                <Set name="tldBundles"><Property name="org.eclipse.jetty.osgi.tldsbundles"
+                <Set name="tldBundles"><Property name="org.eclipse.jetty.osgi.tldbundles"
                      default="javax.faces.jsf-impl" /></Set>
               </New>
             </Arg>
