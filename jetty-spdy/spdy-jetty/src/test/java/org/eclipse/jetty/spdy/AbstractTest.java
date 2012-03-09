@@ -53,9 +53,10 @@ public abstract class AbstractTest
 
     protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
     {
-        server = new Server();
-        connector = newSPDYServerConnector(listener);
+        if (connector == null)
+            connector = newSPDYServerConnector(listener);
         connector.setPort(0);
+        server = new Server();
         server.addConnector(connector);
         server.start();
         return new InetSocketAddress("localhost", connector.getLocalPort());

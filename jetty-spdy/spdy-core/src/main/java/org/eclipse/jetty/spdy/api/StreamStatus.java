@@ -47,27 +47,27 @@ public enum StreamStatus
     /**
      * <p>The stream status indicating an implementation error</p>
      */
-    INTERNAL_ERROR(6, 11),
+    INTERNAL_ERROR(6, 6),
     /**
      * <p>The stream status indicating a flow control error</p>
      */
-    FLOW_CONTROL_ERROR(7, 6),
+    FLOW_CONTROL_ERROR(7, 7),
     /**
      * <p>The stream status indicating a stream opened more than once</p>
      */
-    STREAM_IN_USE(-1, 7),
+    STREAM_IN_USE(-1, 8),
     /**
      * <p>The stream status indicating data on a stream already closed</p>
      */
-    STREAM_ALREADY_CLOSED(-1, 8),
+    STREAM_ALREADY_CLOSED(-1, 9),
     /**
      * <p>The stream status indicating credentials not valid</p>
      */
-    INVALID_CREDENTIALS(-1, 9),
+    INVALID_CREDENTIALS(-1, 10),
     /**
      * <p>The stream status indicating that the implementation could not support a frame too large</p>
      */
-    FRAME_TOO_LARGE(-1, 10);
+    FRAME_TOO_LARGE(-1, 11);
 
     /**
      * @param version the SPDY protocol version

@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.servlets;
@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -39,20 +38,20 @@ import javax.servlet.http.HttpServletRequest;
  * <dt>attribute</dt><dd>If set, then the request attribute of this name is set with the matched user agent string</dd>
  * <dt>cacheSize</dt><dd>The size of the user-agent cache, used to avoid reparsing of user agent strings. The entire cache is flushed
  * when this size is reached</dd>
- * <dt>userAgent</dt><dd>A regex {@link Pattern} to extract the essential elements of the user agent. 
+ * <dt>userAgent</dt><dd>A regex {@link Pattern} to extract the essential elements of the user agent.
  * The concatenation of matched pattern groups is used as the user agent name</dd>
- * <dl> 
+ * <dl>
  * An example value for pattern is <code>(?:Mozilla[^\(]*\(compatible;\s*+([^;]*);.*)|(?:.*?([^\s]+/[^\s]+).*)</code>. These two
  * pattern match the common compatibility user-agent strings and extract the real user agent, failing that, the first
- * element of the agent string is returned. 
- * 
+ * element of the agent string is returned.
+ *
  *
  */
 public class UserAgentFilter implements Filter
 {
     private static final String __defaultPattern = "(?:Mozilla[^\\(]*\\(compatible;\\s*+([^;]*);.*)|(?:.*?([^\\s]+/[^\\s]+).*)";
     private Pattern _pattern = Pattern.compile(__defaultPattern);
-    private Map _agentCache = new ConcurrentHashMap();
+    private Map<String, String> _agentCache = new ConcurrentHashMap<String, String>();
     private int _agentCacheSize=1024;
     private String _attribute;
 
@@ -71,7 +70,7 @@ public class UserAgentFilter implements Filter
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
         if (_attribute!=null && _pattern!=null)
-        {       
+        {
             String ua=getUserAgent(request);
             request.setAttribute(_attribute,ua);
         }
@@ -85,11 +84,11 @@ public class UserAgentFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _attribute=filterConfig.getInitParameter("attribute");
-        
+
         String p=filterConfig.getInitParameter("userAgent");
         if (p!=null)
             _pattern=Pattern.compile(p);
-        
+
         String size=filterConfig.getInitParameter("cacheSize");
         if (size!=null)
             _agentCacheSize=Integer.parseInt(size);
@@ -101,7 +100,7 @@ public class UserAgentFilter implements Filter
         String ua=((HttpServletRequest)request).getHeader("User-Agent");
         return getUserAgent(ua);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Get UserAgent.
      * The configured agent patterns are used to match against the passed user agent string.
@@ -112,37 +111,42 @@ public class UserAgentFilter implements Filter
      */
     public String getUserAgent(String ua)
     {
-        if (ua==null)
+        if (ua == null)
             return null;
-        
-        String tag = (String)_agentCache.get(ua);
-        
 
-        if (tag==null)
+        String tag = _agentCache.get(ua);
+
+        if (tag == null)
         {
-            Matcher matcher=_pattern.matcher(ua);
-            if (matcher.matches())
+            if (_pattern != null)
             {
-                if(matcher.groupCount()>0)
+                Matcher matcher = _pattern.matcher(ua);
+                if (matcher.matches())
                 {
-                    for (int g=1;g<=matcher.groupCount();g++)
+                    if (matcher.groupCount() > 0)
                     {
-                        String group=matcher.group(g);
-                        if (group!=null)
-                            tag=tag==null?group:(tag+group);
+                        for (int g = 1; g <= matcher.groupCount(); g++)
+                        {
+                            String group = matcher.group(g);
+                            if (group != null)
+                                tag = tag == null ? group : tag + group;
+                        }
+                    }
+                    else
+                    {
+                        tag = matcher.group();
                     }
                 }
-                else 
-                    tag=matcher.group();
             }
-            else
-                tag=ua;
 
-            if (_agentCache.size()>=_agentCacheSize)
-                    _agentCache.clear();
-                _agentCache.put(ua,tag);
+            if (tag == null)
+                tag = ua;
 
+            if (_agentCache.size() >= _agentCacheSize)
+                _agentCache.clear();
+            _agentCache.put(ua, tag);
         }
+
         return tag;
     }
 }
