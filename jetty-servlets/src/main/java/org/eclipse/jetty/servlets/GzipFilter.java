@@ -20,6 +20,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.regex.Pattern;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -67,12 +68,17 @@ public class GzipFilter extends UserAgentFilter
     protected Set<String> _mimeTypes;
     protected int _bufferSize=8192;
     protected int _minGzipSize=256;
-    protected Set<String> _excluded;
+    protected Set<String> _excludedAgents;
+    protected Set<Pattern> _excludedAgentPatterns;
+    protected Set<String> _excludedPaths;
+    protected Set<Pattern> _excludedPathPatterns;
+
     
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#init(javax.servlet.FilterConfig)
      */
+    @Override
     public void init(FilterConfig filterConfig) throws ServletException
     {
         super.init(filterConfig);
@@ -93,21 +99,48 @@ public class GzipFilter extends UserAgentFilter
             while (tok.hasMoreTokens())
                 _mimeTypes.add(tok.nextToken());
         }
-        
         tmp=filterConfig.getInitParameter("excludedAgents");
         if (tmp!=null)
         {
-            _excluded=new HashSet<String>();
+            _excludedAgents=new HashSet<String>();
             StringTokenizer tok = new StringTokenizer(tmp,",",false);
             while (tok.hasMoreTokens())
-                _excluded.add(tok.nextToken());
+               _excludedAgents.add(tok.nextToken());
         }
+        
+                tmp=filterConfig.getInitParameter("excludeAgentPatterns");
+        if (tmp!=null)
+        {
+            _excludedAgentPatterns=new HashSet<Pattern>();
+            StringTokenizer tok = new StringTokenizer(tmp,",",false);
+            while (tok.hasMoreTokens())
+                _excludedAgentPatterns.add(Pattern.compile(tok.nextToken()));            
+        }        
+        
+        tmp=filterConfig.getInitParameter("excludePaths");
+        if (tmp!=null)
+        {
+            _excludedPaths=new HashSet<String>();
+            StringTokenizer tok = new StringTokenizer(tmp,",",false);
+            while (tok.hasMoreTokens())
+                _excludedPaths.add(tok.nextToken());            
+        }
+        
+        tmp=filterConfig.getInitParameter("excludePathPatterns");
+        if (tmp!=null)
+        {
+            _excludedPathPatterns=new HashSet<Pattern>();
+            StringTokenizer tok = new StringTokenizer(tmp,",",false);
+            while (tok.hasMoreTokens())
+                _excludedPathPatterns.add(Pattern.compile(tok.nextToken()));            
+        }       
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#destroy()
      */
+    @Override
     public void destroy()
     {
     }
@@ -116,6 +149,7 @@ public class GzipFilter extends UserAgentFilter
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
+    @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) 
         throws IOException, ServletException
     {
@@ -126,14 +160,17 @@ public class GzipFilter extends UserAgentFilter
         if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
                 && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
         {
-            if (_excluded!=null)
+            String ua = getUserAgent(request);
+            if (isExcludedAgent(ua))
             {
-                String ua=getUserAgent(request);
-                if (_excluded.contains(ua))
-                {
-                    super.doFilter(request,response,chain);
-                    return;
-                }
+                super.doFilter(request,response,chain);
+                return;
+            }
+            String requestURI = request.getRequestURI();
+            if (isExcludedPath(requestURI))
+            {
+                super.doFilter(request,response,chain);
+                return;
             }
 
             final GzipResponseWrapper wrappedResponse=newGzipResponseWrapper(request,response);
@@ -181,7 +218,64 @@ public class GzipFilter extends UserAgentFilter
             super.doFilter(request,response,chain);
         }
     }
-    
+     
+    /**
+     * Checks to see if the UserAgent is excluded
+     * 
+     * @param ua
+     *            the user agent
+     * @return boolean true if excluded
+     */
+    private boolean isExcludedAgent(String ua)
+    {
+        if (ua == null)
+            return false;
+
+        if (_excludedAgents != null)
+        {
+            if (_excludedAgents.contains(ua))
+            {
+                return true;
+            }
+        }
+        else if (_excludedAgentPatterns != null)
+        {
+            for (Pattern pattern : _excludedAgentPatterns)
+            {
+                if (pattern.matcher(ua).matches())
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks to see if the Path is excluded
+     * 
+     * @param ua
+     *            the request uri
+     * @return boolean true if excluded
+     */
+    private boolean isExcludedPath(String requestURI)
+    {
+        if (requestURI == null)
+            return false;
+        if (_excludedPathPatterns != null)
+        {
+            for (Pattern pattern : _excludedPathPatterns)
+            {
+                if (pattern.matcher(requestURI).matches())
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+            
     /**
      * Allows derived implementations to replace ResponseWrapper implementation.
      *

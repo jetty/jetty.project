@@ -440,6 +440,20 @@ public class ResponseTest
     }
 
     @Test
+    public void testZeroContent () throws Exception
+    {
+        Response response = new Response (new TestHttpConnection(connector, new ByteArrayEndPoint(), connector.getServer()));
+        PrintWriter writer = response.getWriter();
+        response.setContentLength(0);
+        assertTrue(!response.isCommitted());
+        assertTrue(!writer.checkError());
+        writer.print("");
+        assertTrue(!writer.checkError());
+        assertTrue(response.isCommitted());
+    }
+    
+    
+    @Test
     public void testHead() throws Exception
     {
         Server server = new Server();

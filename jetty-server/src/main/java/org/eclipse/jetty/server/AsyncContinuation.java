@@ -24,7 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationThrowable;
-import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -821,8 +820,10 @@ public class AsyncContinuation implements AsyncContext, Continuation
         synchronized (this)
         {
             doSuspend(context,request,response);
-            if ( request instanceof HttpServletRequest)
-                _event._pathInContext=URIUtil.addPaths(((HttpServletRequest)request).getServletPath(),((HttpServletRequest)request).getPathInfo());
+            if (request instanceof HttpServletRequest)
+            {
+                _event._pathInContext = URIUtil.addPaths(((HttpServletRequest)request).getServletPath(),((HttpServletRequest)request).getPathInfo());
+            }
         }
     }
 

@@ -1,22 +1,19 @@
 package org.eclipse.jetty.annotations.resources;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector;
-import org.eclipse.jetty.annotations.AnnotationParser;
-import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.annotations.ResourceAnnotationHandler;
 import org.eclipse.jetty.annotations.ResourcesAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -24,24 +21,39 @@ import static org.junit.Assert.assertNotNull;
 
 public class TestResourceAnnotations
 {
-    Object objA=new Integer(1000);
-    Object objB=new Integer(2000);
-    
+    private Server server;
+    private WebAppContext wac;
+    private InjectionCollection injections;
+    private Context comp;
+    private Context env;
+    private Object objA = 1000;
+    private Object objB = 2000;
+
+    @Before
+    public void init() throws Exception
+    {
+        server = new Server();
+        wac = new WebAppContext();
+        wac.setServer(server);
+        injections = new InjectionCollection();
+        wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
+        InitialContext ic = new InitialContext();
+        comp = (Context)ic.lookup("java:comp");
+        env = comp.createSubcontext("env");
+    }
+
+    @After
+    public void destroy() throws Exception
+    {
+        comp.destroySubcontext("env");
+    }
+
     @Test
     public void testResourceAnnotations ()
     throws Exception
     {
-        Server server = new Server();
-        WebAppContext wac = new WebAppContext();
-        wac.setServer(server);
-        InjectionCollection injections = new InjectionCollection();
-        wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
-        InitialContext ic = new InitialContext();
-        Context comp = (Context)ic.lookup("java:comp");
-        Context env = comp.createSubcontext("env");
-        
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
+        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
+        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
 
         AnnotationIntrospector parser = new AnnotationIntrospector();
         ResourceAnnotationHandler handler = new ResourceAnnotationHandler(wac);
@@ -116,32 +128,21 @@ public class TestResourceAnnotations
         f = ResourceA.class.getDeclaredField("n");
         f.setAccessible(true);
         assertEquals(objB, f.get(binst));
-
-        comp.destroySubcontext("env");
     }
-    
-  
+
     @Test
     public void testResourcesAnnotation ()
     throws Exception
     {
-        Server server = new Server();
-        WebAppContext wac = new WebAppContext();
-        wac.setServer(server);
-        InjectionCollection injections = new InjectionCollection();
-        wac.setAttribute(InjectionCollection.INJECTION_COLLECTION, injections);
-        InitialContext ic = new InitialContext();
-        Context comp = (Context)ic.lookup("java:comp");
-        Context env = comp.createSubcontext("env");
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceA = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
-        org.eclipse.jetty.plus.jndi.EnvEntry resourceB = new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
-             
+        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
+        new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
+
         AnnotationIntrospector introspector = new AnnotationIntrospector();
         ResourcesAnnotationHandler handler = new ResourcesAnnotationHandler(wac);
         introspector.registerHandler(handler);
         introspector.introspect(ResourceA.class);
         introspector.introspect(ResourceB.class);
-        
+
         assertEquals(objA, env.lookup("peach"));
         assertEquals(objB, env.lookup("pear"));
     }

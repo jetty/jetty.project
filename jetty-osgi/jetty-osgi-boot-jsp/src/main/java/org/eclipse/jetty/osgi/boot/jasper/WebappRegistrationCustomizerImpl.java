@@ -167,6 +167,8 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
     	}
     	return urls.toArray(new URL[urls.size()]);
     }
+    
+   
 	
     /**
      * Jasper resolves the dtd when it parses a taglib descriptor. 
@@ -182,7 +184,7 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
      * on a static friendly field :(
      * </p>
      */
-    void fixupDtdResolution()
+   void fixupDtdResolution()
     {
         try
         {
@@ -214,12 +216,12 @@ public class WebappRegistrationCustomizerImpl implements WebappRegistrationCusto
           Constants.WEBAPP_DTD_RESOURCE_PATH_22,
           Constants.WEBAPP_DTD_RESOURCE_PATH_23, };
 
-        // static final String[] CACHED_SCHEMA_RESOURCE_PATHS = {
-        // Constants.TAGLIB_SCHEMA_RESOURCE_PATH_20,
-        // Constants.TAGLIB_SCHEMA_RESOURCE_PATH_21,
-        // Constants.WEBAPP_SCHEMA_RESOURCE_PATH_24,
-        // Constants.WEBAPP_SCHEMA_RESOURCE_PATH_25,
-        // };
+        static final String[] CACHED_SCHEMA_RESOURCE_PATHS = {
+                                                              Constants.TAGLIB_SCHEMA_RESOURCE_PATH_20,
+                                                              Constants.TAGLIB_SCHEMA_RESOURCE_PATH_21,
+                                                              Constants.WEBAPP_SCHEMA_RESOURCE_PATH_24,
+                                                              Constants.WEBAPP_SCHEMA_RESOURCE_PATH_25,
+        };
         public InputSource resolveEntity(String publicId, String systemId) throws SAXException
         {
             for (int i = 0; i < CACHED_DTD_PUBLIC_IDS.length; i++)

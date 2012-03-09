@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeMap;
@@ -50,6 +51,9 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleReference;
+import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.util.tracker.ServiceTracker;
 import org.xml.sax.SAXException;
 
 /**
@@ -173,6 +177,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                 overrideBundleInstallLocation);
         File webapp = null;
         URL baseWebappInstallURL = null;
+        
         if (webappFolderPath != null && webappFolderPath.length() != 0 && !webappFolderPath.equals("."))
         {
             if (webappFolderPath.startsWith("/") || webappFolderPath.startsWith("file:"))
@@ -261,7 +266,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                 File defaultWebXml = null;
                 if (defaultWebXmlPath.startsWith("/") || defaultWebXmlPath.startsWith("file:/"))
                 {
-                    defaultWebXml = new File(webXmlPath);
+                    defaultWebXml = new File(defaultWebXmlPath);
                 }
                 else
                 {
@@ -276,8 +281,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             //other parameters that might be defines on the OSGiAppProvider:
             context.setParentLoaderPriority(_wrapper.getOSGiAppProvider().isParentLoaderPriority());
 
+            configureWebappClassLoader(contributor,context,composite, requireTldBundle);
             configureWebAppContext(context,contributor,requireTldBundle);
-            configureWebappClassLoader(contributor,context,composite);
+            
 
             // @see
             // org.eclipse.jetty.webapp.JettyWebXmlConfiguration#configure(WebAppContext)
@@ -450,7 +456,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             //the actual registration must happen via the new Deployment API.
 //            _ctxtHandler.addHandler(context);
 
-            configureWebappClassLoader(contributor,context,composite);
+            configureWebappClassLoader(contributor,context,composite, requireTldBundle);
             if (context instanceof WebAppContext)
             {
                 webAppContext = (WebAppContext)context;
@@ -615,8 +621,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 		                        }
 		                        while (tldEnum.hasMoreElements())
 		                        {
+		                            URL tldUrl = tldEnum.nextElement();	                            
 		                        	tldfrags.add(Resource.newResource(
-		                        			DefaultFileLocatorHelper.getLocalURL(tldEnum.nextElement())));
+		                        			DefaultFileLocatorHelper.getLocalURL(tldUrl)));
 		                        }
 	                        }
 	                    }
@@ -764,13 +771,17 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @param classInBundle
      * @throws Exception
      */
-    protected void configureWebappClassLoader(Bundle contributor, ContextHandler context, OSGiWebappClassLoader webappClassLoader) throws Exception
+    protected void configureWebappClassLoader(Bundle contributor, ContextHandler context, OSGiWebappClassLoader webappClassLoader, String requireTldBundle) throws Exception
     {
         if (context instanceof WebAppContext)
         {
             WebAppContext webappCtxt = (WebAppContext)context;
             context.setClassLoader(webappClassLoader);
             webappClassLoader.setWebappContext(webappCtxt);
+
+            String pathsToRequiredBundles = getPathsToRequiredBundles(context, requireTldBundle);
+            if (pathsToRequiredBundles != null)
+                webappClassLoader.addClassPath(pathsToRequiredBundles);
         }
         else
         {
@@ -788,6 +799,18 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         // know.
         OSGiWebappClassLoader webappClassLoader = new OSGiWebappClassLoader(
             _wrapper.getParentClassLoaderForWebapps(),new WebAppContext(),contributor,BUNDLE_CLASS_LOADER_HELPER);
+        /* DEBUG
+        try {
+        Class c = webappClassLoader.loadClass("org.glassfish.jsp.api.ResourceInjector");
+        System.err.println("LOADED org.glassfish.jsp.api.ResourceInjector from "+c.getClassLoader());
+        }
+        catch (Exception e) {e.printStackTrace();}
+        try {
+            Class c = webappClassLoader.loadClass("org.apache.jasper.xmlparser.ParserUtils");
+            System.err.println("LOADED org.apache.jasper.xmlparser.ParserUtils from "+c.getClassLoader());
+            }
+            catch (Exception e) {e.printStackTrace();}
+        */
         return webappClassLoader;
     }
 
@@ -809,6 +832,51 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         {
             __logger.warn("Unable to set 'this.bundle.install' " + " for the bundle " + bundle.getSymbolicName(), t);
         }
+    }
+
+    
+    private String getPathsToRequiredBundles (ContextHandler context, String requireTldBundle) throws Exception
+    {
+        if (requireTldBundle == null)
+            return null;
+
+        StringBuilder paths = new StringBuilder();
+        Bundle bundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
+        PackageAdmin packAdmin = getBundleAdmin();
+        DefaultFileLocatorHelper fileLocatorHelper = new DefaultFileLocatorHelper();
+        
+        String[] symbNames = requireTldBundle.split(", ");
+
+        for (String symbName : symbNames)
+        {
+            Bundle[] bs = packAdmin.getBundles(symbName, null);
+            if (bs == null || bs.length == 0)
+            {
+                throw new IllegalArgumentException("Unable to locate the bundle '"
+                                                   + symbName + "' specified in the "
+                                                   + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
+                                                   + " of the manifest of "
+                                                   + bundle.getSymbolicName());
+            }
+
+            
+            File f = fileLocatorHelper.getBundleInstallLocation(bs[0]);
+            if (paths.length() > 0)
+                paths.append(", ");
+            System.err.println("getPathsToRequiredBundles: bundle path="+bs[0].getLocation()+" uri="+f.toURI());
+            paths.append(f.toURI().toURL().toString());
+        }
+
+        return paths.toString();
+    }
+
+    private PackageAdmin getBundleAdmin()
+    {
+        Bundle bootBundle = ((BundleReference)OSGiWebappConstants.class.getClassLoader()).getBundle();
+        ServiceTracker serviceTracker = new ServiceTracker(bootBundle.getBundleContext(), PackageAdmin.class.getName(), null);
+        serviceTracker.open();
+
+        return (PackageAdmin) serviceTracker.getService();
     }
 
 
