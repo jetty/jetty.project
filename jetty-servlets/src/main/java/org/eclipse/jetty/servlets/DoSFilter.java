@@ -992,7 +992,7 @@ public class DoSFilter implements Filter
             if (_rateTrackers != null && _trackerTimeoutQ != null)
             {
                 long now = _trackerTimeoutQ.getNow();
-                int latestIndex = _next == 0 ? 3 : (_next - 1 ) % _timestamps.length;
+                int latestIndex = _next == 0 ? (_timestamps.length-1) : (_next - 1 );
                 long last=_timestamps[latestIndex];
                 boolean hasRecentRequest = last != 0 && (now-last)<1000L;
 
