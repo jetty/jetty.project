@@ -76,7 +76,7 @@ public class SPDYServerConnector extends SelectChannelConnector
         return bufferPool;
     }
 
-    protected Executor getExecutor()
+    public Executor getExecutor()
     {
         final ThreadPool threadPool = getThreadPool();
         if (threadPool instanceof Executor)
@@ -91,9 +91,14 @@ public class SPDYServerConnector extends SelectChannelConnector
         };
     }
 
-    protected ScheduledExecutorService getScheduler()
+    public ScheduledExecutorService getScheduler()
     {
         return scheduler;
+    }
+
+    public SslContextFactory getSslContextFactory()
+    {
+        return sslContextFactory;
     }
 
     @Override
