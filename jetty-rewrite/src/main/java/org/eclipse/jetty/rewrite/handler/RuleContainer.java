@@ -197,28 +197,25 @@ public class RuleContainer extends Rule
             if (applied!=null)
             {       
                 LOG.debug("applied {}",rule);
-                if (!target.equals(applied))
-                { 
-                    LOG.debug("rewrote {} to {}",target,applied);
-                    if (!original_set)
-                    {
-                        original_set=true;
-                        request.setAttribute(_originalPathAttribute, target);
-                    }     
+                LOG.debug("rewrote {} to {}",target,applied);
+                if (!original_set)
+                {
+                    original_set=true;
+                    request.setAttribute(_originalPathAttribute, target);
+                }     
 
-                    if (_rewriteRequestURI)
-                    {
-                        if (rule instanceof Rule.ApplyURI && !target.equals(request.getRequestURI()))
-                            ((Rule.ApplyURI)rule).applyURI((Request)request, target, applied);
-                        else
-                            ((Request)request).setRequestURI(applied);
-                    }
-
-                    if (_rewritePathInfo)
-                        ((Request)request).setPathInfo(applied);
-
-                    target=applied;
+                if (_rewriteRequestURI)
+                {
+                    if (rule instanceof Rule.ApplyURI)
+                        ((Rule.ApplyURI)rule).applyURI((Request)request, target, applied);
+                    else
+                        ((Request)request).setRequestURI(applied);
                 }
+
+                if (_rewritePathInfo)
+                    ((Request)request).setPathInfo(applied);
+
+                target=applied;
                 
                 if (rule.isHandling())
                 {
