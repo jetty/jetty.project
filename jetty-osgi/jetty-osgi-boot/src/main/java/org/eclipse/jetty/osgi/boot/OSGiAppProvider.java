@@ -187,6 +187,9 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         {
             ((WebAppContext)wah).setConfigurationClasses(_configurationClasses);
         }
+        
+        if (_defaultsDescriptor != null)
+            ((WebAppContext)wah).setDefaultsDescriptor(_defaultsDescriptor);
         return app.getContextHandler();
     }
 

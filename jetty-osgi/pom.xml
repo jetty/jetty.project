@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>7.6.2-SNAPSHOT</version>
+    <version>7.6.3-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.osgi</groupId>
@@ -15,7 +15,6 @@
     <osgi-services-version>3.2.100.v20100503</osgi-services-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
     <!--equinox-servletbridge-version>1.0.0-v20070523</equinox-servletbridge-version-->
-    <jsp-2.1-glassfish-version>2.1.v20100127</jsp-2.1-glassfish-version>
     <logback-version>0.9.18</logback-version>
     <slf4j-version>1.5.11</slf4j-version>
   </properties>

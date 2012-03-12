@@ -1,6 +1,6 @@
 jetty-7.6.3-SNAPSHOT
 
-jetty-7.6.2.v20120302 - 02 March 2012
+jetty-7.6.2.v20120308 - 08 March 2012
  + 370387 SafariWebsocketDraft0Test failure during build.
  + 371168 Update ClientCrossContextSessionTest
  + 372093 handle quotes in Require-Bundle manifest string
@@ -9,7 +9,17 @@ jetty-7.6.2.v20120302 - 02 March 2012
    will happen in the next major release (to avoid break implementers).
  + 372487 JDBCSessionManager does not work with Oracle
  + 372806 Command line should accept relative paths for xml config files
+ + 373037 jetty.server.Response.setContentLength(int) should not close a Writer
+   when length=0
+ + 373162 add improved implementation for getParameterMap(), needs a test
+   though and the existing setup doesn't seem like it would easily support the
+   needed test so need to do that still
+ + 373306 Set default user agent extraction pattern for UserAgentFilter
+ + 373567 cert validation issue with ocsp and crldp always being enabled when
+   validating turned on fixed
+ + JETTY-1409 GzipFilter will double-compress application/x-gzip content
  + JETTY-1489 WebAppProvider attempts to deploy .svn folder
+ + JETTY-1494 .
 
 jetty-7.6.1.v20120215 - 15 February 2012
  + 369121 simplified test

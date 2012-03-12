@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Jetty-OSGi-Jasper integration
 Fragment-Host: org.eclipse.jetty.osgi.boot
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot.jsp
-Bundle-Version: 7.4.1.qualifier
+Bundle-Version: 7.6.2.qualifier
 Bundle-Vendor: Mort Bay Consulting
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Import-Package: com.sun.el;resolution:=optional,
@@ -22,15 +22,16 @@ Import-Package: com.sun.el;resolution:=optional,
  javax.servlet.jsp.resources;version="2.1.0",
  javax.servlet.jsp.tagext;version="2.1.0",
  javax.servlet.resources;version="2.5.0",
- org.apache.jasper;version="2.0.0";resolution:=optional,
- org.apache.jasper.compiler;version="2.0.0";resolution:=optional,
- org.apache.jasper.compiler.tagplugin;version="2.0.0";resolution:=optional,
- org.apache.jasper.runtime;version="2.0.0";resolution:=optional,
- org.apache.jasper.security;version="2.0.0";resolution:=optional,
- org.apache.jasper.servlet;version="2.0.0";resolution:=optional,
- org.apache.jasper.tagplugins.jstl;version="2.0.0";resolution:=optional,
- org.apache.jasper.util;version="2.0.0";resolution:=optional,
- org.apache.jasper.xmlparser;version="2.0.0";resolution:=optional,
+ org.apache.jasper;version="6.0.0";resolution:=optional,
+ org.apache.jasper.compiler;version="6.0.0";resolution:=optional,
+ org.apache.jasper.compiler.tagplugin;version="6.0.0";resolution:=optional,
+ org.apache.jasper.runtime;version="6.0.0";resolution:=optional,
+ org.apache.jasper.security;version="6.0.0";resolution:=optional,
+ org.apache.jasper.servlet;version="6.0.0";resolution:=optional,
+ org.apache.jasper.tagplugins.jstl;version="6.0.0";resolution:=optional,
+ org.apache.jasper.util;version="6.0.0";resolution:=optional,
+ org.apache.jasper.xmlparser;version="6.0.0";resolution:=optional,
+ org.glassfish.jsp.api;version="2.1.3";resolution:=optional,
  org.apache.taglibs.standard;version="1.2.0";resolution:=optional,
  org.apache.taglibs.standard.extra.spath;version="1.2.0";resolution:=optional,
  org.apache.taglibs.standard.functions;version="1.2.0";resolution:=optional,
