@@ -21,6 +21,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.http.HttpGenerator.Content;
 
 public class HttpParser
 {
@@ -66,6 +67,7 @@ public class HttpParser
     private String _field0;
     private String _field1;
     private byte _eol;
+    private Content _content;
     private long _contentLength;
     private long _contentPosition;
     private int _chunkLength;
@@ -136,7 +138,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     public boolean isChunking()
     {
-        return _contentLength==HttpTokens.CHUNKED_CONTENT;
+        return _content==Content.CHUNKED_CONTENT;
     }
 
     /* ------------------------------------------------------------ */
@@ -236,7 +238,7 @@ public class HttpParser
                 switch (_state)
                 {
                     case START:
-                        _contentLength=HttpTokens.UNKNOWN_CONTENT;
+                        _content=Content.UNKNOWN_CONTENT;
                         _header=null;
                         if (ch > HttpTokens.SPACE || ch<0)
                         {
@@ -420,7 +422,7 @@ public class HttpParser
                                         switch (_header)
                                         {
                                             case CONTENT_LENGTH:
-                                                if (_contentLength != HttpTokens.CHUNKED_CONTENT && _responseStatus!=304 && _responseStatus!=204 && (_responseStatus<100 || _responseStatus>=200))
+                                                if (_content != Content.CHUNKED_CONTENT && _responseStatus!=304 && _responseStatus!=204 && (_responseStatus<100 || _responseStatus>=200))
                                                 {
                                                     try
                                                     {
@@ -432,17 +434,19 @@ public class HttpParser
                                                         throw new HttpException(HttpStatus.BAD_REQUEST_400);
                                                     }
                                                     if (_contentLength <= 0)
-                                                        _contentLength=HttpTokens.NO_CONTENT;
+                                                        _content=Content.NO_CONTENT;
+                                                    else 
+                                                        _content=Content.CONTENT_LENGTH;
                                                 }
                                                 break;
 
                                             case TRANSFER_ENCODING:
                                                 if (_value==HttpHeaderValue.CHUNKED)
-                                                    _contentLength=HttpTokens.CHUNKED_CONTENT;
+                                                    _content=Content.CHUNKED_CONTENT;
                                                 else
                                                 {
                                                     if (_field1.endsWith(HttpHeaderValue.CHUNKED.toString()))
-                                                        _contentLength=HttpTokens.CHUNKED_CONTENT;
+                                                        _content=Content.CHUNKED_CONTENT;
                                                     else if (_field1.indexOf(HttpHeaderValue.CHUNKED.toString()) >= 0)
                                                         throw new HttpException(400,null);
                                                 }
@@ -480,7 +484,7 @@ public class HttpParser
                                         }
                                     }
 
-                                    at_next|=_handler.parsedHeader(_field0, _field1);
+                                    at_next|=_handler.parsedHeader(_header, _field0, _field1);
                                 }
                                 _field0=_field1=null;
                                 _header=null;
@@ -495,32 +499,31 @@ public class HttpParser
 
                                     // End of headers!
                                     // work out the _content demarcation
-                                    if (_contentLength == HttpTokens.UNKNOWN_CONTENT)
+                                    if (_content == Content.UNKNOWN_CONTENT)
                                     {
                                         if (_responseStatus == 0  // request
                                                 || _responseStatus == 304 // not-modified response
                                                 || _responseStatus == 204 // no-content response
                                                 || _responseStatus < 200) // 1xx response
-                                            _contentLength=HttpTokens.NO_CONTENT;
+                                            _content=Content.NO_CONTENT;
                                         else
-                                            _contentLength=HttpTokens.EOF_CONTENT;
+                                            _content=Content.EOF_CONTENT;
                                     }
 
-                                    // We convert _contentLength to an int for this switch statement because
-                                    // we don't care about the amount of data available just whether there is some.
-                                    switch (_contentLength > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) _contentLength)
+                                    // How is the message ended?
+                                    switch (_content)
                                     {
-                                        case HttpTokens.EOF_CONTENT:
+                                        case EOF_CONTENT:
                                             _state=State.EOF_CONTENT;
                                             at_next|=_handler.headerComplete(); // May recurse here !
                                             break;
 
-                                        case HttpTokens.CHUNKED_CONTENT:
+                                        case CHUNKED_CONTENT:
                                             _state=State.CHUNKED_CONTENT;
                                             at_next|=_handler.headerComplete(); // May recurse here !
                                             break;
 
-                                        case HttpTokens.NO_CONTENT:
+                                        case NO_CONTENT:
                                             at_next|=_handler.headerComplete();
                                             _state=_persistent||(_responseStatus>=100&&_responseStatus<200)?State.END:State.SEEKING_EOF;
                                             at_next|=_handler.messageComplete(_contentPosition);
@@ -903,7 +906,7 @@ public class HttpParser
     {
         // reset state
         _state=_persistent?State.START:_state==State.END?State.END:State.SEEKING_EOF;
-        _contentLength=HttpTokens.UNKNOWN_CONTENT;
+        _content=Content.UNKNOWN_CONTENT;
         _contentPosition=0;
         _responseStatus=0;
 
@@ -916,7 +919,7 @@ public class HttpParser
     public void setState(State state)
     {
         this._state=state;
-        _contentLength=HttpTokens.UNKNOWN_CONTENT;
+        _content=Content.UNKNOWN_CONTENT;
     }
 
 
@@ -948,8 +951,13 @@ public class HttpParser
 
         /**
          * This is the method called by parser when a HTTP Header name and value is found
+         * @param header The HttpHeader value if there is a match
+         * @param name The String value of the header name
+         * @param value The String value of the header
+         * @return
+         * @throws IOException
          */
-        public boolean parsedHeader(String name, String value) throws IOException;
+        public boolean parsedHeader(HttpHeader header, String name, String value) throws IOException;
 
         public boolean earlyEOF();
     }

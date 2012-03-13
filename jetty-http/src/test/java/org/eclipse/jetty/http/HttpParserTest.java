@@ -303,7 +303,7 @@ public class HttpParserTest
         assertEquals("HTTP/1.1", f0);
         assertEquals("200", f1);
         assertEquals("Correct", f2);
-        assertEquals(_content.length(), 10);
+        assertEquals(10,_content.length());
         assertTrue(headerCompleted);
         assertTrue(messageCompleted);
     }
@@ -477,16 +477,15 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startRequest(String tok0, String tok1, String tok2)
+        public boolean startRequest(String method, String uri, String version)
         {
-            //System.err.println("request "+tok0+" "+tok1+" "+tok2);
             request=true;
             h= -1;
             hdr= new String[9];
             val= new String[9];
-            f0= tok0;
-            f1= tok1;
-            f2= tok2;
+            f0= method;
+            f1= uri;
+            f2= version;
 
             fields=new HttpFields();
             messageCompleted = false;
@@ -495,7 +494,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean parsedHeader(String name, String value)
+        public boolean parsedHeader(HttpHeader header, String name, String value)
         {
             //System.err.println("header "+name+": "+value);
             hdr[++h]= name;

@@ -27,11 +27,6 @@ public interface HttpTokens
     static final byte SEMI_COLON= (byte)';';
     static final byte TAB= 0x09;
 
-    public static final int SELF_DEFINING_CONTENT= -4;
-    public static final int UNKNOWN_CONTENT= -3;
-    public static final int CHUNKED_CONTENT= -2;
-    public static final int EOF_CONTENT= -1;
-    public static final int NO_CONTENT= 0;
 
 
 }

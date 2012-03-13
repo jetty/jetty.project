@@ -378,8 +378,8 @@ public class Response implements HttpServletResponse
         }
         else if (code!=SC_PARTIAL_CONTENT)
         {
-            _connection.getRequestFields().remove(HttpHeader.CONTENT_TYPE_BUFFER);
-            _connection.getRequestFields().remove(HttpHeader.CONTENT_LENGTH_BUFFER);
+            _connection.getRequestFields().remove(HttpHeader.CONTENT_TYPE);
+            _connection.getRequestFields().remove(HttpHeader.CONTENT_LENGTH);
             _characterEncoding=null;
             _mimeType=null;
             _cachedMimeType=null;
@@ -727,9 +727,9 @@ public class Response implements HttpServletResponse
                 {
                     _characterEncoding=null;
                     if (_cachedMimeType!=null)
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_cachedMimeType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_cachedMimeType);
                     else
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_mimeType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_mimeType);
                 }
             }
             else
@@ -748,14 +748,14 @@ public class Response implements HttpServletResponse
                             if (content_type!=null)
                             {
                                 _contentType=content_type.toString();
-                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,content_type);
+                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,content_type);
                             }
                         }
 
                         if (_contentType==null)
                         {
                             _contentType = _mimeType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                         }
                     }
                     else
@@ -774,7 +774,7 @@ public class Response implements HttpServletResponse
                             else
                                 _contentType=_contentType.substring(0,i8)+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ")+_contentType.substring(i2);
                         }
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                     }
                 }
             }
@@ -850,7 +850,7 @@ public class Response implements HttpServletResponse
             _mimeType=null;
             _cachedMimeType=null;
             _contentType=null;
-            _connection.getResponseFields().remove(HttpHeader.CONTENT_TYPE_BUFFER);
+            _connection.getResponseFields().remove(HttpHeader.CONTENT_TYPE);
         }
         else
         {
@@ -884,29 +884,29 @@ public class Response implements HttpServletResponse
                                 if (content_type!=null)
                                 {
                                     _contentType=content_type.toString();
-                                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,content_type);
+                                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,content_type);
                                 }
                                 else
                                 {
                                     _contentType=_mimeType+";charset="+_characterEncoding;
-                                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                                 }
                             }
                             else
                             {
                                 _contentType=_mimeType+";charset="+_characterEncoding;
-                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                             }
                         }
                         else if (i2<0)
                         {
                             _contentType=contentType.substring(0,i1)+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                         }
                         else
                         {
                             _contentType=contentType.substring(0,i1)+contentType.substring(i2)+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                         }
                     }
                     else if ((i1==i0+1 && i2<0) || (i1==i0+2 && i2<0 && contentType.charAt(i0+1)==' '))
@@ -921,38 +921,38 @@ public class Response implements HttpServletResponse
                             if (content_type!=null)
                             {
                                 _contentType=content_type.toString();
-                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,content_type);
+                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,content_type);
                             }
                             else
                             {
                                 _contentType=contentType;
-                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                             }
                         }
                         else
                         {
                             _contentType=contentType;
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                         }
                     }
                     else if (i2>0)
                     {
                         _characterEncoding = QuotedStringTokenizer.unquote(contentType.substring(i8,i2));
                         _contentType=contentType;
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                     }
                     else
                     {
                         _characterEncoding = QuotedStringTokenizer.unquote(contentType.substring(i8));
                         _contentType=contentType;
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                     }
                 }
                 else // No encoding in the params.
                 {
                     _cachedMimeType=null;
                     _contentType=_characterEncoding==null?contentType:contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                 }
             }
             else // No params at all
@@ -968,29 +968,29 @@ public class Response implements HttpServletResponse
                         if (content_type!=null)
                         {
                             _contentType=content_type.toString();
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,content_type);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,content_type);
                         }
                         else
                         {
                             _contentType=_mimeType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                         }
                     }
                     else
                     {
                         _contentType=contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                     }
                 }
                 else if (_cachedMimeType!=null)
                 {
                     _contentType=_cachedMimeType.toString();
-                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_cachedMimeType);
+                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_cachedMimeType);
                 }
                 else
                 {
                     _contentType=contentType;
-                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                 }
             }
         }
@@ -1039,7 +1039,7 @@ public class Response implements HttpServletResponse
         HttpFields response_fields=_connection.getResponseFields();
         
         response_fields.clear();
-        String connection=_connection.getRequestFields().getStringField(HttpHeader.CONNECTION_BUFFER);
+        String connection=_connection.getRequestFields().getStringField(HttpHeader.CONNECTION);
         if (connection!=null)
         {
             String[] values = connection.split(",");
@@ -1052,15 +1052,15 @@ public class Response implements HttpServletResponse
                     switch(cb.getOrdinal())
                     {
                         case HttpHeaderValue.CLOSE_ORDINAL:
-                            response_fields.put(HttpHeader.CONNECTION_BUFFER,HttpHeaderValue.CLOSE_BUFFER);
+                            response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
                             break;
 
                         case HttpHeaderValue.KEEP_ALIVE_ORDINAL:
                             if (HttpVersion.HTTP_1_0.equalsIgnoreCase(_connection.getRequest().getProtocol()))
-                                response_fields.put(HttpHeader.CONNECTION_BUFFER,HttpHeaderValue.KEEP_ALIVE);
+                                response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
                             break;
                         case HttpHeaderValue.TE_ORDINAL:
-                            response_fields.put(HttpHeader.CONNECTION_BUFFER,HttpHeaderValue.TE);
+                            response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.TE);
                             break;
                     }
                 }
@@ -1111,7 +1111,7 @@ public class Response implements HttpServletResponse
             return;
 
         _locale = locale;
-        _connection.getResponseFields().put(HttpHeader.CONTENT_LANGUAGE_BUFFER,locale.toString().replace('_','-'));
+        _connection.getResponseFields().put(HttpHeader.CONTENT_LANGUAGE,locale.toString().replace('_','-'));
 
         if (_explicitEncoding || _outputState!=0 )
             return;
@@ -1143,7 +1143,7 @@ public class Response implements HttpServletResponse
                 }
 
                 _cachedMimeType=MimeTypes.CACHE.get(_mimeType);
-                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE_BUFFER,_contentType);
+                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
             }
         }
     }

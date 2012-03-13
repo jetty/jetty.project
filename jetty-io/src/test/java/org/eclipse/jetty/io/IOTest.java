@@ -24,12 +24,21 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.SelectorProvider;
+import java.util.Set;
+import java.util.concurrent.Future;
 
 import junit.framework.Assert;
 
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.Test;
 
@@ -292,7 +301,7 @@ public class IOTest
         client.setSoLinger(true,0);
         server.setTcpNoDelay(true);
         server.setSoLinger(true,0);
-       
+        
         client.getOutputStream().write(1);
         assertEquals(1,server.getInputStream().read());
         server.getOutputStream().write(1);
@@ -318,5 +327,32 @@ public class IOTest
         // Since output was already shutdown, server closes
         server.close();
     }
-
+    
+    @Test
+    public void testAsyncSocketChannel() throws Exception
+    {
+        AsynchronousServerSocketChannel connector = AsynchronousServerSocketChannel.open();
+        connector.bind(null);
+        Future<AsynchronousSocketChannel> acceptor= connector.accept();
+        
+        AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
+        client.connect(connector.getLocalAddress());
+        
+        AsynchronousSocketChannel server = acceptor.get();
+        
+        ByteBuffer read = ByteBuffer.allocate(1024);
+        Future<Integer> reading=server.read(read);
+        
+        ByteBuffer write= BufferUtil.toBuffer("Testing 1 2 3");
+        Future<Integer> writing=client.write(write);
+        
+        reading.get();
+        writing.get();
+        read.flip();
+        System.err.println(BufferUtil.toString(read));
+        
+        
+        
+        
+    }
 }

@@ -30,32 +30,88 @@ public class HttpGeneratorClientTest
     public final static String CONTENT="The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
     public final static String[] connect={null,"keep-alive","close"};
 
+    class Info implements HttpGenerator.RequestInfo
+    {
+        final String _method;
+        final String _uri;
+        HttpFields _fields = new HttpFields();
+        long _contentLength = -1;
+        
+        Info(String method,String uri)
+        {
+            _method=method;
+            _uri=uri;
+        }
+        
+        @Override
+        public HttpVersion getHttpVersion()
+        {
+            return HttpVersion.HTTP_1_1;
+        }
+
+        @Override
+        public HttpFields getHttpFields()
+        {
+            return _fields;
+        }
+
+        @Override
+        public boolean isHead()
+        {
+            return false;
+        }
+
+        @Override
+        public long getContentLength()
+        {
+            return _contentLength;
+        }
+
+        public void setContentLength(long l)
+        {
+            _contentLength=l;
+        }
+
+        @Override
+        public String getMethod()
+        {
+            return _method;
+        }
+
+        @Override
+        public String getURI()
+        {
+            return _uri;
+        }
+        
+    }
 
     @Test
     public void testRequestNoContent() throws Exception
     {
         ByteBuffer header=BufferUtil.allocate(2048);
-        HttpFields fields = new HttpFields();
-        HttpGenerator gen = new HttpGenerator(fields);
+        Info info = new Info("GET","/index.html");
+        HttpGenerator gen = new HttpGenerator(info);
 
-        fields.add("Host","something");
-        fields.add("User-Agent","test");
-
-        gen.setRequest(HttpMethod.GET,"/index.html",HttpVersion.HTTP_1_1);
+        info.getHttpFields().add("Host","something");
+        info.getHttpFields().add("User-Agent","test");
 
         HttpGenerator.Result
         result=gen.generate(null,null,null,null,Action.COMPLETE);
         assertEquals(HttpGenerator.State.COMMITTING_COMPLETING,gen.getState());
         assertEquals(HttpGenerator.Result.NEED_HEADER,result);
+        assertTrue(!gen.isChunking());
 
         result=gen.generate(header,null,null,null,null);
         assertEquals(HttpGenerator.Result.FLUSH,result);
+        assertTrue(!gen.isChunking());
         String head = BufferUtil.toString(header);
         BufferUtil.clear(header);
 
         result=gen.generate(null,null,null,null,null);
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.END,gen.getState());
+        assertTrue(!gen.isChunking());
 
         assertEquals(0,gen.getContentWritten());
         assertThat(head,containsString("GET /index.html HTTP/1.1"));
@@ -71,13 +127,11 @@ public class HttpGeneratorClientTest
         ByteBuffer buffer=BufferUtil.allocate(8096);
         ByteBuffer content=BufferUtil.toBuffer("Hello World");
         ByteBuffer content1=BufferUtil.toBuffer(". The quick brown fox jumped over the lazy dog.");
-        HttpFields fields = new HttpFields();
-        HttpGenerator gen = new HttpGenerator(fields);
+        Info info = new Info("POST","/index.html");
+        HttpGenerator gen = new HttpGenerator(info);
 
-        gen.setVersion(HttpVersion.HTTP_1_1);
-        gen.setRequest("POST","/index.html");
-        fields.add("Host","something");
-        fields.add("User-Agent","test");
+        info.getHttpFields().add("Host","something");
+        info.getHttpFields().add("User-Agent","test");
 
         HttpGenerator.Result
 
@@ -132,13 +186,11 @@ public class HttpGeneratorClientTest
         ByteBuffer buffer=BufferUtil.allocate(16);
         ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
-        HttpFields fields = new HttpFields();
-        HttpGenerator gen = new HttpGenerator(fields);
+        Info info = new Info("POST","/index.html");
+        HttpGenerator gen = new HttpGenerator(info);
 
-        gen.setVersion(HttpVersion.HTTP_1_1);
-        gen.setRequest("POST","/index.html");
-        fields.add("Host","something");
-        fields.add("User-Agent","test");
+        info.getHttpFields().add("Host","something");
+        info.getHttpFields().add("User-Agent","test");
 
         HttpGenerator.Result
 
@@ -242,14 +294,12 @@ public class HttpGeneratorClientTest
         ByteBuffer header=BufferUtil.allocate(4096);
         ByteBuffer content0=BufferUtil.toBuffer("Hello Cruel World! ");
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
-        HttpFields fields = new HttpFields();
-        HttpGenerator gen = new HttpGenerator(fields);
+        Info info = new Info("POST","/index.html");
+        HttpGenerator gen = new HttpGenerator(info);
         gen.setLargeContent(8);
 
-        gen.setVersion(HttpVersion.HTTP_1_1);
-        gen.setRequest("POST","/index.html");
-        fields.add("Host","something");
-        fields.add("User-Agent","test");
+        info.getHttpFields().add("Host","something");
+        info.getHttpFields().add("User-Agent","test");
 
         HttpGenerator.Result
 
@@ -315,15 +365,13 @@ public class HttpGeneratorClientTest
         ByteBuffer buffer=BufferUtil.allocate(16);
         ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
-        HttpFields fields = new HttpFields();
-        HttpGenerator gen = new HttpGenerator(fields);
+        Info info = new Info("POST","/index.html");
+        HttpGenerator gen = new HttpGenerator(info);
 
-        gen.setVersion(HttpVersion.HTTP_1_1);
-        gen.setRequest("POST","/index.html");
-        fields.add("Host","something");
-        fields.add("User-Agent","test");
-        fields.add("Content-Length","59");
-        gen.setContentLength(59);
+        info.getHttpFields().add("Host","something");
+        info.getHttpFields().add("User-Agent","test");
+        info.getHttpFields().add("Content-Length","59");
+        info.setContentLength(59);
 
         HttpGenerator.Result
 
@@ -408,16 +456,14 @@ public class HttpGeneratorClientTest
         ByteBuffer header=BufferUtil.allocate(4096);
         ByteBuffer content0=BufferUtil.toBuffer("Hello World! ");
         ByteBuffer content1=BufferUtil.toBuffer("The quick brown fox jumped over the lazy dog. ");
-        HttpFields fields = new HttpFields();
-        HttpGenerator gen = new HttpGenerator(fields);
+        Info info = new Info("POST","/index.html");
+        HttpGenerator gen = new HttpGenerator(info);
         gen.setLargeContent(8);
 
-        gen.setVersion(HttpVersion.HTTP_1_1);
-        gen.setRequest("POST","/index.html");
-        fields.add("Host","something");
-        fields.add("User-Agent","test");
-        fields.add("Content-Length","59");
-        gen.setContentLength(59);
+        info.getHttpFields().add("Host","something");
+        info.getHttpFields().add("User-Agent","test");
+        info.getHttpFields().add("Content-Length","59");
+        info.setContentLength(59);
 
         HttpGenerator.Result
 

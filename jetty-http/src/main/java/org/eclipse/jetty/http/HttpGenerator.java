@@ -29,47 +29,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpGenerator
 {
-
-    // Build cache of response lines for status
-    private static class Status
-    {
-        byte[] _reason;
-        byte[] _schemeCode;
-        byte[] _responseLine;
-    }
-    private static final Status[] __status = new Status[HttpStatus.MAX_CODE+1];
-    static
-    {
-        int versionLength=HttpVersion.HTTP_1_1.toString().length();
-
-        for (int i=0;i<__status.length;i++)
-        {
-            HttpStatus.Code code = HttpStatus.getCode(i);
-            if (code==null)
-                continue;
-            String reason=code.getMessage();
-            byte[] line=new byte[versionLength+5+reason.length()+2];
-            HttpVersion.HTTP_1_1.toBuffer().get(line,0,versionLength);
-            line[versionLength+0]=' ';
-            line[versionLength+1]=(byte)('0'+i/100);
-            line[versionLength+2]=(byte)('0'+(i%100)/10);
-            line[versionLength+3]=(byte)('0'+(i%10));
-            line[versionLength+4]=' ';
-            for (int j=0;j<reason.length();j++)
-                line[versionLength+5+j]=(byte)reason.charAt(j);
-            line[versionLength+5+reason.length()]=HttpTokens.CARRIAGE_RETURN;
-            line[versionLength+6+reason.length()]=HttpTokens.LINE_FEED;
-
-            __status[i] = new Status();
-            __status[i]._reason=new byte[line.length-versionLength-7] ;
-            System.arraycopy(line,versionLength+5,__status[i]._reason,0,line.length-versionLength-7);
-            __status[i]._schemeCode=new byte[versionLength+5];
-            System.arraycopy(line,0,__status[i]._schemeCode,0,versionLength+5);
-            __status[i]._responseLine=line;
-        }
-    }
-
-
     private static final Logger LOG = Log.getLogger(HttpGenerator.class);
 
     // states
@@ -77,83 +36,82 @@ public class HttpGenerator
     public enum Action { FLUSH, COMPLETE, PREPARE };
     public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, END };
     public enum Result { NEED_CHUNK,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
-
-    public static final byte[] NO_BYTES = {};
-
-    // data
-
-    private State _state = State.START;
-
-    private int _status = 0;
-
-    private final HttpFields _fields;
-    private HttpVersion _version = HttpVersion.HTTP_1_1;
-    private  byte[] _reason;
-    private  byte[] _method;
-    private  byte[] _uri;
-
-    private int _largeContent=4096;
-    private long _contentPrepared = 0;
-    private long _contentLength = HttpTokens.UNKNOWN_CONTENT;
-    private boolean _head = false;
-    private boolean _noContent = false;
-    private Boolean _persistent = null;
-
-
-    private ByteBuffer _date;
-
-    private boolean _sendServerVersion;
-
-
-
-    // common _content
-    private static final byte[] LAST_CHUNK =    { (byte) '0', (byte) '\015', (byte) '\012', (byte) '\015', (byte) '\012'};
-    private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\015\012");
-    private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\015\012");
-    private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");
-    private static final byte[] CONNECTION_ = StringUtil.getBytes("Connection: ");
-    private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1+" ");
-    private static final byte[] CRLF = StringUtil.getBytes("\015\012");
-    private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
-    private static byte[] SERVER = StringUtil.getBytes("Server: Jetty(7.0.x)\015\012");
+    public enum Content { UNKNOWN_CONTENT,NO_CONTENT,EOF_CONTENT,CONTENT_LENGTH,CHUNKED_CONTENT,SELF_DEFINING_CONTENT };
 
     // other statics
     public static final int CHUNK_SIZE = 12;
+    
+    interface Info
+    {
+        HttpVersion getHttpVersion();
+        HttpFields getHttpFields();
+        boolean isHead();
+        long getContentLength();
+    }
+    
+    interface RequestInfo extends Info
+    {
+        String getMethod();
+        String getURI();
+    }
+    
+    interface ResponseInfo extends Info
+    {
+        int getStatus();
+        String getReason();
+    }
+    
+    // data
+    private final Info _info;
+    private final RequestInfo _request;
+    private final ResponseInfo _response;
 
+    private State _state = State.START;
+    private Content _content = Content.UNKNOWN_CONTENT;
+    
+    private int _largeContent=4096;
+    private long _contentPrepared = 0;
+    private boolean _noContent = false;
+    private Boolean _persistent = null;
+    private boolean _sendServerVersion;
+
+
+    /* ------------------------------------------------------------------------------- */
     public static void setServerVersion(String version)
     {
         SERVER=StringUtil.getBytes("Server: Jetty("+version+")\015\012");
     }
-
+    
+    /* ------------------------------------------------------------------------------- */
     // data
     private boolean _needCRLF = false;
 
     /* ------------------------------------------------------------------------------- */
-    public HttpGenerator(HttpFields fields)
+    public HttpGenerator(RequestInfo info)
     {
-        _fields=fields;
+        _info=info;
+        _request=info;
+        _response=null;
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    public HttpGenerator(ResponseInfo info)
+    {
+        _info=info;
+        _request=null;
+        _response=info;
     }
 
     /* ------------------------------------------------------------------------------- */
     public void reset()
     {
         _state = State.START;
-        _status = 0;
-        _version = HttpVersion.HTTP_1_1;
-        _reason = null;
-        _head = false;
+        _content = Content.UNKNOWN_CONTENT;
         _noContent=false;
         _persistent = null;
         _contentPrepared = 0;
-        _contentLength = HttpTokens.UNKNOWN_CONTENT;
-        _date = null;
-
-        _method=null;
-
         _needCRLF = false;
-        _uri=null;
         _noContent=false;
-        _fields.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -187,12 +145,6 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isIdle()
-    {
-        return _state == State.START && _method==null && _status==0;
-    }
-
-    /* ------------------------------------------------------------ */
     public boolean isCommitted()
     {
         return _state.ordinal() >= State.COMMITTED.ordinal();
@@ -201,7 +153,7 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     public boolean isChunking()
     {
-        return _contentLength==HttpTokens.CHUNKED_CONTENT;
+        return _content==Content.CHUNKED_CONTENT;
     }
 
     /* ------------------------------------------------------------ */
@@ -218,33 +170,6 @@ public class HttpGenerator
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the head.
-     */
-    public boolean isHead()
-    {
-        return _head;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void setContentLength(long value)
-    {
-        if (value<0)
-            _contentLength=HttpTokens.UNKNOWN_CONTENT;
-        else
-            _contentLength=value;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param head The head to set.
-     */
-    public void setHead(boolean head)
-    {
-        _head = head;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return <code>false</code> if the connection should be closed after a request has been read,
      * <code>true</code> if it should be used for additional requests.
      */
@@ -252,7 +177,7 @@ public class HttpGenerator
     {
         return _persistent!=null
                 ?_persistent.booleanValue()
-                        :(isRequest()?true:_version.ordinal()>HttpVersion.HTTP_1_0.ordinal());
+                        :(isRequest()?true:_info.getHttpVersion().ordinal()>HttpVersion.HTTP_1_0.ordinal());
     }
 
     /* ------------------------------------------------------------ */
@@ -262,81 +187,11 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param version The version of the client the response is being sent to (NB. Not the version
-     *            in the response, which is the version of the server).
-     */
-    public void setVersion(HttpVersion version)
-    {
-        if (_state != State.START)
-            throw new IllegalStateException("STATE!=START "+_state);
-        _version = version;
-        if (_version==HttpVersion.HTTP_0_9 && _method!=null)
-            _noContent=true;
-    }
-
-    /* ------------------------------------------------------------ */
     public HttpVersion getVersion()
     {
-        return _version;
+        return _info.getHttpVersion();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.Generator#setDate(org.eclipse.jetty.io.ByteBuffer)
-     */
-    public void setDate(ByteBuffer timeStampBuffer)
-    {
-        _date=timeStampBuffer;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public void setRequest(String method, String uri)
-    {
-        if (_state != State.START)
-            throw new IllegalStateException("STATE!=START "+_state);
-        _method=StringUtil.getBytes(method);
-        _uri=StringUtil.getUtf8Bytes(uri);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     */
-    public void setRequest(HttpMethod method, String uri,HttpVersion version)
-    {
-        if (_state != State.START)
-            throw new IllegalStateException("STATE!=START "+_state);
-        _method=method.getBytes();
-        _uri=StringUtil.getUtf8Bytes(uri);
-        setVersion(version);
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param status The status code to send.
-     * @param reason the status message to send.
-     */
-    public void setResponse(int status, String reason)
-    {
-        if (_state != State.START)
-            throw new IllegalStateException("STATE!=START");
-        _method=null;
-        _status = status;
-        if (reason==null)
-            _reason=null;
-        else
-        {
-            if (reason.length()>1024)
-                reason=reason.substring(0,1024);
-            _reason=StringUtil.getBytes(reason);
-            for (int i=_reason.length;i-->0;)
-                if (_reason[i]=='\r' || _reason[i]=='\n')
-                    _reason[i]='?';
-        }
-    }
 
     /* ------------------------------------------------------------ */
     public boolean isWritten()
@@ -347,10 +202,9 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     public boolean isAllContentWritten()
     {
-        return _contentLength>=0 && _contentPrepared>=_contentLength;
+        return _content==Content.CONTENT_LENGTH && _contentPrepared>=_info.getContentLength();
     }
-
-
+    
     /* ------------------------------------------------------------ */
     public long getContentWritten()
     {
@@ -360,15 +214,14 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     public boolean isRequest()
     {
-        return _method!=null;
+        return _request!=null;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isResponse()
     {
-        return _method==null;
+        return _response!=null;
     }
-
 
     /* ------------------------------------------------------------ */
     public Result generate(ByteBuffer header, ByteBuffer chunk, ByteBuffer buffer, ByteBuffer content, Action action)
@@ -383,10 +236,10 @@ public class HttpGenerator
         if (BufferUtil.hasContent(content))
         {
             // Do we have too much content?
-            if (_contentLength>0 && content.remaining()>(_contentLength-_contentPrepared))
+            if (_content==Content.CONTENT_LENGTH && _info.getContentLength()>=0 && content.remaining()>(_info.getContentLength()-_contentPrepared))
             {
-                LOG.warn("Content truncated at {}",new Throwable());
-                content.limit(content.position()+(int)(_contentLength-_contentPrepared));
+                LOG.warn("Content truncated. Info.getContentLength()=="+_info.getContentLength()+" prepared="+_contentPrepared+" content="+content.remaining(),new Throwable());
+                content.limit(content.position()+(int)(_info.getContentLength()-_contentPrepared));
             }
 
             // Can we do a direct flush
@@ -478,7 +331,7 @@ public class HttpGenerator
                         if (header==null || header.capacity()<=CHUNK_SIZE)
                             return Result.NEED_HEADER;
 
-                        if(_version==HttpVersion.HTTP_0_9)
+                        if(_info.getHttpVersion()==HttpVersion.HTTP_0_9)
                         {
                             _noContent=true;
                             generateRequestLine(header);
@@ -493,10 +346,10 @@ public class HttpGenerator
                         // Responses
 
                         // Do we need a response header?
-                        if (_version == HttpVersion.HTTP_0_9)
+                        if (_info.getHttpVersion() == HttpVersion.HTTP_0_9)
                         {
                             _persistent = false;
-                            _contentLength = HttpTokens.EOF_CONTENT;
+                            _content=Content.EOF_CONTENT;
                             _state = State.COMMITTED;
                             if (result==Result.FLUSH_CONTENT)
                                 _contentPrepared+=content.remaining();
@@ -509,23 +362,24 @@ public class HttpGenerator
 
                         // Are we persistent by default?
                         if (_persistent==null)
-                            _persistent=(_version.ordinal() > HttpVersion.HTTP_1_0.ordinal());
+                            _persistent=(_info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
                         generateResponseLine(header);
 
                         // Handle 1xx
-                        if (_status>=100 && _status<200 )
+                        int status=_response.getStatus();
+                        if (status>=100 && status<200 )
                         {
                             _noContent=true;
 
-                            if (_status!=101 )
+                            if (status!=101 )
                             {
                                 header.put(HttpTokens.CRLF);
                                 _state = State.START;
                                 return Result.OK;
                             }
                         }
-                        else if (_status==204 || _status==304)
+                        else if (status==204 || status==304)
                         {
                             _noContent=true;
                         }
@@ -650,15 +504,15 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     private void generateRequestLine(ByteBuffer header)
     {
-        header.put(_method);
+        header.put(StringUtil.getBytes(_request.getMethod()));
         header.put((byte)' ');
-        header.put(_uri);
-        switch(_version)
+        header.put(StringUtil.getBytes(_request.getURI()));
+        switch(_info.getHttpVersion())
         {
             case HTTP_1_0:
             case HTTP_1_1:
                 header.put((byte)' ');
-                header.put(_version.toBytes());
+                header.put(_info.getHttpVersion().toBytes());
         }
         header.put(HttpTokens.CRLF);
     }
@@ -667,97 +521,82 @@ public class HttpGenerator
     private void generateResponseLine(ByteBuffer header)
     {
         // Look for prepared response line
-        Status status = _status<__status.length?__status[_status]:null;
-        if (status!=null)
+        int status=_response.getStatus();
+        PreparedResponse preprepared = status<__preprepared.length?__preprepared[status]:null;
+        String reason=_response.getReason();
+        if (preprepared!=null)
         {
-            if (_reason==null)
-                header.put(status._responseLine);
+            if (reason==null)
+                header.put(preprepared._responseLine);
             else
             {
-                header.put(status._schemeCode);
-                header.put(_reason);
+                header.put(preprepared._schemeCode);
+                header.put(getReasonBytes(reason));
                 header.put(HttpTokens.CRLF);
             }
         }
         else // generate response line
         {
             header.put(HTTP_1_1_SPACE);
-            header.put((byte) ('0' + _status / 100));
-            header.put((byte) ('0' + (_status % 100) / 10));
-            header.put((byte) ('0' + (_status % 10)));
+            header.put((byte) ('0' + status / 100));
+            header.put((byte) ('0' + (status % 100) / 10));
+            header.put((byte) ('0' + (status % 10)));
             header.put((byte) ' ');
-            if (_reason==null)
+            if (reason==null)
             {
-                header.put((byte) ('0' + _status / 100));
-                header.put((byte) ('0' + (_status % 100) / 10));
-                header.put((byte) ('0' + (_status % 10)));
+                header.put((byte) ('0' + status / 100));
+                header.put((byte) ('0' + (status % 100) / 10));
+                header.put((byte) ('0' + (status % 10)));
             }
             else
-                header.put(_reason);
+                header.put(getReasonBytes(reason));
             header.put(HttpTokens.CRLF);
         }
     }
 
     /* ------------------------------------------------------------ */
+    private byte[] getReasonBytes(String reason)
+    {
+        if (reason.length()>1024)
+            reason=reason.substring(0,1024);
+        byte[] _bytes = StringUtil.getBytes(reason);
+
+        for (int i=_bytes.length;i-->0;)
+            if (_bytes[i]=='\r' || _bytes[i]=='\n')
+                _bytes[i]='?';
+        return _bytes;
+    }
+
+    /* ------------------------------------------------------------ */
     private void generateHeaders(ByteBuffer header,ByteBuffer content,boolean last)
     {
-
-        // Add Date header
-        if (_status>=200 && _date!=null)
-        {
-            header.put(HttpHeader.DATE.getBytesColonSpace());
-            header.put(_date);
-            header.put(CRLF);
-        }
-
         // default field values
         boolean has_server = false;
         HttpFields.Field transfer_encoding=null;
         boolean keep_alive=false;
         boolean close=false;
         boolean content_type=false;
-        boolean content_length=false;
         StringBuilder connection = null;
 
         // Generate fields
-        if (_fields != null)
+        if (_info.getHttpFields() != null)
         {
-            for (HttpFields.Field field : _fields)
+            for (HttpFields.Field field : _info.getHttpFields())
             {
-                HttpHeader name = HttpHeader.CACHE.get(field.getName());
+                HttpHeader name = field.getHeader();
 
                 switch (name==null?HttpHeader.UNKNOWN:name)
                 {
                     case CONTENT_LENGTH:
-                    {
-                        long length = field.getLongValue();
-                        if (length>=0)
-                        {
-                            long prepared=_contentPrepared+BufferUtil.length(content);
-                            if (length < prepared || last && length != prepared)
-                            {
-                                LOG.warn("Incorrect ContentLength: "+length+"!="+prepared);
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug(new Throwable());
-                                _contentLength=HttpTokens.UNKNOWN_CONTENT;
-                            }
-                            else
-                            {
-                                // write the field to the header
-                                header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
-                                BufferUtil.putDecLong(header,length);
-                                BufferUtil.putCRLF(header);
-                                _contentLength=length;
-                                content_length=true;
-                            }
-                        }
+                        // handle specially below
+                        if (_info.getContentLength()>=0)
+                            _content=Content.CONTENT_LENGTH;
                         break;
-                    }
 
                     case CONTENT_TYPE:
                     {
                         if (field.getValue().startsWith(MimeTypes.Type.MULTIPART_BYTERANGES.toString()))
-                            _contentLength = HttpTokens.SELF_DEFINING_CONTENT;
+                            _content=Content.SELF_DEFINING_CONTENT;
 
                         // write the field to the header
                         content_type=true;
@@ -767,7 +606,7 @@ public class HttpGenerator
 
                     case TRANSFER_ENCODING:
                     {
-                        if (_version == HttpVersion.HTTP_1_1)
+                        if (_info.getHttpVersion() == HttpVersion.HTTP_1_1)
                             transfer_encoding = field;
                         // Do NOT add yet!
                         break;
@@ -811,14 +650,14 @@ public class HttpGenerator
                                     close=true;
                                     if (isResponse())
                                         _persistent=false;
-                                    if (!_persistent && isResponse() && _contentLength == HttpTokens.UNKNOWN_CONTENT)
-                                        _contentLength = HttpTokens.EOF_CONTENT;
+                                    if (!_persistent && isResponse() && _content == Content.UNKNOWN_CONTENT)
+                                        _content=Content.EOF_CONTENT;
                                     break;
                                 }
 
                                 case KEEP_ALIVE:
                                 {
-                                    if (_version == HttpVersion.HTTP_1_0)
+                                    if (_info.getHttpVersion() == HttpVersion.HTTP_1_0)
                                     {
                                         keep_alive = true;
                                         if (isResponse())
@@ -877,49 +716,76 @@ public class HttpGenerator
         // 4. Content-Length
         // 5. multipart/byteranges
         // 6. close
-        switch ((int) _contentLength)
+        int status=_response!=null?_response.getStatus():-1;
+        switch (_content)
         {
-            case HttpTokens.UNKNOWN_CONTENT:
+            case UNKNOWN_CONTENT:
                 // It may be that we have no _content, or perhaps _content just has not been
                 // written yet?
 
                 // Response known not to have a body
-                if (_contentPrepared == 0 && isResponse() && (_status < 200 || _status == 204 || _status == 304))
-                    _contentLength = HttpTokens.NO_CONTENT;
-                else if (last)
+                if (_contentPrepared == 0 && isResponse() && (status < 200 || status == 204 || status == 304))
+                    _content=Content.NO_CONTENT;
+                else if (_info.getContentLength()>0)
                 {
-                    // we have seen all the _content there is
-                    _contentLength = _contentPrepared+BufferUtil.length(content);
-                    if (!content_length && (isResponse() || _contentLength>0 || content_type ) && !_noContent)
+                    // we have been given a content length
+                    _content=Content.CONTENT_LENGTH;
+                    long content_length = _info.getContentLength();
+                    if ((isResponse() || content_length>0 || content_type ) && !_noContent)
                     {
                         // known length but not actually set.
                         header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
-                        BufferUtil.putDecLong(header, _contentLength);
+                        BufferUtil.putDecLong(header, content_length);
+                        header.put(HttpTokens.CRLF);
+                    }
+                }
+                else if (last)
+                {
+                    // we have seen all the _content there is, so we can be content-length limited.
+                    _content=Content.CONTENT_LENGTH;
+                    long content_length = _contentPrepared+BufferUtil.length(content);
+                    
+                    // Do we need to tell the headers about it
+                    if ((isResponse() || content_length>0 || content_type ) && !_noContent)
+                    {
+                        header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
+                        BufferUtil.putDecLong(header, content_length);
                         header.put(HttpTokens.CRLF);
                     }
                 }
                 else
                 {
                     // No idea, so we must assume that a body is coming
-                    _contentLength = (!_persistent || _version.ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? HttpTokens.EOF_CONTENT : HttpTokens.CHUNKED_CONTENT;
-                    if (isRequest() && _contentLength==HttpTokens.EOF_CONTENT)
+                    _content = (!_persistent || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? Content.EOF_CONTENT : Content.CHUNKED_CONTENT;
+                    if (isRequest() && _content==Content.EOF_CONTENT)
                     {
-                        _contentLength=HttpTokens.NO_CONTENT;
+                        _content=Content.NO_CONTENT;
                         _noContent=true;
                     }
                 }
                 break;
 
-            case HttpTokens.NO_CONTENT:
-                if (!content_length && isResponse() && _status >= 200 && _status != 204 && _status != 304)
+            case CONTENT_LENGTH:
+                long content_length = _info.getContentLength();
+                if ((isResponse() || content_length>0 || content_type ) && !_noContent)
+                {
+                    // known length but not actually set.
+                    header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
+                    BufferUtil.putDecLong(header, content_length);
+                    header.put(HttpTokens.CRLF);
+                }
+                break;
+                
+            case NO_CONTENT:
+                if (isResponse() && status >= 200 && status != 204 && status != 304)
                     header.put(CONTENT_LENGTH_0);
                 break;
 
-            case HttpTokens.EOF_CONTENT:
+            case EOF_CONTENT:
                 _persistent = isRequest();
                 break;
 
-            case HttpTokens.CHUNKED_CONTENT:
+            case CHUNKED_CONTENT:
                 break;
 
             default:
@@ -944,7 +810,7 @@ public class HttpGenerator
         }
 
         // Handle connection if need be
-        if (_contentLength==HttpTokens.EOF_CONTENT)
+        if (_content==Content.EOF_CONTENT)
         {
             keep_alive=false;
             _persistent=false;
@@ -953,7 +819,7 @@ public class HttpGenerator
         // If this is a response, work out persistence
         if (isResponse())
         {
-            if (!_persistent && (close || _version.ordinal() > HttpVersion.HTTP_1_0.ordinal()))
+            if (!_persistent && (close || _info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal()))
             {
                 if (connection==null)
                     header.put(CONNECTION_CLOSE);
@@ -985,7 +851,7 @@ public class HttpGenerator
             }
         }
 
-        if (!has_server && _status>199 && getSendServerVersion())
+        if (!has_server && status>199 && getSendServerVersion())
             header.put(SERVER);
 
         // end the header.
@@ -997,7 +863,7 @@ public class HttpGenerator
     /* ------------------------------------------------------------------------------- */
     public static byte[] getReasonBuffer(int code)
     {
-        Status status = code<__status.length?__status[code]:null;
+        PreparedResponse status = code<__preprepared.length?__preprepared[code]:null;
         if (status!=null)
             return status._reason;
         return null;
@@ -1011,4 +877,62 @@ public class HttpGenerator
                 getClass().getSimpleName(),
                 _state);
     }
+    
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    // common _content
+    private static final byte[] LAST_CHUNK =    { (byte) '0', (byte) '\015', (byte) '\012', (byte) '\015', (byte) '\012'};
+    private static final byte[] CONTENT_LENGTH_0 = StringUtil.getBytes("Content-Length: 0\015\012");
+    private static final byte[] CONNECTION_KEEP_ALIVE = StringUtil.getBytes("Connection: keep-alive\015\012");
+    private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\015\012");
+    private static final byte[] CONNECTION_ = StringUtil.getBytes("Connection: ");
+    private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1+" ");
+    private static final byte[] CRLF = StringUtil.getBytes("\015\012");
+    private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\015\012");
+    private static byte[] SERVER = StringUtil.getBytes("Server: Jetty(7.0.x)\015\012");
+    private static final byte[] NO_BYTES = {};
+    
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    // Build cache of response lines for status
+    private static class PreparedResponse
+    {
+        byte[] _reason;
+        byte[] _schemeCode;
+        byte[] _responseLine;
+    }
+    private static final PreparedResponse[] __preprepared = new PreparedResponse[HttpStatus.MAX_CODE+1];
+    static
+    {
+        int versionLength=HttpVersion.HTTP_1_1.toString().length();
+
+        for (int i=0;i<__preprepared.length;i++)
+        {
+            HttpStatus.Code code = HttpStatus.getCode(i);
+            if (code==null)
+                continue;
+            String reason=code.getMessage();
+            byte[] line=new byte[versionLength+5+reason.length()+2];
+            HttpVersion.HTTP_1_1.toBuffer().get(line,0,versionLength);
+            line[versionLength+0]=' ';
+            line[versionLength+1]=(byte)('0'+i/100);
+            line[versionLength+2]=(byte)('0'+(i%100)/10);
+            line[versionLength+3]=(byte)('0'+(i%10));
+            line[versionLength+4]=' ';
+            for (int j=0;j<reason.length();j++)
+                line[versionLength+5+j]=(byte)reason.charAt(j);
+            line[versionLength+5+reason.length()]=HttpTokens.CARRIAGE_RETURN;
+            line[versionLength+6+reason.length()]=HttpTokens.LINE_FEED;
+
+            __preprepared[i] = new PreparedResponse();
+            __preprepared[i]._reason=new byte[line.length-versionLength-7] ;
+            System.arraycopy(line,versionLength+5,__preprepared[i]._reason,0,line.length-versionLength-7);
+            __preprepared[i]._schemeCode=new byte[versionLength+5];
+            System.arraycopy(line,0,__preprepared[i]._schemeCode,0,versionLength+5);
+            __preprepared[i]._responseLine=line;
+        }
+    }
+
 }

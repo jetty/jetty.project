@@ -533,6 +533,25 @@ public class HttpFields implements Iterable<HttpFields.Field>
         _fields.add(field);
         _names.put(name, field);
     }
+    
+    /* -------------------------------------------------------------- */
+    /**
+     * Set a field.
+     * 
+     * @param header the header name of the field
+     * @param value the value of the field. If null the field is cleared.
+     */
+    public void put(HttpHeader header, String value)
+    {
+        remove(header.toString());
+        if (value == null)
+            return;
+
+        // new value;
+        Field field = new Field(header, value);
+        _fields.add(field);
+        _names.put(header.toString(), field);
+    }
 
     /* -------------------------------------------------------------- */
     /**
@@ -582,6 +601,38 @@ public class HttpFields implements Iterable<HttpFields.Field>
             _names.put(name, field);
     }
 
+    /* -------------------------------------------------------------- */
+    /**
+     * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
+     * headers of the same name.
+     * 
+     * @param name the name of the field
+     * @param value the value of the field.
+     * @exception IllegalArgumentException If the name is a single valued field and already has a
+     *                value.
+     */
+    public void add(HttpHeader header, String value) throws IllegalArgumentException
+    {
+        if (value == null) throw new IllegalArgumentException("null value");
+
+        Field field = _names.get(header.toString());
+        Field last = null;
+        while (field != null)
+        {
+            last = field;
+            field = field._next;
+        }
+
+        // create the field
+        field = new Field(header, value);
+        _fields.add(field);
+
+        // look for chain to add too
+        if (last != null)
+            last._next = field;
+        else
+            _names.put(header.toString(), field);
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -1051,14 +1102,25 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* ------------------------------------------------------------ */
     public static final class Field
     {
+        private final HttpHeader _header;
         private final String _name;
         private final String _value;
         private Field _next;
 
         /* ------------------------------------------------------------ */
+        private Field(HttpHeader header, String value)
+        {
+            _header = header;
+            _name = header.toString();
+            _value = value;
+            _next = null;
+        }
+        
+        /* ------------------------------------------------------------ */
         private Field(String name, String value)
         {
-            _name = name;
+            _header = HttpHeader.CACHE.get(name);
+            _name = _header==null?name:_header.toString();
             _value = value;
             _next = null;
         }
@@ -1115,6 +1177,12 @@ public class HttpFields implements Iterable<HttpFields.Field>
             buffer.put(toSanitisedBytes(_value));
         }
 
+        /* ------------------------------------------------------------ */
+        public HttpHeader getHeader()
+        {
+            return _header;
+        }
+        
         /* ------------------------------------------------------------ */
         public String getName()
         {
