@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,6 +24,9 @@ import org.eclipse.jetty.io.PooledBuffers;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.io.View;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class HttpGeneratorClientTest
 {
@@ -52,7 +52,7 @@ public class HttpGeneratorClientTest
 
         generator.completeHeader(fields,false);
 
-        generator.addContent(new ByteArrayBuffer(content),true);
+        generator.addContent(new ByteArrayBuffer(content).asMutableBuffer(),true);
         generator.flushBuffer();
         generator.complete();
         generator.flushBuffer();
@@ -77,7 +77,7 @@ public class HttpGeneratorClientTest
 
         String content = "The quick brown fox jumped over the lazy dog";
 
-        generator.addContent(new ByteArrayBuffer(content),true);
+        generator.addContent(new ByteArrayBuffer(content).asMutableBuffer(),true);
         generator.completeHeader(fields,true);
 
         generator.flushBuffer();
@@ -106,7 +106,7 @@ public class HttpGeneratorClientTest
 
         generator.completeHeader(fields,false);
 
-        generator.addContent(new ByteArrayBuffer(content),false);
+        generator.addContent(new ByteArrayBuffer(content).asMutableBuffer(),false);
         generator.flushBuffer();
         generator.complete();
         generator.flushBuffer();
@@ -120,7 +120,7 @@ public class HttpGeneratorClientTest
      * screw up the chunking by leaving out the second chunk header.
      */
     @Test
-    public void testChunkedWithBackPressure() throws Exception 
+    public void testChunkedWithBackPressure() throws Exception
     {
         final AtomicInteger availableChannelBytes = new AtomicInteger(500);
         ByteArrayEndPoint endp = new ByteArrayEndPoint(new byte[0],4096)
