@@ -237,6 +237,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     /* ------------------------------------------------------------ */
     public void onClose()
     {
+        Connection connection = _sslEndPoint.getConnection();
+        if (connection != null && connection != this)
+            connection.onClose();
     }
 
     /* ------------------------------------------------------------ */
@@ -408,7 +411,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             }
 
             // If we are reading into the temp buffer and it has some content, then we should be dispatched.
-            if (toFill==_unwrapBuf && _unwrapBuf.hasContent())
+            if (toFill==_unwrapBuf && _unwrapBuf.hasContent() && !_connection.isSuspended())
                 _aEndp.asyncDispatch();
         }
         finally
@@ -550,7 +553,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 break;
 
             case BUFFER_OVERFLOW:
-                _logger.debug("{} unwrap {} {}->{}",_session,result.getStatus(),_inbound.toDetailString(),buffer.toDetailString());
+                if (_logger.isDebugEnabled()) _logger.debug("{} unwrap {} {}->{}",_session,result.getStatus(),_inbound.toDetailString(),buffer.toDetailString());
                 break;
 
             case OK:

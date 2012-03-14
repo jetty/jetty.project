@@ -80,7 +80,9 @@ public class Promise<T> implements Handler<T>, Future<T>
     @Override
     public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        latch.await(timeout, unit);
+        boolean elapsed = !latch.await(timeout, unit);
+        if (elapsed)
+            throw new TimeoutException();
         return result();
     }
 
