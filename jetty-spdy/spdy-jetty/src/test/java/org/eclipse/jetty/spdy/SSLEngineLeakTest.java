@@ -31,13 +31,24 @@ public class SSLEngineLeakTest extends AbstractTest
     @Test
     public void testSSLEngineLeak() throws Exception
     {
-        avoidStackLocalVariables();
-        Thread.sleep(1000);
         System.gc();
+        Thread.sleep(1000);
+
         Field field = NextProtoNego.class.getDeclaredField("objects");
         field.setAccessible(true);
         Map<Object, NextProtoNego.Provider> objects = (Map<Object, NextProtoNego.Provider>)field.get(null);
-        Assert.assertEquals(0, objects.size());
+        int initialSize = objects.size();
+
+        avoidStackLocalVariables();
+        // Allow the close to arrive to the server and the selector to process it
+        Thread.sleep(1000);
+
+        // Perform GC to be sure that the WeakHashMap is cleared
+        System.gc();
+        Thread.sleep(1000);
+
+        // Check that the WeakHashMap is empty
+        Assert.assertEquals(initialSize, objects.size());
     }
 
     private void avoidStackLocalVariables() throws Exception
