@@ -237,6 +237,9 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     /* ------------------------------------------------------------ */
     public void onClose()
     {
+        Connection connection = _sslEndPoint.getConnection();
+        if (connection != null && connection != this)
+            connection.onClose();
     }
 
     /* ------------------------------------------------------------ */
