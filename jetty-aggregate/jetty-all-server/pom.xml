@@ -80,6 +80,8 @@
                             !org.eclipse.jetty*,
                             javax.annotation;version="1.0.0";resolution:=optional,
                             javax.servlet;version="2.6.0",
+                            javax.servlet.annotation;version="2.6.0",
+                            javax.servlet.descriptor;version="2.6.0",
                             javax.servlet.http;version="2.6.0",
                             javax.mail;version="1.4.0";resolution:=optional,
                             javax.mail.event;version="1.4.0";resolution:=optional,
