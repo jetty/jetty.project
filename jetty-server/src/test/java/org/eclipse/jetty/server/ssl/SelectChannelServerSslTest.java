@@ -144,5 +144,10 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     {
     }
     
-    
+
+    @Override
+    public void testSuspendedPipeline() throws Exception
+    {
+        super.testSuspendedPipeline();
+    }
 }
