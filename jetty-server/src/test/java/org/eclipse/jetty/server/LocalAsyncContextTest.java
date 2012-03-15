@@ -13,27 +13,18 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class LocalAsyncContextTest
 {
@@ -53,7 +44,7 @@ public class LocalAsyncContextTest
         _server.setHandler(session);
         _server.start();
     }
-    
+
     protected Connector initConnector()
     {
         return new LocalConnector();
@@ -112,6 +103,7 @@ public class LocalAsyncContextTest
 
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
+        response=process("wibble");
         check(response,"DISPATCHED");
 
         _handler.setResumeAfter(-1);
@@ -147,13 +139,14 @@ public class LocalAsyncContextTest
         check(response,"COMPLETED");
     }
 
+    @Test
     public void testTwoCycles() throws Exception
     {
         String response;
 
         __completed.set(0);
         __completed1.set(0);
-        
+
         _handler.setRead(0);
         _handler.setSuspendFor(1000);
         _handler.setResumeAfter(100);
@@ -178,12 +171,12 @@ public class LocalAsyncContextTest
             assertTrue(i>=0);
             i+=m.length();
         }
-        
+
     }
 
     private synchronized String process(String content) throws Exception
     {
-        String request = "GET / HTTP/1.1\r\n" + 
+        String request = "GET / HTTP/1.1\r\n" +
         "Host: localhost\r\n"+
         "Connection: close\r\n";
 
@@ -194,7 +187,7 @@ public class LocalAsyncContextTest
 
         return getResponse(request);
     }
-    
+
     protected String getResponse(String request) throws Exception
     {
         return ((LocalConnector)_connector).getResponses(request);
@@ -204,7 +197,7 @@ public class LocalAsyncContextTest
 
     static AtomicInteger __completed = new AtomicInteger();
     static AtomicInteger __completed1 = new AtomicInteger();
-    
+
     static AsyncListener __asyncListener = new AsyncListener()
     {
 
@@ -235,7 +228,7 @@ public class LocalAsyncContextTest
         }
 
     };
-    
+
     static AsyncListener __asyncListener1 = new AsyncListener()
     {
 
