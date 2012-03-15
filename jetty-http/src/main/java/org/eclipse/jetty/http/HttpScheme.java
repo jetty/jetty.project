@@ -51,11 +51,18 @@ public enum HttpScheme
     {
         return _buffer.asReadOnlyBuffer();
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public boolean is(String s)
+    {
+        return _string.equalsIgnoreCase(s);    
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
         return _string;
     }
+    
 }

@@ -640,6 +640,17 @@ public class HttpFields implements Iterable<HttpFields.Field>
      * 
      * @param name
      */
+    public void remove(HttpHeader name)
+    {
+        remove(name.toString());
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Remove a field.
+     * 
+     * @param name
+     */
     public void remove(String name)
     {
         Field field = _names.remove(name);

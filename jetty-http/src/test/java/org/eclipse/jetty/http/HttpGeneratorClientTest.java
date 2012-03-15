@@ -56,12 +56,6 @@ public class HttpGeneratorClientTest
         }
 
         @Override
-        public boolean isHead()
-        {
-            return false;
-        }
-
-        @Override
         public long getContentLength()
         {
             return _contentLength;

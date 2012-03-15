@@ -148,6 +148,12 @@ public enum HttpHeader
     }
 
     /* ------------------------------------------------------------ */
+    public boolean is(String s)
+    {
+        return _string.equalsIgnoreCase(s);    
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {

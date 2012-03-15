@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.http.HttpGenerator.Content;
+import org.eclipse.jetty.http.HttpTokens.Content;
 
 public class HttpParser
 {

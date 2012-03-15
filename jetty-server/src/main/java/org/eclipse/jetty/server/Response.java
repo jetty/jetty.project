@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.BufferCache.CachedBuffer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
@@ -78,7 +77,6 @@ public class Response implements HttpServletResponse
     private String _reason;
     private Locale _locale;
     private String _mimeType;
-    private CachedBuffer _cachedMimeType;
     private String _characterEncoding;
     private boolean _explicitEncoding;
     private String _contentType;
@@ -105,7 +103,6 @@ public class Response implements HttpServletResponse
         _reason=null;
         _locale=null;
         _mimeType=null;
-        _cachedMimeType=null;
         _characterEncoding=null;
         _explicitEncoding=false;
         _contentType=null;
@@ -181,7 +178,7 @@ public class Response implements HttpServletResponse
             path = (path == null?"":path);
             int port=uri.getPort();
             if (port<0) 
-                port = HttpScheme.HTTPS.equalsIgnoreCase(uri.getScheme())?443:80;
+                port = HttpScheme.HTTPS.toString().equalsIgnoreCase(uri.getScheme())?443:80;
             if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
                 request.getServerPort()!=port ||
                 !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
@@ -250,13 +247,13 @@ public class Response implements HttpServletResponse
         if (suffix<0) 
         {          
             return url+ 
-                   ((HttpScheme.HTTPS.equalsIgnoreCase(uri.getScheme()) || HttpScheme.HTTP.equalsIgnoreCase(uri.getScheme())) && uri.getPath()==null?"/":"") + //if no path, insert the root path
+                   ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath()==null?"/":"") + //if no path, insert the root path
                    sessionURLPrefix+id;
         }
      
         
         return url.substring(0,suffix)+
-            ((HttpScheme.HTTPS.equalsIgnoreCase(uri.getScheme()) || HttpScheme.HTTP.equalsIgnoreCase(uri.getScheme())) && uri.getPath()==null?"/":"")+ //if no path so insert the root path
+            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath()==null?"/":"")+ //if no path so insert the root path
             sessionURLPrefix+id+url.substring(suffix);
     }
 
@@ -334,7 +331,7 @@ public class Response implements HttpServletResponse
             else
             {
                 setHeader(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
-                setContentType(MimeTypes.TEXT_HTML_8859_1);
+                setContentType(MimeTypes.Type.TEXT_HTML_8859_1.toString());
                 ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(2048);
                 if (message != null)
                 {
@@ -382,7 +379,6 @@ public class Response implements HttpServletResponse
             _connection.getRequestFields().remove(HttpHeader.CONTENT_LENGTH);
             _characterEncoding=null;
             _mimeType=null;
-            _cachedMimeType=null;
         }
 
         complete();
@@ -498,9 +494,33 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#setHeader(java.lang.String, java.lang.String)
      */
+    public void setHeader(HttpHeader name, String value)
+    {
+        if (HttpHeader.CONTENT_TYPE == name)
+            setContentType(value);
+        else
+        {
+            if (_connection.isIncluding())
+                    return;
+            
+            _connection.getResponseFields().put(name, value);
+            
+            if (HttpHeader.CONTENT_LENGTH==name)
+            {
+                if (value==null)
+                    _connection._generator.setContentLength(-1);
+                else
+                    _connection._generator.setContentLength(Long.parseLong(value));
+            }
+        }
+    }
+    /* ------------------------------------------------------------ */
+    /*
+     * @see javax.servlet.http.HttpServletResponse#setHeader(java.lang.String, java.lang.String)
+     */
     public void setHeader(String name, String value)
     {
-        if (HttpHeader.CONTENT_TYPE.equalsIgnoreCase(name))
+        if (HttpHeader.CONTENT_TYPE.is(name))
             setContentType(value);
         else
         {
@@ -512,7 +532,7 @@ public class Response implements HttpServletResponse
                     return;
             }
             _connection.getResponseFields().put(name, value);
-            if (HttpHeader.CONTENT_LENGTH.equalsIgnoreCase(name))
+            if (HttpHeader.CONTENT_LENGTH.is(name))
             {
                 if (value==null)
                     _connection._generator.setContentLength(-1);
@@ -565,7 +585,7 @@ public class Response implements HttpServletResponse
         }
 
         _connection.getResponseFields().add(name, value);
-        if (HttpHeader.CONTENT_LENGTH.equalsIgnoreCase(name))
+        if (HttpHeader.CONTENT_LENGTH.is(name))
             _connection._generator.setContentLength(Long.parseLong(value));
     }
 
@@ -578,7 +598,7 @@ public class Response implements HttpServletResponse
         if (!_connection.isIncluding())
         {
             _connection.getResponseFields().putLongField(name, value);
-            if (HttpHeader.CONTENT_LENGTH.equalsIgnoreCase(name))
+            if (HttpHeader.CONTENT_LENGTH.is(name))
                 _connection._generator.setContentLength(value);
         }
     }
@@ -592,7 +612,7 @@ public class Response implements HttpServletResponse
         if (!_connection.isIncluding())
         {
             _connection.getResponseFields().addLongField(name, value);
-            if (HttpHeader.CONTENT_LENGTH.equalsIgnoreCase(name))
+            if (HttpHeader.CONTENT_LENGTH.is(name))
                 _connection._generator.setContentLength(value);
         }
     }
@@ -690,10 +710,6 @@ public class Response implements HttpServletResponse
 
             if (encoding==null)
             {
-                /* implementation of educated defaults */
-                if(_cachedMimeType != null)
-                    encoding = MimeTypes.getCharsetFromContentType(_cachedMimeType);
-
                 if (encoding==null)
                     encoding = StringUtil.__ISO_8859_1;
 
@@ -726,10 +742,7 @@ public class Response implements HttpServletResponse
                 if (_characterEncoding!=null)
                 {
                     _characterEncoding=null;
-                    if (_cachedMimeType!=null)
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_cachedMimeType);
-                    else
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_mimeType);
+                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_mimeType);
                 }
             }
             else
@@ -742,15 +755,6 @@ public class Response implements HttpServletResponse
                     if (i0<0)
                     {
                         _contentType=null;
-                        if(_cachedMimeType!=null)
-                        {
-                            CachedBuffer content_type = _cachedMimeType.getAssociate(_characterEncoding);
-                            if (content_type!=null)
-                            {
-                                _contentType=content_type.toString();
-                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,content_type);
-                            }
-                        }
 
                         if (_contentType==null)
                         {
@@ -848,7 +852,6 @@ public class Response implements HttpServletResponse
             if (_locale==null)
                 _characterEncoding=null;
             _mimeType=null;
-            _cachedMimeType=null;
             _contentType=null;
             _connection.getResponseFields().remove(HttpHeader.CONTENT_TYPE);
         }
@@ -863,7 +866,7 @@ public class Response implements HttpServletResponse
 
                 // Extract params off mimetype
                 _mimeType=contentType.substring(0,i0).trim();
-                _cachedMimeType=MimeTypes.CACHE.get(_mimeType);
+                MimeTypes.Type mime_type=MimeTypes.CACHE.get(_mimeType);
 
                 // Look for charset
                 int i1=contentType.indexOf("charset=",i0+1);
@@ -878,9 +881,9 @@ public class Response implements HttpServletResponse
                         // strip the charset and ignore;
                         if ((i1==i0+1 && i2<0) || (i1==i0+2 && i2<0 && contentType.charAt(i0+1)==' '))
                         {
-                            if (_cachedMimeType!=null)
+                            if (mime_type!=null)
                             {
-                                CachedBuffer content_type = _cachedMimeType.getAssociate(_characterEncoding);
+                                CachedBuffer content_type = mime_type.getAssociate(_characterEncoding);
                                 if (content_type!=null)
                                 {
                                     _contentType=content_type.toString();
@@ -912,12 +915,12 @@ public class Response implements HttpServletResponse
                     else if ((i1==i0+1 && i2<0) || (i1==i0+2 && i2<0 && contentType.charAt(i0+1)==' '))
                     {
                         // The params are just the char encoding
-                        _cachedMimeType=MimeTypes.CACHE.get(_mimeType);
+                        mime_type=MimeTypes.CACHE.get(_mimeType);
                         _characterEncoding = QuotedStringTokenizer.unquote(contentType.substring(i8));
 
-                        if (_cachedMimeType!=null)
+                        if (mime_type!=null)
                         {
-                            CachedBuffer content_type = _cachedMimeType.getAssociate(_characterEncoding);
+                            CachedBuffer content_type = mime_type.getAssociate(_characterEncoding);
                             if (content_type!=null)
                             {
                                 _contentType=content_type.toString();
@@ -950,7 +953,7 @@ public class Response implements HttpServletResponse
                 }
                 else // No encoding in the params.
                 {
-                    _cachedMimeType=null;
+                    mime_type=null;
                     _contentType=_characterEncoding==null?contentType:contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
                     _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
                 }

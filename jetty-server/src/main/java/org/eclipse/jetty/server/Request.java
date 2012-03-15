@@ -64,12 +64,11 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.HttpGenerator;
 
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 
-import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Attributes;
@@ -115,7 +114,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *
  */
-public class Request implements HttpServletRequest
+public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
     private static final Logger LOG = Log.getLogger(Request.class);
@@ -154,7 +153,7 @@ public class Request implements HttpServletRequest
     private boolean _paramsExtracted;
     private String _pathInfo;
     private int _port;
-    private String _protocol = HttpVersion.HTTP_1_1;
+    private String _protocol = HttpVersion.HTTP_1_1.toString();
     private String _queryEncoding;
     private String _queryString;
     private BufferedReader _reader;
@@ -250,7 +249,7 @@ public class Request implements HttpServletRequest
             {
                 content_type = HttpFields.valueParameters(content_type,null);
 
-                if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(content_type) && _inputState == __NONE
+                if (MimeTypes.Type.FORM_ENCODED.is(content_type) && _inputState == __NONE
                         && (HttpMethod.POST.equals(getMethod()) || HttpMethod.PUT.equals(getMethod())))
                 {
                     int content_length = getContentLength();
@@ -419,9 +418,10 @@ public class Request implements HttpServletRequest
      */
     public int getContentLength()
     {
-        return (int)_connection.getRequestFields().getLongField(HttpHeader.CONTENT_LENGTH_BUFFER);
+        return (int)_connection.getRequestFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
+    /* ------------------------------------------------------------ */
     public long getContentRead()
     {
         if (_connection == null || _connection.getParser() == null)
@@ -436,7 +436,7 @@ public class Request implements HttpServletRequest
      */
     public String getContentType()
     {
-        return _connection.getRequestFields().getStringField(HttpHeader.CONTENT_TYPE_BUFFER);
+        return _connection.getRequestFields().getStringField(HttpHeader.CONTENT_TYPE);
     }
 
     /* ------------------------------------------------------------ */
@@ -468,7 +468,7 @@ public class Request implements HttpServletRequest
 
         _cookiesExtracted = true;
 
-        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.COOKIE_BUFFER);
+        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.COOKIE.toString());
 
         // Handle no cookies
         if (enm != null)
@@ -576,7 +576,7 @@ public class Request implements HttpServletRequest
      */
     public Locale getLocale()
     {
-        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.ACCEPT_LANGUAGE,HttpFields.__separators);
+        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
         if (enm == null || !enm.hasMoreElements())
@@ -613,7 +613,7 @@ public class Request implements HttpServletRequest
     public Enumeration getLocales()
     {
 
-        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.ACCEPT_LANGUAGE,HttpFields.__separators);
+        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
         if (enm == null || !enm.hasMoreElements())
@@ -1020,22 +1020,22 @@ public class Request implements HttpServletRequest
             return _serverName;
 
         // Return host from header field
-        ByteBuffer hostPort = _connection.getRequestFields().get(HttpHeader.HOST_BUFFER);
+        String hostPort = _connection.getRequestFields().getStringField(HttpHeader.HOST);
         if (hostPort != null)
         {
-            loop: for (int i = hostPort.putIndex(); i-- > hostPort.getIndex();)
+            loop: for (int i = hostPort.length(); i-- > 0;)
             {
-                char ch = (char)(0xff & hostPort.peek(i));
+                char ch = (char)(0xff & hostPort.charAt(i));
                 switch (ch)
                 {
                     case ']':
                         break loop;
 
                     case ':':
-                        _serverName = BufferUtil.to8859_1_String(hostPort.peek(hostPort.getIndex(),i - hostPort.getIndex()));
+                        _serverName = hostPort.substring(0,i); 
                         try
                         {
-                            _port = BufferUtil.toInt(hostPort.peek(i + 1,hostPort.putIndex() - i - 1));
+                            _port = StringUtil.toInt(hostPort.substring(i+1));
                         }
                         catch (NumberFormatException e)
                         {
@@ -1052,9 +1052,10 @@ public class Request implements HttpServletRequest
                         return _serverName;
                 }
             }
+        
             if (_serverName == null || _port < 0)
             {
-                _serverName = BufferUtil.to8859_1_String(hostPort);
+                _serverName = hostPort;
                 _port = 0;
             }
 
@@ -1404,7 +1405,7 @@ public class Request implements HttpServletRequest
         _method = null;
         _pathInfo = null;
         _port = 0;
-        _protocol = HttpVersion.HTTP_1_1;
+        _protocol = HttpVersion.HTTP_1_1.toString();
         _queryEncoding = null;
         _queryString = null;
         _requestedSessionId = null;
@@ -1515,8 +1516,7 @@ public class Request implements HttpServletRequest
                     final ByteBuffer byteBuffer = (ByteBuffer)value;
                     synchronized (byteBuffer)
                     {
-                        NIOBuffer buffer = byteBuffer.isDirect()?new DirectNIOBuffer(byteBuffer,true):new IndirectNIOBuffer(byteBuffer,true);
-                        ((AbstractHttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(buffer);
+                        ((AbstractHttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(byteBuffer);
                     }
                 }
                 catch (IOException e)
@@ -1627,7 +1627,7 @@ public class Request implements HttpServletRequest
      */
     public void setContentType(String contentType)
     {
-        _connection.getRequestFields().put(HttpHeader.CONTENT_TYPE_BUFFER,contentType);
+        _connection.getRequestFields().put(HttpHeader.CONTENT_TYPE,contentType);
 
     }
 

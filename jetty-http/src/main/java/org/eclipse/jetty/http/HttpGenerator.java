@@ -19,6 +19,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.http.HttpTokens.Content;
 
 /* ------------------------------------------------------------ */
 /**
@@ -36,29 +37,28 @@ public class HttpGenerator
     public enum Action { FLUSH, COMPLETE, PREPARE };
     public enum State { START, COMMITTING, COMMITTING_COMPLETING, COMMITTED, COMPLETING, END };
     public enum Result { NEED_CHUNK,NEED_HEADER,NEED_BUFFER,FLUSH,FLUSH_CONTENT,OK,SHUTDOWN_OUT};
-    public enum Content { UNKNOWN_CONTENT,NO_CONTENT,EOF_CONTENT,CONTENT_LENGTH,CHUNKED_CONTENT,SELF_DEFINING_CONTENT };
-
+    
     // other statics
     public static final int CHUNK_SIZE = 12;
     
-    interface Info
+    public interface Info
     {
         HttpVersion getHttpVersion();
         HttpFields getHttpFields();
-        boolean isHead();
         long getContentLength();
     }
     
-    interface RequestInfo extends Info
+    public interface RequestInfo extends Info
     {
         String getMethod();
         String getURI();
     }
     
-    interface ResponseInfo extends Info
+    public interface ResponseInfo extends Info
     {
         int getStatus();
         String getReason();
+        boolean isHead();
     }
     
     // data

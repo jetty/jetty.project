@@ -95,7 +95,6 @@ public abstract class HttpServerConnection  extends AbstractConnection
 
     protected final Connector _connector;
     protected final Server _server;
-    protected final HttpURI _uri;
 
     protected final HttpFields _requestFields;
     protected final Request _request;

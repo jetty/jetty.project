@@ -28,5 +28,7 @@ public interface HttpTokens
     static final byte TAB= 0x09;
 
 
+    public enum Content { UNKNOWN_CONTENT,NO_CONTENT,EOF_CONTENT,CONTENT_LENGTH,CHUNKED_CONTENT,SELF_DEFINING_CONTENT }
 
 }
+
