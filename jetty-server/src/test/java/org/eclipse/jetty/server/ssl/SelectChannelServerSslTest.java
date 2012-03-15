@@ -15,20 +15,29 @@ package org.eclipse.jetty.server.ssl;
 import static org.junit.Assert.assertEquals;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.security.KeyStore;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 
+
+import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.nio.SslConnection;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 
 /**
  * HttpServer Tester.
@@ -46,11 +55,28 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         return __sslContext.getSocketFactory().createSocket(host,port);
     }
     
+    private static final AtomicInteger _handlecount = new AtomicInteger();
 
     @BeforeClass
     public static void init() throws Exception
     {   
-        SslSelectChannelConnector connector = new SslSelectChannelConnector();
+        SslSelectChannelConnector connector = new SslSelectChannelConnector()
+        {
+            @Override
+            protected SslConnection newSslConnection(AsyncEndPoint endPoint, SSLEngine engine)
+            {
+                return new SslConnection(engine, endPoint)
+                {
+                    @Override
+                    public Connection handle() throws IOException
+                    {
+                        _handlecount.incrementAndGet();
+                        return super.handle();
+                    }
+                };
+            }
+        };
+        
         String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         SslContextFactory cf = connector.getSslContextFactory();
         cf.setKeyStorePath(keystorePath);
@@ -69,7 +95,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         __sslContext = SSLContext.getInstance("TLS");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
         
-
         try
         {
             HttpsURLConnection.setDefaultHostnameVerifier(__hostnameverifier);
@@ -105,7 +130,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         {
             OutputStream os=client.getOutputStream();
 
-
             int last=0;
 
             // Write out the fragments
@@ -137,17 +161,17 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         }
     }
 
-
     @Override
     @Ignore
     public void testAvailable() throws Exception
     {
     }
     
-
     @Override
     public void testSuspendedPipeline() throws Exception
     {
+        _handlecount.set(0);
         super.testSuspendedPipeline();
+        assertThat(_handlecount.get(),lessThan(50));
     }
 }
