@@ -11,9 +11,33 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.mortbay.jetty.npn</groupId>
+                  <artifactId>npn-boot</artifactId>
+                  <version>${npn.version}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${build.directory}/npn</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${project.version}/npn-boot-${project.version}.jar </argLine>
+          <argLine>-Xbootclasspath/p:${build.directory}/npn/npn-boot-${npn.version}.jar </argLine>
         </configuration>
       </plugin>
     </plugins>
