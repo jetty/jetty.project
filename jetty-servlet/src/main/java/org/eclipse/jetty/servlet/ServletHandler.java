@@ -1224,7 +1224,7 @@ public class ServletHandler extends ScopedHandler
         
         try
         {
-            if (isStarted())
+            if (_contextHandler!=null && _contextHandler.isStarted() || _contextHandler==null && isStarted())
                 initialize();
         }
         catch (Exception e)
