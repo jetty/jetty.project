@@ -12,7 +12,7 @@ The easiest place to put these lines are in the start.ini file.
 For debugging the spengo authentication the following options are helpful:
 
 -Dorg.eclipse.jetty.LEVEL=debug
--Dsun.security.spnego.debug=all 
+-Dsun.security.spnego.debug=true
 
 
 Spengo Authentication is enabled in the webapp with the following setup.
@@ -60,6 +60,3 @@ embedded, via the jetty.xml or in a context file for the webapp.
     </Set>
     <Set name="checkWelcomeFiles">true</Set>
   </Get>
-  
-  
-8
