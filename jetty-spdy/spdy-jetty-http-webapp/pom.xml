@@ -9,10 +9,27 @@
   <artifactId>spdy-jetty-http-webapp</artifactId>
   <packaging>war</packaging>
   <name>Jetty :: SPDY :: Jetty HTTP Web Application</name>
-  
+  <build>
+    <plugins>
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>config</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
   <!--
-      <build>
-        <plugins>
+      
           <plugin>
             <groupId>org.mortbay.jetty</groupId>
             <artifactId>jetty-maven-plugin</artifactId>
@@ -40,7 +57,7 @@
               </dependency>
             </dependencies>
           </plugin>
-        </plugins>
-      </build>
   -->
+    </plugins>
+  </build>
 </project>

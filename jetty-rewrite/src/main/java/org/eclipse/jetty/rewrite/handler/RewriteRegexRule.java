@@ -24,12 +24,15 @@ import org.eclipse.jetty.server.Request;
  * Rewrite the URI by matching with a regular expression. 
  * The replacement string may use $n" to replace the nth capture group.
  * If the replacement string contains ? character, then it is split into a path
- * and query string component.  The returned target contains only the path.
+ * and query string component.  The replacement query string may also contain $Q, which 
+ * is replaced with the original query string. 
+ * The returned target contains only the path.
  */
 public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
 {
     private String _replacement;
     private String _query;
+    private boolean _queryGroup;
 
     /* ------------------------------------------------------------ */
     public RewriteRegexRule()
@@ -49,6 +52,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         String[] split=replacement.split("\\?",2);
         _replacement = split[0];
         _query=split.length==2?split[1]:null;
+        _queryGroup=_query!=null && _query.contains("$Q");
     }
 
 
@@ -73,7 +77,12 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         }
 
         if (query!=null)
+        {
+            if (_queryGroup)
+                query=query.replace("$Q",request.getQueryString()==null?"":request.getQueryString());
             request.setAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q",query);
+        }
+        
         return target;
     }
 
@@ -84,7 +93,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
         if (_query!=null)
         {
             String query=(String)request.getAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q");
-            if (request.getQueryString()==null)
+            if (_queryGroup||request.getQueryString()==null)
                 request.setQueryString(query);
             else
                 request.setQueryString(request.getQueryString()+"&"+query);

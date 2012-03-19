@@ -31,8 +31,9 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.io.ByteArrayBuffer;
-import org.eclipse.jetty.server.AsyncContext;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
@@ -975,7 +976,10 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                final AsyncContext async = request.startAsync();
+
+                final Continuation continuation = ContinuationSupport.getContinuation(request);
+                continuation.suspend();
+
                 new Thread()
                 {
                     @Override
@@ -988,7 +992,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                             int read = 0;
                             while (read < data.length)
                                 read += input.read(buffer);
-                            async.complete();
+                            continuation.complete();
                             latch.countDown();
                         }
                         catch (IOException x)
@@ -1034,7 +1038,10 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                final AsyncContext async = request.startAsync();
+
+                final Continuation continuation = ContinuationSupport.getContinuation(request);
+                continuation.suspend();
+
                 new Thread()
                 {
                     @Override
@@ -1047,7 +1054,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                             int read = 0;
                             while (read < 2 * data.length)
                                 read += input.read(buffer);
-                            async.complete();
+                            continuation.complete();
                             latch.countDown();
                         }
                         catch (IOException x)
@@ -1094,14 +1101,17 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                if (request.getAsyncContinuation().isInitial())
+
+                final Continuation continuation = ContinuationSupport.getContinuation(request);
+
+                if (continuation.isInitial())
                 {
                     InputStream input = request.getInputStream();
                     byte[] buffer = new byte[256];
                     int read = 0;
                     while (read < data.length)
                         read += input.read(buffer);
-                    final AsyncContext async = request.startAsync();
+                    continuation.suspend();
                     new Thread()
                     {
                         @Override
@@ -1110,7 +1120,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                             try
                             {
                                 TimeUnit.SECONDS.sleep(1);
-                                async.dispatch();
+                                continuation.resume();
                                 latch.countDown();
                             }
                             catch (InterruptedException x)

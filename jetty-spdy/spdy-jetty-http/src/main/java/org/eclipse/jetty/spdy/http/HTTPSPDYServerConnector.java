@@ -16,6 +16,11 @@
 
 package org.eclipse.jetty.spdy.http;
 
+import java.io.IOException;
+
+import org.eclipse.jetty.http.HttpSchemes;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.spdy.AsyncConnectionFactory;
 import org.eclipse.jetty.spdy.SPDYServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -51,5 +56,35 @@ public class HTTPSPDYServerConnector extends SPDYServerConnector
     protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
     {
         return defaultConnectionFactory;
+    }
+
+    @Override
+    public void customize(EndPoint endPoint, Request request) throws IOException
+    {
+        super.customize(endPoint, request);
+        if (getSslContextFactory() != null)
+            request.setScheme(HttpSchemes.HTTPS);
+    }
+
+    @Override
+    public boolean isConfidential(Request request)
+    {
+        if (getSslContextFactory() != null)
+        {
+            int confidentialPort = getConfidentialPort();
+            return confidentialPort == 0 || confidentialPort == request.getServerPort();
+        }
+        return super.isConfidential(request);
+    }
+
+    @Override
+    public boolean isIntegral(Request request)
+    {
+        if (getSslContextFactory() != null)
+        {
+            int integralPort = getIntegralPort();
+            return integralPort == 0 || integralPort == request.getServerPort();
+        }
+        return super.isIntegral(request);
     }
 }

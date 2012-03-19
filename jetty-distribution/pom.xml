@@ -104,6 +104,16 @@
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
+                  <groupId>org.eclipse.jetty.spdy</groupId>
+                  <artifactId>spdy-jetty-http-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
+                  <destFileName>spdy.war</destFileName>
+                </artifactItem>
+                <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-start</artifactId>
                   <version>${project.version}</version>
@@ -124,10 +134,22 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy</excludeGroupIds>
               <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor,jetty-jsp</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-spdy-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -222,7 +244,7 @@
               <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.spdy</includeGroupIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**</excludes>
@@ -397,6 +419,27 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-overlay-deployer</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-jetty</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-jetty-http</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.spdy</groupId>
+      <artifactId>spdy-jetty-http-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.aggregate</groupId>

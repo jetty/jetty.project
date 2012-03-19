@@ -280,24 +280,17 @@ public class ChannelEndPoint implements EndPoint
         if (buf instanceof NIOBuffer)
         {
             final NIOBuffer nbuf = (NIOBuffer)buf;
-            final ByteBuffer bbuf=nbuf.getByteBuffer();
-
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized(bbuf)
+            final ByteBuffer bbuf=nbuf.getByteBuffer().asReadOnlyBuffer();
+            try
             {
-                try
-                {
-                    bbuf.position(buffer.getIndex());
-                    bbuf.limit(buffer.putIndex());
-                    len=_channel.write(bbuf);
-                }
-                finally
-                {
-                    if (len>0)
-                        buffer.skip(len);
-                    bbuf.position(0);
-                    bbuf.limit(bbuf.capacity());
-                }
+                bbuf.position(buffer.getIndex());
+                bbuf.limit(buffer.putIndex());
+                len=_channel.write(bbuf);
+            }
+            finally
+            {
+                if (len>0)
+                    buffer.skip(len);
             }
         }
         else if (buf instanceof RandomAccessFileBuffer)
@@ -363,46 +356,29 @@ public class ChannelEndPoint implements EndPoint
 
         synchronized(this)
         {
-            // We must sync because buffers may be shared (eg nbuf1 is likely to be cached content).
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized(bbuf0)
+            // Adjust position indexs of buf0 and buf1
+            bbuf0=bbuf0.asReadOnlyBuffer();
+            bbuf0.position(header.getIndex());
+            bbuf0.limit(header.putIndex());
+            bbuf1=bbuf1.asReadOnlyBuffer();
+            bbuf1.position(buffer.getIndex());
+            bbuf1.limit(buffer.putIndex());
+
+            _gather2[0]=bbuf0;
+            _gather2[1]=bbuf1;
+
+            // do the gathering write.
+            length=(int)((GatheringByteChannel)_channel).write(_gather2);
+
+            int hl=header.length();
+            if (length>hl)
             {
-                //noinspection SynchronizationOnLocalVariableOrMethodParameter
-                synchronized(bbuf1)
-                {
-                    try
-                    {
-                        // Adjust position indexs of buf0 and buf1
-                        bbuf0.position(header.getIndex());
-                        bbuf0.limit(header.putIndex());
-                        bbuf1.position(buffer.getIndex());
-                        bbuf1.limit(buffer.putIndex());
-
-                        _gather2[0]=bbuf0;
-                        _gather2[1]=bbuf1;
-
-                        // do the gathering write.
-                        length=(int)((GatheringByteChannel)_channel).write(_gather2);
-
-                        int hl=header.length();
-                        if (length>hl)
-                        {
-                            header.clear();
-                            buffer.skip(length-hl);
-                        }
-                        else if (length>0)
-                        {
-                            header.skip(length);
-                        }
-                    }
-                    finally
-                    {
-                        bbuf0.position(0);
-                        bbuf1.position(0);
-                        bbuf0.limit(bbuf0.capacity());
-                        bbuf1.limit(bbuf1.capacity());
-                    }
-                }
+                header.clear();
+                buffer.skip(length-hl);
+            }
+            else if (length>0)
+            {
+                header.skip(length);
             }
         }
         return length;
