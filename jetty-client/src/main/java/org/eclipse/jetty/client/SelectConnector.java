@@ -276,6 +276,11 @@ class SelectConnector extends AggregateLifeCycle implements HttpClient.Connector
             _endp.shutdownOutput();
         }
 
+        public void dispatch()
+        {
+            _endp.asyncDispatch();
+        }
+
         public void asyncDispatch()
         {
             _endp.asyncDispatch();

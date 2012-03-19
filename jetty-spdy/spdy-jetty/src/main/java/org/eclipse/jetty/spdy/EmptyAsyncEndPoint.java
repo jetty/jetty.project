@@ -33,6 +33,11 @@ public class EmptyAsyncEndPoint implements AsyncEndPoint
     private int maxIdleTime;
 
     @Override
+    public void dispatch()
+    {
+    }
+    
+    @Override
     public void asyncDispatch()
     {
     }
