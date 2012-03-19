@@ -364,7 +364,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             BasicDBObject remove = new BasicDBObject();
             BasicDBObject unsets = new BasicDBObject();
             unsets.put(getContextKey(),1);
-            remove.put("$unsets",unsets);
+            remove.put("$unset",unsets);
             _sessions.update(key,remove);
 
             return true;
