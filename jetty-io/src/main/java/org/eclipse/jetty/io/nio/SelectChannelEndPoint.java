@@ -208,11 +208,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized(this)
         {
-            if (_dispatched)
-            {
-                throw new IllegalStateException("dispatched");
-            }
-            else
+            if (!_dispatched)
             {
                 _dispatched = true;
                 boolean dispatched = _manager.dispatch(_handler);
