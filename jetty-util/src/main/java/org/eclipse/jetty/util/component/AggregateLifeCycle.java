@@ -350,10 +350,17 @@ public class AggregateLifeCycle extends AbstractLifeCycle implements Destroyable
     /* ------------------------------------------------------------ */
     public static void dumpObject(Appendable out,Object o) throws IOException
     {
-        if (o instanceof LifeCycle)
-            out.append(String.valueOf(o)).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
-        else
-            out.append(String.valueOf(o)).append("\n"); 
+        try
+        {
+            if (o instanceof LifeCycle)
+                out.append(String.valueOf(o)).append(" - ").append((AbstractLifeCycle.getState((LifeCycle)o))).append("\n");
+            else
+                out.append(String.valueOf(o)).append("\n");
+        }
+        catch(Throwable th)
+        {
+            out.append(" => ").append(th.toString()).append('\n');
+        }
     }
     
     /* ------------------------------------------------------------ */
