@@ -131,11 +131,19 @@ public class MultiPartInputStreamTest extends TestCase
         IO.copy(is, os);
         assertEquals("Joe Blow", new String(os.toByteArray()));
         assertEquals(8, field1.getSize());
+        
+        assertNotNull(((MultiPartInputStream.MultiPart)field1).getBytes()); //in internal buffer
         field1.write("field1.txt");
+        assertNull(((MultiPartInputStream.MultiPart)field1).getBytes()); //no longer in internal buffer
         File f = new File (_dirname+File.separator+"field1.txt");
         assertTrue(f.exists());
-        field1.delete();
-        assertFalse(f.exists());
+        field1.write("another_field1.txt");
+        File f2 = new File(_dirname+File.separator+"another_field1.txt");
+        assertTrue(f2.exists());
+        assertFalse(f.exists()); //should have been renamed
+        field1.delete();  //file should be deleted
+        assertFalse(f2.exists());
+       
         
         Part stuff = mpis.getPart("stuff");
         assertEquals("text/plain", stuff.getContentType());
@@ -146,6 +154,7 @@ public class MultiPartInputStreamTest extends TestCase
         assertEquals(51, stuff.getSize());
         f = ((MultiPartInputStream.MultiPart)stuff).getFile();
         assertNotNull(f); // longer than 100 bytes, should already be a file
+        assertNull(((MultiPartInputStream.MultiPart)stuff).getBytes()); //not in internal buffer any more
         assertTrue(f.exists());
         assertNotSame("stuff.txt", f.getName());
         stuff.write("stuff.txt");
