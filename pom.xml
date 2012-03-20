@@ -10,6 +10,7 @@
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
