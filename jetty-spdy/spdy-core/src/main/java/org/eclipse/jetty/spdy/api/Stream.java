@@ -76,21 +76,18 @@ public interface Stream
     public int getId();
 
     /**
-     * @return the id of the associated stream or 0 if this stream is not associated to another stream
-     */
-    public int getAssociatedStreamId();
-    
-    /**
      * @return the priority of this stream
      */
     public byte getPriority();
-    
 
     /**
      * @return the session this stream is associated to
      */
     public Session getSession();
 
+    //TODO: javadoc
+    public Future<PushStream> synPushStream();
+    
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>
      * <p>Callers may use the returned future to wait for the reply to be actually sent.</p>

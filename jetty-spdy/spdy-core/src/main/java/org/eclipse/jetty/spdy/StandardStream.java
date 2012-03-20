@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
+import org.eclipse.jetty.spdy.api.PushStream;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
@@ -46,6 +48,7 @@ public class StandardStream implements IStream
 {
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, IStream> associatedStreams = new ConcurrentHashMap<>();
     private final SynStreamFrame frame;
     private final ISession session;
     private final AtomicInteger windowSize;
@@ -68,12 +71,6 @@ public class StandardStream implements IStream
         return frame.getStreamId();
     }
 
-    @Override
-    public int getAssociatedStreamId()
-    {
-        return frame.getAssociatedStreamId();
-    }
-    
     @Override
     public byte getPriority()
     {
@@ -280,6 +277,11 @@ public class StandardStream implements IStream
         {
             logger.info("Exception while notifying listener " + listener, x);
         }
+    }
+    
+    @Override
+    public Future<PushStream> synPushStream() {
+    	return null;
     }
 
     @Override
