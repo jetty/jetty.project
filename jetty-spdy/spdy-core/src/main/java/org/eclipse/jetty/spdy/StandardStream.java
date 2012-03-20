@@ -69,6 +69,12 @@ public class StandardStream implements IStream
     }
 
     @Override
+    public int getAssociatedStreamId()
+    {
+        return frame.getAssociatedStreamId();
+    }
+    
+    @Override
     public byte getPriority()
     {
         return frame.getPriority();
@@ -93,6 +99,7 @@ public class StandardStream implements IStream
         return session;
     }
 
+    @Override
     public boolean isHalfClosed()
     {
         return halfClosed;

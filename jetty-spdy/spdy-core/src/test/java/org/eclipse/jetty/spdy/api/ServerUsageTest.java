@@ -89,6 +89,8 @@ public class ServerUsageTest
     @Test
     public void testServerPush() throws Exception
     {
+        
+        
         new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -111,4 +113,5 @@ public class ServerUsageTest
             }
         };
     }
+    
 }

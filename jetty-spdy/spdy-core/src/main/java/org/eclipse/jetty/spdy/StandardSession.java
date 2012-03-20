@@ -109,6 +109,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         this.generator = generator;
     }
 
+    @Override
     public short getVersion()
     {
         return version;
@@ -145,18 +146,24 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         // frame with a compression history will come before the first compressed frame.
         synchronized (this)
         {
+            int streamId = streamIds.getAndAdd(2);
+            SynStreamFrame synStream;
             if (synInfo.isUnidirectional())
             {
-                // TODO: unidirectional functionality
-                throw new UnsupportedOperationException();
+                if(!streams.containsKey(synInfo.getAssociatedStreamId())){
+                    throw new IllegalStateException("Tried to associate new unidirectional stream with streamId: " + synInfo.getAssociatedStreamId() + " But no stream with this id exists. Associated stream already closed?");
+                }
+                if(synInfo.getHeaders().get("url") == null){
+                    throw new IllegalArgumentException("Missing required url header for unidirectional Stream");
+                }
+                synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, synInfo.getAssociatedStreamId(), synInfo.getPriority(), synInfo.getHeaders());
             }
             else
             {
-                int streamId = streamIds.getAndAdd(2);
-                SynStreamFrame synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, 0, synInfo.getPriority(), synInfo.getHeaders());
-                IStream stream = createStream(synStream, listener);
-                control(stream, synStream, timeout, unit, handler, stream);
+                synStream = new SynStreamFrame(version, synInfo.getFlags(), streamId, 0, synInfo.getPriority(), synInfo.getHeaders());
             }
+            IStream stream = createStream(synStream, listener);
+            control(stream, synStream, timeout, unit, handler, stream);
         }
     }
 
@@ -434,7 +441,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             // If this happens we have a bug since we did not check that the peer's streamId was valid
             // (if we're on server, then the client sent an odd streamId and we did not check that)
-            throw new IllegalStateException();
+            throw new IllegalStateException("StreamId: " + synStream.getStreamId() + " invalid.");
         }
 
         logger.debug("Created {}", stream);
