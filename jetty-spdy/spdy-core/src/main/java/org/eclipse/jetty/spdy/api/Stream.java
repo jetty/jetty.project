@@ -86,7 +86,7 @@ public interface Stream
     public Session getSession();
 
     //TODO: javadoc
-    public Future<PushStream> synPushStream();
+    public Stream synPushStream(Headers headers, byte priority);
     
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>

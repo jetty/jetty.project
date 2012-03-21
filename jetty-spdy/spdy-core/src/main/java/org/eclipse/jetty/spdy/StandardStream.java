@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,14 +28,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
+import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
-import org.eclipse.jetty.spdy.api.PushStream;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
@@ -48,7 +50,7 @@ public class StandardStream implements IStream
 {
     private static final Logger logger = LoggerFactory.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Integer, IStream> associatedStreams = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, PushStream> associatedStreams = new ConcurrentHashMap<>();
     private final SynStreamFrame frame;
     private final ISession session;
     private final AtomicInteger windowSize;
@@ -129,12 +131,20 @@ public class StandardStream implements IStream
     @Override
     public void updateCloseState(boolean close)
     {
+        for (PushStream pushStream : associatedStreams.values())
+        {
+            pushStream.updateCloseState(close);
+        }
         if (close)
         {
             if (isHalfClosed())
+            {
                 closed = true;
+            }
             else
+            {
                 halfClosed = true;
+            }
         }
     }
 
@@ -280,8 +290,19 @@ public class StandardStream implements IStream
     }
     
     @Override
-    public Future<PushStream> synPushStream() {
-    	return null;
+    public Stream synPushStream(Headers headers, byte priority) {
+        SynInfo synInfo = new SynInfo(headers,false,true,getId(),priority);
+        Stream stream;
+        try
+        {
+            stream = getSession().syn(synInfo,listener).get();
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new IllegalStateException(e);
+        }
+        associatedStreams.put(stream.getId(),(PushStream)stream);
+        return stream;
     }
 
     @Override
