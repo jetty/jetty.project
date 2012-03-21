@@ -14,22 +14,23 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.util.BufferUtil;
 
 
 public class HttpInput extends ServletInputStream
 {
-    protected final AbstractHttpConnection _connection;
-    protected final HttpParser _parser;
+    protected final ServerConnection _connection;
+    private ByteBuffer _content;
     
     /* ------------------------------------------------------------ */
-    public HttpInput(AbstractHttpConnection connection)
+    public HttpInput(ServerConnection connection)
     {
         _connection=connection;
-        _parser=(HttpParser)connection.getParser();
     }
     
     /* ------------------------------------------------------------ */
@@ -40,9 +41,10 @@ public class HttpInput extends ServletInputStream
     public int read() throws IOException
     {
         int c=-1;
-        ByteBuffer content=_parser.blockForContent(_connection.getMaxIdleTime());
-        if (content!=null)
-            c= 0xff & content.get();
+        if (BufferUtil.isEmpty(_content))
+            _content=_connection.blockForContent();
+        if (BufferUtil.hasContent(_content))
+            c= 0xff & _content.get();
         return c;
     }
     
@@ -54,9 +56,13 @@ public class HttpInput extends ServletInputStream
     public int read(byte[] b, int off, int len) throws IOException
     {
         int l=-1;
-        ByteBuffer content=_parser.blockForContent(_connection.getMaxIdleTime());
-        if (content!=null)
-            l= content.get(b, off, len);
+        if (BufferUtil.isEmpty(_content))
+            _content=_connection.blockForContent();
+        if (BufferUtil.hasContent(_content))
+        {
+            l=Math.min(len,_content.remaining());
+            _content.get(b,off,l);
+        }
         return l;
     }
 
@@ -64,7 +70,11 @@ public class HttpInput extends ServletInputStream
     @Override
     public int available() throws IOException
     {
-        return _parser.available();
+        if (BufferUtil.isEmpty(_content))
+            _content=_connection.getContent();
+        if (BufferUtil.hasContent(_content))
+            return _content.remaining();
+        return 0;
     }
     
     

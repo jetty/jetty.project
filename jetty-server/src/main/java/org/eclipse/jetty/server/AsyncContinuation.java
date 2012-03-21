@@ -62,25 +62,28 @@ public class AsyncContinuation implements AsyncContext, Continuation
     // COMPLETING    UNCOMPLETED                 UNCOMPLETED
     // UNCOMPLETED                                                                        COMPLETED
     // COMPLETED
-    private static final int __IDLE=0;         // Idle request
-    private static final int __DISPATCHED=1;   // Request dispatched to filter/servlet
-    private static final int __ASYNCSTARTED=2; // Suspend called, but not yet returned to container
-    private static final int __REDISPATCHING=3;// resumed while dispatched
-    private static final int __ASYNCWAIT=4;    // Suspended and parked
-    private static final int __REDISPATCH=5;   // Has been scheduled
-    private static final int __REDISPATCHED=6; // Request redispatched to filter/servlet
-    private static final int __COMPLETING=7;   // complete while dispatched
-    private static final int __UNCOMPLETED=8;  // Request is completable
-    private static final int __COMPLETED=9;    // Request is complete
+
+    public enum State { 
+        IDLE,         // Idle request
+        DISPATCHED,   // Request dispatched to filter/servlet
+        ASYNCSTARTED, // Suspend called, but not yet returned to container
+        REDISPATCHING,// resumed while dispatched
+        ASYNCWAIT,    // Suspended and parked
+        REDISPATCH,   // Has been scheduled
+        REDISPATCHED, // Request redispatched to filter/servlet
+        COMPLETING,   // complete while dispatched
+        UNCOMPLETED,  // Request is completable
+        COMPLETED     // Request is complete
+    };
     
     /* ------------------------------------------------------------ */
-    protected AbstractHttpConnection _connection;
+    protected ServerConnection _connection;
     private List<AsyncListener> _lastAsyncListeners;
     private List<AsyncListener> _asyncListeners;
     private List<ContinuationListener> _continuationListeners;
 
     /* ------------------------------------------------------------ */
-    private int _state;
+    private State _state;
     private boolean _initial;
     private boolean _resumed;
     private boolean _expired;
@@ -93,12 +96,12 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected AsyncContinuation()
     {
-        _state=__IDLE;
+        _state=State.IDLE;
         _initial=true;
     }
 
     /* ------------------------------------------------------------ */
-    protected void setConnection(final AbstractHttpConnection connection)
+    protected void setConnection(final ServerConnection connection)
     {
         synchronized(this)
         {
@@ -203,10 +206,10 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __ASYNCSTARTED:
-                case __REDISPATCHING:
-                case __COMPLETING:
-                case __ASYNCWAIT:
+                case ASYNCSTARTED:
+                case REDISPATCHING:
+                case COMPLETING:
+                case ASYNCWAIT:
                     return true;
                     
                 default:
@@ -222,8 +225,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __ASYNCSTARTED:
-                case __ASYNCWAIT:
+                case ASYNCSTARTED:
+                case ASYNCWAIT:
                     return true;
                     
                 default:
@@ -239,10 +242,10 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __REDISPATCH:
-                case __REDISPATCHED:
-                case __REDISPATCHING:
-                case __COMPLETING:
+                case REDISPATCH:
+                case REDISPATCHED:
+                case REDISPATCHING:
+                case COMPLETING:
                     return true;
                     
                 default:
@@ -266,18 +269,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            return
-            ((_state==__IDLE)?"IDLE":
-                (_state==__DISPATCHED)?"DISPATCHED":
-                    (_state==__ASYNCSTARTED)?"ASYNCSTARTED":
-                        (_state==__ASYNCWAIT)?"ASYNCWAIT":
-                            (_state==__REDISPATCHING)?"REDISPATCHING":
-                                (_state==__REDISPATCH)?"REDISPATCH":
-                                    (_state==__REDISPATCHED)?"REDISPATCHED":
-                                        (_state==__COMPLETING)?"COMPLETING":
-                                            (_state==__UNCOMPLETED)?"UNCOMPLETED":
-                                                (_state==__COMPLETED)?"COMPLETE":
-                                                    ("UNKNOWN?"+_state))+
+            return _state+
             (_initial?",initial":"")+
             (_resumed?",resumed":"")+
             (_expired?",expired":"");
@@ -297,9 +289,9 @@ public class AsyncContinuation implements AsyncContext, Continuation
             
             switch(_state)
             {
-                case __IDLE:
+                case IDLE:
                     _initial=true;
-                    _state=__DISPATCHED;
+                    _state=State.DISPATCHED;
                     if (_lastAsyncListeners!=null)
                         _lastAsyncListeners.clear();
                     if (_asyncListeners!=null)
@@ -311,15 +303,15 @@ public class AsyncContinuation implements AsyncContext, Continuation
                     }
                     return true;
                     
-                case __COMPLETING:
-                    _state=__UNCOMPLETED;
+                case COMPLETING:
+                    _state=State.UNCOMPLETED;
                     return false;
 
-                case __ASYNCWAIT:
+                case ASYNCWAIT:
                     return false;
                     
-                case __REDISPATCH:
-                    _state=__REDISPATCHED;
+                case REDISPATCH:
+                    _state=State.REDISPATCHED;
                     return true;
 
                 default:
@@ -340,8 +332,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __DISPATCHED:
-                case __REDISPATCHED:
+                case DISPATCHED:
+                case REDISPATCHED:
                     _resumed=false;
                     _expired=false;
 
@@ -353,7 +345,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
                         _event._path=null;
                     }
 
-                    _state=__ASYNCSTARTED;
+                    _state=State.ASYNCSTARTED;
                     List<AsyncListener> recycle=_lastAsyncListeners;
                     _lastAsyncListeners=_asyncListeners;
                     _asyncListeners=recycle;
@@ -397,37 +389,37 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __REDISPATCHED:
-                case __DISPATCHED:
-                    _state=__UNCOMPLETED;
+                case REDISPATCHED:
+                case DISPATCHED:
+                    _state=State.UNCOMPLETED;
                     return true;
 
-                case __IDLE:
+                case IDLE:
                     throw new IllegalStateException(this.getStatusString());
 
-                case __ASYNCSTARTED:
+                case ASYNCSTARTED:
                     _initial=false;
-                    _state=__ASYNCWAIT;
+                    _state=State.ASYNCWAIT;
                     scheduleTimeout(); // could block and change state.
-                    if (_state==__ASYNCWAIT)
+                    if (_state==State.ASYNCWAIT)
                         return true;
-                    else if (_state==__COMPLETING)
+                    else if (_state==State.COMPLETING)
                     {
-                        _state=__UNCOMPLETED;
+                        _state=State.UNCOMPLETED;
                         return true;
                     }         
                     _initial=false;
-                    _state=__REDISPATCHED;
+                    _state=State.REDISPATCHED;
                     return false; 
 
-                case __REDISPATCHING:
+                case REDISPATCHING:
                     _initial=false;
-                    _state=__REDISPATCHED;
+                    _state=State.REDISPATCHED;
                     return false; 
 
-                case __COMPLETING:
+                case COMPLETING:
                     _initial=false;
-                    _state=__UNCOMPLETED;
+                    _state=State.UNCOMPLETED;
                     return true;
 
                 default:
@@ -444,18 +436,18 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __ASYNCSTARTED:
-                    _state=__REDISPATCHING;
+                case ASYNCSTARTED:
+                    _state=State.REDISPATCHING;
                     _resumed=true;
                     return;
 
-                case __ASYNCWAIT:
+                case ASYNCWAIT:
                     dispatch=!_expired;
-                    _state=__REDISPATCH;
+                    _state=State.REDISPATCH;
                     _resumed=true;
                     break;
                     
-                case __REDISPATCH:
+                case REDISPATCH:
                     return;
                     
                 default:
@@ -479,8 +471,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __ASYNCSTARTED:
-                case __ASYNCWAIT:
+                case ASYNCSTARTED:
+                case ASYNCWAIT:
                     cListeners=_continuationListeners;
                     aListeners=_asyncListeners;
                     break;
@@ -527,8 +519,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __ASYNCSTARTED:
-                case __ASYNCWAIT:
+                case ASYNCSTARTED:
+                case ASYNCWAIT:
                     if (_continuation) 
                         dispatch();
                    else
@@ -552,16 +544,16 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __DISPATCHED:
-                case __REDISPATCHED:
+                case DISPATCHED:
+                case REDISPATCHED:
                     throw new IllegalStateException(this.getStatusString());
 
-                case __ASYNCSTARTED:
-                    _state=__COMPLETING;
+                case ASYNCSTARTED:
+                    _state=State.COMPLETING;
                     return;
                     
-                case __ASYNCWAIT:
-                    _state=__COMPLETING;
+                case ASYNCWAIT:
+                    _state=State.COMPLETING;
                     dispatch=!_expired;
                     break;
                     
@@ -604,8 +596,8 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __UNCOMPLETED:
-                    _state=__COMPLETED;
+                case UNCOMPLETED:
+                    _state=State.COMPLETED;
                     cListeners=_continuationListeners;
                     aListeners=_asyncListeners;
                     break;
@@ -661,11 +653,11 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __DISPATCHED:
-                case __REDISPATCHED:
+                case DISPATCHED:
+                case REDISPATCHED:
                     throw new IllegalStateException(getStatusString());
                 default:
-                    _state=__IDLE;
+                    _state=State.IDLE;
             }
             _initial = true;
             _resumed=false;
@@ -690,71 +682,19 @@ public class AsyncContinuation implements AsyncContext, Continuation
     /* ------------------------------------------------------------ */
     protected void scheduleDispatch()
     {
-        EndPoint endp=_connection.getEndPoint();
-        if (!endp.isBlocking())
-        {
-            ((AsyncEndPoint)endp).asyncDispatch();
-        }
+        _connection.asyncDispatch();
     }
 
     /* ------------------------------------------------------------ */
     protected void scheduleTimeout()
     {
-        EndPoint endp=_connection.getEndPoint();
-        if (_timeoutMs>0)
-        {
-            if (endp.isBlocking())
-            {
-                synchronized(this)
-                {
-                    _expireAt = System.currentTimeMillis()+_timeoutMs;
-                    long wait=_timeoutMs;
-                    while (_expireAt>0 && wait>0 && _connection.getServer().isRunning())
-                    {
-                        try
-                        {
-                            this.wait(wait);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            LOG.ignore(e);
-                        }
-                        wait=_expireAt-System.currentTimeMillis();
-                    }
-
-                    if (_expireAt>0 && wait<=0 && _connection.getServer().isRunning())
-                    {
-                        expired();
-                    }
-                }            
-            }
-            else
-            {
-                ((AsyncEndPoint)endp).scheduleTimeout(_event._timeout,_timeoutMs);
-            }
-        }
+        _connection.scheduleTimeout(_event._timeout,_timeoutMs);
     }
 
     /* ------------------------------------------------------------ */
     protected void cancelTimeout()
     {
-        EndPoint endp=_connection.getEndPoint();
-        if (endp.isBlocking())
-        {
-            synchronized(this)
-            {
-                _expireAt=0;
-                this.notifyAll();
-            }
-        }
-        else 
-        {
-            final AsyncEventState event=_event;
-            if (event!=null)
-            {
-                ((AsyncEndPoint)endp).cancelTimeout(event._timeout);
-            }
-        }
+        _connection.cancelTimeout(_event._timeout);
     }
 
     /* ------------------------------------------------------------ */
@@ -762,7 +702,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            return _state==__COMPLETING;
+            return _state==State.COMPLETING;
         }
     }
     
@@ -771,7 +711,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            return _state==__UNCOMPLETED;
+            return _state==State.UNCOMPLETED;
         }
     } 
     
@@ -780,7 +720,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            return _state==__COMPLETED;
+            return _state==State.COMPLETED;
         }
     }
 
@@ -792,10 +732,10 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __ASYNCSTARTED:
-                case __REDISPATCHING:
-                case __REDISPATCH:
-                case __ASYNCWAIT:
+                case ASYNCSTARTED:
+                case REDISPATCHING:
+                case REDISPATCH:
+                case ASYNCWAIT:
                     return true;
 
                 default:
@@ -812,10 +752,10 @@ public class AsyncContinuation implements AsyncContext, Continuation
         {
             switch(_state)
             {
-                case __IDLE:
-                case __DISPATCHED:
-                case __UNCOMPLETED:
-                case __COMPLETED:
+                case IDLE:
+                case DISPATCHED:
+                case UNCOMPLETED:
+                case COMPLETED:
                     return false;
 
                 default:

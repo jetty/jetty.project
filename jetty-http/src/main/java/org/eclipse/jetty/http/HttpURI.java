@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -55,6 +56,7 @@ public class HttpURI
     QUERY=9,
     ASTERISK=10;
 
+    final Charset _charset;
     boolean _partial=false;
     byte[] _raw=__empty;
     String _rawString;
@@ -70,11 +72,14 @@ public class HttpURI
     int _end;
     boolean _encoded=false;
 
-    final Utf8StringBuilder _utf8b = new Utf8StringBuilder(64);
-
     public HttpURI()
     {
-
+        _charset = URIUtil.__CHARSET;
+    }
+    
+    public HttpURI(Charset charset)
+    {
+        _charset = charset;
     }
 
     /* ------------------------------------------------------------ */
@@ -84,6 +89,7 @@ public class HttpURI
     public HttpURI(boolean parsePartialAuth)
     {
         _partial=parsePartialAuth;
+        _charset = URIUtil.__CHARSET;
     }
 
     public HttpURI(String raw)
@@ -91,22 +97,32 @@ public class HttpURI
         _rawString=raw;
         byte[] b = raw.getBytes();
         parse(b,0,b.length);
+        _charset = URIUtil.__CHARSET;
     }
 
     public HttpURI(byte[] raw,int offset, int length)
     {
         parse2(raw,offset,length);
+        _charset = URIUtil.__CHARSET;
     }
 
     public HttpURI(URI uri)
     {
         parse(uri.toASCIIString());
+        _charset = URIUtil.__CHARSET;
     }
 
     public void parse(String raw)
     {
-        byte[] b = raw.getBytes();
+        byte[] b = StringUtil.getBytes(raw);
         parse2(b,0,b.length);
+        _rawString=raw;
+    }
+    
+    public void parseConnect(String raw)
+    {
+        byte[] b = StringUtil.getBytes(raw);
+        parseConnect(b,0,b.length);
         _rawString=raw;
     }
 
@@ -167,7 +183,7 @@ public class HttpURI
                     {
                         case '/':
                         {
-                            throw new IllegalArgumentException("No closing ']' for " + StringUtil.toString(_raw,offset,length,URIUtil.__CHARSET));
+                            throw new IllegalArgumentException("No closing ']' for " + new String(_raw,offset,length,_charset));
                         }
                         case ']':
                         {
@@ -386,7 +402,7 @@ public class HttpURI
                     {
                         case '/':
                         {
-                            throw new IllegalArgumentException("No closing ']' for " + StringUtil.toString(_raw,offset,length,URIUtil.__CHARSET));
+                            throw new IllegalArgumentException("No closing ']' for " + new String(_raw,offset,length,_charset));
                         }
                         case ']':
                         {
@@ -484,13 +500,6 @@ public class HttpURI
             _portValue=TypeUtil.parseInt(_raw, _port+1, _path-_port-1,10);
     }
 
-    private String toUtf8String(int offset,int length)
-    {
-        _utf8b.reset();
-        _utf8b.append(_raw,offset,length);
-        return _utf8b.toString();
-    }
-
     public String getScheme()
     {
         if (_scheme==_authority)
@@ -510,21 +519,21 @@ public class HttpURI
                 _raw[_scheme+4]=='s' )
             return HttpScheme.HTTPS.toString();
 
-        return toUtf8String(_scheme,_authority-_scheme-1);
+        return new String(_raw,_scheme,_authority-_scheme-1,_charset);
     }
 
     public String getAuthority()
     {
         if (_authority==_path)
             return null;
-        return toUtf8String(_authority,_path-_authority);
+        return new String(_raw,_authority,_path-_authority,_charset);
     }
 
     public String getHost()
     {
         if (_host==_port)
             return null;
-        return toUtf8String(_host,_port-_host);
+        return new String(_raw,_host,_port-_host,_charset);
     }
 
     public int getPort()
@@ -536,7 +545,7 @@ public class HttpURI
     {
         if (_path==_param)
             return null;
-        return toUtf8String(_path,_param-_path);
+        return new String(_raw,_path,_param-_path,_charset);
     }
 
     public String getDecodedPath()
@@ -575,39 +584,36 @@ public class HttpURI
         }
 
         if (bytes==null)
-            return toUtf8String(_path,length);
-
-        _utf8b.reset();
-        _utf8b.append(bytes,0,n);
-        return _utf8b.toString();
+            return new String(_raw,_path,length,_charset);
+        return new String(bytes,0,n,_charset);
     }
 
     public String getPathAndParam()
     {
         if (_path==_query)
             return null;
-        return toUtf8String(_path,_query-_path);
+        return new String(_raw,_path,_query-_path,_charset);
     }
 
     public String getCompletePath()
     {
         if (_path==_end)
             return null;
-        return toUtf8String(_path,_end-_path);
+        return new String(_raw,_path,_end-_path,_charset);
     }
 
     public String getParam()
     {
         if (_param==_query)
             return null;
-        return toUtf8String(_param+1,_query-_param-1);
+        return new String(_raw,_param+1,_query-_param-1,_charset);
     }
 
     public String getQuery()
     {
         if (_query==_fragment)
             return null;
-        return toUtf8String(_query+1,_fragment-_query-1);
+        return new String(_raw,_query+1,_fragment-_query-1,_charset);
     }
 
     public String getQuery(String encoding)
@@ -626,15 +632,14 @@ public class HttpURI
     {
         if (_fragment==_end)
             return null;
-        return toUtf8String(_fragment+1,_end-_fragment-1);
+        return new String(_raw,_fragment+1,_end-_fragment-1,_charset);
     }
 
     public void decodeQueryTo(MultiMap parameters)
     {
         if (_query==_fragment)
             return;
-        _utf8b.reset();
-        UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters,_utf8b);
+        UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
     }
 
     public void decodeQueryTo(MultiMap parameters, String encoding)
@@ -646,7 +651,7 @@ public class HttpURI
         if (encoding==null || StringUtil.isUTF8(encoding))
             UrlEncoded.decodeUtf8To(_raw,_query+1,_fragment-_query-1,parameters);
         else
-            UrlEncoded.decodeTo(toUtf8String(_query+1,_fragment-_query-1),parameters,encoding);
+            UrlEncoded.decodeTo(new String(_raw,_query+1,_fragment-_query-1,_charset),parameters,encoding);
             }
 
     public void clear()
@@ -661,7 +666,7 @@ public class HttpURI
     public String toString()
     {
         if (_rawString==null)
-            _rawString=toUtf8String(_scheme,_end-_scheme);
+            _rawString=new String(_raw,_scheme,_end-_scheme,_charset);
         return _rawString;
     }
 

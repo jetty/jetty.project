@@ -533,6 +533,12 @@ public class HttpFields implements Iterable<HttpFields.Field>
         _fields.add(field);
         _names.put(name, field);
     }
+
+    /* -------------------------------------------------------------- */
+    public void put(HttpHeader header, HttpHeaderValue value)
+    {
+        put(header,value.toString());
+    }
     
     /* -------------------------------------------------------------- */
     /**
@@ -600,7 +606,13 @@ public class HttpFields implements Iterable<HttpFields.Field>
         else
             _names.put(name, field);
     }
-
+    
+    /* -------------------------------------------------------------- */
+    public void add(HttpHeader header, HttpHeaderValue value) throws IllegalArgumentException
+    {
+        add(header,value.toString());
+    }
+    
     /* -------------------------------------------------------------- */
     /**
      * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
@@ -706,6 +718,19 @@ public class HttpFields implements Iterable<HttpFields.Field>
      * @param name the field name
      * @param value the field long value
      */
+    public void putLongField(HttpHeader name, long value)
+    {
+        String v = Long.toString(value);
+        put(name, v);
+    }
+    
+    /* -------------------------------------------------------------- */
+    /**
+     * Sets the value of an long field.
+     * 
+     * @param name the field name
+     * @param value the field long value
+     */
     public void putLongField(String name, long value)
     {
         String v = Long.toString(value);
@@ -720,12 +745,25 @@ public class HttpFields implements Iterable<HttpFields.Field>
      * @param name the field name
      * @param date the field date value
      */
-    public void putDateField(String name, long date)
+    public void putDateField(HttpHeader name, long date)
     {
         String d=formatDate(date);
         put(name, d);
     }
 
+    /* -------------------------------------------------------------- */
+    /**
+     * Sets the value of a date field.
+     * 
+     * @param name the field name
+     * @param date the field date value
+     */
+    public void putDateField(String name, long date)
+    {
+        String d=formatDate(date);
+        put(name, d);
+    }
+    
     /* -------------------------------------------------------------- */
     /**
      * Sets the value of a date field.

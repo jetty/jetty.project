@@ -756,7 +756,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
                 if (version==null)
                 {
-                    _request.setProtocol(HttpVersion.HTTP_0_9);
+                    _request.setHttpVersion(HttpVersion.HTTP_0_9);
                     _version=HttpVersion.HTTP_0_9_ORDINAL;
                 }
                 else
@@ -766,7 +766,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
                         throw new HttpException(HttpStatus.BAD_REQUEST_400,null);
                     _version = HttpVersion.CACHE.getOrdinal(version);
                     if (_version <= 0) _version = HttpVersion.HTTP_1_0_ORDINAL;
-                    _request.setProtocol(version.toString());
+                    _request.setHttpVersion(version.toString());
                 }
             }
             catch (Exception e)

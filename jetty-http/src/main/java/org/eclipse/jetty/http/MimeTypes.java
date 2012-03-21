@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,18 +57,28 @@ public class MimeTypes
         /* ------------------------------------------------------------ */
         private final String _string;
         private final ByteBuffer _buffer;
+        private final Charset _charset;
 
         /* ------------------------------------------------------------ */
         Type(String s)
         {
             _string=s;
             _buffer=BufferUtil.toBuffer(s);
+            
+            int i=s.toLowerCase().indexOf("charset=");
+            _charset=(i>0)?Charset.forName(s.substring(i+8)):null;
         }
 
         /* ------------------------------------------------------------ */
         public ByteBuffer toBuffer()
         {
             return _buffer.asReadOnlyBuffer();
+        }
+        
+        /* ------------------------------------------------------------ */
+        public Charset getCharset()
+        {
+            return _charset;
         }
         
         /* ------------------------------------------------------------ */
@@ -86,7 +97,7 @@ public class MimeTypes
 
     /* ------------------------------------------------------------ */
     private static final Logger LOG = Log.getLogger(MimeTypes.class);
-    private final static StringMap<MimeTypes.Type> CACHE= new StringMap<MimeTypes.Type>(true);
+    public  final static StringMap<MimeTypes.Type> CACHE= new StringMap<MimeTypes.Type>(true);
     private final static StringMap<ByteBuffer> TYPES= new StringMap<ByteBuffer>(true);
     private final static Map<String,ByteBuffer> __dftMimeMap = new HashMap<String,ByteBuffer>();
     private final static Map<String,String> __encodings = new HashMap<String,String>();
@@ -234,16 +245,16 @@ public class MimeTypes
     }
 
     /* ------------------------------------------------------------ */
-    public static String getCharsetFromContentType(ByteBuffer value)
+    public static String getCharsetFromContentType(String value)
     {
-        int i=value.position();
-        int end=value.limit();
+        int end=value.length();
         int state=0;
         int start=0;
         boolean quote=false;
+        int i=0;
         for (;i<end;i++)
         {
-            byte b = value.get(i);
+            char b = value.charAt(i);
 
             if (quote && state!=10)
             {
@@ -299,5 +310,97 @@ public class MimeTypes
             return StringUtil.normalizeCharset(value,start,i-start);
 
         return __encodings.get(value);
+    }
+
+    public static String getContentTypeWithoutCharset(String value)
+    {
+        int end=value.length();
+        int state=0;
+        int start=0;
+        boolean quote=false;
+        int i=0;
+        StringBuilder builder=null;
+        for (;i<end;i++)
+        {
+            char b = value.charAt(i);
+
+            if ('"'==b)
+            {
+                if (quote)
+                {
+                    quote=false;
+                }
+                else
+                {
+                    quote=true;
+                }
+                
+                switch(state)
+                {
+                    case 11:
+                        builder.append(b);break;
+                    case 10:
+                        break;
+                    case 9:
+                        builder=new StringBuilder();
+                        builder.append(value,0,start+1);
+                        state=10;
+                        break;
+                    default:
+                        start=i;
+                        state=0;           
+                }
+                continue;
+            }
+            
+            if (quote)
+            {
+                if (builder!=null && state!=10)
+                    builder.append(b);
+                continue;
+            }
+
+            switch(state)
+            {
+                case 0:
+                    if (';'==b)
+                        state=1;
+                    else if (' '!=b)
+                        start=i;
+                    break;
+
+                case 1: if ('c'==b) state=2; else if (' '!=b) state=0; break;
+                case 2: if ('h'==b) state=3; else state=0;break;
+                case 3: if ('a'==b) state=4; else state=0;break;
+                case 4: if ('r'==b) state=5; else state=0;break;
+                case 5: if ('s'==b) state=6; else state=0;break;
+                case 6: if ('e'==b) state=7; else state=0;break;
+                case 7: if ('t'==b) state=8; else state=0;break;
+                case 8: if ('='==b) state=9; else if (' '!=b) state=0; break;
+
+                case 9:
+                    if (' '==b)
+                        break;
+                    builder=new StringBuilder();
+                    builder.append(value,0,start+1);
+                    state=10;
+                    break;
+
+                case 10:
+                    if (';'==b)
+                    {
+                        builder.append(b);
+                        state=11;
+                    }
+                    break;
+                case 11:
+                    if (' '!=b)
+                        builder.append(b);
+            }
+        }
+        if (builder==null)
+            return value;
+        return builder.toString();
+
     }
 }

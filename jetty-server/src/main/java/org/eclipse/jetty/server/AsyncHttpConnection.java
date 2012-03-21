@@ -14,14 +14,24 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -182,5 +192,105 @@ public class AsyncHttpConnection extends AbstractHttpConnection implements Async
         if (_parser.isIdle())
             _parser.setPersistent(false);
     }
+
+    
+
+    ByteBuffer header=null;
+    ByteBuffer chunk=null;
+    ByteBuffer buffer=null;
+    /* ------------------------------------------------------------ */
+    private void write(ByteBuffer content) throws IOException
+    {
+        if (!_generator.isComplete())
+            throw new EofException();
+
+        try
+        {
+            while(BufferUtil.hasContent(content))
+            {
+
+                // Generate
+                Action action=BufferUtil.hasContent(content)?null:Action.COMPLETE;
+
+                /* System.err.printf("generate(%s,%s,%s,%s,%s)@%s%n",
+                    BufferUtil.toSummaryString(header),
+                    BufferUtil.toSummaryString(chunk),
+                    BufferUtil.toSummaryString(buffer),
+                    BufferUtil.toSummaryString(content),
+                    action,gen.getState());*/
+                HttpGenerator.Result result=_generator.generate(header,chunk,buffer,content,action);
+                /*System.err.printf("%s (%s,%s,%s,%s,%s)@%s%n",
+                    result,
+                    BufferUtil.toSummaryString(header),
+                    BufferUtil.toSummaryString(chunk),
+                    BufferUtil.toSummaryString(buffer),
+                    BufferUtil.toSummaryString(content),
+                    action,gen.getState());*/
+
+                switch(result)
+                {
+                    case NEED_HEADER:
+                        header=BufferUtil.allocate(2048);
+                        break;
+
+                    case NEED_BUFFER:
+                        buffer=BufferUtil.allocate(8192);
+                        break;
+
+                    case NEED_CHUNK:
+                        header=null;
+                        chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
+                        break;
+
+                    case FLUSH:
+                    {
+                        Future<Integer> future = getEndPoint().flush(header,chunk,buffer);
+                        future.get(getMaxIdleTime(),TimeUnit.MILLISECONDS);
+                        break;
+                    }
+                    case FLUSH_CONTENT:
+                    {
+                        Future<Integer> future = getEndPoint().flush(header,chunk,content);
+                        future.get(getMaxIdleTime(),TimeUnit.MILLISECONDS);
+                        break;
+                    }
+                    case OK:
+                        break;
+                    case SHUTDOWN_OUT:
+                        getEndPoint().shutdownOutput();
+                        break;
+                }
+            }
+        }
+
+        catch(final TimeoutException e)
+        {
+            throw new InterruptedIOException(e.toString())
+            {
+                {
+                    this.initCause(e);
+                }
+            };
+        }
+        catch (final InterruptedException e)
+        {
+            throw new InterruptedIOException(e.toString())
+            {
+                {
+                    this.initCause(e);
+                }
+            };
+        }
+        catch (final ExecutionException e)
+        {
+            throw new IOException(e.toString())
+            {
+                {
+                    this.initCause(e);
+                }
+            };
+        }
+    }
+    
 
 }

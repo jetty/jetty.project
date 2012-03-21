@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 
 
@@ -38,7 +39,7 @@ public class URIUtil
     public static final String HTTPS_COLON="https:";
 
     // Use UTF-8 as per http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
-    public static final String __CHARSET=System.getProperty("org.eclipse.jetty.util.URI.charset",StringUtil.__UTF8);
+    public static final Charset __CHARSET=Charset.forName(System.getProperty("org.eclipse.jetty.util.URI.charset",StringUtil.__UTF8));
     
     private URIUtil()
     {}
@@ -221,15 +222,7 @@ public class URIUtil
             
             if (b>0)
             {
-                String s;
-                try
-                {
-                    s=new String(bytes,0,b,__CHARSET);
-                }
-                catch (UnsupportedEncodingException e)
-                {       
-                    s=new String(bytes,0,b);
-                }
+                String s=new String(bytes,0,b,__CHARSET);
                 s.getChars(0,s.length(),chars,n);
                 n+=s.length();
                 b=0;
@@ -243,15 +236,7 @@ public class URIUtil
 
         if (b>0)
         {
-            String s;
-            try
-            {
-                s=new String(bytes,0,b,__CHARSET);
-            }
-            catch (UnsupportedEncodingException e)
-            {       
-                s=new String(bytes,0,b);
-            }
+            String s=new String(bytes,0,b,__CHARSET);
             s.getChars(0,s.length(),chars,n);
             n+=s.length();
         }
@@ -295,8 +280,8 @@ public class URIUtil
         }
 
         if (bytes==null)
-            return StringUtil.toString(buf,offset,length,__CHARSET);
-        return StringUtil.toString(bytes,0,n,__CHARSET);
+            return new String(buf,offset,length,__CHARSET);
+        return new String(bytes,0,n,__CHARSET);
     }
 
     

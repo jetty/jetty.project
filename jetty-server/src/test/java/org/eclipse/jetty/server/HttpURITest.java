@@ -21,12 +21,13 @@ import static org.junit.Assert.fail;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 
 import junit.framework.Assert;
 
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.Test;
 
 public class HttpURITest
@@ -270,8 +271,9 @@ public class HttpURITest
         {
             try
             {
-                ByteArrayBuffer buf = new ByteArrayBuffer(connect_tests[i][0]);
-                uri.parseConnect(buf.array(),2,buf.length()-4);
+                byte[] buf = connect_tests[i][0].getBytes(StringUtil.__UTF8);
+                
+                uri.parseConnect(buf,2,buf.length-4);
                 assertEquals("path"+i,connect_tests[i][1]+":"+connect_tests[i][2],uri.getPath());
                 assertEquals("host"+i,connect_tests[i][1],uri.getHost());
                 assertEquals("port"+i,Integer.parseInt(connect_tests[i][2]),uri.getPort());
@@ -281,5 +283,25 @@ public class HttpURITest
                 assertNull("error"+i,connect_tests[i][1]);
             }
         }
+    }
+    
+    @Test
+    public void testNonURIAscii() throws Exception
+    {
+        String url = "http://www.foo.com/ma\u00F1ana";
+        byte[] asISO = url.getBytes("ISO-8859-1");
+        new String(asISO, "ISO-8859-1");
+
+        //use a non UTF-8 charset as the encoding and url-escape as per
+        //http://www.w3.org/TR/html40/appendix/notes.html#non-ascii-chars
+        String s = URLEncoder.encode(url, "ISO-8859-1");
+        HttpURI uri = new HttpURI(Charset.forName("ISO-8859-1"));
+
+        //parse it, using the same encoding
+        uri.parse(s);
+
+        //decode the url encoding
+        String d = URLDecoder.decode(uri.getCompletePath(), "ISO-8859-1");
+        assertEquals(url, d);
     }
 }

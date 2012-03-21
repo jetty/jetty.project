@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
-import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -38,7 +37,6 @@ public class HttpWriter extends Writer
     private static final int WRITE_UTF8 = 2;
     
     final HttpOutput _out;
-    final AbstractGenerator _generator;
     int _writeMode;
     int _surrogate;
 
@@ -46,7 +44,6 @@ public class HttpWriter extends Writer
     public HttpWriter(HttpOutput out)
     {
         _out=out;
-        _generator=_out._generator;
         _surrogate=0; // AS lastUTF16CodePoint
     }
 

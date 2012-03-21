@@ -67,6 +67,12 @@ public enum HttpVersion
     }
 
     /* ------------------------------------------------------------ */
+    public boolean is(String s)
+    {
+        return _string.equalsIgnoreCase(s);    
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {

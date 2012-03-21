@@ -20,7 +20,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
@@ -114,52 +117,44 @@ import org.eclipse.jetty.util.log.Logger;
  *
  *
  */
-public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
+public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.multipartConfig";
     private static final Logger LOG = Log.getLogger(Request.class);
 
     private static final String __ASYNC_FWD = "org.eclipse.asyncfwd";
-    private static final Collection __defaultLocale = Collections.singleton(Locale.getDefault());
+    private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
-    /* ------------------------------------------------------------ */
-    public static Request getRequest(HttpServletRequest request)
-    {
-        if (request instanceof Request)
-            return (Request)request;
-
-        return AbstractHttpConnection.getCurrentConnection().getRequest();
-    }
-    protected final AsyncContinuation _async = new AsyncContinuation();
+    private ServerConnection _connection;
+    private HttpFields _fields;
+    private final AsyncContinuation _async = new AsyncContinuation();
+    
     private boolean _asyncSupported = true;
     private volatile Attributes _attributes;
     private Authentication _authentication;
     private MultiMap<String> _baseParameters;
     private String _characterEncoding;
-    protected AbstractHttpConnection _connection;
     private ContextHandler.Context _context;
     private boolean _newContext;
     private String _contextPath;
     private CookieCutter _cookies;
     private boolean _cookiesExtracted = false;
     private DispatcherType _dispatcherType;
-    private boolean _dns = false;
-    private EndPoint _endp;
     private boolean _handled = false;
     private int _inputState = __NONE;
+    private HttpMethod _httpMethod;
     private String _method;
     private MultiMap<String> _parameters;
     private boolean _paramsExtracted;
     private String _pathInfo;
     private int _port;
-    private String _protocol = HttpVersion.HTTP_1_1.toString();
+    private HttpVersion _httpVersion = HttpVersion.HTTP_1_1;
     private String _queryEncoding;
     private String _queryString;
     private BufferedReader _reader;
     private String _readerEncoding;
-    private String _remoteAddr;
-    private String _remoteHost;
+    private InetSocketAddress _remote;
     private Object _requestAttributeListeners;
     private String _requestedSessionId;
     private boolean _requestedSessionIdFromCookie = false;
@@ -179,15 +174,13 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
     
     private MultiPartInputStream _multiPartInputStream; //if the request is a multi-part mime
     
+    
     /* ------------------------------------------------------------ */
-    public Request()
+    public Request(ServerConnection connection)
     {
-    }
-
-    /* ------------------------------------------------------------ */
-    public Request(AbstractHttpConnection connection)
-    {
-        setConnection(connection);
+        _connection = connection;
+        _fields=_connection.getRequestFields();
+        _async.setConnection(connection);
     }
 
     /* ------------------------------------------------------------ */
@@ -208,7 +201,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
     public void extractParameters()
     {
         if (_baseParameters == null)
-            _baseParameters = new MultiMap(16);
+            _baseParameters = new MultiMap<String>(16);
 
         if (_paramsExtracted)
         {
@@ -267,10 +260,10 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
                             }
                             else
                             {
-                                Number size = (Number)_connection.getConnector().getServer()
+                                Number size = (Number)_connection.getServer()
                                         .getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
                                 maxFormContentSize = size == null?200000:size.intValue();
-                                Number keys = (Number)_connection.getConnector().getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
+                                Number keys = (Number)_connection.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
                                 maxFormKeys = keys == null?1000:keys.intValue();
                             }
 
@@ -339,7 +332,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
     public Object getAttribute(String name)
     {
         if ("org.eclipse.jetty.io.EndPoint.maxIdleTime".equalsIgnoreCase(name))
-            return new Long(getConnection().getEndPoint().getMaxIdleTime());
+            return new Long(_connection.getMaxIdleTime());
 
         Object attr = (_attributes == null)?null:_attributes.getAttribute(name);
         if (attr == null && Continuation.ATTRIBUTE.equals(name))
@@ -407,7 +400,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
     /**
      * @return Returns the connection.
      */
-    public AbstractHttpConnection getConnection()
+    public ServerConnection getConnection()
     {
         return _connection;
     }
@@ -418,16 +411,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public int getContentLength()
     {
-        return (int)_connection.getRequestFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
-    }
-
-    /* ------------------------------------------------------------ */
-    public long getContentRead()
-    {
-        if (_connection == null || _connection.getParser() == null)
-            return -1;
-
-        return ((HttpParser)_connection.getParser()).getContentRead();
+        return (int)_fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -436,7 +420,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public String getContentType()
     {
-        return _connection.getRequestFields().getStringField(HttpHeader.CONTENT_TYPE);
+        return _fields.getStringField(HttpHeader.CONTENT_TYPE);
     }
 
     /* ------------------------------------------------------------ */
@@ -468,7 +452,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
 
         _cookiesExtracted = true;
 
-        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.COOKIE.toString());
+        Enumeration enm = _fields.getValues(HttpHeader.COOKIE.toString());
 
         // Handle no cookies
         if (enm != null)
@@ -492,7 +476,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public long getDateHeader(String name)
     {
-        return _connection.getRequestFields().getDateField(name);
+        return _fields.getDateField(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -507,7 +491,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public String getHeader(String name)
     {
-        return _connection.getRequestFields().getStringField(name);
+        return _fields.getStringField(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -516,7 +500,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public Enumeration getHeaderNames()
     {
-        return _connection.getRequestFields().getFieldNames();
+        return _fields.getFieldNames();
     }
 
     /* ------------------------------------------------------------ */
@@ -525,7 +509,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public Enumeration getHeaders(String name)
     {
-        Enumeration e = _connection.getRequestFields().getValues(name);
+        Enumeration e = _fields.getValues(name);
         if (e == null)
             return Collections.enumeration(Collections.EMPTY_LIST);
         return e;
@@ -558,17 +542,9 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public int getIntHeader(String name)
     {
-        return (int)_connection.getRequestFields().getLongField(name);
+        return (int)_fields.getLongField(name);
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.ServletRequest#getLocalAddr()
-     */
-    public String getLocalAddr()
-    {
-        return _endp == null?null:_endp.getLocalAddr();
-    }
 
     /* ------------------------------------------------------------ */
     /*
@@ -576,7 +552,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public Locale getLocale()
     {
-        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
+        Enumeration<String> enm = _fields.getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
         if (enm == null || !enm.hasMoreElements())
@@ -613,14 +589,14 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
     public Enumeration getLocales()
     {
 
-        Enumeration enm = _connection.getRequestFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
+        Enumeration<String> enm = _fields.getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
         if (enm == null || !enm.hasMoreElements())
             return Collections.enumeration(__defaultLocale);
 
         // sort the list in quality order
-        List acceptLanguage = HttpFields.qualityList(enm);
+        List<String> acceptLanguage = HttpFields.qualityList(enm);
 
         if (acceptLanguage.size() == 0)
             return Collections.enumeration(__defaultLocale);
@@ -652,19 +628,22 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
 
     /* ------------------------------------------------------------ */
     /*
+     * @see javax.servlet.ServletRequest#getLocalAddr()
+     */
+    public String getLocalAddr()
+    {
+        InetSocketAddress local=_connection.getLocalAddress();
+        return local.getAddress().getHostAddress();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
      * @see javax.servlet.ServletRequest#getLocalName()
      */
     public String getLocalName()
     {
-        if (_endp == null)
-            return null;
-        if (_dns)
-            return _endp.getLocalHost();
-
-        String local = _endp.getLocalAddr();
-        if (local != null && local.indexOf(':') >= 0)
-            local = "[" + local + "]";
-        return local;
+        InetSocketAddress local=_connection.getLocalAddress();
+        return local.getHostString();
     }
 
     /* ------------------------------------------------------------ */
@@ -673,7 +652,8 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public int getLocalPort()
     {
-        return _endp == null?0:_endp.getLocalPort();
+        InetSocketAddress local=_connection.getLocalAddress();
+        return local.getPort();
     }
 
     /* ------------------------------------------------------------ */
@@ -712,7 +692,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
     /*
      * @see javax.servlet.ServletRequest#getParameterNames()
      */
-    public Enumeration getParameterNames()
+    public Enumeration<String> getParameterNames()
     {
         if (!_paramsExtracted)
             extractParameters();
@@ -768,7 +748,16 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public String getProtocol()
     {
-        return _protocol;
+        return _httpVersion.toString();
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see javax.servlet.ServletRequest#getProtocol()
+     */
+    public HttpVersion getHttpVersion()
+    {
+        return _httpVersion;
     }
 
     /* ------------------------------------------------------------ */
@@ -843,9 +832,10 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public String getRemoteAddr()
     {
-        if (_remoteAddr != null)
-            return _remoteAddr;
-        return _endp == null?null:_endp.getRemoteAddr();
+        InetSocketAddress remote=_remote;
+        if (remote==null)
+            remote=_connection.getRemoteAddress();
+        return remote==null?"":remote.getAddress().getHostAddress();
     }
 
     /* ------------------------------------------------------------ */
@@ -854,15 +844,10 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public String getRemoteHost()
     {
-        if (_dns)
-        {
-            if (_remoteHost != null)
-            {
-                return _remoteHost;
-            }
-            return _endp == null?null:_endp.getRemoteHost();
-        }
-        return getRemoteAddr();
+        InetSocketAddress remote=_remote;
+        if (remote==null)
+            remote=_connection.getRemoteAddress();
+        return remote==null?"":remote.getHostString();
     }
 
     /* ------------------------------------------------------------ */
@@ -871,7 +856,10 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public int getRemotePort()
     {
-        return _endp == null?0:_endp.getRemotePort();
+        InetSocketAddress remote=_remote;
+        if (remote==null)
+            remote=_connection.getRemoteAddress();
+        return remote==null?0:remote.getPort();
     }
 
     /* ------------------------------------------------------------ */
@@ -1020,7 +1008,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
             return _serverName;
 
         // Return host from header field
-        String hostPort = _connection.getRequestFields().getStringField(HttpHeader.HOST);
+        String hostPort = _fields.getStringField(HttpHeader.HOST);
         if (hostPort != null)
         {
             loop: for (int i = hostPort.length(); i-- > 0;)
@@ -1042,7 +1030,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
                             try
                             {
                                 if (_connection != null)
-                                    _connection._generator.sendError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null,true);
+                                    _connection.sendError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null,true);
                             }
                             catch (IOException e1)
                             {
@@ -1099,7 +1087,10 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
                 if (_serverName != null && _uri != null)
                     _port = _uri.getPort();
                 else
-                    _port = _endp == null?0:_endp.getLocalPort();
+                {
+                    InetSocketAddress local = _connection.getLocalAddress();
+                    _port = local == null?0:local.getPort();
+                }
             }
         }
 
@@ -1200,19 +1191,6 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
     public long getTimeStamp()
     {
         return _timeStamp;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Get Request TimeStamp
-     *
-     * @return The time that the request was received.
-     */
-    public ByteBuffer getTimeStampBuffer()
-    {
-        if (_timeStampBuffer == null && _timeStamp > 0)
-            _timeStampBuffer = HttpFields.__dateCache.formatBuffer(_timeStamp);
-        return _timeStampBuffer;
     }
 
     /* ------------------------------------------------------------ */
@@ -1405,7 +1383,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
         _method = null;
         _pathInfo = null;
         _port = 0;
-        _protocol = HttpVersion.HTTP_1_1.toString();
+        _httpVersion = HttpVersion.HTTP_1_1;
         _queryEncoding = null;
         _queryString = null;
         _requestedSessionId = null;
@@ -1429,6 +1407,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
             _savedNewSessions.clear();
         _savedNewSessions=null;
         _multiPartInputStream = null;
+        _remote=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1524,17 +1503,6 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
                     throw new RuntimeException(e);
                 }
             }
-            else if ("org.eclipse.jetty.io.EndPoint.maxIdleTime".equalsIgnoreCase(name))
-            {
-                try
-                {
-                    getConnection().getEndPoint().setMaxIdleTime(Integer.valueOf(value.toString()));
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
         }
 
         if (_attributes == null)
@@ -1598,8 +1566,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
 
         // check encoding is supported
         if (!StringUtil.isUTF8(encoding))
-            // noinspection ResultOfMethodCallIgnored
-            "".getBytes(encoding);
+            Charset.forName(encoding);
     }
 
     /* ------------------------------------------------------------ */
@@ -1615,10 +1582,6 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
     // final so we can safely call this from constructor
     protected final void setConnection(AbstractHttpConnection connection)
     {
-        _connection = connection;
-        _async.setConnection(connection);
-        _endp = connection.getEndPoint();
-        _dns = connection.getResolveNames();
     }
 
     /* ------------------------------------------------------------ */
@@ -1627,7 +1590,7 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      */
     public void setContentType(String contentType)
     {
-        _connection.getRequestFields().put(HttpHeader.CONTENT_TYPE,contentType);
+        _fields.put(HttpHeader.CONTENT_TYPE,contentType);
 
     }
 
@@ -1696,9 +1659,16 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      * @param method
      *            The method to set.
      */
-    public void setMethod(String method)
+    public void setMethod(HttpMethod httpMethod, String method)
     {
+        _httpMethod=httpMethod;
         _method = method;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean isHead()
+    {
+        return HttpMethod.HEAD==_httpMethod;
     }
 
     /* ------------------------------------------------------------ */
@@ -1725,12 +1695,12 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
 
     /* ------------------------------------------------------------ */
     /**
-     * @param protocol
+     * @param version
      *            The protocol to set.
      */
-    public void setProtocol(String protocol)
+    public void setHttpVersion(HttpVersion version)
     {
-        _protocol = protocol;
+        _httpVersion = version;
     }
 
     /* ------------------------------------------------------------ */
@@ -1763,19 +1733,9 @@ public class Request implements HttpServletRequest, HttpGenerator.RequestInfo
      * @param addr
      *            The address to set.
      */
-    public void setRemoteAddr(String addr)
+    public void setRemoteAddr(InetSocketAddress addr)
     {
-        _remoteAddr = addr;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param host
-     *            The host to set.
-     */
-    public void setRemoteHost(String host)
-    {
-        _remoteHost = host;
+        _remote = addr;
     }
 
     /* ------------------------------------------------------------ */

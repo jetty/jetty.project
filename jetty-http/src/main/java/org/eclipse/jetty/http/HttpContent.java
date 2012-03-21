@@ -26,8 +26,8 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public interface HttpContent
 {
-    ByteBuffer getContentType();
-    ByteBuffer getLastModified();
+    String getContentType();
+    String getLastModified();
     ByteBuffer getIndirectBuffer();
     ByteBuffer getDirectBuffer();
     Resource getResource();
@@ -41,17 +41,17 @@ public interface HttpContent
     public class ResourceAsHttpContent implements HttpContent
     {
         final Resource _resource;
-        final ByteBuffer _mimeType;
+        final String _mimeType;
         final int _maxBuffer;
 
-        public ResourceAsHttpContent(final Resource resource, final ByteBuffer mimeType)
+        public ResourceAsHttpContent(final Resource resource, final String mimeType)
         {
             _resource=resource;
             _mimeType=mimeType;
             _maxBuffer=-1;
         }
 
-        public ResourceAsHttpContent(final Resource resource, final ByteBuffer mimeType, int maxBuffer)
+        public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer)
         {
             _resource=resource;
             _mimeType=mimeType;
@@ -60,14 +60,14 @@ public interface HttpContent
 
         /* ------------------------------------------------------------ */
         @Override
-        public ByteBuffer getContentType()
+        public String getContentType()
         {
             return _mimeType;
         }
 
         /* ------------------------------------------------------------ */
         @Override
-        public ByteBuffer getLastModified()
+        public String getLastModified()
         {
             return null;
         }

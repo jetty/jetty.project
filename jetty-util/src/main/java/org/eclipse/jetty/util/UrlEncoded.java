@@ -265,22 +265,11 @@ public class UrlEncoded extends MultiMap implements Cloneable
      * @param offset the offset within raw to decode from
      * @param length the length of the section to decode
      * @param map the {@link MultiMap} to populate
+     * @param buffer the buffer to decode into
      */
     public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap map)
     {
-        decodeUtf8To(raw,offset,length,map,new Utf8StringBuilder());
-    }
-
-    /* -------------------------------------------------------------- */
-    /** Decoded parameters to Map.
-     * @param raw the byte[] containing the encoded parameters
-     * @param offset the offset within raw to decode from
-     * @param length the length of the section to decode
-     * @param map the {@link MultiMap} to populate
-     * @param buffer the buffer to decode into
-     */
-    public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap map,Utf8StringBuilder buffer)
-    {
+        Utf8StringBuilder buffer = new Utf8StringBuilder();
         synchronized(map)
         {
             String key = null;

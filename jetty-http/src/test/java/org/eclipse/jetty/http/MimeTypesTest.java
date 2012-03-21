@@ -1,5 +1,8 @@
 package org.eclipse.jetty.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -46,7 +49,46 @@ public class MimeTypesTest
         MimeTypes mimetypes = new MimeTypes();
         ByteBuffer contentType = mimetypes.getMimeByExtension(filename);
         String prefix = "MimeTypes.getMimeByExtension(" + filename + ")";
-        Assert.assertNotNull(prefix,contentType);
-        Assert.assertEquals(prefix,expectedMimeType,BufferUtil.toString(contentType));
+        assertNotNull(prefix,contentType);
+        assertEquals(prefix,expectedMimeType,BufferUtil.toString(contentType));
+    }
+    
+    @Test
+    public void testCharsetFromContentType()
+    {
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar;charset=abc;some=else"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar;charset=abc"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar ; charset = abc"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar ; charset = abc ; some=else"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar;other=param;charset=abc;some=else"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar;other=param;charset=abc"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = abc"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = abc ; some=else"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = abc"));
+        assertEquals("abc",MimeTypes.getCharsetFromContentType("foo/bar other = param ; charset = \"abc\" ; some=else"));
+        assertEquals(null,MimeTypes.getCharsetFromContentType("foo/bar"));
+        assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("foo/bar;charset=uTf8"));
+        assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("foo/bar;other=\"charset=abc\";charset=uTf8"));
+        assertEquals("UTF-8",MimeTypes.getCharsetFromContentType("text/html;charset=utf-8"));
+        
+    }
+    
+    @Test
+    public void testContentTypeWithoutCharset()
+    {
+        assertEquals("foo/bar;some=else",MimeTypes.getContentTypeWithoutCharset("foo/bar;charset=abc;some=else"));
+        assertEquals("foo/bar",MimeTypes.getContentTypeWithoutCharset("foo/bar;charset=abc"));
+        assertEquals("foo/bar",MimeTypes.getContentTypeWithoutCharset("foo/bar ; charset = abc"));
+        assertEquals("foo/bar;some=else",MimeTypes.getContentTypeWithoutCharset("foo/bar ; charset = abc ; some=else"));
+        assertEquals("foo/bar;other=param;some=else",MimeTypes.getContentTypeWithoutCharset("foo/bar;other=param;charset=abc;some=else"));
+        assertEquals("foo/bar;other=param",MimeTypes.getContentTypeWithoutCharset("foo/bar;other=param;charset=abc"));
+        assertEquals("foo/bar ; other = param",MimeTypes.getContentTypeWithoutCharset("foo/bar ; other = param ; charset = abc"));
+        assertEquals("foo/bar ; other = param;some=else",MimeTypes.getContentTypeWithoutCharset("foo/bar ; other = param ; charset = abc ; some=else"));
+        assertEquals("foo/bar ; other = param",MimeTypes.getContentTypeWithoutCharset("foo/bar ; other = param ; charset = abc"));
+        assertEquals("foo/bar ; other = param;some=else",MimeTypes.getContentTypeWithoutCharset("foo/bar ; other = param ; charset = \"abc\" ; some=else"));
+        assertEquals("foo/bar",MimeTypes.getContentTypeWithoutCharset("foo/bar"));
+        assertEquals("foo/bar",MimeTypes.getContentTypeWithoutCharset("foo/bar;charset=uTf8"));
+        assertEquals("foo/bar;other=\"charset=abc\"",MimeTypes.getContentTypeWithoutCharset("foo/bar;other=\"charset=abc\";charset=uTf8"));
+        assertEquals("text/html",MimeTypes.getContentTypeWithoutCharset("text/html;charset=utf-8"));
     }
 }

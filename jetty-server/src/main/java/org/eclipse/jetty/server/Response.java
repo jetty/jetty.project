@@ -53,11 +53,7 @@ public class Response implements HttpServletResponse
 {
     private static final Logger LOG = Log.getLogger(Response.class);
 
-    
-    public static final int
-        NONE=0,
-        STREAM=1,
-        WRITER=2;
+    public enum Output {NONE,STREAM,WRITER}
 
     /**
      * If a header name starts with this string,  the header (stripped of the prefix)
@@ -72,24 +68,68 @@ public class Response implements HttpServletResponse
      */
     public final static String HTTP_ONLY_COMMENT="__HTTP_ONLY__";
     
-    private final AbstractHttpConnection _connection;
+    private final ServerConnection _connection;
+    private final HttpFields _fields;
     private int _status=SC_OK;
     private String _reason;
     private Locale _locale;
-    private String _mimeType;
+    private MimeTypes.Type _mimeType;
     private String _characterEncoding;
-    private boolean _explicitEncoding;
     private String _contentType;
-    private volatile int _outputState;
+    private Output _outputState;
     private PrintWriter _writer;
+    private long _contentLength;
 
+
+    private final HttpGenerator.ResponseInfo _info = new HttpGenerator.ResponseInfo()
+    {
+        @Override
+        public HttpVersion getHttpVersion()
+        {
+            return _connection.getRequest().getHttpVersion();
+        }
+        
+        @Override
+        public HttpFields getHttpFields()
+        {
+            return _fields;
+        }
+        
+        @Override
+        public long getContentLength()
+        {
+            return _contentLength;
+        }
+        
+        @Override
+        public boolean isHead()
+        {
+            return _connection.getRequest().isHead();
+        }
+        
+        @Override
+        public int getStatus()
+        {
+            return _status;
+        }
+        
+        @Override
+        public String getReason()
+        {
+            return _reason;
+        }
+    };
+    
+    
+    
     /* ------------------------------------------------------------ */
     /**
      *
      */
-    public Response(AbstractHttpConnection connection)
+    public Response(ServerConnection connection)
     {
         _connection=connection;
+        _fields=connection.getResponseFields();
     }
 
 
@@ -104,10 +144,9 @@ public class Response implements HttpServletResponse
         _locale=null;
         _mimeType=null;
         _characterEncoding=null;
-        _explicitEncoding=false;
         _contentType=null;
         _writer=null;
-        _outputState=NONE;
+        _outputState=Output.NONE;
     }
 
     /* ------------------------------------------------------------ */
@@ -116,7 +155,7 @@ public class Response implements HttpServletResponse
      */
     public void addCookie(HttpCookie cookie)
     {
-        _connection.getResponseFields().addSetCookie(cookie);
+        _fields.addSetCookie(cookie);
     }
     
     /* ------------------------------------------------------------ */
@@ -139,7 +178,7 @@ public class Response implements HttpServletResponse
                     comment=null;
             }
         }
-        _connection.getResponseFields().addSetCookie(cookie.getName(),
+        _fields.addSetCookie(cookie.getName(),
                 cookie.getValue(),
                 cookie.getDomain(),
                 cookie.getPath(),
@@ -156,7 +195,7 @@ public class Response implements HttpServletResponse
      */
     public boolean containsHeader(String name)
     {
-        return _connection.getResponseFields().containsKey(name);
+        return _fields.containsKey(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -300,7 +339,7 @@ public class Response implements HttpServletResponse
         setHeader(HttpHeader.CONTENT_TYPE,null);
         setHeader(HttpHeader.CONTENT_LENGTH,null);
 
-        _outputState=NONE;
+        _outputState=Output.NONE;
         setStatus(code,message);
 
         if (message==null)
@@ -319,7 +358,7 @@ public class Response implements HttpServletResponse
             if (context!=null)
                 error_handler=context.getContextHandler().getErrorHandler();
             if (error_handler==null)
-                error_handler = _connection.getConnector().getServer().getBean(ErrorHandler.class);
+                error_handler = _connection.getServer().getBean(ErrorHandler.class);
             if (error_handler!=null)
             {
                 request.setAttribute(Dispatcher.ERROR_STATUS_CODE,new Integer(code));
@@ -407,7 +446,7 @@ public class Response implements HttpServletResponse
     public void sendProcessing() throws IOException
     {
         if (_connection.isExpecting102Processing() && !isCommitted())
-            ((HttpGenerator)_connection.getGenerator()).send1xx(HttpStatus.PROCESSING_102);
+            _connection.send1xx(HttpStatus.PROCESSING_102);
     }
 
     /* ------------------------------------------------------------ */
@@ -477,7 +516,7 @@ public class Response implements HttpServletResponse
     public void setDateHeader(String name, long date)
     {
         if (!_connection.isIncluding())
-            _connection.getResponseFields().putDateField(name, date);
+            _fields.putDateField(name, date);
     }
 
     /* ------------------------------------------------------------ */
@@ -487,7 +526,7 @@ public class Response implements HttpServletResponse
     public void addDateHeader(String name, long date)
     {
         if (!_connection.isIncluding())
-            _connection.getResponseFields().addDateField(name, date);
+            _fields.addDateField(name, date);
     }
 
     /* ------------------------------------------------------------ */
@@ -503,14 +542,14 @@ public class Response implements HttpServletResponse
             if (_connection.isIncluding())
                     return;
             
-            _connection.getResponseFields().put(name, value);
+            _fields.put(name, value);
             
             if (HttpHeader.CONTENT_LENGTH==name)
             {
                 if (value==null)
-                    _connection._generator.setContentLength(-1);
+                    _contentLength=-1l;
                 else
-                    _connection._generator.setContentLength(Long.parseLong(value));
+                    _contentLength=Long.parseLong(value);
             }
         }
     }
@@ -531,13 +570,13 @@ public class Response implements HttpServletResponse
                 else
                     return;
             }
-            _connection.getResponseFields().put(name, value);
+            _fields.put(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
             {
                 if (value==null)
-                    _connection._generator.setContentLength(-1);
+                    _contentLength=-1l;
                 else
-                    _connection._generator.setContentLength(Long.parseLong(value));
+                    _contentLength=Long.parseLong(value);
             }
         }
     }
@@ -546,7 +585,7 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     public Collection<String> getHeaderNames()
     {
-        final HttpFields fields=_connection.getResponseFields();
+        final HttpFields fields=_fields;
         return fields.getFieldNamesCollection();
     }
     
@@ -555,7 +594,7 @@ public class Response implements HttpServletResponse
      */
     public String getHeader(String name)
     {
-        return _connection.getResponseFields().getStringField(name);
+        return _fields.getStringField(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -563,7 +602,7 @@ public class Response implements HttpServletResponse
      */
     public Collection<String> getHeaders(String name)
     {
-        final HttpFields fields=_connection.getResponseFields();
+        final HttpFields fields=_fields;
         Collection<String> i = fields.getValuesCollection(name);
         if (i==null)
             return Collections.EMPTY_LIST;
@@ -584,9 +623,14 @@ public class Response implements HttpServletResponse
                 return;
         }
 
-        _connection.getResponseFields().add(name, value);
+        _fields.add(name, value);
         if (HttpHeader.CONTENT_LENGTH.is(name))
-            _connection._generator.setContentLength(Long.parseLong(value));
+        {
+            if (value==null)
+                _contentLength=-1l;
+            else
+                _contentLength=Long.parseLong(value);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -597,9 +641,9 @@ public class Response implements HttpServletResponse
     {
         if (!_connection.isIncluding())
         {
-            _connection.getResponseFields().putLongField(name, value);
+            _fields.putLongField(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
-                _connection._generator.setContentLength(value);
+                _contentLength=value;
         }
     }
 
@@ -611,9 +655,9 @@ public class Response implements HttpServletResponse
     {
         if (!_connection.isIncluding())
         {
-            _connection.getResponseFields().addLongField(name, value);
+            _fields.add(name, Integer.toString(value));
             if (HttpHeader.CONTENT_LENGTH.is(name))
-                _connection._generator.setContentLength(value);
+                _contentLength=value;
         }
     }
 
@@ -673,24 +717,24 @@ public class Response implements HttpServletResponse
      */
     public ServletOutputStream getOutputStream() throws IOException
     {
-        if (_outputState!=NONE && _outputState!=STREAM)
+        if (_outputState==Output.WRITER)
             throw new IllegalStateException("WRITER");
 
         ServletOutputStream out = _connection.getOutputStream();
-        _outputState=STREAM;
+        _outputState=Output.STREAM;
         return out;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isWriting()
     {
-        return _outputState==WRITER;
+        return _outputState==Output.WRITER;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isOutputing()
     {
-        return _outputState!=NONE;
+        return _outputState!=Output.NONE;
     }
 
     /* ------------------------------------------------------------ */
@@ -699,7 +743,7 @@ public class Response implements HttpServletResponse
      */
     public PrintWriter getWriter() throws IOException
     {
-        if (_outputState!=NONE && _outputState!=WRITER)
+        if (_outputState==Output.STREAM)
             throw new IllegalStateException("STREAM");
 
         /* if there is no writer yet */
@@ -719,71 +763,10 @@ public class Response implements HttpServletResponse
             /* construct Writer using correct encoding */
             _writer = _connection.getPrintWriter(encoding);
         }
-        _outputState=WRITER;
+        _outputState=Output.WRITER;
         return _writer;
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see javax.servlet.ServletResponse#setCharacterEncoding(java.lang.String)
-     */
-    public void setCharacterEncoding(String encoding)
-    {
-    	if (_connection.isIncluding())
-    		return;
-
-        if (this._outputState==0 && !isCommitted())
-        {
-            _explicitEncoding=true;
-
-            if (encoding==null)
-            {
-                // Clear any encoding.
-                if (_characterEncoding!=null)
-                {
-                    _characterEncoding=null;
-                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_mimeType);
-                }
-            }
-            else
-            {
-                // No, so just add this one to the mimetype
-                _characterEncoding=encoding;
-                if (_contentType!=null)
-                {
-                    int i0=_contentType.indexOf(';');
-                    if (i0<0)
-                    {
-                        _contentType=null;
-
-                        if (_contentType==null)
-                        {
-                            _contentType = _mimeType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                        }
-                    }
-                    else
-                    {
-                        int i1=_contentType.indexOf("charset=",i0);
-                        if (i1<0)
-                        {
-                            _contentType = _contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                        }
-                        else
-                        {
-                            int i8=i1+8;
-                            int i2=_contentType.indexOf(" ",i8);
-                            if (i2<0)
-                                _contentType=_contentType.substring(0,i8)+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            else
-                                _contentType=_contentType.substring(0,i8)+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ")+_contentType.substring(i2);
-                        }
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                    }
-                }
-            }
-        }
-    }
 
     /* ------------------------------------------------------------ */
     /*
@@ -796,24 +779,26 @@ public class Response implements HttpServletResponse
         // if the getHandling committed the response!
         if (isCommitted() || _connection.isIncluding())
             return;
-        _connection._generator.setContentLength(len);
+        _contentLength=len;
         if (len>=0)
         {
-            _connection.getResponseFields().putLongField(HttpHeader.CONTENT_LENGTH, len);
-            if (_connection._generator.isAllContentWritten())
+            _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), (long)len);
+            if (_connection.isAllContentWritten())
             {
-                if (_outputState==WRITER)
-                    _writer.close();
-                else if (_outputState==STREAM)
+                switch(_outputState)
                 {
-                    try
-                    {
-                        getOutputStream().close();
-                    }
-                    catch(IOException e)
-                    {
-                        throw new RuntimeException(e);
-                    }
+                    case WRITER:
+                        _writer.close();
+                        break;
+                    case STREAM:
+                        try
+                        {
+                            getOutputStream().close();
+                        }
+                        catch(IOException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
                 }
             }
         }
@@ -830,10 +815,47 @@ public class Response implements HttpServletResponse
         // if the getHandling committed the response!
         if (isCommitted() || _connection.isIncluding())
         	return;
-        _connection._generator.setContentLength(len);
-        _connection.getResponseFields().putLongField(HttpHeader.CONTENT_LENGTH, len);
+        _contentLength=len;
+        _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
     }
 
+    /* ------------------------------------------------------------ */
+    /*
+     * @see javax.servlet.ServletResponse#setCharacterEncoding(java.lang.String)
+     */
+    public void setCharacterEncoding(String encoding)
+    {
+        if (_connection.isIncluding())
+                return;
+
+        if (_outputState==Output.NONE && !isCommitted())
+        {
+            if (encoding==null)
+            {
+                // Clear any encoding.
+                if (_characterEncoding!=null)
+                {
+                    _characterEncoding=null;
+                    if (_contentType!=null)
+                    {
+                        _contentType=MimeTypes.getContentTypeWithoutCharset(_contentType);
+                        _fields.put(HttpHeader.CONTENT_TYPE,_contentType);
+                    }
+                }
+            }
+            else
+            {
+                // No, so just add this one to the mimetype
+                _characterEncoding=encoding;
+                if (_contentType!=null)
+                {
+                    _contentType=MimeTypes.getContentTypeWithoutCharset(_contentType)+";charset="+encoding;
+                    _fields.put(HttpHeader.CONTENT_TYPE,_contentType);
+                }
+            }
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#setContentType(java.lang.String)
@@ -843,159 +865,29 @@ public class Response implements HttpServletResponse
         if (isCommitted() || _connection.isIncluding())
             return;
 
-        // Yes this method is horribly complex.... but there are lots of special cases and
-        // as this method is called on every request, it is worth trying to save string creation.
-        //
-
         if (contentType==null)
         {
             if (_locale==null)
                 _characterEncoding=null;
             _mimeType=null;
             _contentType=null;
-            _connection.getResponseFields().remove(HttpHeader.CONTENT_TYPE);
+            _fields.remove(HttpHeader.CONTENT_TYPE);
         }
         else
         {
-            // Look for encoding in contentType
-            int i0=contentType.indexOf(';');
-
-            if (i0>0)
+            _contentType=contentType;
+            _mimeType=MimeTypes.CACHE.get(contentType);
+            String charset=_mimeType==null?MimeTypes.getCharsetFromContentType(contentType):_mimeType.getCharset().toString();
+            
+            if (charset!=null)
+                _characterEncoding=charset;
+            else if (_characterEncoding!=null)
             {
-                // we have content type parameters
-
-                // Extract params off mimetype
-                _mimeType=contentType.substring(0,i0).trim();
-                MimeTypes.Type mime_type=MimeTypes.CACHE.get(_mimeType);
-
-                // Look for charset
-                int i1=contentType.indexOf("charset=",i0+1);
-                if (i1>=0)
-                {
-                    _explicitEncoding=true;
-                    int i8=i1+8;
-                    int i2 = contentType.indexOf(' ',i8);
-
-                    if (_outputState==WRITER)
-                    {
-                        // strip the charset and ignore;
-                        if ((i1==i0+1 && i2<0) || (i1==i0+2 && i2<0 && contentType.charAt(i0+1)==' '))
-                        {
-                            if (mime_type!=null)
-                            {
-                                CachedBuffer content_type = mime_type.getAssociate(_characterEncoding);
-                                if (content_type!=null)
-                                {
-                                    _contentType=content_type.toString();
-                                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,content_type);
-                                }
-                                else
-                                {
-                                    _contentType=_mimeType+";charset="+_characterEncoding;
-                                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                                }
-                            }
-                            else
-                            {
-                                _contentType=_mimeType+";charset="+_characterEncoding;
-                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                            }
-                        }
-                        else if (i2<0)
-                        {
-                            _contentType=contentType.substring(0,i1)+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                        }
-                        else
-                        {
-                            _contentType=contentType.substring(0,i1)+contentType.substring(i2)+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                        }
-                    }
-                    else if ((i1==i0+1 && i2<0) || (i1==i0+2 && i2<0 && contentType.charAt(i0+1)==' '))
-                    {
-                        // The params are just the char encoding
-                        mime_type=MimeTypes.CACHE.get(_mimeType);
-                        _characterEncoding = QuotedStringTokenizer.unquote(contentType.substring(i8));
-
-                        if (mime_type!=null)
-                        {
-                            CachedBuffer content_type = mime_type.getAssociate(_characterEncoding);
-                            if (content_type!=null)
-                            {
-                                _contentType=content_type.toString();
-                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,content_type);
-                            }
-                            else
-                            {
-                                _contentType=contentType;
-                                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                            }
-                        }
-                        else
-                        {
-                            _contentType=contentType;
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                        }
-                    }
-                    else if (i2>0)
-                    {
-                        _characterEncoding = QuotedStringTokenizer.unquote(contentType.substring(i8,i2));
-                        _contentType=contentType;
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                    }
-                    else
-                    {
-                        _characterEncoding = QuotedStringTokenizer.unquote(contentType.substring(i8));
-                        _contentType=contentType;
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                    }
-                }
-                else // No encoding in the params.
-                {
-                    mime_type=null;
-                    _contentType=_characterEncoding==null?contentType:contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                }
+                _contentType=contentType+";charset="+_characterEncoding;
+                _mimeType=null;
             }
-            else // No params at all
-            {
-                _mimeType=contentType;
-                _cachedMimeType=MimeTypes.CACHE.get(_mimeType);
-
-                if (_characterEncoding!=null)
-                {
-                    if (_cachedMimeType!=null)
-                    {
-                        CachedBuffer content_type = _cachedMimeType.getAssociate(_characterEncoding);
-                        if (content_type!=null)
-                        {
-                            _contentType=content_type.toString();
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,content_type);
-                        }
-                        else
-                        {
-                            _contentType=_mimeType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                            _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                        }
-                    }
-                    else
-                    {
-                        _contentType=contentType+";charset="+QuotedStringTokenizer.quoteIfNeeded(_characterEncoding,";= ");
-                        _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                    }
-                }
-                else if (_cachedMimeType!=null)
-                {
-                    _contentType=_cachedMimeType.toString();
-                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_cachedMimeType);
-                }
-                else
-                {
-                    _contentType=contentType;
-                    _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-                }
-            }
+            
+            _fields.put(HttpHeader.CONTENT_TYPE,_contentType);
         }
     }
 
@@ -1005,9 +897,9 @@ public class Response implements HttpServletResponse
      */
     public void setBufferSize(int size)
     {
-        if (isCommitted() || getContentCount()>0)
+        if (isCommitted())
             throw new IllegalStateException("Committed or content written");
-        _connection.getGenerator().increaseContentBufferSize(size);
+        _connection.increaseContentBufferSize(size);
     }
 
     /* ------------------------------------------------------------ */
@@ -1016,7 +908,7 @@ public class Response implements HttpServletResponse
      */
     public int getBufferSize()
     {
-        return _connection.getGenerator().getContentBufferSize();
+        return _connection.getContentBufferSize();
     }
 
     /* ------------------------------------------------------------ */
@@ -1039,7 +931,7 @@ public class Response implements HttpServletResponse
         _status=200;
         _reason=null;
         
-        HttpFields response_fields=_connection.getResponseFields();
+        HttpFields response_fields=_fields;
         
         response_fields.clear();
         String connection=_connection.getRequestFields().getStringField(HttpHeader.CONNECTION);
@@ -1048,22 +940,22 @@ public class Response implements HttpServletResponse
             String[] values = connection.split(",");
             for  (int i=0;values!=null && i<values.length;i++)
             {
-                CachedBuffer cb = HttpHeaderValue.CACHE.get(values[0].trim());
+                HttpHeaderValue cb = HttpHeaderValue.CACHE.get(values[0].trim());
 
                 if (cb!=null)
                 {
-                    switch(cb.getOrdinal())
+                    switch(cb)
                     {
-                        case HttpHeaderValue.CLOSE_ORDINAL:
-                            response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
+                        case CLOSE:
+                            response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
                             break;
 
-                        case HttpHeaderValue.KEEP_ALIVE_ORDINAL:
-                            if (HttpVersion.HTTP_1_0.equalsIgnoreCase(_connection.getRequest().getProtocol()))
-                                response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
+                        case KEEP_ALIVE:
+                            if (HttpVersion.HTTP_1_0.is(_connection.getRequest().getProtocol()))
+                                response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE.toString());
                             break;
-                        case HttpHeaderValue.TE_ORDINAL:
-                            response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.TE);
+                        case TE:
+                            response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.TE.toString());
                             break;
                     }
                 }
@@ -1080,7 +972,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
 
         _writer=null;
-        _outputState=NONE;
+        _outputState=Output.NONE;
     }
 
     /* ------------------------------------------------------------ */
@@ -1091,7 +983,7 @@ public class Response implements HttpServletResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        _connection.getGenerator().resetBuffer();
+        _connection.resetBuffer();
     }
 
     /* ------------------------------------------------------------ */
@@ -1114,9 +1006,9 @@ public class Response implements HttpServletResponse
             return;
 
         _locale = locale;
-        _connection.getResponseFields().put(HttpHeader.CONTENT_LANGUAGE,locale.toString().replace('_','-'));
+        _fields.put(HttpHeader.CONTENT_LANGUAGE,locale.toString().replace('_','-'));
 
-        if (_explicitEncoding || _outputState!=0 )
+        if (_outputState!=Output.NONE )
             return;
 
         if (_connection.getRequest().getContext()==null)
@@ -1124,31 +1016,8 @@ public class Response implements HttpServletResponse
 
         String charset = _connection.getRequest().getContext().getContextHandler().getLocaleEncoding(locale);
 
-        if (charset!=null && charset.length()>0)
-        {
-            _characterEncoding=charset;
-
-            /* get current MIME type from Content-Type header */
-            String type=getContentType();
-            if (type!=null)
-            {
-                _characterEncoding=charset;
-                int semi=type.indexOf(';');
-                if (semi<0)
-                {
-                    _mimeType=type;
-                    _contentType= type += ";charset="+charset;
-                }
-                else
-                {
-                    _mimeType=type.substring(0,semi);
-                    _contentType= _mimeType += ";charset="+charset;
-                }
-
-                _cachedMimeType=MimeTypes.CACHE.get(_mimeType);
-                _connection.getResponseFields().put(HttpHeader.CONTENT_TYPE,_contentType);
-            }
-        }
+        if (charset!=null && charset.length()>0 && _characterEncoding==null)
+            setCharacterEncoding(charset);
     }
 
     /* ------------------------------------------------------------ */
@@ -1191,21 +1060,10 @@ public class Response implements HttpServletResponse
         _connection.completeResponse();
     }
 
-    /* ------------------------------------------------------------- */
-    /**
-     * @return the number of bytes actually written in response body
-     */
-    public long getContentCount()
-    {
-        if (_connection==null || _connection.getGenerator()==null)
-            return -1;
-        return _connection.getGenerator().getContentWritten();
-    }
-
     /* ------------------------------------------------------------ */
     public HttpFields getHttpFields()
     {
-        return _connection.getResponseFields();
+        return _fields;
     }
 
     /* ------------------------------------------------------------ */
@@ -1213,7 +1071,7 @@ public class Response implements HttpServletResponse
     public String toString()
     {
         return "HTTP/1.1 "+_status+" "+ (_reason==null?"":_reason) +System.getProperty("line.separator")+
-        _connection.getResponseFields().toString();
+        _fields.toString();
     }
     
     /* ------------------------------------------------------------ */

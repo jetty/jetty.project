@@ -44,12 +44,8 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpOutput extends ServletOutputStream 
 {
-    protected final AbstractHttpConnection _connection;
-    protected final HttpGenerator _generator;
+    private final ServerConnection _connection;
     private boolean _closed;
-    ByteBuffer header=null;
-    ByteBuffer chunk=null;
-    ByteBuffer buffer=null;
     
     // These are held here for reuse by Writer
     String _characterEncoding;
@@ -58,22 +54,15 @@ public class HttpOutput extends ServletOutputStream
     ByteArrayOutputStream2 _bytes;
 
     /* ------------------------------------------------------------ */
-    public HttpOutput(AbstractHttpConnection connection)
+    public HttpOutput(ServerConnection connection)
     {
         _connection=connection;
-        _generator=(HttpGenerator)connection.getGenerator();
-    }
-
-    /* ------------------------------------------------------------ */
-    public int getMaxIdleTime()
-    {
-        return _connection.getMaxIdleTime();
     }
     
     /* ------------------------------------------------------------ */
     public boolean isWritten()
     {
-        return _generator.getContentWritten()>0;
+        return _connection.getContentWritten()>0;
     }
     
     /* ------------------------------------------------------------ */
@@ -109,7 +98,10 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
-        write(ByteBuffer.wrap(b,off,len));
+        if (_closed)
+            throw new IOException("Closed");
+
+        _connection.write(ByteBuffer.wrap(b,off,len));
     }
 
     /* ------------------------------------------------------------ */
@@ -119,7 +111,10 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void write(byte[] b) throws IOException
     {
-        write(ByteBuffer.wrap(b));
+        if (_closed)
+            throw new IOException("Closed");
+
+        _connection.write(ByteBuffer.wrap(b));
     }
 
     /* ------------------------------------------------------------ */
@@ -129,105 +124,11 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void write(int b) throws IOException
     {
-        write(ByteBuffer.wrap(new byte[]{(byte)b}));
-    }
-
-    /* ------------------------------------------------------------ */
-    private void write(ByteBuffer content) throws IOException
-    {
         if (_closed)
             throw new IOException("Closed");
-        if (!_generator.isComplete())
-            throw new EofException();
 
-        try
-        {
-            while(BufferUtil.hasContent(content))
-            {
-
-                // Generate
-                Action action=BufferUtil.hasContent(content)?null:Action.COMPLETE;
-
-                /* System.err.printf("generate(%s,%s,%s,%s,%s)@%s%n",
-                    BufferUtil.toSummaryString(header),
-                    BufferUtil.toSummaryString(chunk),
-                    BufferUtil.toSummaryString(buffer),
-                    BufferUtil.toSummaryString(content),
-                    action,gen.getState());*/
-                HttpGenerator.Result result=_generator.generate(header,chunk,buffer,content,action);
-                /*System.err.printf("%s (%s,%s,%s,%s,%s)@%s%n",
-                    result,
-                    BufferUtil.toSummaryString(header),
-                    BufferUtil.toSummaryString(chunk),
-                    BufferUtil.toSummaryString(buffer),
-                    BufferUtil.toSummaryString(content),
-                    action,gen.getState());*/
-
-                switch(result)
-                {
-                    case NEED_HEADER:
-                        header=BufferUtil.allocate(2048);
-                        break;
-
-                    case NEED_BUFFER:
-                        buffer=BufferUtil.allocate(8192);
-                        break;
-
-                    case NEED_CHUNK:
-                        header=null;
-                        chunk=BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
-                        break;
-
-                    case FLUSH:
-                    {
-                        Future<Integer> future = _connection.getEndPoint().flush(header,chunk,buffer);
-                        future.get(getMaxIdleTime(),TimeUnit.MILLISECONDS);
-                        break;
-                    }
-                    case FLUSH_CONTENT:
-                    {
-                        Future<Integer> future = _connection.getEndPoint().flush(header,chunk,content);
-                        future.get(getMaxIdleTime(),TimeUnit.MILLISECONDS);
-                        break;
-                    }
-                    case OK:
-                        break;
-                    case SHUTDOWN_OUT:
-                        _connection.getEndPoint().shutdownOutput();
-                        break;
-                }
-            }
-        }
-
-        catch(final TimeoutException e)
-        {
-            throw new InterruptedIOException(e.toString())
-            {
-                {
-                    this.initCause(e);
-                }
-            };
-        }
-        catch (final InterruptedException e)
-        {
-            throw new InterruptedIOException(e.toString())
-            {
-                {
-                    this.initCause(e);
-                }
-            };
-        }
-        catch (final ExecutionException e)
-        {
-            throw new IOException(e.toString())
-            {
-                {
-                    this.initCause(e);
-                }
-            };
-        }
+        _connection.write(ByteBuffer.wrap(new byte[]{(byte)b}));
     }
-    
 
     /* ------------------------------------------------------------ */
     /* 
