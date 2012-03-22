@@ -18,8 +18,6 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -82,7 +80,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
-    private final ConcurrentMap<IStream, Set<IStream>> associatedStreams = new ConcurrentHashMap<>();
     private final Deque<FrameBytes> queue = new LinkedList<>();
     private final ByteBufferPool bufferPool;
     private final Executor threadPool;
@@ -270,17 +267,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public Set<IStream> getAssociatedStreams(Stream stream)
-    {
-        Set<IStream> streams = associatedStreams.get(stream);
-        if (streams == null)
-        {
-            return Collections.emptySet();
-        }
-        return streams;
-    }
-
-    @Override
     public void onControlFrame(ControlFrame frame)
     {
         notifyIdle(idleListener,false);
@@ -460,16 +446,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
         if (synStream.isUnidirectional())
         {
-            // TODO: check if synchronization is needed
-            Set<IStream> childStreams = parentStream.getAssociatedStreams();
-            if (childStreams.isEmpty())
-            {
-                childStreams = new HashSet<>();
-            }
-            childStreams.add(stream);
-            associatedStreams.put(parentStream,childStreams);
+            parentStream.addAssociatedStream(stream);
         }
-        
         
         logger.debug("Created {}",stream);
         notifyStreamCreated(stream);

@@ -17,6 +17,8 @@
 package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +54,7 @@ public class StandardStream implements IStream
     private final SynStreamFrame frame;
     private final ISession session;
     private final AtomicInteger windowSize;
+    private Set<IStream> associatedStreams = Collections.emptySet();
     private volatile StreamFrameListener listener;
     private volatile boolean opened;
     private volatile boolean halfClosed;
@@ -81,7 +84,16 @@ public class StandardStream implements IStream
     @Override
     public Set<IStream> getAssociatedStreams()
     {
-        return session.getAssociatedStreams(this);
+        return associatedStreams;
+    }
+    
+    @Override
+    public void addAssociatedStream(IStream stream)
+    {
+        if(associatedStreams.isEmpty()){
+            associatedStreams = new HashSet<>();
+        }
+        associatedStreams.add(stream);
     }
     
     @Override
@@ -142,7 +154,7 @@ public class StandardStream implements IStream
     @Override
     public void updateCloseState(boolean close)
     {
-        for (IStream stream : session.getAssociatedStreams(this))
+        for (IStream stream : associatedStreams)
         {
             stream.updateCloseState(close);
         }
@@ -150,6 +162,9 @@ public class StandardStream implements IStream
         {
             if (isHalfClosed())
             {
+                if(associatedStream!=null){
+                    associatedStream.getAssociatedStreams().remove(this);
+                }
                 closed = true;
             }
             else

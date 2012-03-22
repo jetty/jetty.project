@@ -186,9 +186,6 @@ public interface Session
      */
     public Set<Stream> getStreams();
 
-    //TODO: javadoc
-    public Set<IStream> getAssociatedStreams(Stream stream);
-    
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>
      */

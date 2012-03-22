@@ -87,12 +87,6 @@ public interface Stream
      * @return the associated parent stream or null if this is not an associated stream
      */
     public Stream getParentStream();
-        
-    /**
-     * @return associated child streams or an empty set if no associated streams exist
-     */
-    //TODO: we're exposing the internal IStream to the public api here
-    public Set<IStream> getAssociatedStreams();
     
     /**
      * @return the session this stream is associated to

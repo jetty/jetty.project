@@ -72,22 +72,42 @@ public class StandardSessionTest
         
         Stream stream = createStream();
         Stream pushStream = createPushStream(stream).get();
-        assertThat("stream is not halfClosed", stream.isHalfClosed(), is(false));
-        assertThat("stream is not closed", stream.isClosed(), is(false));
-        assertThat("pushStream is not halfClosed", pushStream.isHalfClosed(), is(false));
-        assertThat("pushStream is not closed", pushStream.isClosed(), is(false));
+        assertThat("stream should not be halfClosed", stream.isHalfClosed(), is(false));
+        assertThat("stream should not be closed", stream.isClosed(), is(false));
+        assertThat("pushStream should not be halfClosed", pushStream.isHalfClosed(), is(false));
+        assertThat("pushStream should not be closed", pushStream.isClosed(), is(false));
         
         ReplyInfo replyInfo = new ReplyInfo(true);
         stream.reply(replyInfo);
-        assertThat("stream is halfClosed", stream.isHalfClosed(), is(true));
-        assertThat("stream is not closed", stream.isClosed(), is(false));
-        assertThat("pushStream is halfClosed", pushStream.isHalfClosed(), is(true));
-        assertThat("pushStream is not closed", pushStream.isClosed(), is(false));
+        assertThat("stream should be halfClosed", stream.isHalfClosed(), is(true));
+        assertThat("stream should not be closed", stream.isClosed(), is(false));
+        assertThat("pushStream should be halfClosed", pushStream.isHalfClosed(), is(true));
+        assertThat("pushStream should not be closed", pushStream.isClosed(), is(false));
         
         stream.reply(replyInfo);
-        assertThat("stream is closed", stream.isClosed(), is(true));
-        assertThat("pushStream is closed", pushStream.isClosed(), is(true));
+        assertThat("stream should be closed", stream.isClosed(), is(true));
+        assertThat("pushStream should be closed", pushStream.isClosed(), is(true));
         
+    }
+    
+    @Test
+    public void testPushStreamIsAddedToParent() throws InterruptedException, ExecutionException{
+        IStream stream = (IStream)createStream();
+        Stream pushStream = createPushStream(stream).get();
+        assertThat("PushStream has not been added to parent", stream.getAssociatedStreams().contains(pushStream) ,is(true));
+    }
+    
+    @Test
+    public void testPushStreamIsRemovedFromParentWhenClosed() throws InterruptedException, ExecutionException{
+        IStream stream = (IStream)createStream();
+        Stream pushStream = createPushStream(stream).get();
+        assertThat("PushStream has not been added to parent", stream.getAssociatedStreams().contains(pushStream) ,is(true));
+        ReplyInfo replyInfo = new ReplyInfo(true);
+        pushStream.reply(replyInfo);
+        assertThat("pushStream is not halfClosed", pushStream.isHalfClosed(), is(true));
+        pushStream.reply(replyInfo);
+        assertThat("pushStream is not closed", pushStream.isClosed(), is(true));
+        assertThat("PushStream has not been removed from parent", stream.getAssociatedStreams().contains(pushStream) ,is(false));
     }
 
     // TODO: remove duplication in AsyncTimeoutTest

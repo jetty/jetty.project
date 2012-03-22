@@ -17,6 +17,7 @@
 package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -89,4 +90,11 @@ public interface IStream extends Stream
      * @see #process(ControlFrame)
      */
     public void process(DataFrame frame, ByteBuffer data);
+    
+    /**
+     * @return associated child streams or an empty set if no associated streams exist
+     */
+    public Set<IStream> getAssociatedStreams();
+    
+    public void addAssociatedStream(IStream stream);
 }
