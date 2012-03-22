@@ -262,9 +262,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public List<Stream> getStreams()
+    public Set<Stream> getStreams()
     {
-        List<Stream> result = new ArrayList<>();
+        Set<Stream> result = new HashSet<>();
         result.addAll(streams.values());
         return result;
     }
@@ -574,8 +574,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         Settings.Setting windowSizeSetting = frame.getSettings().get(Settings.ID.INITIAL_WINDOW_SIZE);
         if (windowSizeSetting != null)
         {
+            int prevWindowSize = windowSize;
             windowSize = windowSizeSetting.value();
-            logger.debug("Updated window size to {}",windowSize);
+            for (IStream stream : streams.values())
+                stream.updateWindowSize(windowSize - prevWindowSize);
+            logger.debug("Updated window size to {}", windowSize);
         }
 
         SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(),frame.isClearPersisted());
@@ -806,12 +809,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void execute(Runnable task)
     {
         threadPool.execute(task);
-    }
-
-    @Override
-    public int getWindowSize()
-    {
-        return windowSize;
     }
 
     @Override
