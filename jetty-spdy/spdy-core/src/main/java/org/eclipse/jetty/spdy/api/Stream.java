@@ -17,8 +17,11 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.nio.channels.WritePendingException;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.spdy.IStream;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
@@ -79,14 +82,25 @@ public interface Stream
      * @return the priority of this stream
      */
     public byte getPriority();
-
+    
+    /**
+     * @return the associated parent stream or null if this is not an associated stream
+     */
+    public Stream getParentStream();
+        
+    /**
+     * @return associated child streams or an empty set if no associated streams exist
+     */
+    //TODO: we're exposing the internal IStream to the public api here
+    public Set<IStream> getAssociatedStreams();
+    
     /**
      * @return the session this stream is associated to
      */
     public Session getSession();
 
     //TODO: javadoc
-    public Stream synPushStream(Headers headers, byte priority);
+    public Future<Stream> synPushStream(Headers headers, boolean close, byte priority);
     
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>

@@ -19,9 +19,12 @@ package org.eclipse.jetty.spdy;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -33,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Handler;
@@ -78,6 +82,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
+    private final ConcurrentMap<IStream, Set<IStream>> associatedStreams = new ConcurrentHashMap<>();
     private final Deque<FrameBytes> queue = new LinkedList<>();
     private final ByteBufferPool bufferPool;
     private final Executor threadPool;
@@ -129,7 +134,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener)
+    public Future<Stream> syn(AbstractSynInfo synInfo, StreamFrameListener listener)
     {
         Promise<Stream> result = new Promise<>();
         syn(synInfo,listener,0,TimeUnit.MILLISECONDS,result);
@@ -137,7 +142,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler)
+    public void syn(AbstractSynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler)
     {
         // Synchronization is necessary.
         // SPEC v3, 2.3.1 requires that the stream creation be monotonically crescent
@@ -153,10 +158,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 {
                     throw new IllegalStateException("Tried to associate new unidirectional stream with streamId: " + synInfo.getAssociatedStreamId()
                             + " But no stream with this id exists. Associated stream already closed?");
-                }
-                if (synInfo.getHeaders().get("url") == null)
-                {
-                    throw new IllegalArgumentException("Missing required url header for unidirectional Stream");
                 }
             }
 
@@ -266,6 +267,17 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         List<Stream> result = new ArrayList<>();
         result.addAll(streams.values());
         return result;
+    }
+
+    @Override
+    public Set<IStream> getAssociatedStreams(Stream stream)
+    {
+        Set<IStream> streams = associatedStreams.get(stream);
+        if (streams == null)
+        {
+            return Collections.emptySet();
+        }
+        return streams;
     }
 
     @Override
@@ -405,7 +417,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private void onSyn(SynStreamFrame frame)
     {
-        IStream stream = newStream(frame);
+        IStream stream = newStream(frame,null);
         logger.debug("Opening {}",stream);
         int streamId = frame.getStreamId();
         IStream existing = streams.putIfAbsent(streamId,stream);
@@ -424,7 +436,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void processSyn(SessionFrameListener listener, IStream stream, SynStreamFrame frame)
     {
         stream.process(frame);
-        SynInfo synInfo = new SynInfo(frame.getHeaders(),frame.isClose(),frame.isUnidirectional(),frame.getAssociatedStreamId(),frame.getPriority());
+        SynInfo synInfo = new SynInfo(frame.getHeaders(),frame.isClose(),frame.getPriority());
         StreamFrameListener streamListener = notifyOnSyn(listener,stream,synInfo);
         stream.setStreamFrameListener(streamListener);
         flush();
@@ -435,7 +447,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private IStream createStream(SynStreamFrame synStream, StreamFrameListener listener)
     {
-        IStream stream = newStream(synStream);
+        IStream parentStream = streams.get(synStream.getAssociatedStreamId());
+        
+        IStream stream = newStream(synStream,parentStream);
         stream.setStreamFrameListener(listener);
         if (streams.putIfAbsent(synStream.getStreamId(),stream) != null)
         {
@@ -444,16 +458,28 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             throw new IllegalStateException("StreamId: " + synStream.getStreamId() + " invalid.");
         }
 
+        if (synStream.isUnidirectional())
+        {
+            // TODO: check if synchronization is needed
+            Set<IStream> childStreams = parentStream.getAssociatedStreams();
+            if (childStreams.isEmpty())
+            {
+                childStreams = new HashSet<>();
+            }
+            childStreams.add(stream);
+            associatedStreams.put(parentStream,childStreams);
+        }
+        
+        
         logger.debug("Created {}",stream);
         notifyStreamCreated(stream);
 
         return stream;
     }
 
-    private IStream newStream(SynStreamFrame frame)
+    private IStream newStream(SynStreamFrame frame, IStream parentStream)
     {
-        Stream associatedStream = streams.get(frame.getAssociatedStreamId());
-        return frame.isUnidirectional()?new StandardPushStream(frame,this,windowSize,associatedStream):new StandardStream(frame,this,windowSize);
+        return new StandardStream(frame,this,windowSize, parentStream);
     }
 
     private void notifyStreamCreated(IStream stream)
@@ -640,7 +666,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private StreamFrameListener notifyOnSyn(SessionFrameListener listener, Stream stream, SynInfo synInfo)
+    private StreamFrameListener notifyOnSyn(SessionFrameListener listener, Stream stream, AbstractSynInfo synInfo)
     {
         try
         {
@@ -907,7 +933,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private void notifyHandlerFailed(Handler handler, Throwable x)
+    private void notifyHandlerFailed(@SuppressWarnings("rawtypes") Handler handler, Throwable x)
     {
         try
         {

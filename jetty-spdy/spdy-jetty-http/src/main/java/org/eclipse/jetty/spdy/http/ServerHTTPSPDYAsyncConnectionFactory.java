@@ -31,7 +31,7 @@ import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         }
 
         @Override
-        public StreamFrameListener onSyn(final Stream stream, SynInfo synInfo)
+        public StreamFrameListener onSyn(final Stream stream, AbstractSynInfo synInfo)
         {
             // Every time we have a SYN, it maps to a HTTP request.
             // We can have multiple concurrent SYNs on the same connection,

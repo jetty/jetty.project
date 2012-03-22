@@ -17,7 +17,7 @@
 package org.eclipse.jetty.spdy.frames;
 
 import org.eclipse.jetty.spdy.api.Headers;
-import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 
 public class SynStreamFrame extends ControlFrame
 {
@@ -57,12 +57,12 @@ public class SynStreamFrame extends ControlFrame
 
     public boolean isClose()
     {
-        return (getFlags() & SynInfo.FLAG_CLOSE) == SynInfo.FLAG_CLOSE;
+        return (getFlags() & AbstractSynInfo.FLAG_CLOSE) == AbstractSynInfo.FLAG_CLOSE;
     }
 
     public boolean isUnidirectional()
     {
-        return (getFlags() & SynInfo.FLAG_UNIDIRECTIONAL) == SynInfo.FLAG_UNIDIRECTIONAL;
+        return (getFlags() & AbstractSynInfo.FLAG_UNIDIRECTIONAL) == AbstractSynInfo.FLAG_UNIDIRECTIONAL;
     }
 
     @Override

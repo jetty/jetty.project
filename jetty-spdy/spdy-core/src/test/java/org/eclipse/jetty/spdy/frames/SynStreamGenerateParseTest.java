@@ -22,7 +22,7 @@ import org.eclipse.jetty.spdy.StandardByteBufferPool;
 import org.eclipse.jetty.spdy.StandardCompressionFactory;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
 import org.junit.Assert;
@@ -33,7 +33,7 @@ public class SynStreamGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        byte flags = SynInfo.FLAG_CLOSE;
+        byte flags = AbstractSynInfo.FLAG_CLOSE;
         int streamId = 13;
         int associatedStreamId = 11;
         byte priority = 3;
@@ -66,7 +66,7 @@ public class SynStreamGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        byte flags = SynInfo.FLAG_CLOSE;
+        byte flags = AbstractSynInfo.FLAG_CLOSE;
         int streamId = 13;
         int associatedStreamId = 11;
         byte priority = 3;

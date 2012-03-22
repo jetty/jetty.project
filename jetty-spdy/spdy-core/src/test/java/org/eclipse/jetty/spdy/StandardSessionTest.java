@@ -1,14 +1,17 @@
 package org.eclipse.jetty.spdy;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -47,28 +50,28 @@ public class StandardSessionTest
     public void testServerPush() throws InterruptedException, ExecutionException
     {
         Stream stream = createStream();
-        PushStream pushStream = createPushStream(stream);
-        assertThat("Push stream must be associated to the first stream created", pushStream.getAssociatedStream().getId(), is(stream.getId()));
-        assertThat(pushStream.getId(), greaterThan(stream.getId()));
+        Stream pushStream = createPushStream(stream).get();
+        assertThat("Push stream must be associated to the first stream created", pushStream.getParentStream().getId(), is(stream.getId()));
+        assertThat("streamIds need to be monotonic",pushStream.getId(), greaterThan(stream.getId()));
     }
 
     private Stream createStream() throws InterruptedException, ExecutionException
     {
-        SynInfo synInfo = new SynInfo(headers,false,false,0,(byte)0);
+        AbstractSynInfo synInfo = new SynInfo(headers,false,(byte)0);
         return session.syn(synInfo,streamFrameListener).get();
     }
     
-    private PushStream createPushStream(Stream stream)
+    private Future<Stream> createPushStream(Stream stream)
     {
         headers.add("url","http://some.url");
-        return (PushStream)stream.synPushStream(headers, stream.getPriority());
+        return stream.synPushStream(headers, false, stream.getPriority());
     }
     
     @Test
     public void testPushStreamIsClosedWhenAssociatedStreamIsClosed() throws InterruptedException, ExecutionException{
         
         Stream stream = createStream();
-        PushStream pushStream = createPushStream(stream);
+        Stream pushStream = createPushStream(stream).get();
         assertThat("stream is not halfClosed", stream.isHalfClosed(), is(false));
         assertThat("stream is not closed", stream.isClosed(), is(false));
         assertThat("pushStream is not halfClosed", pushStream.isHalfClosed(), is(false));
@@ -85,38 +88,6 @@ public class StandardSessionTest
         assertThat("stream is closed", stream.isClosed(), is(true));
         assertThat("pushStream is closed", pushStream.isClosed(), is(true));
         
-    }
-
-    /**
-     * is a stream is closed, it'll get removed from StandardSession. So this test is equal to testUnidirectionalStreamWithInvalidAssociatedStreamId and serves
-     * mainly for documentational purposes. However if the handling of closed streams change to NOT remove closed streams from StandardSession this test needs
-     * to be adapted for sure.
-     */
-    @Test(expected = IllegalStateException.class)
-    public void testUnidirectionalStreamWithClosedAssociatedStreamId() throws InterruptedException, ExecutionException
-    {
-        createUnidirectionalStreamWithMissingAssociatedStream();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testUnidirectionalStreamWithInvalidAssociatedStreamId() throws InterruptedException, ExecutionException
-    {
-        createUnidirectionalStreamWithMissingAssociatedStream();
-    }
-
-    private void createUnidirectionalStreamWithMissingAssociatedStream() throws InterruptedException, ExecutionException
-    {
-        headers.add("url","http://some.url");
-        SynInfo synInfo = new SynInfo(headers,false,true,0,(byte)0);
-        session.syn(synInfo,streamFrameListener).get();
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testUnidirectionalStreamWithMissingUrlHeader() throws InterruptedException, ExecutionException
-    {
-        Stream stream = createStream();
-        SynInfo synInfo = new SynInfo(headers,false,true,stream.getId(),(byte)0);
-        session.syn(synInfo,streamFrameListener);
     }
 
     // TODO: remove duplication in AsyncTimeoutTest

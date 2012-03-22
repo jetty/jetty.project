@@ -18,8 +18,11 @@ package org.eclipse.jetty.spdy.api;
 
 import java.util.EventListener;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.spdy.IStream;
 
 /**
  * <p>A {@link Session} represents the client-side endpoint of a SPDY connection to a single origin server.</p>
@@ -72,9 +75,9 @@ public interface Session
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
      * @return a future for the stream that will be created
-     * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Handler)
+     * @see #syn(AbstractSynInfo, StreamFrameListener, long, TimeUnit, Handler)
      */
-    public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
+    public Future<Stream> syn(AbstractSynInfo synInfo, StreamFrameListener listener);
     
     /**
      * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
@@ -86,9 +89,9 @@ public interface Session
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
      * @param handler  the completion handler that gets notified of stream creation
-     * @see #syn(SynInfo, StreamFrameListener)
+     * @see #syn(AbstractSynInfo, StreamFrameListener)
      */
-    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
+    public void syn(AbstractSynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
 
     
     /**
@@ -184,6 +187,9 @@ public interface Session
      */
     public List<Stream> getStreams();
 
+    //TODO: javadoc
+    public Set<IStream> getAssociatedStreams(Stream stream);
+    
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>
      */

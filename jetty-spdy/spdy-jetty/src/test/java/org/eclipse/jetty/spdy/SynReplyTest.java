@@ -37,7 +37,7 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
-import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
@@ -60,7 +60,7 @@ public class SynReplyTest extends AbstractTest
             }
 
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
             {
                 Assert.assertTrue(stream.isHalfClosed());
                 stream.reply(new ReplyInfo(new Headers(), true));
@@ -93,7 +93,7 @@ public class SynReplyTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(new Headers(), true), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new AbstractSynInfo(new Headers(), true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -123,7 +123,7 @@ public class SynReplyTest extends AbstractTest
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
             {
                 Assert.assertFalse(stream.isHalfClosed());
                 Assert.assertFalse(stream.isClosed());
@@ -167,7 +167,7 @@ public class SynReplyTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        Stream stream = session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+        Stream stream = session.syn(new AbstractSynInfo(false), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -194,7 +194,7 @@ public class SynReplyTest extends AbstractTest
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(final Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(final Stream stream, AbstractSynInfo synInfo)
             {
                 Assert.assertTrue(stream.isHalfClosed());
 
@@ -215,7 +215,7 @@ public class SynReplyTest extends AbstractTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch1 = new CountDownLatch(1);
         final CountDownLatch dataLatch2 = new CountDownLatch(1);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new AbstractSynInfo(true), new StreamFrameListener.Adapter()
         {
             private AtomicInteger dataCount = new AtomicInteger();
 
@@ -263,7 +263,7 @@ public class SynReplyTest extends AbstractTest
             @Override
             public void onConnect(Session session)
             {
-                session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
+                session.syn(new AbstractSynInfo(false), new StreamFrameListener.Adapter()
                 {
                     @Override
                     public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -294,7 +294,7 @@ public class SynReplyTest extends AbstractTest
         SessionFrameListener clientSessionFrameListener = new SessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
             {
                 Assert.assertEquals(0, stream.getId() % 2);
 
@@ -332,7 +332,7 @@ public class SynReplyTest extends AbstractTest
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
             {
                 // Do not send the reply, we expect a RST_STREAM
                 stream.data(new StringDataInfo("foo", true));
@@ -348,7 +348,7 @@ public class SynReplyTest extends AbstractTest
         };
         Session session = startClient(startServer(serverSessionFrameListener), null);
 
-        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new AbstractSynInfo(true), null).get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         RstInfo rstInfo = ref.get();
@@ -364,7 +364,7 @@ public class SynReplyTest extends AbstractTest
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
             {
                 Assert.assertTrue(stream.isHalfClosed());
 
@@ -396,8 +396,8 @@ public class SynReplyTest extends AbstractTest
                 dataLatch.countDown();
             }
         };
-        session.syn(new SynInfo(true), clientStreamFrameListener);
-        session.syn(new SynInfo(true), clientStreamFrameListener);
+        session.syn(new AbstractSynInfo(true), clientStreamFrameListener);
+        session.syn(new AbstractSynInfo(true), clientStreamFrameListener);
 
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));

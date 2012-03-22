@@ -13,7 +13,7 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
-import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
@@ -25,7 +25,7 @@ public class ResetStreamTest extends AbstractTest
     {
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()), null);
 
-        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new AbstractSynInfo(false), null).get(5, TimeUnit.SECONDS);
         session.rst(new RstInfo(stream.getId(), StreamStatus.CANCEL_STREAM)).get(5, TimeUnit.SECONDS);
 
         Assert.assertEquals(0, session.getStreams().size());
@@ -40,7 +40,7 @@ public class ResetStreamTest extends AbstractTest
         Session clientSession = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
             {
                 Session serverSession = stream.getSession();
                 serverSessionRef.set(serverSession);
@@ -57,7 +57,7 @@ public class ResetStreamTest extends AbstractTest
             }
         });
 
-        clientSession.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
+        clientSession.syn(new AbstractSynInfo(false), null).get(5, TimeUnit.SECONDS);
 
         Assert.assertTrue(synLatch.await(5, TimeUnit.SECONDS));
         Session serverSession = serverSessionRef.get();
@@ -76,7 +76,7 @@ public class ResetStreamTest extends AbstractTest
         Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
             {
                 try
                 {
@@ -107,7 +107,7 @@ public class ResetStreamTest extends AbstractTest
             }
         });
 
-        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new AbstractSynInfo(false), null).get(5, TimeUnit.SECONDS);
         stream.data(new StringDataInfo("data", true), 5, TimeUnit.SECONDS, new Handler.Adapter<Void>()
         {
             @Override

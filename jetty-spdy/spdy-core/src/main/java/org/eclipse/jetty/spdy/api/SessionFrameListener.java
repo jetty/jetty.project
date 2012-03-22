@@ -74,7 +74,7 @@ public interface SessionFrameListener extends EventListener
      * @param synInfo the metadata sent on stream creation
      * @return a listener for stream events, or null if there is no interest in being notified of stream events
      */
-    public StreamFrameListener onSyn(Stream stream, SynInfo synInfo);
+    public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo);
 
     /**
      * <p>Callback invoked when a stream error happens.</p>
@@ -125,7 +125,7 @@ public interface SessionFrameListener extends EventListener
         private static final Logger logger = LoggerFactory.getLogger(Adapter.class);
 
         @Override
-        public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+        public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
         {
             return null;
         }

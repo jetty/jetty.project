@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 
@@ -54,7 +54,7 @@ public interface IStream extends Stream
 
     /**
      * @param listener the stream frame listener associated to this stream
-     * as returned by {@link SessionFrameListener#onSyn(Stream, SynInfo)}
+     * as returned by {@link SessionFrameListener#onSyn(Stream, AbstractSynInfo)}
      */
     public void setStreamFrameListener(StreamFrameListener listener);
 
