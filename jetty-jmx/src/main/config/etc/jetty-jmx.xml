@@ -69,7 +69,7 @@
   -->
   <!--
   <Call name="createRegistry" class="java.rmi.registry.LocateRegistry">
-    <Arg type="java.lang.Integer">1099</Arg>
+    <Arg type="java.lang.Integer"><SystemProperty name="jetty.jmxrmiport" default="1099"/></Arg>
     <Call name="sleep" class="java.lang.Thread">
        <Arg type="java.lang.Integer">1000</Arg>
     </Call>
@@ -91,8 +91,8 @@
       <New class="javax.management.remote.JMXServiceURL">
         <Arg type="java.lang.String">rmi</Arg>
         <Arg type="java.lang.String" />
-        <Arg type="java.lang.Integer">0</Arg>
-        <Arg type="java.lang.String">/jndi/rmi://localhost:1099/jettyjmx</Arg>
+        <Arg type="java.lang.Integer"><SystemProperty name="jetty.jmxrmiport" default="1099"/></Arg>
+        <Arg type="java.lang.String">/jndi/rmi://localhost:<SystemProperty name="jetty.jmxrmiport" default="1099"/>/jettyjmx</Arg>
       </New>
     </Arg>
     <Arg>org.eclipse.jetty:name=rmiconnectorserver</Arg>
