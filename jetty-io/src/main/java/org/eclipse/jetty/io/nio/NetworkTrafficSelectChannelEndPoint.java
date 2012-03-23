@@ -53,14 +53,20 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     @Override
-    public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
+    public int gather(ByteBuffer... buffers) throws IOException
     {
-        int headerPosition = header.position();
-        int headerLength = header.remaining();
-        int bufferPosition = buffer.position();
-        int written = super.flush(header, buffer);
-        notifyOutgoing(header, headerPosition, written > headerLength ? headerLength : written);
-        notifyOutgoing(buffer, bufferPosition, written > headerLength ? written - headerLength : 0);
+        int written=0;
+        for (ByteBuffer b : buffers)
+        {
+            if (b.hasRemaining())
+            {
+                int l = flush(b);
+                if (l==0)
+                    break;
+                else
+                    written+=l;
+            }
+        }
         return written;
     }
 

@@ -126,7 +126,7 @@ public class Request implements HttpServletRequest
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
-    private ServerConnection _connection;
+    private HttpChannel _connection;
     private HttpFields _fields;
     private final AsyncContinuation _async = new AsyncContinuation();
     
@@ -176,7 +176,7 @@ public class Request implements HttpServletRequest
     
     
     /* ------------------------------------------------------------ */
-    public Request(ServerConnection connection)
+    public Request(HttpChannel connection)
     {
         _connection = connection;
         _fields=_connection.getRequestFields();
@@ -400,7 +400,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the connection.
      */
-    public ServerConnection getConnection()
+    public HttpChannel getConnection()
     {
         return _connection;
     }

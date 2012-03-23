@@ -137,7 +137,13 @@ public class HttpGenerator
     {
         return _state == state;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    public boolean isIdle()
+    {
+        return _state == State.START;
+    }
+    
     /* ------------------------------------------------------------ */
     public boolean isComplete()
     {

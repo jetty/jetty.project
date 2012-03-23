@@ -68,7 +68,7 @@ public class Response implements HttpServletResponse
      */
     public final static String HTTP_ONLY_COMMENT="__HTTP_ONLY__";
     
-    private final ServerConnection _connection;
+    private final HttpChannel _connection;
     private final HttpFields _fields;
     private int _status=SC_OK;
     private String _reason;
@@ -80,53 +80,13 @@ public class Response implements HttpServletResponse
     private PrintWriter _writer;
     private long _contentLength;
 
-
-    private final HttpGenerator.ResponseInfo _info = new HttpGenerator.ResponseInfo()
-    {
-        @Override
-        public HttpVersion getHttpVersion()
-        {
-            return _connection.getRequest().getHttpVersion();
-        }
-        
-        @Override
-        public HttpFields getHttpFields()
-        {
-            return _fields;
-        }
-        
-        @Override
-        public long getContentLength()
-        {
-            return _contentLength;
-        }
-        
-        @Override
-        public boolean isHead()
-        {
-            return _connection.getRequest().isHead();
-        }
-        
-        @Override
-        public int getStatus()
-        {
-            return _status;
-        }
-        
-        @Override
-        public String getReason()
-        {
-            return _reason;
-        }
-    };
-    
     
     
     /* ------------------------------------------------------------ */
     /**
      *
      */
-    public Response(ServerConnection connection)
+    public Response(HttpChannel connection)
     {
         _connection=connection;
         _fields=connection.getResponseFields();
@@ -805,6 +765,12 @@ public class Response implements HttpServletResponse
     }
 
     /* ------------------------------------------------------------ */
+    public long getLongContentLength()
+    {
+        return _contentLength;
+    }
+
+    /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#setContentLength(int)
      */
@@ -1100,5 +1066,4 @@ public class Response implements HttpServletResponse
         }
 
     }
-
 }

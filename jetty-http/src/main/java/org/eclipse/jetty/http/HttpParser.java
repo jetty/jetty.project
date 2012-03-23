@@ -134,6 +134,12 @@ public class HttpParser
     {
         return _state.ordinal() < State.END.ordinal();
     }
+    
+    /* ------------------------------------------------------------------------------- */
+    public boolean isInContent()
+    {
+        return _content!=Content.NO_CONTENT && _content!=Content.UNKNOWN_CONTENT;
+    }
 
     /* ------------------------------------------------------------------------------- */
     public boolean isChunking()
@@ -200,7 +206,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     /**
      * Parse until next Event.
-     * @return an indication of progress
+     * @return True if an {@link RequestHandler} method was called and it returned true;
      */
     public boolean parseNext(ByteBuffer buffer) throws IOException
     {
@@ -979,7 +985,6 @@ public class HttpParser
         public abstract boolean startResponse(String version, int status, String reason)
                 throws IOException;
     }
-
 
 
 }

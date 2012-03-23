@@ -245,23 +245,27 @@ public class ChannelEndPoint implements EndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
-    public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
+    public int gather(ByteBuffer... buffers) throws IOException
     {
-        int len;
-        if (buffer==null||buffer.remaining()==0)
-            len=flush(header);
-        else if (header==null||header.remaining()==0)
-            len=flush(buffer);
-        else if (_channel instanceof GatheringByteChannel)
-            len= (int)((GatheringByteChannel)_channel).write(new ByteBuffer[]{header,buffer},0,2);
+        int len=0;
+        if (_channel instanceof GatheringByteChannel)
+        {
+            len= (int)((GatheringByteChannel)_channel).write(buffers,0,2);
+        }
         else
         {
-            len=flush(header);
-
-            if (header.remaining()==0)
-                len+=flush(buffer);
+            for (ByteBuffer b : buffers)
+            {
+                if (b.hasRemaining())
+                {
+                    int l=_channel.write(b);
+                    if (l>0)
+                        len+=l;
+                    else
+                        break;
+                }
+            }
         }
-
         return len;
     }
 

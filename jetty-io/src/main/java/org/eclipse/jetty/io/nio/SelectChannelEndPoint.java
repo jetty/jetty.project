@@ -314,17 +314,22 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     /* ------------------------------------------------------------ */
     @Override
-    public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
+    public int gather(ByteBuffer... buffers) throws IOException
     {
-        int l = super.flush(header, buffer);
+        int l = super.gather(buffers);
 
-        // If there was something to write and it wasn't written, then we are not writable.
-        if (l==0 && ( header!=null && header.remaining()>0 || buffer!=null && buffer.remaining()>0))
+        if (l==0)
         {
-            synchronized (this)
+            for (ByteBuffer b: buffers)
             {
-                if (_dispatched)
-                    _writable=false;
+                if (b.hasRemaining())
+                {
+                    synchronized (this)
+                    {
+                        if (_dispatched)
+                            _writable=false;
+                    }
+                }
             }
         }
         else if (l>0)
@@ -495,7 +500,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             int current_ops=-1;
             if (getChannel().isOpen())
             {
-                boolean read_interest = _readBlocked || (!_dispatched && !_connection.isSuspended());
+                boolean read_interest = _readBlocked || (!_dispatched && _connection.isReadInterested());
                 boolean write_interest= _writeBlocked || (!_dispatched && !_writable);
 
                 _interestOps =

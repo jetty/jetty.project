@@ -45,7 +45,7 @@ public interface Connection
 
     boolean isIdle();
     
-    boolean isSuspended();
+    boolean isReadInterested();
     
     /**
      * Called when the connection is closed

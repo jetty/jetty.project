@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpOutput extends ServletOutputStream 
 {
-    private final ServerConnection _connection;
+    private final HttpChannel _connection;
     private boolean _closed;
     
     // These are held here for reuse by Writer
@@ -54,7 +54,7 @@ public class HttpOutput extends ServletOutputStream
     ByteArrayOutputStream2 _bytes;
 
     /* ------------------------------------------------------------ */
-    public HttpOutput(ServerConnection connection)
+    public HttpOutput(HttpChannel connection)
     {
         _connection=connection;
     }

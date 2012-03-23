@@ -15,6 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.GatheringByteChannel;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -215,23 +216,24 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
-    public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
+    public int gather(ByteBuffer... buffers) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
 
-        int flushed=0;
-
-        if (header!=null && header.remaining()>0)
-            flushed=flush(header);
-
-        if (header==null || header.remaining()==0)
+        int len=0;
+        for (ByteBuffer b : buffers)
         {
-            if (buffer!=null && buffer.remaining()>0)
-                flushed+=flush(buffer);
+            if (b.hasRemaining())
+            {
+                int l=flush(b);
+                if (l>0)
+                    len+=l;
+                else
+                    break;
+            }
         }
-
-        return flushed;
+        return len;
     }
 
     /* ------------------------------------------------------------ */

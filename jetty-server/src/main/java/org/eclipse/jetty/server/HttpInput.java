@@ -24,11 +24,11 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class HttpInput extends ServletInputStream
 {
-    protected final ServerConnection _connection;
+    protected final HttpChannel _connection;
     private ByteBuffer _content;
     
     /* ------------------------------------------------------------ */
-    public HttpInput(ServerConnection connection)
+    public HttpInput(HttpChannel connection)
     {
         _connection=connection;
     }

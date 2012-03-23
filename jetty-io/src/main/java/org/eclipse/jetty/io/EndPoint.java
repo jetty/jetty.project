@@ -72,11 +72,10 @@ public interface EndPoint
      * are taken from the header/buffer position up until the buffer limit.  The header/buffers position 
      * is updated to indicate how many bytes have been consumed.  
      * 
-     * @param buffer The buffer to flush. This buffers position is updated if it is not read only.
      * @return  the number of bytes written
      * @throws EofException If the endpoint is closed or output is shutdown.
      */
-    int flush(ByteBuffer header, ByteBuffer buffer) throws IOException;
+    int gather(ByteBuffer... buffer) throws IOException;
 
 
     /* ------------------------------------------------------------ */

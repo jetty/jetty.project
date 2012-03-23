@@ -229,18 +229,19 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
-        return false;
+        return _connection.isIdle();
     }
 
     /* ------------------------------------------------------------ */
-    public boolean isSuspended()
+    public boolean isReadInterested()
     {
-        return false;
+        return _connection.isReadInterested();
     }
 
     /* ------------------------------------------------------------ */
     public void onClose()
     {
+        _connection.onClose();
     }
 
     /* ------------------------------------------------------------ */
@@ -622,13 +623,21 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             return size-buffer.remaining();
         }
 
-        public int flush(ByteBuffer header, ByteBuffer buffer) throws IOException
+        public int gather(ByteBuffer... buffers) throws IOException
         {
-            if (BufferUtil.hasContent(header))
-                return flush(header);
-            if (BufferUtil.hasContent(buffer))
-                return flush(buffer);
-            return 0;
+            int len=0;
+            for (ByteBuffer b : buffers)
+            {
+                if (b.hasRemaining())
+                {
+                    int l=flush(b);
+                    if (l>0)
+                        len+=l;
+                    else
+                        break;
+                }
+            }
+            return len;
         }
 
         public boolean blockReadable(long millisecs) throws IOException

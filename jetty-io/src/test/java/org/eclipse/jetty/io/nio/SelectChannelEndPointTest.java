@@ -157,9 +157,10 @@ public class SelectChannelEndPointTest
             return false;
         }
 
-        public boolean isSuspended()
+        @Override
+        public boolean isReadInterested()
         {
-            return false;
+            return true;
         }
 
         public void onClose()

@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpParser.RequestHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -62,11 +63,11 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 /**
  *
  */
-public abstract class ServerConnection
+public class HttpChannel
 {
-    private static final Logger LOG = Log.getLogger(ServerConnection.class);
+    private static final Logger LOG = Log.getLogger(HttpChannel.class);
 
-    private static final ThreadLocal<ServerConnection> __currentConnection = new ThreadLocal<ServerConnection>();
+    private static final ThreadLocal<HttpChannel> __currentConnection = new ThreadLocal<HttpChannel>();
 
     private int _requests;
 
@@ -86,8 +87,6 @@ public abstract class ServerConnection
 
     int _include;
 
-    private Object _associatedObject; // associated object
-
     private HttpVersion _version = HttpVersion.HTTP_1_1;
 
     private boolean _expect = false;
@@ -96,13 +95,13 @@ public abstract class ServerConnection
     private boolean _host = false;
 
     /* ------------------------------------------------------------ */
-    public static ServerConnection getCurrentConnection()
+    public static HttpChannel getCurrentConnection()
     {
         return __currentConnection.get();
     }
 
     /* ------------------------------------------------------------ */
-    protected static void setCurrentConnection(ServerConnection connection)
+    protected static void setCurrentConnection(HttpChannel connection)
     {
         __currentConnection.set(connection);
     }
@@ -111,7 +110,7 @@ public abstract class ServerConnection
     /** Constructor
      *
      */
-    public ServerConnection(Server server)
+    public HttpChannel(Server server)
     {
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
@@ -136,23 +135,11 @@ public abstract class ServerConnection
     {
         return _server;
     }
-
+    
     /* ------------------------------------------------------------ */
-    /**
-     * @return Returns the associatedObject.
-     */
-    public Object getAssociatedObject()
+    public AsyncContinuation getAsyncContinuation()
     {
-        return _associatedObject;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param associatedObject The associatedObject to set.
-     */
-    public void setAssociatedObject(Object associatedObject)
-    {
-        _associatedObject = associatedObject;
+        return _async;
     }
 
     /* ------------------------------------------------------------ */
@@ -219,7 +206,7 @@ public abstract class ServerConnection
         }
 
         if (_in == null)
-            _in = new HttpInput(ServerConnection.this);
+            _in = new HttpInput(HttpChannel.this);
         return _in;
     }
 
@@ -382,7 +369,6 @@ public abstract class ServerConnection
 
             if (_async.isUncompleted())
             {
-                
                 _async.doComplete(async_exception);
 
                 if (_expect100Continue)
@@ -397,16 +383,16 @@ public abstract class ServerConnection
                         setPersistent(false);
                 }
 
-                    if (error)
-                        setPersistent(false);
-                    else if (!_response.isCommitted() && !_request.isHandled())
-                        _response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                if (error)
+                    setPersistent(false);
+                else if (!_response.isCommitted() && !_request.isHandled())
+                    _response.sendError(HttpServletResponse.SC_NOT_FOUND);
 
-                    _response.complete();
-                    if (isPersistent())
-                        persist();
+                _response.complete();
+                if (isPersistent())
+                    persist();
 
-                    _request.setHandled(true);
+                _request.setHandled(true);
             }
         }
     }
@@ -661,7 +647,7 @@ public abstract class ServerConnection
     {
         Output()
         {
-            super(ServerConnection.this);
+            super(HttpChannel.this);
         }
 
         /* ------------------------------------------------------------ */
@@ -743,7 +729,7 @@ public abstract class ServerConnection
     {
         OutputWriter()
         {
-            super(ServerConnection.this._out);
+            super(HttpChannel.this._out);
         }
     }
     
@@ -920,4 +906,55 @@ public abstract class ServerConnection
         return false;
     }
 
+    
+    public HttpParser.RequestHandler getRequestHandler()
+    {
+        return _handler;
+    }
+
+    public HttpGenerator.ResponseInfo getResponseInfo()
+    {
+        return _info;
+    }
+    
+    private final RequestHandler _handler = new RequestHandler();
+    private final HttpGenerator.ResponseInfo _info = new HttpGenerator.ResponseInfo()
+    {
+        @Override
+        public HttpVersion getHttpVersion()
+        {
+            return getRequest().getHttpVersion();
+        }
+        
+        @Override
+        public HttpFields getHttpFields()
+        {
+            return _responseFields;
+        }
+        
+        @Override
+        public long getContentLength()
+        {
+            return _response.getLongContentLength();
+        }
+        
+        @Override
+        public boolean isHead()
+        {
+            return getRequest().isHead();
+        }
+        
+        @Override
+        public int getStatus()
+        {
+            return _response.getStatus();
+        }
+        
+        @Override
+        public String getReason()
+        {
+            return _response.getReason();
+        }
+    };
+    
 }
