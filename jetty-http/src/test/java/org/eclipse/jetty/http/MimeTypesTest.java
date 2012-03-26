@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Assert;
 import org.junit.Test;
 
 public class MimeTypesTest

@@ -21,8 +21,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
@@ -33,7 +31,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 /**
  * An Endpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPoint, ConnectedEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPoint
 {
     public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
 
@@ -47,14 +45,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     /** The desired value for {@link SelectionKey#interestOps()} */
     private int _interestOps;
-
-    /**
-     * The connection instance is the handler for any IO activity on the endpoint.
-     * There is a different type of connection for HTTP, AJP, WebSocket and
-     * ProxyConnect.   The connection may change for an SCEP as it is upgraded
-     * from HTTP to proxy connect or websocket.
-     */
-    private volatile AsyncConnection _connection;
 
     /** true if a thread has been dispatched to handle this endpoint */
     private boolean _dispatched = false;
@@ -79,6 +69,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     private boolean _ishut;
 
+    private volatile AsyncConnection _connection;
+    
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
         throws IOException
@@ -110,19 +102,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         return _manager;
     }
 
-    /* ------------------------------------------------------------ */
-    public Connection getConnection()
-    {
-        return _connection;
-    }
 
     /* ------------------------------------------------------------ */
-    public void setConnection(Connection connection)
+    public void setAsyncConnection(AsyncConnection connection)
     {
-        Connection old=_connection;
-        _connection=(AsyncConnection)connection;
-        if (old!=null && old!=_connection)
-            _manager.endPointUpgraded(this,old);
+        AsyncConnection old=getAsyncConnection();
+        _connection=connection;
+        if (old!=null && old!=connection)
+            _manager.endPointUpgraded(this,(AsyncConnection)old);
     }
 
     /* ------------------------------------------------------------ */
@@ -299,7 +286,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /* ------------------------------------------------------------ */
     public void onIdleExpired(long idleForMs)
     {
-        _connection.onIdleExpired(idleForMs);
+        getAsyncConnection().onIdleExpired(idleForMs);
     }
 
     /* ------------------------------------------------------------ */
@@ -481,12 +468,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     }
 
     /* ------------------------------------------------------------ */
-    public boolean hasProgressed()
-    {
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
     /**
      * Updates selection key. Adds operations types to the selection key as needed. No operations
      * are removed as this is only done during dispatch. This method records the new key and
@@ -500,7 +481,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             int current_ops=-1;
             if (getChannel().isOpen())
             {
-                boolean read_interest = _readBlocked || (!_dispatched && _connection.isReadInterested());
+                boolean read_interest = _readBlocked || (!_dispatched && getAsyncConnection().isReadInterested());
                 boolean write_interest= _writeBlocked || (!_dispatched && !_writable);
 
                 _interestOps =
@@ -611,12 +592,12 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 {
                     while(true)
                     {
-                        final AsyncConnection next = (AsyncConnection)_connection.handle();
-                        if (next!=_connection)
+                        final AsyncConnection next = (AsyncConnection)getAsyncConnection().handle();
+                        if (next!=getAsyncConnection())
                         {
-                            LOG.debug("{} replaced {}",next,_connection);
-                            Connection old=_connection;
-                            _connection=next;
+                            LOG.debug("{} replaced {}",next,getAsyncConnection());
+                            AsyncConnection old=getAsyncConnection();
+                            setAsyncConnection(next);
                             _manager.endPointUpgraded(this,old);
                             continue;
                         }
@@ -652,7 +633,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                         _ishut=true;
                         try
                         {
-                            _connection.onInputShutdown();
+                            getAsyncConnection().onInputShutdown();
                         }
                         catch(Throwable x)
                         {
@@ -744,7 +725,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 _writable,
                 _interestOps,
                 keyString,
-                _connection);
+                getAsyncConnection());
     }
 
     /* ------------------------------------------------------------ */
@@ -762,6 +743,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     public void setMaxIdleTime(int timeMs) throws IOException
     {
         _maxIdleTime=timeMs;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public AsyncConnection getAsyncConnection()
+    {
+        return _connection;
     }
 
 }

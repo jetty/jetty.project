@@ -14,23 +14,11 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.nio.channels.CompletionHandler;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ServletOutputStream;
 
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpGenerator.Action;
-
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
 /** Output.

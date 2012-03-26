@@ -35,15 +35,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSessionContext;
 
-import org.eclipse.jetty.http.Generator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.Parser;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.AbstractSession;
@@ -513,7 +508,7 @@ public class ResponseTest
         endPoint.setGrowOutput(true);
         AbstractHttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
         connection.getGenerator().reset();
-        AbstractHttpConnection.setCurrentConnection(connection);
+        AbstractHttpConnection.setCurrentHttpChannel(connection);
         Response response = connection.getResponse();
         connection.getRequest().setRequestURI("/test");
         return response;
@@ -627,7 +622,7 @@ public class ResponseTest
         }
 
         @Override
-        public Connection handle() throws IOException
+        public AsyncConnection handle() throws IOException
         {
             return this;
         }

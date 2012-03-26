@@ -18,7 +18,6 @@ import static org.junit.Assert.assertEquals;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
 
 /**

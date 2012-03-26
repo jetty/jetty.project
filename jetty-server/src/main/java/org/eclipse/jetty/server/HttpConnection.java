@@ -14,64 +14,35 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InterruptedIOException;
-import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.continuation.ContinuationThrowable;
-import org.eclipse.jetty.http.HttpBuffers;
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.HttpGenerator.Action;
-import org.eclipse.jetty.io.AbstractConnection;
-
+import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.server.nio.NIOConnector;
-import org.eclipse.jetty.server.ssl.SslConnector;
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
 
 /**
  */
-public abstract class HttpConnection extends AbstractConnection
+public abstract class HttpConnection extends AbstractAsyncConnection
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
 
-    private final AsyncEndPoint _asyncEndp;
     private final Server _server;
     private final Connector _connector;
     private final HttpParser _parser;
@@ -100,12 +71,11 @@ public abstract class HttpConnection extends AbstractConnection
     /** Constructor
      *
      */
-    public HttpConnection(Connector connector, EndPoint endpoint, Server server)
+    public HttpConnection(Connector connector, AsyncEndPoint endpoint, Server server)
     {
         super(endpoint);
         _connector = connector;
         _server = server;
-        _asyncEndp=(AsyncEndPoint)endpoint;
         
         _channel = new HttpChannel(server);
        
@@ -137,6 +107,15 @@ public abstract class HttpConnection extends AbstractConnection
     public Connector getConnector()
     {
         return _connector;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the HttpChannel.
+     */
+    public HttpChannel getHttpChannel()
+    {
+        return _channel;
     }
 
     /* ------------------------------------------------------------ */
@@ -200,9 +179,9 @@ public abstract class HttpConnection extends AbstractConnection
 
     /* ------------------------------------------------------------ */
     @Override
-    public Connection handle() throws IOException
+    public AsyncConnection handle() throws IOException
     {
-        Connection connection = this;
+        AsyncConnection connection = this;
         boolean progress=true;
 
         try
@@ -210,7 +189,7 @@ public abstract class HttpConnection extends AbstractConnection
             setCurrentConnection(this);
 
             // don't check for idle while dispatched (unless blocking IO is done).
-            _asyncEndp.setCheckForIdle(false);
+            getAsyncEndPoint().setCheckForIdle(false);
 
 
             // While progress and the connection has not changed
@@ -254,7 +233,7 @@ public abstract class HttpConnection extends AbstractConnection
                         // look for a switched connection instance?
                         if (_channel.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            Connection switched=(Connection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
+                            AsyncConnection switched=(AsyncConnection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
                                 connection=switched;
                         }
@@ -281,7 +260,7 @@ public abstract class HttpConnection extends AbstractConnection
             if (!_channel.getRequest().getAsyncContinuation().isAsyncStarted())
             {
                 // reenable idle checking unless request is suspended
-                _asyncEndp.setCheckForIdle(true);
+                getAsyncEndPoint().setCheckForIdle(true);
             }
         }
         return connection;
@@ -289,101 +268,75 @@ public abstract class HttpConnection extends AbstractConnection
 
     
     /* ------------------------------------------------------------ */
-    private void write(ByteBuffer content, Action action) throws IOException
+    private void generate(ByteBuffer content, Action action) throws IOException
     {
         if (!_generator.isComplete())
             throw new EofException();
 
-        try
+        while(BufferUtil.hasContent(content))
         {
-            while(BufferUtil.hasContent(content))
-            {
-                /* System.err.printf("generate(%s,%s,%s,%s,%s)@%s%n",
-                    BufferUtil.toSummaryString(header),
-                    BufferUtil.toSummaryString(chunk),
-                    BufferUtil.toSummaryString(buffer),
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}: generate({},{},{},{},{})@{}",
+                    this,
+                    BufferUtil.toSummaryString(_responseHeader),
+                    BufferUtil.toSummaryString(_chunk),
+                    BufferUtil.toSummaryString(_responseBuffer),
                     BufferUtil.toSummaryString(content),
-                    action,gen.getState());*/
-                HttpGenerator.Result result=_generator.generate(_responseHeader,_chunk,_responseBuffer,content,action);
-                /*System.err.printf("%s (%s,%s,%s,%s,%s)@%s%n",
+                    action,_generator.getState());
+            
+            HttpGenerator.Result result=_generator.generate(_responseHeader,_chunk,_responseBuffer,content,action);
+            
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}: {} ({},{},{},{},{})@{}",
+                    this,
                     result,
-                    BufferUtil.toSummaryString(header),
-                    BufferUtil.toSummaryString(chunk),
-                    BufferUtil.toSummaryString(buffer),
+                    BufferUtil.toSummaryString(_responseHeader),
+                    BufferUtil.toSummaryString(_chunk),
+                    BufferUtil.toSummaryString(_responseBuffer),
                     BufferUtil.toSummaryString(content),
-                    action,gen.getState());*/
+                    action,_generator.getState());
 
-                switch(result)
-                {
-                    case NEED_HEADER:
-                        _responseHeader=_connector.getResponseBuffers().getHeader();
-                        break;
+            switch(result)
+            {
+                case NEED_HEADER:
+                    _responseHeader=_connector.getResponseBuffers().getHeader();
+                    break;
 
-                    case NEED_BUFFER:
-                        _responseBuffer=_connector.getResponseBuffers().getBuffer();
-                        _responseBuffer=BufferUtil.allocate(8192);
-                        break;
+                case NEED_BUFFER:
+                    _responseBuffer=_connector.getResponseBuffers().getBuffer();
+                    _responseBuffer=BufferUtil.allocate(8192);
+                    break;
 
-                    case NEED_CHUNK:
-                        _responseHeader=null;
-                        _chunk=_connector.getResponseBuffers().getBuffer(HttpGenerator.CHUNK_SIZE);
-                        break;
+                case NEED_CHUNK:
+                    _responseHeader=null;
+                    _chunk=_connector.getResponseBuffers().getBuffer(HttpGenerator.CHUNK_SIZE);
+                    break;
 
-                    case FLUSH:
-                    {
-                        Future<Integer> future = getEndPoint().flush(_responseHeader,_chunk,_responseBuffer);
-                        future.get(getMaxIdleTime(),TimeUnit.MILLISECONDS);
-                        break;
-                    }
-                    case FLUSH_CONTENT:
-                    {
-                        Future<Integer> future = getEndPoint().flush(_responseHeader,_chunk,content);
-                        future.get(getMaxIdleTime(),TimeUnit.MILLISECONDS);
-                        break;
-                    }
-                    case OK:
-                        break;
-                    case SHUTDOWN_OUT:
-                        getEndPoint().shutdownOutput();
-                        break;
-                }
+                case FLUSH:
+                    getAsyncEndPoint().gather(_responseHeader,_chunk,_responseBuffer);
+                    // TODO handle incomplete flush
+                    break;
                 
-                switch(action)
-                {
-                    case COMPLETE: action=Action.PREPARE; break;
-                    case FLUSH: action=Action.FLUSH; break;
-                    case PREPARE: action=Action.PREPARE; break;
-                }
+                case FLUSH_CONTENT:
+                    getAsyncEndPoint().gather(_responseHeader,_chunk,content);
+                    // TODO handle incomplete flush
+                    break;
+                
+                case SHUTDOWN_OUT:
+                    getAsyncEndPoint().shutdownOutput();
+                    break;
+                case OK:
+                    break;
+            }
+
+            switch(action)
+            {
+                case COMPLETE: action=Action.PREPARE; break;
+                case FLUSH: action=Action.FLUSH; break;
+                case PREPARE: action=Action.PREPARE; break;
             }
         }
 
-        catch(final TimeoutException e)
-        {
-            throw new InterruptedIOException(e.toString())
-            {
-                {
-                    this.initCause(e);
-                }
-            };
-        }
-        catch (final InterruptedException e)
-        {
-            throw new InterruptedIOException(e.toString())
-            {
-                {
-                    this.initCause(e);
-                }
-            };
-        }
-        catch (final ExecutionException e)
-        {
-            throw new IOException(e.toString())
-            {
-                {
-                    this.initCause(e);
-                }
-            };
-        }
     }
 
 

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 
@@ -76,71 +77,31 @@ public interface EndPoint
      * @throws EofException If the endpoint is closed or output is shutdown.
      */
     int gather(ByteBuffer... buffer) throws IOException;
-
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
+     * if this <code>EndPoint</code> does not represent a network connection.
+     */
+    InetSocketAddress getLocalAddress();
 
     /* ------------------------------------------------------------ */
     /**
-     * @return The local IP address to which this <code>EndPoint</code> is bound, or <code>null</code>
+     * @return The remote Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
      * if this <code>EndPoint</code> does not represent a network connection.
      */
-    public String getLocalAddr();
+    InetSocketAddress getRemoteAddress();
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return The local host name to which this <code>EndPoint</code> is bound, or <code>null</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
-     */
-    public String getLocalHost();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The local port number on which this <code>EndPoint</code> is listening, or <code>0</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
-     */
-    public int getLocalPort();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The remote IP address to which this <code>EndPoint</code> is connected, or <code>null</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
-     */
-    public String getRemoteAddr();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The host name of the remote machine to which this <code>EndPoint</code> is connected, or <code>null</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
-     */
-    public String getRemoteHost();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The remote port number to which this <code>EndPoint</code> is connected, or <code>0</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
-     */
-    public int getRemotePort();
-
-    /* ------------------------------------------------------------ */
-    public boolean blockReadable(long millisecs) throws IOException;
-
-    /* ------------------------------------------------------------ */
-    public boolean blockWritable(long millisecs) throws IOException;
-
-    /* ------------------------------------------------------------ */
-    public boolean isOpen();
+    boolean isOpen();
 
     /* ------------------------------------------------------------ */
     /**
      * @return The underlying transport object (socket, channel, etc.)
      */
-    public Object getTransport();
+    Object getTransport();
 
-    /* ------------------------------------------------------------ */
-    /** Flush any buffered output.
-     * May fail to write all data if endpoint is non-blocking
-     * @throws EofException If the endpoint is closed or output is shutdown.
-     */
-    public void flush() throws IOException;
 
     /* ------------------------------------------------------------ */
     /** Get the max idle time in ms.
@@ -151,15 +112,12 @@ public interface EndPoint
      * to implement the max idle time.
      * @return the max idle time in ms or if ms <= 0 implies an infinite timeout
      */
-    public int getMaxIdleTime();
+    int getMaxIdleTime();
 
     /* ------------------------------------------------------------ */
     /** Set the max idle time.
      * @param timeMs the max idle time in MS. Timeout <= 0 implies an infinite timeout
      * @throws IOException if the timeout cannot be set.
      */
-    public void setMaxIdleTime(int timeMs) throws IOException;
-
-
-
+    void setMaxIdleTime(int timeMs) throws IOException;
 }

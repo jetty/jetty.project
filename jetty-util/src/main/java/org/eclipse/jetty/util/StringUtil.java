@@ -14,10 +14,8 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

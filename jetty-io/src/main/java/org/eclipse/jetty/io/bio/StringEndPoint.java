@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.io.bio;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 

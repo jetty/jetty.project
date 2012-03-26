@@ -2,6 +2,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -18,15 +19,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
-
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.AsyncConnection;
-
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -233,7 +228,7 @@ public class ConnectHandler extends HandlerWrapper
         // 1. when this unread data is written and the server replies before the clientToProxy
         // connection is installed (it is only installed after returning from this method)
         // 2. when the client sends data before this unread data has been written.
-        AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentConnection();
+        AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentHttpChannel();
         ByteBuffer headerBuffer = ((HttpParser)httpConnection.getParser()).getHeaderBuffer();
         ByteBuffer bodyBuffer = ((HttpParser)httpConnection.getParser()).getBodyBuffer();
         int length = headerBuffer == null ? 0 : headerBuffer.length();
@@ -273,7 +268,7 @@ public class ConnectHandler extends HandlerWrapper
 
     private ClientToProxyConnection prepareConnections(ConcurrentMap<String, Object> context, SocketChannel channel, ByteBuffer buffer)
     {
-        AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentConnection();
+        AbstractHttpConnection httpConnection = AbstractHttpConnection.getCurrentHttpChannel();
         ProxyToServerConnection proxyToServer = newProxyToServerConnection(context, buffer);
         ClientToProxyConnection clientToProxy = newClientToProxyConnection(context, channel, httpConnection.getEndPoint(), httpConnection.getTimeStamp());
         clientToProxy.setConnection(proxyToServer);
@@ -354,7 +349,7 @@ public class ConnectHandler extends HandlerWrapper
     {
     }
 
-    private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, Connection connection) throws IOException
+    private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, AsyncConnection connection) throws IOException
     {
         // Set the new connection as request attribute and change the status to 101
         // so that Jetty understands that it has to upgrade the connection
@@ -459,7 +454,7 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
+        protected void endPointUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
         {
         }
     }
@@ -491,7 +486,7 @@ public class ConnectHandler extends HandlerWrapper
             return builder.append(")").toString();
         }
 
-        public Connection handle() throws IOException
+        public AsyncConnection handle() throws IOException
         {
             _logger.debug("{}: begin reading from server", this);
             try
@@ -708,7 +703,7 @@ public class ConnectHandler extends HandlerWrapper
             return builder.append(")").toString();
         }
 
-        public Connection handle() throws IOException
+        public AsyncConnection handle() throws IOException
         {
             _logger.debug("{}: begin reading from client", this);
             try

@@ -14,17 +14,18 @@
 package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
-import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -40,7 +41,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * it's source/sink of encrypted data.   It then provides {@link #getSslEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  */
-public class SslConnection extends AbstractConnection implements AsyncConnection
+public class SslConnection extends AbstractAsyncConnection
 {
     private final Logger _logger = Log.getLogger("org.eclipse.jetty.io.nio.ssl");
 
@@ -102,6 +103,12 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         return new SslEndPoint();
     }
 
+    /* ------------------------------------------------------------ */
+    public AsyncEndPoint getAsyncEndPoint()
+    {
+        return _aEndp;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return True if SSL re-negotiation is allowed (default false)
@@ -175,7 +182,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public Connection handle() throws IOException
+    public AsyncConnection handle() throws IOException
     {
         try
         {
@@ -557,7 +564,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             return _engine;
         }
 
-        public AsyncEndPoint getEndpoint()
+        public AsyncEndPoint getIoEndPoint()
         {
             return _aEndp;
         }
@@ -649,7 +656,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             {
                 if (process(null,null))
                     break;
-                _endp.blockReadable(end-now);
+                _aEndp.blockReadable(end-now);
                 now = System.currentTimeMillis();
             }
 
@@ -658,7 +665,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         public boolean blockWritable(long millisecs) throws IOException
         {
-            return _endp.blockWritable(millisecs);
+            return _aEndp.blockWritable(millisecs);
         }
 
         public boolean isOpen()
@@ -716,39 +723,14 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             return _aEndp.isWritable();
         }
 
-        public boolean hasProgressed()
+        public InetSocketAddress getLocalAddress()
         {
-            return _progressed.getAndSet(false);
+            return _aEndp.getLocalAddress();
         }
 
-        public String getLocalAddr()
+        public InetSocketAddress getRemoteAddress()
         {
-            return _aEndp.getLocalAddr();
-        }
-
-        public String getLocalHost()
-        {
-            return _aEndp.getLocalHost();
-        }
-
-        public int getLocalPort()
-        {
-            return _aEndp.getLocalPort();
-        }
-
-        public String getRemoteAddr()
-        {
-            return _aEndp.getRemoteAddr();
-        }
-
-        public String getRemoteHost()
-        {
-            return _aEndp.getRemoteHost();
-        }
-
-        public int getRemotePort()
-        {
-            return _aEndp.getRemotePort();
+            return _aEndp.getRemoteAddress();
         }
 
         public boolean isBlocking()
@@ -765,13 +747,13 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         {
             _aEndp.setMaxIdleTime(timeMs);
         }
-
-        public Connection getConnection()
+        
+        public AsyncConnection getAsyncConnection()
         {
             return _connection;
         }
 
-        public void setConnection(Connection connection)
+        public void setAsyncConnection(AsyncConnection connection)
         {
             _connection=(AsyncConnection)connection;
         }

@@ -17,9 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
@@ -27,33 +25,21 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationThrowable;
-import org.eclipse.jetty.http.HttpBuffers;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.HttpParser.RequestHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.AbstractConnection;
-
-import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-import org.eclipse.jetty.server.HttpServerTestBase.AvailableHandler;
-import org.eclipse.jetty.server.nio.NIOConnector;
-import org.eclipse.jetty.server.ssl.SslConnector;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -67,8 +53,20 @@ public class HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
 
-    private static final ThreadLocal<HttpChannel> __currentConnection = new ThreadLocal<HttpChannel>();
+    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<HttpChannel>();
 
+    /* ------------------------------------------------------------ */
+    public static HttpChannel getCurrentHttpChannel()
+    {
+        return __currentChannel.get();
+    }
+
+    /* ------------------------------------------------------------ */
+    protected static void setCurrentHttpChannel(HttpChannel channel)
+    {
+        __currentChannel.set(channel);
+    }
+    
     private int _requests;
 
     protected final Server _server;
@@ -94,17 +92,56 @@ public class HttpChannel
     private boolean _expect102Processing = false;
     private boolean _host = false;
 
-    /* ------------------------------------------------------------ */
-    public static HttpChannel getCurrentConnection()
+    public HttpParser.RequestHandler getRequestHandler()
     {
-        return __currentConnection.get();
+        return _handler;
     }
 
-    /* ------------------------------------------------------------ */
-    protected static void setCurrentConnection(HttpChannel connection)
+    public HttpGenerator.ResponseInfo getResponseInfo()
     {
-        __currentConnection.set(connection);
+        return _info;
     }
+    
+    private final RequestHandler _handler = new RequestHandler();
+    private final HttpGenerator.ResponseInfo _info = new HttpGenerator.ResponseInfo()
+    {
+        @Override
+        public HttpVersion getHttpVersion()
+        {
+            return getRequest().getHttpVersion();
+        }
+        
+        @Override
+        public HttpFields getHttpFields()
+        {
+            return _responseFields;
+        }
+        
+        @Override
+        public long getContentLength()
+        {
+            return _response.getLongContentLength();
+        }
+        
+        @Override
+        public boolean isHead()
+        {
+            return getRequest().isHead();
+        }
+        
+        @Override
+        public int getStatus()
+        {
+            return _response.getStatus();
+        }
+        
+        @Override
+        public String getReason()
+        {
+            return _response.getReason();
+        }
+    };
+    
 
     /* ------------------------------------------------------------ */
     /** Constructor
@@ -420,7 +457,7 @@ public class HttpChannel
     
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.io.Connection#isSuspended()
+     * @see org.eclipse.jetty.io.AsyncConnection#isSuspended()
      */
     public boolean isSuspended()
     {
@@ -767,13 +804,12 @@ public class HttpChannel
         
     }
     
-    /* ------------------------------------------------------------ */
     public void send1xx(int processing102)
     {
         // TODO Auto-generated method stub
         
     }
-
+    
     public boolean isAllContentWritten()
     {
         // TODO Auto-generated method stub
@@ -832,12 +868,6 @@ public class HttpChannel
         // TODO Auto-generated method stub
         return null;
     }
-    
-    public String getMaxIdleTime()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
     public void flushResponse()
     {
@@ -866,7 +896,6 @@ public class HttpChannel
     public void cancelTimeout(Task timeout)
     {
         // TODO Auto-generated method stub
-        
     }
 
 
@@ -907,54 +936,5 @@ public class HttpChannel
     }
 
     
-    public HttpParser.RequestHandler getRequestHandler()
-    {
-        return _handler;
-    }
-
-    public HttpGenerator.ResponseInfo getResponseInfo()
-    {
-        return _info;
-    }
-    
-    private final RequestHandler _handler = new RequestHandler();
-    private final HttpGenerator.ResponseInfo _info = new HttpGenerator.ResponseInfo()
-    {
-        @Override
-        public HttpVersion getHttpVersion()
-        {
-            return getRequest().getHttpVersion();
-        }
-        
-        @Override
-        public HttpFields getHttpFields()
-        {
-            return _responseFields;
-        }
-        
-        @Override
-        public long getContentLength()
-        {
-            return _response.getLongContentLength();
-        }
-        
-        @Override
-        public boolean isHead()
-        {
-            return getRequest().isHead();
-        }
-        
-        @Override
-        public int getStatus()
-        {
-            return _response.getStatus();
-        }
-        
-        @Override
-        public String getReason()
-        {
-            return _response.getReason();
-        }
-    };
     
 }

@@ -21,7 +21,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.Principal;
@@ -37,7 +36,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
@@ -58,20 +56,13 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.HttpGenerator;
-
-
-import org.eclipse.jetty.io.EndPoint;
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Attributes;
@@ -331,9 +322,6 @@ public class Request implements HttpServletRequest
      */
     public Object getAttribute(String name)
     {
-        if ("org.eclipse.jetty.io.EndPoint.maxIdleTime".equalsIgnoreCase(name))
-            return new Long(_connection.getMaxIdleTime());
-
         Object attr = (_attributes == null)?null:_attributes.getAttribute(name);
         if (attr == null && Continuation.ATTRIBUTE.equals(name))
             return _async;
@@ -1481,7 +1469,7 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    ((AbstractHttpConnection.Output)getServletResponse().getOutputStream()).sendContent(value);
+                    ((HttpChannel.Output)getServletResponse().getOutputStream()).sendContent(value);
                 }
                 catch (IOException e)
                 {
@@ -1495,7 +1483,7 @@ public class Request implements HttpServletRequest
                     final ByteBuffer byteBuffer = (ByteBuffer)value;
                     synchronized (byteBuffer)
                     {
-                        ((AbstractHttpConnection.Output)getServletResponse().getOutputStream()).sendResponse(byteBuffer);
+                        ((HttpChannel.Output)getServletResponse().getOutputStream()).sendResponse(byteBuffer);
                     }
                 }
                 catch (IOException e)
@@ -1576,12 +1564,6 @@ public class Request implements HttpServletRequest
     public void setCharacterEncodingUnchecked(String encoding)
     {
         _characterEncoding = encoding;
-    }
-
-    /* ------------------------------------------------------------ */
-    // final so we can safely call this from constructor
-    protected final void setConnection(AbstractHttpConnection connection)
-    {
     }
 
     /* ------------------------------------------------------------ */

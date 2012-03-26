@@ -32,8 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -341,7 +339,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected abstract void endPointOpened(SelectChannelEndPoint endpoint);
 
     /* ------------------------------------------------------------ */
-    protected abstract void endPointUpgraded(ConnectedEndPoint endpoint,Connection oldConnection);
+    protected abstract void endPointUpgraded(EndPoint endpoint,AsyncConnection oldConnection);
 
     /* ------------------------------------------------------------------------------- */
     public abstract AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment);

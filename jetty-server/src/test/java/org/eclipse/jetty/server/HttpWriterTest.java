@@ -4,15 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.AbstractGenerator;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-
 import org.eclipse.jetty.io.Buffers;
-import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.SimpleBuffers;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -79,7 +76,7 @@ public class HttpWriterTest
         AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,generator,null)
         {
             @Override
-            public Connection handle() throws IOException
+            public AsyncConnection handle() throws IOException
             {
                 return null;
             }
@@ -172,7 +169,7 @@ public class HttpWriterTest
         AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,hb,null)
         {
             @Override
-            public Connection handle() throws IOException
+            public AsyncConnection handle() throws IOException
             {
                 return null;
             }

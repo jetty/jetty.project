@@ -13,24 +13,21 @@
 
 package org.eclipse.jetty.server;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.ServletResponseWrapper;
-import javax.servlet.ServletException;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
 import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.continuation.ContinuationThrowable;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.log.Log;

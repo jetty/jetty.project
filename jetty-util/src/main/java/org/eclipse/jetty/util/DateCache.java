@@ -21,8 +21,6 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-
 /* ------------------------------------------------------------ */
 /**  Date Format Cache.
  * Computes String representations of Dates and caches

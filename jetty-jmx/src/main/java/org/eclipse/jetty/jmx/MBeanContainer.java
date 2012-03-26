@@ -34,7 +34,6 @@ import org.eclipse.jetty.util.component.Container.Relationship;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**

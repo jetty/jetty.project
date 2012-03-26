@@ -22,14 +22,10 @@ import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.ConnectedEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
-import org.eclipse.jetty.server.AsyncHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -300,7 +296,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         }
 
         @Override
-        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
+        protected void endPointUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
         {
             connectionUpgraded(oldConnection,endpoint.getConnection());
         }

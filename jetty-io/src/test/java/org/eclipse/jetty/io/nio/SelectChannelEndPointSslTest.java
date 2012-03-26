@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -48,7 +49,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         SslConnection connection = new SslConnection(engine,endpoint);
 
         AsyncConnection delegate = super.newConnection(channel,connection.getSslEndPoint());
-        connection.getSslEndPoint().setConnection(delegate);
+        connection.getSslEndPoint().setAsyncConnection(delegate);
         return connection;
     }
 

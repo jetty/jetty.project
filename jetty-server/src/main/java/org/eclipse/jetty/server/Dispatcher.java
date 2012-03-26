@@ -113,7 +113,7 @@ public class Dispatcher implements RequestDispatcher
      */
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
+        Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentHttpChannel().getRequest();
       
         
         if (!(request instanceof HttpServletRequest))
@@ -194,7 +194,7 @@ public class Dispatcher implements RequestDispatcher
      */
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
-        Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentConnection().getRequest();
+        Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentHttpChannel().getRequest();
         Response base_response=baseRequest.getResponse();
         response.resetBuffer();
         base_response.fwdReset();

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
 

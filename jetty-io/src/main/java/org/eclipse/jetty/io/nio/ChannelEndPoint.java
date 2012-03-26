@@ -24,8 +24,6 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -46,6 +44,7 @@ public class ChannelEndPoint implements EndPoint
     protected volatile int _maxIdleTime;
     private volatile boolean _ishut;
     private volatile boolean _oshut;
+
 
     public ChannelEndPoint(ByteChannel channel) throws IOException
     {
@@ -81,19 +80,10 @@ public class ChannelEndPoint implements EndPoint
         }
     }
 
+    
     public boolean isBlocking()
     {
         return  !(_channel instanceof SelectableChannel) || ((SelectableChannel)_channel).isBlocking();
-    }
-
-    public boolean blockReadable(long millisecs) throws IOException
-    {
-        return true;
-    }
-
-    public boolean blockWritable(long millisecs) throws IOException
-    {
-        return true;
     }
 
     /*
@@ -278,81 +268,18 @@ public class ChannelEndPoint implements EndPoint
         return _channel;
     }
 
-
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getLocalAddr()
-     */
-    public String getLocalAddr()
+    @Override
+    public InetSocketAddress getLocalAddress()
     {
-        if (_socket==null)
-            return null;
-       if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
-           return StringUtil.ALL_INTERFACES;
-        return _local.getAddress().getHostAddress();
+        return _local;
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getLocalHost()
-     */
-    public String getLocalHost()
+    @Override
+    public InetSocketAddress getRemoteAddress()
     {
-        if (_socket==null)
-            return null;
-       if (_local==null || _local.getAddress()==null || _local.getAddress().isAnyLocalAddress())
-           return StringUtil.ALL_INTERFACES;
-        return _local.getAddress().getCanonicalHostName();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getLocalPort()
-     */
-    public int getLocalPort()
-    {
-        if (_socket==null)
-            return 0;
-        if (_local==null)
-            return -1;
-        return _local.getPort();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getRemoteAddr()
-     */
-    public String getRemoteAddr()
-    {
-        if (_socket==null)
-            return null;
-        if (_remote==null)
-            return null;
-        return _remote.getAddress().getHostAddress();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getRemoteHost()
-     */
-    public String getRemoteHost()
-    {
-        if (_socket==null)
-            return null;
-        if (_remote==null)
-            return null;
-        return _remote.getAddress().getCanonicalHostName();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getRemotePort()
-     */
-    public int getRemotePort()
-    {
-        if (_socket==null)
-            return 0;
-        return _remote==null?-1:_remote.getPort();
+        return _remote;
     }
 
     /* ------------------------------------------------------------ */
@@ -362,12 +289,6 @@ public class ChannelEndPoint implements EndPoint
     public Object getTransport()
     {
         return _channel;
-    }
-
-    /* ------------------------------------------------------------ */
-    public void flush()
-        throws IOException
-    {
     }
 
     /* ------------------------------------------------------------ */

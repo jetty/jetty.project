@@ -25,7 +25,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.AbstractHttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IPAddressMap;
 import org.eclipse.jetty.util.log.Log;

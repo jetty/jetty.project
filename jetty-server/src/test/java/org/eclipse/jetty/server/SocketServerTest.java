@@ -12,7 +12,6 @@
 // ========================================================================
 
 package org.eclipse.jetty.server;
-import org.eclipse.jetty.server.bio.SocketConnector;
 import org.junit.BeforeClass;
 
 /**

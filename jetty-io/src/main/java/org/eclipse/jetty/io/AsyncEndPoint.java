@@ -13,10 +13,26 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
+
+import org.eclipse.jetty.io.nio.AsyncConnection;
 import org.eclipse.jetty.util.thread.Timeout;
 
-public interface AsyncEndPoint extends ConnectedEndPoint
+public interface AsyncEndPoint extends EndPoint
 {
+    /* ------------------------------------------------------------ */
+    AsyncConnection getAsyncConnection();
+
+    /* ------------------------------------------------------------ */
+    void setAsyncConnection(AsyncConnection connection);
+    
+    /* ------------------------------------------------------------ */
+    public boolean blockReadable(long millisecs) throws IOException;
+
+    /* ------------------------------------------------------------ */
+    public boolean blockWritable(long millisecs) throws IOException;
+
+    
     /* ------------------------------------------------------------ */
     /**
      * Dispatch the endpoint to a thread to attend to it.
@@ -49,16 +65,9 @@ public interface AsyncEndPoint extends ConnectedEndPoint
      */
     public boolean isCheckForIdle();
 
-    
     /* ------------------------------------------------------------ */
     public boolean isWritable();
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return True if IO has been successfully performed since the last call to {@link #hasProgressed()}
-     */
-    public boolean hasProgressed();
-    
     /* ------------------------------------------------------------ */
     /**
      */

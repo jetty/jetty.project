@@ -14,8 +14,8 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.GatheringByteChannel;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -26,14 +26,13 @@ import org.eclipse.jetty.util.BufferUtil;
  *
  *
  */
-public class ByteArrayEndPoint implements ConnectedEndPoint
+public class ByteArrayEndPoint implements EndPoint
 {
     protected byte[] _inBytes;
     protected ByteBuffer _in;
     protected ByteBuffer _out;
     protected boolean _closed;
     protected boolean _growOutput;
-    protected Connection _connection;
     protected int _maxIdleTime;
 
     /* ------------------------------------------------------------ */
@@ -57,30 +56,13 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.io.ConnectedEndPoint#getConnection()
-     */
-    public Connection getConnection()
-    {
-        return _connection;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.io.ConnectedEndPoint#setConnection(org.eclipse.jetty.io.Connection)
-     */
-    public void setConnection(Connection connection)
-    {
-        _connection=connection;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the in.
      */
     public ByteBuffer getIn()
     {
         return _in;
     }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param in The in to set.
@@ -89,6 +71,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     {
         _in = in;
     }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the out.
@@ -97,6 +80,7 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     {
         return _out;
     }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param out The out to set.
@@ -248,57 +232,17 @@ public class ByteArrayEndPoint implements ConnectedEndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getLocalAddr()
-     */
-    public String getLocalAddr()
+    @Override
+    public InetSocketAddress getLocalAddress()
     {
         return null;
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getLocalHost()
-     */
-    public String getLocalHost()
+    @Override
+    public InetSocketAddress getRemoteAddress()
     {
         return null;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getLocalPort()
-     */
-    public int getLocalPort()
-    {
-        return 0;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getRemoteAddr()
-     */
-    public String getRemoteAddr()
-    {
-        return null;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getRemoteHost()
-     */
-    public String getRemoteHost()
-    {
-        return null;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getRemotePort()
-     */
-    public int getRemotePort()
-    {
-        return 0;
     }
 
     /* ------------------------------------------------------------ */

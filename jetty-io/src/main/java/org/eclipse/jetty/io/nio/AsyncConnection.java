@@ -15,9 +15,41 @@ package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 
-public interface AsyncConnection extends Connection
+public interface AsyncConnection 
 {
     void onInputShutdown() throws IOException;
+    
+    AsyncEndPoint getAsyncEndPoint();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Handle the connection.
+     * @return The Connection to use for the next handling of the connection. 
+     * This allows protocol upgrades and support for CONNECT.
+     * @throws IOException
+     */
+    AsyncConnection handle() throws IOException;
+    
+    boolean isReadInterested();
+
+    /**
+     * Called when the connection is closed
+     */
+    void onClose();
+    
+    /**
+     * Called when the connection idle timeout expires
+     * @param idleForMs TODO
+     */
+    void onIdleExpired(long idleForMs);
+    
+
+    /**
+     * @return the timestamp at which the connection was created
+     */
+    long getTimeStamp();
+
+    boolean isIdle();
 }

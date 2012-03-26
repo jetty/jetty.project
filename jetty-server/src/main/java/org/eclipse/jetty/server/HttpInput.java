@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 
 import javax.servlet.ServletInputStream;
 
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.util.BufferUtil;
 
 
