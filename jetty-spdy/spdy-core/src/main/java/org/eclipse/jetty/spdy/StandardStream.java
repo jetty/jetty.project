@@ -318,7 +318,7 @@ public class StandardStream implements IStream
         if(isClosed()){
             throw new IllegalStateException("Stream already closed. No push streams can be created on closed streams.");
         }
-        PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo.getHeaders(),synInfo.isClose(),synInfo.getPriority());
+        PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo);
         return getSession().syn(pushSynInfo,null);
     }
 

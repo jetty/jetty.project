@@ -1,29 +1,17 @@
 package org.eclipse.jetty.spdy;
 
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.AbstractSynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
 
 public class PushSynInfo extends AbstractSynInfo
 {
     private int associatedStreamId;
     
-    //TODO: remove constructors and add PSI(id,synInfo)
-    public PushSynInfo(int associatedStreamId, boolean close){
-        super(close);
+    public PushSynInfo(int associatedStreamId, SynInfo synInfo){
+        super(synInfo.getHeaders(), synInfo.isClose(), synInfo.getPriority());
         this.associatedStreamId = associatedStreamId;
     }
     
-    public PushSynInfo(int associatedStreamId, Headers headers, boolean close){
-        super(headers,close);
-        this.associatedStreamId = associatedStreamId;
-    }
-    
-    public PushSynInfo(int associatedStreamId, Headers headers, boolean close, byte priority)
-    {
-        super(headers,close,priority);
-        this.associatedStreamId = associatedStreamId;
-    }
-
     @Override
     public boolean isUnidirectional()
     {
