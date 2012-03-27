@@ -91,10 +91,8 @@ public interface IStream extends Stream
      */
     public void process(DataFrame frame, ByteBuffer data);
     
-    /**
-     * @return associated child streams or an empty set if no associated streams exist
-     */
-    public Set<IStream> getAssociatedStreams();
-    
     public void addAssociatedStream(IStream stream);
+
+    //TODO: Do we really need it?
+//    public void removeAssociatedStream(IStream stream);
 }

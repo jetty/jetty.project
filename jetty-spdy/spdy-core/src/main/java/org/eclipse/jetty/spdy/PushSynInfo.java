@@ -7,6 +7,7 @@ public class PushSynInfo extends AbstractSynInfo
 {
     private int associatedStreamId;
     
+    //TODO: remove constructors and add PSI(id,synInfo)
     public PushSynInfo(int associatedStreamId, boolean close){
         super(close);
         this.associatedStreamId = associatedStreamId;

@@ -149,6 +149,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         // frame with a compression history will come before the first compressed frame.
         synchronized (this)
         {
+            //TODO: use instanceof PushSynInfo
             if (synInfo.isUnidirectional())
             {
                 if (!streams.containsKey(synInfo.getAssociatedStreamId()))
@@ -158,6 +159,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 }
             }
 
+            //TODO: check if pushStreamIds should be odd or even
             int streamId = streamIds.getAndAdd(2);
             SynStreamFrame synStream = new SynStreamFrame(version,synInfo.getFlags(),streamId,synInfo.getAssociatedStreamId(),synInfo.getPriority(),
                     synInfo.getHeaders());
@@ -533,7 +535,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void onRst(RstStreamFrame frame)
     {
         // TODO: implement logic to clean up unidirectional streams associated with this stream
-
         IStream stream = streams.get(frame.getStreamId());
 
         if (stream != null)

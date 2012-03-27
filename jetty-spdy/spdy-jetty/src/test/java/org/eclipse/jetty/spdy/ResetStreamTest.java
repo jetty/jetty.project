@@ -120,4 +120,10 @@ public class ResetStreamTest extends AbstractTest
         Assert.assertTrue(rstLatch.await(5, TimeUnit.SECONDS));
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
     }
+    
+    //TODO: Reset after server received first dataframe, make sure client doesn't send 2nd dataframe
+    
+    //TODO: If server already received 2nd dataframe after it rst, it should ignore it
+    
+    
 }

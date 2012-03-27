@@ -50,25 +50,13 @@ public class StandardSessionTest
     public void testServerPush() throws InterruptedException, ExecutionException
     {
         Stream stream = createStream();
-        Stream pushStream = createPushStream(stream).get();
+        IStream pushStream = (IStream)createPushStream(stream).get();
         assertThat("Push stream must be associated to the first stream created", pushStream.getParentStream().getId(), is(stream.getId()));
         assertThat("streamIds need to be monotonic",pushStream.getId(), greaterThan(stream.getId()));
     }
 
-    private Stream createStream() throws InterruptedException, ExecutionException
-    {
-        AbstractSynInfo synInfo = new SynInfo(headers,false,(byte)0);
-        return session.syn(synInfo,streamFrameListener).get();
-    }
-    
-    private Future<Stream> createPushStream(Stream stream)
-    {
-        headers.add("url","http://some.url");
-        return stream.synPushStream(headers, false, stream.getPriority());
-    }
-    
     @Test
-    public void testPushStreamIsClosedWhenAssociatedStreamIsClosed() throws InterruptedException, ExecutionException{
+    public void testPushStreamIsNotClosedWhenAssociatedStreamIsClosed() throws InterruptedException, ExecutionException{
         
         Stream stream = createStream();
         Stream pushStream = createPushStream(stream).get();
@@ -81,12 +69,23 @@ public class StandardSessionTest
         stream.reply(replyInfo);
         assertThat("stream should be halfClosed", stream.isHalfClosed(), is(true));
         assertThat("stream should not be closed", stream.isClosed(), is(false));
-        assertThat("pushStream should be halfClosed", pushStream.isHalfClosed(), is(true));
+        assertThat("pushStream should be halfClosed", pushStream.isHalfClosed(), is(false));
         assertThat("pushStream should not be closed", pushStream.isClosed(), is(false));
         
         stream.reply(replyInfo);
         assertThat("stream should be closed", stream.isClosed(), is(true));
-        assertThat("pushStream should be closed", pushStream.isClosed(), is(true));
+        assertThat("pushStream should be closed", pushStream.isClosed(), is(false));
+        
+    }
+    
+    @Test(expected=IllegalStateException.class)
+    public void testCreatePushStreamOnClosedStream() throws InterruptedException, ExecutionException{
+        IStream stream = (IStream)createStream();
+        stream.updateCloseState(true);
+        assertThat("stream should be halfClosed", stream.isHalfClosed(), is(true));
+        stream.updateCloseState(true);
+        assertThat("stream should be closed", stream.isClosed(), is(true));
+        createPushStream(stream).get();
         
     }
     
@@ -109,7 +108,34 @@ public class StandardSessionTest
         assertThat("pushStream is not closed", pushStream.isClosed(), is(true));
         assertThat("PushStream has not been removed from parent", stream.getAssociatedStreams().contains(pushStream) ,is(false));
     }
+    
+    @Test
+    public void testPushStreamWithSynInfoClosedTrue() throws InterruptedException, ExecutionException{
+        IStream stream = (IStream)createStream();
+        SynInfo synInfo = new SynInfo(headers,true,stream.getPriority());
+        Stream pushStream = stream.syn(synInfo).get();
+        assertThat("pushStream should be half closed",pushStream.isHalfClosed(), is(true));
+        assertThat("pushStream should not be closed",pushStream.isClosed(),is(false));
+        pushStream.reply(new ReplyInfo(true));
+        assertThat("pushStream should be closed",pushStream.isClosed(),is(true));
+        assertThat("pushStream should be removed from parent", stream.getAssociatedStreams().size(), is(0));
+    }
 
+    //TODO: Test for even/odd streamIds
+    
+    private Stream createStream() throws InterruptedException, ExecutionException
+    {
+        SynInfo synInfo = new SynInfo(headers,false,(byte)0);
+        return session.syn(synInfo,streamFrameListener).get();
+    }
+    
+    private Future<Stream> createPushStream(Stream stream)
+    {
+        headers.add("url","http://some.url");
+        SynInfo synInfo = new SynInfo(headers,false,stream.getPriority());
+        return stream.syn(synInfo);
+    }
+    
     // TODO: remove duplication in AsyncTimeoutTest
     private static class TestController implements Controller<StandardSession.FrameBytes>
     {

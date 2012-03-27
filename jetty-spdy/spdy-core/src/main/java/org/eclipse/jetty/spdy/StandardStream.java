@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
-import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.HeadersFrame;
@@ -154,15 +154,12 @@ public class StandardStream implements IStream
     @Override
     public void updateCloseState(boolean close)
     {
-        for (IStream stream : associatedStreams)
-        {
-            stream.updateCloseState(close);
-        }
         if (close)
         {
             if (isHalfClosed())
             {
                 if(associatedStream!=null){
+                    //TODO: consider making this a method in IStream
                     associatedStream.getAssociatedStreams().remove(this);
                 }
                 closed = true;
@@ -316,10 +313,13 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public Future<Stream> synPushStream(Headers headers, boolean close, byte priority)
+    public Future<Stream> syn(SynInfo synInfo)
     {
-        PushSynInfo synInfo = new PushSynInfo(getId(),headers,close,priority);
-        return getSession().syn(synInfo,null);
+        if(isClosed()){
+            throw new IllegalStateException("Stream already closed. No push streams can be created on closed streams.");
+        }
+        PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo.getHeaders(),synInfo.isClose(),synInfo.getPriority());
+        return getSession().syn(pushSynInfo,null);
     }
 
     @Override

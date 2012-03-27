@@ -84,17 +84,14 @@ public interface Stream
     public byte getPriority();
     
     /**
-     * @return the associated parent stream or null if this is not an associated stream
-     */
-    public Stream getParentStream();
-    
-    /**
      * @return the session this stream is associated to
      */
     public Session getSession();
 
+    //TODO: Handler version of syn
+    
     //TODO: javadoc
-    public Future<Stream> synPushStream(Headers headers, boolean close, byte priority);
+    public Future<Stream> syn(SynInfo synInfo);
     
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>
@@ -207,4 +204,15 @@ public interface Stream
      * @see #setAttribute(String, Object)
      */
     public Object removeAttribute(String key);
+    
+    /**
+     * @return the associated parent stream or null if this is not an associated stream
+     */
+    public IStream getParentStream();
+    
+    /**
+     * @return associated child streams or an empty set if no associated streams exist
+     */
+    public Set<IStream> getAssociatedStreams();
+    
 }
