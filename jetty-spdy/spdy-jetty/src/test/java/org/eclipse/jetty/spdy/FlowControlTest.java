@@ -359,6 +359,98 @@ public class FlowControlTest extends AbstractTest
         Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
     }
 
+    @Test
+    public void testStreamsStalledDoesNotStallOtherStreams() throws Exception
+    {
+        final int windowSize = 1024;
+        final CountDownLatch settingsLatch = new CountDownLatch(1);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public void onSettings(Session session, SettingsInfo settingsInfo)
+            {
+                settingsLatch.countDown();
+            }
+
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                stream.reply(new ReplyInfo(false));
+                stream.data(new BytesDataInfo(new byte[windowSize * 2], true));
+                return null;
+            }
+        }), null);
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowSize));
+        session.settings(new SettingsInfo(settings));
+
+        Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
+        final CountDownLatch latch = new CountDownLatch(3);
+        final AtomicReference<DataInfo> dataInfoRef1 = new AtomicReference<>();
+        final AtomicReference<DataInfo> dataInfoRef2 = new AtomicReference<>();
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        {
+            private final AtomicInteger dataFrames = new AtomicInteger();
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                int frames = dataFrames.incrementAndGet();
+                if (frames == 1)
+                {
+                    // Do not consume it to stall flow control
+                    dataInfoRef1.set(dataInfo);
+                }
+                else
+                {
+                    dataInfo.consume(dataInfo.length());
+                    if (dataInfo.isClose())
+                        latch.countDown();
+                }
+            }
+        }).get(5, TimeUnit.SECONDS);
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        {
+            private final AtomicInteger dataFrames = new AtomicInteger();
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                int frames = dataFrames.incrementAndGet();
+                if (frames == 1)
+                {
+                    // Do not consume it to stall flow control
+                    dataInfoRef2.set(dataInfo);
+                }
+                else
+                {
+                    dataInfo.consume(dataInfo.length());
+                    if (dataInfo.isClose())
+                        latch.countDown();
+                }
+            }
+        }).get(5, TimeUnit.SECONDS);
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                DataInfo dataInfo1 = dataInfoRef1.getAndSet(null);
+                if (dataInfo1 != null)
+                    dataInfo1.consume(dataInfo1.length());
+                DataInfo dataInfo2 = dataInfoRef2.getAndSet(null);
+                if (dataInfo2 != null)
+                    dataInfo2.consume(dataInfo2.length());
+                dataInfo.consume(dataInfo.length());
+                if (dataInfo.isClose())
+                    latch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
     private void expectException(Class<? extends Exception> exception, Callable command)
     {
         try
