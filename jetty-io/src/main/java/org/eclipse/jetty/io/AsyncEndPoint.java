@@ -27,13 +27,6 @@ public interface AsyncEndPoint extends EndPoint
     void setAsyncConnection(AsyncConnection connection);
     
     /* ------------------------------------------------------------ */
-    public boolean blockReadable(long millisecs) throws IOException;
-
-    /* ------------------------------------------------------------ */
-    public boolean blockWritable(long millisecs) throws IOException;
-
-    
-    /* ------------------------------------------------------------ */
     /**
      * Dispatch the endpoint to a thread to attend to it.
      * 

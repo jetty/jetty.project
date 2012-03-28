@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletInputStream;
@@ -40,6 +42,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
+import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -69,19 +73,24 @@ public class HttpChannel
     
     private int _requests;
 
-    protected final Server _server;
-    protected final HttpURI _uri;
+    private final HttpTransport _transport;
+    private final Server _server;
+    private final HttpURI _uri;
 
-    protected final HttpFields _requestFields;
-    protected final Request _request;
-    protected final AsyncContinuation _async;
-    protected volatile ServletInputStream _in;
+    private final HttpFields _requestFields;
+    private final Request _request;
+    private final AsyncContinuation _async;
 
-    protected final HttpFields _responseFields;
-    protected final Response _response;
-    protected volatile Output _out;
-    protected volatile OutputWriter _writer;
-    protected volatile PrintWriter _printWriter;
+    private final HttpFields _responseFields;
+    private final Response _response;
+    
+    private final ArrayQueue<ByteBuffer> _inputQ=new ArrayQueue<>();
+    private boolean _inputEOF;
+
+    private volatile ServletInputStream _in;
+    private volatile Output _out;
+    private volatile HttpWriter _writer;
+    private volatile PrintWriter _printWriter;
 
     int _include;
 
@@ -147,14 +156,15 @@ public class HttpChannel
     /** Constructor
      *
      */
-    public HttpChannel(Server server)
+    public HttpChannel(HttpTransport transport, Server server)
     {
+        _server = server;
+        _transport=transport;
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
         _request = new Request(this);
         _response = new Response(this);
-        _server = server;
         _async = _request.getAsyncContinuation();
     }
 
@@ -171,6 +181,12 @@ public class HttpChannel
     public Server getServer()
     {
         return _server;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpTransport getHttpTransport()
+    {
+        return _transport;
     }
     
     /* ------------------------------------------------------------ */
@@ -232,12 +248,12 @@ public class HttpChannel
         if (_expect100Continue)
         {
             // is content missing?
-            if (!isContentAvailable())
+            if (available()==0)
             {
-                if (isResponseCommitted())
+                if (_transport.isResponseCommitted())
                     throw new IllegalStateException("Committed before 100 Continues");
 
-                send1xx(HttpStatus.CONTINUE_100);
+                _transport.send1xx(HttpStatus.CONTINUE_100);
             }
             _expect100Continue=false;
         }
@@ -264,12 +280,12 @@ public class HttpChannel
      * @return A {@link PrintWriter} wrapping the {@link #getOutputStream output stream}. The writer is created if it
      *    does not already exist.
      */
-    public PrintWriter getPrintWriter(String encoding)
+    public PrintWriter getPrintWriter(String charset)
     {
         getOutputStream();
         if (_writer==null)
         {
-            _writer=new OutputWriter();
+            _writer=new HttpWriter(_out);
             if (_server.isUncheckedPrintWriter())
                 _printWriter=new UncheckedPrintWriter(_writer);
             else
@@ -292,7 +308,7 @@ public class HttpChannel
                 };
 
         }
-        _writer.setCharacterEncoding(encoding);
+        _writer.setCharacterEncoding(charset);
         return _printWriter;
     }
 
@@ -304,6 +320,11 @@ public class HttpChannel
         _responseFields.clear();
         _response.recycle();
         _uri.clear();
+        synchronized (_inputQ)
+        {
+            _inputEOF=false;
+            _inputQ.clear();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -351,7 +372,7 @@ public class HttpChannel
                     if (_async.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
-                        customize(_request);
+                        _transport.customize(_request);
                         server.handle(this);
                     }
                     else
@@ -391,7 +412,7 @@ public class HttpChannel
                     LOG.warn(String.valueOf(_uri),e);
                     error=true;
                     _request.setHandled(true);
-                    sendError(info==null?400:500, null, null, true);
+                    _transport.sendError(info==null?400:500, null, null, true);
                 }
                 finally
                 {
@@ -417,17 +438,17 @@ public class HttpChannel
                     // do anything special here other than make the connection not persistent
                     _expect100Continue = false;
                     if (!_response.isCommitted())
-                        setPersistent(false);
+                        _transport.setPersistent(false);
                 }
 
                 if (error)
-                    setPersistent(false);
+                    _transport.setPersistent(false);
                 else if (!_response.isCommitted() && !_request.isHandled())
                     _response.sendError(HttpServletResponse.SC_NOT_FOUND);
 
                 _response.complete();
-                if (isPersistent())
-                    persist();
+                if (_transport.isPersistent())
+                    _transport.persist();
 
                 _request.setHandled(true);
             }
@@ -482,6 +503,81 @@ public class HttpChannel
         return _expect102Processing;
     }
 
+    /* ------------------------------------------------------------ */
+    /* 
+     * @see java.io.InputStream#read(byte[], int, int)
+     */
+    public int read(byte[] b, int off, int len) throws IOException
+    {
+        synchronized (_inputQ.lock())
+        {
+            
+            ByteBuffer content=null;
+            long start=-1;
+            long timeout=-1;
+            
+            while(content==null)
+            {
+                content=_inputQ.peekUnsafe();
+                while (content!=null && !content.hasRemaining())
+                {
+                    _inputQ.pollUnsafe();
+                    content=_inputQ.peekUnsafe();
+                }
+
+                if (content==null)
+                {
+                    // check for EOF
+                    if (_inputEOF)
+                        return -1;
+
+                    // block for content
+                    if (start<0)
+                    {
+                        start=System.currentTimeMillis();
+                        timeout=_transport.getMaxIdleTime();
+                    }
+                    else
+                    {
+                        long now=System.currentTimeMillis();
+                        timeout=timeout-(now-start);
+                        start=now;
+                    }
+                    if (timeout<=0)
+                        throw new SocketTimeoutException(">"+_transport.getMaxIdleTime()+"ms");
+                    try
+                    {
+                        _inputQ.wait(timeout);
+                    }
+                    catch(InterruptedException e)
+                    {
+                        LOG.ignore(e);
+                    }
+                    content=_inputQ.peekUnsafe();
+                }
+            }
+
+            int l=Math.min(len,content.remaining());
+            content.get(b,off,l);
+            return l;
+        }
+        
+    }
+
+    /* ------------------------------------------------------------ */
+    public int available() throws IOException
+    {
+        synchronized (_inputQ.lock())
+        {
+            ByteBuffer content=_inputQ.peekUnsafe();
+            if (content==null)
+                return 0;
+
+            return content.remaining();
+        }
+        
+    }
+    
     /* ------------------------------------------------------------ */
     public String toString()
     {
@@ -609,7 +705,7 @@ public class HttpChannel
                 case HTTP_0_9:
                     break;
                 case HTTP_1_0:
-                    if (isPersistent())
+                    if (_transport.isPersistent())
                     {
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
                     }
@@ -620,7 +716,7 @@ public class HttpChannel
 
                 case HTTP_1_1:
 
-                    if (!isPersistent())
+                    if (!_transport.isPersistent())
                     {
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
                     }
@@ -631,7 +727,7 @@ public class HttpChannel
                     {
                         LOG.debug("!host {}",this);
                         _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        sendError(HttpStatus.BAD_REQUEST_400,null,null,true);
+                        _transport.sendError(HttpStatus.BAD_REQUEST_400,null,null,true);
                         return true;
                     }
 
@@ -639,7 +735,7 @@ public class HttpChannel
                     {
                         LOG.debug("!expectation {}",this);
                         _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        sendError(HttpStatus.EXPECTATION_FAILED_417,null,null,true);
+                        _transport.sendError(HttpStatus.EXPECTATION_FAILED_417,null,null,true);
                         return true;
                     }
 
@@ -657,13 +753,21 @@ public class HttpChannel
         @Override
         public boolean content(ByteBuffer ref) throws IOException
         {
-            // TODO queue the content
+            synchronized (_inputQ)
+            {
+                _inputQ.addUnsafe(ref);
+                _inputQ.notifyAll();
+            }
             return true;
         }
 
         @Override
         public boolean messageComplete(long contentLength) throws IOException
         {
+            synchronized (_inputQ)
+            {
+                _inputEOF=true;
+            }
             return true;
         }
 
@@ -684,7 +788,7 @@ public class HttpChannel
     {
         Output()
         {
-            super(HttpChannel.this);
+            super(_transport);
         }
 
         /* ------------------------------------------------------------ */
@@ -758,128 +862,9 @@ public class HttpChannel
 
         }
     }
-
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    public class OutputWriter extends HttpWriter
-    {
-        OutputWriter()
-        {
-            super(HttpChannel.this._out);
-        }
-    }
     
-    /* ------------------------------------------------------------ */
-    public ByteBuffer getContent() throws IOException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    /* ------------------------------------------------------------ */
-    public ByteBuffer blockForContent() throws IOException
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
     
-    /* ------------------------------------------------------------ */
-    public void write(ByteBuffer wrap) throws IOException
-    {
-        // TODO Auto-generated method stub
-    }
-
-    /* ------------------------------------------------------------ */
-    public int getContentWritten()
-    {
-        // TODO Auto-generated method stub
-        return 0;
-    }
     
-    /* ------------------------------------------------------------ */
-    public void sendError(int status, String reason, String content, boolean close)  throws IOException
-    {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    public void send1xx(int processing102)
-    {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    public boolean isAllContentWritten()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    public int getContentBufferSize()
-    {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    public void increaseContentBufferSize(int size)
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    public void resetBuffer()
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    private boolean isContentAvailable()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    public boolean isResponseCommitted()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    public boolean isPersistent()
-    {
-        // TODO Auto-generated method stub
-        return false;
-    }
-    
-    public void setPersistent(boolean persistent)
-    {
-    }
-
-    public InetSocketAddress getLocalAddress()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-
-    public InetSocketAddress getRemoteAddress()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public void flushResponse()
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    public void completeResponse()
-    {
-        // TODO Auto-generated method stub
-        
-    }
 
     public void asyncDispatch()
     {
@@ -898,43 +883,5 @@ public class HttpChannel
         // TODO Auto-generated method stub
     }
 
-
-    private void persist()
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    private void customize(Request request)
-    {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The result of calling {@link #getConnector}.{@link Connector#isConfidential(Request) isCondidential}(request), or false
-     *  if there is no connector.
-     */
-    public boolean isConfidential(Request request)
-    {
-        // TODO
-        return false;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Find out if the request is INTEGRAL security.
-     * @param request
-     * @return <code>true</code> if there is a {@link #getConnector() connector} and it considers <code>request</code>
-     *         to be {@link Connector#isIntegral(Request) integral}
-     */
-    public boolean isIntegral(Request request)
-    {
-        // TODO
-        return false;
-    }
-
-    
     
 }

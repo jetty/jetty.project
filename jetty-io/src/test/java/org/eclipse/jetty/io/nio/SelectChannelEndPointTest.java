@@ -100,7 +100,7 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(),_connector.socket().getLocalPort());
     }
 
-    protected AsyncConnection newConnection(SocketChannel channel, EndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
@@ -110,7 +110,7 @@ public class SelectChannelEndPointTest
         ByteBuffer _in = BufferUtil.allocate(32*1024);
         ByteBuffer _out = BufferUtil.allocate(32*1024);
 
-        public TestConnection(EndPoint endp)
+        public TestConnection(AsyncEndPoint endp)
         {
             super(endp);
         }
@@ -130,7 +130,7 @@ public class SelectChannelEndPointTest
                 
                 while (_blockAt>0 && _in.remaining()>0 && _in.remaining()<_blockAt)
                 {
-                    ((AsyncEndPoint)_endp).blockReadable(10000);
+                    // ((AsyncEndPoint)_endp).blockReadable(10000);
                     if (!BufferUtil.isFull(_in) && _endp.fill(_in)>0)
                         progress=true;
                 }
@@ -163,7 +163,7 @@ public class SelectChannelEndPointTest
         @Override
         public AsyncEndPoint getAsyncEndPoint()
         {
-            return (AsyncEndPoint)getEndPoint();
+            return _endp;
         }
 
         public void onClose()

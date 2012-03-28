@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public class HttpInput extends ServletInputStream
 {
     protected final HttpChannel _connection;
-    private ByteBuffer _content;
+    protected final byte[] _byte=new byte[1];
     
     /* ------------------------------------------------------------ */
     public HttpInput(HttpChannel connection)
@@ -39,12 +39,8 @@ public class HttpInput extends ServletInputStream
     @Override
     public int read() throws IOException
     {
-        int c=-1;
-        if (BufferUtil.isEmpty(_content))
-            _content=_connection.blockForContent();
-        if (BufferUtil.hasContent(_content))
-            c= 0xff & _content.get();
-        return c;
+        int len=_connection.read(_byte,0,1);
+        return len<0?len:_byte[0];
     }
     
     /* ------------------------------------------------------------ */
@@ -54,29 +50,14 @@ public class HttpInput extends ServletInputStream
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        int l=-1;
-        if (BufferUtil.isEmpty(_content))
-            _content=_connection.blockForContent();
-        if (BufferUtil.hasContent(_content))
-        {
-            l=Math.min(len,_content.remaining());
-            _content.get(b,off,l);
-        }
-        return l;
+        return _connection.read(_byte,0,1);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public int available() throws IOException
     {
-        if (BufferUtil.isEmpty(_content))
-            _content=_connection.getContent();
-        if (BufferUtil.hasContent(_content))
-            return _content.remaining();
-        return 0;
+        return _connection.available();
     }
-    
-    
-    
 
 }

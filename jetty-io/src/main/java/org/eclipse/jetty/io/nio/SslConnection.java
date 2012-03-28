@@ -82,13 +82,13 @@ public class SslConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public SslConnection(SSLEngine engine,EndPoint endp)
+    public SslConnection(SSLEngine engine,AsyncEndPoint endp)
     {
         this(engine,endp,System.currentTimeMillis());
     }
 
     /* ------------------------------------------------------------ */
-    public SslConnection(SSLEngine engine,EndPoint endp, long timeStamp)
+    public SslConnection(SSLEngine engine,AsyncEndPoint endp, long timeStamp)
     {
         super(endp,timeStamp);
         _engine=engine;
@@ -647,6 +647,7 @@ public class SslConnection extends AbstractAsyncConnection
             return len;
         }
 
+        /*
         public boolean blockReadable(long millisecs) throws IOException
         {
             long now = System.currentTimeMillis();
@@ -667,6 +668,7 @@ public class SslConnection extends AbstractAsyncConnection
         {
             return _aEndp.blockWritable(millisecs);
         }
+        */
 
         public boolean isOpen()
         {

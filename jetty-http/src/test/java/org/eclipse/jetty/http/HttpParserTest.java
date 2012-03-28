@@ -473,6 +473,7 @@ public class HttpParserTest
             String c = BufferUtil.toString(ref,StringUtil.__UTF8_CHARSET);
             //System.err.println("content '"+c+"'");
             _content= _content + c;
+            ref.position(ref.limit());
             return false;
         }
 

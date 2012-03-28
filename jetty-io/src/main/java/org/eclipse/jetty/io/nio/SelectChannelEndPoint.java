@@ -357,7 +357,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /*
      * Allows thread to block waiting for further events.
      */
-    @Override
+    @Deprecated
     public boolean blockReadable(long timeoutMs) throws IOException
     {
         synchronized (this)
@@ -405,7 +405,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     /*
      * Allows thread to block waiting for further events.
      */
-    @Override
+    @Deprecated
     public boolean blockWritable(long timeoutMs) throws IOException
     {
         synchronized (this)

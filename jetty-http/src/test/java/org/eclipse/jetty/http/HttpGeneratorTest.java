@@ -47,6 +47,7 @@ public class HttpGeneratorTest
             if (_content==null)
                 _content="";
             _content+=BufferUtil.toString(ref);
+            ref.position(ref.limit());
             return false;
         }
 

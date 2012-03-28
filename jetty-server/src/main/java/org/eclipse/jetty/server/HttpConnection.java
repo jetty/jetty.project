@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -49,10 +50,12 @@ public abstract class HttpConnection extends AbstractAsyncConnection
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
 
+    int _toFlush;
     ByteBuffer _requestBuffer=null;
     ByteBuffer _responseHeader=null;
     ByteBuffer _chunk=null;
-    ByteBuffer _responseBuffer=null;    
+    ByteBuffer _responseBuffer=null; 
+    ByteBuffer _content=null;    
     
     
     /* ------------------------------------------------------------ */
@@ -77,7 +80,7 @@ public abstract class HttpConnection extends AbstractAsyncConnection
         _connector = connector;
         _server = server;
         
-        _channel = new HttpChannel(server);
+        _channel = new HttpChannel(_transport,server);
        
         _parser = new HttpParser(_channel.getRequestHandler());
         _generator = new HttpGenerator(_channel.getResponseInfo());
@@ -216,7 +219,7 @@ public abstract class HttpConnection extends AbstractAsyncConnection
                 catch (HttpException e)
                 {
                     progress=true;
-                    _channel.sendError(e.getStatus(), e.getReason(), null, true);
+                    _transport.sendError(e.getStatus(), e.getReason(), null, true);
                 }
                 finally
                 {
@@ -268,13 +271,16 @@ public abstract class HttpConnection extends AbstractAsyncConnection
 
     
     /* ------------------------------------------------------------ */
-    private void generate(ByteBuffer content, Action action) throws IOException
+    private void generate(ByteBuffer content, Action action, boolean volatileContent) throws IOException
     {
         if (!_generator.isComplete())
             throw new EofException();
 
         while(BufferUtil.hasContent(content))
         {
+            if (_toFlush!=0)
+                flush(true);
+            
             if (LOG.isDebugEnabled())
                 LOG.debug("{}: generate({},{},{},{},{})@{}",
                     this,
@@ -313,18 +319,26 @@ public abstract class HttpConnection extends AbstractAsyncConnection
                     break;
 
                 case FLUSH:
-                    getAsyncEndPoint().gather(_responseHeader,_chunk,_responseBuffer);
-                    // TODO handle incomplete flush
+                    _toFlush=
+                        (BufferUtil.hasContent(_responseHeader)?8:0)+
+                        (BufferUtil.hasContent(_chunk)?4:0)+
+                        (BufferUtil.hasContent(_responseBuffer)?2:0);
+                    flush(false);
                     break;
                 
                 case FLUSH_CONTENT:
-                    getAsyncEndPoint().gather(_responseHeader,_chunk,content);
-                    // TODO handle incomplete flush
+                    _content=content;
+                    _toFlush=
+                        (BufferUtil.hasContent(_responseHeader)?8:0)+
+                        (BufferUtil.hasContent(_chunk)?4:0)+
+                        (BufferUtil.hasContent(_content)?1:0);
+                    flush(volatileContent);
                     break;
                 
                 case SHUTDOWN_OUT:
                     getAsyncEndPoint().shutdownOutput();
                     break;
+                    
                 case OK:
                     break;
             }
@@ -336,9 +350,65 @@ public abstract class HttpConnection extends AbstractAsyncConnection
                 case PREPARE: action=Action.PREPARE; break;
             }
         }
-
     }
+    
+    /* ------------------------------------------------------------ */
+    private void flush(boolean block) throws IOException
+    {
+        while (_toFlush>0)
+        {
+            switch(_toFlush)
+            {
+                case 10:
+                    _endp.gather(_responseHeader,_responseBuffer); 
+                    _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0)+(BufferUtil.hasContent(_responseBuffer)?2:0);
+                    break;
+                case 9: 
+                    _endp.gather(_responseHeader,_content); 
+                    _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0)+(BufferUtil.hasContent(_content)?1:0);
+                    if (_toFlush==0)
+                        _content=null;
+                    break;
+                case 8: 
+                    _endp.gather(_responseHeader); 
+                    _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0);
+                    break;
+                case 6: 
+                    _endp.gather(_chunk,_responseBuffer);
+                    _toFlush=(BufferUtil.hasContent(_chunk)?4:0)+(BufferUtil.hasContent(_responseBuffer)?2:0);
+                    break;
+                case 5: 
+                    _endp.gather(_chunk,_content);
+                    _toFlush=(BufferUtil.hasContent(_chunk)?4:0)+(BufferUtil.hasContent(_content)?1:0);
+                    if (_toFlush==0)
+                        _content=null;
+                    break;
+                case 4: 
+                    _endp.gather(_chunk);
+                    _toFlush=(BufferUtil.hasContent(_chunk)?4:0);
+                    break;
+                case 2: 
+                    _endp.gather(_responseBuffer);
+                    _toFlush=(BufferUtil.hasContent(_responseBuffer)?2:0);
+                    break;
+                case 1: 
+                    _endp.gather(_content);
+                    _toFlush=(BufferUtil.hasContent(_content)?1:0);
+                    if (_toFlush==0)
+                        _content=null;
+                    break;
+                case 0:
+                default:
+                    throw new IllegalStateException();
+            }
+            
+            if (!block)
+                break;
+            if (_toFlush>0)
+                blockUntilWritable(getMaxIdleTime());
 
+        }
+    }
 
     /* ------------------------------------------------------------ */
     public void onClose()
@@ -361,4 +431,133 @@ public abstract class HttpConnection extends AbstractAsyncConnection
             _parser.setPersistent(false);
     }
 
+    private final HttpTransport _transport = new HttpTransport()
+    {
+        
+        @Override
+        public void write(ByteBuffer content, boolean volatileContent) throws IOException
+        {
+            HttpConnection.this.generate(content,Action.PREPARE,volatileContent);
+        }
+        
+        @Override
+        public void setPersistent(boolean persistent)
+        {
+            _parser.setPersistent(persistent);
+            _generator.setPersistent(persistent);
+        }
+        
+        @Override
+        public void sendError(int status, String reason, String content, boolean close) throws IOException
+        {
+            // TODO Auto-generated method stub
+            
+        }
+        
+        @Override
+        public void send1xx(int processing102)
+        {
+            // TODO Auto-generated method stub
+            
+        }
+        
+        @Override
+        public void resetBuffer()
+        {
+            // TODO Auto-generated method stub
+            
+        }
+        
+        @Override
+        public void persist()
+        {
+            // TODO Auto-generated method stub
+            
+        }
+        
+        @Override
+        public boolean isResponseCommitted()
+        {
+            return _generator.isCommitted();
+        }
+        
+        @Override
+        public boolean isPersistent()
+        {
+            return _generator.isPersistent();
+        }
+        
+        @Override
+        public boolean isAllContentWritten()
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+        
+        @Override
+        public void increaseContentBufferSize(int size)
+        {
+            // TODO Auto-generated method stub
+        }
+        
+        @Override
+        public InetSocketAddress getRemoteAddress()
+        {
+            return _endp.getRemoteAddress();
+        }
+        
+        @Override
+        public long getMaxIdleTime()
+        {
+            return HttpConnection.this.getMaxIdleTime();
+        }
+        
+        @Override
+        public InetSocketAddress getLocalAddress()
+        {
+            return _endp.getLocalAddress();
+        }
+        
+        @Override
+        public long getContentWritten()
+        {
+            return _generator.getContentWritten();
+        }
+        
+        @Override
+        public int getContentBufferSize()
+        {
+            ByteBuffer buffer=_responseBuffer;
+            if (buffer!=null)
+                return buffer.capacity();
+            
+            return _connector.getResponseBufferSize();
+        }
+        
+        @Override
+        public Connector getConnector()
+        {
+            return _connector;
+        }
+        
+        @Override
+        public void flushResponse() throws IOException
+        {
+            HttpConnection.this.generate(null,Action.FLUSH,false);
+        }
+        
+        @Override
+        public void customize(Request request)
+        {
+            // TODO Auto-generated method stub
+            
+        }
+        
+        @Override
+        public void completeResponse()
+        {
+            // TODO Auto-generated method stub
+            
+        }
+    };
 }

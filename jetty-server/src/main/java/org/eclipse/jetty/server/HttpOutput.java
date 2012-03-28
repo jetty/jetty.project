@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpOutput extends ServletOutputStream 
 {
-    private final HttpChannel _connection;
+    private final HttpTransport _transport;
     private boolean _closed;
     
     // These are held here for reuse by Writer
@@ -42,15 +42,15 @@ public class HttpOutput extends ServletOutputStream
     ByteArrayOutputStream2 _bytes;
 
     /* ------------------------------------------------------------ */
-    public HttpOutput(HttpChannel connection)
+    public HttpOutput(HttpTransport transport)
     {
-        _connection=connection;
+        _transport=transport;
     }
     
     /* ------------------------------------------------------------ */
     public boolean isWritten()
     {
-        return _connection.getContentWritten()>0;
+        return _transport.getContentWritten()>0;
     }
     
     /* ------------------------------------------------------------ */
@@ -79,7 +79,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void flush() throws IOException
     {
-        // TODO
+        _transport.flushResponse();
     }
 
     /* ------------------------------------------------------------ */
@@ -89,7 +89,7 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _connection.write(ByteBuffer.wrap(b,off,len));
+        _transport.write(ByteBuffer.wrap(b,off,len),true);
     }
 
     /* ------------------------------------------------------------ */
@@ -102,7 +102,7 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _connection.write(ByteBuffer.wrap(b));
+        _transport.write(ByteBuffer.wrap(b),true);
     }
 
     /* ------------------------------------------------------------ */
@@ -115,7 +115,7 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _connection.write(ByteBuffer.wrap(new byte[]{(byte)b}));
+        _transport.write(ByteBuffer.wrap(new byte[]{(byte)b}),true);
     }
 
     /* ------------------------------------------------------------ */

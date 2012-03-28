@@ -15,7 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpTokens.Content;
+import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -67,7 +67,7 @@ public class HttpGenerator
     private final ResponseInfo _response;
 
     private State _state = State.START;
-    private Content _content = Content.UNKNOWN_CONTENT;
+    private EndOfContent _content = EndOfContent.UNKNOWN_CONTENT;
     
     private int _largeContent=4096;
     private long _contentPrepared = 0;
@@ -106,7 +106,7 @@ public class HttpGenerator
     public void reset()
     {
         _state = State.START;
-        _content = Content.UNKNOWN_CONTENT;
+        _content = EndOfContent.UNKNOWN_CONTENT;
         _noContent=false;
         _persistent = null;
         _contentPrepared = 0;
@@ -159,7 +159,7 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     public boolean isChunking()
     {
-        return _content==Content.CHUNKED_CONTENT;
+        return _content==EndOfContent.CHUNKED_CONTENT;
     }
 
     /* ------------------------------------------------------------ */
@@ -208,7 +208,7 @@ public class HttpGenerator
     /* ------------------------------------------------------------ */
     public boolean isAllContentWritten()
     {
-        return _content==Content.CONTENT_LENGTH && _contentPrepared>=_info.getContentLength();
+        return _content==EndOfContent.CONTENT_LENGTH && _contentPrepared>=_info.getContentLength();
     }
     
     /* ------------------------------------------------------------ */
@@ -242,7 +242,7 @@ public class HttpGenerator
         if (BufferUtil.hasContent(content))
         {
             // Do we have too much content?
-            if (_content==Content.CONTENT_LENGTH && _info.getContentLength()>=0 && content.remaining()>(_info.getContentLength()-_contentPrepared))
+            if (_content==EndOfContent.CONTENT_LENGTH && _info.getContentLength()>=0 && content.remaining()>(_info.getContentLength()-_contentPrepared))
             {
                 LOG.warn("Content truncated. Info.getContentLength()=="+_info.getContentLength()+" prepared="+_contentPrepared+" content="+content.remaining(),new Throwable());
                 content.limit(content.position()+(int)(_info.getContentLength()-_contentPrepared));
@@ -355,7 +355,7 @@ public class HttpGenerator
                         if (_info.getHttpVersion() == HttpVersion.HTTP_0_9)
                         {
                             _persistent = false;
-                            _content=Content.EOF_CONTENT;
+                            _content=EndOfContent.EOF_CONTENT;
                             _state = State.COMMITTED;
                             if (result==Result.FLUSH_CONTENT)
                                 _contentPrepared+=content.remaining();
@@ -596,13 +596,13 @@ public class HttpGenerator
                     case CONTENT_LENGTH:
                         // handle specially below
                         if (_info.getContentLength()>=0)
-                            _content=Content.CONTENT_LENGTH;
+                            _content=EndOfContent.CONTENT_LENGTH;
                         break;
 
                     case CONTENT_TYPE:
                     {
                         if (field.getValue().startsWith(MimeTypes.Type.MULTIPART_BYTERANGES.toString()))
-                            _content=Content.SELF_DEFINING_CONTENT;
+                            _content=EndOfContent.SELF_DEFINING_CONTENT;
 
                         // write the field to the header
                         content_type=true;
@@ -656,8 +656,8 @@ public class HttpGenerator
                                     close=true;
                                     if (isResponse())
                                         _persistent=false;
-                                    if (!_persistent && isResponse() && _content == Content.UNKNOWN_CONTENT)
-                                        _content=Content.EOF_CONTENT;
+                                    if (!_persistent && isResponse() && _content == EndOfContent.UNKNOWN_CONTENT)
+                                        _content=EndOfContent.EOF_CONTENT;
                                     break;
                                 }
 
@@ -731,11 +731,11 @@ public class HttpGenerator
 
                 // Response known not to have a body
                 if (_contentPrepared == 0 && isResponse() && (status < 200 || status == 204 || status == 304))
-                    _content=Content.NO_CONTENT;
+                    _content=EndOfContent.NO_CONTENT;
                 else if (_info.getContentLength()>0)
                 {
                     // we have been given a content length
-                    _content=Content.CONTENT_LENGTH;
+                    _content=EndOfContent.CONTENT_LENGTH;
                     long content_length = _info.getContentLength();
                     if ((isResponse() || content_length>0 || content_type ) && !_noContent)
                     {
@@ -748,7 +748,7 @@ public class HttpGenerator
                 else if (last)
                 {
                     // we have seen all the _content there is, so we can be content-length limited.
-                    _content=Content.CONTENT_LENGTH;
+                    _content=EndOfContent.CONTENT_LENGTH;
                     long content_length = _contentPrepared+BufferUtil.length(content);
                     
                     // Do we need to tell the headers about it
@@ -762,10 +762,10 @@ public class HttpGenerator
                 else
                 {
                     // No idea, so we must assume that a body is coming
-                    _content = (!_persistent || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? Content.EOF_CONTENT : Content.CHUNKED_CONTENT;
-                    if (isRequest() && _content==Content.EOF_CONTENT)
+                    _content = (!_persistent || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal() ) ? EndOfContent.EOF_CONTENT : EndOfContent.CHUNKED_CONTENT;
+                    if (isRequest() && _content==EndOfContent.EOF_CONTENT)
                     {
-                        _content=Content.NO_CONTENT;
+                        _content=EndOfContent.NO_CONTENT;
                         _noContent=true;
                     }
                 }
@@ -816,7 +816,7 @@ public class HttpGenerator
         }
 
         // Handle connection if need be
-        if (_content==Content.EOF_CONTENT)
+        if (_content==EndOfContent.EOF_CONTENT)
         {
             keep_alive=false;
             _persistent=false;
