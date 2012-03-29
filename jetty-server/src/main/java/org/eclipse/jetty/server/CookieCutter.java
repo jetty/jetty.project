@@ -193,7 +193,7 @@ public class CookieCutter
                                 continue;
 
                             case ';':
-                            case ',':
+                            // case ',':
                                 if (tokenstart>=0)
                                     value = hdr.substring(tokenstart, tokenend+1);
                                 else
@@ -239,7 +239,7 @@ public class CookieCutter
                                 continue;
 
                             case ';':
-                            case ',':
+                            // case ',':
                                 if (tokenstart>=0)
                                 {
                                     name = hdr.substring(tokenstart, tokenend+1);
