@@ -53,27 +53,27 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 /**
  *
  */
-public class HttpChannel
+public abstract class HttpProcessor
 {
-    private static final Logger LOG = Log.getLogger(HttpChannel.class);
+    private static final Logger LOG = Log.getLogger(HttpProcessor.class);
 
-    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<HttpChannel>();
+    private static final ThreadLocal<HttpProcessor> __currentChannel = new ThreadLocal<HttpProcessor>();
 
     /* ------------------------------------------------------------ */
-    public static HttpChannel getCurrentHttpChannel()
+    public static HttpProcessor getCurrentHttpChannel()
     {
         return __currentChannel.get();
     }
 
     /* ------------------------------------------------------------ */
-    protected static void setCurrentHttpChannel(HttpChannel channel)
+    protected static void setCurrentHttpChannel(HttpProcessor channel)
     {
         __currentChannel.set(channel);
     }
     
     private int _requests;
 
-    private final HttpTransport _transport;
+    private final HttpController _controller;
     private final Server _server;
     private final HttpURI _uri;
 
@@ -156,10 +156,10 @@ public class HttpChannel
     /** Constructor
      *
      */
-    public HttpChannel(HttpTransport transport, Server server)
+    public HttpProcessor(Server server, HttpController controller)
     {
         _server = server;
-        _transport=transport;
+        _controller=controller;
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
@@ -168,6 +168,11 @@ public class HttpChannel
         _async = _request.getAsyncContinuation();
     }
 
+    /* ------------------------------------------------------------ */
+    abstract public InetSocketAddress getLocalAddress();
+    abstract public InetSocketAddress getRemoteAddress();
+    abstract public long getMaxIdleTime();
+    
     /* ------------------------------------------------------------ */
     /**
      * @return the number of requests handled by this connection
@@ -184,9 +189,9 @@ public class HttpChannel
     }
 
     /* ------------------------------------------------------------ */
-    public HttpTransport getHttpTransport()
+    public HttpController getHttpTransport()
     {
-        return _transport;
+        return _controller;
     }
     
     /* ------------------------------------------------------------ */
@@ -250,16 +255,16 @@ public class HttpChannel
             // is content missing?
             if (available()==0)
             {
-                if (_transport.isResponseCommitted())
+                if (_controller.isResponseCommitted())
                     throw new IllegalStateException("Committed before 100 Continues");
 
-                _transport.send1xx(HttpStatus.CONTINUE_100);
+                _controller.send1xx(HttpStatus.CONTINUE_100);
             }
             _expect100Continue=false;
         }
 
         if (_in == null)
-            _in = new HttpInput(HttpChannel.this);
+            _in = new HttpInput(HttpProcessor.this);
         return _in;
     }
 
@@ -268,7 +273,7 @@ public class HttpChannel
     /**
      * @return The output stream for this connection. The stream will be created if it does not already exist.
      */
-    public ServletOutputStream getOutputStream()
+    public HttpOutput getOutputStream()
     {
         if (_out == null)
             _out = new Output();
@@ -372,7 +377,7 @@ public class HttpChannel
                     if (_async.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
-                        _transport.customize(_request);
+                        _controller.customize(_request);
                         server.handle(this);
                     }
                     else
@@ -412,7 +417,7 @@ public class HttpChannel
                     LOG.warn(String.valueOf(_uri),e);
                     error=true;
                     _request.setHandled(true);
-                    _transport.sendError(info==null?400:500, null, null, true);
+                    _controller.sendError(info==null?400:500, null, null, true);
                 }
                 finally
                 {
@@ -438,17 +443,17 @@ public class HttpChannel
                     // do anything special here other than make the connection not persistent
                     _expect100Continue = false;
                     if (!_response.isCommitted())
-                        _transport.setPersistent(false);
+                        _controller.setPersistent(false);
                 }
 
                 if (error)
-                    _transport.setPersistent(false);
+                    _controller.setPersistent(false);
                 else if (!_response.isCommitted() && !_request.isHandled())
                     _response.sendError(HttpServletResponse.SC_NOT_FOUND);
 
                 _response.complete();
-                if (_transport.isPersistent())
-                    _transport.persist();
+                if (_controller.isPersistent())
+                    _controller.persist();
 
                 _request.setHandled(true);
             }
@@ -511,7 +516,6 @@ public class HttpChannel
     {
         synchronized (_inputQ.lock())
         {
-            
             ByteBuffer content=null;
             long start=-1;
             long timeout=-1;
@@ -535,7 +539,7 @@ public class HttpChannel
                     if (start<0)
                     {
                         start=System.currentTimeMillis();
-                        timeout=_transport.getMaxIdleTime();
+                        timeout=getMaxIdleTime();
                     }
                     else
                     {
@@ -544,7 +548,7 @@ public class HttpChannel
                         start=now;
                     }
                     if (timeout<=0)
-                        throw new SocketTimeoutException(">"+_transport.getMaxIdleTime()+"ms");
+                        throw new SocketTimeoutException(">"+getMaxIdleTime()+"ms");
                     try
                     {
                         _inputQ.wait(timeout);
@@ -705,7 +709,7 @@ public class HttpChannel
                 case HTTP_0_9:
                     break;
                 case HTTP_1_0:
-                    if (_transport.isPersistent())
+                    if (_controller.isPersistent())
                     {
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
                     }
@@ -716,7 +720,7 @@ public class HttpChannel
 
                 case HTTP_1_1:
 
-                    if (!_transport.isPersistent())
+                    if (!_controller.isPersistent())
                     {
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
                     }
@@ -727,7 +731,7 @@ public class HttpChannel
                     {
                         LOG.debug("!host {}",this);
                         _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        _transport.sendError(HttpStatus.BAD_REQUEST_400,null,null,true);
+                        _controller.sendError(HttpStatus.BAD_REQUEST_400,null,null,true);
                         return true;
                     }
 
@@ -735,7 +739,7 @@ public class HttpChannel
                     {
                         LOG.debug("!expectation {}",this);
                         _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        _transport.sendError(HttpStatus.EXPECTATION_FAILED_417,null,null,true);
+                        _controller.sendError(HttpStatus.EXPECTATION_FAILED_417,null,null,true);
                         return true;
                     }
 
@@ -788,7 +792,7 @@ public class HttpChannel
     {
         Output()
         {
-            super(_transport);
+            super(_controller,HttpProcessor.this);
         }
 
         /* ------------------------------------------------------------ */

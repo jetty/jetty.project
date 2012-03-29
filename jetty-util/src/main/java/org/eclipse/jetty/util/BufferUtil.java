@@ -220,7 +220,7 @@ public class BufferUtil
      * @param buffer The buffer to get the remaining from, in flush mode.
      * @return 0 if the buffer is null, else the bytes remaining in the buffer.
      */
-    public static long length(ByteBuffer buffer)
+    public static int length(ByteBuffer buffer)
     {
         return buffer==null?0:buffer.remaining();
     }

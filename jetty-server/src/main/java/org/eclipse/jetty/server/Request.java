@@ -117,8 +117,8 @@ public class Request implements HttpServletRequest
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
-    private final HttpChannel _channel;
-    private final HttpTransport _transport;
+    private final HttpProcessor _processor;
+    private final HttpController _transport;
     private HttpFields _fields;
     private final AsyncContinuation _async = new AsyncContinuation();
     
@@ -168,12 +168,12 @@ public class Request implements HttpServletRequest
     
     
     /* ------------------------------------------------------------ */
-    public Request(HttpChannel channel)
+    public Request(HttpProcessor processor)
     {
-        _channel = channel;
-        _transport = channel.getHttpTransport();
-        _fields=_channel.getRequestFields();
-        _async.setConnection(channel);
+        _processor = processor;
+        _transport = processor.getHttpTransport();
+        _fields=_processor.getRequestFields();
+        _async.setConnection(processor);
     }
 
     /* ------------------------------------------------------------ */
@@ -253,10 +253,10 @@ public class Request implements HttpServletRequest
                             }
                             else
                             {
-                                Number size = (Number)_channel.getServer()
+                                Number size = (Number)_processor.getServer()
                                         .getAttribute("org.eclipse.jetty.server.Request.maxFormContentSize");
                                 maxFormContentSize = size == null?200000:size.intValue();
-                                Number keys = (Number)_channel.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
+                                Number keys = (Number)_processor.getServer().getAttribute("org.eclipse.jetty.server.Request.maxFormKeys");
                                 maxFormKeys = keys == null?1000:keys.intValue();
                             }
 
@@ -390,9 +390,9 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the connection.
      */
-    public HttpChannel getConnection()
+    public HttpProcessor getConnection()
     {
-        return _channel;
+        return _processor;
     }
 
     /* ------------------------------------------------------------ */
@@ -523,7 +523,7 @@ public class Request implements HttpServletRequest
         if (_inputState != __NONE && _inputState != _STREAM)
             throw new IllegalStateException("READER");
         _inputState = _STREAM;
-        return _channel.getInputStream();
+        return _processor.getInputStream();
     }
 
     /* ------------------------------------------------------------ */
@@ -622,7 +622,7 @@ public class Request implements HttpServletRequest
      */
     public String getLocalAddr()
     {
-        InetSocketAddress local=_transport.getLocalAddress();
+        InetSocketAddress local=_processor.getLocalAddress();
         return local.getAddress().getHostAddress();
     }
     
@@ -632,7 +632,7 @@ public class Request implements HttpServletRequest
      */
     public String getLocalName()
     {
-        InetSocketAddress local=_transport.getLocalAddress();
+        InetSocketAddress local=_processor.getLocalAddress();
         return local.getHostString();
     }
 
@@ -642,7 +642,7 @@ public class Request implements HttpServletRequest
      */
     public int getLocalPort()
     {
-        InetSocketAddress local=_transport.getLocalAddress();
+        InetSocketAddress local=_processor.getLocalAddress();
         return local.getPort();
     }
 
@@ -824,7 +824,7 @@ public class Request implements HttpServletRequest
     {
         InetSocketAddress remote=_remote;
         if (remote==null)
-            remote=_transport.getRemoteAddress();
+            remote=_processor.getRemoteAddress();
         return remote==null?"":remote.getAddress().getHostAddress();
     }
 
@@ -836,7 +836,7 @@ public class Request implements HttpServletRequest
     {
         InetSocketAddress remote=_remote;
         if (remote==null)
-            remote=_transport.getRemoteAddress();
+            remote=_processor.getRemoteAddress();
         return remote==null?"":remote.getHostString();
     }
 
@@ -848,7 +848,7 @@ public class Request implements HttpServletRequest
     {
         InetSocketAddress remote=_remote;
         if (remote==null)
-            remote=_transport.getRemoteAddress();
+            remote=_processor.getRemoteAddress();
         return remote==null?0:remote.getPort();
     }
 
@@ -937,7 +937,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public Response getResponse()
     {
-        return _channel.getResponse();
+        return _processor.getResponse();
     }
 
     /* ------------------------------------------------------------ */
@@ -1019,7 +1019,7 @@ public class Request implements HttpServletRequest
                         {
                             try
                             {
-                                if (_channel != null)
+                                if (_processor != null)
                                     _transport.sendError(HttpStatus.BAD_REQUEST_400,"Bad Host header",null,true);
                             }
                             catch (IOException e1)
@@ -1041,7 +1041,7 @@ public class Request implements HttpServletRequest
         }
 
         // Return host from connection
-        if (_channel != null)
+        if (_processor != null)
         {
             _serverName = getLocalName();
             _port = getLocalPort();
@@ -1078,7 +1078,7 @@ public class Request implements HttpServletRequest
                     _port = _uri.getPort();
                 else
                 {
-                    InetSocketAddress local = _transport.getLocalAddress();
+                    InetSocketAddress local = _processor.getLocalAddress();
                     _port = local == null?0:local.getPort();
                 }
             }
@@ -1123,7 +1123,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public ServletResponse getServletResponse()
     {
-        return _channel.getResponse();
+        return _processor.getResponse();
     }
 
     /* ------------------------------------------------------------ */
@@ -1158,7 +1158,7 @@ public class Request implements HttpServletRequest
         _session = _sessionManager.newHttpSession(this);
         HttpCookie cookie = _sessionManager.getSessionCookie(_session,getContextPath(),isSecure());
         if (cookie != null)
-            _channel.getResponse().addCookie(cookie);
+            _processor.getResponse().addCookie(cookie);
 
         return _session;
     }
@@ -1471,7 +1471,7 @@ public class Request implements HttpServletRequest
             {
                 try
                 {
-                    ((HttpChannel.Output)getServletResponse().getOutputStream()).sendContent(value);
+                    ((HttpProcessor.Output)getServletResponse().getOutputStream()).sendContent(value);
                 }
                 catch (IOException e)
                 {
@@ -1850,7 +1850,7 @@ public class Request implements HttpServletRequest
     {
         if (!_asyncSupported)
             throw new IllegalStateException("!asyncSupported");
-        _async.suspend(_context,this,_channel.getResponse());
+        _async.suspend(_context,this,_processor.getResponse());
         return _async;
     }
 

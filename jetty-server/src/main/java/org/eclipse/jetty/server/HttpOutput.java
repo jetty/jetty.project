@@ -32,7 +32,8 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpOutput extends ServletOutputStream 
 {
-    private final HttpTransport _transport;
+    private final HttpController _controller;
+    private final HttpProcessor _processor;
     private boolean _closed;
     
     // These are held here for reuse by Writer
@@ -40,17 +41,32 @@ public class HttpOutput extends ServletOutputStream
     Writer _converter;
     char[] _chars;
     ByteArrayOutputStream2 _bytes;
+    long _written;
 
     /* ------------------------------------------------------------ */
-    public HttpOutput(HttpTransport transport)
+    public HttpOutput(HttpController controller, HttpProcessor processor)
     {
-        _transport=transport;
+        _controller=controller;
+        _processor=processor;
     }
     
     /* ------------------------------------------------------------ */
     public boolean isWritten()
     {
-        return _transport.getContentWritten()>0;
+        return _written>0;
+    }
+
+    /* ------------------------------------------------------------ */
+    public long getWritten()
+    {
+        return _written;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void reset()
+    {
+        _written=0;
+        _closed=false;
     }
     
     /* ------------------------------------------------------------ */
@@ -60,6 +76,8 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void close() throws IOException
     {
+        if (!_closed)
+            _controller.completeResponse();
         _closed=true;
     }
     
@@ -79,7 +97,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void flush() throws IOException
     {
-        _transport.flushResponse();
+        _controller.flushResponse();
     }
 
     /* ------------------------------------------------------------ */
@@ -89,7 +107,8 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _transport.write(ByteBuffer.wrap(b,off,len),true);
+        _written+=_controller.write(ByteBuffer.wrap(b,off,len),true);
+        _processor.getResponse().checkAllContentWritten(_written);
     }
 
     /* ------------------------------------------------------------ */
@@ -102,7 +121,8 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _transport.write(ByteBuffer.wrap(b),true);
+        _written+=_controller.write(ByteBuffer.wrap(b),true);
+        _processor.getResponse().checkAllContentWritten(_written);
     }
 
     /* ------------------------------------------------------------ */
@@ -115,7 +135,8 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _transport.write(ByteBuffer.wrap(new byte[]{(byte)b}),true);
+        _written+=_controller.write(ByteBuffer.wrap(new byte[]{(byte)b}),true);
+        _processor.getResponse().checkAllContentWritten(_written);
     }
 
     /* ------------------------------------------------------------ */
@@ -127,4 +148,5 @@ public class HttpOutput extends ServletOutputStream
     {
         write(s.getBytes());
     }
+
 }

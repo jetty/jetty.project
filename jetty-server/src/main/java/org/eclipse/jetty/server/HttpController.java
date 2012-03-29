@@ -4,18 +4,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-public interface HttpTransport
+public interface HttpController
 {
-    public void write(ByteBuffer wrap,boolean volatileContent) throws IOException;
-    
-    public long getContentWritten();
-    
+    public int write(ByteBuffer content,boolean volatileContent) throws IOException;
+        
     void sendError(int status, String reason, String content, boolean close)  throws IOException;
     
     void send1xx(int processing102);
     
-    boolean isAllContentWritten();
-
     int getContentBufferSize();
 
     void increaseContentBufferSize(int size);
@@ -28,10 +24,6 @@ public interface HttpTransport
     
     public void setPersistent(boolean persistent);
 
-    public InetSocketAddress getLocalAddress();
-
-    public InetSocketAddress getRemoteAddress();
-
     public void flushResponse() throws IOException;
 
     public void completeResponse();
@@ -41,7 +33,5 @@ public interface HttpTransport
     void persist();
 
     void customize(Request request);
-
-    long getMaxIdleTime();
     
 }

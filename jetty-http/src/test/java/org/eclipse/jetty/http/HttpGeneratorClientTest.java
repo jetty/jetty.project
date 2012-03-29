@@ -107,7 +107,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.State.END,gen.getState());
         assertTrue(!gen.isChunking());
 
-        assertEquals(0,gen.getContentWritten());
+        assertEquals(0,gen.getContentPrepared());
         assertThat(head,containsString("GET /index.html HTTP/1.1"));
         assertThat(head,not(containsString("Content-Length")));
 
@@ -169,7 +169,7 @@ public class HttpGeneratorClientTest
 
         assertEquals("Hello World. The quick brown fox jumped over the lazy dog.",body);
 
-        assertEquals(58,gen.getContentWritten());
+        assertEquals(58,gen.getContentPrepared());
     }
 
     @Test
@@ -269,7 +269,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.END,gen.getState());
 
-        assertEquals(59,gen.getContentWritten());
+        assertEquals(59,gen.getContentPrepared());
 
         // System.err.println(head+body);
 
@@ -338,7 +338,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.END,gen.getState());
 
-        assertEquals(65,gen.getContentWritten());
+        assertEquals(65,gen.getContentPrepared());
 
         // System.err.println(head+body);
 
@@ -431,7 +431,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.State.END,gen.getState());
         assertEquals(0,buffer.remaining());
 
-        assertEquals(59,gen.getContentWritten());
+        assertEquals(59,gen.getContentPrepared());
 
         // System.err.println(head+body);
 
@@ -489,7 +489,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.END,gen.getState());
 
-        assertEquals(59,gen.getContentWritten());
+        assertEquals(59,gen.getContentPrepared());
 
         // System.err.println(head+body);
 

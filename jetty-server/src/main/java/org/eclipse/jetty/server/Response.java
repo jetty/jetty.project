@@ -65,8 +65,8 @@ public class Response implements HttpServletResponse
      */
     public final static String HTTP_ONLY_COMMENT="__HTTP_ONLY__";
     
-    private final HttpChannel _channel;
-    private final HttpTransport _transport;
+    private final HttpProcessor _processor;
+    private final HttpController _controller;
     private final HttpFields _fields;
     private int _status=SC_OK;
     private String _reason;
@@ -76,7 +76,7 @@ public class Response implements HttpServletResponse
     private String _contentType;
     private Output _outputState;
     private PrintWriter _writer;
-    private long _contentLength;
+    private long _contentLength=-1;
 
     
     
@@ -84,10 +84,10 @@ public class Response implements HttpServletResponse
     /**
      *
      */
-    public Response(HttpChannel channel)
+    public Response(HttpProcessor channel)
     {
-        _channel=channel;
-        _transport=channel.getHttpTransport();
+        _processor=channel;
+        _controller=channel.getHttpTransport();
         _fields=channel.getResponseFields();
     }
 
@@ -106,6 +106,7 @@ public class Response implements HttpServletResponse
         _contentType=null;
         _writer=null;
         _outputState=Output.NONE;
+        _contentLength=-1;
     }
 
     /* ------------------------------------------------------------ */
@@ -163,7 +164,7 @@ public class Response implements HttpServletResponse
      */
     public String encodeURL(String url)
     {
-        final Request request=_channel.getRequest();
+        final Request request=_processor.getRequest();
         SessionManager sessionManager = request.getSessionManager();
         if (sessionManager==null)
             return url;
@@ -284,7 +285,7 @@ public class Response implements HttpServletResponse
      */
     public void sendError(int code, String message) throws IOException
     {
-    	if (_channel.isIncluding())
+    	if (_processor.isIncluding())
     		return;
 
         if (isCommitted())
@@ -310,21 +311,21 @@ public class Response implements HttpServletResponse
             code!=SC_PARTIAL_CONTENT &&
             code>=SC_OK)
         {
-            Request request = _channel.getRequest();
+            Request request = _processor.getRequest();
 
             ErrorHandler error_handler = null;
             ContextHandler.Context context = request.getContext();
             if (context!=null)
                 error_handler=context.getContextHandler().getErrorHandler();
             if (error_handler==null)
-                error_handler = _channel.getServer().getBean(ErrorHandler.class);
+                error_handler = _processor.getServer().getBean(ErrorHandler.class);
             if (error_handler!=null)
             {
                 request.setAttribute(Dispatcher.ERROR_STATUS_CODE,new Integer(code));
                 request.setAttribute(Dispatcher.ERROR_MESSAGE, message);
                 request.setAttribute(Dispatcher.ERROR_REQUEST_URI, request.getRequestURI());
                 request.setAttribute(Dispatcher.ERROR_SERVLET_NAME,request.getServletName());
-                error_handler.handle(null,_channel.getRequest(),_channel.getRequest(),this );
+                error_handler.handle(null,_processor.getRequest(),_processor.getRequest(),this );
             }
             else
             {
@@ -373,8 +374,8 @@ public class Response implements HttpServletResponse
         }
         else if (code!=SC_PARTIAL_CONTENT)
         {
-            _channel.getRequestFields().remove(HttpHeader.CONTENT_TYPE);
-            _channel.getRequestFields().remove(HttpHeader.CONTENT_LENGTH);
+            _processor.getRequestFields().remove(HttpHeader.CONTENT_TYPE);
+            _processor.getRequestFields().remove(HttpHeader.CONTENT_LENGTH);
             _characterEncoding=null;
             _mimeType=null;
         }
@@ -404,8 +405,8 @@ public class Response implements HttpServletResponse
      */
     public void sendProcessing() throws IOException
     {
-        if (_channel.isExpecting102Processing() && !isCommitted())
-            _transport.send1xx(HttpStatus.PROCESSING_102);
+        if (_processor.isExpecting102Processing() && !isCommitted())
+            _controller.send1xx(HttpStatus.PROCESSING_102);
     }
 
     /* ------------------------------------------------------------ */
@@ -414,7 +415,7 @@ public class Response implements HttpServletResponse
      */
     public void sendRedirect(String location) throws IOException
     {
-    	if (_channel.isIncluding())
+    	if (_processor.isIncluding())
     		return;
 
         if (location==null)
@@ -422,12 +423,12 @@ public class Response implements HttpServletResponse
 
         if (!URIUtil.hasScheme(location))
         {
-            StringBuilder buf = _channel.getRequest().getRootURL();
+            StringBuilder buf = _processor.getRequest().getRootURL();
             if (location.startsWith("/"))
                 buf.append(location);
             else
             {
-                String path=_channel.getRequest().getRequestURI();
+                String path=_processor.getRequest().getRequestURI();
                 String parent=(path.endsWith("/"))?path:URIUtil.parentPath(path);
                 location=URIUtil.addPaths(parent,location);
                 if(location==null)
@@ -445,7 +446,7 @@ public class Response implements HttpServletResponse
                 throw new IllegalArgumentException();
             if (!canonical.equals(path))
             {
-                buf = _channel.getRequest().getRootURL();
+                buf = _processor.getRequest().getRootURL();
                 buf.append(URIUtil.encodePath(canonical));
                 if (uri.getQuery()!=null)
                 {
@@ -474,7 +475,7 @@ public class Response implements HttpServletResponse
      */
     public void setDateHeader(String name, long date)
     {
-        if (!_channel.isIncluding())
+        if (!_processor.isIncluding())
             _fields.putDateField(name, date);
     }
 
@@ -484,7 +485,7 @@ public class Response implements HttpServletResponse
      */
     public void addDateHeader(String name, long date)
     {
-        if (!_channel.isIncluding())
+        if (!_processor.isIncluding())
             _fields.addDateField(name, date);
     }
 
@@ -498,7 +499,7 @@ public class Response implements HttpServletResponse
             setContentType(value);
         else
         {
-            if (_channel.isIncluding())
+            if (_processor.isIncluding())
                     return;
             
             _fields.put(name, value);
@@ -522,7 +523,7 @@ public class Response implements HttpServletResponse
             setContentType(value);
         else
         {
-            if (_channel.isIncluding())
+            if (_processor.isIncluding())
             {
                 if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                     name=name.substring(SET_INCLUDE_HEADER_PREFIX.length());
@@ -574,7 +575,7 @@ public class Response implements HttpServletResponse
      */
     public void addHeader(String name, String value)
     {
-        if (_channel.isIncluding())
+        if (_processor.isIncluding())
         {
             if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name=name.substring(SET_INCLUDE_HEADER_PREFIX.length());
@@ -598,7 +599,7 @@ public class Response implements HttpServletResponse
      */
     public void setIntHeader(String name, int value)
     {
-        if (!_channel.isIncluding())
+        if (!_processor.isIncluding())
         {
             _fields.putLongField(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -612,7 +613,7 @@ public class Response implements HttpServletResponse
      */
     public void addIntHeader(String name, int value)
     {
-        if (!_channel.isIncluding())
+        if (!_processor.isIncluding())
         {
             _fields.add(name, Integer.toString(value));
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -637,7 +638,7 @@ public class Response implements HttpServletResponse
     {
         if (sc<=0)
             throw new IllegalArgumentException();
-        if (!_channel.isIncluding())
+        if (!_processor.isIncluding())
         {
             _status=sc;
             _reason=sm;
@@ -679,7 +680,7 @@ public class Response implements HttpServletResponse
         if (_outputState==Output.WRITER)
             throw new IllegalStateException("WRITER");
 
-        ServletOutputStream out = _channel.getOutputStream();
+        ServletOutputStream out = _processor.getOutputStream();
         _outputState=Output.STREAM;
         return out;
     }
@@ -720,7 +721,7 @@ public class Response implements HttpServletResponse
             }
 
             /* construct Writer using correct encoding */
-            _writer = _channel.getPrintWriter(encoding);
+            _writer = _processor.getPrintWriter(encoding);
         }
         _outputState=Output.WRITER;
         return _writer;
@@ -736,29 +737,34 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || _channel.isIncluding())
+        if (isCommitted() || _processor.isIncluding())
             return;
         _contentLength=len;
-        if (len>=0)
+        _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), (long)len);
+        
+        if (_contentLength>0)
+            checkAllContentWritten(_processor.getOutputStream().getWritten());
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void checkAllContentWritten(long written)
+    {
+        if (_contentLength>0 && written>=_contentLength)
         {
-            _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), (long)len);
-            if (_transport.isAllContentWritten())
+            switch(_outputState)
             {
-                switch(_outputState)
-                {
-                    case WRITER:
-                        _writer.close();
-                        break;
-                    case STREAM:
-                        try
-                        {
-                            getOutputStream().close();
-                        }
-                        catch(IOException e)
-                        {
-                            throw new RuntimeException(e);
-                        }
-                }
+                case WRITER:
+                    _writer.close();
+                    break;
+                case STREAM:
+                    try
+                    {
+                        getOutputStream().close();
+                    }
+                    catch(IOException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
             }
         }
     }
@@ -778,7 +784,7 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || _channel.isIncluding())
+        if (isCommitted() || _processor.isIncluding())
         	return;
         _contentLength=len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
@@ -790,7 +796,7 @@ public class Response implements HttpServletResponse
      */
     public void setCharacterEncoding(String encoding)
     {
-        if (_channel.isIncluding())
+        if (_processor.isIncluding())
                 return;
 
         if (_outputState==Output.NONE && !isCommitted())
@@ -827,7 +833,7 @@ public class Response implements HttpServletResponse
      */
     public void setContentType(String contentType)
     {
-        if (isCommitted() || _channel.isIncluding())
+        if (isCommitted() || _processor.isIncluding())
             return;
 
         if (contentType==null)
@@ -864,7 +870,7 @@ public class Response implements HttpServletResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed or content written");
-        _transport.increaseContentBufferSize(size);
+        _controller.increaseContentBufferSize(size);
     }
 
     /* ------------------------------------------------------------ */
@@ -873,7 +879,7 @@ public class Response implements HttpServletResponse
      */
     public int getBufferSize()
     {
-        return _transport.getContentBufferSize();
+        return _controller.getContentBufferSize();
     }
 
     /* ------------------------------------------------------------ */
@@ -882,7 +888,7 @@ public class Response implements HttpServletResponse
      */
     public void flushBuffer() throws IOException
     {
-        _transport.flushResponse();
+        _controller.flushResponse();
     }
 
     /* ------------------------------------------------------------ */
@@ -895,11 +901,12 @@ public class Response implements HttpServletResponse
         fwdReset();
         _status=200;
         _reason=null;
+        _contentLength=-1;
         
         HttpFields response_fields=_fields;
         
         response_fields.clear();
-        String connection=_channel.getRequestFields().getStringField(HttpHeader.CONNECTION);
+        String connection=_processor.getRequestFields().getStringField(HttpHeader.CONNECTION);
         if (connection!=null)
         {
             String[] values = connection.split(",");
@@ -916,7 +923,7 @@ public class Response implements HttpServletResponse
                             break;
 
                         case KEEP_ALIVE:
-                            if (HttpVersion.HTTP_1_0.is(_channel.getRequest().getProtocol()))
+                            if (HttpVersion.HTTP_1_0.is(_processor.getRequest().getProtocol()))
                                 response_fields.put(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE.toString());
                             break;
                         case TE:
@@ -948,7 +955,15 @@ public class Response implements HttpServletResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        _transport.resetBuffer();
+        
+        switch(_outputState)
+        {
+            case STREAM:
+            case WRITER:
+                _processor.getOutputStream().reset();
+        }
+        
+        _controller.resetBuffer();
     }
 
     /* ------------------------------------------------------------ */
@@ -957,7 +972,7 @@ public class Response implements HttpServletResponse
      */
     public boolean isCommitted()
     {
-        return _transport.isResponseCommitted();
+        return _controller.isResponseCommitted();
     }
 
     /* ------------------------------------------------------------ */
@@ -966,7 +981,7 @@ public class Response implements HttpServletResponse
      */
     public void setLocale(Locale locale)
     {
-        if (locale == null || isCommitted() ||_channel.isIncluding())
+        if (locale == null || isCommitted() ||_processor.isIncluding())
             return;
 
         _locale = locale;
@@ -975,10 +990,10 @@ public class Response implements HttpServletResponse
         if (_outputState!=Output.NONE )
             return;
 
-        if (_channel.getRequest().getContext()==null)
+        if (_processor.getRequest().getContext()==null)
             return;
 
-        String charset = _channel.getRequest().getContext().getContextHandler().getLocaleEncoding(locale);
+        String charset = _processor.getRequest().getContext().getContextHandler().getLocaleEncoding(locale);
 
         if (charset!=null && charset.length()>0 && _characterEncoding==null)
             setCharacterEncoding(charset);
@@ -1021,7 +1036,7 @@ public class Response implements HttpServletResponse
     public void complete()
         throws IOException
     {
-        _transport.completeResponse();
+        _controller.completeResponse();
     }
 
     /* ------------------------------------------------------------ */

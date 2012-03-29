@@ -212,7 +212,7 @@ public class HttpGenerator
     }
     
     /* ------------------------------------------------------------ */
-    public long getContentWritten()
+    public long getContentPrepared()
     {
         return _contentPrepared;
     }

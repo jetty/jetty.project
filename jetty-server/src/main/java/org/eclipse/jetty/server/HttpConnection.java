@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class HttpConnection extends AbstractConnection
 {
+
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<HttpConnection>();
@@ -47,7 +48,7 @@ public abstract class HttpConnection extends AbstractConnection
     private final Connector _connector;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
-    private final HttpChannel _channel;
+    private final HttpProcessor _processor;
 
     int _toFlush;
     ByteBuffer _requestBuffer=null;
@@ -79,10 +80,10 @@ public abstract class HttpConnection extends AbstractConnection
         _connector = connector;
         _server = server;
         
-        _channel = new HttpChannel(_transport,server);
+        _processor = new HttpOverHttpProcessor(server,_controller);
        
-        _parser = new HttpParser(_channel.getRequestHandler());
-        _generator = new HttpGenerator(_channel.getResponseInfo());
+        _parser = new HttpParser(_processor.getRequestHandler());
+        _generator = new HttpGenerator(_processor.getResponseInfo());
         
     }
 
@@ -115,9 +116,9 @@ public abstract class HttpConnection extends AbstractConnection
     /**
      * @return Returns the HttpChannel.
      */
-    public HttpChannel getHttpChannel()
+    public HttpProcessor getHttpChannel()
     {
-        return _channel;
+        return _processor;
     }
 
     /* ------------------------------------------------------------ */
@@ -125,7 +126,7 @@ public abstract class HttpConnection extends AbstractConnection
     {
         _parser.reset();
         _generator.reset();
-        _channel.reset();
+        _processor.reset();
         if (_requestBuffer!=null)
             _connector.getResponseBuffers().returnBuffer(_requestBuffer);
         _requestBuffer=null;
@@ -156,7 +157,7 @@ public abstract class HttpConnection extends AbstractConnection
     /* ------------------------------------------------------------ */
     public boolean isReadInterested()
     {
-        return !_channel.getAsyncContinuation().isSuspended() && !_parser.isComplete();
+        return !_processor.getAsyncContinuation().isSuspended() && !_parser.isComplete();
     }
 
     /* ------------------------------------------------------------ */
@@ -222,13 +223,13 @@ public abstract class HttpConnection extends AbstractConnection
                     
                     // If we parse to an event, call the connection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
-                        _channel.handleRequest();
+                        _processor.handleRequest();
 
                 }
                 catch (HttpException e)
                 {
                     progress=true;
-                    _transport.sendError(e.getStatus(), e.getReason(), null, true);
+                    _controller.sendError(e.getStatus(), e.getReason(), null, true);
                 }
                 finally
                 {
@@ -243,9 +244,9 @@ public abstract class HttpConnection extends AbstractConnection
                     if (_parser.isComplete() && _generator.isComplete())
                     {
                         // look for a switched connection instance?
-                        if (_channel.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+                        if (_processor.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            Connection switched=(Connection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
+                            Connection switched=(Connection)_processor.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
                                 connection=switched;
                         }
@@ -254,7 +255,7 @@ public abstract class HttpConnection extends AbstractConnection
                         reset();
                         progress=true;
                     }
-                    else if (_channel.getRequest().getAsyncContinuation().isAsyncStarted())
+                    else if (_processor.getRequest().getAsyncContinuation().isAsyncStarted())
                     {
                         // The request is suspended, so even though progress has been made,
                         // exit the while loop by setting progress to false
@@ -273,7 +274,7 @@ public abstract class HttpConnection extends AbstractConnection
             setCurrentConnection(null);
 
             // If we are not suspended
-            if (!_channel.getRequest().getAsyncContinuation().isAsyncStarted())
+            if (!_processor.getRequest().getAsyncContinuation().isAsyncStarted())
             {
                 // reenable idle checking unless request is suspended
                 getEndPoint().setCheckForIdle(true);
@@ -283,12 +284,14 @@ public abstract class HttpConnection extends AbstractConnection
 
     
     /* ------------------------------------------------------------ */
-    private void generate(ByteBuffer content, Action action, boolean volatileContent) throws IOException
+    private int generate(ByteBuffer content, Action action, boolean volatileContent) throws IOException
     {
         if (!_generator.isComplete())
             throw new EofException();
 
-        while(BufferUtil.hasContent(content))
+        long prepared=_generator.getContentPrepared();
+        
+        do
         {
             if (_toFlush!=0)
                 flush(true);
@@ -303,7 +306,6 @@ public abstract class HttpConnection extends AbstractConnection
                     action,_generator.getState());
             
             HttpGenerator.Result result=_generator.generate(_responseHeader,_chunk,_responseBuffer,content,action);
-            
             if (LOG.isDebugEnabled())
                 LOG.debug("{}: {} ({},{},{},{},{})@{}",
                     this,
@@ -354,14 +356,10 @@ public abstract class HttpConnection extends AbstractConnection
                 case OK:
                     break;
             }
-
-            switch(action)
-            {
-                case COMPLETE: action=Action.PREPARE; break;
-                case FLUSH: action=Action.FLUSH; break;
-                case PREPARE: action=Action.PREPARE; break;
-            }
         }
+        while(BufferUtil.hasContent(content));
+        
+        return (int)(prepared-_generator.getContentPrepared());
     }
     
     /* ------------------------------------------------------------ */
@@ -418,7 +416,7 @@ public abstract class HttpConnection extends AbstractConnection
                 break;
             
             if (_toFlush>0)
-                blockUntilWritable(getMaxIdleTime());
+                _endp.blockWritable(getMaxIdleTime());
 
         }
     }
@@ -426,14 +424,14 @@ public abstract class HttpConnection extends AbstractConnection
     /* ------------------------------------------------------------ */
     public void onClose()
     {
-        _channel.onClose();
+        _processor.onClose();
     }
     
     /* ------------------------------------------------------------ */
     public void onInputShutdown() throws IOException
     {
         // If we don't have a committed response and we are not suspended
-        if (_generator.isIdle() && !_channel.getRequest().getAsyncContinuation().isSuspended())
+        if (_generator.isIdle() && !_processor.getRequest().getAsyncContinuation().isSuspended())
         {
             // then no more can happen, so close.
             _endp.close();
@@ -444,17 +442,45 @@ public abstract class HttpConnection extends AbstractConnection
             _parser.setPersistent(false);
     }
     
-    
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private final HttpTransport _transport = new HttpTransport()
+    private final class HttpOverHttpProcessor extends HttpProcessor
+    {
+        private HttpOverHttpProcessor(Server server, HttpController controller)
+        {
+            super(server,controller);
+        }
+
+        @Override
+        public InetSocketAddress getLocalAddress()
+        {
+            return _endp.getLocalAddress();
+        }
+
+        @Override
+        public InetSocketAddress getRemoteAddress()
+        {
+            return _endp.getRemoteAddress();
+        }
+
+        @Override
+        public long getMaxIdleTime()
+        {
+            return HttpConnection.this.getMaxIdleTime();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private final HttpController _controller = new HttpController()
     {
         
         @Override
-        public void write(ByteBuffer content, boolean volatileContent) throws IOException
+        public int write(ByteBuffer content, boolean volatileContent) throws IOException
         {
-            HttpConnection.this.generate(content,Action.PREPARE,volatileContent);
+            return HttpConnection.this.generate(content,Action.PREPARE,volatileContent);
         }
         
         @Override
@@ -505,40 +531,9 @@ public abstract class HttpConnection extends AbstractConnection
         }
         
         @Override
-        public boolean isAllContentWritten()
-        {
-            // TODO Auto-generated method stub
-            return false;
-        }
-        
-        @Override
         public void increaseContentBufferSize(int size)
         {
             // TODO Auto-generated method stub
-        }
-        
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            return _endp.getRemoteAddress();
-        }
-        
-        @Override
-        public long getMaxIdleTime()
-        {
-            return HttpConnection.this.getMaxIdleTime();
-        }
-        
-        @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            return _endp.getLocalAddress();
-        }
-        
-        @Override
-        public long getContentWritten()
-        {
-            return _generator.getContentWritten();
         }
         
         @Override

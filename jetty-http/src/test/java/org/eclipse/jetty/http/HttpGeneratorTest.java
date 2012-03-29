@@ -490,7 +490,7 @@ public class HttpGeneratorTest
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.END,gen.getState());
 
-        assertEquals(0,gen.getContentWritten());
+        assertEquals(0,gen.getContentPrepared());
         assertThat(head,containsString("HTTP/1.1 200 OK"));
         assertThat(head,containsString("Last-Modified: Thu, 01 Jan 1970 00?00?00 GMT"));
         assertThat(head,containsString("Content-Length: 0"));
@@ -591,7 +591,7 @@ public class HttpGeneratorTest
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.END,gen.getState());
 
-        assertEquals(59,gen.getContentWritten());
+        assertEquals(59,gen.getContentPrepared());
 
         // System.err.println(head+body);
 
@@ -679,7 +679,7 @@ public class HttpGeneratorTest
         assertEquals(HttpGenerator.State.END,gen.getState());
         assertEquals(0,buffer.remaining());
 
-        assertEquals(59,gen.getContentWritten());
+        assertEquals(59,gen.getContentPrepared());
 
         // System.err.println(head+body);
 
@@ -734,7 +734,7 @@ public class HttpGeneratorTest
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.END,gen.getState());
 
-        assertEquals(59,gen.getContentWritten());
+        assertEquals(59,gen.getContentPrepared());
 
         // System.err.println(head+body);
 
@@ -800,7 +800,7 @@ public class HttpGeneratorTest
         assertEquals(HttpGenerator.Result.OK,result);
         assertEquals(HttpGenerator.State.END,gen.getState());
 
-        assertEquals(65,gen.getContentWritten());
+        assertEquals(65,gen.getContentPrepared());
 
         // System.err.println(head+body);
 
@@ -865,6 +865,6 @@ public class HttpGeneratorTest
 
         assertEquals("Hello World. The quick brown fox jumped over the lazy dog.",body);
 
-        assertEquals(58,gen.getContentWritten());
+        assertEquals(58,gen.getContentPrepared());
     }
 }
