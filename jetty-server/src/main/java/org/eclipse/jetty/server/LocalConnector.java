@@ -20,6 +20,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.nio.Connection;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -106,7 +107,7 @@ public class LocalConnector extends AbstractConnector
                 ByteArrayEndPoint endPoint = new ByteArrayEndPoint(_requestsBuffer.asArray(), 1024)
                 {
                     @Override
-                    public void setConnection(AsyncConnection connection)
+                    public void setConnection(Connection connection)
                     {
                         if (getConnection()!=null && connection!=getConnection())
                             connectionUpgraded(getConnection(),connection);
@@ -126,8 +127,8 @@ public class LocalConnector extends AbstractConnector
                     {
                         while (true)
                         {
-                            final AsyncConnection con = endPoint.getConnection();
-                            final AsyncConnection next = con.handle();
+                            final Connection con = endPoint.getConnection();
+                            final Connection next = con.handle();
                             if (next!=con)
                             {  
                                 endPoint.setConnection(next);

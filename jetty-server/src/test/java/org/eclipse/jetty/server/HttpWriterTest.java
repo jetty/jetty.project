@@ -76,7 +76,7 @@ public class HttpWriterTest
         AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,generator,null)
         {
             @Override
-            public AsyncConnection handle() throws IOException
+            public Connection handle() throws IOException
             {
                 return null;
             }
@@ -169,7 +169,7 @@ public class HttpWriterTest
         AbstractHttpConnection connection = new AbstractHttpConnection(null,endp,new Server(),null,hb,null)
         {
             @Override
-            public AsyncConnection handle() throws IOException
+            public Connection handle() throws IOException
             {
                 return null;
             }

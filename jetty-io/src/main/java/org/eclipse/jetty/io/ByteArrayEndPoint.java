@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.nio.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 
 
@@ -34,6 +35,8 @@ public class ByteArrayEndPoint implements EndPoint
     protected boolean _closed;
     protected boolean _growOutput;
     protected int _maxIdleTime;
+    protected Connection _connection;
+    private boolean _idleCheck;
 
     /* ------------------------------------------------------------ */
     /**
@@ -118,18 +121,6 @@ public class ByteArrayEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    public boolean blockReadable(long millisecs)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean blockWritable(long millisecs)
-    {
-        return true;
-    }
-
-    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#shutdownOutput()
      */
@@ -172,35 +163,9 @@ public class ByteArrayEndPoint implements EndPoint
 
     /* ------------------------------------------------------------ */
     /*
-     * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer)
-     */
-    public int flush(ByteBuffer buffer) throws IOException
-    {
-        if (_closed)
-            throw new IOException("CLOSED");
-        
-        if (_growOutput && buffer.remaining()>_out.remaining())
-        {
-            _out.compact();
-
-            if (buffer.remaining()>_out.remaining())
-            {
-                ByteBuffer n = ByteBuffer.allocate(_out.capacity()+buffer.remaining()*2);
-                n.put(_out);
-                _out=n;
-            }
-        }
-
-        int put=buffer.remaining();
-        _out.put(buffer);
-        return put;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
-    public int gather(ByteBuffer... buffers) throws IOException
+    public int flush(ByteBuffer... buffers) throws IOException
     {
         if (_closed)
             throw new IOException("CLOSED");
@@ -210,9 +175,25 @@ public class ByteArrayEndPoint implements EndPoint
         {
             if (b.hasRemaining())
             {
-                int l=flush(b);
-                if (l>0)
-                    len+=l;
+                if (_growOutput && b.remaining()>_out.remaining())
+                {
+                    _out.compact();
+
+                    if (b.remaining()>_out.remaining())
+                    {
+                        ByteBuffer n = ByteBuffer.allocate(_out.capacity()+b.remaining()*2);
+                        n.put(_out);
+                        _out=n;
+                    }
+                }
+
+                int put=b.remaining();
+                
+                if (put>0)
+                {
+                    _out.put(b);
+                    len+=put;
+                }
                 else
                     break;
             }
@@ -255,11 +236,6 @@ public class ByteArrayEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    public void flush() throws IOException
-    {
-    }
-    
-    /* ------------------------------------------------------------ */
     /**
      * @return the growOutput
      */
@@ -293,6 +269,35 @@ public class ByteArrayEndPoint implements EndPoint
     public void setMaxIdleTime(int timeMs) throws IOException
     {
         _maxIdleTime=timeMs;
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return _connection;
+    }
+
+    @Override
+    public void setConnection(Connection connection)
+    {
+        _connection=connection;
+    }
+
+    @Override
+    public void onIdleExpired(long idleForMs)
+    {        
+    }
+
+    @Override
+    public void setCheckForIdle(boolean check)
+    {
+        _idleCheck=check;        
+    }
+
+    @Override
+    public boolean isCheckForIdle()
+    {
+        return _idleCheck;
     }
 
 

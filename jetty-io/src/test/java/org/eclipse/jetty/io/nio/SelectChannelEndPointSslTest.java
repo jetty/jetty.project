@@ -11,8 +11,6 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -43,14 +41,14 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     }
 
     @Override
-    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected Connection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
         SSLEngine engine = __sslCtxFactory.newSslEngine();
         engine.setUseClientMode(false);
         SslConnection connection = new SslConnection(engine,endpoint);
 
-        AsyncConnection delegate = super.newConnection(channel,connection.getSslEndPoint());
-        connection.getSslEndPoint().setAsyncConnection(delegate);
+        Connection delegate = super.newConnection(channel,connection.getSslEndPoint());
+        connection.getSslEndPoint().setConnection(delegate);
         return connection;
     }
 

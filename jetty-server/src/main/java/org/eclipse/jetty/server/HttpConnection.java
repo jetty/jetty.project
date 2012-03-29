@@ -27,18 +27,17 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.nio.AsyncConnection;
+import org.eclipse.jetty.io.nio.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  */
-public abstract class HttpConnection extends AbstractAsyncConnection
+public abstract class HttpConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
@@ -74,7 +73,7 @@ public abstract class HttpConnection extends AbstractAsyncConnection
     /** Constructor
      *
      */
-    public HttpConnection(Connector connector, AsyncEndPoint endpoint, Server server)
+    public HttpConnection(Connector connector, EndPoint endpoint, Server server)
     {
         super(endpoint);
         _connector = connector;
@@ -179,12 +178,26 @@ public abstract class HttpConnection extends AbstractAsyncConnection
                 _parser);
     }
 
-
     /* ------------------------------------------------------------ */
     @Override
-    public AsyncConnection handle() throws IOException
+    public void canRead()
     {
-        AsyncConnection connection = this;
+    
+    
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void canWrite()
+    {
+    
+    
+    }
+
+    /* ------------------------------------------------------------ */
+    public void processInput()
+    {
+        Connection connection = this;
         boolean progress=true;
 
         try
@@ -192,7 +205,7 @@ public abstract class HttpConnection extends AbstractAsyncConnection
             setCurrentConnection(this);
 
             // don't check for idle while dispatched (unless blocking IO is done).
-            getAsyncEndPoint().setCheckForIdle(false);
+            getEndPoint().setCheckForIdle(false);
 
 
             // While progress and the connection has not changed
@@ -201,15 +214,11 @@ public abstract class HttpConnection extends AbstractAsyncConnection
                 progress=false;
                 try
                 {
-                    // Shall we try some reading
-                    if (isReadInterested())
-                    {
-                        // We will need a buffer to read into
-                        if (_requestBuffer==null)
-                            _requestBuffer=_parser.isInContent()
-                                ?_connector.getRequestBuffers().getBuffer()
-                                :_connector.getRequestBuffers().getHeader();    
-                    }
+                    // We will need a buffer to read into
+                    if (_requestBuffer==null)
+                        _requestBuffer=_parser.isInContent()
+                        ?_connector.getRequestBuffers().getBuffer()
+                                :_connector.getRequestBuffers().getHeader();   
                     
                     // If we parse to an event, call the connection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
@@ -236,7 +245,7 @@ public abstract class HttpConnection extends AbstractAsyncConnection
                         // look for a switched connection instance?
                         if (_channel.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            AsyncConnection switched=(AsyncConnection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
+                            Connection switched=(Connection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
                                 connection=switched;
                         }
@@ -255,6 +264,10 @@ public abstract class HttpConnection extends AbstractAsyncConnection
                 }
             }
         }
+        catch(IOException e)
+        {
+            // TODO 
+        }
         finally
         {
             setCurrentConnection(null);
@@ -263,10 +276,9 @@ public abstract class HttpConnection extends AbstractAsyncConnection
             if (!_channel.getRequest().getAsyncContinuation().isAsyncStarted())
             {
                 // reenable idle checking unless request is suspended
-                getAsyncEndPoint().setCheckForIdle(true);
+                getEndPoint().setCheckForIdle(true);
             }
         }
-        return connection;
     }
 
     
@@ -336,7 +348,7 @@ public abstract class HttpConnection extends AbstractAsyncConnection
                     break;
                 
                 case SHUTDOWN_OUT:
-                    getAsyncEndPoint().shutdownOutput();
+                    getEndPoint().shutdownOutput();
                     break;
                     
                 case OK:
@@ -360,39 +372,39 @@ public abstract class HttpConnection extends AbstractAsyncConnection
             switch(_toFlush)
             {
                 case 10:
-                    _endp.gather(_responseHeader,_responseBuffer); 
+                    _endp.flush(_responseHeader,_responseBuffer); 
                     _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0)+(BufferUtil.hasContent(_responseBuffer)?2:0);
                     break;
                 case 9: 
-                    _endp.gather(_responseHeader,_content); 
+                    _endp.flush(_responseHeader,_content); 
                     _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0)+(BufferUtil.hasContent(_content)?1:0);
                     if (_toFlush==0)
                         _content=null;
                     break;
                 case 8: 
-                    _endp.gather(_responseHeader); 
+                    _endp.flush(_responseHeader); 
                     _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0);
                     break;
                 case 6: 
-                    _endp.gather(_chunk,_responseBuffer);
+                    _endp.flush(_chunk,_responseBuffer);
                     _toFlush=(BufferUtil.hasContent(_chunk)?4:0)+(BufferUtil.hasContent(_responseBuffer)?2:0);
                     break;
                 case 5: 
-                    _endp.gather(_chunk,_content);
+                    _endp.flush(_chunk,_content);
                     _toFlush=(BufferUtil.hasContent(_chunk)?4:0)+(BufferUtil.hasContent(_content)?1:0);
                     if (_toFlush==0)
                         _content=null;
                     break;
                 case 4: 
-                    _endp.gather(_chunk);
+                    _endp.flush(_chunk);
                     _toFlush=(BufferUtil.hasContent(_chunk)?4:0);
                     break;
                 case 2: 
-                    _endp.gather(_responseBuffer);
+                    _endp.flush(_responseBuffer);
                     _toFlush=(BufferUtil.hasContent(_responseBuffer)?2:0);
                     break;
                 case 1: 
-                    _endp.gather(_content);
+                    _endp.flush(_content);
                     _toFlush=(BufferUtil.hasContent(_content)?1:0);
                     if (_toFlush==0)
                         _content=null;
@@ -404,6 +416,7 @@ public abstract class HttpConnection extends AbstractAsyncConnection
             
             if (!block)
                 break;
+            
             if (_toFlush>0)
                 blockUntilWritable(getMaxIdleTime());
 
@@ -430,7 +443,11 @@ public abstract class HttpConnection extends AbstractAsyncConnection
         if (_parser.isIdle())
             _parser.setPersistent(false);
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
     private final HttpTransport _transport = new HttpTransport()
     {
         

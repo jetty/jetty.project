@@ -20,8 +20,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -55,12 +54,12 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        protected void endPointUpgraded(EndPoint endpoint, AsyncConnection oldConnection)
+        protected void endPointUpgraded(EndPoint endpoint, Connection oldConnection)
         {
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel,endpoint);
         }
@@ -69,7 +68,7 @@ public class SelectChannelEndPointTest
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
             SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,2000);
-            endp.setAsyncConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+            endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
             _lastEndp=endp;
             return endp;
         }
@@ -100,22 +99,22 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(),_connector.socket().getLocalPort());
     }
 
-    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
 
-    public class TestConnection extends AbstractAsyncConnection implements AsyncConnection
+    public class TestConnection extends AbstractConnection implements Connection
     {
         ByteBuffer _in = BufferUtil.allocate(32*1024);
         ByteBuffer _out = BufferUtil.allocate(32*1024);
 
-        public TestConnection(AsyncEndPoint endp)
+        public TestConnection(EndPoint endp)
         {
             super(endp);
         }
 
-        public AsyncConnection handle() throws IOException
+        public void canRead()
         {
             boolean progress=true;
             while(progress)
@@ -146,9 +145,13 @@ public class SelectChannelEndPointTest
                 if (BufferUtil.isEmpty(_out) && _endp.isInputShutdown())
                     _endp.shutdownOutput();
             }
-            return this;
         }
-
+        
+        public void canWrite()
+        {
+            
+        }
+        
         public boolean isIdle()
         {
             return false;
@@ -161,7 +164,7 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        public AsyncEndPoint getAsyncEndPoint()
+        public EndPoint getEndPoint()
         {
             return _endp;
         }

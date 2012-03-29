@@ -36,14 +36,15 @@ public class ChannelEndPoint implements EndPoint
 {
     private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
 
-    protected final ByteChannel _channel;
-    protected final ByteBuffer[] _gather2=new ByteBuffer[2];
-    protected final Socket _socket;
-    protected final InetSocketAddress _local;
-    protected final InetSocketAddress _remote;
-    protected volatile int _maxIdleTime;
+    private final ByteChannel _channel;
+    private final Socket _socket;
+    private final InetSocketAddress _local;
+    private final InetSocketAddress _remote;
+    private volatile int _maxIdleTime;
     private volatile boolean _ishut;
     private volatile boolean _oshut;
+    private Connection _connection;
+    private boolean _idleCheck;
 
 
     public ChannelEndPoint(ByteChannel channel) throws IOException
@@ -224,18 +225,9 @@ public class ChannelEndPoint implements EndPoint
     }
 
     /* (non-Javadoc)
-     * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer)
-     */
-    public int flush(ByteBuffer buffer) throws IOException
-    {
-        int len=_channel.write(buffer);
-        return len;
-    }
-
-    /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
-    public int gather(ByteBuffer... buffers) throws IOException
+    public int flush(ByteBuffer... buffers) throws IOException
     {
         int len=0;
         if (_channel instanceof GatheringByteChannel)
@@ -283,12 +275,15 @@ public class ChannelEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#getConnection()
-     */
     public Object getTransport()
     {
         return _channel;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Socket getSocket()
+    {
+        return _socket;
     }
 
     /* ------------------------------------------------------------ */
@@ -303,8 +298,39 @@ public class ChannelEndPoint implements EndPoint
      */
     public void setMaxIdleTime(int timeMs) throws IOException
     {
-        if (_socket!=null && timeMs!=_maxIdleTime)
-            _socket.setSoTimeout(timeMs>0?timeMs:0);
+        //if (_socket!=null && timeMs!=_maxIdleTime)
+        //    _socket.setSoTimeout(timeMs>0?timeMs:0);
         _maxIdleTime=timeMs;
     }
+    
+
+    @Override
+    public Connection getConnection()
+    {
+        return _connection;
+    }
+
+    @Override
+    public void setConnection(Connection connection)
+    {
+        _connection=connection;
+    }
+
+    @Override
+    public void onIdleExpired(long idleForMs)
+    {        
+    }
+
+    @Override
+    public void setCheckForIdle(boolean check)
+    {
+        _idleCheck=check;        
+    }
+
+    @Override
+    public boolean isCheckForIdle()
+    {
+        return _idleCheck;
+    }
+
 }

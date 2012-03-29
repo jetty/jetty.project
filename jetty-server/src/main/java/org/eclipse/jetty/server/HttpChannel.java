@@ -478,7 +478,7 @@ public class HttpChannel
     
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.io.AsyncConnection#isSuspended()
+     * @see org.eclipse.jetty.io.Connection#isSuspended()
      */
     public boolean isSuspended()
     {

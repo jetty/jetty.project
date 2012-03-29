@@ -21,8 +21,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.nio.Connection;
 import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
 import org.eclipse.jetty.io.nio.SelectorManager;
 import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
@@ -125,8 +125,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     @Override
     public void persist(EndPoint endpoint) throws IOException
     {
-        AsyncEndPoint aEndp = ((AsyncEndPoint)endpoint);
-        aEndp.setCheckForIdle(true);
+        endpoint.setCheckForIdle(true);
         super.persist(endpoint);
     }
 
@@ -262,7 +261,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected AsyncConnection newConnection(SocketChannel channel,final AsyncEndPoint endpoint)
+    protected Connection newConnection(SocketChannel channel,final EndPoint endpoint)
     {
         return new AsyncHttpConnection(SelectChannelConnector.this,endpoint,getServer());
     }
@@ -296,13 +295,13 @@ public class SelectChannelConnector extends AbstractNIOConnector
         }
 
         @Override
-        protected void endPointUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
+        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
         {
             connectionUpgraded(oldConnection,endpoint.getConnection());
         }
 
         @Override
-        public AsyncConnection newConnection(SocketChannel channel,AsyncEndPoint endpoint, Object attachment)
+        public Connection newConnection(SocketChannel channel,AsyncEndPoint endpoint, Object attachment)
         {
             return SelectChannelConnector.this.newConnection(channel,endpoint);
         }

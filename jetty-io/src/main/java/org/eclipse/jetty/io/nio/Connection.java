@@ -15,25 +15,22 @@ package org.eclipse.jetty.io.nio;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.EndPoint;
 
-public interface AsyncConnection 
+public interface Connection 
 {
-    void onInputShutdown() throws IOException;
     
-    AsyncEndPoint getAsyncEndPoint();
+    EndPoint getEndPoint();
     
-    /* ------------------------------------------------------------ */
-    /**
-     * Handle the connection.
-     * @return The Connection to use for the next handling of the connection. 
-     * This allows protocol upgrades and support for CONNECT.
-     * @throws IOException
-     */
-    AsyncConnection handle() throws IOException;
+    void canRead();
+    void canWrite();
     
     boolean isReadInterested();
+    boolean isWriteInterested();
 
+    
+    void onInputShutdown() throws IOException;
+    
     /**
      * Called when the connection is closed
      */

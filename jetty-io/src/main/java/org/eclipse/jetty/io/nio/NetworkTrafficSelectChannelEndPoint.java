@@ -44,23 +44,16 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
     }
 
     @Override
-    public int flush(ByteBuffer buffer) throws IOException
-    {
-        int position = buffer.position();
-        int written = super.flush(buffer);
-        notifyOutgoing(buffer, position, written);
-        return written;
-    }
-
-    @Override
-    public int gather(ByteBuffer... buffers) throws IOException
+    public int flush(ByteBuffer... buffers) throws IOException
     {
         int written=0;
         for (ByteBuffer b : buffers)
         {
             if (b.hasRemaining())
             {
-                int l = flush(b);
+                int position = b.position();
+                int l = super.flush(b);
+                notifyOutgoing(b, position, l);
                 if (l==0)
                     break;
                 else
@@ -79,7 +72,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
             {
                 try
                 {
-                    listener.opened(_socket);
+                    listener.opened(getSocket());
                 }
                 catch (Exception x)
                 {
@@ -98,7 +91,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
                 try
                 {
                     ByteBuffer view = buffer.asReadOnlyBuffer();
-                    listener.incoming(_socket, view);
+                    listener.incoming(getSocket(), view);
                 }
                 catch (Exception x)
                 {
@@ -119,7 +112,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
                     ByteBuffer view = buffer.slice();
                     view.position(position);
                     view.limit(position + written);
-                    listener.outgoing(_socket, view);
+                    listener.outgoing(getSocket(), view);
                 }
                 catch (Exception x)
                 {
@@ -137,7 +130,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
             {
                 try
                 {
-                    listener.closed(_socket);
+                    listener.closed(getSocket());
                 }
                 catch (Exception x)
                 {

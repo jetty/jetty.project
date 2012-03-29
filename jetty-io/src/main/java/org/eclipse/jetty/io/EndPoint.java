@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.nio.Connection;
+
 
 /**
  *
@@ -58,17 +60,6 @@ public interface EndPoint
 
 
     /**
-     * Flush data from the passed buffer to this endpoint.  As many bytes as can be consumed 
-     * are taken from the buffer position up until the buffer limit.  The 
-     * buffers position is updated to indicate how many bytes have been consumed.  
-     * 
-     * @param buffer The buffer to flush. This buffers position is updated if it is not read only.
-     * @return  the number of bytes written
-     * @throws EofException If the endpoint is closed or output is shutdown.
-     */
-    int flush(ByteBuffer buffer) throws IOException;
-
-    /**
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed 
      * are taken from the header/buffer position up until the buffer limit.  The header/buffers position 
      * is updated to indicate how many bytes have been consumed.  
@@ -76,7 +67,7 @@ public interface EndPoint
      * @return  the number of bytes written
      * @throws EofException If the endpoint is closed or output is shutdown.
      */
-    int gather(ByteBuffer... buffer) throws IOException;
+    int flush(ByteBuffer... buffer) throws IOException;
     
     
     /* ------------------------------------------------------------ */
@@ -120,4 +111,30 @@ public interface EndPoint
      * @throws IOException if the timeout cannot be set.
      */
     void setMaxIdleTime(int timeMs) throws IOException;
+    
+
+    /* ------------------------------------------------------------ */
+    Connection getConnection();
+
+    /* ------------------------------------------------------------ */
+    void setConnection(Connection connection);
+    
+
+    /* ------------------------------------------------------------ */
+    /** Callback when idle.
+     * <p>An endpoint is idle if there has been no IO activity for 
+     * {@link #getMaxIdleTime()} and {@link #isCheckForIdle()} is true.
+     * @param idleForMs TODO
+     */
+    public void onIdleExpired(long idleForMs);
+
+    /* ------------------------------------------------------------ */
+    /** Set if the endpoint should be checked for idleness
+     */
+    public void setCheckForIdle(boolean check);
+
+    /* ------------------------------------------------------------ */
+    /** Get if the endpoint should be checked for idleness
+     */
+    public boolean isCheckForIdle();
 }

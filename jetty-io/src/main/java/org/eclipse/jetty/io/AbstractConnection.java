@@ -2,25 +2,25 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.nio.AsyncConnection;
+import org.eclipse.jetty.io.nio.Connection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-public abstract class AbstractAsyncConnection implements AsyncConnection
+public abstract class AbstractConnection implements Connection
 {
-    private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
+    private static final Logger LOG = Log.getLogger(AbstractConnection.class);
 
     private final long _timeStamp;
-    protected final AsyncEndPoint _endp;
+    protected final EndPoint _endp;
 
-    public AbstractAsyncConnection(AsyncEndPoint endp)
+    public AbstractConnection(EndPoint endp)
     {
         _endp=endp;
         _timeStamp = System.currentTimeMillis();
     }
 
-    public AbstractAsyncConnection(AsyncEndPoint endp,long timestamp)
+    public AbstractConnection(EndPoint endp,long timestamp)
     {
         _endp=endp;
         _timeStamp = timestamp;
@@ -28,7 +28,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     
     
     @Override
-    public AsyncEndPoint getAsyncEndPoint()
+    public EndPoint getEndPoint()
     {
         return _endp;
     }

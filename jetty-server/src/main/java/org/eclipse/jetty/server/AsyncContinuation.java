@@ -819,7 +819,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
-            return (_event!=null && _event.getSuppliedRequest()==_connection._request && _event.getSuppliedResponse()==_connection._response);
+            return (_event!=null && _event.getSuppliedRequest()==_connection.getRequest() && _event.getSuppliedResponse()==_connection.getResponse());
         }
     }
 

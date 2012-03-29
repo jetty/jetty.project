@@ -24,13 +24,11 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 
-import org.eclipse.jetty.io.AbstractAsyncConnection;
-import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /* ------------------------------------------------------------ */
 /** SSL Connection.
@@ -41,7 +39,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  * it's source/sink of encrypted data.   It then provides {@link #getSslEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  */
-public class SslConnection extends AbstractAsyncConnection
+public class SslConnection extends AbstractConnection
 {
     private final Logger _logger = Log.getLogger("org.eclipse.jetty.io.nio.ssl");
 
@@ -50,7 +48,7 @@ public class SslConnection extends AbstractAsyncConnection
     private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<SslBuffers>();
     private final SSLEngine _engine;
     private final SSLSession _session;
-    private AsyncConnection _connection;
+    private Connection _connection;
     private final SslEndPoint _sslEndPoint;
     private int _allocations;
     private SslBuffers _buffers;
@@ -104,7 +102,7 @@ public class SslConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public AsyncEndPoint getAsyncEndPoint()
+    public EndPoint getEndPoint()
     {
         return _aEndp;
     }
@@ -182,7 +180,7 @@ public class SslConnection extends AbstractAsyncConnection
     }
 
     /* ------------------------------------------------------------ */
-    public AsyncConnection handle() throws IOException
+    public void canRead() throws IOException
     {
         try
         {
@@ -199,12 +197,7 @@ public class SslConnection extends AbstractAsyncConnection
                     progress=process(null,null);
 
                 // handle the delegate connection
-                AsyncConnection next = (AsyncConnection)_connection.handle();
-                if (next!=_connection && next!=null)
-                {
-                    _connection=next;
-                    progress=true;
-                }
+                _connection.canRead();
 
                 _logger.debug("{} handle {} progress={}", _session, this, progress);
             }
@@ -229,10 +222,15 @@ public class SslConnection extends AbstractAsyncConnection
                 }
             }
         }
-
-        return this;
     }
 
+    /* ------------------------------------------------------------ */
+    public void canWrite() throws IOException
+    {
+        // TODO
+    }
+    
+    
     /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
@@ -623,21 +621,17 @@ public class SslConnection extends AbstractAsyncConnection
             return filled;
         }
 
-        public int flush(ByteBuffer buffer) throws IOException
-        {
-            int size = buffer.remaining();
-            process(null, buffer);
-            return size-buffer.remaining();
-        }
-
-        public int gather(ByteBuffer... buffers) throws IOException
+        public int flush(ByteBuffer... buffers) throws IOException
         {
             int len=0;
             for (ByteBuffer b : buffers)
             {
                 if (b.hasRemaining())
                 {
-                    int l=flush(b);
+                    int l = b.remaining();
+                    process(null, b);
+                    l=l-b.remaining();
+                    
                     if (l>0)
                         len+=l;
                     else
@@ -646,29 +640,6 @@ public class SslConnection extends AbstractAsyncConnection
             }
             return len;
         }
-
-        /*
-        public boolean blockReadable(long millisecs) throws IOException
-        {
-            long now = System.currentTimeMillis();
-            long end=millisecs>0?(now+millisecs):Long.MAX_VALUE;
-
-            while (now<end)
-            {
-                if (process(null,null))
-                    break;
-                _aEndp.blockReadable(end-now);
-                now = System.currentTimeMillis();
-            }
-
-            return now<end;
-        }
-
-        public boolean blockWritable(long millisecs) throws IOException
-        {
-            return _aEndp.blockWritable(millisecs);
-        }
-        */
 
         public boolean isOpen()
         {
@@ -685,16 +656,6 @@ public class SslConnection extends AbstractAsyncConnection
             process(null, null);
         }
 
-        public void asyncDispatch()
-        {
-            _aEndp.asyncDispatch();
-        }
-
-        public void scheduleWrite()
-        {
-            _aEndp.scheduleWrite();
-        }
-
         public void onIdleExpired(long idleForMs)
         {
             _aEndp.onIdleExpired(idleForMs);
@@ -708,21 +669,6 @@ public class SslConnection extends AbstractAsyncConnection
         public boolean isCheckForIdle()
         {
             return _aEndp.isCheckForIdle();
-        }
-
-        public void scheduleTimeout(Task task, long timeoutMs)
-        {
-            _aEndp.scheduleTimeout(task,timeoutMs);
-        }
-
-        public void cancelTimeout(Task task)
-        {
-            _aEndp.cancelTimeout(task);
-        }
-
-        public boolean isWritable()
-        {
-            return _aEndp.isWritable();
         }
 
         public InetSocketAddress getLocalAddress()
@@ -750,14 +696,14 @@ public class SslConnection extends AbstractAsyncConnection
             _aEndp.setMaxIdleTime(timeMs);
         }
         
-        public AsyncConnection getAsyncConnection()
+        public Connection getConnection()
         {
             return _connection;
         }
 
-        public void setAsyncConnection(AsyncConnection connection)
+        public void setConnection(Connection connection)
         {
-            _connection=(AsyncConnection)connection;
+            _connection=(Connection)connection;
         }
 
         public String toString()
@@ -777,6 +723,5 @@ public class SslConnection extends AbstractAsyncConnection
                     _ishut, _oshut,
                     _connection);
         }
-
     }
 }
