@@ -519,7 +519,6 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
-
                 contentBytes.addAndGet(dataInfo.asByteBuffer(true).remaining());
                 if (dataInfo.isClose())
                 {
