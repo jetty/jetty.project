@@ -30,7 +30,7 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
+import org.eclipse.jetty.http.gzip.GzipResponseWrapperImpl;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -222,7 +222,7 @@ public class GzipHandler extends HandlerWrapper
                     }
                 }
 
-                final GzipResponseWrapper wrappedResponse = newGzipResponseWrapper(request,response);
+                final GzipResponseWrapperImpl wrappedResponse = newGzipResponseWrapper(request,response);
                 
                 boolean exceptional=true;
                 try
@@ -256,7 +256,7 @@ public class GzipHandler extends HandlerWrapper
                     else if (exceptional && !response.isCommitted())
                     {
                         wrappedResponse.resetBuffer();
-                        wrappedResponse.noGzip();
+                        wrappedResponse.noCompression();
                     }
                     else
                         wrappedResponse.finish();
@@ -276,14 +276,14 @@ public class GzipHandler extends HandlerWrapper
      * @param response the response
      * @return the gzip response wrapper
      */
-    protected GzipResponseWrapper newGzipResponseWrapper(HttpServletRequest request, HttpServletResponse response)
+    protected GzipResponseWrapperImpl newGzipResponseWrapper(HttpServletRequest request, HttpServletResponse response)
     {
-        return new GzipResponseWrapper(request, response)
+        return new GzipResponseWrapperImpl(request, response)
         {
             {
                 super.setMimeTypes(GzipHandler.this._mimeTypes);
                 super.setBufferSize(GzipHandler.this._bufferSize);
-                super.setMinGzipSize(GzipHandler.this._minGzipSize);
+                super.setMinCompressSize(GzipHandler.this._minGzipSize);
             }
             
             @Override

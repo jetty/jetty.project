@@ -1,18 +1,24 @@
 package org.eclipse.jetty.servlets;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 
+import org.eclipse.jetty.http.gzip.CompressionType;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -25,21 +31,46 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test the effects of Gzip filtering when in the context of HTTP/1.1 Pipelining.
  */
+@RunWith(Parameterized.class)
 public class GzipWithPipeliningTest
 {
+    @Parameters
+    public static Collection<String[]> data()
+    {
+        // Test different Content-Encoding header combinations. So implicitly testing that gzip is preferred oder deflate
+        String[][] data = new String[][]
+                {
+                { CompressionType.GZIP.getEncodingHeader() },
+                { CompressionType.DEFLATE.getEncodingHeader() + ", " + CompressionType.GZIP.getEncodingHeader() },
+                { CompressionType.GZIP.getEncodingHeader() + ", " + CompressionType.DEFLATE.getEncodingHeader() },
+                { CompressionType.DEFLATE.getEncodingHeader() } 
+                };
+        
+        return Arrays.asList(data);
+    }
+    
     @Rule
     public TestingDir testingdir = new TestingDir();
     
     private Server server;
     private URI serverUri;
+    private String encodingHeader;
+    
+    
+    public GzipWithPipeliningTest(String encodingHeader)
+    {
+        this.encodingHeader = encodingHeader;
+    }
 
     @Before
     public void startServer() throws Exception
@@ -86,7 +117,7 @@ public class GzipWithPipeliningTest
         testingdir.ensureEmpty();
         File outputDir = testingdir.getDir(); 
         
-        PipelineHelper client = new PipelineHelper(serverUri);
+        PipelineHelper client = new PipelineHelper(serverUri, encodingHeader);
 
         try
         {
@@ -95,7 +126,7 @@ public class GzipWithPipeliningTest
 
             // Size of content, as it exists on disk, without gzip compression.
             long rawsize = txtFile.length() + pngFile.length();
-            Assert.assertThat("Ensure that we have sufficient file size to trigger chunking",rawsize,greaterThan(300000L));
+            assertThat("Ensure that we have sufficient file size to trigger chunking",rawsize,greaterThan(300000L));
 
             String respHeader;
 
@@ -106,8 +137,9 @@ public class GzipWithPipeliningTest
 
             respHeader = client.readResponseHeader();
             System.out.println("Response Header #1 --\n" + respHeader);
-            Assert.assertThat("Content-Encoding should be gzipped",respHeader,containsString("Content-Encoding: gzip\r\n"));
-            Assert.assertThat("Transfer-Encoding should be chunked",respHeader,containsString("Transfer-Encoding: chunked\r\n"));
+            String expectedEncodingHeader = encodingHeader.equals(CompressionType.DEFLATE.getEncodingHeader()) ? CompressionType.DEFLATE.getEncodingHeader() : CompressionType.GZIP.getEncodingHeader();
+            assertThat("Content-Encoding should be gzipped",respHeader,containsString("Content-Encoding: " + expectedEncodingHeader + "\r\n"));
+            assertThat("Transfer-Encoding should be chunked",respHeader,containsString("Transfer-Encoding: chunked\r\n"));
 
             // Raw output / gzipped, writted to disk (checked for sha1sum later)
             File rawOutputFile = new File(outputDir, "response-1.gz");
@@ -118,7 +150,7 @@ public class GzipWithPipeliningTest
 
             // Read only 20% - intentionally a partial read.
             System.out.println("Attempting to read partial content ...");
-            int readBytes = client.readBody(rawOutputStream,(int)((float)chunkSize * 0.20f));
+            int readBytes = client.readBody(rawOutputStream,(int)(chunkSize * 0.20f));
             System.out.printf("Read %,d bytes%n",readBytes);
 
             // Issue another request
@@ -133,14 +165,14 @@ public class GzipWithPipeliningTest
                 readBytes = client.readBody(rawOutputStream,(int)chunkSize);
                 System.out.printf("Read %,d bytes%n",readBytes);
                 line = client.readLine();
-                Assert.assertThat("Chunk delim should be an empty line with CR+LF",line,is(""));
+                assertThat("Chunk delim should be an empty line with CR+LF",line,is(""));
                 chunkSize = client.readChunkSize();
                 System.out.printf("Next Chunk: (0x%X) %,d bytes%n",chunkSize,chunkSize);
             }
 
             // Inter-pipeline delim
             line = client.readLine();
-            Assert.assertThat("Inter-pipeline delim should be an empty line with CR+LF",line,is(""));
+            assertThat("Inter-pipeline delim should be an empty line with CR+LF",line,is(""));
             
             // Sha1tracking for 1st Request
             MessageDigest digestTxt = MessageDigest.getInstance("SHA1");
@@ -149,14 +181,23 @@ public class GzipWithPipeliningTest
             // Decompress 1st request and calculate sha1sum
             IO.close(rawOutputStream);
             FileInputStream rawInputStream = new FileInputStream(rawOutputFile);
-            GZIPInputStream ungzipStream = new GZIPInputStream(rawInputStream);
-            IO.copy(ungzipStream, digesterTxt);
+            InputStream uncompressedStream = null;
+            if (CompressionType.DEFLATE.getEncodingHeader().equals(encodingHeader))
+            {
+                uncompressedStream = new InflaterInputStream(rawInputStream);
+            }
+            else
+            {
+                uncompressedStream = new GZIPInputStream(rawInputStream);
+            }
+
+            IO.copy(uncompressedStream, digesterTxt);
             
             // Read 2nd request http response header
             respHeader = client.readResponseHeader();
             System.out.println("Response Header #2 --\n" + respHeader);
-            Assert.assertThat("Content-Encoding should NOT be gzipped",respHeader,not(containsString("Content-Encoding: gzip\r\n")));
-            Assert.assertThat("Transfer-Encoding should NOT be chunked",respHeader,not(containsString("Transfer-Encoding: chunked\r\n")));
+            assertThat("Content-Encoding should NOT be gzipped",respHeader,not(containsString("Content-Encoding: gzip\r\n")));
+            assertThat("Transfer-Encoding should NOT be chunked",respHeader,not(containsString("Transfer-Encoding: chunked\r\n")));
 
             // Sha1tracking for 2nd Request
             MessageDigest digestImg = MessageDigest.getInstance("SHA1");
@@ -164,7 +205,7 @@ public class GzipWithPipeliningTest
 
             // Read 2nd request body
             int contentLength = client.getContentLength(respHeader);
-            Assert.assertThat("Image Content Length",(long)contentLength,is(pngFile.length()));
+            assertThat("Image Content Length",(long)contentLength,is(pngFile.length()));
             client.readBody(digesterImg,contentLength);
 
             // Validate checksums
@@ -183,7 +224,7 @@ public class GzipWithPipeliningTest
     {
         String expectedSha1 = loadSha1sum(testResourceFile + ".sha1");
         String actualSha1 = Hex.asHex(digest.digest());
-        Assert.assertEquals(testResourceFile + " / SHA1Sum of content",expectedSha1,actualSha1);
+        assertEquals(testResourceFile + " / SHA1Sum of content",expectedSha1,actualSha1);
     }
 
     private String loadSha1sum(String testResourceSha1Sum) throws IOException
@@ -192,7 +233,7 @@ public class GzipWithPipeliningTest
         String contents = IO.readToString(sha1File);
         Pattern pat = Pattern.compile("^[0-9A-Fa-f]*");
         Matcher mat = pat.matcher(contents);
-        Assert.assertTrue("Should have found HEX code in SHA1 file: " + sha1File,mat.find());
+        assertTrue("Should have found HEX code in SHA1 file: " + sha1File,mat.find());
         return mat.group();
     }
 

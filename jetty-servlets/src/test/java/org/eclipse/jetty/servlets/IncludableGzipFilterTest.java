@@ -22,10 +22,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.gzip.CompressionType;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.testing.HttpTester;
@@ -36,9 +40,28 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class IncludableGzipFilterTest
 {
+    @Parameters
+    public static Collection<CompressionType[]> data()
+    {
+        CompressionType[][] data = new CompressionType[][]
+                {
+                { CompressionType.GZIP },
+                { CompressionType.DEFLATE } 
+                };
+        
+        return Arrays.asList(data);
+    }
+    
+    @Rule
+    public TestingDir testdir = new TestingDir();
+    
     private static String __content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
         "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
@@ -53,11 +76,14 @@ public class IncludableGzipFilterTest
         "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
-    @Rule
-    public TestingDir testdir = new TestingDir();
-
     private ServletTester tester;
-
+    private CompressionType compressionType;
+    
+    public IncludableGzipFilterTest(CompressionType compressionType)
+    {
+        this.compressionType = compressionType;
+    }
+    
     @Before
     public void setUp() throws Exception
     {
@@ -95,7 +121,7 @@ public class IncludableGzipFilterTest
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
-        request.setHeader("accept-encoding","gzip");
+        request.setHeader("accept-encoding", compressionType.getEncodingHeader());
         request.setURI("/context/file.txt");
         
         ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
@@ -103,10 +129,19 @@ public class IncludableGzipFilterTest
         response.parse(respBuff.asArray());
                 
         assertTrue(response.getMethod()==null);
-        assertTrue(response.getHeader("Content-Encoding").equalsIgnoreCase("gzip"));
+        assertTrue(response.getHeader("Content-Encoding").equalsIgnoreCase(compressionType.getEncodingHeader()));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         
-        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        InputStream testIn = null;
+        ByteArrayInputStream compressedResponseStream = new ByteArrayInputStream(response.getContentBytes());
+        if (compressionType.equals(CompressionType.GZIP))
+        {
+            testIn = new GZIPInputStream(compressedResponseStream);
+        }
+        else if (compressionType.equals(CompressionType.DEFLATE))
+        {
+            testIn = new InflaterInputStream(compressedResponseStream);
+        }
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);
         

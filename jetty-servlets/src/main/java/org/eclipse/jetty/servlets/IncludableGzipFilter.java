@@ -24,11 +24,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
-import org.eclipse.jetty.http.gzip.GzipStream;
+import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
+import org.eclipse.jetty.http.gzip.CompressedStream;
+import org.eclipse.jetty.http.gzip.CompressionType;
+import org.eclipse.jetty.http.gzip.DeflateStreamImpl;
+import org.eclipse.jetty.http.gzip.GzipResponseWrapperImpl;
+import org.eclipse.jetty.http.gzip.GzipStreamImpl;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
-
-
 
 /* ------------------------------------------------------------ */
 /** Includable GZip Filter.
@@ -57,36 +59,52 @@ public class IncludableGzipFilter extends GzipFilter
     }
 
     @Override
-    protected GzipResponseWrapper newGzipResponseWrapper(HttpServletRequest request, HttpServletResponse response)
+    protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, CompressionType compressionType)
     {
         return new IncludableResponseWrapper(request,response);
     }
 
-    public class IncludableResponseWrapper extends GzipResponseWrapper
+    public class IncludableResponseWrapper extends GzipResponseWrapperImpl
     {
         public IncludableResponseWrapper(HttpServletRequest request, HttpServletResponse response)
         {
             super(request,response);
-            
+
             super.setMimeTypes(IncludableGzipFilter.this._mimeTypes);
             super.setBufferSize(IncludableGzipFilter.this._bufferSize);
-            super.setMinGzipSize(IncludableGzipFilter.this._minGzipSize);
+            super.setMinCompressSize(IncludableGzipFilter.this._minGzipSize);
         }
 
         @Override
-        protected GzipStream newGzipStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minGzipSize) throws IOException
+        protected CompressedStream newCompressedStream(HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize,
+                int minGzipSize) throws IOException
         {
-            return new IncludableGzipStream(request,response,contentLength,bufferSize,minGzipSize);
+            String encodingHeader = request.getHeader("accept-encoding");
+            CompressionType compressionType = CompressionType.getByEncodingHeader(encodingHeader);
+            if (compressionType.equals(CompressionType.GZIP))
+            {
+                return new IncludableGzipStream(request,response,contentLength,bufferSize,minGzipSize);
+            }
+            else if (compressionType.equals(CompressionType.DEFLATE))
+            {
+                return new IncludableDeflateStream(request,response,contentLength,bufferSize,minGzipSize);
+            }
+            else
+            {
+                throw new IllegalStateException(compressionType.name() + " not supported.");
+            }
         }
 
         @Override
-        protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
+        protected PrintWriter newWriter(OutputStream out, String encoding) throws UnsupportedEncodingException
         {
-            return IncludableGzipFilter.this.newWriter(out,encoding);
+            if (_uncheckedPrintWriter)
+                return encoding == null?new UncheckedPrintWriter(out):new UncheckedPrintWriter(new OutputStreamWriter(out,encoding));
+            return super.newWriter(out,encoding);
         }
     }
-    
-    public class IncludableGzipStream extends GzipStream
+
+    public class IncludableGzipStream extends GzipStreamImpl
     {
         public IncludableGzipStream(HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize, int minGzipSize)
                 throws IOException
@@ -95,22 +113,43 @@ public class IncludableGzipFilter extends GzipFilter
         }
 
         @Override
-        protected boolean setContentEncodingGzip()
+        protected boolean setContentEncoding()
         {
-            if (_request.getAttribute("javax.servlet.include.request_uri")!=null)
-                _response.setHeader("org.eclipse.jetty.server.include.Content-Encoding", "gzip");
+            if (_request.getAttribute("javax.servlet.include.request_uri") != null)
+            {
+                _response.setHeader("org.eclipse.jetty.server.include.Content-Encoding","gzip");
+            }
             else
-                _response.setHeader("Content-Encoding", "gzip");
-                
+            {
+                _response.setHeader("Content-Encoding","gzip");
+            }
+
             return _response.containsHeader("Content-Encoding");
         }
     }
 
-    @Override
-    protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
+    public class IncludableDeflateStream extends DeflateStreamImpl
     {
-        if (_uncheckedPrintWriter)
-            return encoding==null?new UncheckedPrintWriter(out):new UncheckedPrintWriter(new OutputStreamWriter(out,encoding));
-        return super.newWriter(out,encoding);
+        public IncludableDeflateStream(HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize, int minGzipSize)
+                throws IOException
+        {
+            super(request,response,contentLength,bufferSize,minGzipSize);
+        }
+
+        @Override
+        protected boolean setContentEncoding()
+        {
+            if (_request.getAttribute("javax.servlet.include.request_uri") != null)
+            {
+                _response.setHeader("org.eclipse.jetty.server.include.Content-Encoding","deflate");
+            }
+            else
+            {
+                _response.setHeader("Content-Encoding","deflate");
+            }
+
+            return _response.containsHeader("Content-Encoding");
+        }
     }
+
 }

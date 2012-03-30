@@ -13,10 +13,6 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -34,14 +30,18 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
+import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
+import org.eclipse.jetty.http.gzip.CompressionType;
+import org.eclipse.jetty.http.gzip.DeflateResponseWrapperImpl;
+import org.eclipse.jetty.http.gzip.GzipResponseWrapperImpl;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** GZIP Filter
- * This filter will gzip the content of a response iff: <ul>
+ * This filter will gzip or deflate the content of a response if: <ul>
  * <li>The filter is mapped to a matching path</li>
+ * <li>accept-encoding header is set to either gzip, deflate or a combination of those</li>
  * <li>The response status code is >=200 and <300
  * <li>The content length is unknown or more than the <code>minGzipSize</code> initParameter or the minGzipSize is 0(default)</li>
  * <li>The content-type is in the comma separated list of mimeTypes set in the <code>mimeTypes</code> initParameter or
@@ -50,8 +50,11 @@ import org.eclipse.jetty.util.log.Logger;
  * </ul>
  * 
  * <p>
+ * If both gzip and deflate are specified in the accept-encoding header, then gzip will be used.
+ * </p>
+ * <p>
  * Compressing the content can greatly improve the network bandwidth usage, but at a cost of memory and
- * CPU cycles.   If this filter is mapped for static content, then use of efficient direct NIO may be 
+ * CPU cycles. If this filter is mapped for static content, then use of efficient direct NIO may be 
  * prevented, thus use of the gzip mechanism of the {@link org.eclipse.jetty.servlet.DefaultServlet} is 
  * advised instead.
  * </p>
@@ -157,7 +160,8 @@ public class GzipFilter extends UserAgentFilter
         HttpServletResponse response=(HttpServletResponse)res;
 
         String ae = request.getHeader("accept-encoding");
-        if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
+        CompressionType compressionType = CompressionType.getByEncodingHeader(ae);
+        if (ae != null && !compressionType.equals(CompressionType.UNSUPPORTED) && !response.containsHeader("Content-Encoding")
                 && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
         {
             String ua = getUserAgent(request);
@@ -172,8 +176,8 @@ public class GzipFilter extends UserAgentFilter
                 super.doFilter(request,response,chain);
                 return;
             }
-
-            final GzipResponseWrapper wrappedResponse=newGzipResponseWrapper(request,response);
+            
+            CompressedResponseWrapper wrappedResponse = createWrappedResponse(request,response,compressionType);
             
             boolean exceptional=true;
             try
@@ -186,28 +190,12 @@ public class GzipFilter extends UserAgentFilter
                 Continuation continuation = ContinuationSupport.getContinuation(request);
                 if (continuation.isSuspended() && continuation.isResponseWrapped())   
                 {
-                    continuation.addContinuationListener(new ContinuationListener()
-                    {
-                        public void onComplete(Continuation continuation)
-                        {
-                            try
-                            {
-                                wrappedResponse.finish();
-                            }
-                            catch(IOException e)
-                            {
-                                LOG.warn(e);
-                            }
-                        }
-
-                        public void onTimeout(Continuation continuation)
-                        {}
-                    });
+                    continuation.addContinuationListener(new ContinuationListenerWaitingForWrappedResponseToFinish(wrappedResponse));
                 }
                 else if (exceptional && !response.isCommitted())
                 {
                     wrappedResponse.resetBuffer();
-                    wrappedResponse.noGzip();
+                    wrappedResponse.noCompression();
                 }
                 else
                     wrappedResponse.finish();
@@ -218,7 +206,59 @@ public class GzipFilter extends UserAgentFilter
             super.doFilter(request,response,chain);
         }
     }
+
+    protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, CompressionType compressionType)
+    {
+        CompressedResponseWrapper wrappedResponse = null;
+        if (compressionType.equals(CompressionType.GZIP))
+        {
+            wrappedResponse = new GzipResponseWrapperImpl(request,response);
+        }
+        else if (compressionType.equals(CompressionType.DEFLATE))
+        {
+            wrappedResponse = new DeflateResponseWrapperImpl(request,response);
+        }
+        else
+        {
+            throw new IllegalStateException(compressionType + " not supported");
+        }
+        configureWrappedResponse(wrappedResponse);
+        return wrappedResponse;
+    }
+
+    private void configureWrappedResponse(CompressedResponseWrapper wrappedResponse)
+    {
+        wrappedResponse.setMimeTypes(_mimeTypes);
+        wrappedResponse.setBufferSize(_bufferSize);
+        wrappedResponse.setMinCompressSize(_minGzipSize);
+    }
      
+    private class ContinuationListenerWaitingForWrappedResponseToFinish implements ContinuationListener{
+        
+        private CompressedResponseWrapper wrappedResponse;
+
+        public ContinuationListenerWaitingForWrappedResponseToFinish(CompressedResponseWrapper wrappedResponse)
+        {
+            this.wrappedResponse = wrappedResponse;
+        }
+
+        public void onComplete(Continuation continuation)
+        {
+            try
+            {
+                wrappedResponse.finish();
+            }
+            catch (IOException e)
+            {
+                LOG.warn(e);
+            }
+        }
+
+        public void onTimeout(Continuation continuation)
+        {
+        }
+    }
+    
     /**
      * Checks to see if the UserAgent is excluded
      * 
@@ -274,43 +314,5 @@ public class GzipFilter extends UserAgentFilter
             }
         }
         return false;
-    }
-            
-    /**
-     * Allows derived implementations to replace ResponseWrapper implementation.
-     *
-     * @param request the request
-     * @param response the response
-     * @return the gzip response wrapper
-     */
-    protected GzipResponseWrapper newGzipResponseWrapper(HttpServletRequest request, HttpServletResponse response)
-    {
-        return new GzipResponseWrapper(request, response)
-        {
-            {
-                setMimeTypes(GzipFilter.this._mimeTypes);
-                setBufferSize(GzipFilter.this._bufferSize);
-                setMinGzipSize(GzipFilter.this._minGzipSize);
-            }
-            
-            @Override
-            protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
-            {
-                return GzipFilter.this.newWriter(out,encoding);
-            }
-        };
-    }
-    
-    /**
-     * Allows derived implementations to replace PrintWriter implementation.
-     *
-     * @param out the out
-     * @param encoding the encoding
-     * @return the prints the writer
-     * @throws UnsupportedEncodingException
-     */
-    protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
-    {
-        return encoding==null?new PrintWriter(out):new PrintWriter(new OutputStreamWriter(out,encoding));
     }
 }

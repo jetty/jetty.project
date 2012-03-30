@@ -13,14 +13,21 @@
 
 package org.eclipse.jetty.servlets;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import javax.servlet.Servlet;
 
+import org.eclipse.jetty.http.gzip.CompressionType;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestMinGzipSizeServlet;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Perform specific tests on the IncludableGzipFilter's ability to manage
@@ -28,17 +35,36 @@ import org.junit.Test;
  * 
  * @see <a href="Eclipse Bug 366106">http://bugs.eclipse.org/366106</a>
  */
+@RunWith(Parameterized.class)
 public class IncludableGzipFilterMinSizeTest
 {
+    @Parameters
+    public static Collection<CompressionType[]> data()
+    {
+        CompressionType[][] data = new CompressionType[][]
+                {
+                { CompressionType.GZIP },
+                { CompressionType.DEFLATE } 
+                };
+        
+        return Arrays.asList(data);
+    }
+    
+    public IncludableGzipFilterMinSizeTest(CompressionType compressionType)
+    {
+        this.compressionType = compressionType;
+    }
+
     @Rule
     public TestingDir testdir = new TestingDir();
 
+    private CompressionType compressionType;
     private Class<? extends Servlet> testServlet = TestMinGzipSizeServlet.class;
 
     @Test
     public void testUnderMinSize() throws Exception
     {
-        GzipTester tester = new GzipTester(testdir);
+        GzipTester tester = new GzipTester(testdir, compressionType);
         // Use IncludableGzipFilter 
         tester.setGzipFilterClass(IncludableGzipFilter.class);
 
@@ -64,7 +90,7 @@ public class IncludableGzipFilterMinSizeTest
     @Test
     public void testOverMinSize() throws Exception
     {
-        GzipTester tester = new GzipTester(testdir);
+        GzipTester tester = new GzipTester(testdir, compressionType);
         // Use IncludableGzipFilter 
         tester.setGzipFilterClass(IncludableGzipFilter.class);
 
