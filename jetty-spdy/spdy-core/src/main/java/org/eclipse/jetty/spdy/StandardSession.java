@@ -1018,8 +1018,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         private final IStream stream;
         private final DataInfo dataInfo;
-        private int length;
-        private ByteBuffer buffer;
+        private int size;
+        private volatile ByteBuffer buffer;
 
         private DataFrameBytes(Handler<C> handler, C context, IStream stream, DataInfo dataInfo)
         {
@@ -1037,11 +1037,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 if (windowSize <= 0)
                     return null;
 
-                length = dataInfo.length();
-                if (length > windowSize)
-                    length = windowSize;
+                size = dataInfo.available();
+                if (size > windowSize)
+                    size = windowSize;
 
-                buffer = generator.data(stream.getId(),length,dataInfo);
+                buffer = generator.data(stream.getId(), size, dataInfo);
                 return buffer;
             }
             catch (Throwable x)
@@ -1054,13 +1054,14 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public void complete()
         {
-            stream.updateWindowSize(-length);
             bufferPool.release(buffer);
+            stream.updateWindowSize(-size);
 
             if (dataInfo.available() > 0)
             {
-                // If we could not write a full data frame, then we need first
-                // to finish it, and then process the others (to avoid data garbling)
+                // We have written a frame out of this DataInfo, but there is more to write.
+                // We need to keep the correct ordering of frames, to avoid that another
+                // DataInfo for the same stream is written before this one is finished.
                 enqueueFirst(this);
             }
             else
