@@ -448,6 +448,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
         if (synStream.isUnidirectional())
         {
+            // unidirectional streams are implicitly half closed for the client
+            stream.updateCloseState(true);
             parentStream.addAssociatedStream(stream);
         }
         
@@ -804,12 +806,21 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             if (frameBytes == null)
                 return;
 
-            buffer = frameBytes.getByteBuffer();
-            if (buffer == null)
+            FrameBytes stalled = null;
+            while (true)
             {
-                enqueueFirst(frameBytes);
-                logger.debug("Flush skipped, {} frame(s) in queue",queue.size());
-                return;
+                buffer = frameBytes.getByteBuffer();
+                if (buffer != null)
+                    break;
+
+                // We are stalled: enqueue as last so other frames can be flushed
+                enqueueLast(frameBytes);
+                if (stalled == null)
+                    stalled = frameBytes;
+                else if (stalled == frameBytes)
+                    return;
+                logger.debug("Flush stalled for {}, {} frame(s) in queue", frameBytes, queue.size());
+                frameBytes = queue.poll();
             }
 
             flushing = true;

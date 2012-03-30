@@ -62,14 +62,14 @@ public class StandardSessionTest
         Stream pushStream = createPushStream(stream).get();
         assertThat("stream should not be halfClosed", stream.isHalfClosed(), is(false));
         assertThat("stream should not be closed", stream.isClosed(), is(false));
-        assertThat("pushStream should not be halfClosed", pushStream.isHalfClosed(), is(false));
-        assertThat("pushStream should not be closed", pushStream.isClosed(), is(false));
+        assertThat("pushStream expected to be halfClosed", pushStream.isHalfClosed(), is(true));
+        assertThat("pushStream expected to not be closed", pushStream.isClosed(), is(false));
         
         ReplyInfo replyInfo = new ReplyInfo(true);
         stream.reply(replyInfo);
         assertThat("stream should be halfClosed", stream.isHalfClosed(), is(true));
         assertThat("stream should not be closed", stream.isClosed(), is(false));
-        assertThat("pushStream should be halfClosed", pushStream.isHalfClosed(), is(false));
+        assertThat("pushStream should be halfClosed", pushStream.isHalfClosed(), is(true));
         assertThat("pushStream should not be closed", pushStream.isClosed(), is(false));
         
         stream.reply(replyInfo);
@@ -100,13 +100,14 @@ public class StandardSessionTest
     public void testPushStreamIsRemovedFromParentWhenClosed() throws InterruptedException, ExecutionException{
         IStream stream = (IStream)createStream();
         Stream pushStream = createPushStream(stream).get();
+        assertThat("pushStream expected to be halfClosed", pushStream.isHalfClosed(), is(true));
         assertThat("PushStream has not been added to parent", stream.getAssociatedStreams().contains(pushStream) ,is(true));
         ReplyInfo replyInfo = new ReplyInfo(true);
         pushStream.reply(replyInfo);
-        assertThat("pushStream is not halfClosed", pushStream.isHalfClosed(), is(true));
+        assertThat("pushStream expected to be halfClosed", pushStream.isHalfClosed(), is(true));
         pushStream.reply(replyInfo);
-        assertThat("pushStream is not closed", pushStream.isClosed(), is(true));
-        assertThat("PushStream has not been removed from parent", stream.getAssociatedStreams().contains(pushStream) ,is(false));
+        assertThat("pushStream expected to be closed", pushStream.isClosed(), is(true));
+        assertThat("PushStream expected to be removed from parent", stream.getAssociatedStreams().contains(pushStream) ,is(false));
     }
     
     @Test
@@ -114,11 +115,11 @@ public class StandardSessionTest
         IStream stream = (IStream)createStream();
         SynInfo synInfo = new SynInfo(headers,true,stream.getPriority());
         Stream pushStream = stream.syn(synInfo).get();
-        assertThat("pushStream should be half closed",pushStream.isHalfClosed(), is(true));
-        assertThat("pushStream should not be closed",pushStream.isClosed(),is(false));
+        assertThat("pushStream expected to be half closed",pushStream.isHalfClosed(), is(true));
+        assertThat("pushStream expected to be not closed",pushStream.isClosed(),is(false));
         pushStream.reply(new ReplyInfo(true));
-        assertThat("pushStream should be closed",pushStream.isClosed(),is(true));
-        assertThat("pushStream should be removed from parent", stream.getAssociatedStreams().size(), is(0));
+        assertThat("pushStream expected to be closed",pushStream.isClosed(),is(true));
+        assertThat("pushStream expected to be removed from parent", stream.getAssociatedStreams().size(), is(0));
     }
 
     //TODO: Test for even/odd streamIds
