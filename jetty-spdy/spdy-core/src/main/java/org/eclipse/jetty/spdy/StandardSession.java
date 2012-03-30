@@ -18,10 +18,11 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
-import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -253,9 +254,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public List<Stream> getStreams()
+    public Set<Stream> getStreams()
     {
-        List<Stream> result = new ArrayList<>();
+        Set<Stream> result = new HashSet<>();
         result.addAll(streams.values());
         return result;
     }
@@ -540,7 +541,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         Settings.Setting windowSizeSetting = frame.getSettings().get(Settings.ID.INITIAL_WINDOW_SIZE);
         if (windowSizeSetting != null)
         {
+            int prevWindowSize = windowSize;
             windowSize = windowSizeSetting.value();
+            for (IStream stream : streams.values())
+                stream.updateWindowSize(windowSize - prevWindowSize);
             logger.debug("Updated window size to {}", windowSize);
         }
 
@@ -775,12 +779,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public int getWindowSize()
-    {
-        return windowSize;
-    }
-
-    @Override
     public void flush()
     {
         FrameBytes frameBytes;
@@ -794,12 +792,21 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             if (frameBytes == null)
                 return;
 
-            buffer = frameBytes.getByteBuffer();
-            if (buffer == null)
+            FrameBytes stalled = null;
+            while (true)
             {
-                enqueueFirst(frameBytes);
-                logger.debug("Flush skipped, {} frame(s) in queue", queue.size());
-                return;
+                buffer = frameBytes.getByteBuffer();
+                if (buffer != null)
+                    break;
+
+                // We are stalled: enqueue as last so other frames can be flushed
+                enqueueLast(frameBytes);
+                if (stalled == null)
+                    stalled = frameBytes;
+                else if (stalled == frameBytes)
+                    return;
+                logger.debug("Flush stalled for {}, {} frame(s) in queue", frameBytes, queue.size());
+                frameBytes = queue.poll();
             }
 
             flushing = true;
