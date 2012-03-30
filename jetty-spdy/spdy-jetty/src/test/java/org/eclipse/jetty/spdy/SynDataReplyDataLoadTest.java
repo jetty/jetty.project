@@ -38,7 +38,8 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
         ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(synInfo.getHeaders(), false));
                 return new StreamFrameListener.Adapter()
@@ -138,7 +139,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
             final AtomicInteger count = new AtomicInteger(2);
             final int index = i;
             counter.put(index, index);
-            session.syn(new AbstractSynInfo(headers, false), new StreamFrameListener.Adapter()
+            session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
                     {
                         @Override
                         public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -181,7 +182,7 @@ public class SynDataReplyDataLoadTest extends AbstractTest
             final AtomicInteger count = new AtomicInteger(2);
             final int index = i;
             counter.put(index, index);
-            Stream stream = session.syn(new AbstractSynInfo(headers, false), new StreamFrameListener.Adapter()
+            Stream stream = session.syn(new SynInfo(headers, false), new StreamFrameListener.Adapter()
             {
                 @Override
                 public void onReply(Stream stream, ReplyInfo replyInfo)

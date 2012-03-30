@@ -56,16 +56,17 @@ public class StandardStream implements IStream
     private final AtomicInteger windowSize;
     private Set<IStream> associatedStreams = Collections.emptySet();
     private volatile StreamFrameListener listener;
-    private volatile boolean opened;
-    private volatile boolean halfClosed;
-    private volatile boolean closed;
+    private volatile boolean isOpened;
+    private volatile boolean isDataSent=false;
+    private volatile boolean isHalfClosed;
+    private volatile boolean isClosed;
 
     public StandardStream(SynStreamFrame frame, ISession session, int windowSize, IStream associatedStream)
     {
         this.frame = frame;
         this.session = session;
         this.windowSize = new AtomicInteger(windowSize);
-        this.halfClosed = frame.isClose();
+        this.isHalfClosed = frame.isClose();
         this.associatedStream = associatedStream;
     }
 
@@ -124,7 +125,7 @@ public class StandardStream implements IStream
     @Override
     public boolean isHalfClosed()
     {
-        return halfClosed;
+        return isHalfClosed;
     }
 
     @Override
@@ -162,11 +163,11 @@ public class StandardStream implements IStream
                     //TODO: consider making this a method in IStream
                     associatedStream.getAssociatedStreams().remove(this);
                 }
-                closed = true;
+                isClosed = true;
             }
             else
             {
-                halfClosed = true;
+                isHalfClosed = true;
             }
         }
     }
@@ -178,12 +179,12 @@ public class StandardStream implements IStream
         {
             case SYN_STREAM:
             {
-                opened = true;
+                isOpened = true;
                 break;
             }
             case SYN_REPLY:
             {
-                opened = true;
+                isOpened = true;
                 SynReplyFrame synReply = (SynReplyFrame)frame;
                 updateCloseState(synReply.isClose());
                 ReplyInfo replyInfo = new ReplyInfo(synReply.getHeaders(),synReply.isClose());
@@ -220,7 +221,7 @@ public class StandardStream implements IStream
     @Override
     public void process(DataFrame frame, ByteBuffer data)
     {
-        if (!opened)
+        if (!isOpened)
         {
             session.rst(new RstInfo(getId(),StreamStatus.PROTOCOL_ERROR));
             return;
@@ -352,6 +353,7 @@ public class StandardStream implements IStream
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
         session.data(this,dataInfo,timeout,unit,handler,null);
+        isDataSent=true;
     }
 
     @Override
@@ -373,7 +375,13 @@ public class StandardStream implements IStream
     @Override
     public boolean isClosed()
     {
-        return closed;
+        return isClosed;
+    }
+    
+    @Override
+    public boolean isDataSent()
+    {
+        return isDataSent;
     }
 
     @Override

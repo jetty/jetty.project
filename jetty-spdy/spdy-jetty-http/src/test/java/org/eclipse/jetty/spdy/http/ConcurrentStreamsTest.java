@@ -30,7 +30,7 @@ import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -78,7 +78,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
         headers.put("version", "HTTP/1.1");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch slowClientLatch = new CountDownLatch(1);
-        session.syn(new AbstractSynInfo(headers, true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -96,7 +96,7 @@ public class ConcurrentStreamsTest extends AbstractHTTPSPDYTest
         headers.put("version", "HTTP/1.1");
         headers.put("host", "localhost:" + connector.getLocalPort());
         final CountDownLatch fastClientLatch = new CountDownLatch(1);
-        session.syn(new AbstractSynInfo(headers, true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(headers, true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)

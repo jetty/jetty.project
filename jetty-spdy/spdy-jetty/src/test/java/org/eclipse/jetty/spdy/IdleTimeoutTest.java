@@ -28,7 +28,8 @@ import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
@@ -43,7 +44,7 @@ public class IdleTimeoutTest extends AbstractTest
         connector = newSPDYServerConnector(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
                 return null;
@@ -64,7 +65,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
 
-        session.syn(new AbstractSynInfo(true), null);
+        session.syn(new SynInfo(true), null);
 
         Assert.assertTrue(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
     }
@@ -90,7 +91,7 @@ public class IdleTimeoutTest extends AbstractTest
         });
 
         // The SYN is not replied, and the server should idle timeout
-        session.syn(new AbstractSynInfo(true), null);
+        session.syn(new SynInfo(true), null);
 
         Assert.assertTrue(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
     }
@@ -103,7 +104,7 @@ public class IdleTimeoutTest extends AbstractTest
         connector = newSPDYServerConnector(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 try
                 {
@@ -133,7 +134,7 @@ public class IdleTimeoutTest extends AbstractTest
         });
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(new AbstractSynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
@@ -153,7 +154,7 @@ public class IdleTimeoutTest extends AbstractTest
         InetSocketAddress address = startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
                 return null;
@@ -175,7 +176,7 @@ public class IdleTimeoutTest extends AbstractTest
         client.setMaxIdleTime(maxIdleTime);
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
-        session.syn(new AbstractSynInfo(true), null);
+        session.syn(new SynInfo(true), null);
 
         Assert.assertTrue(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
     }
@@ -202,7 +203,7 @@ public class IdleTimeoutTest extends AbstractTest
         client.setMaxIdleTime(maxIdleTime);
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
-        session.syn(new AbstractSynInfo(true), null);
+        session.syn(new SynInfo(true), null);
 
         Assert.assertTrue(latch.await(2 * maxIdleTime, TimeUnit.MILLISECONDS));
     }
@@ -215,7 +216,7 @@ public class IdleTimeoutTest extends AbstractTest
         InetSocketAddress address = startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(true));
                 return null;
@@ -237,7 +238,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = client.connect(address, null).get(5, TimeUnit.SECONDS);
 
         final CountDownLatch replyLatch = new CountDownLatch(1);
-        session.syn(new AbstractSynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)

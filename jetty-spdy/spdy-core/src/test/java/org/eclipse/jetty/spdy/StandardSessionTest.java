@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2012 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.eclipse.jetty.spdy;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -11,7 +27,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
+import org.eclipse.jetty.spdy.api.BytesDataInfo;
+import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -86,7 +103,6 @@ public class StandardSessionTest
         stream.updateCloseState(true);
         assertThat("stream should be closed", stream.isClosed(), is(true));
         createPushStream(stream).get();
-        
     }
     
     @Test
@@ -116,10 +132,16 @@ public class StandardSessionTest
         SynInfo synInfo = new SynInfo(headers,true,stream.getPriority());
         Stream pushStream = stream.syn(synInfo).get();
         assertThat("pushStream expected to be half closed",pushStream.isHalfClosed(), is(true));
-        assertThat("pushStream expected to be not closed",pushStream.isClosed(),is(false));
-        pushStream.reply(new ReplyInfo(true));
-        assertThat("pushStream expected to be closed",pushStream.isClosed(),is(true));
-        assertThat("pushStream expected to be removed from parent", stream.getAssociatedStreams().size(), is(0));
+        assertThat("pushStream expected to be not closed",pushStream.isClosed(),is(true));
+    }
+    
+    @Test(expected=IllegalStateException.class)
+    public void testCreatePushStreamAfterDataHasBeenSent() throws InterruptedException, ExecutionException{
+        IStream stream = (IStream)createStream();
+        byte[] bytes = new byte[] { };
+        DataInfo dataInfo = new BytesDataInfo(bytes,false);
+        stream.data(dataInfo);
+        createPushStream(stream);
     }
 
     //TODO: Test for even/odd streamIds

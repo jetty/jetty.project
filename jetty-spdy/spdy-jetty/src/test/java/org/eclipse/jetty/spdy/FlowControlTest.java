@@ -35,7 +35,7 @@ import org.eclipse.jetty.spdy.api.Settings;
 import org.eclipse.jetty.spdy.api.SettingsInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Assert;
 import org.junit.Test;
@@ -121,7 +121,7 @@ public class FlowControlTest extends AbstractTest
             }
 
             @Override
-            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
                 stream.data(new BytesDataInfo(new byte[length], true));
@@ -136,7 +136,7 @@ public class FlowControlTest extends AbstractTest
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         final Exchanger<DataInfo> exchanger = new Exchanger<>();
-        session.syn(new AbstractSynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
         {
             private AtomicInteger dataFrames = new AtomicInteger();
 
@@ -247,7 +247,7 @@ public class FlowControlTest extends AbstractTest
             }
 
             @Override
-            public StreamFrameListener onSyn(Stream stream, AbstractSynInfo synInfo)
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
                 return new StreamFrameListener.Adapter()
@@ -307,7 +307,7 @@ public class FlowControlTest extends AbstractTest
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        Stream stream = session.syn(new AbstractSynInfo(true), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
         final int length = 5 * windowSize;
         stream.data(new BytesDataInfo(new byte[length], true));
 

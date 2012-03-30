@@ -149,17 +149,20 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         // frame with a compression history will come before the first compressed frame.
         synchronized (this)
         {
-            //TODO: use instanceof PushSynInfo
             if (synInfo.isUnidirectional())
             {
-                if (!streams.containsKey(synInfo.getAssociatedStreamId()))
+                IStream associatedStream = streams.get(synInfo.getAssociatedStreamId());
+                if (associatedStream == null)
                 {
                     throw new IllegalStateException("Tried to associate new unidirectional stream with streamId: " + synInfo.getAssociatedStreamId()
                             + " But no stream with this id exists. Associated stream already closed?");
                 }
+                else if (associatedStream.isDataSent())
+                {
+                    throw new IllegalStateException("Can't create pushStream if data has been sent already on associated stream.");
+                }
             }
 
-            //TODO: check if pushStreamIds should be odd or even
             int streamId = streamIds.getAndAdd(2);
             SynStreamFrame synStream = new SynStreamFrame(version,synInfo.getFlags(),streamId,synInfo.getAssociatedStreamId(),synInfo.getPriority(),
                     synInfo.getHeaders());
@@ -650,7 +653,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private StreamFrameListener notifyOnSyn(SessionFrameListener listener, Stream stream, AbstractSynInfo synInfo)
+    private StreamFrameListener notifyOnSyn(SessionFrameListener listener, Stream stream, SynInfo synInfo)
     {
         try
         {

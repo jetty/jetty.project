@@ -21,8 +21,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.spdy.IStream;
-
 /**
  * <p>A {@link Session} represents the client-side endpoint of a SPDY connection to a single origin server.</p>
  * <p>Once a {@link Session} has been obtained, it can be used to open SPDY streams:</p>

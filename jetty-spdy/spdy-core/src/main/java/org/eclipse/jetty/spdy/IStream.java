@@ -17,12 +17,11 @@
 package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
-import java.util.Set;
 
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
 
@@ -55,7 +54,7 @@ public interface IStream extends Stream
 
     /**
      * @param listener the stream frame listener associated to this stream
-     * as returned by {@link SessionFrameListener#onSyn(Stream, AbstractSynInfo)}
+     * as returned by {@link SessionFrameListener#onSyn(Stream, SynInfo)}
      */
     public void setStreamFrameListener(StreamFrameListener listener);
 
@@ -93,6 +92,13 @@ public interface IStream extends Stream
     
     public void addAssociatedStream(IStream stream);
 
+    /**
+     * <p>boolean indicating if data has been sent on this stream or not</p>
+     * 
+     * @return true if data has already been sent using this stream, false otherwise
+     */
+    public boolean isDataSent();
+    
     //TODO: Do we really need it?
 //    public void removeAssociatedStream(IStream stream);
 }
