@@ -31,6 +31,12 @@ public class SelectChannelServerTest extends HttpServerTestBase
     {
         super.testCommittedError();
     }
+
+    @Override
+    public void testSuspendedPipeline() throws Exception
+    {
+        super.testSuspendedPipeline();
+    }
     
     
 }

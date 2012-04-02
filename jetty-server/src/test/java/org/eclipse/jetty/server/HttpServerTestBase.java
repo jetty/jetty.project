@@ -32,7 +32,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
@@ -1278,6 +1277,53 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
            //don't read the input, just send something back
             ((Request)request).setHandled(true);
             response.setStatus(200);
+        }
+    }
+    
+
+    @Test
+    public void testSuspendedPipeline() throws Exception
+    {
+        SuspendHandler suspend = new SuspendHandler();
+        suspend.setSuspendFor(30000);
+        suspend.setResumeAfter(1000);
+        configureServer(suspend);
+
+        long start=System.currentTimeMillis();
+        Socket client=newSocket(HOST,_connector.getLocalPort());
+        try
+        {
+            OutputStream os=client.getOutputStream();
+            InputStream is=client.getInputStream();
+
+            // write an initial request
+            os.write((
+                    "GET / HTTP/1.1\r\n"+
+                    "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+            
+            Thread.sleep(200);
+            
+            // write an pipelined request
+            os.write((
+                    "GET / HTTP/1.1\r\n"+
+                    "host: "+HOST+":"+_connector.getLocalPort()+"\r\n"+
+                    "connection: close\r\n"+
+                    "\r\n"
+            ).getBytes());
+            os.flush();
+            
+            String response=readResponse(client);
+            assertThat(response,JUnitMatchers.containsString("RESUMEDHTTP/1.1 200 OK"));
+            assertThat((System.currentTimeMillis()-start),greaterThanOrEqualTo(1999L));
+            
+            // TODO This test should also check that that the CPU did not spin during the suspend.
+        }
+        finally
+        {
+            client.close();
         }
     }
 }

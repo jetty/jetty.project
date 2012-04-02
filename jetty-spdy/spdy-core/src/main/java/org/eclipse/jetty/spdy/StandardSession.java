@@ -18,10 +18,10 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
-import java.util.ArrayList;
-import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -78,7 +78,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
-    private final Deque<FrameBytes> queue = new LinkedList<>();
+    private final LinkedList<FrameBytes> queue = new LinkedList<>();
     private final ByteBufferPool bufferPool;
     private final Executor threadPool;
     private final ScheduledExecutorService scheduler;
@@ -253,9 +253,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public List<Stream> getStreams()
+    public Set<Stream> getStreams()
     {
-        List<Stream> result = new ArrayList<>();
+        Set<Stream> result = new HashSet<>();
         result.addAll(streams.values());
         return result;
     }
@@ -540,7 +540,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         Settings.Setting windowSizeSetting = frame.getSettings().get(Settings.ID.INITIAL_WINDOW_SIZE);
         if (windowSizeSetting != null)
         {
+            int prevWindowSize = windowSize;
             windowSize = windowSizeSetting.value();
+            for (IStream stream : streams.values())
+                stream.updateWindowSize(windowSize - prevWindowSize);
             logger.debug("Updated window size to {}", windowSize);
         }
 
@@ -728,10 +731,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             {
                 ByteBuffer buffer = generator.control(frame);
                 logger.debug("Queuing {} on {}", frame, stream);
-                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(handler, context, frame, buffer);
+                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream, handler, context, frame, buffer);
                 if (timeout > 0)
                     frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
-                enqueueLast(frameBytes);
+                append(frameBytes);
             }
 
             flush();
@@ -762,10 +765,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Handler<C> handler, C context)
     {
         logger.debug("Queuing {} on {}", dataInfo, stream);
-        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(handler, context, stream, dataInfo);
+        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(stream, handler, context, dataInfo);
         if (timeout > 0)
             frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
-        enqueueLast(frameBytes);
+        append(frameBytes);
         flush();
     }
 
@@ -775,55 +778,70 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public int getWindowSize()
-    {
-        return windowSize;
-    }
-
-    @Override
     public void flush()
     {
-        FrameBytes frameBytes;
-        ByteBuffer buffer;
+        FrameBytes frameBytes = null;
+        ByteBuffer buffer = null;
         synchronized (queue)
         {
-            if (flushing)
+            if (flushing || queue.isEmpty())
                 return;
 
-            frameBytes = queue.poll();
-            if (frameBytes == null)
-                return;
-
-            buffer = frameBytes.getByteBuffer();
-            if (buffer == null)
+            Set<IStream> stalledStreams = null;
+            for (int i = 0; i < queue.size(); ++i)
             {
-                enqueueFirst(frameBytes);
-                logger.debug("Flush skipped, {} frame(s) in queue", queue.size());
-                return;
+                frameBytes = queue.get(i);
+
+                if (stalledStreams != null && stalledStreams.contains(frameBytes.getStream()))
+                    continue;
+
+                buffer = frameBytes.getByteBuffer();
+                if (buffer != null)
+                {
+                    queue.remove(i);
+                    break;
+                }
+
+                if (stalledStreams == null)
+                    stalledStreams = new HashSet<>();
+                stalledStreams.add(frameBytes.getStream());
+
+                logger.debug("Flush stalled for {}, {} frame(s) in queue", frameBytes, queue.size());
             }
+
+            if (buffer == null)
+                return;
 
             flushing = true;
             logger.debug("Flushing {}, {} frame(s) in queue", frameBytes, queue.size());
         }
-
-        logger.debug("Writing {} frame bytes of {}", buffer.remaining(), frameBytes);
         write(buffer, this, frameBytes);
     }
 
-    private void enqueueLast(FrameBytes frameBytes)
+    private void append(FrameBytes frameBytes)
     {
-        // TODO: handle priority; e.g. use queues to prioritize the buffers ?
-        synchronized (queue)
-        {
-            queue.offerLast(frameBytes);
-        }
+        enqueue(frameBytes, false);
     }
 
-    private void enqueueFirst(FrameBytes frameBytes)
+    private void prepend(FrameBytes frameBytes)
+    {
+        enqueue(frameBytes, true);
+    }
+
+    private void enqueue(FrameBytes frameBytes, boolean prepend)
     {
         synchronized (queue)
         {
-            queue.offerFirst(frameBytes);
+            int index = 0;
+            while (index < queue.size())
+            {
+                FrameBytes element = queue.get(index);
+                int comparison = element.compareTo(frameBytes);
+                if (comparison > 0 || prepend && comparison == 0)
+                    break;
+                ++index;
+            }
+            queue.add(index, frameBytes);
         }
     }
 
@@ -836,6 +854,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             flushing = false;
         }
         frameBytes.complete();
+        flush();
     }
 
     @Override
@@ -847,7 +866,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     protected void write(ByteBuffer buffer, Handler<FrameBytes> handler, FrameBytes frameBytes)
     {
         if (controller != null)
+        {
+            logger.debug("Writing {} frame bytes of {}", buffer.remaining(), frameBytes);
             controller.write(buffer, handler, frameBytes);
+        }
     }
 
     private <C> void complete(final Handler<C> handler, final C context)
@@ -913,8 +935,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    public interface FrameBytes
+    public interface FrameBytes extends Comparable<FrameBytes>
     {
+        public IStream getStream();
+
         public abstract ByteBuffer getByteBuffer();
 
         public abstract void complete();
@@ -922,14 +946,28 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private abstract class AbstractFrameBytes<C> implements FrameBytes, Runnable
     {
+        private final IStream stream;
         private final Handler<C> handler;
         private final C context;
         protected volatile ScheduledFuture<?> task;
 
-        protected AbstractFrameBytes(Handler<C> handler, C context)
+        protected AbstractFrameBytes(IStream stream, Handler<C> handler, C context)
         {
+            this.stream = stream;
             this.handler = handler;
             this.context = context;
+        }
+
+        @Override
+        public IStream getStream()
+        {
+            return stream;
+        }
+
+        @Override
+        public int compareTo(FrameBytes that)
+        {
+            return getStream().getPriority() - that.getStream().getPriority();
         }
 
         @Override
@@ -959,9 +997,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         private final ControlFrame frame;
         private final ByteBuffer buffer;
 
-        private ControlFrameBytes(Handler<C> handler, C context, ControlFrame frame, ByteBuffer buffer)
+        private ControlFrameBytes(IStream stream, Handler<C> handler, C context, ControlFrame frame, ByteBuffer buffer)
         {
-            super(handler, context);
+            super(stream, handler, context);
             this.frame = frame;
             this.buffer = buffer;
         }
@@ -996,15 +1034,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private class DataFrameBytes<C> extends AbstractFrameBytes<C>
     {
-        private final IStream stream;
         private final DataInfo dataInfo;
-        private int length;
-        private ByteBuffer buffer;
+        private int size;
+        private volatile ByteBuffer buffer;
 
-        private DataFrameBytes(Handler<C> handler, C context, IStream stream, DataInfo dataInfo)
+        private DataFrameBytes(IStream stream, Handler<C> handler, C context, DataInfo dataInfo)
         {
-            super(handler, context);
-            this.stream = stream;
+            super(stream, handler, context);
             this.dataInfo = dataInfo;
         }
 
@@ -1013,15 +1049,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             try
             {
+                IStream stream = getStream();
                 int windowSize = stream.getWindowSize();
                 if (windowSize <= 0)
                     return null;
 
-                length = dataInfo.length();
-                if (length > windowSize)
-                    length = windowSize;
+                size = dataInfo.available();
+                if (size > windowSize)
+                    size = windowSize;
 
-                buffer = generator.data(stream.getId(), length, dataInfo);
+                buffer = generator.data(stream.getId(), size, dataInfo);
                 return buffer;
             }
             catch (Throwable x)
@@ -1034,14 +1071,16 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public void complete()
         {
-            stream.updateWindowSize(-length);
             bufferPool.release(buffer);
+            IStream stream = getStream();
+            stream.updateWindowSize(-size);
 
             if (dataInfo.available() > 0)
             {
-                // If we could not write a full data frame, then we need first
-                // to finish it, and then process the others (to avoid data garbling)
-                enqueueFirst(this);
+                // We have written a frame out of this DataInfo, but there is more to write.
+                // We need to keep the correct ordering of frames, to avoid that another
+                // DataInfo for the same stream is written before this one is finished.
+                prepend(this);
             }
             else
             {
@@ -1055,7 +1094,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public String toString()
         {
-            return String.format("DATA bytes @%x available=%d consumed=%d on %s", dataInfo.hashCode(), dataInfo.available(), dataInfo.consumed(), stream);
+            return String.format("DATA bytes @%x available=%d consumed=%d on %s", dataInfo.hashCode(), dataInfo.available(), dataInfo.consumed(), getStream());
         }
     }
 }

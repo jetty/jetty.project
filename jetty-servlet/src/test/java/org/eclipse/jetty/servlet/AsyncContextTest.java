@@ -3,6 +3,7 @@ package org.eclipse.jetty.servlet;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,6 +13,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import junit.framework.Assert;
 
@@ -223,17 +225,20 @@ public class AsyncContextTest
             }
             else
             {
+                boolean wrapped = false;
                 final AsyncContext asyncContext;
                 if (request.getParameter("dispatchRequestResponse") != null)
                 {
-                    asyncContext = request.startAsync(request,response);
+                    wrapped = true;
+                    asyncContext = request.startAsync(request, new Wrapper(response));
                 }
                 else
                 {
                     asyncContext = request.startAsync();
                 }
 
-                new Thread(new DispatchingRunnable(asyncContext)).start();
+
+                new Thread(new DispatchingRunnable(asyncContext, wrapped)).start();
             }
         }
     }
@@ -241,14 +246,18 @@ public class AsyncContextTest
     private class DispatchingRunnable implements Runnable
     {
         private AsyncContext asyncContext;
+        private boolean wrapped;
 
-        public DispatchingRunnable(AsyncContext asyncContext)
+        public DispatchingRunnable(AsyncContext asyncContext, boolean wrapped)
         {
             this.asyncContext = asyncContext;
+            this.wrapped = wrapped;
         }
 
         public void run()
         {
+            if (wrapped)
+                assertTrue(asyncContext.getResponse() instanceof Wrapper);
             asyncContext.dispatch();
         }
     }
@@ -347,4 +356,13 @@ public class AsyncContextTest
         }
     }
 
+    private class Wrapper extends HttpServletResponseWrapper
+    {
+        public Wrapper (HttpServletResponse response)
+        {
+            super(response);
+        }
+    }
+    
+    
 }

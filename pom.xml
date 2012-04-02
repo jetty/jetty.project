@@ -6,10 +6,11 @@
     <version>19</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>7.6.2-SNAPSHOT</version>
+  <version>7.6.3-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>

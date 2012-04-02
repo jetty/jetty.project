@@ -254,7 +254,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         Nonce nonce=_nonceQueue.peek();
         while (nonce!=null && nonce._ts<expired)
         {
-            _nonceQueue.remove();
+            _nonceQueue.remove(nonce);
             _nonceCount.remove(nonce._nonce);
             nonce=_nonceQueue.peek();
         }

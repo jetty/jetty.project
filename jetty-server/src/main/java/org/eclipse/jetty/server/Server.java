@@ -265,7 +265,7 @@ public class Server extends HandlerWrapper implements Attributes
             mex.add(e);
         }
 
-        if (_connectors!=null)
+        if (_connectors!=null && mex.size()==0)
         {
             for (int i=0;i<_connectors.length;i++)
             {
