@@ -151,21 +151,6 @@ public class GzipFilter extends UserAgentFilter
     }
     
     /* ------------------------------------------------------------ */
-    public String selectCompression(String encodingHeader)
-    {
-        // TODO, this could be a little more robust.
-        // prefer gzip over deflate
-        if (encodingHeader!=null)
-        {
-            if (encodingHeader.toLowerCase().contains(GZIP))
-                return GZIP;
-            if (encodingHeader.toLowerCase().contains(DEFLATE))
-                return DEFLATE;
-        }
-        return null;
-    }
-    
-    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
@@ -176,7 +161,6 @@ public class GzipFilter extends UserAgentFilter
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
 
-        String ae = request.getHeader("accept-encoding");
         String compressionType = selectCompression(request.getHeader("accept-encoding"));
         if (compressionType!=null && !response.containsHeader("Content-Encoding") && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
         {
@@ -223,6 +207,21 @@ public class GzipFilter extends UserAgentFilter
         }
     }
 
+    /* ------------------------------------------------------------ */
+    private String selectCompression(String encodingHeader)
+    {
+        // TODO, this could be a little more robust.
+        // prefer gzip over deflate
+        if (encodingHeader!=null)
+        {
+            if (encodingHeader.toLowerCase().contains(GZIP))
+                return GZIP;
+            else if (encodingHeader.toLowerCase().contains(DEFLATE))
+                return DEFLATE;
+        }
+        return null;
+    }
+    
     protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
     {
         CompressedResponseWrapper wrappedResponse = null;
