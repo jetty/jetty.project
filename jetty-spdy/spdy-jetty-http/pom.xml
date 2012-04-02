@@ -28,7 +28,7 @@
                   <version>${npn.version}</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
-                  <outputDirectory>${build.directory}/npn</outputDirectory>
+                  <outputDirectory>${project.build.directory}/npn</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -38,7 +38,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-Xbootclasspath/p:${build.directory}/npn/npn-boot-${npn.version}.jar </argLine>
+          <argLine>-Xbootclasspath/p:${project.build.directory}/npn/npn-boot-${npn.version}.jar</argLine>
         </configuration>
       </plugin>
     </plugins>
