@@ -88,25 +88,8 @@ public class SynDataReplyDataLoadTest extends AbstractTest
             }
         });
 
-        List<Callable<Object>> tasks = new ArrayList<>();
-        for (int i = 0; i < count; ++i)
-        {
-            tasks.add(new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
-                {
-                    synCompletedData(session, headers, iterations);
-                    return null;
-                }
-            });
-        }
-
         ExecutorService threadPool = Executors.newFixedThreadPool(count);
-        List<Future<Object>> futures = threadPool.invokeAll(tasks);
-        for (Future<Object> future : futures)
-            future.get(iterations, TimeUnit.SECONDS);
-        Assert.assertTrue(latch.await(count * iterations, TimeUnit.SECONDS));
+        List<Callable<Object>> tasks = new ArrayList<>();
 
         tasks.clear();
         for (int i = 0; i < count; ++i)
@@ -121,11 +104,38 @@ public class SynDataReplyDataLoadTest extends AbstractTest
                 }
             });
         }
+        {
+            long begin = System.nanoTime();
+            List<Future<Object>> futures = threadPool.invokeAll(tasks);
+            for (Future<Object> future : futures)
+                future.get(iterations, TimeUnit.SECONDS);
+            Assert.assertTrue(latch.await(count * iterations, TimeUnit.SECONDS));
+            long end = System.nanoTime();
+            System.err.printf("SYN+GET+DATA+GET completed in %d ms%n", TimeUnit.NANOSECONDS.toMillis(end - begin));
+        }
 
-        futures = threadPool.invokeAll(tasks);
-        for (Future<Object> future : futures)
-            future.get(iterations, TimeUnit.SECONDS);
-        Assert.assertTrue(latch.await(count * iterations, TimeUnit.SECONDS));
+        tasks.clear();
+        for (int i = 0; i < count; ++i)
+        {
+            tasks.add(new Callable<Object>()
+            {
+                @Override
+                public Object call() throws Exception
+                {
+                    synCompletedData(session, headers, iterations);
+                    return null;
+                }
+            });
+        }
+        {
+            long begin = System.nanoTime();
+            List<Future<Object>> futures = threadPool.invokeAll(tasks);
+            for (Future<Object> future : futures)
+                future.get(iterations, TimeUnit.SECONDS);
+            Assert.assertTrue(latch.await(count * iterations, TimeUnit.SECONDS));
+            long end = System.nanoTime();
+            System.err.printf("SYN+COMPLETED+DATA completed in %d ms%n", TimeUnit.NANOSECONDS.toMillis(end - begin));
+        }
 
         threadPool.shutdown();
     }

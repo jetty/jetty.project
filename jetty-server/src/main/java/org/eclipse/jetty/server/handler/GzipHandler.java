@@ -21,6 +21,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -30,7 +32,8 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
+import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
+import org.eclipse.jetty.http.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -222,7 +225,7 @@ public class GzipHandler extends HandlerWrapper
                     }
                 }
 
-                final GzipResponseWrapper wrappedResponse = newGzipResponseWrapper(request,response);
+                final CompressedResponseWrapper wrappedResponse = newGzipResponseWrapper(request,response);
                 
                 boolean exceptional=true;
                 try
@@ -256,7 +259,7 @@ public class GzipHandler extends HandlerWrapper
                     else if (exceptional && !response.isCommitted())
                     {
                         wrappedResponse.resetBuffer();
-                        wrappedResponse.noGzip();
+                        wrappedResponse.noCompression();
                     }
                     else
                         wrappedResponse.finish();
@@ -276,14 +279,27 @@ public class GzipHandler extends HandlerWrapper
      * @param response the response
      * @return the gzip response wrapper
      */
-    protected GzipResponseWrapper newGzipResponseWrapper(HttpServletRequest request, HttpServletResponse response)
+    protected CompressedResponseWrapper newGzipResponseWrapper(HttpServletRequest request, HttpServletResponse response)
     {
-        return new GzipResponseWrapper(request, response)
+        return new CompressedResponseWrapper(request,response)
         {
             {
                 super.setMimeTypes(GzipHandler.this._mimeTypes);
                 super.setBufferSize(GzipHandler.this._bufferSize);
-                super.setMinGzipSize(GzipHandler.this._minGzipSize);
+                super.setMinCompressSize(GzipHandler.this._minGzipSize);
+            }
+            
+            @Override
+            protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+            {
+                return new AbstractCompressedStream("gzip",request,response,contentLength,bufferSize,minCompressSize)
+                {
+                    @Override
+                    protected DeflaterOutputStream createStream() throws IOException
+                    {
+                        return new GZIPOutputStream(_response.getOutputStream(),_bufferSize);
+                    }
+                };
             }
             
             @Override

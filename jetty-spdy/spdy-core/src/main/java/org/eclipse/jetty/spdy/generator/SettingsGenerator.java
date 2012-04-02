@@ -65,7 +65,7 @@ public class SettingsGenerator extends ControlFrameGenerator
             case SPDY.V2:
             {
                 // In v2 the format is 24 bits of ID + 8 bits of flag
-                int idAndFlags = (id << 8) + flags;
+                int idAndFlags = (id << 8) + (flags & 0xFF);
                 // A bug in the Chromium implementation forces v2 to have
                 // the 3 ID bytes little endian, so we swap first and third
                 int result = idAndFlags & 0x00_FF_00_FF;
