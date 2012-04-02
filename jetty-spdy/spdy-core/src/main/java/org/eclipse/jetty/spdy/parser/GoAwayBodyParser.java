@@ -58,6 +58,10 @@ public class GoAwayBodyParser extends ControlFrameBodyParser
                                 state = State.STATUS_CODE;
                                 break;
                             }
+                            default:
+                            {
+                                throw new IllegalStateException();
+                            }
                         }
                     }
                     else
@@ -86,6 +90,10 @@ public class GoAwayBodyParser extends ControlFrameBodyParser
                             {
                                 state = State.STATUS_CODE;
                                 break;
+                            }
+                            default:
+                            {
+                                throw new IllegalStateException();
                             }
                         }
                     }
