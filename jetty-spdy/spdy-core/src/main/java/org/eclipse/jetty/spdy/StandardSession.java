@@ -854,6 +854,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             flushing = false;
         }
         frameBytes.complete();
+        flush();
     }
 
     @Override
