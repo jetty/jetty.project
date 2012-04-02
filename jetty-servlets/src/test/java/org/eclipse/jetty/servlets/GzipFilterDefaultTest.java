@@ -10,8 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.gzip.CompressionType;
-import org.eclipse.jetty.http.gzip.GzipResponseWrapperImpl;
+import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
@@ -29,20 +28,20 @@ import org.junit.runners.Parameterized.Parameters;
 public class GzipFilterDefaultTest
 {
     @Parameters
-    public static Collection<CompressionType[]> data()
+    public static Collection<String[]> data()
     {
-        CompressionType[][] data = new CompressionType[][]
+        String[][] data = new String[][]
                 {
-                { CompressionType.GZIP },
-                { CompressionType.DEFLATE } 
+                { GzipFilter.GZIP },
+                { GzipFilter.DEFLATE } 
                 };
         
         return Arrays.asList(data);
     }
     
-    private CompressionType compressionType;
+    private String compressionType;
     
-    public GzipFilterDefaultTest(CompressionType compressionType)
+    public GzipFilterDefaultTest(String compressionType)
     {
         this.compressionType = compressionType;
     }
@@ -80,7 +79,7 @@ public class GzipFilterDefaultTest
         GzipTester tester = new GzipTester(testingdir, compressionType);
 
         // Test content that is smaller than the buffer.
-        int filesize = GzipResponseWrapperImpl.DEFAULT_BUFFER_SIZE / 4;
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE / 4;
         tester.prepareServerFile("file.txt",filesize);
         
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -103,7 +102,7 @@ public class GzipFilterDefaultTest
         GzipTester tester = new GzipTester(testingdir, compressionType);
 
         // Test content that is smaller than the buffer.
-        int filesize = GzipResponseWrapperImpl.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
         tester.prepareServerFile("file.txt",filesize);
         
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -126,7 +125,7 @@ public class GzipFilterDefaultTest
         GzipTester tester = new GzipTester(testingdir, compressionType);
 
         // Test content that is smaller than the buffer.
-        int filesize = GzipResponseWrapperImpl.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
         tester.prepareServerFile("file.mp3",filesize);
         
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
@@ -173,7 +172,7 @@ public class GzipFilterDefaultTest
         holder.setInitParameter("excludedAgents", "foo");
         tester.setUserAgent("foo");
         
-        int filesize = GzipResponseWrapperImpl.DEFAULT_BUFFER_SIZE * 4;
+        int filesize = CompressedResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
         tester.prepareServerFile("file.txt",filesize);
         
         try

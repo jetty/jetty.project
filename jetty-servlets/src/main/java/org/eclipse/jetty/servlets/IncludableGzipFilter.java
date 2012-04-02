@@ -18,6 +18,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -25,11 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
-import org.eclipse.jetty.http.gzip.CompressedStream;
-import org.eclipse.jetty.http.gzip.CompressionType;
-import org.eclipse.jetty.http.gzip.DeflateStreamImpl;
-import org.eclipse.jetty.http.gzip.GzipResponseWrapperImpl;
-import org.eclipse.jetty.http.gzip.GzipStreamImpl;
+import org.eclipse.jetty.http.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
 
 /* ------------------------------------------------------------ */
@@ -58,97 +56,81 @@ public class IncludableGzipFilter extends GzipFilter
             _uncheckedPrintWriter=Boolean.valueOf(tmp).booleanValue();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.servlets.GzipFilter#createWrappedResponse(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, java.lang.String)
+     */
     @Override
-    protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, CompressionType compressionType)
+    protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
     {
-        return new IncludableResponseWrapper(request,response);
+        CompressedResponseWrapper wrappedResponse = null;
+        if (compressionType.equals(GZIP))
+        {
+            wrappedResponse = new IncludableResponseWrapper(request,response)
+            {
+                @Override
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                {
+                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    {
+                        @Override
+                        protected DeflaterOutputStream createStream() throws IOException
+                        {
+                            return new GZIPOutputStream(_response.getOutputStream(),_bufferSize);
+                        }
+                    };
+                }
+            };
+        }
+        else if (compressionType.equals(DEFLATE))
+        {
+            wrappedResponse = new IncludableResponseWrapper(request,response)
+            {
+                @Override
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                {
+                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    {
+                        @Override
+                        protected DeflaterOutputStream createStream() throws IOException
+                        {
+                            return new DeflaterOutputStream(_response.getOutputStream());
+                        }
+                    };
+                }
+            };
+        }
+        else
+        {
+            throw new IllegalStateException(compressionType + " not supported");
+        }
+        configureWrappedResponse(wrappedResponse);
+        return wrappedResponse;
     }
-
-    public class IncludableResponseWrapper extends GzipResponseWrapperImpl
+    
+    
+    // Extend CompressedResponseWrapper to be able to set headers during include and to create unchecked printwriters
+    private abstract class IncludableResponseWrapper extends CompressedResponseWrapper
     {
         public IncludableResponseWrapper(HttpServletRequest request, HttpServletResponse response)
         {
             super(request,response);
-
-            super.setMimeTypes(IncludableGzipFilter.this._mimeTypes);
-            super.setBufferSize(IncludableGzipFilter.this._bufferSize);
-            super.setMinCompressSize(IncludableGzipFilter.this._minGzipSize);
         }
 
         @Override
-        protected CompressedStream newCompressedStream(HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize,
-                int minGzipSize) throws IOException
+        public void setHeader(String name,String value)
         {
-            String encodingHeader = request.getHeader("accept-encoding");
-            CompressionType compressionType = CompressionType.getByEncodingHeader(encodingHeader);
-            if (compressionType.equals(CompressionType.GZIP))
-            {
-                return new IncludableGzipStream(request,response,contentLength,bufferSize,minGzipSize);
-            }
-            else if (compressionType.equals(CompressionType.DEFLATE))
-            {
-                return new IncludableDeflateStream(request,response,contentLength,bufferSize,minGzipSize);
-            }
-            else
-            {
-                throw new IllegalStateException(compressionType.name() + " not supported.");
-            }
+            super.setHeader(name,value);
+            HttpServletResponse response = (HttpServletResponse)getResponse();
+            if (!response.containsHeader(name))
+                response.setHeader("org.eclipse.jetty.server.include."+name,value);;    
         }
-
         @Override
         protected PrintWriter newWriter(OutputStream out, String encoding) throws UnsupportedEncodingException
         {
             if (_uncheckedPrintWriter)
                 return encoding == null?new UncheckedPrintWriter(out):new UncheckedPrintWriter(new OutputStreamWriter(out,encoding));
             return super.newWriter(out,encoding);
-        }
-    }
-
-    public class IncludableGzipStream extends GzipStreamImpl
-    {
-        public IncludableGzipStream(HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize, int minGzipSize)
-                throws IOException
-        {
-            super(request,response,contentLength,bufferSize,minGzipSize);
-        }
-
-        @Override
-        protected boolean setContentEncoding()
-        {
-            if (_request.getAttribute("javax.servlet.include.request_uri") != null)
-            {
-                _response.setHeader("org.eclipse.jetty.server.include.Content-Encoding","gzip");
-            }
-            else
-            {
-                _response.setHeader("Content-Encoding","gzip");
-            }
-
-            return _response.containsHeader("Content-Encoding");
-        }
-    }
-
-    public class IncludableDeflateStream extends DeflateStreamImpl
-    {
-        public IncludableDeflateStream(HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize, int minGzipSize)
-                throws IOException
-        {
-            super(request,response,contentLength,bufferSize,minGzipSize);
-        }
-
-        @Override
-        protected boolean setContentEncoding()
-        {
-            if (_request.getAttribute("javax.servlet.include.request_uri") != null)
-            {
-                _response.setHeader("org.eclipse.jetty.server.include.Content-Encoding","deflate");
-            }
-            else
-            {
-                _response.setHeader("Content-Encoding","deflate");
-            }
-
-            return _response.containsHeader("Content-Encoding");
         }
     }
 

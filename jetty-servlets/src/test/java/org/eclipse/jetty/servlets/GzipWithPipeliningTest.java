@@ -18,7 +18,6 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import org.eclipse.jetty.http.gzip.CompressionType;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -50,10 +49,10 @@ public class GzipWithPipeliningTest
         // Test different Content-Encoding header combinations. So implicitly testing that gzip is preferred oder deflate
         String[][] data = new String[][]
                 {
-                { CompressionType.GZIP.getEncodingHeader() },
-                { CompressionType.DEFLATE.getEncodingHeader() + ", " + CompressionType.GZIP.getEncodingHeader() },
-                { CompressionType.GZIP.getEncodingHeader() + ", " + CompressionType.DEFLATE.getEncodingHeader() },
-                { CompressionType.DEFLATE.getEncodingHeader() } 
+                { GzipFilter.GZIP },
+                { GzipFilter.DEFLATE + ", " + GzipFilter.GZIP },
+                { GzipFilter.GZIP + ", " + GzipFilter.DEFLATE },
+                { GzipFilter.DEFLATE } 
                 };
         
         return Arrays.asList(data);
@@ -137,7 +136,7 @@ public class GzipWithPipeliningTest
 
             respHeader = client.readResponseHeader();
             System.out.println("Response Header #1 --\n" + respHeader);
-            String expectedEncodingHeader = encodingHeader.equals(CompressionType.DEFLATE.getEncodingHeader()) ? CompressionType.DEFLATE.getEncodingHeader() : CompressionType.GZIP.getEncodingHeader();
+            String expectedEncodingHeader = encodingHeader.equals(GzipFilter.DEFLATE) ? GzipFilter.DEFLATE : GzipFilter.GZIP;
             assertThat("Content-Encoding should be gzipped",respHeader,containsString("Content-Encoding: " + expectedEncodingHeader + "\r\n"));
             assertThat("Transfer-Encoding should be chunked",respHeader,containsString("Transfer-Encoding: chunked\r\n"));
 
@@ -182,7 +181,7 @@ public class GzipWithPipeliningTest
             IO.close(rawOutputStream);
             FileInputStream rawInputStream = new FileInputStream(rawOutputFile);
             InputStream uncompressedStream = null;
-            if (CompressionType.DEFLATE.getEncodingHeader().equals(encodingHeader))
+            if (GzipFilter.DEFLATE.equals(encodingHeader))
             {
                 uncompressedStream = new InflaterInputStream(rawInputStream);
             }

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http.gzip;
 
+import java.io.Closeable;
+import java.io.Flushable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -32,8 +34,9 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  * Major work and configuration is done here. Subclasses using different kinds of compression only have to implement the abstract methods doCompress() and
  * setContentEncoding() using the desired compression and setting the appropiate Content-Encoding header string.
  */
-public abstract class AbstractCompressedStream extends ServletOutputStream implements CompressedStream
+public abstract class AbstractCompressedStream extends ServletOutputStream 
 {
+    private final String _encoding;
     protected HttpServletRequest _request;
     protected HttpServletResponse _response;
     protected OutputStream _out;
@@ -61,9 +64,10 @@ public abstract class AbstractCompressedStream extends ServletOutputStream imple
      * @throws IOException
      *             Signals that an I/O exception has occurred.
      */
-    public AbstractCompressedStream(HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize, int minCompressSize)
+    public AbstractCompressedStream(String encoding,HttpServletRequest request, HttpServletResponse response, long contentLength, int bufferSize, int minCompressSize)
             throws IOException
     {
+        _encoding=encoding;
         _request = request;
         _response = response;
         _contentLength = contentLength;
@@ -232,7 +236,9 @@ public abstract class AbstractCompressedStream extends ServletOutputStream imple
             if (_response.isCommitted())
                 throw new IllegalStateException();
             
-            if (setContentEncoding())
+            setHeader("Content-Encoding", _encoding);
+            
+            if (_response.containsHeader("Content-Encoding"))
             {
                 _out=_compressedOutputStream=createStream();
 
@@ -325,12 +331,10 @@ public abstract class AbstractCompressedStream extends ServletOutputStream imple
         return encoding == null?new PrintWriter(out):new PrintWriter(new OutputStreamWriter(out,encoding));
     }
 
-    /**
-     * Sets the content encoding.
-     * 
-     * @return true, if successful
-     */
-    protected abstract boolean setContentEncoding();
+    protected void setHeader(String name,String value)
+    {
+        _response.setHeader(name, value);
+    }
     
     /**
      * Create the stream fitting to the underlying compression type.

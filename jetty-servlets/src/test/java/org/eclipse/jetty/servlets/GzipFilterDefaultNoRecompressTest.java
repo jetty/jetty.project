@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jetty.http.gzip.CompressionType;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
@@ -32,41 +31,41 @@ public class GzipFilterDefaultNoRecompressTest
         return Arrays.asList(new Object[][]
         {
                 // Some already compressed files
-                { "test_quotes.gz", "application/gzip", CompressionType.GZIP },
-                { "test_quotes.bz2", "application/bzip2", CompressionType.GZIP },
-                { "test_quotes.zip", "application/zip", CompressionType.GZIP },
-                { "test_quotes.rar", "application/octet-stream", CompressionType.GZIP },
+                { "test_quotes.gz", "application/gzip", GzipFilter.GZIP },
+                { "test_quotes.bz2", "application/bzip2", GzipFilter.GZIP },
+                { "test_quotes.zip", "application/zip", GzipFilter.GZIP },
+                { "test_quotes.rar", "application/octet-stream", GzipFilter.GZIP },
                 // Some images (common first)
-                { "jetty_logo.png", "image/png", CompressionType.GZIP },
-                { "jetty_logo.gif", "image/gif", CompressionType.GZIP },
-                { "jetty_logo.jpeg", "image/jpeg", CompressionType.GZIP },
-                { "jetty_logo.jpg", "image/jpeg", CompressionType.GZIP },
+                { "jetty_logo.png", "image/png", GzipFilter.GZIP },
+                { "jetty_logo.gif", "image/gif", GzipFilter.GZIP },
+                { "jetty_logo.jpeg", "image/jpeg", GzipFilter.GZIP },
+                { "jetty_logo.jpg", "image/jpeg", GzipFilter.GZIP },
                 // Lesser encountered images (usually found being requested from non-browser clients)
-                { "jetty_logo.bmp", "image/bmp", CompressionType.GZIP },
-                { "jetty_logo.tga", "application/tga", CompressionType.GZIP },
-                { "jetty_logo.tif", "image/tiff", CompressionType.GZIP },
-                { "jetty_logo.tiff", "image/tiff", CompressionType.GZIP },
-                { "jetty_logo.xcf", "image/xcf", CompressionType.GZIP },
-                { "jetty_logo.jp2", "image/jpeg2000", CompressionType.GZIP },
+                { "jetty_logo.bmp", "image/bmp", GzipFilter.GZIP },
+                { "jetty_logo.tga", "application/tga", GzipFilter.GZIP },
+                { "jetty_logo.tif", "image/tiff", GzipFilter.GZIP },
+                { "jetty_logo.tiff", "image/tiff", GzipFilter.GZIP },
+                { "jetty_logo.xcf", "image/xcf", GzipFilter.GZIP },
+                { "jetty_logo.jp2", "image/jpeg2000", GzipFilter.GZIP },
 
                 // Same tests again for deflate
                 // Some already compressed files
-                { "test_quotes.gz", "application/gzip", CompressionType.DEFLATE },
-                { "test_quotes.bz2", "application/bzip2", CompressionType.DEFLATE },
-                { "test_quotes.zip", "application/zip", CompressionType.DEFLATE },
-                { "test_quotes.rar", "application/octet-stream", CompressionType.DEFLATE },
+                { "test_quotes.gz", "application/gzip", GzipFilter.DEFLATE },
+                { "test_quotes.bz2", "application/bzip2", GzipFilter.DEFLATE },
+                { "test_quotes.zip", "application/zip", GzipFilter.DEFLATE },
+                { "test_quotes.rar", "application/octet-stream", GzipFilter.DEFLATE },
                 // Some images (common first)
-                { "jetty_logo.png", "image/png", CompressionType.DEFLATE },
-                { "jetty_logo.gif", "image/gif", CompressionType.DEFLATE },
-                { "jetty_logo.jpeg", "image/jpeg", CompressionType.DEFLATE },
-                { "jetty_logo.jpg", "image/jpeg", CompressionType.DEFLATE },
+                { "jetty_logo.png", "image/png", GzipFilter.DEFLATE },
+                { "jetty_logo.gif", "image/gif", GzipFilter.DEFLATE },
+                { "jetty_logo.jpeg", "image/jpeg", GzipFilter.DEFLATE },
+                { "jetty_logo.jpg", "image/jpeg", GzipFilter.DEFLATE },
                 // Lesser encountered images (usually found being requested from non-browser clients)
-                { "jetty_logo.bmp", "image/bmp", CompressionType.DEFLATE },
-                { "jetty_logo.tga", "application/tga", CompressionType.DEFLATE },
-                { "jetty_logo.tif", "image/tiff", CompressionType.DEFLATE },
-                { "jetty_logo.tiff", "image/tiff", CompressionType.DEFLATE },
-                { "jetty_logo.xcf", "image/xcf", CompressionType.DEFLATE },
-                { "jetty_logo.jp2", "image/jpeg2000", CompressionType.DEFLATE } });
+                { "jetty_logo.bmp", "image/bmp", GzipFilter.DEFLATE },
+                { "jetty_logo.tga", "application/tga", GzipFilter.DEFLATE },
+                { "jetty_logo.tif", "image/tiff", GzipFilter.DEFLATE },
+                { "jetty_logo.tiff", "image/tiff", GzipFilter.DEFLATE },
+                { "jetty_logo.xcf", "image/xcf", GzipFilter.DEFLATE },
+                { "jetty_logo.jp2", "image/jpeg2000", GzipFilter.DEFLATE } });
     }
 
     @Rule
@@ -74,9 +73,9 @@ public class GzipFilterDefaultNoRecompressTest
 
     private String alreadyCompressedFilename;
     private String expectedContentType;
-    private CompressionType compressionType;
+    private String compressionType;
 
-    public GzipFilterDefaultNoRecompressTest(String testFilename, String expectedContentType, CompressionType compressionType)
+    public GzipFilterDefaultNoRecompressTest(String testFilename, String expectedContentType, String compressionType)
     {
         this.alreadyCompressedFilename = testFilename;
         this.expectedContentType = expectedContentType;

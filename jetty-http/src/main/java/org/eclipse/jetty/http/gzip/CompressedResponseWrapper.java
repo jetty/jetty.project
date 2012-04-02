@@ -14,45 +14,398 @@
 package org.eclipse.jetty.http.gzip;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.Set;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
-/* ------------------------------------------------------------ */
+import org.eclipse.jetty.util.StringUtil;
+
+/*------------------------------------------------------------ */
 /**
- * A ResponseWrapper interface that adds compress functionality to a ResponseWrapper
  */
-public interface CompressedResponseWrapper extends HttpServletResponse
+public abstract class CompressedResponseWrapper extends HttpServletResponseWrapper
 {
+    
+    public static final int DEFAULT_BUFFER_SIZE = 8192;
+    public static final int DEFAULT_MIN_COMPRESS_SIZE = 256;
+    
+    private Set<String> _mimeTypes;
+    private int _bufferSize=DEFAULT_BUFFER_SIZE;
+    private int _minCompressSize=DEFAULT_MIN_COMPRESS_SIZE;
+    protected HttpServletRequest _request;
 
-    /**
-     * Sets the mime types.
-     * 
-     * @param mimeTypes
-     *            the new mime types
-     */
-    public void setMimeTypes(Set<String> mimeTypes);
+    private PrintWriter _writer;
+    private AbstractCompressedStream _compressedStream;
+    private long _contentLength=-1;
+    private boolean _noCompression;
 
-    /**
-     * Sets the min compress size.
-     * 
-     * @param minCompressSize
-     *            the new min compress size
-     */
-    public void setMinCompressSize(int minCompressSize);
+    public CompressedResponseWrapper(HttpServletRequest request, HttpServletResponse response)
+    {
+        super(response);
+        _request = request;
+    }
 
     /* ------------------------------------------------------------ */
     /**
-     * No compression.
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setMimeTypes(java.util.Set)
      */
-    public void noCompression();
+    public void setMimeTypes(Set<String> mimeTypes)
+    {
+        _mimeTypes = mimeTypes;
+    }
 
+    /* ------------------------------------------------------------ */
     /**
-     * Finish.
-     * 
-     * @throws IOException
-     *             Signals that an I/O exception has occurred.
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setBufferSize(int)
      */
-    public void finish() throws IOException;
+    @Override
+    public void setBufferSize(int bufferSize)
+    {
+        _bufferSize = bufferSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setMinCompressSize(int)
+     */
+    public void setMinCompressSize(int minCompressSize)
+    {
+        _minCompressSize = minCompressSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setContentType(java.lang.String)
+     */
+    @Override
+    public void setContentType(String ct)
+    {
+        super.setContentType(ct);
+    
+        if (ct!=null)
+        {
+            int colon=ct.indexOf(";");
+            if (colon>0)
+                ct=ct.substring(0,colon);
+        }
+    
+        if ((_compressedStream==null || _compressedStream.getOutputStream()==null) && 
+            (_mimeTypes==null && ct!=null && ct.contains("gzip") ||
+             _mimeTypes!=null && (ct==null||!_mimeTypes.contains(StringUtil.asciiToLowerCase(ct)))))
+        {
+            noCompression();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setStatus(int, java.lang.String)
+     */
+    @Override
+    public void setStatus(int sc, String sm)
+    {
+        super.setStatus(sc,sm);
+        if (sc<200 || sc==204 || sc==205 || sc>=300)
+            noCompression();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setStatus(int)
+     */
+    @Override
+    public void setStatus(int sc)
+    {
+        super.setStatus(sc);
+        if (sc<200 || sc==204 || sc==205 ||sc>=300)
+            noCompression();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setContentLength(int)
+     */
+    @Override
+    public void setContentLength(int length)
+    {
+        setContentLength((long)length);
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void setContentLength(long length)
+    {
+        _contentLength=length;
+        if (_compressedStream!=null)
+            _compressedStream.setContentLength(length);
+        else if (_noCompression && _contentLength>=0)
+        {
+            HttpServletResponse response = (HttpServletResponse)getResponse();
+            if(_contentLength<Integer.MAX_VALUE)
+            {
+                response.setContentLength((int)_contentLength);
+            }
+            else
+            {
+                response.setHeader("Content-Length", Long.toString(_contentLength));
+            }
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#addHeader(java.lang.String, java.lang.String)
+     */
+    @Override
+    public void addHeader(String name, String value)
+    {
+        if ("content-length".equalsIgnoreCase(name))
+        {
+            _contentLength=Long.parseLong(value);
+            if (_compressedStream!=null)
+                _compressedStream.setContentLength(_contentLength);
+        }
+        else if ("content-type".equalsIgnoreCase(name))
+        {   
+            setContentType(value);
+        }
+        else if ("content-encoding".equalsIgnoreCase(name))
+        {   
+            super.addHeader(name,value);
+            if (!isCommitted())
+            {
+                noCompression();
+            }
+        }
+        else
+            super.addHeader(name,value);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#flushBuffer()
+     */
+    @Override
+    public void flushBuffer() throws IOException
+    {
+        if (_writer!=null)
+            _writer.flush();
+        if (_compressedStream!=null)
+            _compressedStream.finish();
+        else
+            getResponse().flushBuffer();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#reset()
+     */
+    @Override
+    public void reset()
+    {
+        super.reset();
+        if (_compressedStream!=null)
+            _compressedStream.resetBuffer();
+        _writer=null;
+        _compressedStream=null;
+        _noCompression=false;
+        _contentLength=-1;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#resetBuffer()
+     */
+    @Override
+    public void resetBuffer()
+    {
+        super.resetBuffer();
+        if (_compressedStream!=null)
+            _compressedStream.resetBuffer();
+        _writer=null;
+        _compressedStream=null;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#sendError(int, java.lang.String)
+     */
+    @Override
+    public void sendError(int sc, String msg) throws IOException
+    {
+        resetBuffer();
+        super.sendError(sc,msg);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#sendError(int)
+     */
+    @Override
+    public void sendError(int sc) throws IOException
+    {
+        resetBuffer();
+        super.sendError(sc);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#sendRedirect(java.lang.String)
+     */
+    @Override
+    public void sendRedirect(String location) throws IOException
+    {
+        resetBuffer();
+        super.sendRedirect(location);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#noCompression()
+     */
+    public void noCompression()
+    {
+        _noCompression=true;
+        if (_compressedStream!=null)
+        {
+            try
+            {
+                _compressedStream.doNotCompress();
+            }
+            catch (IOException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#finish()
+     */
+    public void finish() throws IOException
+    {
+        if (_writer!=null && !_compressedStream.isClosed())
+            _writer.flush();
+        if (_compressedStream!=null)
+            _compressedStream.finish();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setHeader(java.lang.String, java.lang.String)
+     */
+    @Override
+    public void setHeader(String name, String value)
+    {
+        if ("content-length".equalsIgnoreCase(name))
+        {
+            setContentLength(Long.parseLong(value));
+        }
+        else if ("content-type".equalsIgnoreCase(name))
+        {   
+            setContentType(value);
+        }
+        else if ("content-encoding".equalsIgnoreCase(name))
+        {   
+            super.setHeader(name,value);
+            if (!isCommitted())
+            {
+                noCompression();
+            }
+        }
+        else
+            super.setHeader(name,value);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#getOutputStream()
+     */
+    @Override
+    public ServletOutputStream getOutputStream() throws IOException
+    {
+        if (_compressedStream==null)
+        {
+            if (getResponse().isCommitted() || _noCompression)
+            {
+                setContentLength(_contentLength);
+                return getResponse().getOutputStream();
+            }
+            
+            _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minCompressSize);
+        }
+        else if (_writer!=null)
+            throw new IllegalStateException("getWriter() called");
+        
+        return (ServletOutputStream)_compressedStream;   
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#getWriter()
+     */
+    @Override
+    public PrintWriter getWriter() throws IOException
+    {
+        if (_writer==null)
+        { 
+            if (_compressedStream!=null)
+                throw new IllegalStateException("getOutputStream() called");
+            
+            if (getResponse().isCommitted() || _noCompression)
+            {
+                setContentLength(_contentLength);
+                return getResponse().getWriter();
+            }
+            
+            _compressedStream=newCompressedStream(_request,(HttpServletResponse)getResponse(),_contentLength,_bufferSize,_minCompressSize);
+            _writer=newWriter((OutputStream)_compressedStream,getCharacterEncoding());
+        }
+        return _writer;   
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.gzip.CompressedResponseWrapper#setIntHeader(java.lang.String, int)
+     */
+    @Override
+    public void setIntHeader(String name, int value)
+    {
+        if ("content-length".equalsIgnoreCase(name))
+        {
+            _contentLength=value;
+            if (_compressedStream!=null)
+                _compressedStream.setContentLength(_contentLength);
+        }
+        else
+            super.setIntHeader(name,value);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Allows derived implementations to replace PrintWriter implementation.
+     *
+     * @param out the out
+     * @param encoding the encoding
+     * @return the prints the writer
+     * @throws UnsupportedEncodingException the unsupported encoding exception
+     */
+    protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
+    {
+        return encoding==null?new PrintWriter(out):new PrintWriter(new OutputStreamWriter(out,encoding));
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     *@return the underlying CompressedStream implementation 
+     */
+    protected abstract AbstractCompressedStream newCompressedStream(HttpServletRequest _request, HttpServletResponse response, long _contentLength2, int _bufferSize2, int _minCompressedSize2) throws IOException;
 
 }

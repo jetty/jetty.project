@@ -18,7 +18,6 @@ import java.util.Collection;
 
 import javax.servlet.Servlet;
 
-import org.eclipse.jetty.http.gzip.CompressionType;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestMinGzipSizeServlet;
@@ -39,18 +38,18 @@ import org.junit.runners.Parameterized.Parameters;
 public class IncludableGzipFilterMinSizeTest
 {
     @Parameters
-    public static Collection<CompressionType[]> data()
+    public static Collection<String[]> data()
     {
-        CompressionType[][] data = new CompressionType[][]
+        String[][] data = new String[][]
                 {
-                { CompressionType.GZIP },
-                { CompressionType.DEFLATE } 
+                { GzipFilter.GZIP },
+                { GzipFilter.DEFLATE } 
                 };
         
         return Arrays.asList(data);
     }
     
-    public IncludableGzipFilterMinSizeTest(CompressionType compressionType)
+    public IncludableGzipFilterMinSizeTest(String compressionType)
     {
         this.compressionType = compressionType;
     }
@@ -58,7 +57,7 @@ public class IncludableGzipFilterMinSizeTest
     @Rule
     public TestingDir testdir = new TestingDir();
 
-    private CompressionType compressionType;
+    private String compressionType;
     private Class<? extends Servlet> testServlet = TestMinGzipSizeServlet.class;
 
     @Test

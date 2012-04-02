@@ -25,7 +25,6 @@ import java.util.zip.InflaterInputStream;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.gzip.CompressionType;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -44,9 +43,9 @@ public class GzipTester
     private String userAgent = null;
     private ServletTester servletTester;
     private TestingDir testdir;
-    private CompressionType compressionType;
+    private String compressionType;
 
-    public GzipTester(TestingDir testingdir, CompressionType compressionType)
+    public GzipTester(TestingDir testingdir, String compressionType)
     {
         this.testdir = testingdir;
         this.compressionType = compressionType;
@@ -68,7 +67,7 @@ public class GzipTester
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
-        request.setHeader("Accept-Encoding",compressionType.getEncodingHeader());
+        request.setHeader("Accept-Encoding",compressionType);
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
@@ -83,7 +82,7 @@ public class GzipTester
         Assert.assertThat("Response.method",response.getMethod(),nullValue());
         Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
         Assert.assertThat("Response.header[Content-Length]",response.getHeader("Content-Length"),notNullValue());
-        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),containsString(compressionType.getEncodingHeader()));
+        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),containsString(compressionType));
 
         // Assert that the decompressed contents are what we expect.
         File serverFile = testdir.getFile(serverFilename);
@@ -96,11 +95,11 @@ public class GzipTester
         try
         {
             bais = new ByteArrayInputStream(response.getContentBytes());
-            if (compressionType.equals(CompressionType.GZIP))
+            if (compressionType.equals(GzipFilter.GZIP))
             {
                 in = new GZIPInputStream(bais);
             }
-            else if (compressionType.equals(CompressionType.DEFLATE))
+            else if (compressionType.equals(GzipFilter.DEFLATE))
             {
                 in = new InflaterInputStream(bais);
             }
@@ -142,7 +141,7 @@ public class GzipTester
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
-        request.setHeader("Accept-Encoding",compressionType.getEncodingHeader());
+        request.setHeader("Accept-Encoding",compressionType);
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
         request.setURI("/context/" + requestedFilename);
@@ -229,7 +228,7 @@ public class GzipTester
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
-        request.setHeader("Accept-Encoding",compressionType.getEncodingHeader());
+        request.setHeader("Accept-Encoding",compressionType);
         if (this.userAgent != null)
             request.setHeader("User-Agent", this.userAgent);
         if (filename == null)
@@ -252,7 +251,7 @@ public class GzipTester
             int serverLength = Integer.parseInt(response.getHeader("Content-Length"));
             Assert.assertThat("Response.header[Content-Length]",serverLength,is(expectedFilesize));
         }
-        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString(compressionType.getEncodingHeader())));
+        Assert.assertThat("Response.header[Content-Encoding]",response.getHeader("Content-Encoding"),not(containsString(compressionType)));
 
         // Assert that the contents are what we expect.
         if (filename != null)

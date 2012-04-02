@@ -29,7 +29,6 @@ import java.util.zip.InflaterInputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.gzip.CompressionType;
 import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.testing.HttpTester;
@@ -48,12 +47,12 @@ import org.junit.runners.Parameterized.Parameters;
 public class IncludableGzipFilterTest
 {
     @Parameters
-    public static Collection<CompressionType[]> data()
+    public static Collection<String[]> data()
     {
-        CompressionType[][] data = new CompressionType[][]
+        String[][] data = new String[][]
                 {
-                { CompressionType.GZIP },
-                { CompressionType.DEFLATE } 
+                { GzipFilter.GZIP },
+                { GzipFilter.DEFLATE } 
                 };
         
         return Arrays.asList(data);
@@ -77,9 +76,9 @@ public class IncludableGzipFilterTest
         "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
 
     private ServletTester tester;
-    private CompressionType compressionType;
+    private String compressionType;
     
-    public IncludableGzipFilterTest(CompressionType compressionType)
+    public IncludableGzipFilterTest(String compressionType)
     {
         this.compressionType = compressionType;
     }
@@ -121,7 +120,7 @@ public class IncludableGzipFilterTest
         request.setMethod("GET");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host","tester");
-        request.setHeader("accept-encoding", compressionType.getEncodingHeader());
+        request.setHeader("accept-encoding", compressionType);
         request.setURI("/context/file.txt");
         
         ByteArrayBuffer reqsBuff = new ByteArrayBuffer(request.generate().getBytes());
@@ -129,16 +128,16 @@ public class IncludableGzipFilterTest
         response.parse(respBuff.asArray());
                 
         assertTrue(response.getMethod()==null);
-        assertTrue(response.getHeader("Content-Encoding").equalsIgnoreCase(compressionType.getEncodingHeader()));
+        assertTrue(response.getHeader("Content-Encoding").equalsIgnoreCase(compressionType));
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
         
         InputStream testIn = null;
         ByteArrayInputStream compressedResponseStream = new ByteArrayInputStream(response.getContentBytes());
-        if (compressionType.equals(CompressionType.GZIP))
+        if (compressionType.equals(GzipFilter.GZIP))
         {
             testIn = new GZIPInputStream(compressedResponseStream);
         }
-        else if (compressionType.equals(CompressionType.DEFLATE))
+        else if (compressionType.equals(GzipFilter.DEFLATE))
         {
             testIn = new InflaterInputStream(compressedResponseStream);
         }
