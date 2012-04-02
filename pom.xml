@@ -358,7 +358,6 @@
     <module>jetty-http</module>
     <module>jetty-websocket</module>
     <module>jetty-continuation</module>
-    <module>jetty-npn</module>
     <module>jetty-server</module>
     <module>jetty-client</module>
     <module>jetty-xml</module>
