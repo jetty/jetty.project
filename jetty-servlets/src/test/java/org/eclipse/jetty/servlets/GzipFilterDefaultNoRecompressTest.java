@@ -31,22 +31,41 @@ public class GzipFilterDefaultNoRecompressTest
         return Arrays.asList(new Object[][]
         {
                 // Some already compressed files
-                { "test_quotes.gz", "application/gzip" },
-                { "test_quotes.bz2", "application/bzip2" },
-                { "test_quotes.zip", "application/zip" },
-                { "test_quotes.rar", "application/octet-stream" },
+                { "test_quotes.gz", "application/gzip", GzipFilter.GZIP },
+                { "test_quotes.bz2", "application/bzip2", GzipFilter.GZIP },
+                { "test_quotes.zip", "application/zip", GzipFilter.GZIP },
+                { "test_quotes.rar", "application/octet-stream", GzipFilter.GZIP },
                 // Some images (common first)
-                { "jetty_logo.png", "image/png" },
-                { "jetty_logo.gif", "image/gif" },
-                { "jetty_logo.jpeg", "image/jpeg" },
-                { "jetty_logo.jpg", "image/jpeg" },
+                { "jetty_logo.png", "image/png", GzipFilter.GZIP },
+                { "jetty_logo.gif", "image/gif", GzipFilter.GZIP },
+                { "jetty_logo.jpeg", "image/jpeg", GzipFilter.GZIP },
+                { "jetty_logo.jpg", "image/jpeg", GzipFilter.GZIP },
                 // Lesser encountered images (usually found being requested from non-browser clients)
-                { "jetty_logo.bmp", "image/bmp" },
-                { "jetty_logo.tga", "application/tga" },
-                { "jetty_logo.tif", "image/tiff" },
-                { "jetty_logo.tiff", "image/tiff" },
-                { "jetty_logo.xcf", "image/xcf" },
-                { "jetty_logo.jp2", "image/jpeg2000" } });
+                { "jetty_logo.bmp", "image/bmp", GzipFilter.GZIP },
+                { "jetty_logo.tga", "application/tga", GzipFilter.GZIP },
+                { "jetty_logo.tif", "image/tiff", GzipFilter.GZIP },
+                { "jetty_logo.tiff", "image/tiff", GzipFilter.GZIP },
+                { "jetty_logo.xcf", "image/xcf", GzipFilter.GZIP },
+                { "jetty_logo.jp2", "image/jpeg2000", GzipFilter.GZIP },
+
+                // Same tests again for deflate
+                // Some already compressed files
+                { "test_quotes.gz", "application/gzip", GzipFilter.DEFLATE },
+                { "test_quotes.bz2", "application/bzip2", GzipFilter.DEFLATE },
+                { "test_quotes.zip", "application/zip", GzipFilter.DEFLATE },
+                { "test_quotes.rar", "application/octet-stream", GzipFilter.DEFLATE },
+                // Some images (common first)
+                { "jetty_logo.png", "image/png", GzipFilter.DEFLATE },
+                { "jetty_logo.gif", "image/gif", GzipFilter.DEFLATE },
+                { "jetty_logo.jpeg", "image/jpeg", GzipFilter.DEFLATE },
+                { "jetty_logo.jpg", "image/jpeg", GzipFilter.DEFLATE },
+                // Lesser encountered images (usually found being requested from non-browser clients)
+                { "jetty_logo.bmp", "image/bmp", GzipFilter.DEFLATE },
+                { "jetty_logo.tga", "application/tga", GzipFilter.DEFLATE },
+                { "jetty_logo.tif", "image/tiff", GzipFilter.DEFLATE },
+                { "jetty_logo.tiff", "image/tiff", GzipFilter.DEFLATE },
+                { "jetty_logo.xcf", "image/xcf", GzipFilter.DEFLATE },
+                { "jetty_logo.jp2", "image/jpeg2000", GzipFilter.DEFLATE } });
     }
 
     @Rule
@@ -54,17 +73,19 @@ public class GzipFilterDefaultNoRecompressTest
 
     private String alreadyCompressedFilename;
     private String expectedContentType;
+    private String compressionType;
 
-    public GzipFilterDefaultNoRecompressTest(String testFilename, String expectedContentType)
+    public GzipFilterDefaultNoRecompressTest(String testFilename, String expectedContentType, String compressionType)
     {
         this.alreadyCompressedFilename = testFilename;
         this.expectedContentType = expectedContentType;
+        this.compressionType = compressionType;
     }
 
     @Test
     public void testNotGzipFiltered_Default_AlreadyCompressed() throws Exception
     {
-        GzipTester tester = new GzipTester(testingdir);
+        GzipTester tester = new GzipTester(testingdir, compressionType);
 
         copyTestFileToServer(alreadyCompressedFilename);
 

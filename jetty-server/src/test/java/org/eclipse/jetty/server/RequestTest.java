@@ -718,7 +718,7 @@ public class RequestTest
                 "POST / HTTP/1.1\r\n"+
                 "Host: whatever\r\n"+
                 "Cookie: name0=value0; name1 = value1 ; \"name2\"  =  \"\\\"value2\\\"\"  \n" +
-                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080, name4=; name5 =  ; name6\n" +
+                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080; name4=; name5 =  ; name6\n" +
                 "Cookie: name7=value7;\n" +
                 "Connection: close\r\n"+
         "\r\n");
@@ -743,6 +743,20 @@ public class RequestTest
         assertEquals("", cookies.get(6).getValue());
         assertEquals("name7", cookies.get(7).getName());
         assertEquals("value7", cookies.get(7).getValue());
+
+        cookies.clear();
+        response=_connector.getResponses(
+                "GET /other HTTP/1.1\n"+
+                        "Host: whatever\n"+
+                        "Other: header\n"+
+                        "Cookie: __utmz=14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html\n"+
+                        "\n"
+                );
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(1,cookies.size());
+        assertEquals("__utmz", cookies.get(0).getName());
+        assertEquals("14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html", cookies.get(0).getValue());
+
     }
 
     @Test

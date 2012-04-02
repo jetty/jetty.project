@@ -938,6 +938,7 @@ public class AsyncContinuation implements AsyncContext, Continuation
     {
         synchronized (this)
         {
+            _responseWrapped=!(response instanceof Response);
             doSuspend(context,request,response);
             if (request instanceof HttpServletRequest)
             {
