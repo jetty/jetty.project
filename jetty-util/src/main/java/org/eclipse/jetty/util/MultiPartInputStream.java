@@ -170,7 +170,9 @@ public class MultiPartInputStream
          */
         public String getHeader(String name)
         {
-            return (String)_headers.getValue(name, 0);
+            if (name == null)
+                return null;
+            return (String)_headers.getValue(name.toLowerCase(), 0);
         }
 
         /** 

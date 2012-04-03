@@ -147,7 +147,7 @@ public class MultiPartInputStreamTest extends TestCase
         
         Part stuff = mpis.getPart("stuff");
         assertEquals("text/plain", stuff.getContentType());
-        assertEquals("text/plain", stuff.getHeader("content-type"));
+        assertEquals("text/plain", stuff.getHeader("Content-Type"));
         assertEquals(1, stuff.getHeaders("content-type").size());
         assertEquals("form-data; name=\"stuff\"; filename=\"stuff.txt\"", stuff.getHeader("content-disposition"));
         assertEquals(2, stuff.getHeaderNames().size());
