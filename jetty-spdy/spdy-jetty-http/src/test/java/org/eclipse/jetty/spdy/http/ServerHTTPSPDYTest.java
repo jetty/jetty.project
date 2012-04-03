@@ -190,6 +190,14 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 Assert.assertEquals("POST", httpRequest.getMethod());
                 Assert.assertEquals("1", httpRequest.getParameter("a"));
                 Assert.assertEquals("2", httpRequest.getParameter("b"));
+                Assert.assertNotNull(httpRequest.getRemoteHost());
+                Assert.assertNotNull(httpRequest.getRemotePort());
+                Assert.assertNotNull(httpRequest.getRemoteAddr());
+                Assert.assertNotNull(httpRequest.getLocalPort());
+                Assert.assertNotNull(httpRequest.getLocalName());
+                Assert.assertNotNull(httpRequest.getLocalAddr());
+                Assert.assertNotNull(httpRequest.getServerPort());
+                Assert.assertNotNull(httpRequest.getServerName());
                 handlerLatch.countDown();
             }
         }), null);
