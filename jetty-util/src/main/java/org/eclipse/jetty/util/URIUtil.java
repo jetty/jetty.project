@@ -14,6 +14,10 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
+
+import org.eclipse.jetty.util.log.Log;
 
 
 
@@ -67,6 +71,7 @@ public class URIUtil
      */
     public static StringBuilder encodePath(StringBuilder buf, String path)
     {
+        byte[] bytes=null;
         if (buf==null)
         {
         loop:
@@ -84,8 +89,23 @@ public class URIUtil
                     case '<':
                     case '>':
                     case ' ':
-                        buf=new StringBuilder(path.length()<<1);
+                        buf=new StringBuilder(path.length()*2);
                         break loop;
+                    default:
+                        if (c>127)
+                        {
+                            try
+                            {
+                                bytes=path.getBytes(URIUtil.__CHARSET);
+                            }
+                            catch (UnsupportedEncodingException e)
+                            {
+                                throw new IllegalStateException(e);
+                            }
+                            buf=new StringBuilder(path.length()*2);
+                            break loop;
+                        }
+                       
                 }
             }
             if (buf==null)
@@ -94,41 +114,91 @@ public class URIUtil
         
         synchronized(buf)
         {
-            for (int i=0;i<path.length();i++)
+            if (bytes!=null)
             {
-                char c=path.charAt(i);       
-                switch(c)
+                for (int i=0;i<bytes.length;i++)
                 {
-                  case '%':
-                      buf.append("%25");
-                      continue;
-                  case '?':
-                      buf.append("%3F");
-                      continue;
-                  case ';':
-                      buf.append("%3B");
-                      continue;
-                  case '#':
-                      buf.append("%23");
-                      continue;
-                  case '"':
-                      buf.append("%22");
-                      continue;
-                  case '\'':
-                      buf.append("%27");
-                      continue;
-                  case '<':
-                      buf.append("%3C");
-                      continue;
-                  case '>':
-                      buf.append("%3E");
-                      continue;
-                  case ' ':
-                      buf.append("%20");
-                      continue;
-                  default:
-                      buf.append(c);
-                      continue;
+                    byte c=bytes[i];       
+                    switch(c)
+                    {
+                      case '%':
+                          buf.append("%25");
+                          continue;
+                      case '?':
+                          buf.append("%3F");
+                          continue;
+                      case ';':
+                          buf.append("%3B");
+                          continue;
+                      case '#':
+                          buf.append("%23");
+                          continue;
+                      case '"':
+                          buf.append("%22");
+                          continue;
+                      case '\'':
+                          buf.append("%27");
+                          continue;
+                      case '<':
+                          buf.append("%3C");
+                          continue;
+                      case '>':
+                          buf.append("%3E");
+                          continue;
+                      case ' ':
+                          buf.append("%20");
+                          continue;
+                      default:
+                          if (c<0)
+                          {
+                              buf.append('%');
+                              TypeUtil.toHex(c,buf);
+                          }
+                          else
+                              buf.append((char)c);
+                          continue;
+                    }
+                }
+                
+            }
+            else
+            {
+                for (int i=0;i<path.length();i++)
+                {
+                    char c=path.charAt(i);       
+                    switch(c)
+                    {
+                        case '%':
+                            buf.append("%25");
+                            continue;
+                        case '?':
+                            buf.append("%3F");
+                            continue;
+                        case ';':
+                            buf.append("%3B");
+                            continue;
+                        case '#':
+                            buf.append("%23");
+                            continue;
+                        case '"':
+                            buf.append("%22");
+                            continue;
+                        case '\'':
+                            buf.append("%27");
+                            continue;
+                        case '<':
+                            buf.append("%3C");
+                            continue;
+                        case '>':
+                            buf.append("%3E");
+                            continue;
+                        case ' ':
+                            buf.append("%20");
+                            continue;
+                        default:
+                            buf.append(c);
+                            continue;
+                    }
                 }
             }
         }
