@@ -29,7 +29,6 @@ import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
-import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;

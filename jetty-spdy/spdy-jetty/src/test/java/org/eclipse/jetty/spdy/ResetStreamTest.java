@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.RstInfo;
-import org.eclipse.jetty.spdy.api.SPDYException;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
