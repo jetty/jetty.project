@@ -104,7 +104,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
     /** Called by selectSet to schedule handling
      *
      */
-    public void selected()
+    public void selected() throws IOException
     {
         _lock.lock();
         _selected=true;

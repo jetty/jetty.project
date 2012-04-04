@@ -21,7 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.AbstractSelectableConnection;
+import org.eclipse.jetty.io.SelectableConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
@@ -108,7 +108,7 @@ public class SelectChannelEndPointTest
         return new TestConnection(endpoint);
     }
 
-    public class TestConnection extends AbstractSelectableConnection
+    public class TestConnection extends SelectableConnection
     {
         ByteBuffer _in = BufferUtil.allocate(32*1024);
         ByteBuffer _out = BufferUtil.allocate(32*1024);

@@ -27,17 +27,18 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.AbstractSelectableConnection;
+import org.eclipse.jetty.io.SelectableConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.SelectableEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  */
-public abstract class HttpConnection extends AbstractSelectableConnection
+public abstract class HttpConnection extends SelectableConnection
 {
 
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
@@ -74,7 +75,7 @@ public abstract class HttpConnection extends AbstractSelectableConnection
     /** Constructor
      *
      */
-    public HttpConnection(Connector connector, EndPoint endpoint, Server server)
+    public HttpConnection(Connector connector, SelectableEndPoint endpoint, Server server)
     {
         super(endpoint);
         _connector = connector;
@@ -149,6 +150,7 @@ public abstract class HttpConnection extends AbstractSelectableConnection
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isIdle()
     {
         return _parser.isIdle() && _generator.isIdle();
@@ -161,6 +163,7 @@ public abstract class HttpConnection extends AbstractSelectableConnection
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int getMaxIdleTime()
     {
         if (_connector.isLowResources() && _endp.getMaxIdleTime()==_connector.getMaxIdleTime())
@@ -171,6 +174,7 @@ public abstract class HttpConnection extends AbstractSelectableConnection
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return String.format("%s,g=%s,p=%s",
@@ -179,21 +183,6 @@ public abstract class HttpConnection extends AbstractSelectableConnection
                 _parser);
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public void canRead()
-    {
-    
-    
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void canWrite()
-    {
-    
-    
-    }
 
     /* ------------------------------------------------------------ */
     public void processInput()
@@ -206,7 +195,7 @@ public abstract class HttpConnection extends AbstractSelectableConnection
             setCurrentConnection(this);
 
             // don't check for idle while dispatched (unless blocking IO is done).
-            getEndPoint().setCheckForIdle(false);
+            getSelectableEndPoint().setCheckForIdle(false);
 
 
             // While progress and the connection has not changed
@@ -277,7 +266,7 @@ public abstract class HttpConnection extends AbstractSelectableConnection
             if (!_processor.getRequest().getAsyncContinuation().isAsyncStarted())
             {
                 // reenable idle checking unless request is suspended
-                getEndPoint().setCheckForIdle(true);
+                getSelectableEndPoint().setCheckForIdle(true);
             }
         }
     }
@@ -416,18 +405,20 @@ public abstract class HttpConnection extends AbstractSelectableConnection
                 break;
             
             if (_toFlush>0)
-                _endp.blockWritable(getMaxIdleTime());
+                blockWriteable();
 
         }
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void onClose()
     {
         _processor.onClose();
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public void onInputShutdown() throws IOException
     {
         // If we don't have a committed response and we are not suspended

@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  * it's source/sink of encrypted data.   It then provides {@link #getAppEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  */
-public class SslConnection extends AbstractSelectableConnection
+public class SslConnection extends SelectableConnection
 {
     private static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.nio.ssl");
 
@@ -679,7 +679,7 @@ public class SslConnection extends AbstractSelectableConnection
 
         public void setSelectableConnection(SelectableConnection connection)
         {
-            _appConnection=(AbstractSelectableConnection)connection;
+            _appConnection=(SelectableConnection)connection;
         }
 
         @Override
