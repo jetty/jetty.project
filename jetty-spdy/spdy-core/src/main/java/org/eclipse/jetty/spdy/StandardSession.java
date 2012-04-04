@@ -18,9 +18,11 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -151,11 +153,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             if ((synInfo.getFlags() & PushSynInfo.FLAG_UNIDIRECTIONAL) == PushSynInfo.FLAG_UNIDIRECTIONAL)
             {
                 associatedStreamId = ((PushSynInfo)synInfo).getAssociatedStreamId();
-                IStream associatedStream = streams.get(associatedStreamId);
-                //TODO: single place for error handling --> stream?
-                if (associatedStream == null)
-                    handler.failed(new IllegalStateException("Tried to associate new unidirectional stream with streamId: " + associatedStreamId
-                            + " But no stream with this id exists. Associated stream already closed?"));
             }
 
             int streamId = streamIds.getAndAdd(2);
@@ -261,10 +258,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public Set<Stream> getStreams()
+    public Map<Integer,Stream> getStreams()
     {
-        Set<Stream> result = new HashSet<>();
-        result.addAll(streams.values());
+        Map<Integer,Stream> result = new HashMap<>();
+        result.putAll(streams);
         return result;
     }
 

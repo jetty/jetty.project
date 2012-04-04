@@ -17,7 +17,7 @@
 package org.eclipse.jetty.spdy.api;
 
 import java.util.EventListener;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -182,7 +182,7 @@ public interface Session
     /**
      * @return the streams currently active in this session
      */
-    public Set<Stream> getStreams();
+    public Map<Integer,Stream> getStreams();
 
     /**
      * <p>Super interface for listeners with callbacks that are invoked on specific session events.</p>

@@ -319,10 +319,11 @@ public class StandardStream implements IStream
     @Override
     public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler)
     {
-        // TODO: Should we fail if url header is missing? For V3 it's scheme, host and path
-        if (isClosed)
+        if (isClosed || !session.getStreams().containsKey(getId()))
+        {
             handler.failed(new StreamException(getId(),StreamStatus.INVALID_STREAM)); // TODO: use StreamStatus.alreadyClosed() for V3
-            
+            return;
+        }
         PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo);
         session.syn(pushSynInfo,null,timeout,unit,handler);
     }
