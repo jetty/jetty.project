@@ -88,10 +88,10 @@ public interface Stream
      */
     public Session getSession();
 
-    //TODO: Handler version of syn
-    
     //TODO: javadoc
     public Future<Stream> syn(SynInfo synInfo);
+    
+    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler);
     
     /**
      * <p>Sends asynchronously a SYN_REPLY frame in response to a SYN_STREAM frame.</p>

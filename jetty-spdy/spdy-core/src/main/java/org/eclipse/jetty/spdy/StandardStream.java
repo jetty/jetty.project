@@ -316,14 +316,19 @@ public class StandardStream implements IStream
     @Override
     public Future<Stream> syn(SynInfo synInfo)
     {
-        //TODO: call handler instead of throwing
-        if(isClosed())
-            throw new IllegalStateException("Stream already closed. No push streams can be created on closed streams.");
-        PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo);
-        return getSession().syn(pushSynInfo,null);
+        Promise<Stream> result = new Promise<>();
+        syn(synInfo,0, TimeUnit.MILLISECONDS, result);
+        return result;
     }
     
-    //TODO: syn(synInfo,handler)
+    @Override
+    public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler)
+    {
+        if(isClosed())
+            handler.failed(new IllegalStateException("Stream already closed. No push streams can be created on closed streams."));
+        PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo);
+        session.syn(pushSynInfo,null,0,TimeUnit.MILLISECONDS, handler);
+    }
     
     @Override
     public Future<Void> reply(ReplyInfo replyInfo)
