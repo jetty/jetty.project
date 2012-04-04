@@ -28,9 +28,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.nio.Connection;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -1142,12 +1142,10 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /* ------------------------------------------------------------ */
     protected void connectionClosed(Connection connection)
     {
-        connection.onClose();
-
         if (_statsStartedAt.get() == -1)
             return;
 
-        long duration = System.currentTimeMillis() - connection.getTimeStamp();
+        long duration = System.currentTimeMillis() - connection.getCreatedTimeStamp();
         int requests = (connection instanceof HttpConnection)?((HttpConnection)connection).getHttpChannel().getRequests():0;
         _requestStats.set(requests);
         _connectionStats.decrement();

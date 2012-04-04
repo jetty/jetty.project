@@ -21,11 +21,12 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.Connection;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager;
-import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectableEndPoint;
+import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.SelectorManager.SelectSet;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -255,7 +256,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected void endPointClosed(SelectChannelEndPoint endpoint)
+    protected void endPointClosed(SelectableEndPoint endpoint)
     {
         connectionClosed(endpoint.getConnection());
     }
@@ -282,7 +283,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         }
 
         @Override
-        protected void endPointClosed(final SelectChannelEndPoint endpoint)
+        protected void endPointClosed(final SelectableEndPoint endpoint)
         {
             SelectChannelConnector.this.endPointClosed(endpoint);
         }

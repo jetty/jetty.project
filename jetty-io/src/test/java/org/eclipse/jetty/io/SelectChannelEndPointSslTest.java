@@ -1,4 +1,4 @@
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +11,10 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLSocket;
 
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -41,14 +45,14 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     }
 
     @Override
-    protected Connection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected SelectableConnection newConnection(SocketChannel channel, SelectableEndPoint endpoint)
     {
         SSLEngine engine = __sslCtxFactory.newSslEngine();
         engine.setUseClientMode(false);
         SslConnection connection = new SslConnection(engine,endpoint);
 
-        Connection delegate = super.newConnection(channel,connection.getSslEndPoint());
-        connection.getSslEndPoint().setConnection(delegate);
+        SelectableConnection delegate = super.newConnection(channel,connection.getAppEndPoint());
+        connection.setAppConnection(delegate);
         return connection;
     }
 

@@ -27,17 +27,17 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.AbstractSelectableConnection;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.nio.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  */
-public abstract class HttpConnection extends AbstractConnection
+public abstract class HttpConnection extends AbstractSelectableConnection
 {
 
     private static final Logger LOG = Log.getLogger(HttpConnection.class);

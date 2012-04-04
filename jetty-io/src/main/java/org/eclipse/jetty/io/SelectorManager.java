@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -338,10 +337,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected abstract void endPointOpened(SelectChannelEndPoint endpoint);
 
     /* ------------------------------------------------------------ */
-    protected abstract void endPointUpgraded(EndPoint endpoint,Connection oldConnection);
+    protected abstract void endPointUpgraded(SelectChannelEndPoint endpoint,Connection oldConnection);
 
     /* ------------------------------------------------------------------------------- */
-    public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment);
+    public abstract SelectableConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment);
 
     /* ------------------------------------------------------------ */
     /**
@@ -472,7 +471,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                 key = channel.register(selector,SelectionKey.OP_READ,att);
                                 SelectChannelEndPoint endpoint = createEndPoint((SocketChannel)channel,key);
                                 key.attach(endpoint);
-                                endpoint.selected();
                             }
                             else if (channel.isOpen())
                             {
@@ -487,7 +485,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             key = channel.register(selector,SelectionKey.OP_READ,null);
                             SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
-                            endpoint.selected();
                         }
                         else if (change instanceof ChangeTask)
                         {
@@ -703,7 +700,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         {
                             for (SelectChannelEndPoint endp:_endPoints.keySet())
                             {
-                                endp.checkIdleTimestamp(idle_now);
+                                endp.checkForIdle(idle_now);
                             }
                         }
                         public String toString() {return "Idle-"+super.toString();}
@@ -842,6 +839,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             LOG.debug("destroyEndPoint {}",endp);
             _endPoints.remove(endp);
+            SelectableConnection connection=endp.getSelectableConnection();
+            if (connection!=null)
+                connection.onClose();
             endPointClosed(endp);
         }
 

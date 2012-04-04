@@ -11,42 +11,21 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
-import java.io.IOException;
 
-import org.eclipse.jetty.io.EndPoint;
 
 public interface Connection 
 {
-    
     EndPoint getEndPoint();
     
-    void canRead();
-    void canWrite();
     
-    boolean isReadInterested();
-    boolean isWriteInterested();
-
-    
-    void onInputShutdown() throws IOException;
-    
-    /**
-     * Called when the connection is closed
-     */
-    void onClose();
-    
-    /**
-     * Called when the connection idle timeout expires
-     * @param idleForMs TODO
-     */
-    void onIdleExpired(long idleForMs);
-    
+    int getMaxIdleTime();
 
     /**
      * @return the timestamp at which the connection was created
      */
-    long getTimeStamp();
+    long getCreatedTimeStamp();
 
     boolean isIdle();
 }

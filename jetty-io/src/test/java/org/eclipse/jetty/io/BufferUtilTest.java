@@ -1,4 +1,4 @@
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

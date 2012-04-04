@@ -28,7 +28,7 @@ import org.eclipse.jetty.io.Buffers.Type;
 import org.eclipse.jetty.io.BuffersFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.nio.SslConnection;
+import org.eclipse.jetty.io.SslConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -98,7 +98,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         request.setScheme(HttpScheme.HTTPS);
         super.customize(endpoint,request);
 
-        SslConnection.SslEndPoint sslEndpoint=(SslConnection.SslEndPoint)endpoint;
+        SslConnection.AppEndPoint sslEndpoint=(SslConnection.AppEndPoint)endpoint;
         SSLEngine sslEngine=sslEndpoint.getSslEngine();
         SSLSession sslSession=sslEngine.getSession();
 
@@ -548,8 +548,8 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         {
             SSLEngine engine = createSSLEngine(channel);
             SslConnection connection = newSslConnection(endpoint, engine);
-            Connection delegate = newPlainConnection(channel, connection.getSslEndPoint());
-            connection.getSslEndPoint().setConnection(delegate);
+            Connection delegate = newPlainConnection(channel, connection.getAppEndPoint());
+            connection.getAppEndPoint().setConnection(delegate);
             connection.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
             return connection;
         }

@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -23,7 +23,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -43,9 +43,6 @@ public class ChannelEndPoint implements EndPoint
     private volatile int _maxIdleTime;
     private volatile boolean _ishut;
     private volatile boolean _oshut;
-    private Connection _connection;
-    private boolean _idleCheck;
-
 
     public ChannelEndPoint(ByteChannel channel) throws IOException
     {
@@ -90,6 +87,7 @@ public class ChannelEndPoint implements EndPoint
     /*
      * @see org.eclipse.io.EndPoint#isOpen()
      */
+    @Override
     public boolean isOpen()
     {
         return _channel.isOpen();
@@ -133,6 +131,7 @@ public class ChannelEndPoint implements EndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
+    @Override
     public void shutdownInput() throws IOException
     {
         shutdownChannelInput();
@@ -172,16 +171,19 @@ public class ChannelEndPoint implements EndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
+    @Override
     public void shutdownOutput() throws IOException
     {
         shutdownChannelOutput();
     }
 
+    @Override
     public boolean isOutputShutdown()
     {
         return _oshut || !_channel.isOpen() || _socket != null && _socket.isOutputShutdown();
     }
 
+    @Override
     public boolean isInputShutdown()
     {
         return _ishut || !_channel.isOpen() || _socket != null && _socket.isInputShutdown();
@@ -190,6 +192,7 @@ public class ChannelEndPoint implements EndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
+    @Override
     public void close() throws IOException
     {
         LOG.debug("close {}",this);
@@ -199,17 +202,15 @@ public class ChannelEndPoint implements EndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
      */
+    @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
         if (_ishut)
             return -1;
 
-        int pos=buffer.position();
+        int pos=BufferUtil.flipToFill(buffer);
         try
         {
-            buffer.position(buffer.limit());
-            buffer.limit(buffer.capacity());
-
             int filled = _channel.read(buffer);
 
             if (filled==-1)
@@ -217,23 +218,29 @@ public class ChannelEndPoint implements EndPoint
             
             return filled;
         }
+        catch(IOException e)
+        {
+            LOG.debug(e);
+            shutdownInput();
+            return -1;
+        }
         finally
         {
-            buffer.limit(buffer.position());
-            buffer.position(pos);
+            BufferUtil.flipToFlush(buffer,pos);
         }
     }
 
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
+    @Override
     public int flush(ByteBuffer... buffers) throws IOException
     {
         int len=0;
-        if (_channel instanceof GatheringByteChannel)
-        {
-            len= (int)((GatheringByteChannel)_channel).write(buffers,0,2);
-        }
+        if (buffers.length==1)
+            len=_channel.write(buffers[0]);
+        else if (buffers.length>1 && _channel instanceof GatheringByteChannel)
+            len= (int)((GatheringByteChannel)_channel).write(buffers,0,buffers.length);
         else
         {
             for (ByteBuffer b : buffers)
@@ -275,6 +282,7 @@ public class ChannelEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Object getTransport()
     {
         return _channel;
@@ -287,6 +295,7 @@ public class ChannelEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int getMaxIdleTime()
     {
         return _maxIdleTime;
@@ -296,6 +305,7 @@ public class ChannelEndPoint implements EndPoint
     /**
      * @see org.eclipse.jetty.io.bio.StreamEndPoint#setMaxIdleTime(int)
      */
+    @Override
     public void setMaxIdleTime(int timeMs) throws IOException
     {
         //if (_socket!=null && timeMs!=_maxIdleTime)
@@ -303,34 +313,4 @@ public class ChannelEndPoint implements EndPoint
         _maxIdleTime=timeMs;
     }
     
-
-    @Override
-    public Connection getConnection()
-    {
-        return _connection;
-    }
-
-    @Override
-    public void setConnection(Connection connection)
-    {
-        _connection=connection;
-    }
-
-    @Override
-    public void onIdleExpired(long idleForMs)
-    {        
-    }
-
-    @Override
-    public void setCheckForIdle(boolean check)
-    {
-        _idleCheck=check;        
-    }
-
-    @Override
-    public boolean isCheckForIdle()
-    {
-        return _idleCheck;
-    }
-
 }

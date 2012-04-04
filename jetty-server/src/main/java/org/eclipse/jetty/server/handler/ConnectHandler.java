@@ -20,8 +20,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectableEndPoint;
+import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -449,7 +450,7 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected void endPointClosed(SelectChannelEndPoint endpoint)
+        protected void endPointClosed(SelectableEndPoint endpoint)
         {
         }
 

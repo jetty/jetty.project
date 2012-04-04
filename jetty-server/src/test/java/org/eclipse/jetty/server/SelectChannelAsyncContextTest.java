@@ -6,14 +6,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectableEndPoint;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.util.IO;
 import org.junit.Test;
 
 public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
 {
-    volatile SelectChannelEndPoint _endp;
+    volatile SelectableEndPoint _endp;
 
     @Override
     protected Connector initConnector()
@@ -24,7 +24,7 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
             public void customize(EndPoint endpoint, Request request) throws IOException
             {
                 super.customize(endpoint,request);
-                _endp=(SelectChannelEndPoint)endpoint;
+                _endp=(SelectableEndPoint)endpoint;
             }
             
         };
@@ -54,7 +54,7 @@ public class SelectChannelAsyncContextTest extends LocalAsyncContextTest
                     try 
                     {
                         TimeUnit.MILLISECONDS.sleep(200);
-                        SelectChannelEndPoint endp=_endp;
+                        SelectableEndPoint endp=_endp;
                         if (endp!=null && endp.isOpen())
                             endp.asyncDispatch();
                     }

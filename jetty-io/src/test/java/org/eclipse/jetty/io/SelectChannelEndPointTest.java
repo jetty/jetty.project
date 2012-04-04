@@ -1,4 +1,4 @@
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -20,8 +20,11 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.AbstractSelectableConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -32,7 +35,7 @@ import org.junit.Test;
 
 public class SelectChannelEndPointTest
 {
-    protected SelectChannelEndPoint _lastEndp;
+    protected SelectableEndPoint _lastEndp;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     protected SelectorManager _manager = new SelectorManager()
@@ -54,12 +57,12 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        protected void endPointUpgraded(EndPoint endpoint, Connection oldConnection)
+        protected void endPointUpgraded(SelectChannelEndPoint endpoint, Connection oldConnection)
         {
         }
 
         @Override
-        public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment)
+        public SelectableConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
         {
             return SelectChannelEndPointTest.this.newConnection(channel,endpoint);
         }
@@ -68,7 +71,8 @@ public class SelectChannelEndPointTest
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
             SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,2000);
-            endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+            endp.setSelectableConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+            endp.setReadInterested(true);
             _lastEndp=endp;
             return endp;
         }
@@ -99,88 +103,94 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(),_connector.socket().getLocalPort());
     }
 
-    protected Connection newConnection(SocketChannel channel, EndPoint endpoint)
+    protected SelectableConnection newConnection(SocketChannel channel, SelectableEndPoint endpoint)
     {
         return new TestConnection(endpoint);
     }
 
-    public class TestConnection extends AbstractConnection implements Connection
+    public class TestConnection extends AbstractSelectableConnection
     {
         ByteBuffer _in = BufferUtil.allocate(32*1024);
         ByteBuffer _out = BufferUtil.allocate(32*1024);
 
-        public TestConnection(EndPoint endp)
+        public TestConnection(SelectableEndPoint endp)
         {
             super(endp);
         }
 
-        public void canRead()
+        @Override
+        public void doRead()
         {
-            boolean progress=true;
-            while(progress)
+            try
             {
-                progress=false;
-                _in.compact().flip();
-                if (!BufferUtil.isFull(_in) && _endp.fill(_in)>0)
+                boolean progress=true;
+                while(progress)
                 {
-                    progress=true;
-                }
-                
-                
-                while (_blockAt>0 && _in.remaining()>0 && _in.remaining()<_blockAt)
-                {
-                    // ((AsyncEndPoint)_endp).blockReadable(10000);
-                    if (!BufferUtil.isFull(_in) && _endp.fill(_in)>0)
+                    progress=false;
+
+                    // Fill the input buffer with everything available
+                    if (!BufferUtil.isFull(_in))
+                        progress|=_endp.fill(_in)>0;
+                    // If the tests wants to block, then block
+                    while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt && blockReadable())
+                        progress|=_endp.fill(_in)>0;
+
+                    // Copy to the out buffer
+                    if (BufferUtil.hasContent(_in) && BufferUtil.flipPutFlip(_in,_out)>0)
                         progress=true;
+                    
+                    // Try non blocking write
+                    if (BufferUtil.hasContent(_out) && _endp.flush(_out)>0)
+                        
+                    // Try blocking write
+                    while (!_endp.isOutputShutdown() && BufferUtil.hasContent(_out))
+                    {
+                        blockWriteable();
+                        if (_endp.flush(_out)>0)
+                            progress=true;
+                    }
                 }
-
-                if (BufferUtil.hasContent(_in) && BufferUtil.flipPutFlip(_in,_out)>0)
-                    progress=true;
-
-                if (BufferUtil.hasContent(_out) && _endp.flush(_out)>0)
-                    progress=true;
-
-                _out.compact().flip();
-
-                if (BufferUtil.isEmpty(_out) && _endp.isInputShutdown())
-                    _endp.shutdownOutput();
+            }
+            catch(IOException e)
+            {
+                e.printStackTrace();
+            }
+            finally
+            {
+                _endp.setReadInterested(true);
             }
         }
-        
-        public void canWrite()
+
+
+        @Override
+        public void onInputShutdown()
         {
-            
+            try
+            {
+                if (BufferUtil.isEmpty(_out))
+                    _endp.shutdownOutput();
+            }
+            catch(IOException e)
+            {
+                e.printStackTrace();
+            }
         }
-        
+
+        @Override
+        public void onClose()
+        {            
+        }
+
+        @Override
         public boolean isIdle()
         {
             return false;
         }
-
-        @Override
-        public boolean isReadInterested()
-        {
-            return true;
-        }
-
-        @Override
-        public EndPoint getEndPoint()
-        {
-            return _endp;
-        }
-
-        public void onClose()
-        {
-            // System.err.println("onClose");
-        }
-
-        public void onInputShutdown() throws IOException
-        {
-            // System.err.println("onInputShutdown");
-        }
-
+        
+        
     }
 
+    
     @Test
     public void testEcho() throws Exception
     {
@@ -310,7 +320,7 @@ public class SelectChannelEndPointTest
         int specifiedTimeout = 400;
         client.setSoTimeout(specifiedTimeout);
 
-        // Write 8 and cause block for 10
+        // Write 8 and cause block waiting for 10
         _blockAt=10;
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
@@ -327,7 +337,7 @@ public class SelectChannelEndPointTest
         catch(SocketTimeoutException e)
         {
             int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
-            System.err.println("blocked for " + elapsed+ "ms");
+            // System.err.println("blocked for " + elapsed+ "ms");
             Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3*specifiedTimeout/4));
         }
 

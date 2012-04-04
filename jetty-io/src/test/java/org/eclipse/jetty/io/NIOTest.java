@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;

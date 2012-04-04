@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.nio.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 
 
@@ -36,7 +35,6 @@ public class ByteArrayEndPoint implements EndPoint
     protected boolean _growOutput;
     protected int _maxIdleTime;
     protected Connection _connection;
-    private boolean _idleCheck;
 
     /* ------------------------------------------------------------ */
     /**
@@ -97,6 +95,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      * @see org.eclipse.io.EndPoint#isOpen()
      */
+    @Override
     public boolean isOpen()
     {
         return !_closed;
@@ -106,6 +105,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      *  @see org.eclipse.jetty.io.EndPoint#isInputShutdown()
      */
+    @Override
     public boolean isInputShutdown()
     {
         return _closed;
@@ -115,6 +115,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      *  @see org.eclipse.jetty.io.EndPoint#isOutputShutdown()
      */
+    @Override
     public boolean isOutputShutdown()
     {
         return _closed;
@@ -124,6 +125,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      * @see org.eclipse.io.EndPoint#shutdownOutput()
      */
+    @Override
     public void shutdownOutput() throws IOException
     {
         close();
@@ -133,6 +135,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      * @see org.eclipse.io.EndPoint#shutdownInput()
      */
+    @Override
     public void shutdownInput() throws IOException
     {
         close();
@@ -142,6 +145,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      * @see org.eclipse.io.EndPoint#close()
      */
+    @Override
     public void close() throws IOException
     {
         _closed=true;
@@ -151,6 +155,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
      */
+    @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
         if (_closed)
@@ -165,6 +170,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
      */
+    @Override
     public int flush(ByteBuffer... buffers) throws IOException
     {
         if (_closed)
@@ -230,6 +236,7 @@ public class ByteArrayEndPoint implements EndPoint
     /*
      * @see org.eclipse.io.EndPoint#getConnection()
      */
+    @Override
     public Object getTransport()
     {
         return _inBytes;
@@ -257,6 +264,7 @@ public class ByteArrayEndPoint implements EndPoint
     /**
      * @see org.eclipse.jetty.io.EndPoint#getMaxIdleTime()
      */
+    @Override
     public int getMaxIdleTime()
     {
         return _maxIdleTime;
@@ -266,39 +274,12 @@ public class ByteArrayEndPoint implements EndPoint
     /**
      * @see org.eclipse.jetty.io.EndPoint#setMaxIdleTime(int)
      */
+    @Override
     public void setMaxIdleTime(int timeMs) throws IOException
     {
         _maxIdleTime=timeMs;
     }
 
-    @Override
-    public Connection getConnection()
-    {
-        return _connection;
-    }
-
-    @Override
-    public void setConnection(Connection connection)
-    {
-        _connection=connection;
-    }
-
-    @Override
-    public void onIdleExpired(long idleForMs)
-    {        
-    }
-
-    @Override
-    public void setCheckForIdle(boolean check)
-    {
-        _idleCheck=check;        
-    }
-
-    @Override
-    public boolean isCheckForIdle()
-    {
-        return _idleCheck;
-    }
 
 
 }

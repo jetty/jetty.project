@@ -1,9 +1,9 @@
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.io.EndPointTest;
+import org.eclipse.jetty.io.ChannelEndPoint;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 

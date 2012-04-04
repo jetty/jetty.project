@@ -268,7 +268,7 @@ public class BufferUtil
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from in flush mode
-     * @param to Buffer to put bytes to in flush mode. The buffer is flipped before and after the put.
+     * @param to Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
      * @return number of bytes moved
      */
     public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
@@ -649,12 +649,12 @@ public class BufferUtil
         for (int i=0;i<buffer.position();i++)
         {
             char c=(char)buffer.get(i);
-            if (c>=' ')
+            if (c>=' ' && c<=127)
                 buf.append(c);
             else if (c=='\r'||c=='\n')
                 buf.append('|');
             else
-                buf.append('?');
+                buf.append('\ufffd');
             if (i==16&&buffer.position()>32)
             {
                 buf.append("...");
@@ -665,12 +665,12 @@ public class BufferUtil
         for (int i=buffer.position();i<buffer.limit();i++)
         {
             char c=(char)buffer.get(i);
-            if (c>=' ')
+            if (c>=' ' && c<=127)
                 buf.append(c);
             else if (c=='\r'||c=='\n')
                 buf.append('|');
             else
-                buf.append('?');
+                buf.append('\ufffd');
             if (i==buffer.position()+16&&buffer.limit()>buffer.position()+32)
             {
                 buf.append("...");
@@ -683,12 +683,12 @@ public class BufferUtil
         for (int i=limit;i<buffer.capacity();i++)
         {
             char c=(char)buffer.get(i);
-            if (c>=' ')
+            if (c>=' ' && c<=127)
                 buf.append(c);
             else if (c=='\r'||c=='\n')
                 buf.append('|');
             else
-                buf.append('?');
+                buf.append('\ufffd');
             if (i==limit+16&&buffer.capacity()>limit+32)
             {
                 buf.append("...");

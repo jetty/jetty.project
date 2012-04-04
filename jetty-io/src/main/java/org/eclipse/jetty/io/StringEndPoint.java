@@ -11,12 +11,11 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
 
-package org.eclipse.jetty.io.bio;
+package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
-import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 

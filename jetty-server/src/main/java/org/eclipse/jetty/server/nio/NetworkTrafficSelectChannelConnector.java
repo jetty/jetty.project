@@ -21,9 +21,10 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.io.NetworkTrafficListener;
-import org.eclipse.jetty.io.nio.NetworkTrafficSelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectChannelEndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager;
+import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectableEndPoint;
+import org.eclipse.jetty.io.SelectorManager;
 
 /**
  * <p>A specialized version of {@link SelectChannelConnector} that supports {@link NetworkTrafficListener}s.</p>
@@ -60,7 +61,7 @@ public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
     }
 
     @Override
-    protected void endPointClosed(SelectChannelEndPoint endpoint)
+    protected void endPointClosed(SelectableEndPoint endpoint)
     {
         super.endPointClosed(endpoint);
         ((NetworkTrafficSelectChannelEndPoint)endpoint).notifyClosed();

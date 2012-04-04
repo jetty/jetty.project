@@ -11,7 +11,7 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -19,7 +19,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
-import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 

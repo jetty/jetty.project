@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.SslConnection;
+import org.eclipse.jetty.io.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
@@ -149,8 +149,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
         // Get the server side endpoint
         EndPoint endp = endpoint.exchange(null,10,TimeUnit.SECONDS);
-        if (endp instanceof SslConnection.SslEndPoint)
-            endp=((SslConnection.SslEndPoint)endp).getEndpoint();
+        if (endp instanceof SslConnection.AppEndPoint)
+            endp=((SslConnection.AppEndPoint)endp).getEndpoint();
 
         // read the response
         String result=IO.toString(is);

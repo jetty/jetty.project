@@ -11,17 +11,17 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
-package org.eclipse.jetty.io.nio;
+package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.nio.SelectorManager.SelectSet;
+import org.eclipse.jetty.io.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout.Task;
@@ -30,22 +30,29 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 /**
  * An Endpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements SelectableEndPoint
 {
     public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
 
+    private final Lock _lock = new ReentrantLock();
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
     private  SelectionKey _key;
 
+    private boolean _selected;
+    private boolean _changing;
+    
     /** The desired value for {@link SelectionKey#interestOps()} */
     private int _interestOps;
 
+    private boolean _ishutCalled;
+    
     /** true if {@link SelectSet#destroyEndPoint(SelectChannelEndPoint)} has not been called */
     private boolean _open;
 
-    private volatile long _idleTimestamp;
-    private volatile Connection _connection;
+    private volatile boolean _idlecheck;
+    private volatile long _lastNotIdleTimestamp;
+    private volatile SelectableConnection _connection;
     
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
@@ -78,18 +85,19 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
 
 
     /* ------------------------------------------------------------ */
-    public void setConnection(Connection connection)
+    public void setSelectableConnection(SelectableConnection connection)
     {
-        Connection old=getConnection();
+        Connection old=getSelectableConnection();
         _connection=connection;
         if (old!=null && old!=connection)
-            _manager.endPointUpgraded(this,(Connection)old);
+            _manager.endPointUpgraded(this,old);
     }
-
+    
     /* ------------------------------------------------------------ */
-    public long getIdleTimestamp()
+    @Override
+    public long getLastNotIdleTimestamp()
     {
-        return _idleTimestamp;
+        return _lastNotIdleTimestamp;
     }
 
     /* ------------------------------------------------------------ */
@@ -98,9 +106,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
      */
     public void selected()
     {
-        final boolean can_read;
-        final boolean can_write;
-        synchronized (this)
+        _lock.lock();
+        _selected=true;
+        try
         {
             // If there is no key, then do nothing
             if (_key == null || !_key.isValid())
@@ -108,19 +116,103 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
                 this.notifyAll();
                 return;
             }
-
-            can_read=(_key.isReadable() && (_key.interestOps()|SelectionKey.OP_READ)!=0);
-            can_write=(_key.isWritable() && (_key.interestOps()|SelectionKey.OP_WRITE)!=0);
+            
+            boolean can_read=(_key.isReadable() && (_key.interestOps()|SelectionKey.OP_READ)!=0);
+            boolean can_write=(_key.isWritable() && (_key.interestOps()|SelectionKey.OP_WRITE)!=0);
             _interestOps=0;
-            _key.interestOps(0);
+
+            if (can_read)
+            {
+                Runnable task=getSelectableConnection().onReadable();
+                if (task!=null)
+                    _manager.dispatch(task);
+            }
+            if (can_write)
+            {
+                Runnable task=getSelectableConnection().onWriteable();
+                if (task!=null)
+                    _manager.dispatch(task);
+            }
+            
+            if (isInputShutdown() && !_ishutCalled)
+            {
+                _ishutCalled=true;
+                getSelectableConnection().onInputShutdown();
+            }
         }
-        
-        if (can_read)
-            getConnection().canRead();
-        if (can_write)
-            getConnection().canWrite();
+        finally
+        {
+            doUpdateKey();
+            _selected=false;
+            _lock.unlock();
+        }
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isReadInterested()
+    {
+        _lock.lock();
+        try
+        {
+            return (_interestOps&SelectionKey.OP_READ)!=0;
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void setReadInterested(boolean interested)
+    {
+        _lock.lock();
+        try
+        {
+            _interestOps=interested?(_interestOps|SelectionKey.OP_READ):(_interestOps&~SelectionKey.OP_READ);
+            if (!_selected)
+                updateKey();
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isWriteInterested()
+    {
+        _lock.lock();
+        try
+        {
+            return (_interestOps&SelectionKey.OP_READ)!=0;
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void setWriteInterested(boolean interested)
+    {
+        _lock.lock();
+        try
+        {
+            _interestOps=interested?(_interestOps|SelectionKey.OP_WRITE):(_interestOps&~SelectionKey.OP_WRITE);
+            if (!_selected)
+                updateKey();
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+    
+    
     /* ------------------------------------------------------------ */
     public void cancelTimeout(Task task)
     {
@@ -134,46 +226,51 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setCheckForIdle(boolean check)
     {
-        _idleTimestamp=check?System.currentTimeMillis():0;
+        _idlecheck=true;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isCheckForIdle()
     {
-        return _idleTimestamp!=0;
+        return _idlecheck;
     }
 
     /* ------------------------------------------------------------ */
     protected void notIdle()
     {
-        if (_idleTimestamp!=0)
-            _idleTimestamp=System.currentTimeMillis();
+        _lastNotIdleTimestamp=System.currentTimeMillis();
     }
 
     /* ------------------------------------------------------------ */
-    public void checkIdleTimestamp(long now)
+    public void checkForIdle(long now)
     {
-        long idleTimestamp=_idleTimestamp;
-        long max_idle_time=getMaxIdleTime();
-
-        if (idleTimestamp!=0 && max_idle_time>0)
+        if (_idlecheck)
         {
-            long idleForMs=now-idleTimestamp;
+            long idleTimestamp=_lastNotIdleTimestamp;
+            long max_idle_time=getMaxIdleTime();
 
-            if (idleForMs>max_idle_time)
+            if (idleTimestamp!=0 && max_idle_time>0)
             {
-                onIdleExpired(idleForMs);
-                _idleTimestamp=now;
+                long idleForMs=now-idleTimestamp;
+
+                if (idleForMs>max_idle_time)
+                {
+                    onIdleExpired(idleForMs);
+                    _lastNotIdleTimestamp=now;
+                }
             }
         }
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void onIdleExpired(long idleForMs)
     {
-        getConnection().onIdleExpired(idleForMs);
+        getSelectableConnection().onIdleExpired(idleForMs);
     }
 
     /* ------------------------------------------------------------ */
@@ -199,38 +296,26 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
     
     /* ------------------------------------------------------------ */
     /**
-     * Updates selection key. Adds operations types to the selection key as needed. No operations
-     * are removed as this is only done during dispatch. This method records the new key and
-     * schedules a call to doUpdateKey to do the keyChange
+     * Updates selection key. This method schedules a call to doUpdateKey to do the keyChange
      */
-    public void updateKey()
+    private void updateKey()
     {
-        final boolean changed;
-        synchronized (this)
+        int current_ops=-1;
+        if (getChannel().isOpen())
         {
-            int current_ops=-1;
-            if (getChannel().isOpen())
+            try
             {
-                Socket socket = getSocket();
-                boolean read_interest = getConnection().isReadInterested() && !socket.isInputShutdown();
-                boolean write_interest= getConnection().isWriteInterested() && !socket.isOutputShutdown();
-
-                _interestOps = (read_interest?SelectionKey.OP_READ:0)|(write_interest?SelectionKey.OP_WRITE:0);
-                try
-                {
-                    current_ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
-                }
-                catch(Exception e)
-                {
-                    _key=null;
-                    LOG.ignore(e);
-                }
+                current_ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
             }
-            changed=_interestOps!=current_ops;
+            catch(Exception e)
+            {
+                _key=null;
+                LOG.ignore(e);
+            }
         }
-
-        if(changed)
+        if (_interestOps!=current_ops && !_changing)
         {
+            _changing=true;
             _selectSet.addChange(this);
             _selectSet.wakeup();
         }
@@ -243,8 +328,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
      */
     void doUpdateKey()
     {
-        synchronized (this)
+        _lock.lock();
+        try
         {
+            _changing=false;
             if (getChannel().isOpen())
             {
                 if (_interestOps>0)
@@ -305,6 +392,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
                 _key = null;
             }
         }
+        finally
+        {
+            _lock.unlock();
+        }
     }
 
 
@@ -328,7 +419,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
             updateKey();
         }
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
     public String toString()
@@ -367,7 +458,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
                 isOutputShutdown(),
                 _interestOps,
                 keyString,
-                getConnection());
+                getSelectableConnection());
     }
 
     /* ------------------------------------------------------------ */
@@ -375,12 +466,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements EndPoint
     {
         return _selectSet;
     }
-
+    
     /* ------------------------------------------------------------ */
     @Override
-    public Connection getConnection()
+    public SelectableConnection getSelectableConnection()
     {
         return _connection;
     }
+
 
 }

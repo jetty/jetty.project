@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.nio.Connection;
 
 
 /**
@@ -113,28 +112,5 @@ public interface EndPoint
     void setMaxIdleTime(int timeMs) throws IOException;
     
 
-    /* ------------------------------------------------------------ */
-    Connection getConnection();
 
-    /* ------------------------------------------------------------ */
-    void setConnection(Connection connection);
-    
-
-    /* ------------------------------------------------------------ */
-    /** Callback when idle.
-     * <p>An endpoint is idle if there has been no IO activity for 
-     * {@link #getMaxIdleTime()} and {@link #isCheckForIdle()} is true.
-     * @param idleForMs TODO
-     */
-    public void onIdleExpired(long idleForMs);
-
-    /* ------------------------------------------------------------ */
-    /** Set if the endpoint should be checked for idleness
-     */
-    public void setCheckForIdle(boolean check);
-
-    /* ------------------------------------------------------------ */
-    /** Get if the endpoint should be checked for idleness
-     */
-    public boolean isCheckForIdle();
 }
