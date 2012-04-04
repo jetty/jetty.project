@@ -9,13 +9,6 @@
         <Set name="trustStore">src/main/resources/truststore.jks</Set>
         <Set name="trustStorePassword">storepwd</Set>
         <Set name="protocol">TLSv1</Set>
-        <Set name="includeProtocols">
-            <Array type="java.lang.String">
-                <Item>TLSv1</Item>
-                <Item>TLSv1.1</Item>
-                <Item>TLSv1.2</Item>
-            </Array>
-        </Set>
     </New>
 
     <Call name="addConnector">

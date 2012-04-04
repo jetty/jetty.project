@@ -75,7 +75,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
             logger.debug("Received {} on {}", synInfo, stream);
 
-            HTTPSPDYAsyncEndPoint asyncEndPoint = new HTTPSPDYAsyncEndPoint(stream);
+            HTTPSPDYAsyncEndPoint asyncEndPoint = new HTTPSPDYAsyncEndPoint(endPoint, stream);
             ServerHTTPSPDYAsyncConnection connection = new ServerHTTPSPDYAsyncConnection(connector,
                     asyncEndPoint, connector.getServer(),
                     (SPDYAsyncConnection)endPoint.getConnection(), stream);
@@ -133,10 +133,12 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
     private class HTTPSPDYAsyncEndPoint extends EmptyAsyncEndPoint
     {
+        private final AsyncEndPoint endPoint;
         private final Stream stream;
 
-        public HTTPSPDYAsyncEndPoint(Stream stream)
+        private HTTPSPDYAsyncEndPoint(AsyncEndPoint endPoint, Stream stream)
         {
+            this.endPoint = endPoint;
             this.stream = stream;
         }
 
@@ -145,6 +147,42 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
         {
             ServerHTTPSPDYAsyncConnection connection = (ServerHTTPSPDYAsyncConnection)stream.getAttribute(CONNECTION_ATTRIBUTE);
             connection.async();
+        }
+
+        @Override
+        public String getLocalAddr()
+        {
+            return endPoint.getLocalAddr();
+        }
+
+        @Override
+        public String getLocalHost()
+        {
+            return endPoint.getLocalHost();
+        }
+
+        @Override
+        public int getLocalPort()
+        {
+            return endPoint.getLocalPort();
+        }
+
+        @Override
+        public String getRemoteAddr()
+        {
+            return endPoint.getRemoteAddr();
+        }
+
+        @Override
+        public String getRemoteHost()
+        {
+            return endPoint.getRemoteHost();
+        }
+
+        @Override
+        public int getRemotePort()
+        {
+            return endPoint.getRemotePort();
         }
     }
 }
