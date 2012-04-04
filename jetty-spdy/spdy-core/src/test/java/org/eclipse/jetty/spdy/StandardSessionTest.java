@@ -32,12 +32,15 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
+import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class StandardSessionTest
@@ -49,7 +52,6 @@ public class StandardSessionTest
     private Generator generator;
     private ScheduledExecutorService scheduler;
     private Headers headers;
-    private StreamFrameListener.Adapter streamFrameListener;
 
     @Before
     public void setUp() throws Exception
@@ -60,106 +62,143 @@ public class StandardSessionTest
         generator = new Generator(new StandardByteBufferPool(),new StandardCompressionFactory.StandardCompressor());
         session = new StandardSession(SPDY.V2,bufferPool,threadPool,scheduler,new TestController(),null,1,null,generator);
         headers = new Headers();
-        streamFrameListener = new StreamFrameListener.Adapter();
     }
 
+    @Test
+    public void testResetStreamGetsRemovedFromSession() throws InterruptedException, ExecutionException{
+        Stream stream = createStream();
+        assertThat("1 stream in session", session.getStreams().size(), is(1));
+        session.rst(new RstInfo(stream.getId(),StreamStatus.STREAM_ALREADY_CLOSED));
+        assertThat("stream is removed", session.getStreams().size(), is(0));
+    }
+    
     @Test
     public void testServerPush() throws InterruptedException, ExecutionException
     {
         Stream stream = createStream();
-        IStream pushStream = (IStream)createPushStream(stream).get();
-        assertThat("Push stream must be associated to the first stream created", pushStream.getParentStream().getId(), is(stream.getId()));
-        assertThat("streamIds need to be monotonic",pushStream.getId(), greaterThan(stream.getId()));
+        IStream pushStream = (IStream)createPushStream(stream,true).get();
+        assertThat("Push stream must be associated to the first stream created",pushStream.getParentStream().getId(),is(stream.getId()));
+        assertThat("streamIds need to be monotonic",pushStream.getId(),greaterThan(stream.getId()));
     }
 
     @Test
-    public void testPushStreamIsNotClosedWhenAssociatedStreamIsClosed() throws InterruptedException, ExecutionException{
-        
+    public void testPushStreamIsNotClosedWhenAssociatedStreamIsClosed() throws InterruptedException, ExecutionException
+    {
         Stream stream = createStream();
-        Stream pushStream = createPushStream(stream).get();
-        assertThat("stream should not be halfClosed", stream.isHalfClosed(), is(false));
-        assertThat("stream should not be closed", stream.isClosed(), is(false));
-        assertThat("pushStream expected to be halfClosed", pushStream.isHalfClosed(), is(true));
-        assertThat("pushStream expected to not be closed", pushStream.isClosed(), is(false));
-        
+        Stream pushStream = createPushStream(stream,true).get();
+        assertThat("stream should not be halfClosed",stream.isHalfClosed(),is(false));
+        assertThat("stream should not be closed",stream.isClosed(),is(false));
+        assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
+        assertThat("pushStream expected to not be closed",pushStream.isClosed(),is(false));
+
         ReplyInfo replyInfo = new ReplyInfo(true);
         stream.reply(replyInfo);
-        assertThat("stream should be halfClosed", stream.isHalfClosed(), is(true));
-        assertThat("stream should not be closed", stream.isClosed(), is(false));
-        assertThat("pushStream should be halfClosed", pushStream.isHalfClosed(), is(true));
-        assertThat("pushStream should not be closed", pushStream.isClosed(), is(false));
-        
+        assertThat("stream should be halfClosed",stream.isHalfClosed(),is(true));
+        assertThat("stream should not be closed",stream.isClosed(),is(false));
+        assertThat("pushStream should be halfClosed",pushStream.isHalfClosed(),is(true));
+        assertThat("pushStream should not be closed",pushStream.isClosed(),is(false));
+
         stream.reply(replyInfo);
-        assertThat("stream should be closed", stream.isClosed(), is(true));
-        assertThat("pushStream should be closed", pushStream.isClosed(), is(false));
-        
+        assertThat("stream should be closed",stream.isClosed(),is(true));
+        assertThat("pushStream should be closed",pushStream.isClosed(),is(false));
     }
-    
-    @Test(expected=IllegalStateException.class)
-    public void testCreatePushStreamOnClosedStream() throws InterruptedException, ExecutionException{
+
+    @Test(expected = IllegalStateException.class)
+    public void testCreatePushStreamOnClosedStream() throws InterruptedException, ExecutionException
+    {
         IStream stream = (IStream)createStream();
         stream.updateCloseState(true);
-        assertThat("stream should be halfClosed", stream.isHalfClosed(), is(true));
+        assertThat("stream should be halfClosed",stream.isHalfClosed(),is(true));
         stream.updateCloseState(true);
-        assertThat("stream should be closed", stream.isClosed(), is(true));
-        createPushStream(stream).get();
+        assertThat("stream should be closed",stream.isClosed(),is(true));
+        createPushStream(stream,true).get();
     }
-    
+
     @Test
-    public void testPushStreamIsAddedToParent() throws InterruptedException, ExecutionException{
+    public void testPushStreamIsAddedToParent() throws InterruptedException, ExecutionException
+    {
         IStream stream = (IStream)createStream();
-        Stream pushStream = createPushStream(stream).get();
-        assertThat("PushStream has not been added to parent", stream.getAssociatedStreams().contains(pushStream) ,is(true));
+        Stream pushStream = createPushStream(stream,true).get();
+        assertThat("PushStream has not been added to parent",stream.getAssociatedStreams().contains(pushStream),is(true));
     }
-    
+
     @Test
-    public void testPushStreamIsRemovedFromParentWhenClosed() throws InterruptedException, ExecutionException{
+    public void testPushStreamIsRemovedFromParentWhenClosed() throws InterruptedException, ExecutionException
+    {
         IStream stream = (IStream)createStream();
-        Stream pushStream = createPushStream(stream).get();
-        assertThat("pushStream expected to be halfClosed", pushStream.isHalfClosed(), is(true));
-        assertThat("PushStream has not been added to parent", stream.getAssociatedStreams().contains(pushStream) ,is(true));
+        Stream pushStream = createPushStream(stream,true).get();
+        assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
+        assertThat("PushStream has not been added to parent",stream.getAssociatedStreams().contains(pushStream),is(true));
         ReplyInfo replyInfo = new ReplyInfo(true);
         pushStream.reply(replyInfo);
-        assertThat("pushStream expected to be halfClosed", pushStream.isHalfClosed(), is(true));
+        assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
         pushStream.reply(replyInfo);
-        assertThat("pushStream expected to be closed", pushStream.isClosed(), is(true));
-        assertThat("PushStream expected to be removed from parent", stream.getAssociatedStreams().contains(pushStream) ,is(false));
+        assertThat("pushStream expected to be closed",pushStream.isClosed(),is(true));
+        assertThat("PushStream expected to be removed from parent",stream.getAssociatedStreams().contains(pushStream),is(false));
     }
-    
+
     @Test
-    public void testPushStreamWithSynInfoClosedTrue() throws InterruptedException, ExecutionException{
+    public void testPushStreamWithSynInfoClosedTrue() throws InterruptedException, ExecutionException
+    {
         IStream stream = (IStream)createStream();
         SynInfo synInfo = new SynInfo(headers,true,stream.getPriority());
         Stream pushStream = stream.syn(synInfo).get();
-        assertThat("pushStream expected to be half closed",pushStream.isHalfClosed(), is(true));
+        assertThat("pushStream expected to be half closed",pushStream.isHalfClosed(),is(true));
         assertThat("pushStream expected to be not closed",pushStream.isClosed(),is(true));
     }
-    
-    @Test(expected=IllegalStateException.class)
-    public void testCreatePushStreamAfterDataHasBeenSent() throws InterruptedException, ExecutionException{
+
+    @Test(expected = IllegalStateException.class)
+    public void testCreatePushStreamAfterDataHasBeenSent() throws InterruptedException, ExecutionException
+    {
         IStream stream = (IStream)createStream();
-        byte[] bytes = new byte[] { };
+        byte[] bytes = new byte[] {};
         DataInfo dataInfo = new BytesDataInfo(bytes,false);
         stream.data(dataInfo);
-        createPushStream(stream);
+        createPushStream(stream,true);
     }
 
-    //TODO: Test for even/odd streamIds
-    
+    @Ignore("draft 3.0 and we need to decide if we want to check this on the serverside or accept opening pushstreams with missing headers and let the client reset")
+    @Test(expected = IllegalStateException.class)
+    public void testPushStreamWithMissingSchemeHeader() throws InterruptedException, ExecutionException
+    {
+        IStream stream = (IStream)createStream();
+        createPushStream(stream,false);
+    }
+
+    @Ignore("draft 3.0 and we need to decide if we want to check this on the serverside or accept opening pushstreams with missing headers and let the client reset")
+    @Test(expected = IllegalStateException.class)
+    public void testPushStreamWithMissingHostHeader() throws InterruptedException, ExecutionException
+    {
+        IStream stream = (IStream)createStream();
+        createPushStream(stream,false);
+    }
+
+    @Ignore("draft 3.0 and we need to decide if we want to check this on the serverside or accept opening pushstreams with missing headers and let the client reset")
+    @Test(expected = IllegalStateException.class)
+    public void testPushStreamWithMissingPathHeader() throws InterruptedException, ExecutionException
+    {
+        IStream stream = (IStream)createStream();
+        createPushStream(stream,false);
+    }
+
+    // TODO: Test for even/odd streamIds
+
     private Stream createStream() throws InterruptedException, ExecutionException
     {
         SynInfo synInfo = new SynInfo(headers,false,(byte)0);
-        return session.syn(synInfo,streamFrameListener).get();
+        return session.syn(synInfo,new StreamFrameListener.Adapter()).get();
     }
-    
-    private Future<Stream> createPushStream(Stream stream)
+
+    private Future<Stream> createPushStream(Stream stream, boolean addHeaders)
     {
-        headers.add("url","http://some.url");
+        if (addHeaders)
+        {
+            headers.add("url","http://some.url/some/resource.css");
+        }
         SynInfo synInfo = new SynInfo(headers,false,stream.getPriority());
         return stream.syn(synInfo);
     }
-    
-    // TODO: remove duplication in AsyncTimeoutTest
+
     private static class TestController implements Controller<StandardSession.FrameBytes>
     {
         @Override
@@ -168,7 +207,7 @@ public class StandardSessionTest
             handler.completed(context);
             return buffer.remaining();
         }
-
+        
         @Override
         public void close(boolean onlyOutput)
         {

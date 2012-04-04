@@ -1,10 +1,15 @@
 package org.eclipse.jetty.spdy;
 
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 
-public class PushSynInfo extends AbstractSynInfo
+/* ------------------------------------------------------------ */
+/**
+ * <p>A subclass container of {@link SynInfo} for unidirectional streams</p>
+ */
+public class PushSynInfo extends SynInfo
 {
+    public static final byte FLAG_UNIDIRECTIONAL = 2;
+    
     private int associatedStreamId;
     
     public PushSynInfo(int associatedStreamId, SynInfo synInfo){
@@ -12,18 +17,26 @@ public class PushSynInfo extends AbstractSynInfo
         this.associatedStreamId = associatedStreamId;
     }
     
+    /**
+     * @return the close and unidirectional flags as integer
+     * @see #FLAG_CLOSE
+     */
     @Override
-    public boolean isUnidirectional()
+    public byte getFlags()
     {
-        return true;
+        byte flags = isClose() ? FLAG_CLOSE : 0;
+        flags += FLAG_UNIDIRECTIONAL;
+        return flags;
     }
-
-    @Override
+    
+    /**
+     * @return the id of the associated stream
+     */
     public int getAssociatedStreamId()
     {
         return associatedStreamId;
     }
-
+    
     @Override
     public int hashCode()
     {

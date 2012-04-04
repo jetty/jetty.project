@@ -22,6 +22,8 @@ package org.eclipse.jetty.spdy.api;
  */
 public class SPDYException extends RuntimeException
 {
+    private static final long serialVersionUID = 322482713142731444L;
+
     public SPDYException()
     {
     }

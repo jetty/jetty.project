@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Handler;
@@ -130,7 +129,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public Future<Stream> syn(AbstractSynInfo synInfo, StreamFrameListener listener)
+    public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener)
     {
         Promise<Stream> result = new Promise<>();
         syn(synInfo,listener,0,TimeUnit.MILLISECONDS,result);
@@ -138,7 +137,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public void syn(AbstractSynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler)
+    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler)
     {
         // Synchronization is necessary.
         // SPEC v3, 2.3.1 requires that the stream creation be monotonically crescent
@@ -148,22 +147,20 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         // frame with a compression history will come before the first compressed frame.
         synchronized (this)
         {
-            if (synInfo.isUnidirectional())
+            int associatedStreamId = 0;
+            if ((synInfo.getFlags() & PushSynInfo.FLAG_UNIDIRECTIONAL) == PushSynInfo.FLAG_UNIDIRECTIONAL)
             {
-                IStream associatedStream = streams.get(synInfo.getAssociatedStreamId());
+                associatedStreamId = ((PushSynInfo)synInfo).getAssociatedStreamId();
+                IStream associatedStream = streams.get(associatedStreamId);
                 if (associatedStream == null)
-                {
-                    throw new IllegalStateException("Tried to associate new unidirectional stream with streamId: " + synInfo.getAssociatedStreamId()
-                            + " But no stream with this id exists. Associated stream already closed?");
-                }
+                    handler.failed(new IllegalStateException("Tried to associate new unidirectional stream with streamId: " + associatedStreamId
+                            + " But no stream with this id exists. Associated stream already closed?"));
                 else if (associatedStream.isDataSent())
-                {
-                    throw new IllegalStateException("Can't create pushStream if data has been sent already on associated stream.");
-                }
+                    handler.failed(new IllegalStateException("Can't create pushStream if data has been sent already on associated stream."));
             }
 
             int streamId = streamIds.getAndAdd(2);
-            SynStreamFrame synStream = new SynStreamFrame(version,synInfo.getFlags(),streamId,synInfo.getAssociatedStreamId(),synInfo.getPriority(),
+            SynStreamFrame synStream = new SynStreamFrame(version,synInfo.getFlags(),streamId,associatedStreamId,synInfo.getPriority(),
                     synInfo.getHeaders());
             IStream stream = createStream(synStream,listener);
             control(stream,synStream,timeout,unit,handler,stream);
@@ -191,9 +188,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             int streamId = rstInfo.getStreamId();
             IStream stream = streams.get(streamId);
             if (stream != null)
+            {
+                RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
+                control(stream,frame,timeout,unit,handler,null);
                 removeStream(stream);
-            RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
-            control(null,frame,timeout,unit,handler,null);
+            }
         }
     }
 
@@ -438,7 +437,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private IStream createStream(SynStreamFrame synStream, StreamFrameListener listener)
     {
         IStream parentStream = streams.get(synStream.getAssociatedStreamId());
-        
+
         IStream stream = newStream(synStream,parentStream);
         stream.setStreamFrameListener(listener);
         if (streams.putIfAbsent(synStream.getStreamId(),stream) != null)
@@ -454,7 +453,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             stream.updateCloseState(true);
             parentStream.addAssociatedStream(stream);
         }
-        
+
         logger.debug("Created {}",stream);
         notifyStreamCreated(stream);
 
@@ -463,7 +462,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private IStream newStream(SynStreamFrame frame, IStream parentStream)
     {
-        return new StandardStream(frame,this,windowSize, parentStream);
+        return new StandardStream(frame,this,windowSize,parentStream);
     }
 
     private void notifyStreamCreated(IStream stream)
@@ -561,7 +560,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             windowSize = windowSizeSetting.value();
             for (IStream stream : streams.values())
                 stream.updateWindowSize(windowSize - prevWindowSize);
-            logger.debug("Updated window size to {}", windowSize);
+            logger.debug("Updated window size to {}",windowSize);
         }
 
         SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(),frame.isClearPersisted());
@@ -747,10 +746,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             synchronized (this)
             {
                 ByteBuffer buffer = generator.control(frame);
-                logger.debug("Queuing {} on {}", frame, stream);
-                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream, handler, context, frame, buffer);
+                logger.debug("Queuing {} on {}",frame,stream);
+                ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream,handler,context,frame,buffer);
                 if (timeout > 0)
-                    frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
+                    frameBytes.task = scheduler.schedule(frameBytes,timeout,unit);
                 append(frameBytes);
             }
 
@@ -781,10 +780,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     @Override
     public <C> void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Handler<C> handler, C context)
     {
-        logger.debug("Queuing {} on {}", dataInfo, stream);
-        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(stream, handler, context, dataInfo);
+        logger.debug("Queuing {} on {}",dataInfo,stream);
+        DataFrameBytes<C> frameBytes = new DataFrameBytes<>(stream,handler,context,dataInfo);
         if (timeout > 0)
-            frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
+        {
+            frameBytes.task = scheduler.schedule(frameBytes,timeout,unit);
+        }
         append(frameBytes);
         flush();
     }
@@ -809,21 +810,25 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             {
                 frameBytes = queue.get(i);
 
-                if (stalledStreams != null && stalledStreams.contains(frameBytes.getStream()))
+                IStream stream = frameBytes.getStream();
+                if (stream != null && stalledStreams != null && stalledStreams.contains(stream))
                     continue;
 
                 buffer = frameBytes.getByteBuffer();
                 if (buffer != null)
                 {
                     queue.remove(i);
+                    if (stream != null && !streams.containsValue(stream))
+                        frameBytes.fail(new StreamException(stream.getId(), StreamStatus.INVALID_STREAM));
                     break;
                 }
 
                 if (stalledStreams == null)
                     stalledStreams = new HashSet<>();
-                stalledStreams.add(frameBytes.getStream());
+                if (stream != null)
+                    stalledStreams.add(stream);
 
-                logger.debug("Flush stalled for {}, {} frame(s) in queue", frameBytes, queue.size());
+                logger.debug("Flush stalled for {}, {} frame(s) in queue",frameBytes,queue.size());
             }
 
             if (buffer == null)
@@ -832,17 +837,17 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             flushing = true;
             logger.debug("Flushing {}, {} frame(s) in queue",frameBytes,queue.size());
         }
-        write(buffer, this, frameBytes);
+        write(buffer,this,frameBytes);
     }
 
     private void append(FrameBytes frameBytes)
     {
-        enqueue(frameBytes, false);
+        enqueue(frameBytes,false);
     }
 
     private void prepend(FrameBytes frameBytes)
     {
-        enqueue(frameBytes, true);
+        enqueue(frameBytes,true);
     }
 
     private void enqueue(FrameBytes frameBytes, boolean prepend)
@@ -858,7 +863,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                     break;
                 ++index;
             }
-            queue.add(index, frameBytes);
+            queue.add(index,frameBytes);
         }
     }
 
@@ -884,8 +889,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         if (controller != null)
         {
-            logger.debug("Writing {} frame bytes of {}", buffer.remaining(), frameBytes);
-            controller.write(buffer, handler, frameBytes);
+            logger.debug("Writing {} frame bytes of {}",buffer.remaining(),frameBytes);
+            controller.write(buffer,handler,frameBytes);
         }
     }
 
@@ -958,6 +963,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         public abstract ByteBuffer getByteBuffer();
 
         public abstract void complete();
+        
+        public abstract void fail(Throwable throwable);
     }
 
     private abstract class AbstractFrameBytes<C> implements FrameBytes, Runnable
@@ -989,15 +996,22 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public void complete()
         {
-            ScheduledFuture<?> task = this.task;
-            if (task != null)
-                task.cancel(false);
+            cancelTask();
             StandardSession.this.complete(handler,context);
         }
 
-        protected void fail(Throwable x)
+        @Override
+        public void fail(Throwable x)
         {
+            cancelTask();
             notifyHandlerFailed(handler,x);
+        }
+        
+        private void cancelTask()
+        {
+            ScheduledFuture<?> task = this.task;
+            if (task != null)
+                task.cancel(false);
         }
 
         @Override
@@ -1015,7 +1029,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
         private ControlFrameBytes(IStream stream, Handler<C> handler, C context, ControlFrame frame, ByteBuffer buffer)
         {
-            super(stream, handler, context);
+            super(stream,handler,context);
             this.frame = frame;
             this.buffer = buffer;
         }
@@ -1056,7 +1070,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
         private DataFrameBytes(IStream stream, Handler<C> handler, C context, DataInfo dataInfo)
         {
-            super(stream, handler, context);
+            super(stream,handler,context);
             this.dataInfo = dataInfo;
         }
 
@@ -1074,7 +1088,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 if (size > windowSize)
                     size = windowSize;
 
-                buffer = generator.data(stream.getId(), size, dataInfo);
+                buffer = generator.data(stream.getId(),size,dataInfo);
                 return buffer;
             }
             catch (Throwable x)
@@ -1110,7 +1124,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public String toString()
         {
-            return String.format("DATA bytes @%x available=%d consumed=%d on %s", dataInfo.hashCode(), dataInfo.available(), dataInfo.consumed(), getStream());
+            return String.format("DATA bytes @%x available=%d consumed=%d on %s",dataInfo.hashCode(),dataInfo.available(),dataInfo.consumed(),getStream());
         }
     }
 }

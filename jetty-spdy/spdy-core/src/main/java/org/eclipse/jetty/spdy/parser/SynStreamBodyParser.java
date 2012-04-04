@@ -23,7 +23,7 @@ import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.StreamStatus;
-import org.eclipse.jetty.spdy.api.AbstractSynInfo;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 
@@ -131,7 +131,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                     {
                         byte flags = controlFrameParser.getFlags();
                         // TODO: can it be both FIN and UNIDIRECTIONAL ?
-                        if (flags != 0 && flags != AbstractSynInfo.FLAG_CLOSE && flags != AbstractSynInfo.FLAG_UNIDIRECTIONAL)
+                        if (flags != 0 && flags != SynInfo.FLAG_CLOSE && flags != SynInfo.FLAG_UNIDIRECTIONAL)
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.SYN_STREAM);
 
                         SynStreamFrame frame = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, new Headers(headers, true));

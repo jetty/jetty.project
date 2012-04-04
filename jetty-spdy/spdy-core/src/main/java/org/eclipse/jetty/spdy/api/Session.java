@@ -72,9 +72,9 @@ public interface Session
      * @param synInfo  the metadata to send on stream creation
      * @param listener the listener to invoke when events happen on the stream just created
      * @return a future for the stream that will be created
-     * @see #syn(AbstractSynInfo, StreamFrameListener, long, TimeUnit, Handler)
+     * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Handler)
      */
-    public Future<Stream> syn(AbstractSynInfo synInfo, StreamFrameListener listener);
+    public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
     
     /**
      * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
@@ -86,9 +86,9 @@ public interface Session
      * @param timeout  the operation's timeout
      * @param unit     the timeout's unit
      * @param handler  the completion handler that gets notified of stream creation
-     * @see #syn(AbstractSynInfo, StreamFrameListener)
+     * @see #syn(SynInfo, StreamFrameListener)
      */
-    public void syn(AbstractSynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
+    public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
 
     
     /**
