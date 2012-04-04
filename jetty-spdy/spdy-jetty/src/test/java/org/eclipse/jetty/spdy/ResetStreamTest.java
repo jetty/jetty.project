@@ -127,7 +127,6 @@ public class ResetStreamTest extends AbstractTest
         assertFalse("dataLatch shouln't be count down",dataLatch.await(1,TimeUnit.SECONDS));
     }
     
-    // TODO: Reset after server received first dataframe, make sure client doesn't send 2nd dataframe
     @Test
     public void testResetAfterServerReceivedFirstDataFrame() throws Exception
     {

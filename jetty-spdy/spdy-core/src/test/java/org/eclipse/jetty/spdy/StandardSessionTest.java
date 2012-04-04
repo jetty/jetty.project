@@ -16,19 +16,20 @@
 
 package org.eclipse.jetty.spdy;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.spdy.api.BytesDataInfo;
-import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -92,18 +93,18 @@ public class StandardSessionTest
         assertThat("pushStream expected to not be closed",pushStream.isClosed(),is(false));
 
         ReplyInfo replyInfo = new ReplyInfo(true);
-        stream.reply(replyInfo);
+        stream.reply(replyInfo).get();
         assertThat("stream should be halfClosed",stream.isHalfClosed(),is(true));
         assertThat("stream should not be closed",stream.isClosed(),is(false));
         assertThat("pushStream should be halfClosed",pushStream.isHalfClosed(),is(true));
         assertThat("pushStream should not be closed",pushStream.isClosed(),is(false));
 
-        stream.reply(replyInfo);
+        stream.reply(replyInfo).get();
         assertThat("stream should be closed",stream.isClosed(),is(true));
         assertThat("pushStream should be closed",pushStream.isClosed(),is(false));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testCreatePushStreamOnClosedStream() throws InterruptedException, ExecutionException
     {
         IStream stream = (IStream)createStream();
@@ -111,7 +112,27 @@ public class StandardSessionTest
         assertThat("stream should be halfClosed",stream.isHalfClosed(),is(true));
         stream.updateCloseState(true);
         assertThat("stream should be closed",stream.isClosed(),is(true));
-        createPushStream(stream,true).get();
+        createPushStreamAndMakeSureItFails(stream);
+    }
+
+    private void createPushStreamAndMakeSureItFails(IStream stream)
+    {
+        final CountDownLatch failedLatch = new CountDownLatch(1);
+        SynInfo synInfo = new SynInfo(headers,false,stream.getPriority());
+        stream.syn(synInfo,5,TimeUnit.SECONDS,new Handler<Stream>()
+        {
+            @Override
+            public void completed(Stream context)
+            {
+            }
+            
+            @Override
+            public void failed(Throwable x)
+            {
+                failedLatch.countDown();
+            }
+        });
+        assertThat("PushStream creation failed", failedLatch.getCount(), equalTo(0L));
     }
 
     @Test
@@ -146,42 +167,6 @@ public class StandardSessionTest
         assertThat("pushStream expected to be half closed",pushStream.isHalfClosed(),is(true));
         assertThat("pushStream expected to be not closed",pushStream.isClosed(),is(true));
     }
-
-    @Test(expected = IllegalStateException.class)
-    public void testCreatePushStreamAfterDataHasBeenSent() throws InterruptedException, ExecutionException
-    {
-        IStream stream = (IStream)createStream();
-        byte[] bytes = new byte[] {};
-        DataInfo dataInfo = new BytesDataInfo(bytes,false);
-        stream.data(dataInfo);
-        createPushStream(stream,true);
-    }
-
-    @Ignore("draft 3.0 and we need to decide if we want to check this on the serverside or accept opening pushstreams with missing headers and let the client reset")
-    @Test(expected = IllegalStateException.class)
-    public void testPushStreamWithMissingSchemeHeader() throws InterruptedException, ExecutionException
-    {
-        IStream stream = (IStream)createStream();
-        createPushStream(stream,false);
-    }
-
-    @Ignore("draft 3.0 and we need to decide if we want to check this on the serverside or accept opening pushstreams with missing headers and let the client reset")
-    @Test(expected = IllegalStateException.class)
-    public void testPushStreamWithMissingHostHeader() throws InterruptedException, ExecutionException
-    {
-        IStream stream = (IStream)createStream();
-        createPushStream(stream,false);
-    }
-
-    @Ignore("draft 3.0 and we need to decide if we want to check this on the serverside or accept opening pushstreams with missing headers and let the client reset")
-    @Test(expected = IllegalStateException.class)
-    public void testPushStreamWithMissingPathHeader() throws InterruptedException, ExecutionException
-    {
-        IStream stream = (IStream)createStream();
-        createPushStream(stream,false);
-    }
-
-    // TODO: Test for even/odd streamIds
 
     private Stream createStream() throws InterruptedException, ExecutionException
     {

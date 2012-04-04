@@ -20,11 +20,12 @@ public class PushSynInfo extends SynInfo
     /**
      * @return the close and unidirectional flags as integer
      * @see #FLAG_CLOSE
+     * @see #FLAG_UNIDIRECTIONAL
      */
     @Override
     public byte getFlags()
     {
-        byte flags = isClose() ? FLAG_CLOSE : 0;
+        byte flags = super.getFlags();
         flags += FLAG_UNIDIRECTIONAL;
         return flags;
     }
@@ -36,28 +37,5 @@ public class PushSynInfo extends SynInfo
     {
         return associatedStreamId;
     }
-    
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = super.hashCode();
-        result = prime * result + associatedStreamId;
-        return result;
-    }
 
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-            return true;
-        if (!super.equals(obj))
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        PushSynInfo other = (PushSynInfo)obj;
-        if (associatedStreamId != other.associatedStreamId)
-            return false;
-        return true;
-    }
 }

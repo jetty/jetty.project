@@ -100,48 +100,12 @@ public class SynInfo
     }
     
     /**
-     * @return the close and unidirectional flags as integer
+     * @return the close flag as integer
      * @see #FLAG_CLOSE
      */
     public byte getFlags()
     {
-        byte flags = isClose() ? FLAG_CLOSE : 0;
-        return flags;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (close?1231:1237);
-        result = prime * result + ((headers == null)?0:headers.hashCode());
-        result = prime * result + priority;
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        SynInfo other = (SynInfo)obj;
-        if (close != other.close)
-            return false;
-        if (headers == null)
-        {
-            if (other.headers != null)
-                return false;
-        }
-        else if (!headers.equals(other.headers))
-            return false;
-        if (priority != other.priority)
-            return false;
-        return true;
+        return isClose() ? FLAG_CLOSE : 0;
     }
 
     @Override

@@ -90,15 +90,9 @@ public interface IStream extends Stream
      */
     public void process(DataFrame frame, ByteBuffer data);
     
-    public void addAssociatedStream(IStream stream);
-
-    /**
-     * <p>boolean indicating if data has been sent on this stream or not</p>
-     * 
-     * @return true if data has already been sent using this stream, false otherwise
-     */
-    public boolean isDataSent();
+    //TODO: javadoc
+    public void associate(IStream stream);
     
-    //TODO: Do we really need it?
+    //TODO: Do we really need it? If not change method name addAssociatedStream to associateStream
 //    public void removeAssociatedStream(IStream stream);
 }

@@ -152,11 +152,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             {
                 associatedStreamId = ((PushSynInfo)synInfo).getAssociatedStreamId();
                 IStream associatedStream = streams.get(associatedStreamId);
+                //TODO: single place for error handling --> stream?
                 if (associatedStream == null)
                     handler.failed(new IllegalStateException("Tried to associate new unidirectional stream with streamId: " + associatedStreamId
                             + " But no stream with this id exists. Associated stream already closed?"));
-                else if (associatedStream.isDataSent())
-                    handler.failed(new IllegalStateException("Can't create pushStream if data has been sent already on associated stream."));
             }
 
             int streamId = streamIds.getAndAdd(2);
@@ -451,7 +450,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             // unidirectional streams are implicitly half closed for the client
             stream.updateCloseState(true);
-            parentStream.addAssociatedStream(stream);
+            parentStream.associate(stream);
         }
 
         logger.debug("Created {}",stream);
@@ -537,7 +536,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private void onRst(RstStreamFrame frame)
     {
-        // TODO: implement logic to clean up unidirectional streams associated with this stream
         IStream stream = streams.get(frame.getStreamId());
 
         if (stream != null)

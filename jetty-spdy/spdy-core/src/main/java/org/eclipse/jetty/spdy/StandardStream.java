@@ -18,7 +18,6 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,10 +53,9 @@ public class StandardStream implements IStream
     private final SynStreamFrame frame;
     private final ISession session;
     private final AtomicInteger windowSize;
-    private Set<IStream> associatedStreams = Collections.emptySet();
+    private final Set<IStream> associatedStreams = Collections.newSetFromMap(new ConcurrentHashMap<IStream,Boolean>());
     private volatile StreamFrameListener listener;
     private volatile boolean isOpened;
-    private volatile boolean isDataSent=false;
     private volatile boolean isHalfClosed;
     private volatile boolean isClosed;
 
@@ -89,11 +87,8 @@ public class StandardStream implements IStream
     }
     
     @Override
-    public void addAssociatedStream(IStream stream)
+    public void associate(IStream stream)
     {
-        if(associatedStreams.isEmpty()){
-            associatedStreams = new HashSet<>();
-        }
         associatedStreams.add(stream);
     }
     
@@ -324,10 +319,12 @@ public class StandardStream implements IStream
     @Override
     public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler)
     {
-        if(isClosed())
-            handler.failed(new IllegalStateException("Stream already closed. No push streams can be created on closed streams."));
+        // TODO: Should we fail if url header is missing? For V3 it's scheme, host and path
+        if (isClosed)
+            handler.failed(new StreamException(getId(),StreamStatus.INVALID_STREAM)); // TODO: use StreamStatus.alreadyClosed() for V3
+            
         PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo);
-        session.syn(pushSynInfo,null,0,TimeUnit.MILLISECONDS, handler);
+        session.syn(pushSynInfo,null,timeout,unit,handler);
     }
     
     @Override
@@ -360,7 +357,6 @@ public class StandardStream implements IStream
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
         session.data(this,dataInfo,timeout,unit,handler,null);
-        isDataSent=true;
     }
 
     @Override
@@ -385,12 +381,6 @@ public class StandardStream implements IStream
         return isClosed;
     }
     
-    @Override
-    public boolean isDataSent()
-    {
-        return isDataSent;
-    }
-
     @Override
     public String toString()
     {
