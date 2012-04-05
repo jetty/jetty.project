@@ -50,12 +50,12 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implements AsyncConnection
 {
-    private static final Logger logger = LoggerFactory.getLogger(ServerHTTPSPDYAsyncConnection.class);
+    private static final Logger logger = Log.getLogger(ServerHTTPSPDYAsyncConnection.class);
     private static final ByteBuffer ZERO_BYTES = ByteBuffer.allocate(0);
     private static final DataInfo END_OF_CONTENT = new ByteBufferDataInfo(ZERO_BYTES, true);
 
