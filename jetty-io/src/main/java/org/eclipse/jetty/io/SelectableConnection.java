@@ -14,12 +14,12 @@ public abstract class SelectableConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(SelectableConnection.class);
 
+    protected final Lock _lock=new ReentrantLock();
     protected final SelectableEndPoint _endp;
     private final long _createdTimeStamp;
-    private final Lock _lock=new ReentrantLock();
     private final Condition _readable=_lock.newCondition();
     private final Condition _writeable=_lock.newCondition();
-    private boolean _readBlocked;
+    private Thread _readBlocked;
     private boolean _writeBlocked;
 
     private final Runnable _reader=new Runnable()
@@ -83,7 +83,7 @@ public abstract class SelectableConnection implements Connection
         _lock.lock();
         try
         {
-            if (_readBlocked)
+            if (_readBlocked!=null)
                 _readable.signalAll();
             else 
                 return _reader;
@@ -118,9 +118,15 @@ public abstract class SelectableConnection implements Connection
         boolean readable=false;
         try
         {
-            if (_readBlocked)
+            if (_readBlocked!=null)
+            {
+                System.err.println("Already blocked by "+_readBlocked);
+                for (StackTraceElement e :_readBlocked.getStackTrace())
+                    System.err.println("    at "+e);
+                
                 throw new IllegalStateException();
-            _readBlocked=true;
+            }
+            _readBlocked=Thread.currentThread();
             _endp.setReadInterested(true);
             readable=_readable.await(getMaxIdleTime(),TimeUnit.SECONDS);
         }
@@ -132,7 +138,7 @@ public abstract class SelectableConnection implements Connection
         {
             if (!readable)
                 _endp.setReadInterested(false);
-            _readBlocked=false;
+            _readBlocked=null;
             _lock.unlock();
         }
         return readable;
@@ -214,7 +220,7 @@ public abstract class SelectableConnection implements Connection
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x rb=%s wb=%b", getClass().getSimpleName(), hashCode(),_readBlocked,_writeBlocked);
     }
 
     public void onInputShutdown() throws IOException

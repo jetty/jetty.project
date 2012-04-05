@@ -18,6 +18,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -40,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SslConnection extends SelectableConnection
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.nio.ssl");
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.nio.ssl");
 
     private static final ByteBuffer __ZERO_BUFFER=BufferUtil.allocate(0);
 
@@ -59,7 +61,6 @@ public class SslConnection extends SelectableConnection
     private boolean _handshook;
     private boolean _ishut;
     private boolean _oshut;
-    private final AtomicBoolean _progressed = new AtomicBoolean();
 
     /* ------------------------------------------------------------ */
     /* this is a half baked buffer pool
@@ -136,7 +137,9 @@ public class SslConnection extends SelectableConnection
     /* ------------------------------------------------------------ */
     private void allocateBuffers()
     {
-        synchronized (this)
+        // TODO remove this lock if always called with lock held?
+        _lock.lock();
+        try
         {
             if (_allocations++==0)
             {
@@ -152,12 +155,18 @@ public class SslConnection extends SelectableConnection
                 }
             }
         }
+        finally
+        {
+            _lock.unlock();
+        }
     }
 
     /* ------------------------------------------------------------ */
     private void releaseBuffers()
     {
-        synchronized (this)
+        // TODO remove this lock if always called with lock held?
+        _lock.lock();
+        try
         {
             if (--_allocations==0)
             {
@@ -177,6 +186,10 @@ public class SslConnection extends SelectableConnection
                     _buffers=null;
                 }
             }
+        }
+        finally
+        {
+            _lock.unlock();
         }
     }
     /* ------------------------------------------------------------ */
@@ -217,6 +230,9 @@ public class SslConnection extends SelectableConnection
     @Override
     public void doRead()
     {
+        LOG.debug("do   Read {}",_endp); 
+        
+        _lock.lock();
         try
         {        
             allocateBuffers();     
@@ -234,10 +250,26 @@ public class SslConnection extends SelectableConnection
                 
                 if (BufferUtil.hasContent(_inApp) && _appEndPoint.isReadInterested())
                 {
+                    _appEndPoint._readInterested=false;
                     progress=true;
                     Runnable task =_appConnection.onReadable();
+                    
                     if (task!=null)
-                        task.run();
+                    {
+                        // We have a task from the application connection.  We could
+                        // dispatch this to a thread, but we are likely just to return afterwards.
+                        // So we unlock (so another thread can call doRead if the app blocks) and 
+                        // call the app ourselves.
+                        try
+                        {
+                            _lock.unlock();
+                            task.run();
+                        }
+                        finally
+                        {
+                            _lock.lock();
+                        }
+                    }
                 }
             }
         }
@@ -250,6 +282,8 @@ public class SslConnection extends SelectableConnection
             releaseBuffers();
             _endp.setReadInterested(_appEndPoint.isReadInterested());
             _endp.setWriteInterested(BufferUtil.hasContent(_outNet));
+            LOG.debug("done Read {}",_endp); 
+            _lock.unlock();
         }
     }
     
@@ -257,6 +291,7 @@ public class SslConnection extends SelectableConnection
     @Override
     public void doWrite()
     {
+        _lock.lock();
         try
         {
             while (BufferUtil.hasContent(_outNet))
@@ -279,15 +314,19 @@ public class SslConnection extends SelectableConnection
         {
             if (BufferUtil.hasContent(_outNet))
                 _endp.setWriteInterested(true);
+            _lock.unlock();
         }
     }
 
     /* ------------------------------------------------------------ */
-    private synchronized boolean process(ByteBuffer appOut) throws IOException
+    private boolean process(ByteBuffer appOut) throws IOException
     {
         boolean some_progress=false;
+        _lock.lock();
         try
         {
+            allocateBuffers();
+            
             // If we have no data to flush, flush the empty buffer
             if (appOut==null)
                 appOut=__ZERO_BUFFER;
@@ -362,15 +401,21 @@ public class SslConnection extends SelectableConnection
                 some_progress|=progress;
             }
         }
+        catch(SSLException e)
+        {
+            LOG.warn(e.toString());
+            LOG.debug(e);
+            _endp.close();
+        }
         finally
         {
-            if (some_progress)
-                _progressed.set(true);
+            releaseBuffers();
+            _lock.unlock();
         }
         return some_progress;
     }
 
-    private synchronized boolean wrap(final ByteBuffer outApp) throws IOException
+    private boolean wrap(final ByteBuffer outApp) throws IOException
     {
         final SSLEngineResult result;
 
@@ -421,7 +466,7 @@ public class SslConnection extends SelectableConnection
         return result.bytesConsumed()>0 || result.bytesProduced()>0 || flushed>0;
     }
 
-    private synchronized boolean unwrap() throws IOException
+    private boolean unwrap() throws IOException
     {
         if (BufferUtil.isEmpty(_inNet))
             return false;
@@ -511,7 +556,7 @@ public class SslConnection extends SelectableConnection
     /* ------------------------------------------------------------ */
     public class AppEndPoint implements SelectableEndPoint
     {
-        boolean _readInterested=true;
+        boolean _readInterested;
         boolean _writeInterested;
         
         public SSLEngine getSslEngine()
@@ -527,11 +572,16 @@ public class SslConnection extends SelectableConnection
         @Override
         public void shutdownOutput() throws IOException
         {
-            synchronized (SslConnection.this)
+            _lock.lock();
+            try
             {
                 LOG.debug("{} ssl endp.oshut {}",_session,this);
                 _engine.closeOutbound();
                 _oshut=true;
+            }
+            finally
+            {
+                _lock.unlock();
             }
             flush();
         }
@@ -539,9 +589,14 @@ public class SslConnection extends SelectableConnection
         @Override
         public boolean isOutputShutdown()
         {
-            synchronized (SslConnection.this)
+            _lock.lock();
+            try
             {
                 return _oshut||!isOpen()||_engine.isOutboundDone();
+            }
+            finally
+            {
+                _lock.unlock();
             }
         }
 
@@ -556,11 +611,16 @@ public class SslConnection extends SelectableConnection
         @Override
         public boolean isInputShutdown()
         {
-            synchronized (SslConnection.this)
+            _lock.lock();
+            try
             {
                 return _endp.isInputShutdown() &&
                 !(_inApp!=null&&BufferUtil.hasContent(_inApp)) &&
                 !(_inNet!=null&&BufferUtil.hasContent(_inNet));
+            }
+            finally
+            {
+                _lock.unlock();
             }
         }
 
@@ -575,13 +635,18 @@ public class SslConnection extends SelectableConnection
         public int fill(ByteBuffer buffer) throws IOException
         {
             int size=buffer.remaining();
-            synchronized (this)
+            _lock.lock();
+            try
             {
                 if (!BufferUtil.hasContent(_inApp))
                     process(null);
 
                 if (BufferUtil.hasContent(_inApp))
                     BufferUtil.flipPutFlip(_inApp,buffer);
+            }
+            finally
+            {
+                _lock.unlock();
             }
             int filled=buffer.remaining()-size;
 
@@ -685,7 +750,7 @@ public class SslConnection extends SelectableConnection
         @Override
         public String toString()
         {
-            // Do NOT use synchronized (SslConnection.this)
+            // Do NOT use _lock.lock();try
             // because it's very easy to deadlock when debugging is enabled.
             // We do a best effort to print the right toString() and that's it.
             ByteBuffer inbound = _inNet;
@@ -694,7 +759,8 @@ public class SslConnection extends SelectableConnection
             int i = inbound == null? -1 : inbound.remaining();
             int o = outbound == null ? -1 : outbound.remaining();
             int u = unwrap == null ? -1 : unwrap.remaining();
-            return String.format("SSL %s i/o/u=%d/%d/%d ishut=%b oshut=%b {%s}",
+            return String.format("SSL %s %s i/o/u=%d/%d/%d ishut=%b oshut=%b {%s}",
+                    super.toString(),
                     _engine.getHandshakeStatus(),
                     i, o, u,
                     _ishut, _oshut,
@@ -704,7 +770,17 @@ public class SslConnection extends SelectableConnection
         @Override
         public void setWriteInterested(boolean interested)
         {
-            _writeInterested=interested;
+            _lock.lock();
+            try
+            {
+                _writeInterested=interested;
+                if (interested)
+                    _endp.setWriteInterested(true);
+            }
+            finally
+            {
+                _lock.unlock();
+            }
         }
 
         @Override
@@ -716,7 +792,17 @@ public class SslConnection extends SelectableConnection
         @Override
         public void setReadInterested(boolean interested)
         {
-            _readInterested=interested;
+            _lock.lock();
+            try
+            {
+                _readInterested=interested;
+                if (interested)
+                    _endp.setReadInterested(true);
+            }
+            finally
+            {
+                _lock.unlock();
+            }
         }
 
         @Override

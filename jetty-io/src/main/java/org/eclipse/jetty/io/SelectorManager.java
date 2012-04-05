@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
-    public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
+    public static final Logger LOG=Log.getLogger(SelectorManager.class);
 
     private static final int __MONITOR_PERIOD=Integer.getInteger("org.eclipse.jetty.io.nio.MONITOR_PERIOD",1000).intValue();
     private static final int __MAX_SELECTS=Integer.getInteger("org.eclipse.jetty.io.nio.MAX_SELECTS",100000).intValue();

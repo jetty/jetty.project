@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
  */
 public class SelectChannelEndPoint extends ChannelEndPoint implements SelectableEndPoint
 {
-    public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
+    public static final Logger LOG=Log.getLogger(SelectChannelEndPoint.class);
 
     private final Lock _lock = new ReentrantLock();
     private final SelectorManager.SelectSet _selectSet;

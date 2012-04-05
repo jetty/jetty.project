@@ -551,11 +551,16 @@ public abstract class HttpProcessor
                         throw new SocketTimeoutException(">"+getMaxIdleTime()+"ms");
                     try
                     {
+                        setReadInterested(true);
                         _inputQ.wait(timeout);
                     }
                     catch(InterruptedException e)
                     {
                         LOG.ignore(e);
+                    }
+                    finally
+                    {
+                        setReadInterested(false);
                     }
                     content=_inputQ.peekUnsafe();
                 }

@@ -19,6 +19,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -53,6 +54,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
 
         SelectableConnection delegate = super.newConnection(channel,connection.getAppEndPoint());
         connection.setAppConnection(delegate);
+        connection.getAppEndPoint().setReadInterested(endpoint.isReadInterested());
         return connection;
     }
 
@@ -64,17 +66,23 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     }
 
 
-    @Test
+    @Ignore
     @Override
     public void testShutdown() throws Exception
     {
         // SSL does not do half closes
     }
 
+    @Override
+    public void testBlockIn() throws Exception
+    {
+        super.testBlockIn();
+    }
+    
+    
     @Test
     public void testTcpClose() throws Exception
     {
-
         // This test replaces SSLSocket() with a very manual SSL client
         // so we can close TCP underneath SSL.
 
@@ -183,6 +191,7 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     }
 
     @Test
+    @Override
     public void testStress() throws Exception
     {
         super.testStress();

@@ -14,6 +14,7 @@ import java.io.PrintStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -71,8 +72,8 @@ public class SelectChannelEndPointTest
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
             SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,2000);
-            endp.setSelectableConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
             endp.setReadInterested(true);
+            endp.setSelectableConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
             _lastEndp=endp;
             return endp;
         }
@@ -141,15 +142,19 @@ public class SelectChannelEndPointTest
                     
                     // Try non blocking write
                     if (BufferUtil.hasContent(_out) && _endp.flush(_out)>0)
-                        
+                        progress=true;
+                    
                     // Try blocking write
-                    while (!_endp.isOutputShutdown() && BufferUtil.hasContent(_out))
+                    while (!_endp.isOutputShutdown() && BufferUtil.hasContent(_out) && blockWriteable())
                     {
-                        blockWriteable();
                         if (_endp.flush(_out)>0)
                             progress=true;
                     }
                 }
+            }
+            catch(ClosedChannelException e)
+            {
+                System.err.println(e);
             }
             catch(IOException e)
             {
@@ -317,7 +322,7 @@ public class SelectChannelEndPointTest
         OutputStream clientOutputStream = client.getOutputStream();
         InputStream clientInputStream = client.getInputStream();
 
-        int specifiedTimeout = 400;
+        int specifiedTimeout = SslConnection.LOG.isDebugEnabled()?2000:400;
         client.setSoTimeout(specifiedTimeout);
 
         // Write 8 and cause block waiting for 10
@@ -325,8 +330,9 @@ public class SelectChannelEndPointTest
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
 
+        _lastEndp.setMaxIdleTime(10*specifiedTimeout);
         Thread.sleep(2 * specifiedTimeout);
-
+        
         // No echo as blocking for 10
         long start=System.currentTimeMillis();
         try
