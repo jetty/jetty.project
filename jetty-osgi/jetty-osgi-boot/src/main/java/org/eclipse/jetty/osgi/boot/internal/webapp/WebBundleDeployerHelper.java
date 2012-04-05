@@ -229,6 +229,11 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 
         try
         {
+          
+            
+            //apply any META-INF/context.xml file that is found to configure the webapp first
+            applyMetaInfContextXml (contributor, context);
+            
             // make sure we provide access to all the jetty bundles by going
             // through this bundle.
             OSGiWebappClassLoader composite = createWebappClassLoader(contributor);
@@ -661,7 +666,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         }
         catch (FileNotFoundException e)
         {
-            e.printStackTrace();
+            __logger.warn(e);
         }
         return null;
     }
@@ -726,18 +731,15 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         }
         catch (SAXException e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            __logger.warn(e);
         }
         catch (IOException e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            __logger.warn(e);
         }
         catch (Throwable e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            __logger.warn(e);
         }
         finally
         {
@@ -802,21 +804,46 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         // know.
         OSGiWebappClassLoader webappClassLoader = new OSGiWebappClassLoader(_wrapper.getParentClassLoaderForWebapps(), new WebAppContext(), contributor,
                                                                             BUNDLE_CLASS_LOADER_HELPER);
-        /*
-         * DEBUG try { Class c =
-         * webappClassLoader.loadClass("org.glassfish.jsp.api.ResourceInjector"
-         * );
-         * System.err.println("LOADED org.glassfish.jsp.api.ResourceInjector from "
-         * +c.getClassLoader()); } catch (Exception e) {e.printStackTrace();}
-         * try { Class c =
-         * webappClassLoader.loadClass("org.apache.jasper.xmlparser.ParserUtils"
-         * );
-         * System.err.println("LOADED org.apache.jasper.xmlparser.ParserUtils from "
-         * +c.getClassLoader()); } catch (Exception e) {e.printStackTrace();}
-         */
         return webappClassLoader;
     }
 
+    
+    protected void applyMetaInfContextXml (Bundle bundle, ContextHandler contextHandler)
+    throws Exception
+    {
+        if (bundle == null)
+            return;
+        if (contextHandler == null)
+            return;
+
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        __logger.info("Context classloader = "+cl);
+        try
+        {
+            Thread.currentThread().setContextClassLoader(_wrapper.getParentClassLoaderForWebapps());
+
+            //find if there is a META-INF/context.xml file
+            URL contextXmlUrl = bundle.getEntry("/META-INF/jetty-webapp-context.xml");
+            if (contextXmlUrl == null)
+                return;
+
+            //Apply it just as the standard jetty ContextProvider would do
+            __logger.info("Applying "+contextXmlUrl+" to "+contextHandler);
+
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXmlUrl);
+            HashMap properties = new HashMap();
+            properties.put("Server", _wrapper.getServer());
+            xmlConfiguration.getProperties().putAll(properties);
+            xmlConfiguration.configure(contextHandler);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(cl);
+        }
+    }
+    
+    
+    
     /**
      * Set the property &quot;this.bundle.install&quot; to point to the location
      * of the bundle. Useful when <SystemProperty name="this.bundle.home"/> is
