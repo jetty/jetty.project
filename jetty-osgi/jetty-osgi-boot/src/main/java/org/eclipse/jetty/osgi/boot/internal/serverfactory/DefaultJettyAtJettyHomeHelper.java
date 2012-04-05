@@ -167,18 +167,21 @@ public class DefaultJettyAtJettyHomeHelper {
      */
     private static String getJettyConfigurationURLs(File jettyhome)
     {
-        String jettyetc = System.getProperty(SYS_PROP_JETTY_ETC_FILES,"etc/jetty.xml");
-        StringTokenizer tokenizer = new StringTokenizer(jettyetc,";,", false);
+        String jettyetc = System.getProperty(SYS_PROP_JETTY_ETC_FILES, "etc/jetty.xml");
+        StringTokenizer tokenizer = new StringTokenizer(jettyetc, ";,", false);
         StringBuilder res = new StringBuilder();
         while (tokenizer.hasMoreTokens())
         {
             String next = tokenizer.nextToken().trim();
             if (!next.startsWith("/") && next.indexOf(':') == -1)
             {
-                try {
+                try
+                {
                     next = new File(jettyhome, next).toURI().toURL().toString();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
+                }
+                catch (MalformedURLException e)
+                {
+                    LOG.warn(e);
                     continue;
                 }
             }
@@ -225,7 +228,7 @@ public class DefaultJettyAtJettyHomeHelper {
                 }
                 if (enUrls == null || !enUrls.hasMoreElements())
                 {
-                    System.err.println("Unable to locate a jetty configuration file for " + etcFile);
+                    LOG.warn("Unable to locate a jetty configuration file for " + etcFile);
                 }
                 if (enUrls != null)
                 {

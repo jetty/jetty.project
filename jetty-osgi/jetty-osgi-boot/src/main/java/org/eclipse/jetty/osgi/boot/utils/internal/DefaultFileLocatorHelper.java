@@ -69,7 +69,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         // grab the MANIFEST.MF's url
         // and then do what it takes.
         URL url = bundle.getEntry("/META-INF/MANIFEST.MF");
-        //System.err.println(url.toString() + " " + url.toURI() + " " + url.getProtocol());
+      
         if (url.getProtocol().equals("file"))
         {
             // some osgi frameworks do use the file protocole directly in some

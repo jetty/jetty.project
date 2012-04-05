@@ -167,8 +167,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
             catch (Throwable e)
             {
                 LOG.warn("Starting the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
-                return true;// maybe it did not work maybe it did. safer to
-                // track this bundle.
+                return true;// maybe it did not work maybe it did. safer to track this bundle.
             }
         }
         else if (dic.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH) != null)
@@ -189,8 +188,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
                 }
                 catch (Throwable e)
                 {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    LOG.warn(e);
                 }
             }
             return true;
@@ -221,10 +219,8 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
             }
             catch (Throwable e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                return true;// maybe it did not work maybe it did. safer to
-                // track this bundle.
+                LOG.warn(e);
+                return true;// maybe it did not work maybe it did. safer to track this bundle.
             }
         }
     }

@@ -24,6 +24,8 @@ import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHom
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.IManagedJettyServerRegistry;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
@@ -52,7 +54,8 @@ import org.osgi.framework.ServiceReference;
  */
 public class JettyContextHandlerServiceTracker implements ServiceListener
 {
-
+    private static Logger __logger = Log.getLogger(WebBundleDeployerHelper.class.getName());
+    
     /** New style: ability to manage multiple jetty instances */
     private final IManagedJettyServerRegistry _registry;
 
@@ -149,8 +152,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     }
                     catch (Exception e)
                     {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        __logger.warn(e);
                     }
                 }
             }
@@ -236,7 +238,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     }
                     catch (Throwable e)
                     {
-                        e.printStackTrace();
+                        __logger.warn(e);
                     }
                 }
                 else
@@ -270,8 +272,7 @@ public class JettyContextHandlerServiceTracker implements ServiceListener
                     }
                     catch (Throwable e)
                     {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        __logger.warn(e);
                     }
                 }
             }
