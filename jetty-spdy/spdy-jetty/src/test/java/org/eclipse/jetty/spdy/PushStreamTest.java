@@ -19,7 +19,8 @@ package org.eclipse.jetty.spdy;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -28,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
@@ -54,6 +56,7 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
+                stream.reply(new ReplyInfo(false));
                 stream.syn(new SynInfo(false));
                 return null;
             }
@@ -63,6 +66,7 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 pushStreamSynLatch.countDown();
+                stream.reply(new ReplyInfo(true));
                 return super.onSyn(stream,synInfo);
             }
         });
@@ -111,7 +115,7 @@ public class PushStreamTest extends AbstractTest
                             if (pushStreamDataReceived.getCount() == 2)
                             {
                                 Stream pushStream = stream.syn(new SynInfo(false)).get();
-                                streamExchanger.exchange(pushStream,100,TimeUnit.SECONDS);
+                                streamExchanger.exchange(pushStream,1,TimeUnit.SECONDS);
                             }
                         }
                         catch (InterruptedException | ExecutionException | TimeoutException | BrokenBarrierException e)
@@ -129,6 +133,7 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 pushStreamSynLatch.countDown();
+                stream.reply(new ReplyInfo(true));
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
@@ -148,7 +153,7 @@ public class PushStreamTest extends AbstractTest
             {
                 try
                 {
-                    replyBarrier.await(100,TimeUnit.SECONDS);
+                    replyBarrier.await(1,TimeUnit.SECONDS);
                 }
                 catch (InterruptedException | BrokenBarrierException | TimeoutException e)
                 {
@@ -156,13 +161,13 @@ public class PushStreamTest extends AbstractTest
                 }
                 super.onReply(stream,replyInfo);
             }
-            
+
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
                 try
                 {
-                    closeBarrier.await(100,TimeUnit.SECONDS);
+                    closeBarrier.await(1,TimeUnit.SECONDS);
                 }
                 catch (InterruptedException | BrokenBarrierException | TimeoutException e)
                 {
@@ -171,11 +176,13 @@ public class PushStreamTest extends AbstractTest
                 super.onData(stream,dataInfo);
             }
         }).get();
-        replyBarrier.await(100,TimeUnit.SECONDS);
-        stream.data(new StringDataInfo("data",false));
+
+        replyBarrier.await(1,TimeUnit.SECONDS);
+        stream.data(new StringDataInfo("client data",false));
         Stream pushStream = streamExchanger.exchange(null,1,TimeUnit.SECONDS);
         pushStream.data(new StringDataInfo("first push data frame",false));
-        while (pushStreamDataReceived.getCount() != 1)  //nasty, but less complex than using another cyclicBarrier for example
+        // nasty, but less complex than using another cyclicBarrier for example
+        while (pushStreamDataReceived.getCount() != 1)
             Thread.sleep(1);
         stream.data(new StringDataInfo("client close",true));
         closeBarrier.await(1,TimeUnit.SECONDS);
@@ -222,6 +229,98 @@ public class PushStreamTest extends AbstractTest
     }
 
     @Test
+    public void testSendBigDataOnPushStreamWhenAssociatedStreamIsClosed() throws Exception
+    {
+        final CountDownLatch streamClosedLatch = new CountDownLatch(1);
+        final CountDownLatch allDataReceived = new CountDownLatch(1);
+        final Exchanger<byte[]> exchanger = new Exchanger<>(); 
+        final int dataSizeInBytes = 1024 * 1000 * 1;
+        final byte[] transferBytes = createHugeByteArray(dataSizeInBytes);
+        
+        Session clientSession = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                try
+                {
+                    Stream pushStream = stream.syn(new SynInfo(false)).get();
+                    stream.reply(new ReplyInfo(true));
+                    // wait until stream is closed
+                    streamClosedLatch.await(1,TimeUnit.SECONDS);
+                    pushStream.data(new BytesDataInfo(transferBytes,false));
+                }
+                catch (InterruptedException | ExecutionException e)
+                {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        }),new SessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                return new StreamFrameListener.Adapter()
+                {
+                    byte[] receivedBytes = new byte[0];
+
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        receivedBytes = concat(receivedBytes,dataInfo.asBytes(true));
+//                        System.out.println(receivedBytes.length + " " + dataSizeInBytes); 
+                        if (receivedBytes.length == dataSizeInBytes)
+                        {
+                            allDataReceived.countDown();
+                            try
+                            {
+                                exchanger.exchange(receivedBytes,200,TimeUnit.SECONDS);
+                            }
+                            catch (InterruptedException | TimeoutException e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                        super.onData(stream,dataInfo);
+                    }
+                };
+            }
+        });
+
+        Stream stream = clientSession.syn(new SynInfo(true),new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onReply(Stream stream, ReplyInfo replyInfo)
+            {
+                streamClosedLatch.countDown();
+                super.onReply(stream,replyInfo);
+            }
+        }).get();
+
+        byte[] receivedBytes = exchanger.exchange(null,200,TimeUnit.SECONDS);
+        assertThat("received byte array is the same as transferred byte array",Arrays.equals(transferBytes,receivedBytes),is(true));
+        assertThat("onReply has been called to close the stream",streamClosedLatch.await(1,TimeUnit.SECONDS),is(true));
+        assertThat("stream is closed",stream.isClosed(),is(true));
+        assertThat("all data has been received",allDataReceived.await(20,TimeUnit.SECONDS),is(true));
+    }
+
+    private byte[] concat(byte[] first, byte[] second)
+    {
+        byte[] result = new byte[first.length + second.length];
+        System.arraycopy(first,0,result,0,first.length);
+        System.arraycopy(second,0,result,first.length,second.length);
+        return result;
+    }
+
+    private byte[] createHugeByteArray(int sizeInBytes)
+    {
+        byte[] bytes = new byte[sizeInBytes];
+        new Random().nextBytes(bytes);
+        return bytes;
+    }
+
+    @Test
     public void testOddEvenStreamIds() throws Exception
     {
         final CountDownLatch pushStreamIdIsEvenLatch = new CountDownLatch(3);
@@ -239,6 +338,7 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
+                stream.reply(new ReplyInfo(true));
                 assertStreamIdIsEven(stream);
                 pushStreamIdIsEvenLatch.countDown();
                 return super.onSyn(stream,synInfo);
