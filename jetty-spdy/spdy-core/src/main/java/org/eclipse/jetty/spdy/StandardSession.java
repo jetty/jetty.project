@@ -837,15 +837,21 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private void append(FrameBytes frameBytes)
     {
-        enqueue(frameBytes,false);
+        synchronized (queue)
+        {
+            int index = queue.size();
+            while (index > 0)
+            {
+                FrameBytes element = queue.get(index - 1);
+                if (element.compareTo(frameBytes) >= 0)
+                    break;
+                --index;
+            }
+            queue.add(index, frameBytes);
+        }
     }
 
     private void prepend(FrameBytes frameBytes)
-    {
-        enqueue(frameBytes,true);
-    }
-
-    private void enqueue(FrameBytes frameBytes, boolean prepend)
     {
         synchronized (queue)
         {
@@ -853,8 +859,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             while (index < queue.size())
             {
                 FrameBytes element = queue.get(index);
-                int comparison = element.compareTo(frameBytes);
-                if (comparison > 0 || prepend && comparison == 0)
+                if (element.compareTo(frameBytes) <= 0)
                     break;
                 ++index;
             }
@@ -871,7 +876,6 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             flushing = false;
         }
         frameBytes.complete();
-        flush();
     }
 
     @Override
@@ -891,37 +895,36 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
 
     private <C> void complete(final Handler<C> handler, final C context)
     {
-        if (handler != null)
+        // Applications may send and queue up a lot of frames and
+        // if we call Handler.completed() only synchronously we risk
+        // starvation (for the last frames sent) and stack overflow.
+        // Therefore every some invocation, we dispatch to a new thread
+        Integer invocations = handlerInvocations.get();
+        if (invocations >= 4)
         {
-            // Applications may send and queue up a lot of frames and
-            // if we call Handler.completed() only synchronously we risk
-            // starvation (for the last frames sent) and stack overflow.
-            // Therefore every some invocation, we dispatch to a new thread
-            Integer invocations = handlerInvocations.get();
-            if (invocations >= 4)
+            execute(new Runnable()
             {
-                execute(new Runnable()
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        notifyHandlerCompleted(handler,context);
-                        flush();
-                    }
-                });
-            }
-            else
-            {
-                handlerInvocations.set(invocations + 1);
-                try
-                {
-                    notifyHandlerCompleted(handler,context);
+                    if (handler != null)
+                        notifyHandlerCompleted(handler, context);
                     flush();
                 }
-                finally
-                {
-                    handlerInvocations.set(invocations);
-                }
+            });
+        }
+        else
+        {
+            handlerInvocations.set(invocations + 1);
+            try
+            {
+                if (handler != null)
+                    notifyHandlerCompleted(handler, context);
+                flush();
+            }
+            finally
+            {
+                handlerInvocations.set(invocations);
             }
         }
     }
@@ -985,7 +988,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         @Override
         public int compareTo(FrameBytes that)
         {
-            return getStream().getPriority() - that.getStream().getPriority();
+            // If this.stream.priority > that.stream.priority => -1 (this.stream has less priority than that.stream)
+            return that.getStream().getPriority() - getStream().getPriority();
         }
 
         @Override
