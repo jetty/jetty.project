@@ -39,12 +39,12 @@ import org.eclipse.jetty.spdy.frames.HeadersFrame;
 import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class StandardStream implements IStream
 {
-    private static final Logger logger = LoggerFactory.getLogger(Stream.class);
+    private static final Logger logger = Log.getLogger(Stream.class);
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     private final SynStreamFrame frame;
     private final ISession session;

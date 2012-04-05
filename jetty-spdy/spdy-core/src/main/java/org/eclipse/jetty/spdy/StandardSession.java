@@ -61,12 +61,12 @@ import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.frames.WindowUpdateFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.eclipse.jetty.spdy.parser.Parser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class StandardSession implements ISession, Parser.Listener, Handler<StandardSession.FrameBytes>
 {
-    private static final Logger logger = LoggerFactory.getLogger(Session.class);
+    private static final Logger logger = Log.getLogger(Session.class);
     private static final ThreadLocal<Integer> handlerInvocations = new ThreadLocal<Integer>()
     {
         @Override

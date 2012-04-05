@@ -27,12 +27,12 @@ import org.eclipse.jetty.spdy.StreamException;
 import org.eclipse.jetty.spdy.api.SessionStatus;
 import org.eclipse.jetty.spdy.frames.ControlFrame;
 import org.eclipse.jetty.spdy.frames.DataFrame;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class Parser
 {
-    private static final Logger logger = LoggerFactory.getLogger(Parser.class);
+    private static final Logger logger = Log.getLogger(Parser.class);
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ControlFrameParser controlFrameParser;
     private final DataFrameParser dataFrameParser;

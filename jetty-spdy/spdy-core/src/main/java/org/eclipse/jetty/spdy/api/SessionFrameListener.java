@@ -18,8 +18,8 @@ package org.eclipse.jetty.spdy.api;
 
 import java.util.EventListener;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>A {@link SessionFrameListener} is the passive counterpart of a {@link Session} and receives events happening
@@ -122,7 +122,7 @@ public interface SessionFrameListener extends EventListener
      */
     public static class Adapter implements SessionFrameListener
     {
-        private static final Logger logger = LoggerFactory.getLogger(Adapter.class);
+        private static final Logger logger = Log.getLogger(Adapter.class);
 
         @Override
         public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)

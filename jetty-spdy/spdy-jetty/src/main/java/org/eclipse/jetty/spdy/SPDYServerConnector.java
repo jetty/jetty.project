@@ -41,14 +41,14 @@ import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SPDYServerConnector extends SelectChannelConnector
 {
-    private static final Logger logger = LoggerFactory.getLogger(SPDYServerConnector.class);
+    private static final Logger logger = Log.getLogger(SPDYServerConnector.class);
 
     // Order is important on server side, so we use a LinkedHashMap
     private final Map<String, AsyncConnectionFactory> factories = new LinkedHashMap<>();
