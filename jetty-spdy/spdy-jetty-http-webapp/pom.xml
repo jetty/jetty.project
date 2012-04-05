@@ -42,7 +42,7 @@
                         -Dlog4j.configuration=file://${basedir}/src/main/resources/log4j.properties
                         -Xbootclasspath/p:${settings.localRepository}/org/mortbay/jetty/npn/npn-boot/${project.version}/npn-boot-${project.version}.jar
                     </jvmArgs>
-                    <jettyXml>${basedir}/src/main/config/jetty-spdy.xml</jettyXml>
+                    <jettyXml>${basedir}/src/main/config/etc/jetty-spdy.xml</jettyXml>
                     <contextPath>/</contextPath>
                 </configuration>
                 <dependencies>
