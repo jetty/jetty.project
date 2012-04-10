@@ -473,13 +473,20 @@ public class ProxyServlet implements Servlet
                     @Override
                     protected void onResponseHeader(Buffer name, Buffer value) throws IOException
                     {
-                        String s = name.toString().toLowerCase();
+                        String nameString = name.toString();
+                        String s = nameString.toLowerCase();
                         if (!_DontProxyHeaders.contains(s) || (HttpHeaders.CONNECTION_BUFFER.equals(name) && HttpHeaderValues.CLOSE_BUFFER.equals(value)))
                         {
                             if (debug != 0)
                                 _log.debug(debug + " " + name + ": " + value);
 
-                            response.addHeader(name.toString(),value.toString());
+                            String filteredHeaderValue = filterResponseHeaderValue(nameString,value.toString(),request);
+                            if (filteredHeaderValue != null && filteredHeaderValue.trim().length() > 0)
+                            {
+                                if (debug != 0)
+                                    _log.debug(debug + " " + name + ": (filtered): " + filteredHeaderValue);
+                                response.addHeader(nameString,filteredHeaderValue);
+                            }
                         }
                         else if (debug != 0)
                             _log.debug(debug + " " + name + "! " + value);
@@ -776,8 +783,22 @@ public class ProxyServlet implements Servlet
     }
 
     /**
+     * Extension point for remote server response header filtering. The default implementation returns the header value as is. If null is returned, this header
+     * won't be forwarded back to the client.
+     * 
+     * @param headerName
+     * @param headerValue
+     * @param request
+     * @return filteredHeaderValue
+     */
+    protected String filterResponseHeaderValue(String headerName, String headerValue, HttpServletRequest request)
+    {
+        return headerValue;
+    }
+
+    /**
      * Transparent Proxy.
-     *
+     * 
      * This convenience extension to ProxyServlet configures the servlet as a transparent proxy. The servlet is configured with init parameters:
      * <ul>
      * <li>ProxyTo - a URI like http://host:80/context to which the request is proxied.
@@ -785,7 +806,7 @@ public class ProxyServlet implements Servlet
      * </ul>
      * For example, if a request was received at /foo/bar and the ProxyTo was http://host:80/context and the Prefix was /foo, then the request would be proxied
      * to http://host:80/context/bar
-     *
+     * 
      */
     public static class Transparent extends ProxyServlet
     {
