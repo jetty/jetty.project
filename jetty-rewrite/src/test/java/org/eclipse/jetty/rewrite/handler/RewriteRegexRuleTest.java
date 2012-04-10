@@ -14,6 +14,10 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,20 +57,35 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
     {
         for (String[] test : _tests)
         {
+            reset();
+            _request.setRequestURI(null);
+            
             String t=test[0]+"?"+test[1]+">"+test[2]+"|"+test[3];
             _rule.setRegex(test[2]);
             _rule.setReplacement(test[3]);
 
-            _request.setRequestURI(test[0]);
-            _request.setQueryString(test[1]);
-            _request.getAttributes().clearAttributes();
+            _request.setUri(new HttpURI(test[0]+(test[1]==null?"":("?"+test[1]))));
+            _request.getRequestURI();
+
             
             String result = _rule.matchAndApply(test[0], _request, _response);
             assertEquals(t, test[4], result);
             _rule.applyURI(_request,test[0],result);
 
-            assertEquals(t,test[4], _request.getRequestURI());
-            assertEquals(t,test[5], _request.getQueryString());
+            if (result!=null)
+            {
+                assertEquals(t,test[4], _request.getRequestURI());
+                assertEquals(t,test[5], _request.getQueryString());
+            }
+            
+            if (test[5]!=null)
+            {
+                MultiMap<String> params=new MultiMap<String>();
+                UrlEncoded.decodeTo(test[5],params,StringUtil.__UTF8);
+                               
+                for (String n:params.keySet())
+                    assertEquals(params.getString(n),_request.getParameter(n));
+            }
         }
     }
     
