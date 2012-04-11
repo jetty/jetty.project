@@ -50,7 +50,7 @@ public class StandardStream implements IStream
     private final ISession session;
     private final AtomicInteger windowSize;
     private volatile StreamFrameListener listener;
-    private volatile boolean opened;
+    private volatile OpenState openState = OpenState.SYN_SENT;
     private volatile boolean halfClosed;
     private volatile boolean closed;
 
@@ -141,12 +141,12 @@ public class StandardStream implements IStream
         {
             case SYN_STREAM:
             {
-                opened = true;
+                openState = OpenState.SYN_RECV;
                 break;
             }
             case SYN_REPLY:
             {
-                opened = true;
+                openState = OpenState.REPLY_RECV;
                 SynReplyFrame synReply = (SynReplyFrame)frame;
                 updateCloseState(synReply.isClose());
                 ReplyInfo replyInfo = new ReplyInfo(synReply.getHeaders(), synReply.isClose());
@@ -183,7 +183,7 @@ public class StandardStream implements IStream
     @Override
     public void process(DataFrame frame, ByteBuffer data)
     {
-        if (!opened)
+        if (!canReceive())
         {
             session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
             return;
@@ -286,6 +286,7 @@ public class StandardStream implements IStream
     @Override
     public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
+        openState = OpenState.REPLY_SENT;
         updateCloseState(replyInfo.isClose());
         SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
         session.control(this, frame, timeout, unit, handler, null);
@@ -302,6 +303,12 @@ public class StandardStream implements IStream
     @Override
     public void data(DataInfo dataInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
+        if (!canSend())
+        {
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            throw new IllegalStateException("Cannot send DATA frames before a SYN_REPLY frame");
+        }
+
         // Cannot update the close state here, because the data that we send may
         // be flow controlled, so we need the stream to update the window size.
         session.data(this, dataInfo, timeout, unit, handler, null);
@@ -318,6 +325,12 @@ public class StandardStream implements IStream
     @Override
     public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
+        if (!canSend())
+        {
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            throw new IllegalStateException("Cannot send a HEADERS frame before a SYN_REPLY frame");
+        }
+
         updateCloseState(headersInfo.isClose());
         HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
         session.control(this, frame, timeout, unit, handler, null);
@@ -333,5 +346,22 @@ public class StandardStream implements IStream
     public String toString()
     {
         return String.format("stream=%d v%d closed=%s", getId(), session.getVersion(), isClosed() ? "true" : isHalfClosed() ? "half" : "false");
+    }
+
+    private boolean canSend()
+    {
+        OpenState openState = this.openState;
+        return openState == OpenState.SYN_SENT || openState == OpenState.REPLY_RECV || openState == OpenState.REPLY_SENT;
+    }
+
+    private boolean canReceive()
+    {
+        OpenState openState = this.openState;
+        return openState == OpenState.SYN_RECV || openState == OpenState.REPLY_RECV || openState == OpenState.REPLY_SENT;
+    }
+
+    private enum OpenState
+    {
+        SYN_SENT, SYN_RECV, REPLY_SENT, REPLY_RECV
     }
 }
