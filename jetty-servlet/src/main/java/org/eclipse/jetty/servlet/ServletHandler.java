@@ -1233,7 +1233,7 @@ public class ServletHandler extends ScopedHandler
     {
         if(LOG.isDebugEnabled())
             LOG.debug("Not Found "+request.getRequestURI());
-        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        //Override to send an error back, eg with: response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
     
     /* ------------------------------------------------------------ */
