@@ -303,7 +303,7 @@ public class GzipFilter extends UserAgentFilter
     }
     
     /**
-     * Checks to see if the UserAgent is excluded
+     * Checks to see if the userAgent is excluded
      * 
      * @param ua
      *            the user agent
@@ -336,9 +336,9 @@ public class GzipFilter extends UserAgentFilter
     }
 
     /**
-     * Checks to see if the Path is excluded
+     * Checks to see if the path is excluded
      * 
-     * @param ua
+     * @param requestURI
      *            the request uri
      * @return boolean true if excluded
      */
