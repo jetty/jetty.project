@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
@@ -233,10 +234,10 @@ public class PushStreamTest extends AbstractTest
     {
         final CountDownLatch streamClosedLatch = new CountDownLatch(1);
         final CountDownLatch allDataReceived = new CountDownLatch(1);
-        final Exchanger<byte[]> exchanger = new Exchanger<>(); 
-        final int dataSizeInBytes = 1024 * 1000 * 1;
+        final Exchanger<ByteBuffer> exchanger = new Exchanger<>();
+        final int dataSizeInBytes = 1024 * 1024 * 1;
         final byte[] transferBytes = createHugeByteArray(dataSizeInBytes);
-        
+
         Session clientSession = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
             @Override
@@ -248,7 +249,7 @@ public class PushStreamTest extends AbstractTest
                     stream.reply(new ReplyInfo(true));
                     // wait until stream is closed
                     streamClosedLatch.await(1,TimeUnit.SECONDS);
-                    pushStream.data(new BytesDataInfo(transferBytes,false));
+                    pushStream.data(new BytesDataInfo(transferBytes,true));
                 }
                 catch (InterruptedException | ExecutionException e)
                 {
@@ -263,19 +264,20 @@ public class PushStreamTest extends AbstractTest
             {
                 return new StreamFrameListener.Adapter()
                 {
-                    byte[] receivedBytes = new byte[0];
+                    ByteBuffer receivedBytes = ByteBuffer.allocate(dataSizeInBytes);
 
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        receivedBytes = concat(receivedBytes,dataInfo.asBytes(true));
-//                        System.out.println(receivedBytes.length + " " + dataSizeInBytes); 
-                        if (receivedBytes.length == dataSizeInBytes)
+                        dataInfo.consumeInto(receivedBytes);
+                        // System.out.println(receivedBytes.length + " " + dataSizeInBytes);
+                        if (dataInfo.isClose())
                         {
                             allDataReceived.countDown();
                             try
                             {
-                                exchanger.exchange(receivedBytes,200,TimeUnit.SECONDS);
+                                receivedBytes.flip();
+                                exchanger.exchange(receivedBytes.slice(),2,TimeUnit.SECONDS);
                             }
                             catch (InterruptedException | TimeoutException e)
                             {
@@ -298,19 +300,12 @@ public class PushStreamTest extends AbstractTest
             }
         }).get();
 
-        byte[] receivedBytes = exchanger.exchange(null,200,TimeUnit.SECONDS);
-        assertThat("received byte array is the same as transferred byte array",Arrays.equals(transferBytes,receivedBytes),is(true));
+        ByteBuffer receivedBytes = exchanger.exchange(null,200,TimeUnit.SECONDS);
+
+        assertThat("received byte array is the same as transferred byte array",Arrays.equals(transferBytes,receivedBytes.array()),is(true));
         assertThat("onReply has been called to close the stream",streamClosedLatch.await(1,TimeUnit.SECONDS),is(true));
         assertThat("stream is closed",stream.isClosed(),is(true));
         assertThat("all data has been received",allDataReceived.await(20,TimeUnit.SECONDS),is(true));
-    }
-
-    private byte[] concat(byte[] first, byte[] second)
-    {
-        byte[] result = new byte[first.length + second.length];
-        System.arraycopy(first,0,result,0,first.length);
-        System.arraycopy(second,0,result,first.length,second.length);
-        return result;
     }
 
     private byte[] createHugeByteArray(int sizeInBytes)

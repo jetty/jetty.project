@@ -93,6 +93,12 @@ public class StandardStream implements IStream
     }
     
     @Override
+    public void removeAssociation(IStream stream)
+    {
+        associatedStreams.remove(stream);
+    }
+    
+    @Override
     public byte getPriority()
     {
         return frame.getPriority();
@@ -155,8 +161,7 @@ public class StandardStream implements IStream
             if (isHalfClosed())
             {
                 if(associatedStream!=null){
-                    //TODO: consider making this a method in IStream
-                    associatedStream.getAssociatedStreams().remove(this);
+                    associatedStream.removeAssociation(this);
                 }
                 isClosed = true;
             }

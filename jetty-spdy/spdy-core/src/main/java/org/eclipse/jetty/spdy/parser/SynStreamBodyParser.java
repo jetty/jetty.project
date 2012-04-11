@@ -131,7 +131,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                     if (headersBlockParser.parse(streamId, version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
-                        // TODO: can it be both FIN and UNIDIRECTIONAL ?
+                        // TODO: can it be both FIN and UNIDIRECTIONAL ? TB: doesn't make sense to send a synInfo with FLAG_UNIDIRECTIONAL AND FLAG_CLOSE at the same time. What do we open a pushstream for if we don't want to send any data?
                         if (flags != 0 && flags != SynInfo.FLAG_CLOSE && flags != PushSynInfo.FLAG_UNIDIRECTIONAL)
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.SYN_STREAM);
 

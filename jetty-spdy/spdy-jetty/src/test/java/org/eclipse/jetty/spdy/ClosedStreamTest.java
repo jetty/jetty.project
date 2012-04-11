@@ -18,7 +18,6 @@ package org.eclipse.jetty.spdy;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,17 +25,18 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Session;
-import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class ClosedStreamTest extends AbstractTest
 {
     @Test
+    @Ignore("half closed handling not yet iplemented")
     public void testSendDataOnHalfClosedStream() throws Exception
     {
         final CountDownLatch replyReceivedLatch = new CountDownLatch(1);
@@ -59,21 +59,13 @@ public class ClosedStreamTest extends AbstractTest
                 stream.data(new StringDataInfo("data send after half closed",false));
                 return null;
             }
-        }),new SessionFrameListener.Adapter()
-        {
-            @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
-            {
-                replyReceivedLatch.countDown();
-                stream.reply(new ReplyInfo(true));
-                return super.onSyn(stream,synInfo);
-            }
-        });
+        }),null);
 
         Stream stream = clientSession.syn(new SynInfo(false),new StreamFrameListener.Adapter(){
             @Override
             public void onReply(Stream stream, ReplyInfo replyInfo)
             {
+                System.out.println("onReply");
                 replyReceivedLatch.countDown();
                 super.onReply(stream,replyInfo);
             }
@@ -81,6 +73,7 @@ public class ClosedStreamTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
+                System.out.println("onData");
                 clientReceivedDataLatch.countDown();
                 super.onData(stream,dataInfo);
             }
@@ -89,4 +82,8 @@ public class ClosedStreamTest extends AbstractTest
         assertThat("stream is half closed from server", stream.isHalfClosed(),is(true));
         assertThat("client has not received any data sent after stream was half closed by server",clientReceivedDataLatch.await(150,TimeUnit.MILLISECONDS),is(false));
     }
+    
+    //TODO: write independent tests for the following cases once half closed handling is implemented:
+    // - s: syn(true), s: send data, s: should not send data, c: should not receive data --> testSendDataOnHalfClosedStream() is pretty much what we need here, but if the client ignores the data, we've to find another way to test that the server doesn't send data
+    // - c: create half closed connection from server, c: somehow send data on this connection, c: client should ignore --> no real server in use, maybe mock things. Could be better placed in StandardSessionTest as unit test
 }

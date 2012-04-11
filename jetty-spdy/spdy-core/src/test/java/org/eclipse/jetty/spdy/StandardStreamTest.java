@@ -19,10 +19,12 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -31,9 +33,9 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -44,26 +46,49 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class StandardStreamTest
 {
-
     @Mock private ISession session;
     @Mock private SynStreamFrame synStreamFrame;
     
-    
-    //TODO: refactor to not need PushSynInfo.equal()
     /**
      * Test method for {@link org.eclipse.jetty.spdy.StandardStream#syn(org.eclipse.jetty.spdy.api.SynInfo)}.
      */
     @SuppressWarnings("unchecked")
     @Test
-    @Ignore
     public void testSyn()
     {
         Stream stream = new StandardStream(synStreamFrame,session,0,null);
+        Map<Integer,Stream> streams = new HashMap<>();
+        streams.put(stream.getId(),stream);
         when(synStreamFrame.isClose()).thenReturn(false);
         SynInfo synInfo = new SynInfo(false);
+        when(session.getStreams()).thenReturn(streams);
         stream.syn(synInfo);
-        PushSynInfo expectedPushSynInfo = new PushSynInfo(stream.getId(),synInfo);
-        verify(session).syn(eq(expectedPushSynInfo),any(StreamFrameListener.class),anyLong(),any(TimeUnit.class),any(Handler.class));
+        verify(session).syn(argThat(new PushSynInfoMatcher(stream.getId(),synInfo)),any(StreamFrameListener.class),anyLong(),any(TimeUnit.class),any(Handler.class));
+    }
+    
+    private class PushSynInfoMatcher extends ArgumentMatcher<PushSynInfo>{
+        int associatedStreamId;
+        SynInfo synInfo;
+        
+        public PushSynInfoMatcher(int associatedStreamId, SynInfo synInfo)
+        {
+            this.associatedStreamId = associatedStreamId;
+            this.synInfo = synInfo;
+        }
+        @Override
+        public boolean matches(Object argument)
+        {
+            PushSynInfo pushSynInfo = (PushSynInfo)argument;
+            if(pushSynInfo.getAssociatedStreamId() != associatedStreamId){
+                System.out.println("streamIds do not match!");
+                return false;
+            }
+            if(pushSynInfo.isClose() != synInfo.isClose()){
+                System.out.println("isClose doesn't match");
+                return false;
+            }
+            return true;
+        }
     }
 
     @Test

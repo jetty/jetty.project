@@ -88,9 +88,27 @@ public interface Stream
      */
     public Session getSession();
 
-    //TODO: javadoc
+    /**
+     * <p>Initiate a unidirectional spdy pushstream associated to this stream asynchronously<p>
+     * <p>Callers may use the returned future to get the pushstream once it got created</p>
+     * 
+     * @param synInfo the metadata to send on stream creation
+     * @return a future containing the stream once it got established
+     * @see #syn(SynInfo, long, TimeUnit, Handler)
+     */
     public Future<Stream> syn(SynInfo synInfo);
     
+    /**
+     * <p>Initiate a unidirectional spdy pushstream associated to this stream asynchronously<p>
+     * <p>Callers may pass a non-null completion handler to be notified of when the
+     * pushstream has been established.</p>
+     * 
+     * @param synInfo the metadata to send on stream creation
+     * @param timeout  the operation's timeout
+     * @param unit     the timeout's unit
+     * @param handler   the completion handler that gets notified once the pushstream is established
+     * @see #syn(SynInfo)
+     */
     public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler);
     
     /**
@@ -179,7 +197,6 @@ public interface Stream
      * @return whether this stream has been closed by one party only
      * @see #isClosed()     * @param timeout     the timeout for the stream creation
      * @param unit        the timeout's unit
-
      */
     public boolean isHalfClosed();
 
