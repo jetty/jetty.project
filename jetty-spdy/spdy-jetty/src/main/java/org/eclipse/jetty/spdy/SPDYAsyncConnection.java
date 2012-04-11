@@ -30,12 +30,12 @@ import org.eclipse.jetty.io.nio.NIOBuffer;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.parser.Parser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SPDYAsyncConnection extends AbstractConnection implements AsyncConnection, Controller<StandardSession.FrameBytes>, IdleListener
 {
-    private static final Logger logger = LoggerFactory.getLogger(SPDYAsyncConnection.class);
+    private static final Logger logger = Log.getLogger(SPDYAsyncConnection.class);
     private final ByteBufferPool bufferPool;
     private final Parser parser;
     private volatile Session session;
@@ -181,7 +181,7 @@ public class SPDYAsyncConnection extends AbstractConnection implements AsyncConn
         }
         catch (IOException x)
         {
-            logger.trace("", x);
+            logger.ignore(x);
         }
     }
 

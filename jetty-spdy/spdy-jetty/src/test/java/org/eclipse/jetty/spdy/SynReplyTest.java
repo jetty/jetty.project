@@ -30,12 +30,10 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -322,39 +320,6 @@ public class SynReplyTest extends AbstractTest
         Assert.assertTrue(replyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void testSynDataRst() throws Exception
-    {
-        final AtomicReference<RstInfo> ref = new AtomicReference<>();
-        final CountDownLatch latch = new CountDownLatch(1);
-        ServerSessionFrameListener serverSessionFrameListener = new ServerSessionFrameListener.Adapter()
-        {
-            @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
-            {
-                // Do not send the reply, we expect a RST_STREAM
-                stream.data(new StringDataInfo("foo", true));
-                return null;
-            }
-
-            @Override
-            public void onRst(Session session, RstInfo rstInfo)
-            {
-                ref.set(rstInfo);
-                latch.countDown();
-            }
-        };
-        Session session = startClient(startServer(serverSessionFrameListener), null);
-
-        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
-
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        RstInfo rstInfo = ref.get();
-        Assert.assertNotNull(rstInfo);
-        Assert.assertEquals(stream.getId(), rstInfo.getStreamId());
-        Assert.assertSame(StreamStatus.PROTOCOL_ERROR, rstInfo.getStreamStatus());
     }
 
     @Test

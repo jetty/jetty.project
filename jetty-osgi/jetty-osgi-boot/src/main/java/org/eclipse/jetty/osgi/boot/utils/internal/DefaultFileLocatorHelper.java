@@ -25,6 +25,7 @@ import java.util.zip.ZipFile;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.FileResource;
 import org.osgi.framework.Bundle;
 
@@ -43,11 +44,13 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
     // The url nuxeo and felix return is created directly from the File so it
     // should work.
     private static Field BUNDLE_ENTRY_FIELD = null;
+
     private static Field FILE_FIELD = null;
 
     private static Field BUNDLE_FILE_FIELD_FOR_DIR_ZIP_BUNDLE_ENTRY = null;// ZipBundleFile
-                                                                           // inside
-                                                                           // DirZipBundleEntry
+
+    // inside
+    // DirZipBundleEntry
 
     private static Field ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = null;// ZipFile
 
@@ -56,8 +59,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * spirit of OSGi but quite necessary to support self-contained webapps and
      * other situations.
      * 
-     * @param bundle
-     *            The bundle
+     * @param bundle The bundle
      * @return Its installation location as a file.
      * @throws Exception
      */
@@ -67,19 +69,23 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         // grab the MANIFEST.MF's url
         // and then do what it takes.
         URL url = bundle.getEntry("/META-INF/MANIFEST.MF");
-//        System.err.println(url.toString() + " " + url.toURI() + " " + url.getProtocol());
+      
         if (url.getProtocol().equals("file"))
         {
             // some osgi frameworks do use the file protocole directly in some
-            // situations. Do use the FileResource to transform the URL into a File: URL#toURI is broken
-        	return new FileResource(url).getFile().getParentFile().getParentFile();
+            // situations. Do use the FileResource to transform the URL into a
+            // File: URL#toURI is broken
+            return new FileResource(url).getFile().getParentFile().getParentFile();
         }
         else if (url.getProtocol().equals("bundleentry"))
         {
             // say hello to equinox who has its own protocol.
             // we use introspection like there is no tomorrow to get access to
             // the File
+
             URLConnection con = url.openConnection();
+            con.setUseCaches(Resource.getDefaultUseCaches()); //work around problems where url connections cache references to jars
+
             if (BUNDLE_ENTRY_FIELD == null)
             {
                 BUNDLE_ENTRY_FIELD = con.getClass().getDeclaredField("bundleEntry");
@@ -93,13 +99,16 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                     FILE_FIELD = bundleEntry.getClass().getDeclaredField("file");
                     FILE_FIELD.setAccessible(true);
                 }
-                File f = (File)FILE_FIELD.get(bundleEntry);
+                File f = (File) FILE_FIELD.get(bundleEntry);
                 return f.getParentFile().getParentFile();
             }
             else if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.ZipBundleEntry"))
             {
                 url = bundle.getEntry("/");
+               
                 con = url.openConnection();
+                con.setDefaultUseCaches(Resource.getDefaultUseCaches());
+               
                 if (BUNDLE_ENTRY_FIELD == null)
                 {// this one will be a DirZipBundleEntry
                     BUNDLE_ENTRY_FIELD = con.getClass().getDeclaredField("bundleEntry");
@@ -117,7 +126,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
                     ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE = zipBundleFile.getClass().getDeclaredField("zipFile");
                     ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.setAccessible(true);
                 }
-                ZipFile zipFile = (ZipFile)ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.get(zipBundleFile);
+                ZipFile zipFile = (ZipFile) ZIP_FILE_FILED_FOR_ZIP_BUNDLE_FILE.get(zipBundleFile);
                 return new File(zipFile.getName());
             }
             else if (bundleEntry.getClass().getName().equals("org.eclipse.osgi.baseadaptor.bundlefile.DirZipBundleEntry"))
@@ -130,7 +139,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
         {
             // observed this on felix-2.0.0
             String location = bundle.getLocation();
-//            System.err.println("location  " + location);
+            // System.err.println("location  " + location);
             if (location.startsWith("file:/"))
             {
                 URI uri = new URI(URIUtil.encodePath(location));
@@ -138,27 +147,32 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             }
             else if (location.startsWith("file:"))
             {
-            	//location defined in the BundleArchive m_bundleArchive
-            	//it is relative to relative to the  BundleArchive's m_archiveRootDir
-            	File res = new File(location.substring("file:".length()));
-            	if (!res.exists())
-            	{
-            		return null;
-//                	Object bundleArchive = getFelixBundleArchive(bundle);
-//                	File archiveRoot = getFelixBundleArchiveRootDir(bundleArchive);
-//                	String currentLocation = getFelixBundleArchiveCurrentLocation(bundleArchive);
-//                	System.err.println("Got the archive root " + archiveRoot.getAbsolutePath()
-//                	+ " current location " + currentLocation + " is directory ?");
-//                	res = new File(archiveRoot, currentLocation != null
-//                			? currentLocation : location.substring("file:".length()));
-            	}
-            	return res;
+                // location defined in the BundleArchive m_bundleArchive
+                // it is relative to relative to the BundleArchive's
+                // m_archiveRootDir
+                File res = new File(location.substring("file:".length()));
+                if (!res.exists()) 
+                { 
+                    return null;
+                    // Object bundleArchive = getFelixBundleArchive(bundle);
+                    // File archiveRoot =
+                    // getFelixBundleArchiveRootDir(bundleArchive);
+                    // String currentLocation =
+                    // getFelixBundleArchiveCurrentLocation(bundleArchive);
+                    // System.err.println("Got the archive root " +
+                    // archiveRoot.getAbsolutePath()
+                    // + " current location " + currentLocation +
+                    // " is directory ?");
+                    // res = new File(archiveRoot, currentLocation != null
+                    // ? currentLocation : location.substring("file:".length()));
+                }
+                return res;
             }
             else if (location.startsWith("reference:file:"))
             {
-            	location = URLDecoder.decode(location.substring("reference:".length()), "UTF-8");
-            	File file = new File(location.substring("file:".length()));
-            	return file;
+                location = URLDecoder.decode(location.substring("reference:".length()), "UTF-8");
+                File file = new File(location.substring("file:".length()));
+                return file;
             }
         }
         return null;
@@ -179,37 +193,40 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             path = path.substring(1);
         }
         File bundleInstall = getBundleInstallLocation(bundle);
-        File webapp = path != null && path.length() != 0?new File(bundleInstall,path):bundleInstall;
-        if (!webapp.exists())
-        {
-            throw new IllegalArgumentException("Unable to locate " + path + " inside " + bundle.getSymbolicName() + " ("
-                    + (bundleInstall != null?bundleInstall.getAbsolutePath():" no_bundle_location ") + ")");
+        File webapp = path != null && path.length() != 0 ? new File(bundleInstall, path) : bundleInstall;
+        if (!webapp.exists()) 
+        { 
+            throw new IllegalArgumentException("Unable to locate " + path
+                                               + " inside "
+                                               + bundle.getSymbolicName()
+                                               + " ("
+                                               + (bundleInstall != null ? bundleInstall.getAbsolutePath() : " no_bundle_location ")
+                                               + ")"); 
         }
         return webapp;
     }
-    
+
     /**
-	 * Helper method equivalent to Bundle#getEntry(String entryPath) except that
-	 * it searches for entries in the fragments by using the Bundle#findEntries method.
-	 * 
-	 * @param bundle
-	 * @param entryPath
-	 * @return null or all the entries found for that path.
-	 */
-	public Enumeration<URL> findEntries(Bundle bundle, String entryPath)
-	{
-    	int last = entryPath.lastIndexOf('/');
-    	String path = last != -1 && last < entryPath.length() -2
-    		? entryPath.substring(0, last) : "/";
-    	if (!path.startsWith("/"))
-    	{
-    		path = "/" + path;
-    	}
-    	String pattern = last != -1 && last < entryPath.length() -2
-			? entryPath.substring(last+1) : entryPath;
-		Enumeration<URL> enUrls = bundle.findEntries(path, pattern, false);
-		return enUrls;
-	}
+     * Helper method equivalent to Bundle#getEntry(String entryPath) except that
+     * it searches for entries in the fragments by using the Bundle#findEntries
+     * method.
+     * 
+     * @param bundle
+     * @param entryPath
+     * @return null or all the entries found for that path.
+     */
+    public Enumeration<URL> findEntries(Bundle bundle, String entryPath)
+    {
+        int last = entryPath.lastIndexOf('/');
+        String path = last != -1 && last < entryPath.length() - 2 ? entryPath.substring(0, last) : "/";
+        if (!path.startsWith("/"))
+        {
+            path = "/" + path;
+        }
+        String pattern = last != -1 && last < entryPath.length() - 2 ? entryPath.substring(last + 1) : entryPath;
+        Enumeration<URL> enUrls = bundle.findEntries(path, pattern, false);
+        return enUrls;
+    }
 
     /**
      * If the bundle is a jar, returns the jar. If the bundle is a folder, look
@@ -256,76 +273,84 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
             return new File[] { jasperLocation };
         }
     }
-    
 
-	//introspection on equinox to invoke the getLocalURL method on BundleURLConnection
-    //equivalent to using the FileLocator without depending on an equinox class.
-	private static Method BUNDLE_URL_CONNECTION_getLocalURL = null;
-	private static Method BUNDLE_URL_CONNECTION_getFileURL = null;
-	/**
-	 * Only useful for equinox: on felix we get the file:// or jar:// url already.
-	 * Other OSGi implementations have not been tested
-	 * <p>
-	 * Get a URL to the bundle entry that uses a common protocol (i.e. file:
-	 * jar: or http: etc.).  
-	 * </p>
-	 * @return a URL to the bundle entry that uses a common protocol
-	 */
-	public static URL getLocalURL(URL url) {
-		if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol())) {
-			try {
-				URLConnection conn = url.openConnection();
-				if (BUNDLE_URL_CONNECTION_getLocalURL == null && 
-						conn.getClass().getName().equals(
-								"org.eclipse.osgi.framework.internal.core.BundleURLConnection")) {
-					BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
-					BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
-				}
-				if (BUNDLE_URL_CONNECTION_getLocalURL != null) {
-					return (URL)BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn, null);
-				}
-			} catch (Throwable t) {
-				System.err.println("Unable to locate the OSGi url: '" + url + "'.");
-				t.printStackTrace();
-			}
-		}
-		return url;
-	}
-	/**
-	 * Only useful for equinox: on felix we get the file:// url already.
-	 * Other OSGi implementations have not been tested
-	 * <p>
-	 * Get a URL to the content of the bundle entry that uses the file: protocol.
-	 * The content of the bundle entry may be downloaded or extracted to the local
-	 * file system in order to create a file: URL.
-	 * @return a URL to the content of the bundle entry that uses the file: protocol
-	 * </p>
-	 */
-	public static URL getFileURL(URL url)
-	{
-		if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
-		{
-			try
-			{
-				URLConnection conn = url.openConnection();
-				if (BUNDLE_URL_CONNECTION_getFileURL == null && 
-						conn.getClass().getName().equals(
-								"org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
-				{
-					BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
-					BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);
-				}
-				if (BUNDLE_URL_CONNECTION_getFileURL != null)
-				{
-					return (URL)BUNDLE_URL_CONNECTION_getFileURL.invoke(conn, null);
-				}
-			}
-			catch (Throwable t)
-			{
-				t.printStackTrace();
-			}
-		}
-		return url;
-	}
+    // introspection on equinox to invoke the getLocalURL method on
+    // BundleURLConnection
+    // equivalent to using the FileLocator without depending on an equinox
+    // class.
+    private static Method BUNDLE_URL_CONNECTION_getLocalURL = null;
+
+    private static Method BUNDLE_URL_CONNECTION_getFileURL = null;
+
+    /**
+     * Only useful for equinox: on felix we get the file:// or jar:// url
+     * already. Other OSGi implementations have not been tested
+     * <p>
+     * Get a URL to the bundle entry that uses a common protocol (i.e. file:
+     * jar: or http: etc.).
+     * </p>
+     * 
+     * @return a URL to the bundle entry that uses a common protocol
+     */
+    public static URL getLocalURL(URL url)
+    {
+        if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
+        {
+            try
+            {
+                URLConnection conn = url.openConnection();
+                conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
+                if (BUNDLE_URL_CONNECTION_getLocalURL == null && conn.getClass().getName()
+                                                                     .equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+                {
+                    BUNDLE_URL_CONNECTION_getLocalURL = conn.getClass().getMethod("getLocalURL", null);
+                    BUNDLE_URL_CONNECTION_getLocalURL.setAccessible(true);
+                }
+                if (BUNDLE_URL_CONNECTION_getLocalURL != null) { return (URL) BUNDLE_URL_CONNECTION_getLocalURL.invoke(conn, null); }
+            }
+            catch (Throwable t)
+            {
+                System.err.println("Unable to locate the OSGi url: '" + url + "'.");
+                t.printStackTrace();
+            }
+        }
+        return url;
+    }
+
+    /**
+     * Only useful for equinox: on felix we get the file:// url already. Other
+     * OSGi implementations have not been tested
+     * <p>
+     * Get a URL to the content of the bundle entry that uses the file:
+     * protocol. The content of the bundle entry may be downloaded or extracted
+     * to the local file system in order to create a file: URL.
+     * 
+     * @return a URL to the content of the bundle entry that uses the file:
+     *         protocol
+     *         </p>
+     */
+    public static URL getFileURL(URL url)
+    {
+        if ("bundleresource".equals(url.getProtocol()) || "bundleentry".equals(url.getProtocol()))
+        {
+            try
+            {
+                URLConnection conn = url.openConnection();
+                conn.setDefaultUseCaches(Resource.getDefaultUseCaches());
+                if (BUNDLE_URL_CONNECTION_getFileURL == null && conn.getClass().getName()
+                                                                    .equals("org.eclipse.osgi.framework.internal.core.BundleURLConnection"))
+                {
+                    BUNDLE_URL_CONNECTION_getFileURL = conn.getClass().getMethod("getFileURL", null);
+                    BUNDLE_URL_CONNECTION_getFileURL.setAccessible(true);
+                }
+                if (BUNDLE_URL_CONNECTION_getFileURL != null) { return (URL) BUNDLE_URL_CONNECTION_getFileURL.invoke(conn, null); }
+            }
+            catch (Throwable t)
+            {
+                t.printStackTrace();
+            }
+        }
+        return url;
+    }
 
 }
