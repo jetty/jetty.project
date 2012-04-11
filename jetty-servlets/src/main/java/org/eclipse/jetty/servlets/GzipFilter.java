@@ -238,7 +238,7 @@ public class GzipFilter extends UserAgentFilter
                 return true;
             }
         }
-        else if (_excludedAgentPatterns != null)
+        if (_excludedAgentPatterns != null)
         {
             for (Pattern pattern : _excludedAgentPatterns)
             {
@@ -263,6 +263,16 @@ public class GzipFilter extends UserAgentFilter
     {
         if (requestURI == null)
             return false;
+        if (_excludedPaths != null)
+        {
+            for (String excludedPath : _excludedPaths)
+            {
+                if (requestURI.contains(excludedPath))
+                {
+                    return true;
+                }
+            }
+        }
         if (_excludedPathPatterns != null)
         {
             for (Pattern pattern : _excludedPathPatterns)

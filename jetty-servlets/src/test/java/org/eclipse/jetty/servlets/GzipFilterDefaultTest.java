@@ -25,6 +25,8 @@ public class GzipFilterDefaultTest
     
     public static class HttpStatusServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
+        
         private int _status = 204;
         
         public HttpStatusServlet()
@@ -145,6 +147,74 @@ public class GzipFilterDefaultTest
         FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
         holder.setInitParameter("excludedAgents", "foo");
         tester.setUserAgent("foo");
+        
+        int filesize = GzipResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        try
+        {
+            tester.start();
+            tester.assertIsResponseNotGzipCompressed("file.txt", filesize, HttpStatus.OK_200);
+        } 
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
+    public void testUserAgentExclusionByExcludedAgentPatterns() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir);
+        
+        FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
+        holder.setInitParameter("excludedAgents", "bar");
+        holder.setInitParameter("excludeAgentPatterns", "fo.*");
+        tester.setUserAgent("foo");
+        
+        int filesize = GzipResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        try
+        {
+            tester.start();
+            tester.assertIsResponseNotGzipCompressed("file.txt", filesize, HttpStatus.OK_200);
+        } 
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
+    public void testExcludePaths() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir);
+        
+        FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
+        holder.setInitParameter("excludePaths", "/context/");
+        
+        int filesize = GzipResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
+        tester.prepareServerFile("file.txt",filesize);
+        
+        try
+        {
+            tester.start();
+            tester.assertIsResponseNotGzipCompressed("file.txt", filesize, HttpStatus.OK_200);
+        } 
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
+    public void testExcludePathPatterns() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir);
+        
+        FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
+        holder.setInitParameter("excludePathPatterns", "/cont.*");
         
         int filesize = GzipResponseWrapper.DEFAULT_BUFFER_SIZE * 4;
         tester.prepareServerFile("file.txt",filesize);
