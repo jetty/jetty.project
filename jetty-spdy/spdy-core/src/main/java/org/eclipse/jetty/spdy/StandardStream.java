@@ -51,15 +51,13 @@ public class StandardStream implements IStream
     private final AtomicInteger windowSize;
     private volatile StreamFrameListener listener;
     private volatile OpenState openState = OpenState.SYN_SENT;
-    private volatile boolean halfClosed;
-    private volatile boolean closed;
+    private volatile CloseState closeState = CloseState.OPENED;
 
     public StandardStream(SynStreamFrame frame, ISession session, int windowSize)
     {
         this.frame = frame;
         this.session = session;
         this.windowSize = new AtomicInteger(windowSize);
-        this.halfClosed = frame.isClose();
     }
 
     @Override
@@ -95,7 +93,8 @@ public class StandardStream implements IStream
 
     public boolean isHalfClosed()
     {
-        return halfClosed;
+        CloseState closeState = this.closeState;
+        return closeState == CloseState.LOCALLY_CLOSED || closeState == CloseState.REMOTELY_CLOSED;
     }
 
     @Override
@@ -123,14 +122,38 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public void updateCloseState(boolean close)
+    public void updateCloseState(boolean close, boolean local)
     {
         if (close)
         {
-            if (isHalfClosed())
-                closed = true;
-            else
-                halfClosed = true;
+            switch (closeState)
+            {
+                case OPENED:
+                {
+                    closeState = local ? CloseState.LOCALLY_CLOSED : CloseState.REMOTELY_CLOSED;
+                    break;
+                }
+                case LOCALLY_CLOSED:
+                {
+                    if (local)
+                        throw new IllegalStateException();
+                    else
+                        closeState = CloseState.CLOSED;
+                    break;
+                }
+                case REMOTELY_CLOSED:
+                {
+                    if (local)
+                        closeState = CloseState.CLOSED;
+                    else
+                        throw new IllegalStateException();
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
         }
     }
 
@@ -148,7 +171,7 @@ public class StandardStream implements IStream
             {
                 openState = OpenState.REPLY_RECV;
                 SynReplyFrame synReply = (SynReplyFrame)frame;
-                updateCloseState(synReply.isClose());
+                updateCloseState(synReply.isClose(), false);
                 ReplyInfo replyInfo = new ReplyInfo(synReply.getHeaders(), synReply.isClose());
                 notifyOnReply(replyInfo);
                 break;
@@ -156,7 +179,7 @@ public class StandardStream implements IStream
             case HEADERS:
             {
                 HeadersFrame headers = (HeadersFrame)frame;
-                updateCloseState(headers.isClose());
+                updateCloseState(headers.isClose(), false);
                 HeadersInfo headersInfo = new HeadersInfo(headers.getHeaders(), headers.isClose(), headers.isResetCompression());
                 notifyOnHeaders(headersInfo);
                 break;
@@ -189,7 +212,7 @@ public class StandardStream implements IStream
             return;
         }
 
-        updateCloseState(frame.isClose());
+        updateCloseState(frame.isClose(), false);
 
         ByteBufferDataInfo dataInfo = new ByteBufferDataInfo(data, frame.isClose(), frame.isCompress())
         {
@@ -287,7 +310,7 @@ public class StandardStream implements IStream
     public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
         openState = OpenState.REPLY_SENT;
-        updateCloseState(replyInfo.isClose());
+        updateCloseState(replyInfo.isClose(), true);
         SynReplyFrame frame = new SynReplyFrame(session.getVersion(), replyInfo.getFlags(), getId(), replyInfo.getHeaders());
         session.control(this, frame, timeout, unit, handler, null);
     }
@@ -306,7 +329,12 @@ public class StandardStream implements IStream
         if (!canSend())
         {
             session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
-            throw new IllegalStateException("Cannot send DATA frames before a SYN_REPLY frame");
+            throw new IllegalStateException("Protocol violation: cannot send a DATA frame before a SYN_REPLY frame");
+        }
+        if (isLocallyClosed())
+        {
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            throw new IllegalStateException("Protocol violation: cannot send a DATA frame on a closed stream");
         }
 
         // Cannot update the close state here, because the data that we send may
@@ -328,10 +356,15 @@ public class StandardStream implements IStream
         if (!canSend())
         {
             session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
-            throw new IllegalStateException("Cannot send a HEADERS frame before a SYN_REPLY frame");
+            throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame before a SYN_REPLY frame");
+        }
+        if (isLocallyClosed())
+        {
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR));
+            throw new IllegalStateException("Protocol violation: cannot send a HEADERS frame on a closed stream");
         }
 
-        updateCloseState(headersInfo.isClose());
+        updateCloseState(headersInfo.isClose(), true);
         HeadersFrame frame = new HeadersFrame(session.getVersion(), headersInfo.getFlags(), getId(), headersInfo.getHeaders());
         session.control(this, frame, timeout, unit, handler, null);
     }
@@ -339,13 +372,19 @@ public class StandardStream implements IStream
     @Override
     public boolean isClosed()
     {
-        return closed;
+        return closeState == CloseState.CLOSED;
+    }
+
+    private boolean isLocallyClosed()
+    {
+        CloseState closeState = this.closeState;
+        return closeState == CloseState.LOCALLY_CLOSED || closeState == CloseState.CLOSED;
     }
 
     @Override
     public String toString()
     {
-        return String.format("stream=%d v%d closed=%s", getId(), session.getVersion(), isClosed() ? "true" : isHalfClosed() ? "half" : "false");
+        return String.format("stream=%d v%d %s", getId(), session.getVersion(), closeState);
     }
 
     private boolean canSend()
@@ -363,5 +402,10 @@ public class StandardStream implements IStream
     private enum OpenState
     {
         SYN_SENT, SYN_RECV, REPLY_SENT, REPLY_RECV
+    }
+
+    private enum CloseState
+    {
+        OPENED, LOCALLY_CLOSED, REMOTELY_CLOSED, CLOSED
     }
 }

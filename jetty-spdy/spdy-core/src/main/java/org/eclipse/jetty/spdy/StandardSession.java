@@ -398,6 +398,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void onSyn(SynStreamFrame frame)
     {
         IStream stream = newStream(frame);
+        stream.updateCloseState(frame.isClose(), false);
         logger.debug("Opening {}", stream);
         int streamId = frame.getStreamId();
         IStream existing = streams.putIfAbsent(streamId, stream);
@@ -429,6 +430,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private IStream createStream(SynStreamFrame synStream, StreamFrameListener listener)
     {
         IStream stream = newStream(synStream);
+        stream.updateCloseState(synStream.isClose(), true);
         stream.setStreamFrameListener(listener);
         if (streams.putIfAbsent(synStream.getStreamId(), stream) != null)
         {
@@ -734,7 +736,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream, handler, context, frame, buffer);
                 if (timeout > 0)
                     frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
-                append(frameBytes);
+
+                // Special handling for PING frames, they must be sent as soon as possible
+                if (ControlFrameType.PING == frame.getType())
+                    prepend(frameBytes);
+                else
+                    append(frameBytes);
             }
 
             flush();
@@ -1089,7 +1096,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             else
             {
                 super.complete();
-                stream.updateCloseState(dataInfo.isClose());
+                stream.updateCloseState(dataInfo.isClose(), true);
                 if (stream.isClosed())
                     removeStream(stream);
             }

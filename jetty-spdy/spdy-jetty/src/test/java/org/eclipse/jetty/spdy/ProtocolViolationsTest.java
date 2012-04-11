@@ -8,6 +8,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
+import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Session;
@@ -21,11 +24,12 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.frames.ControlFrameType;
 import org.eclipse.jetty.spdy.frames.GoAwayFrame;
+import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class APIUsageTest extends AbstractTest
+public class ProtocolViolationsTest extends AbstractTest
 {
     @Test
     public void testSendDataBeforeReplyIsIllegal() throws Exception
@@ -87,6 +91,68 @@ public class APIUsageTest extends AbstractTest
         readBuffer.flip();
         Assert.assertEquals(ControlFrameType.RST_STREAM.getCode(), readBuffer.getShort(2));
         Assert.assertEquals(streamId, readBuffer.getInt(8));
+
+        writeBuffer = generator.control(new GoAwayFrame(SPDY.V2, 0, SessionStatus.OK.getCode()));
+        channel.write(writeBuffer);
+        channel.shutdownOutput();
+        channel.close();
+
+        server.close();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testSendDataAfterCloseIsIllegal() throws Exception
+    {
+        Session session = startClient(startServer(null), null);
+        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        stream.data(new StringDataInfo("test", true));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testSendHeadersAfterCloseIsIllegal() throws Exception
+    {
+        Session session = startClient(startServer(null), null);
+        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        stream.headers(new HeadersInfo(new Headers(), true));
+    }
+
+    @Test
+    public void testDataSentAfterCloseIsDiscardedByRecipient() throws Exception
+    {
+        ServerSocketChannel server = ServerSocketChannel.open();
+        server.bind(new InetSocketAddress("localhost", 0));
+
+        Session session = startClient(new InetSocketAddress("localhost", server.socket().getLocalPort()), null);
+        final CountDownLatch dataLatch = new CountDownLatch(2);
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                dataLatch.countDown();
+            }
+        });
+
+        SocketChannel channel = server.accept();
+        ByteBuffer readBuffer = ByteBuffer.allocate(1024);
+        channel.read(readBuffer);
+        readBuffer.flip();
+        int streamId = readBuffer.getInt(8);
+
+        Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
+
+        ByteBuffer writeBuffer = generator.control(new SynReplyFrame(SPDY.V2, (byte)0, streamId, new Headers()));
+        channel.write(writeBuffer);
+
+        byte[] bytes = new byte[1];
+        writeBuffer = generator.data(streamId, bytes.length, new BytesDataInfo(bytes, true));
+        channel.write(writeBuffer);
+
+        // Write again to simulate the faulty condition
+        writeBuffer.flip();
+        channel.write(writeBuffer);
+
+        Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
         writeBuffer = generator.control(new GoAwayFrame(SPDY.V2, 0, SessionStatus.OK.getCode()));
         channel.write(writeBuffer);
