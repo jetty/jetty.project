@@ -27,21 +27,21 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
 {
     private String[][] _tests=
     {
-            {"/foo/bar",null,".*","/replace","/replace",null},
-            {"/foo/bar","n=v",".*","/replace","/replace","n=v"},
-            {"/foo/bar",null,"/xxx.*","/replace",null,null},
-            {"/foo/bar",null,"/(.*)/(.*)","/$2/$1/xxx","/bar/foo/xxx",null},
-            {"/foo/bar",null,"/(.*)/(.*)","/test?p2=$2&p1=$1","/test","p2=bar&p1=foo"},
-            {"/foo/bar","n=v","/(.*)/(.*)","/test?p2=$2&p1=$1","/test","n=v&p2=bar&p1=foo"},
-            {"/foo/bar",null,"/(.*)/(.*)","/foo/bar?p2=$2&p1=$1","/foo/bar","p2=bar&p1=foo"},
-            {"/foo/bar","n=v","/(.*)/(.*)","/foo/bar?p2=$2&p1=$1","/foo/bar","n=v&p2=bar&p1=foo"},
-            {"/foo/bar",null,"/(foo)/(.*)(bar)","/$3/$1/xxx$2","/bar/foo/xxx",null},
-            {"/foo/$bar",null,".*","/$replace","/$replace",null},
-            {"/foo/$bar",null,"/foo/(.*)","/$1/replace","/$bar/replace",null},
-            {"/foo/bar/info",null,"/foo/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2","/info/other","p1=bar"},
-            {"/foo/bar/info",null,"/foo/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2&$Q","/info/other","p1=bar&"},
-            {"/foo/bar/info","n=v","/foo/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2&$Q","/info/other","p1=bar&n=v"},
-            {"/foo/bar/info","n=v","/foo/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2","/info/other","n=v&p1=bar"},
+            {"/foo0/bar",null,".*","/replace","/replace",null},
+            {"/foo1/bar","n=v",".*","/replace","/replace","n=v"},
+            {"/foo2/bar",null,"/xxx.*","/replace",null,null},
+            {"/foo3/bar",null,"/(.*)/(.*)","/$2/$1/xxx","/bar/foo3/xxx",null},
+            {"/foo4/bar",null,"/(.*)/(.*)","/test?p2=$2&p1=$1","/test","p2=bar&p1=foo4"},
+            {"/foo5/bar","n=v","/(.*)/(.*)","/test?p2=$2&p1=$1","/test","n=v&p2=bar&p1=foo5"},
+            {"/foo6/bar",null,"/(.*)/(.*)","/foo6/bar?p2=$2&p1=$1","/foo6/bar","p2=bar&p1=foo6"},
+            {"/foo7/bar","n=v","/(.*)/(.*)","/foo7/bar?p2=$2&p1=$1","/foo7/bar","n=v&p2=bar&p1=foo7"},
+            {"/foo8/bar",null,"/(foo8)/(.*)(bar)","/$3/$1/xxx$2","/bar/foo8/xxx",null},
+            {"/foo9/$bar",null,".*","/$replace","/$replace",null},
+            {"/fooA/$bar",null,"/fooA/(.*)","/$1/replace","/$bar/replace",null},
+            {"/fooB/bar/info",null,"/fooB/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2","/info/other","p1=bar"},
+            {"/fooC/bar/info",null,"/fooC/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2&$Q","/info/other","p1=bar&"},
+            {"/fooD/bar/info","n=v","/fooD/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2&$Q","/info/other","p1=bar&n=v"},
+            {"/fooE/bar/info","n=v","/fooE/(NotHere)?([^/]*)/(.*)","/$3/other?p1=$2","/info/other","n=v&p1=bar"},
     };
     private RewriteRegexRule _rule;
 
@@ -97,6 +97,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         container.addRule(_rule);
         for (String[] test : _tests)
         {
+            reset();
             String t=test[0]+"?"+test[1]+">"+test[2]+"|"+test[3];
             _rule.setRegex(test[2]);
             _rule.setReplacement(test[3]);
