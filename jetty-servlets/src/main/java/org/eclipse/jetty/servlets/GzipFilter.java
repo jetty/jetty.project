@@ -350,7 +350,7 @@ public class GzipFilter extends UserAgentFilter
         {
             for (String excludedPath : _excludedPaths)
             {
-                if (requestURI.contains(excludedPath))
+                if (requestURI.startsWith(excludedPath))
                 {
                     return true;
                 }
