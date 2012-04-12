@@ -1,4 +1,45 @@
-jetty-8.1.3-SNAPSHOT
+jetty-8.1.3.v20120412 - 12 April 2012
+ + 349110 MultiPartFilter records the content-type in request params
+ + 367172 Remove detection for slf4j NOPLogger
+ + 372678 Embedded Examples need updates for new LoginService requirement
+ + 373269 Make ServletHandler.notFound() method impl do nothing - override to
+   send back 404.
+ + 373421 address potential race condition related to the nonce queue removing
+   the same nonce twice
+ + 373952 bind called too frequently on refresh
+ + 374018 correctly handle requestperminuted underflow
+ + 374152 jetty-all-server MANIFEST contains wrong import:
+   javax.servlet.annotation;version="[2.6,3)"
+ + 374252 SslConnection.onClose() does not forward to nested connection.
+ + 374258 SPDY leaks SSLEngines. Made the test more reliable.
+ + 374367 NPE in QueuedThreadPool.dump() with early java6 jvms
+ + 374475 Response.sendRedirect does not encode UTF-8 characters properly
+ + 374881 Ensure setCopyWebInf(true) only copies WEB-INF if
+   !setCopyWebDir(true)
+ + 374891 enhancement to how ProxyServlet determines the proxy target
+ + 375009 Filter initialization error will throw MultiException
+ + 375083 Flow control should take in account window size changes from
+   concurrent SETTINGS
+ + 375096 If starting a server instance fails in osgi it is cleaned up.
+ + 375490 NPE with --help on command line
+ + 375509 Stalled stream stalls other streams or session control frames. Now
+   using a "death pill" instead of a boolean in order to avoid race conditions
+   where DataInfos were read from the queue (but the boolean not updated yet),
+   and viceversa.
+ + 375594 fixed SSL tests so they are not order dependent
+ + 375709 Ensure resolveTempDirectory failure does not deadlock; improve error
+   message
+ + 375906 Part.getHeader method not case insensitive
+ + 375970 HttpServletRequest.getRemoteAddr() returns null when HTTP is over
+   SPDY.
+ + 376201 HalfClosed state not handled properly. Addendum to restore previous
+   behavior, where a closed stream was also half closed.
+ + 376324 <max-file-size> is not respected in <multipart-config>
+ + JETTY-1495 Ensure dynamic servlet addition does not cause servlets to be
+   inited.
+ + JETTY-1500 form parameters from multipart request not available via
+   request.getParameter
+ + JETTY-1504 HttpServletResponseWrapper ignored when using asyncContext?
 
 jetty-8.1.2.v20120308 - 08 March 2012
  + 370387 SafariWebsocketDraft0Test failure during build.
