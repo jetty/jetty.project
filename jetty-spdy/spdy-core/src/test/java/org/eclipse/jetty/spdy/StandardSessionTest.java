@@ -38,7 +38,6 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
-import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -49,7 +48,6 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -99,21 +97,20 @@ public class StandardSessionTest
     @Test
     public void testPushStreamIsNotClosedWhenAssociatedStreamIsClosed() throws InterruptedException, ExecutionException, TimeoutException
     {
-        Stream stream = createStream();
+        IStream stream = (IStream)createStream();
         Stream pushStream = createPushStream(stream,true).get(1,TimeUnit.SECONDS);
         assertThat("stream should not be halfClosed",stream.isHalfClosed(),is(false));
         assertThat("stream should not be closed",stream.isClosed(),is(false));
         assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
         assertThat("pushStream expected to not be closed",pushStream.isClosed(),is(false));
 
-        ReplyInfo replyInfo = new ReplyInfo(true);
-        stream.reply(replyInfo).get(1,TimeUnit.SECONDS);
+        stream.updateCloseState(true,true);
         assertThat("stream should be halfClosed",stream.isHalfClosed(),is(true));
         assertThat("stream should not be closed",stream.isClosed(),is(false));
         assertThat("pushStream should be halfClosed",pushStream.isHalfClosed(),is(true));
         assertThat("pushStream should not be closed",pushStream.isClosed(),is(false));
 
-        stream.reply(replyInfo).get(1,TimeUnit.SECONDS);
+        stream.updateCloseState(true,false);
         assertThat("stream should be closed",stream.isClosed(),is(true));
         assertThat("pushStream should be closed",pushStream.isClosed(),is(false));
     }
@@ -122,9 +119,9 @@ public class StandardSessionTest
     public void testCreatePushStreamOnClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = (IStream)createStream();
-        stream.updateCloseState(true);
+        stream.updateCloseState(true,true);
         assertThat("stream should be halfClosed",stream.isHalfClosed(),is(true));
-        stream.updateCloseState(true);
+        stream.updateCloseState(true,false);
         assertThat("stream should be closed",stream.isClosed(),is(true));
         createPushStreamAndMakeSureItFails(stream);
     }
@@ -161,31 +158,27 @@ public class StandardSessionTest
     public void testPushStreamIsRemovedFromParentWhenClosed() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = (IStream)createStream();
-        Stream pushStream = createPushStream(stream,true).get(1,TimeUnit.SECONDS);
+        IStream pushStream = (IStream)createPushStream(stream,true).get(1,TimeUnit.SECONDS);
         assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
         assertThat("PushStream has not been added to parent",stream.getAssociatedStreams().contains(pushStream),is(true));
-        ReplyInfo replyInfo = new ReplyInfo(true);
-        pushStream.reply(replyInfo);
         assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
-        pushStream.reply(replyInfo);
+        pushStream.updateCloseState(true,true);
         assertThat("pushStream expected to be closed",pushStream.isClosed(),is(true));
         assertThat("PushStream expected to be removed from parent",stream.getAssociatedStreams().contains(pushStream),is(false));
     }
 
-    //TODO: Does it make any sense to open a pushstream with synInfo close=true?
     @Test
     public void testPushStreamWithSynInfoClosedTrue() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = (IStream)createStream();
         SynInfo synInfo = new SynInfo(headers,true,stream.getPriority());
         Stream pushStream = stream.syn(synInfo).get(1,TimeUnit.SECONDS);
-        assertThat("pushStream expected to be half closed",pushStream.isHalfClosed(),is(true));
-        assertThat("pushStream expected to be not closed",pushStream.isClosed(),is(true));
+        assertThat("pushStream is half closed ",pushStream.isHalfClosed(),is(true));
+        assertThat("pushStream is closed",pushStream.isClosed(),is(true));
     }
 
     @SuppressWarnings("unchecked")
     @Test
-    @Ignore("need to implement better handling of half closed connections: 376201")
     public void testSendDataOnHalfClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,(byte)1,1,0 ,(byte)0,null);

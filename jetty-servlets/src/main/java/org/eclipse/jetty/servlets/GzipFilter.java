@@ -303,7 +303,7 @@ public class GzipFilter extends UserAgentFilter
     }
     
     /**
-     * Checks to see if the UserAgent is excluded
+     * Checks to see if the userAgent is excluded
      * 
      * @param ua
      *            the user agent
@@ -321,7 +321,7 @@ public class GzipFilter extends UserAgentFilter
                 return true;
             }
         }
-        else if (_excludedAgentPatterns != null)
+        if (_excludedAgentPatterns != null)
         {
             for (Pattern pattern : _excludedAgentPatterns)
             {
@@ -336,9 +336,9 @@ public class GzipFilter extends UserAgentFilter
     }
 
     /**
-     * Checks to see if the Path is excluded
+     * Checks to see if the path is excluded
      * 
-     * @param ua
+     * @param requestURI
      *            the request uri
      * @return boolean true if excluded
      */
@@ -346,6 +346,16 @@ public class GzipFilter extends UserAgentFilter
     {
         if (requestURI == null)
             return false;
+        if (_excludedPaths != null)
+        {
+            for (String excludedPath : _excludedPaths)
+            {
+                if (requestURI.startsWith(excludedPath))
+                {
+                    return true;
+                }
+            }
+        }
         if (_excludedPathPatterns != null)
         {
             for (Pattern pattern : _excludedPathPatterns)

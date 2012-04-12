@@ -260,7 +260,6 @@ public class HttpParser implements Parser
             {
                 _state=STATE_END;
                 _handler.messageComplete(_contentPosition);
-                returnBuffers();
                 return 1;
             }
 
@@ -326,7 +325,6 @@ public class HttpParser implements Parser
                     if (!isComplete() && !isIdle())
                         throw new EofException();
 
-                    returnBuffers();
                     return -1;
                 }
                 length=_buffer.length();
@@ -440,7 +438,6 @@ public class HttpParser implements Parser
                             _state=STATE_SEEKING_EOF;
                             _handler.headerComplete();
                             _handler.messageComplete(_contentPosition);
-                            returnBuffers();
                             return 1;
                         }
                         break;
@@ -470,7 +467,6 @@ public class HttpParser implements Parser
                                 _state=STATE_SEEKING_EOF;
                                 _handler.headerComplete();
                                 _handler.messageComplete(_contentPosition);
-                                returnBuffers();
                                 return 1;
                             }
                         }
@@ -634,7 +630,6 @@ public class HttpParser implements Parser
                                             _handler.headerComplete();
                                             _state=_persistent||(_responseStatus>=100&&_responseStatus<200)?STATE_END:STATE_SEEKING_EOF;
                                             _handler.messageComplete(_contentPosition);
-                                            returnBuffers();
                                             return 1;
 
                                         default:
@@ -840,7 +835,6 @@ public class HttpParser implements Parser
                         {
                             _state=_persistent?STATE_END:STATE_SEEKING_EOF;
                             _handler.messageComplete(_contentPosition);
-                            returnBuffers();
                             return 1;
                         }
 
@@ -860,7 +854,6 @@ public class HttpParser implements Parser
                         {
                             _state=_persistent?STATE_END:STATE_SEEKING_EOF;
                             _handler.messageComplete(_contentPosition);
-                            returnBuffers();
                         }
                         // TODO adjust the _buffer to keep unconsumed content
                         return 1;
@@ -895,7 +888,6 @@ public class HttpParser implements Parser
                                     _eol=_buffer.get();
                                 _state=_persistent?STATE_END:STATE_SEEKING_EOF;
                                 _handler.messageComplete(_contentPosition);
-                                returnBuffers();
                                 return 1;
                             }
                             else
@@ -926,7 +918,6 @@ public class HttpParser implements Parser
                                     _eol=_buffer.get();
                                 _state=_persistent?STATE_END:STATE_SEEKING_EOF;
                                 _handler.messageComplete(_contentPosition);
-                                returnBuffers();
                                 return 1;
                             }
                             else

@@ -403,7 +403,8 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private void onSyn(SynStreamFrame frame)
     {
         IStream stream = newStream(frame,null);
-        logger.debug("Opening {}",stream);
+        stream.updateCloseState(frame.isClose(), false);
+        logger.debug("Opening {}", stream);
         int streamId = frame.getStreamId();
         IStream existing = streams.putIfAbsent(streamId,stream);
         if (existing != null)
@@ -433,8 +434,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     private IStream createStream(SynStreamFrame synStream, StreamFrameListener listener)
     {
         IStream parentStream = streams.get(synStream.getAssociatedStreamId());
-
+        
         IStream stream = newStream(synStream,parentStream);
+        stream.updateCloseState(synStream.isClose(), true);
         stream.setStreamFrameListener(listener);
         if (streams.putIfAbsent(synStream.getStreamId(),stream) != null)
         {
@@ -446,7 +448,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         if (synStream.isUnidirectional())
         {
             // unidirectional streams are implicitly half closed for the client
-            stream.updateCloseState(true);
+            stream.updateCloseState(true,false);
             parentStream.associate(stream);
         }
 
@@ -744,8 +746,13 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 logger.debug("Queuing {} on {}",frame,stream);
                 ControlFrameBytes<C> frameBytes = new ControlFrameBytes<>(stream,handler,context,frame,buffer);
                 if (timeout > 0)
-                    frameBytes.task = scheduler.schedule(frameBytes,timeout,unit);
-                append(frameBytes);
+                    frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
+
+                // Special handling for PING frames, they must be sent as soon as possible
+                if (ControlFrameType.PING == frame.getType())
+                    prepend(frameBytes);
+                else
+                    append(frameBytes);
             }
 
             flush();
@@ -1114,7 +1121,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             else
             {
                 super.complete();
-                stream.updateCloseState(dataInfo.isClose());
+                stream.updateCloseState(dataInfo.isClose(), true);
                 if (stream.isClosed())
                     removeStream(stream);
             }

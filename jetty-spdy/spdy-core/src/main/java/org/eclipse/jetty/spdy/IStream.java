@@ -68,8 +68,9 @@ public interface IStream extends Stream
      * of true puts the stream into closed state.</p>
      *
      * @param close whether the close state should be updated
+     * @param local whether the close is local or remote
      */
-    public void updateCloseState(boolean close);
+    public void updateCloseState(boolean close, boolean local);
 
     /**
      * <p>Processes the given control frame,

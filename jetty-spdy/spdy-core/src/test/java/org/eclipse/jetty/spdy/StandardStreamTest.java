@@ -94,8 +94,8 @@ public class StandardStreamTest
     @Test
     public void testSynOnClosedStream(){
         IStream stream = new StandardStream(synStreamFrame,session,0,null);
-        stream.updateCloseState(true);
-        stream.updateCloseState(true);
+        stream.updateCloseState(true,true);
+        stream.updateCloseState(true,false);
         assertThat("stream expected to be closed",stream.isClosed(),is(true));
         final CountDownLatch failedLatch = new CountDownLatch(1);
         stream.syn(new SynInfo(false),0,TimeUnit.SECONDS,new Handler<Stream>()

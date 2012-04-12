@@ -305,7 +305,8 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
             catch(IOException e)
             {
-                LOG.warn("tmpdir",e); System.exit(1);
+                tmpDir = null;
+                throw new IllegalStateException("Cannot create tmp dir in "+System.getProperty("java.io.tmpdir")+ " for context "+context,e);
             }
         }
     }
