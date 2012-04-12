@@ -20,6 +20,7 @@ import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import javax.servlet.Servlet;
@@ -101,7 +102,7 @@ public class GzipTester
             }
             else if (compressionType.equals(GzipFilter.DEFLATE))
             {
-                in = new InflaterInputStream(bais);
+                in = new InflaterInputStream(bais, new Inflater(true));
             }
             out = new ByteArrayOutputStream();
             IO.copy(in,out);
