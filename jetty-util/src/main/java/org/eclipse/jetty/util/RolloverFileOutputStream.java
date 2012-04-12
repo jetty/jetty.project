@@ -326,6 +326,7 @@ public class RolloverFileOutputStream extends FilterOutputStream
             }
             catch(IOException e)
             {
+                // Cannot log this exception to a LOG, as RolloverFOS can be used by logging
                 e.printStackTrace();
             }
         }

@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
+import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -255,7 +256,7 @@ public class GzipFilter extends UserAgentFilter
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
                         {
-                            return new DeflaterOutputStream(_response.getOutputStream());
+                            return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(Deflater.DEFAULT_COMPRESSION));
                         }
                     };
                 }

@@ -336,7 +336,7 @@ public class MultiPartFilter implements Filter
                     }
                     catch(Exception e)
                     {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
                 }
                 else if (o instanceof String)

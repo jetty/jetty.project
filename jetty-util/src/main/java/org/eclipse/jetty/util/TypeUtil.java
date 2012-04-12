@@ -44,7 +44,7 @@ public class TypeUtil
     public static int LF = '\012';
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<String, Class> name2Class=new HashMap<String, Class>();
+    private static final HashMap<String, Class<?>> name2Class=new HashMap<String, Class<?>>();
     static
     {
         name2Class.put("boolean",java.lang.Boolean.TYPE);
@@ -92,7 +92,7 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<Class, String> class2Name=new HashMap<Class, String>();
+    private static final HashMap<Class<?>, String> class2Name=new HashMap<Class<?>, String>();
     static
     {
         class2Name.put(java.lang.Boolean.TYPE,"boolean");
@@ -119,12 +119,12 @@ public class TypeUtil
     }
 
     /* ------------------------------------------------------------ */
-    private static final HashMap<Class, Method> class2Value=new HashMap<Class, Method>();
+    private static final HashMap<Class<?>, Method> class2Value=new HashMap<Class<?>, Method>();
     static
     {
         try
         {
-            Class[] s ={java.lang.String.class};
+            Class<?>[] s ={java.lang.String.class};
 
             class2Value.put(java.lang.Boolean.TYPE,
                            java.lang.Boolean.class.getMethod("valueOf",s));
@@ -158,7 +158,7 @@ public class TypeUtil
         }
         catch(Exception e)
         {
-            e.printStackTrace();
+            throw new Error(e);
         }
     }
 
@@ -180,7 +180,7 @@ public class TypeUtil
      * @param name A class or type name.
      * @return A class , which may be a primitive TYPE field..
      */
-    public static Class fromName(String name)
+    public static Class<?> fromName(String name)
     {
         return name2Class.get(name);
     }
@@ -190,7 +190,7 @@ public class TypeUtil
      * @param type A class , which may be a primitive TYPE field.
      * @return Canonical name.
      */
-    public static String toName(Class type)
+    public static String toName(Class<?> type)
     {
         return class2Name.get(type);
     }
@@ -201,7 +201,7 @@ public class TypeUtil
      * @param value The value as a string.
      * @return The value as an Object.
      */
-    public static Object valueOf(Class type, String value)
+    public static Object valueOf(Class<?> type, String value)
     {
         try
         {
@@ -216,7 +216,7 @@ public class TypeUtil
                 type.equals(java.lang.Character.class))
                 return new Character(value.charAt(0));
 
-            Constructor c = type.getConstructor(java.lang.String.class);
+            Constructor<?> c = type.getConstructor(java.lang.String.class);
             return c.newInstance(value);
         }
         catch(NoSuchMethodException e)
@@ -431,7 +431,7 @@ public class TypeUtil
     }
 
 
-    public static void dump(Class c)
+    public static void dump(Class<?> c)
     {
         System.err.println("Dump: "+c);
         dump(c.getClassLoader());
