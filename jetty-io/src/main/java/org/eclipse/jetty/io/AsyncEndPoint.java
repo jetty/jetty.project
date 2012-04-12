@@ -19,7 +19,14 @@ public interface AsyncEndPoint extends ConnectedEndPoint
 {
     /* ------------------------------------------------------------ */
     /**
-     * Dispatch the endpoint to a thread to attend to it.
+     * Dispatch the endpoint if it is not already dispatched
+     * 
+     */
+    public void dispatch();
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Dispatch the endpoint. If it is already dispatched, schedule a redispatch
      * 
      */
     public void asyncDispatch();

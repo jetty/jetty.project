@@ -121,8 +121,7 @@ class SuspendHandler extends HandlerWrapper
                         try
                         {
                             Thread.sleep(_resumeAfter);
-                            if(((HttpServletRequest)asyncContext.getRequest()).getSession(true).getId()!=null)
-                                asyncContext.dispatch();
+                            asyncContext.dispatch();
                         }
                         catch(Exception e)
                         {

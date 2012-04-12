@@ -247,7 +247,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         catch (IOException e)
         {
             // nevermind. just trying our best
-            e.printStackTrace();
+            __logger.ignore(e);
         }
         return true;
     }
@@ -279,7 +279,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         catch (Throwable t)
         {
             // humf that will hurt if it does not work.
-            t.printStackTrace();
+            __logger.warn("Unable to set webappcontext", t);
         }
     }
 }

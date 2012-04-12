@@ -37,6 +37,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 {
     public static final Logger LOG=Log.getLogger("org.eclipse.jetty.io.nio");
 
+    private final boolean WORK_AROUND_JVM_BUG_6346658 = System.getProperty("os.name").toLowerCase().contains("win");
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
     private  SelectionKey _key;
@@ -208,11 +209,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {
         synchronized(this)
         {
-            if (_dispatched)
-            {
-                throw new IllegalStateException("dispatched");
-            }
-            else
+            if (!_dispatched)
             {
                 _dispatched = true;
                 boolean dispatched = _manager.dispatch(_handler);
@@ -685,15 +682,23 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     @Override
     public void close() throws IOException
     {
-        try
+        // On unix systems there is a JVM issue that if you cancel before closing, it can 
+        // cause the selector to block waiting for a channel to close and that channel can 
+        // block waiting for the remote end.  But on windows, if you don't cancel before a 
+        // close, then the selector can block anyway!
+        // https://bugs.eclipse.org/bugs/show_bug.cgi?id=357318
+        if (WORK_AROUND_JVM_BUG_6346658)
         {
-            SelectionKey key = _key;
-            if (key!=null)
-                key.cancel();
-        }
-        catch (Throwable e)
-        {
-            LOG.ignore(e);
+            try
+            {
+                SelectionKey key = _key;
+                if (key!=null)
+                    key.cancel();
+            }
+            catch (Throwable e)
+            {
+                LOG.ignore(e);
+            }
         }
 
         try

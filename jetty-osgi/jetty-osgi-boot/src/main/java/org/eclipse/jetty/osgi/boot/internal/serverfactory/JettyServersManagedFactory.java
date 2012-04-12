@@ -99,14 +99,21 @@ public class JettyServersManagedFactory implements ManagedServiceFactory, IManag
         String name = (String)properties.get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
         if (name == null)
         {
-        	throw new ConfigurationException(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME,
-        			"The name of the server is mandatory");
+            throw new ConfigurationException(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME,
+            "The name of the server is mandatory");
         }
         serverInstanceWrapper = new ServerInstanceWrapper(name);
         _serversIndexedByPID.put(pid, serverInstanceWrapper);
         _serversNameIndexedByPID.put(pid, name);
         _serversPIDIndexedByName.put(name, pid);
-        serverInstanceWrapper.start(new Server(), properties);
+        try 
+        {
+            serverInstanceWrapper.start(new Server(), properties);
+        }
+        catch (Exception e)
+        {
+            throw new ConfigurationException(null, "Error starting jetty server instance", e);
+        }
     }
 
     public synchronized void deleted(String pid)
