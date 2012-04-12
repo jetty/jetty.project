@@ -361,28 +361,18 @@ public class HttpFieldsTest
         fields.clear();
         fields.addSetCookie("everything","wrong","wrong","wrong",0,"to be replaced",true,true,0);
         fields.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
+        assertEquals("everything=value;Comment=comment;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",fields.getStringField("Set-Cookie"));
         Enumeration<String> e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
-        assertEquals("everything=value;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",e.nextElement());
+        assertEquals("everything=value;Comment=comment;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Secure;HttpOnly",e.nextElement());
         assertFalse(e.hasMoreElements());
-        assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.getStringField("Expires"));
-       
+        assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.getStringField("Expires")); 
         
         fields.clear();
         fields.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,2);
         String setCookie=fields.getStringField("Set-Cookie");
-        assertTrue(setCookie.startsWith("\"ev erything\"=\"va lue\";Version=1;Comment=\"co mment\";Path=\"pa th\";Domain=\"do main\";Expires="));
+        assertTrue(setCookie.startsWith("\"ev erything\"=\"va lue\";Comment=\"co mment\";Path=\"pa th\";Domain=\"do main\";Expires="));
         assertTrue(setCookie.endsWith("GMT;Max-Age=1;Secure;HttpOnly"));
-
-        fields.clear();
-        fields.addSetCookie("name","value",null,null,-1,null,false,false,0);
-        setCookie=fields.getStringField("Set-Cookie");
-        assertEquals(-1,setCookie.indexOf("Version="));
-        fields.clear();
-        fields.addSetCookie("name","v a l u e",null,null,-1,null,false,false,0);
-        setCookie=fields.getStringField("Set-Cookie");
-        assertEquals(17,setCookie.indexOf("Version=1"));
         
         fields.clear();
         fields.addSetCookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
@@ -401,12 +391,6 @@ public class HttpFieldsTest
         e=fields.getValues("Set-Cookie");
         assertEquals("name=more;Domain=domain",e.nextElement());
         assertEquals("foo=bob;Domain=domain",e.nextElement());
-        
-        fields=new HttpFields(0);
-        fields.addSetCookie("name","value==",null,null,-1,null,false,false,0);
-        setCookie=fields.getStringField("Set-Cookie");
-        assertEquals("name=value==",setCookie);
-        
     }
 
     private Set<String> enum2set(Enumeration<String> e)

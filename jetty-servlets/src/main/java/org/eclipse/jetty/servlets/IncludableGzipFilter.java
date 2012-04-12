@@ -18,6 +18,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -94,7 +95,7 @@ public class IncludableGzipFilter extends GzipFilter
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
                         {
-                            return new DeflaterOutputStream(_response.getOutputStream());
+                            return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(_deflateCompressionLevel, _deflateNoWrap));
                         }
                     };
                 }

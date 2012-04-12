@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import javax.servlet.http.HttpServletResponse;
@@ -139,7 +140,7 @@ public class IncludableGzipFilterTest
         }
         else if (compressionType.equals(GzipFilter.DEFLATE))
         {
-            testIn = new InflaterInputStream(compressedResponseStream);
+            testIn = new InflaterInputStream(compressedResponseStream, new Inflater(true));
         }
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn,testOut);

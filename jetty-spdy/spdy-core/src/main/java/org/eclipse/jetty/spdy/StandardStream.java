@@ -125,7 +125,9 @@ public class StandardStream implements IStream
     public boolean isHalfClosed()
     {
         CloseState closeState = this.closeState;
-        return closeState == CloseState.LOCALLY_CLOSED || closeState == CloseState.REMOTELY_CLOSED || closeState == CloseState.CLOSED;
+        return closeState == CloseState.LOCALLY_CLOSED ||
+                closeState == CloseState.REMOTELY_CLOSED ||
+                closeState == CloseState.CLOSED;
     }
 
     @Override
