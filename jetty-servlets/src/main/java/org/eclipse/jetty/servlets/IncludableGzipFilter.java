@@ -95,7 +95,7 @@ public class IncludableGzipFilter extends GzipFilter
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
                         {
-                            return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(Deflater.DEFAULT_COMPRESSION));
+                            return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(_deflateCompressionLevel, _deflateNoWrap));
                         }
                     };
                 }
