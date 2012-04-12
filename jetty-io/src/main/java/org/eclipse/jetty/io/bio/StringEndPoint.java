@@ -70,10 +70,12 @@ public class StringEndPoint extends StreamEndPoint
             _bout.reset();
       	  return s;
         }
-        catch(Exception e)
+        catch(final Exception e)
         {
-            e.printStackTrace();
-            throw new IllegalStateException(_encoding+": "+e.toString());
+            throw new IllegalStateException(_encoding)
+            {
+                {initCause(e);}
+            };
         }
     }
 
