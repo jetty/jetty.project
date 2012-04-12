@@ -40,8 +40,6 @@ public class UnsupportedVersionTest extends AbstractTest
             @Override
             public void onException(Throwable x)
             {
-                System.out.println(x.getMessage());
-                x.printStackTrace();
                 // Suppress exception logging for this test
             }
         });
@@ -56,7 +54,7 @@ public class UnsupportedVersionTest extends AbstractTest
         channel.write(buffer);
         Assert.assertFalse(buffer.hasRemaining());
 
-        Assert.assertFalse(synLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertFalse(synLatch.await(1, TimeUnit.SECONDS));
 
         buffer = ByteBuffer.allocate(1024);
         channel.read(buffer);

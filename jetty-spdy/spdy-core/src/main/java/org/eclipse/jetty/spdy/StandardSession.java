@@ -184,11 +184,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             int streamId = rstInfo.getStreamId();
             IStream stream = streams.get(streamId);
             if (stream != null)
-            {
-                RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
-                control(stream,frame,timeout,unit,handler,null);
                 removeStream(stream);
-            }
+            RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
+            control(null,frame,timeout,unit,handler,null);
         }
     }
 
