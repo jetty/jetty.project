@@ -64,6 +64,7 @@ public class MultiPartInputStream
         protected String _filename;
         protected File _file;
         protected OutputStream _out;
+        protected ByteArrayOutputStream2 _bout;
         protected String _contentType;
         protected MultiMap<String> _headers;
         protected long _size = 0;
@@ -95,7 +96,7 @@ public class MultiPartInputStream
             {
                 //Write to a buffer in memory until we discover we've exceed the 
                 //MultipartConfig fileSizeThreshold
-                _out = new ByteArrayOutputStream();
+                _out = _bout= new ByteArrayOutputStream2();
             }
         }
         
@@ -142,8 +143,9 @@ public class MultiPartInputStream
             {
                 //already written some bytes, so need to copy them into the file
                 _out.flush();
-                ((ByteArrayOutputStream)_out).writeTo(bos);
+                _bout.writeTo(bos);
                 _out.close();
+                _bout = null;
             }
             _out = bos;
         }
@@ -168,7 +170,9 @@ public class MultiPartInputStream
          */
         public String getHeader(String name)
         {
-            return (String)_headers.getValue(name, 0);
+            if (name == null)
+                return null;
+            return (String)_headers.getValue(name.toLowerCase(), 0);
         }
 
         /** 
@@ -199,10 +203,17 @@ public class MultiPartInputStream
            else
            {
                //part content is in a ByteArrayOutputStream
-               return new ByteArrayInputStream(((ByteArrayOutputStream)_out).toByteArray());
+               return new ByteArrayInputStream(_bout.getBuf(),0,_bout.size());
            }
         }
 
+        public byte[] getBytes()
+        {
+            if (_bout!=null)
+                return _bout.toByteArray();
+            return null;
+        }
+        
         /** 
          * @see javax.servlet.http.Part#getName()
          */
@@ -232,19 +243,22 @@ public class MultiPartInputStream
                 try
                 {
                     bos = new BufferedOutputStream(new FileOutputStream(_file));
-                    ((ByteArrayOutputStream)_out).writeTo(bos);
+                    _bout.writeTo(bos);
                     bos.flush();
                 }
                 finally
                 {
                     if (bos != null)
                         bos.close();
+                    _bout = null;
                 }
             }
             else
             {
                 //the part data is already written to a temporary file, just rename it
-                _file.renameTo(new File(_tmpDir, fileName));
+                File f = new File(_tmpDir, fileName);
+                if (_file.renameTo(f))
+                    _file = f;
             }
         }
         

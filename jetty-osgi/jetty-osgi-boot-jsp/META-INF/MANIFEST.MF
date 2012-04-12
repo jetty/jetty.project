@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Jetty-OSGi-Jasper integration
 Fragment-Host: org.eclipse.jetty.osgi.boot
 Bundle-SymbolicName: org.eclipse.jetty.osgi.boot.jsp
-Bundle-Version: 8.1.2.qualifier
+Bundle-Version: 8.1.3.qualifier
 Bundle-Vendor: Mort Bay Consulting
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Import-Package: com.sun.el;version="2.2.0";resolution:=optional,
@@ -16,7 +16,7 @@ Import-Package: com.sun.el;version="2.2.0";resolution:=optional,
  javax.servlet.jsp.jstl.tlv;version="1.2.0";resolution:=optional,
  javax.servlet.jsp.resources;version="2.1.0",
  javax.servlet.jsp.tagext;version="2.1.0",
- javax.servlet.resources;version="2.5.0",
+ javax.servlet.resources;version="2.6.0",
  org.apache.jasper;version="2.2.2";resolution:=optional,
  org.apache.jasper.compiler;version="2.2.2";resolution:=optional,
  org.apache.jasper.compiler.tagplugin;version="2.2.2";resolution:=optional,

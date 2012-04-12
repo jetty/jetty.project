@@ -13,14 +13,13 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -34,14 +33,16 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationListener;
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpMethods;
-import org.eclipse.jetty.http.gzip.GzipResponseWrapper;
+import org.eclipse.jetty.http.gzip.CompressedResponseWrapper;
+import org.eclipse.jetty.http.gzip.AbstractCompressedStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** GZIP Filter
- * This filter will gzip the content of a response iff: <ul>
+ * This filter will gzip or deflate the content of a response if: <ul>
  * <li>The filter is mapped to a matching path</li>
+ * <li>accept-encoding header is set to either gzip, deflate or a combination of those</li>
  * <li>The response status code is >=200 and <300
  * <li>The content length is unknown or more than the <code>minGzipSize</code> initParameter or the minGzipSize is 0(default)</li>
  * <li>The content-type is in the comma separated list of mimeTypes set in the <code>mimeTypes</code> initParameter or
@@ -50,8 +51,11 @@ import org.eclipse.jetty.util.log.Logger;
  * </ul>
  * 
  * <p>
+ * If both gzip and deflate are specified in the accept-encoding header, then gzip will be used.
+ * </p>
+ * <p>
  * Compressing the content can greatly improve the network bandwidth usage, but at a cost of memory and
- * CPU cycles.   If this filter is mapped for static content, then use of efficient direct NIO may be 
+ * CPU cycles. If this filter is mapped for static content, then use of efficient direct NIO may be 
  * prevented, thus use of the gzip mechanism of the {@link org.eclipse.jetty.servlet.DefaultServlet} is 
  * advised instead.
  * </p>
@@ -59,15 +63,49 @@ import org.eclipse.jetty.util.log.Logger;
  * This filter extends {@link UserAgentFilter} and if the the initParameter <code>excludedAgents</code> 
  * is set to a comma separated list of user agents, then these agents will be excluded from gzip content.
  * </p>
+ * <p>Init Parameters:</p>
+ * <PRE>
+ * bufferSize                 The output buffer size. Defaults to 8192. Be careful as values <= 0 will lead to an 
+ *                            {@link IllegalArgumentException}. 
+ *                            @see java.util.zip.GZIPOutputStream#GZIPOutputStream(java.io.OutputStream, int)
+ *                            @see java.util.zip.DeflaterOutputStream#DeflaterOutputStream(java.io.OutputStream, Deflater, int)
+ *                      
+ * minGzipSize                Content will only be compressed if content length is either unknown or greater
+ *                            than <code>minGzipSize</code>.
+ *                      
+ * deflateCompressionLevel    The compression level used for deflate compression. (0-9).
+ *                            @see java.util.zip.Deflater#Deflater(int, boolean)
+ *                            
+ * deflateNoWrap              The noWrap setting for deflate compression. Defaults to true. (true/false)
+ *                            @see java.util.zip.Deflater#Deflater(int, boolean)
  *
+ * mimeTypes                  Comma separated list of mime types to compress. See description above.
+ * 
+ * excludedAgents             Comma separated list of user agents to exclude from compression. Does a 
+ *                            {@link String#contains(CharSequence)} to check if the excluded agent occurs
+ *                            in the user-agent header. If it does -> no compression
+ *                            
+ * excludeAgentPatterns       Same as excludedAgents, but accepts regex patterns for more complex matching.
+ * 
+ * excludePaths               Comma separated list of paths to exclude from compression. 
+ *                            Does a {@link String#startsWith(String)} comparison to check if the path matches.
+ *                            If it does match -> no compression. To match subpaths use <code>excludePathPatterns</code>
+ *                            instead.
+ * 
+ * excludePathPatterns        Same as excludePath, but accepts regex patterns for more complex matching.
+ * </PRE>
  */
 public class GzipFilter extends UserAgentFilter
 {
     private static final Logger LOG = Log.getLogger(GzipFilter.class);
+    public final static String GZIP="gzip";
+    public final static String DEFLATE="deflate";
 
     protected Set<String> _mimeTypes;
     protected int _bufferSize=8192;
     protected int _minGzipSize=256;
+    protected int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
+    protected boolean _deflateNoWrap = true;
     protected Set<String> _excludedAgents;
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
@@ -90,6 +128,14 @@ public class GzipFilter extends UserAgentFilter
         tmp=filterConfig.getInitParameter("minGzipSize");
         if (tmp!=null)
             _minGzipSize=Integer.parseInt(tmp);
+        
+        tmp=filterConfig.getInitParameter("deflateCompressionLevel");
+        if (tmp!=null)
+            _deflateCompressionLevel=Integer.parseInt(tmp);
+        
+        tmp=filterConfig.getInitParameter("deflateNoWrap");
+        if (tmp!=null)
+            _deflateNoWrap=Boolean.parseBoolean(tmp);
         
         tmp=filterConfig.getInitParameter("mimeTypes");
         if (tmp!=null)
@@ -144,7 +190,7 @@ public class GzipFilter extends UserAgentFilter
     public void destroy()
     {
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
@@ -156,9 +202,8 @@ public class GzipFilter extends UserAgentFilter
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
 
-        String ae = request.getHeader("accept-encoding");
-        if (ae != null && ae.indexOf("gzip")>=0 && !response.containsHeader("Content-Encoding")
-                && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
+        String compressionType = selectCompression(request.getHeader("accept-encoding"));
+        if (compressionType!=null && !response.containsHeader("Content-Encoding") && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
         {
             String ua = getUserAgent(request);
             if (isExcludedAgent(ua))
@@ -172,8 +217,8 @@ public class GzipFilter extends UserAgentFilter
                 super.doFilter(request,response,chain);
                 return;
             }
-
-            final GzipResponseWrapper wrappedResponse=newGzipResponseWrapper(request,response);
+            
+            CompressedResponseWrapper wrappedResponse = createWrappedResponse(request,response,compressionType);
             
             boolean exceptional=true;
             try
@@ -186,28 +231,12 @@ public class GzipFilter extends UserAgentFilter
                 Continuation continuation = ContinuationSupport.getContinuation(request);
                 if (continuation.isSuspended() && continuation.isResponseWrapped())   
                 {
-                    continuation.addContinuationListener(new ContinuationListener()
-                    {
-                        public void onComplete(Continuation continuation)
-                        {
-                            try
-                            {
-                                wrappedResponse.finish();
-                            }
-                            catch(IOException e)
-                            {
-                                LOG.warn(e);
-                            }
-                        }
-
-                        public void onTimeout(Continuation continuation)
-                        {}
-                    });
+                    continuation.addContinuationListener(new ContinuationListenerWaitingForWrappedResponseToFinish(wrappedResponse));
                 }
                 else if (exceptional && !response.isCommitted())
                 {
                     wrappedResponse.resetBuffer();
-                    wrappedResponse.noGzip();
+                    wrappedResponse.noCompression();
                 }
                 else
                     wrappedResponse.finish();
@@ -218,9 +247,104 @@ public class GzipFilter extends UserAgentFilter
             super.doFilter(request,response,chain);
         }
     }
+
+    /* ------------------------------------------------------------ */
+    private String selectCompression(String encodingHeader)
+    {
+        // TODO, this could be a little more robust.
+        // prefer gzip over deflate
+        if (encodingHeader!=null)
+        {
+            if (encodingHeader.toLowerCase().contains(GZIP))
+                return GZIP;
+            else if (encodingHeader.toLowerCase().contains(DEFLATE))
+                return DEFLATE;
+        }
+        return null;
+    }
+    
+    protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
+    {
+        CompressedResponseWrapper wrappedResponse = null;
+        if (compressionType.equals(GZIP))
+        {
+            wrappedResponse = new CompressedResponseWrapper(request,response)
+            {
+                @Override
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                {
+                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    {
+                        @Override
+                        protected DeflaterOutputStream createStream() throws IOException
+                        {
+                            return new GZIPOutputStream(_response.getOutputStream(),_bufferSize);
+                        }
+                    };
+                }
+            };
+        }
+        else if (compressionType.equals(DEFLATE))
+        {
+            wrappedResponse = new CompressedResponseWrapper(request,response)
+            {
+                @Override
+                protected AbstractCompressedStream newCompressedStream(HttpServletRequest request,HttpServletResponse response,long contentLength,int bufferSize, int minCompressSize) throws IOException
+                {
+                    return new AbstractCompressedStream(compressionType,request,response,contentLength,bufferSize,minCompressSize)
+                    {
+                        @Override
+                        protected DeflaterOutputStream createStream() throws IOException
+                        {
+                            return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(_deflateCompressionLevel,_deflateNoWrap));
+                        }
+                    };
+                }
+            };
+        }
+        else
+        {
+            throw new IllegalStateException(compressionType + " not supported");
+        }
+        configureWrappedResponse(wrappedResponse);
+        return wrappedResponse;
+    }
+
+    protected void configureWrappedResponse(CompressedResponseWrapper wrappedResponse)
+    {
+        wrappedResponse.setMimeTypes(_mimeTypes);
+        wrappedResponse.setBufferSize(_bufferSize);
+        wrappedResponse.setMinCompressSize(_minGzipSize);
+    }
      
+    private class ContinuationListenerWaitingForWrappedResponseToFinish implements ContinuationListener{
+        
+        private CompressedResponseWrapper wrappedResponse;
+
+        public ContinuationListenerWaitingForWrappedResponseToFinish(CompressedResponseWrapper wrappedResponse)
+        {
+            this.wrappedResponse = wrappedResponse;
+        }
+
+        public void onComplete(Continuation continuation)
+        {
+            try
+            {
+                wrappedResponse.finish();
+            }
+            catch (IOException e)
+            {
+                LOG.warn(e);
+            }
+        }
+
+        public void onTimeout(Continuation continuation)
+        {
+        }
+    }
+    
     /**
-     * Checks to see if the UserAgent is excluded
+     * Checks to see if the userAgent is excluded
      * 
      * @param ua
      *            the user agent
@@ -238,7 +362,7 @@ public class GzipFilter extends UserAgentFilter
                 return true;
             }
         }
-        else if (_excludedAgentPatterns != null)
+        if (_excludedAgentPatterns != null)
         {
             for (Pattern pattern : _excludedAgentPatterns)
             {
@@ -253,9 +377,9 @@ public class GzipFilter extends UserAgentFilter
     }
 
     /**
-     * Checks to see if the Path is excluded
+     * Checks to see if the path is excluded
      * 
-     * @param ua
+     * @param requestURI
      *            the request uri
      * @return boolean true if excluded
      */
@@ -263,6 +387,16 @@ public class GzipFilter extends UserAgentFilter
     {
         if (requestURI == null)
             return false;
+        if (_excludedPaths != null)
+        {
+            for (String excludedPath : _excludedPaths)
+            {
+                if (requestURI.startsWith(excludedPath))
+                {
+                    return true;
+                }
+            }
+        }
         if (_excludedPathPatterns != null)
         {
             for (Pattern pattern : _excludedPathPatterns)
@@ -274,43 +408,5 @@ public class GzipFilter extends UserAgentFilter
             }
         }
         return false;
-    }
-            
-    /**
-     * Allows derived implementations to replace ResponseWrapper implementation.
-     *
-     * @param request the request
-     * @param response the response
-     * @return the gzip response wrapper
-     */
-    protected GzipResponseWrapper newGzipResponseWrapper(HttpServletRequest request, HttpServletResponse response)
-    {
-        return new GzipResponseWrapper(request, response)
-        {
-            {
-                setMimeTypes(GzipFilter.this._mimeTypes);
-                setBufferSize(GzipFilter.this._bufferSize);
-                setMinGzipSize(GzipFilter.this._minGzipSize);
-            }
-            
-            @Override
-            protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
-            {
-                return GzipFilter.this.newWriter(out,encoding);
-            }
-        };
-    }
-    
-    /**
-     * Allows derived implementations to replace PrintWriter implementation.
-     *
-     * @param out the out
-     * @param encoding the encoding
-     * @return the prints the writer
-     * @throws UnsupportedEncodingException
-     */
-    protected PrintWriter newWriter(OutputStream out,String encoding) throws UnsupportedEncodingException
-    {
-        return encoding==null?new PrintWriter(out):new PrintWriter(new OutputStreamWriter(out,encoding));
     }
 }

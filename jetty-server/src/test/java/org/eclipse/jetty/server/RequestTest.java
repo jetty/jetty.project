@@ -18,6 +18,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,6 +36,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
 
 import junit.framework.Assert;
 
@@ -121,6 +123,51 @@ public class RequestTest
         String responses=_connector.getResponses(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
 
+    }
+    
+    @Test
+    public void testMultiPart() throws Exception
+    {
+        _handler._checker = new RequestTester()
+        {
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                try
+                {
+                    Part foo = request.getPart("stuff");
+                    assertNotNull(foo);
+                    String value = request.getParameter("stuff");
+                    byte[] expected = "000000000000000000000000000000000000000000000000000".getBytes("ISO-8859-1");
+                    return value.equals(new String(expected, "ISO-8859-1"));
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+        };
+        
+        String multipart =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"field1\"\r\n"+
+        "\r\n"+
+        "Joe Blow\r\n"+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"stuff\"\r\n"+
+        "Content-Type: text/plain;charset=ISO-8859-1\r\n"+
+        "\r\n"+
+        "000000000000000000000000000000000000000000000000000\r\n"+
+        "--AaB03x--\r\n";
+        
+        String request="GET / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
+        "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "\r\n"+
+        multipart;
+
+        String responses=_connector.getResponses(request);
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
 
     @Test
@@ -671,7 +718,7 @@ public class RequestTest
                 "POST / HTTP/1.1\r\n"+
                 "Host: whatever\r\n"+
                 "Cookie: name0=value0; name1 = value1 ; \"name2\"  =  \"\\\"value2\\\"\"  \n" +
-                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080, name4=; name5 =  ; name6\n" +
+                "Cookie: $Version=2; name3=value3=value3;$path=/path;$domain=acme.com;$port=8080; name4=; name5 =  ; name6\n" +
                 "Cookie: name7=value7;\n" +
                 "Connection: close\r\n"+
         "\r\n");
@@ -696,6 +743,20 @@ public class RequestTest
         assertEquals("", cookies.get(6).getValue());
         assertEquals("name7", cookies.get(7).getName());
         assertEquals("value7", cookies.get(7).getValue());
+
+        cookies.clear();
+        response=_connector.getResponses(
+                "GET /other HTTP/1.1\n"+
+                        "Host: whatever\n"+
+                        "Other: header\n"+
+                        "Cookie: __utmz=14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html\n"+
+                        "\n"
+                );
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(1,cookies.size());
+        assertEquals("__utmz", cookies.get(0).getName());
+        assertEquals("14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html", cookies.get(0).getValue());
+
     }
 
     @Test
@@ -833,7 +894,9 @@ public class RequestTest
         {
             ((Request)request).setHandled(true);
 
-            if (request.getContentLength()>0 && !MimeTypes.FORM_ENCODED.equals(request.getContentType()))
+            if (request.getContentLength()>0 
+                    && !MimeTypes.FORM_ENCODED.equals(request.getContentType()) 
+                    && !request.getContentType().startsWith("multipart/form-data"))
                 _content=IO.toString(request.getInputStream());
 
             if (_checker!=null && _checker.check(request,response))

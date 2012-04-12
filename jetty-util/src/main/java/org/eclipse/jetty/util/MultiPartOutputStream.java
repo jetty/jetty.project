@@ -27,20 +27,11 @@ import java.io.OutputStream;
 public class MultiPartOutputStream extends FilterOutputStream
 {
     /* ------------------------------------------------------------ */
-    private static byte[] __CRLF;
-    private static byte[] __DASHDASH;
+    private static final byte[] __CRLF={'\r','\n'};
+    private static final byte[] __DASHDASH={'-','-'};
     
     public static String MULTIPART_MIXED="multipart/mixed";
     public static String MULTIPART_X_MIXED_REPLACE="multipart/x-mixed-replace";
-    static
-    {
-        try
-        {
-            __CRLF="\015\012".getBytes(StringUtil.__ISO_8859_1);
-            __DASHDASH="--".getBytes(StringUtil.__ISO_8859_1);
-        }
-        catch (Exception e) {e.printStackTrace(); System.exit(1);}
-    }
     
     /* ------------------------------------------------------------ */
     private String boundary;

@@ -65,6 +65,7 @@ import org.eclipse.jetty.http.HttpVersions;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Buffer;
 import org.eclipse.jetty.io.BufferUtil;
+import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.nio.DirectNIOBuffer;
 import org.eclipse.jetty.io.nio.IndirectNIOBuffer;
@@ -1943,12 +1944,28 @@ public class Request implements HttpServletRequest
     {        
         if (getContentType() == null || !getContentType().startsWith("multipart/form-data"))
             return null;
-        
+
         if (_multiPartInputStream == null)
         { 
             _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
+            for (Part p:parts)
+            {
+                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                {
+                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    String charset = null;
+                    if (mp.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(new ByteArrayBuffer(mp.getContentType()));
+                    
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);
+                    getParameter(""); //cause params to be evaluated
+                    getParameters().add(mp.getName(), content);
+                }
+            }
         }
         return _multiPartInputStream.getPart(name);
     }
@@ -1964,6 +1981,22 @@ public class Request implements HttpServletRequest
             _multiPartInputStream = new MultiPartInputStream(getInputStream(), 
                                                              getContentType(),(MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT), 
                                                              (_context != null?(File)_context.getAttribute("javax.servlet.context.tempdir"):null));
+            Collection<Part> parts = _multiPartInputStream.getParts(); //causes parsing 
+            for (Part p:parts)
+            {
+                MultiPartInputStream.MultiPart mp = (MultiPartInputStream.MultiPart)p;
+                if (mp.getContentDispositionFilename() == null && mp.getFile() == null)
+                {
+                    //Servlet Spec 3.0 pg 23, parts without filenames must be put into init params
+                    String charset = null;
+                    if (mp.getContentType() != null)
+                        charset = MimeTypes.getCharsetFromContentType(new ByteArrayBuffer(mp.getContentType()));
+
+                    String content=new String(mp.getBytes(),charset==null?StringUtil.__UTF8:charset);                   
+                    getParameter(""); //cause params to be evaluated
+                    getParameters().add(mp.getName(), content);
+                }
+            }
         }
         return _multiPartInputStream.getParts();
     }

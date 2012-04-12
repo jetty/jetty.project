@@ -590,7 +590,8 @@ public class ServletHandler extends ScopedHandler
         }
         finally
         {
-            baseRequest.setHandled(true);
+            if (servlet_holder!=null)
+                baseRequest.setHandled(true);
         }
     }
 
@@ -1223,7 +1224,7 @@ public class ServletHandler extends ScopedHandler
         
         try
         {
-            if (isStarted())
+            if (_contextHandler!=null && _contextHandler.isStarted() || _contextHandler==null && isStarted())
                 initialize();
         }
         catch (Exception e)
@@ -1239,7 +1240,7 @@ public class ServletHandler extends ScopedHandler
     {
         if(LOG.isDebugEnabled())
             LOG.debug("Not Found "+request.getRequestURI());
-        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        //Override to send an error back, eg with: response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
     
     /* ------------------------------------------------------------ */

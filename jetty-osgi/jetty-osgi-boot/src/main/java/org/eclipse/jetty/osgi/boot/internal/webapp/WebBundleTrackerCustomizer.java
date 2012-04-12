@@ -24,7 +24,6 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.util.tracker.BundleTracker;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
 
-
 /**
  * Support bundles that declare the webapp directly through headers in their
  * manifest.
@@ -49,133 +48,131 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
  * 
  * @author hmalphettes
  */
-public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
+public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
+{
     private static final Logger LOG = Log.getLogger(WebBundleTrackerCustomizer.class);
 
-	
+    /**
+     * A bundle is being added to the <code>BundleTracker</code>.
+     * 
+     * <p>
+     * This method is called before a bundle which matched the search parameters
+     * of the <code>BundleTracker</code> is added to the
+     * <code>BundleTracker</code>. This method should return the object to be
+     * tracked for the specified <code>Bundle</code>. The returned object is
+     * stored in the <code>BundleTracker</code> and is available from the
+     * {@link BundleTracker#getObject(Bundle) getObject} method.
+     * 
+     * @param bundle The <code>Bundle</code> being added to the
+     *            <code>BundleTracker</code>.
+     * @param event The bundle event which caused this customizer method to be
+     *            called or <code>null</code> if there is no bundle event
+     *            associated with the call to this method.
+     * @return The object to be tracked for the specified <code>Bundle</code>
+     *         object or <code>null</code> if the specified <code>Bundle</code>
+     *         object should not be tracked.
+     */
+    public Object addingBundle(Bundle bundle, BundleEvent event)
+    {
+        if (bundle.getState() == Bundle.ACTIVE)
+        {
+            boolean isWebBundle = register(bundle);
+            return isWebBundle ? bundle : null;
+        }
+        else if (bundle.getState() == Bundle.STOPPING)
+        {
+            unregister(bundle);
+        }
+        else
+        {
+            // we should not be called in that state as
+            // we are registered only for ACTIVE and STOPPING
+        }
+        return null;
+    }
 
-	/**
-	 * A bundle is being added to the <code>BundleTracker</code>.
-	 * 
-	 * <p>
-	 * This method is called before a bundle which matched the search parameters
-	 * of the <code>BundleTracker</code> is added to the
-	 * <code>BundleTracker</code>. This method should return the object to be
-	 * tracked for the specified <code>Bundle</code>. The returned object is
-	 * stored in the <code>BundleTracker</code> and is available from the
-	 * {@link BundleTracker#getObject(Bundle) getObject} method.
-	 * 
-	 * @param bundle The <code>Bundle</code> being added to the
-	 *        <code>BundleTracker</code>.
-	 * @param event The bundle event which caused this customizer method to be
-	 *        called or <code>null</code> if there is no bundle event associated
-	 *        with the call to this method.
-	 * @return The object to be tracked for the specified <code>Bundle</code>
-	 *         object or <code>null</code> if the specified <code>Bundle</code>
-	 *         object should not be tracked.
-	 */
-	public Object addingBundle(Bundle bundle, BundleEvent event)
-	{
-		if (bundle.getState() == Bundle.ACTIVE)
-		{
-			boolean isWebBundle = register(bundle);
-			return isWebBundle ? bundle : null;
-		}
-		else if (bundle.getState() == Bundle.STOPPING)
-		{
-			unregister(bundle);
-		}
-		else
-		{
-			//we should not be called in that state as
-			//we are registered only for ACTIVE and STOPPING
-		}
-		return null;
-	}
+    /**
+     * A bundle tracked by the <code>BundleTracker</code> has been modified.
+     * 
+     * <p>
+     * This method is called when a bundle being tracked by the
+     * <code>BundleTracker</code> has had its state modified.
+     * 
+     * @param bundle The <code>Bundle</code> whose state has been modified.
+     * @param event The bundle event which caused this customizer method to be
+     *            called or <code>null</code> if there is no bundle event
+     *            associated with the call to this method.
+     * @param object The tracked object for the specified bundle.
+     */
+    public void modifiedBundle(Bundle bundle, BundleEvent event, Object object)
+    {
+        // nothing the web-bundle was already track. something changed.
+        // we only reload the webapps if the bundle is stopped and restarted.
+        if (bundle.getState() == Bundle.STOPPING || bundle.getState() == Bundle.ACTIVE)
+        {
+            unregister(bundle);
+        }
+        if (bundle.getState() == Bundle.ACTIVE)
+        {
+            register(bundle);
+        }
+    }
 
-	/**
-	 * A bundle tracked by the <code>BundleTracker</code> has been modified.
-	 * 
-	 * <p>
-	 * This method is called when a bundle being tracked by the
-	 * <code>BundleTracker</code> has had its state modified.
-	 * 
-	 * @param bundle The <code>Bundle</code> whose state has been modified.
-	 * @param event The bundle event which caused this customizer method to be
-	 *        called or <code>null</code> if there is no bundle event associated
-	 *        with the call to this method.
-	 * @param object The tracked object for the specified bundle.
-	 */
-	public void modifiedBundle(Bundle bundle, BundleEvent event,
-			Object object)
-	{
-		//nothing the web-bundle was already track. something changed.
-		//we only reload the webapps if the bundle is stopped and restarted.
-//		System.err.println(bundle.getSymbolicName());
-		if (bundle.getState() == Bundle.STOPPING || bundle.getState() == Bundle.ACTIVE)
-		{
-			unregister(bundle);
-		}
-		if (bundle.getState() == Bundle.ACTIVE)
-		{
-			register(bundle);
-		}
-	}
+    /**
+     * A bundle tracked by the <code>BundleTracker</code> has been removed.
+     * 
+     * <p>
+     * This method is called after a bundle is no longer being tracked by the
+     * <code>BundleTracker</code>.
+     * 
+     * @param bundle The <code>Bundle</code> that has been removed.
+     * @param event The bundle event which caused this customizer method to be
+     *            called or <code>null</code> if there is no bundle event
+     *            associated with the call to this method.
+     * @param object The tracked object for the specified bundle.
+     */
+    public void removedBundle(Bundle bundle, BundleEvent event, Object object)
+    {
+        unregister(bundle);
+    }
 
-	/**
-	 * A bundle tracked by the <code>BundleTracker</code> has been removed.
-	 * 
-	 * <p>
-	 * This method is called after a bundle is no longer being tracked by the
-	 * <code>BundleTracker</code>.
-	 * 
-	 * @param bundle The <code>Bundle</code> that has been removed.
-	 * @param event The bundle event which caused this customizer method to be
-	 *        called or <code>null</code> if there is no bundle event associated
-	 *        with the call to this method.
-	 * @param object The tracked object for the specified bundle.
-	 */
-	public void removedBundle(Bundle bundle, BundleEvent event,
-			Object object)
-	{
-		unregister(bundle);
-	}
-	
-	
-	/**
-	 * @param bundle
-	 * @return true if this bundle in indeed a web-bundle.
-	 */
+    /**
+     * @param bundle
+     * @return true if this bundle in indeed a web-bundle.
+     */
     private boolean register(Bundle bundle)
     {
         Dictionary<?, ?> dic = bundle.getHeaders();
-        String warFolderRelativePath = (String)dic.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
+        String warFolderRelativePath = (String) dic.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
         if (warFolderRelativePath != null)
         {
-            String contextPath = (String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+            String contextPath = getWebContextPath(bundle, dic, false);// (String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
             if (contextPath == null || !contextPath.startsWith("/"))
             {
-            	LOG.warn("The manifest header '" + OSGiWebappConstants.JETTY_WAR_FOLDER_PATH +
-                		": " + warFolderRelativePath + "' in the bundle " + bundle.getSymbolicName() + 
-                		" is not valid: there is no Web-ContextPath defined in the manifest.");
-            	return false;
+                LOG.warn("The manifest header '" + OSGiWebappConstants.JETTY_WAR_FOLDER_PATH
+                         + ": "
+                         + warFolderRelativePath
+                         + "' in the bundle "
+                         + bundle.getSymbolicName()
+                         + " is not valid: there is no Web-ContextPath defined in the manifest.");
+                return false;
             }
             // create the corresponding service and publish it in the context of
             // the contributor bundle.
             try
             {
-                JettyBootstrapActivator.registerWebapplication(bundle,warFolderRelativePath,contextPath);
+                JettyBootstrapActivator.registerWebapplication(bundle, warFolderRelativePath, contextPath);
                 return true;
             }
             catch (Throwable e)
             {
-            	LOG.warn("Starting the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
-                return true;//maybe it did not work maybe it did. safer to track this bundle.
+                LOG.warn("Starting the web-bundle " + bundle.getSymbolicName() + " threw an exception.", e);
+                return true;// maybe it did not work maybe it did. safer to track this bundle.
             }
         }
         else if (dic.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH) != null)
         {
-            String contextFileRelativePath = (String)dic.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
+            String contextFileRelativePath = (String) dic.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
             if (contextFileRelativePath == null)
             {
                 // nothing to register here.
@@ -187,12 +184,11 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             {
                 try
                 {
-                    JettyBootstrapActivator.registerContext(bundle,path.trim());
+                    JettyBootstrapActivator.registerContext(bundle, path.trim());
                 }
                 catch (Throwable e)
                 {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    LOG.warn(e);
                 }
             }
             return true;
@@ -203,8 +199,8 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             // (draft) of the spec: just a couple of posts on the
             // world-wide-web.
             URL rfc66Webxml = bundle.getEntry("/WEB-INF/web.xml");
-            if (rfc66Webxml == null && dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) == null)
-            {
+            if (rfc66Webxml == null && dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) == null) 
+            { 
                 return false;// no webapp in here
             }
             // this is risky: should we make sure that there is no classes and
@@ -215,39 +211,39 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
             // pointing to files and folders inside WEB-INF. We should
             // filter-out
             // META-INF too
-            String rfc66ContextPath = getWebContextPath(bundle,dic);
+            String rfc66ContextPath = getWebContextPath(bundle, dic, rfc66Webxml == null);
             try
             {
-                JettyBootstrapActivator.registerWebapplication(bundle,".",rfc66ContextPath);
+                JettyBootstrapActivator.registerWebapplication(bundle, ".", rfc66ContextPath);
                 return true;
             }
             catch (Throwable e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                return true;//maybe it did not work maybe it did. safer to track this bundle.
+                LOG.warn(e);
+                return true;// maybe it did not work maybe it did. safer to track this bundle.
             }
         }
     }
 
-    private String getWebContextPath(Bundle bundle, Dictionary<?, ?> dic)
+    private String getWebContextPath(Bundle bundle, Dictionary<?, ?> dic, boolean webinfWebxmlExists)
     {
-        String rfc66ContextPath = (String)dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+        String rfc66ContextPath = (String) dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
         if (rfc66ContextPath == null)
         {
+            if (!webinfWebxmlExists) { return null; }
             // extract from the last token of the bundle's location:
             // (really ?
             // could consider processing the symbolic name as an alternative
             // the location will often reflect the version.
             // maybe this is relevant when the file is a war)
             String location = bundle.getLocation();
-            String toks[] = location.replace('\\','/').split("/");
+            String toks[] = location.replace('\\', '/').split("/");
             rfc66ContextPath = toks[toks.length - 1];
             // remove .jar, .war etc:
             int lastDot = rfc66ContextPath.lastIndexOf('.');
             if (lastDot != -1)
             {
-                rfc66ContextPath = rfc66ContextPath.substring(0,lastDot);
+                rfc66ContextPath = rfc66ContextPath.substring(0, lastDot);
             }
         }
         if (!rfc66ContextPath.startsWith("/"))
@@ -265,7 +261,4 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer {
         // webapps registered in that bundle.
     }
 
-
-	
-	
 }

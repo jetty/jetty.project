@@ -10,6 +10,7 @@
   <name>Jetty :: Project</name>
   <url>${jetty.url}</url>
   <packaging>pom</packaging>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
@@ -358,7 +359,6 @@
     <module>jetty-http</module>
     <module>jetty-websocket</module>
     <module>jetty-continuation</module>
-    <module>jetty-npn</module>
     <module>jetty-server</module>
     <module>jetty-client</module>
     <module>jetty-xml</module>

@@ -77,7 +77,7 @@ public class StdErrLog extends AbstractLogger
     private int _level = LEVEL_INFO;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
     private int _configuredLevel;
-    private PrintStream _stderr = System.err;
+    private PrintStream _stderr = null;
     private boolean _source = __source;
     // Print the long form names, otherwise use abbreviated
     private boolean _printLongNames = __long;
@@ -271,7 +271,7 @@ public class StdErrLog extends AbstractLogger
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":WARN:",msg,args);
-            _stderr.println(buffer);
+            (_stderr==null?System.err:_stderr).println(buffer);
         }
     }
 
@@ -286,7 +286,7 @@ public class StdErrLog extends AbstractLogger
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":WARN:",msg,thrown);
-            _stderr.println(buffer);
+            (_stderr==null?System.err:_stderr).println(buffer);
         }
     }
 
@@ -296,7 +296,7 @@ public class StdErrLog extends AbstractLogger
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":INFO:",msg,args);
-            _stderr.println(buffer);
+            (_stderr==null?System.err:_stderr).println(buffer);
         }
     }
 
@@ -311,7 +311,7 @@ public class StdErrLog extends AbstractLogger
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":INFO:",msg,thrown);
-            _stderr.println(buffer);
+            (_stderr==null?System.err:_stderr).println(buffer);
         }
     }
 
@@ -369,7 +369,7 @@ public class StdErrLog extends AbstractLogger
 
     public void setStdErrStream(PrintStream stream)
     {
-        this._stderr = stream;
+        this._stderr = stream==System.err?null:stream;
     }
 
     public void debug(String msg, Object... args)
@@ -378,7 +378,7 @@ public class StdErrLog extends AbstractLogger
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":DBUG:",msg,args);
-            _stderr.println(buffer);
+            (_stderr==null?System.err:_stderr).println(buffer);
         }
     }
 
@@ -393,7 +393,7 @@ public class StdErrLog extends AbstractLogger
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":DBUG:",msg,thrown);
-            _stderr.println(buffer);
+            (_stderr==null?System.err:_stderr).println(buffer);
         }
     }
 
@@ -616,7 +616,7 @@ public class StdErrLog extends AbstractLogger
         {
             StringBuilder buffer = new StringBuilder(64);
             format(buffer,":IGNORED:","",ignored);
-            _stderr.println(buffer);
+            (_stderr==null?System.err:_stderr).println(buffer);
         }
     }
 }

@@ -29,7 +29,11 @@ public class OneWebApp
         server.setConnectors(new Connector[]
         { connector });
 
-        String war = args.length > 0?args[0]: "../test-jetty-webapp/target/test-jetty-webapp-" + Server.getVersion();
+
+        //If you're running this from inside Eclipse, then Server.getVersion will not provide
+        //the correct number as there is no manifest. Use the command line instead to provide the path to the
+        //test webapp
+        String war = args.length > 0?args[0]: "../test-jetty-webapp/target/test-jetty-webapp-"+Server.getVersion();
         String path = args.length > 1?args[1]:"/";
 
         System.err.println(war + " " + path);
@@ -37,6 +41,15 @@ public class OneWebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath(path);
         webapp.setWar(war);
+        
+        //If the webapp contains security constraints, you will need to configure a LoginService
+        if (war.contains("test-jetty-webapp"))
+        {
+            org.eclipse.jetty.security.HashLoginService loginService = new org.eclipse.jetty.security.HashLoginService();
+            loginService.setName("Test Realm");
+            loginService.setConfig("src/test/resources/realm.properties");
+            webapp.getSecurityHandler().setLoginService(loginService);
+        }
 
         server.setHandler(webapp);
 

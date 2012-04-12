@@ -74,7 +74,6 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _sendDateHeader = false; //send Date: header
     private int _graceful=0;
     private boolean _stopAtShutdown;
-    private int _maxCookieVersion=1;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
     private boolean _uncheckedPrintWriter=false;
@@ -267,7 +266,7 @@ public class Server extends HandlerWrapper implements Attributes
             mex.add(e);
         }
 
-        if (_connectors!=null)
+        if (_connectors!=null && mex.size()==0)
         {
             for (int i=0;i<_connectors.length;i++)
             {
@@ -452,21 +451,20 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** Get the maximum cookie version.
-     * @return the maximum set-cookie version sent by this server
+    /** 
      */
+    @Deprecated
     public int getMaxCookieVersion()
     {
-        return _maxCookieVersion;
+        return 1;
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the maximum cookie version.
-     * @param maxCookieVersion the maximum set-cookie version sent by this server
+    /** 
      */
+    @Deprecated
     public void setMaxCookieVersion(int maxCookieVersion)
     {
-        _maxCookieVersion = maxCookieVersion;
     }
 
     /* ------------------------------------------------------------ */

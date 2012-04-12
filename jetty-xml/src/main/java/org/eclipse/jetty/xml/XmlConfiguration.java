@@ -1135,7 +1135,7 @@ public class XmlConfiguration
 
         final AtomicReference<Throwable> exception = new AtomicReference<Throwable>();
 
-        AccessController.doPrivileged(new PrivilegedAction()
+        AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             public Object run()
             {
@@ -1215,11 +1215,6 @@ public class XmlConfiguration
                                 lc.start();
                         }
                     }
-                }
-                catch (AccessControlException ace)
-                {
-                    ace.printStackTrace(System.err);
-                    exception.set(ace);
                 }
                 catch (Exception e)
                 {

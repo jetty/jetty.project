@@ -587,10 +587,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             // Handle run as
             if (_identityService!=null)
                 old_run_as=_identityService.setRunAs(baseRequest.getResolvedUserIdentity(),_runAsToken);
-            
+
             if (!isAsyncSupported())
                 baseRequest.setAsyncSupported(false);
-            
+
+            MultipartConfigElement mpce = ((Registration)getRegistration()).getMultipartConfig();
+            if (mpce != null)
+                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+
             servlet.service(request,response);
             servlet_error=false;
         }

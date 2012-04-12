@@ -25,8 +25,9 @@ public class PipelineHelper
     private Socket socket;
     private OutputStream outputStream;
     private InputStream inputStream;
+    private String encodingHeader;
 
-    public PipelineHelper(URI uri)
+    public PipelineHelper(URI uri, String encodingHeader)
     {
         if (LOG instanceof StdErrLog)
         {
@@ -34,6 +35,7 @@ public class PipelineHelper
         }
         this.uri = uri;
         this.endpoint = new InetSocketAddress(uri.getHost(),uri.getPort());
+        this.encodingHeader = encodingHeader;
     }
 
     /**
@@ -76,7 +78,7 @@ public class PipelineHelper
         req.append("Accept-Language: en-us\r\n");
         if (acceptGzipped)
         {
-            req.append("Accept-Encoding: gzip, deflate\r\n");
+            req.append("Accept-Encoding: " + encodingHeader + "\r\n");
         }
         req.append("Cookie: JSESSIONID=spqx8v8szylt1336t96vc6mw0\r\n");
         if ( close )
@@ -134,7 +136,7 @@ public class PipelineHelper
         while (!(foundCR && foundLF))
         {
             b = inputStream.read();
-            Assert.assertThat("Should not have hit EOL (yet) during chunk size read",(int)b,not(-1));
+            Assert.assertThat("Should not have hit EOL (yet) during chunk size read",b,not(-1));
             if (b == 0x0D)
             {
                 foundCR = true;
@@ -163,7 +165,7 @@ public class PipelineHelper
         while (!(foundCR && foundLF))
         {
             b = inputStream.read();
-            Assert.assertThat("Should not have hit EOL (yet) during chunk size read",(int)b,not(-1));
+            Assert.assertThat("Should not have hit EOL (yet) during chunk size read",b,not(-1));
             if (b == 0x0D)
             {
                 foundCR = true;

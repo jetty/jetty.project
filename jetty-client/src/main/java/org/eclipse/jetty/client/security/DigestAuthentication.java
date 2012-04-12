@@ -104,8 +104,7 @@ public class DigestAuthentication implements Authentication
         }
         catch(Exception e)
         {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException(e);
         }        
     }
     
@@ -119,8 +118,7 @@ public class DigestAuthentication implements Authentication
         }
         catch(Exception e)
         {
-            e.printStackTrace();
-            return null;
+            throw new RuntimeException(e);
         }
     }
     

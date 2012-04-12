@@ -44,28 +44,29 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.xml.sax.SAXParseException;
 
-
 /**
  * Exposes a Jetty Server to be managed by an OSGi ManagedServiceFactory
- * Configure and start it.
- * Can also be used from the ManagedServiceFactory
+ * Configure and start it. Can also be used from the ManagedServiceFactory
  */
-public class ServerInstanceWrapper {
+public class ServerInstanceWrapper
+{
 
-    /** The value of this property points to the parent director of
-     * the jetty.xml configuration file currently executed.
-     * Everything is passed as a URL to support the
-     * case where the bundle is zipped. */
+    /**
+     * The value of this property points to the parent director of the jetty.xml
+     * configuration file currently executed. Everything is passed as a URL to
+     * support the case where the bundle is zipped.
+     */
     public static final String PROPERTY_THIS_JETTY_XML_FOLDER_URL = "this.jetty.xml.parent.folder.url";
 
-    private static Logger __logger = Log.getLogger(ServerInstanceWrapper.class.getName());
-    
+    private static Logger LOG = Log.getLogger(ServerInstanceWrapper.class.getName());
+
     private final String _managedServerName;
-    
+
     /**
      * The managed jetty server
      */
     private Server _server;
+
     private ContextHandlerCollection _ctxtHandler;
 
     /**
@@ -74,32 +75,34 @@ public class ServerInstanceWrapper {
      * let the TldScanner find the jars where the tld files are.
      */
     private ClassLoader _commonParentClassLoaderForWebapps;
+
     private DeploymentManager _deploymentManager;
+
     private OSGiAppProvider _provider;
-    
+
     private WebBundleDeployerHelper _webBundleDeployerHelper;
-    
-    
+
     public ServerInstanceWrapper(String managedServerName)
     {
         _managedServerName = managedServerName;
     }
-    
+
     public String getManagedServerName()
     {
         return _managedServerName;
     }
-    
+
     /**
-     * The classloader that should be the parent classloader for 
-     * each webapp deployed on this server.
+     * The classloader that should be the parent classloader for each webapp
+     * deployed on this server.
+     * 
      * @return
      */
     public ClassLoader getParentClassLoaderForWebapps()
     {
         return _commonParentClassLoaderForWebapps;
     }
-    
+
     /**
      * @return The deployment manager registered on this server.
      */
@@ -107,7 +110,7 @@ public class ServerInstanceWrapper {
     {
         return _deploymentManager;
     }
-    
+
     /**
      * @return The app provider registered on this server.
      */
@@ -115,19 +118,17 @@ public class ServerInstanceWrapper {
     {
         return _provider;
     }
-    
-    
+
     public Server getServer()
     {
         return _server;
     }
-    
-    
+
     public WebBundleDeployerHelper getWebBundleDeployerHelp()
     {
         return _webBundleDeployerHelper;
     }
-    
+
     /**
      * @return The collection of context handlers
      */
@@ -136,8 +137,7 @@ public class ServerInstanceWrapper {
         return _ctxtHandler;
     }
 
-    
-    public void start(Server server, Dictionary props)
+    public void start(Server server, Dictionary props) throws Exception
     {
         _server = server;
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
@@ -146,62 +146,61 @@ public class ServerInstanceWrapper {
             // passing this bundle's classloader as the context classlaoder
             // makes sure there is access to all the jetty's bundles
             ClassLoader libExtClassLoader = null;
-            String sharedURLs = (String)props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
-            try
-            {
-                List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
-                libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(
-                        shared, null, server, JettyBootstrapActivator.class.getClassLoader());
-            }
-            catch (MalformedURLException e)
-            {
-                e.printStackTrace();
-            }
+            String sharedURLs = (String) props.get(OSGiServerConstants.MANAGED_JETTY_SHARED_LIB_FOLDER_URLS);
+
+            List<File> shared = sharedURLs != null ? extractFiles(sharedURLs) : null;
+            libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(shared, null, server, JettyBootstrapActivator.class.getClassLoader());
 
             Thread.currentThread().setContextClassLoader(libExtClassLoader);
-            
+
             configure(server, props);
 
             init();
 
-            //now that we have an app provider we can call the registration customizer.
-            try
-            {
-                URL[] jarsWithTlds = getJarsWithTlds();
-                _commonParentClassLoaderForWebapps = jarsWithTlds == null
-                        ? libExtClassLoader
-                        :new TldLocatableURLClassloader(libExtClassLoader,jarsWithTlds);
-            }
-            catch (MalformedURLException e)
-            {
-                e.printStackTrace();
-            }
+            // now that we have an app provider we can call the registration
+            // customizer.
 
-            
+            URL[] jarsWithTlds = getJarsWithTlds();
+            _commonParentClassLoaderForWebapps = jarsWithTlds == null ? libExtClassLoader : new TldLocatableURLClassloader(libExtClassLoader, jarsWithTlds);
+
             server.start();
+            _webBundleDeployerHelper = new WebBundleDeployerHelper(this);
         }
-        catch (Throwable t)
+        catch (Exception e)
         {
-            t.printStackTrace();
+            if (server != null)
+            {
+                try
+                {
+                    server.stop();
+                }
+                catch (Exception x)
+                {
+                    LOG.ignore(x);
+                }
+            }
+            throw e;
         }
         finally
         {
             Thread.currentThread().setContextClassLoader(contextCl);
         }
-        _webBundleDeployerHelper = new WebBundleDeployerHelper(this);
+        
+        
     }
-    
-    
+
     public void stop()
     {
-        try {
+        try
+        {
             if (_server.isRunning())
             {
                 _server.stop();
             }
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
         }
     }
 
@@ -229,14 +228,13 @@ public class ServerInstanceWrapper {
     private URL[] getJarsWithTlds() throws Exception
     {
         ArrayList<URL> res = new ArrayList<URL>();
-        WebBundleDeployerHelper.staticInit();//that is not looking great.
+        WebBundleDeployerHelper.staticInit();// that is not looking great.
         for (WebappRegistrationCustomizer regCustomizer : WebBundleDeployerHelper.JSP_REGISTRATION_HELPERS)
         {
             URL[] urls = regCustomizer.getJarsWithTlds(_provider, WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER);
             for (URL url : urls)
             {
-                if (!res.contains(url))
-                    res.add(url);
+                if (!res.contains(url)) res.add(url);
             }
         }
         if (!res.isEmpty())
@@ -244,19 +242,15 @@ public class ServerInstanceWrapper {
         else
             return null;
     }
-    
+
     private void configure(Server server, Dictionary props) throws Exception
     {
         String jettyConfigurationUrls = (String) props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
-        List<URL> jettyConfigurations = jettyConfigurationUrls != null
-            ? extractResources(jettyConfigurationUrls) : null;
-        if (jettyConfigurations == null || jettyConfigurations.isEmpty())
-        {
-            return;
-        }
-        Map<String,Object> id_map = new HashMap<String,Object>();
-        id_map.put("Server",server);
-        Map<String,String> properties = new HashMap<String,String>();
+        List<URL> jettyConfigurations = jettyConfigurationUrls != null ? extractResources(jettyConfigurationUrls) : null;
+        if (jettyConfigurations == null || jettyConfigurations.isEmpty()) { return; }
+        Map<String, Object> id_map = new HashMap<String, Object>();
+        id_map.put("Server", server);
+        Map<String, String> properties = new HashMap<String, String>();
         Enumeration<Object> en = props.keys();
         while (en.hasMoreElements())
         {
@@ -275,15 +269,17 @@ public class ServerInstanceWrapper {
                 is = r.getInputStream();
                 XmlConfiguration config = new XmlConfiguration(is);
                 config.getIdMap().putAll(id_map);
-                
-                //#334062 compute the URL of the folder that contains the jetty.xml conf file
-                //and set it as a property so we can compute relative paths from it.
+
+                // #334062 compute the URL of the folder that contains the
+                // jetty.xml conf file
+                // and set it as a property so we can compute relative paths
+                // from it.
                 String urlPath = jettyConfiguration.toString();
                 int lastSlash = urlPath.lastIndexOf('/');
                 if (lastSlash > 4)
                 {
                     urlPath = urlPath.substring(0, lastSlash);
-                    Map<String,String> properties2 = new HashMap<String,String>(properties);
+                    Map<String, String> properties2 = new HashMap<String, String>(properties);
                     properties2.put(PROPERTY_THIS_JETTY_XML_FOLDER_URL, urlPath);
                     config.getProperties().putAll(properties2);
                 }
@@ -292,11 +288,11 @@ public class ServerInstanceWrapper {
                     config.getProperties().putAll(properties);
                 }
                 config.configure();
-                id_map=config.getIdMap();
+                id_map = config.getIdMap();
             }
             catch (SAXParseException saxparse)
             {
-                __logger.warn("Unable to configure the jetty/etc file " + jettyConfiguration,saxparse);
+                LOG.warn("Unable to configure the jetty/etc file " + jettyConfiguration, saxparse);
                 throw saxparse;
             }
             finally
@@ -306,8 +302,7 @@ public class ServerInstanceWrapper {
         }
 
     }
-    
-    
+
     /**
      * Must be called after the server is configured.
      * 
@@ -319,50 +314,48 @@ public class ServerInstanceWrapper {
     private void init()
     {
         // Get the context handler
-        _ctxtHandler = (ContextHandlerCollection)_server.getChildHandlerByClass(ContextHandlerCollection.class);
-        
+        _ctxtHandler = (ContextHandlerCollection) _server.getChildHandlerByClass(ContextHandlerCollection.class);
+
         // get a deployerManager
         List<DeploymentManager> deployers = _server.getBeans(DeploymentManager.class);
         if (deployers != null && !deployers.isEmpty())
         {
             _deploymentManager = deployers.get(0);
-            
+
             for (AppProvider provider : _deploymentManager.getAppProviders())
             {
                 if (provider instanceof OSGiAppProvider)
                 {
-                    _provider=(OSGiAppProvider)provider;
+                    _provider = (OSGiAppProvider) provider;
                     break;
                 }
             }
             if (_provider == null)
             {
-                //create it on the fly with reasonable default values.
+                // create it on the fly with reasonable default values.
                 try
                 {
                     _provider = new OSGiAppProvider();
-                    _provider.setMonitoredDirResource(
-                            Resource.newResource(getDefaultOSGiContextsHome(
-                                    new File(System.getProperty("jetty.home"))).toURI()));
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    _provider.setMonitoredDirResource(Resource.newResource(getDefaultOSGiContextsHome(new File(System.getProperty("jetty.home"))).toURI()));
+                }
+                catch (IOException e)
+                {
+                    LOG.warn(e);
                 }
                 _deploymentManager.addAppProvider(_provider);
             }
         }
 
-        if (_ctxtHandler == null || _provider==null)
-            throw new IllegalStateException("ERROR: No ContextHandlerCollection or OSGiAppProvider configured");
-        
+        if (_ctxtHandler == null || _provider == null) throw new IllegalStateException("ERROR: No ContextHandlerCollection or OSGiAppProvider configured");
 
     }
-    
+
     /**
      * @return The default folder in which the context files of the osgi bundles
      *         are located and watched. Or null when the system property
-     *         "jetty.osgi.contexts.home" is not defined.
-     *         If the configuration file defines the OSGiAppProvider's context.
-     *         This will not be taken into account.
+     *         "jetty.osgi.contexts.home" is not defined. If the configuration
+     *         file defines the OSGiAppProvider's context. This will not be
+     *         taken into account.
      */
     File getDefaultOSGiContextsHome(File jettyHome)
     {
@@ -370,20 +363,19 @@ public class ServerInstanceWrapper {
         if (jettyContextsHome != null)
         {
             File contextsHome = new File(jettyContextsHome);
-            if (!contextsHome.exists() || !contextsHome.isDirectory())
-            {
-                throw new IllegalArgumentException("the ${jetty.osgi.contexts.home} '" + jettyContextsHome + " must exist and be a folder");
-            }
+            if (!contextsHome.exists() || !contextsHome.isDirectory()) { throw new IllegalArgumentException(
+                                                                                                            "the ${jetty.osgi.contexts.home} '" + jettyContextsHome
+                                                                                                            + " must exist and be a folder"); }
             return contextsHome;
         }
         return new File(jettyHome, "/contexts");
     }
-    
+
     File getOSGiContextsHome()
     {
         return _provider.getContextXmlDirAsFile();
     }
-    
+
     /**
      * @return the urls in this string.
      */
@@ -396,19 +388,19 @@ public class ServerInstanceWrapper {
             String tok = tokenizer.nextToken();
             try
             {
-                urls.add(((DefaultFileLocatorHelper) WebBundleDeployerHelper
-                        .BUNDLE_FILE_LOCATOR_HELPER).getLocalURL(new URL(tok)));
+                urls.add(((DefaultFileLocatorHelper) WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER).getLocalURL(new URL(tok)));
             }
             catch (Throwable mfe)
             {
-                
+                LOG.warn(mfe);
             }
         }
         return urls;
     }
-    
+
     /**
-     * Get the folders that might contain jars for the legacy J2EE shared libraries
+     * Get the folders that might contain jars for the legacy J2EE shared
+     * libraries
      */
     private List<File> extractFiles(String propertyValue)
     {
@@ -420,8 +412,7 @@ public class ServerInstanceWrapper {
             try
             {
                 URL url = new URL(tok);
-                url = ((DefaultFileLocatorHelper) WebBundleDeployerHelper
-                    .BUNDLE_FILE_LOCATOR_HELPER).getFileURL(url);
+                url = ((DefaultFileLocatorHelper) WebBundleDeployerHelper.BUNDLE_FILE_LOCATOR_HELPER).getFileURL(url);
                 if (url.getProtocol().equals("file"))
                 {
                     Resource res = Resource.newResource(url);
@@ -434,11 +425,10 @@ public class ServerInstanceWrapper {
             }
             catch (Throwable mfe)
             {
-                
+                LOG.warn(mfe);
             }
         }
         return files;
     }
-    
 
 }

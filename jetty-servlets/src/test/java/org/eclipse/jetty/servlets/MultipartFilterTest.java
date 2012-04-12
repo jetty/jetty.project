@@ -47,7 +47,19 @@ public class MultipartFilterTest
     private ServletTester tester;
 
   
- 
+    public static class TestServlet extends DumpServlet
+    {
+
+        @Override
+        protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            assertNotNull(req.getParameter("fileup"));
+            assertNotNull(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX));
+            assertEquals(req.getParameter("fileup"+MultiPartFilter.CONTENT_TYPE_SUFFIX), "application/octet-stream");
+            super.doPost(req, resp);
+        }
+        
+    }
     
 
     
@@ -63,7 +75,7 @@ public class MultipartFilterTest
         tester=new ServletTester();
         tester.setContextPath("/context");
         tester.setResourceBase(_dir.getCanonicalPath());
-        tester.addServlet(DumpServlet.class, "/");
+        tester.addServlet(TestServlet.class, "/");
         tester.setAttribute("javax.servlet.context.tempdir", _dir);
         FilterHolder multipartFilter = tester.addFilter(MultiPartFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
         multipartFilter.setInitParameter("deleteFiles", "true");
@@ -253,7 +265,6 @@ public class MultipartFilterTest
         protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             assertEquals("How now brown cow.", req.getParameterMap().get("strupContent-Type:"));
-                   
             super.doPost(req, resp);
         }
         

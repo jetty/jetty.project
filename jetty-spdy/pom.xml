@@ -12,6 +12,10 @@
     <packaging>pom</packaging>
     <name>Jetty :: SPDY :: Parent</name>
 
+    <properties>
+        <npn.version>1.0.0.v20120402</npn.version>
+    </properties>
+
     <modules>
         <module>spdy-core</module>
         <module>spdy-jetty</module>

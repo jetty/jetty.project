@@ -64,6 +64,8 @@ public class ResetStreamTest extends AbstractTest
         Assert.assertEquals(0, serverSession.getStreams().size());
 
         Assert.assertTrue(rstLatch.await(5, TimeUnit.SECONDS));
+        // Need to sleep a while to give the chance to the implementation to remove the stream
+        TimeUnit.SECONDS.sleep(1);
         Assert.assertEquals(0, clientSession.getStreams().size());
     }
 

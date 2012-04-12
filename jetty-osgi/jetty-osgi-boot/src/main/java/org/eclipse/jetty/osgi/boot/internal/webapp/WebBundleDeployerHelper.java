@@ -78,13 +78,14 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
     private static Logger __logger = Log.getLogger(WebBundleDeployerHelper.class.getName());
 
     private static boolean INITIALIZED = false;
-    
+
     /**
      * By default set to: {@link DefaultBundleClassLoaderHelper}. It supports
      * equinox and apache-felix fragment bundles that are specific to an OSGi
      * implementation should set a different implementation.
      */
     public static BundleClassLoaderHelper BUNDLE_CLASS_LOADER_HELPER = null;
+
     /**
      * By default set to: {@link DefaultBundleClassLoaderHelper}. It supports
      * equinox and apache-felix fragment bundles that are specific to an OSGi
@@ -97,8 +98,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * equinox and apache-felix fragment bundles that are specific to an OSGi
      * implementation should set a different implementation.
      * <p>
-     * Several of those objects can be added here: For example we could have an optional fragment that setups
-     * a specific implementation of JSF for the whole of jetty-osgi.
+     * Several of those objects can be added here: For example we could have an
+     * optional fragment that setups a specific implementation of JSF for the
+     * whole of jetty-osgi.
      * </p>
      */
     public static Collection<WebappRegistrationCustomizer> JSP_REGISTRATION_HELPERS = new ArrayList<WebappRegistrationCustomizer>();
@@ -127,7 +129,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // setup the custom BundleClassLoaderHelper
             try
             {
-                BUNDLE_CLASS_LOADER_HELPER = (BundleClassLoaderHelper)Class.forName(BundleClassLoaderHelper.CLASS_NAME).newInstance();
+                BUNDLE_CLASS_LOADER_HELPER = (BundleClassLoaderHelper) Class.forName(BundleClassLoaderHelper.CLASS_NAME).newInstance();
             }
             catch (Throwable t)
             {
@@ -137,7 +139,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // setup the custom FileLocatorHelper
             try
             {
-                BUNDLE_FILE_LOCATOR_HELPER = (BundleFileLocatorHelper)Class.forName(BundleFileLocatorHelper.CLASS_NAME).newInstance();
+                BUNDLE_FILE_LOCATOR_HELPER = (BundleFileLocatorHelper) Class.forName(BundleFileLocatorHelper.CLASS_NAME).newInstance();
             }
             catch (Throwable t)
             {
@@ -150,34 +152,28 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
     /**
      * Deploy a new web application on the jetty server.
      * 
-     * @param bundle
-     *            The bundle
-     * @param webappFolderPath
-     *            The path to the root of the webapp. Must be a path relative to
-     *            bundle; either an absolute path.
-     * @param contextPath
-     *            The context path. Must start with "/"
+     * @param bundle The bundle
+     * @param webappFolderPath The path to the root of the webapp. Must be a
+     *            path relative to bundle; either an absolute path.
+     * @param contextPath The context path. Must start with "/"
      * @param extraClasspath
      * @param overrideBundleInstallLocation
      * @param requireTldBundle The list of bundles's symbolic names that contain
-     * tld files that are required by this WAB.
+     *            tld files that are required by this WAB.
      * @param webXmlPath
-     * @param defaultWebXmlPath
-     *            TODO: parameter description
+     * @param defaultWebXmlPath TODO: parameter description
      * @return The contexthandler created and started
      * @throws Exception
      */
-    public WebAppContext registerWebapplication(Bundle bundle,
-            String webappFolderPath, String contextPath, String extraClasspath,
-            String overrideBundleInstallLocation,
-            String requireTldBundle, String webXmlPath,
-            String defaultWebXmlPath, WebAppContext webAppContext) throws Exception
+    public WebAppContext registerWebapplication(Bundle bundle, String webappFolderPath, String contextPath, String extraClasspath,
+                                                String overrideBundleInstallLocation, String requireTldBundle, String webXmlPath, String defaultWebXmlPath,
+                                                WebAppContext webAppContext) throws Exception
     {
-        File bundleInstall = overrideBundleInstallLocation == null?BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle):new File(
-                overrideBundleInstallLocation);
+        File bundleInstall = overrideBundleInstallLocation == null ? BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle) : new File(
+                                                                                                                                            overrideBundleInstallLocation);
         File webapp = null;
         URL baseWebappInstallURL = null;
-        
+
         if (webappFolderPath != null && webappFolderPath.length() != 0 && !webappFolderPath.equals("."))
         {
             if (webappFolderPath.startsWith("/") || webappFolderPath.startsWith("file:"))
@@ -186,7 +182,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             }
             else if (bundleInstall != null && bundleInstall.isDirectory())
             {
-                webapp = new File(bundleInstall,webappFolderPath);
+                webapp = new File(bundleInstall, webappFolderPath);
             }
             else if (bundleInstall != null)
             {
@@ -201,37 +197,48 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         {
             webapp = bundleInstall;
         }
-        if (baseWebappInstallURL == null && (webapp == null || !webapp.exists()))
-        {
-            throw new IllegalArgumentException("Unable to locate " + webappFolderPath + " inside "
-                    + (bundleInstall != null?bundleInstall.getAbsolutePath():"unlocated bundle '" + bundle.getSymbolicName() + "'"));
-        }
+        if (baseWebappInstallURL == null && (webapp == null || !webapp.exists())) { throw new IllegalArgumentException(
+                                                                                                                       "Unable to locate " + webappFolderPath
+                                                                                                                               + " inside "
+                                                                                                                               + (bundleInstall != null ? bundleInstall.getAbsolutePath() : "unlocated bundle '" + bundle.getSymbolicName()
+                                                                                                                                                                                            + "'")); }
         if (baseWebappInstallURL == null && webapp != null)
         {
             baseWebappInstallURL = webapp.toURI().toURL();
         }
-        return registerWebapplication(bundle,webappFolderPath,baseWebappInstallURL,contextPath,
-                extraClasspath,bundleInstall,requireTldBundle,webXmlPath,defaultWebXmlPath,webAppContext);
+        return registerWebapplication(bundle, webappFolderPath, baseWebappInstallURL, contextPath, extraClasspath, bundleInstall, requireTldBundle, webXmlPath,
+                                      defaultWebXmlPath, webAppContext);
     }
-    
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#registerWebapplication(org.osgi.framework.Bundle, java.lang.String, java.io.File, java.lang.String, java.lang.String, java.io.File, java.lang.String, java.lang.String)
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#
+     * registerWebapplication(org.osgi.framework.Bundle, java.lang.String,
+     * java.io.File, java.lang.String, java.lang.String, java.io.File,
+     * java.lang.String, java.lang.String)
      */
-    private WebAppContext registerWebapplication(Bundle contributor, String pathInBundleToWebApp,
-            URL baseWebappInstallURL, String contextPath, String extraClasspath, File bundleInstall,
-            String requireTldBundle, String webXmlPath, String defaultWebXmlPath, WebAppContext context)
-    throws Exception
+    private WebAppContext registerWebapplication(Bundle contributor, String pathInBundleToWebApp, URL baseWebappInstallURL, String contextPath,
+                                                 String extraClasspath, File bundleInstall, String requireTldBundle, String webXmlPath,
+                                                 String defaultWebXmlPath, WebAppContext context) throws Exception
     {
 
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         String[] oldServerClasses = null;
-        
+
         try
         {
+          
+            
+            //apply any META-INF/context.xml file that is found to configure the webapp first
+            applyMetaInfContextXml (contributor, context);
+            
             // make sure we provide access to all the jetty bundles by going
             // through this bundle.
             OSGiWebappClassLoader composite = createWebappClassLoader(contributor);
-            // configure with access to all jetty classes and also all the classes
+            // configure with access to all jetty classes and also all the
+            // classes
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
 
@@ -248,7 +255,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                 }
                 else
                 {
-                    webXml = new File(bundleInstall,webXmlPath);
+                    webXml = new File(bundleInstall, webXmlPath);
                 }
                 if (webXml.exists())
                 {
@@ -258,7 +265,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 
             if (defaultWebXmlPath == null || defaultWebXmlPath.length() == 0)
             {
-                //use the one defined by the OSGiAppProvider.
+                // use the one defined by the OSGiAppProvider.
                 defaultWebXmlPath = _wrapper.getOSGiAppProvider().getDefaultsDescriptor();
             }
             if (defaultWebXmlPath != null && defaultWebXmlPath.length() != 0)
@@ -270,20 +277,19 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                 }
                 else
                 {
-                    defaultWebXml = new File(bundleInstall,defaultWebXmlPath);
+                    defaultWebXml = new File(bundleInstall, defaultWebXmlPath);
                 }
                 if (defaultWebXml.exists())
                 {
                     context.setDefaultsDescriptor(defaultWebXml.getAbsolutePath());
                 }
             }
-            
-            //other parameters that might be defines on the OSGiAppProvider:
+
+            // other parameters that might be defines on the OSGiAppProvider:
             context.setParentLoaderPriority(_wrapper.getOSGiAppProvider().isParentLoaderPriority());
 
-            configureWebappClassLoader(contributor,context,composite, requireTldBundle);
-            configureWebAppContext(context,contributor,requireTldBundle);
-            
+            configureWebappClassLoader(contributor, context, composite, requireTldBundle);
+            configureWebAppContext(context, contributor, requireTldBundle);
 
             // @see
             // org.eclipse.jetty.webapp.JettyWebXmlConfiguration#configure(WebAppContext)
@@ -292,36 +298,36 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // through the webapp classloader.
             oldServerClasses = context.getServerClasses();
             context.setServerClasses(null);
-            
-            _wrapper.getOSGiAppProvider().addContext(contributor,pathInBundleToWebApp,context);
-            
-            //support for patch resources. ideally this should be done inside a configurator.
-            List<Resource> patchResources =
-            		(List<Resource>)context.getAttribute(WebInfConfiguration.RESOURCE_URLS+".patch");
+
+            _wrapper.getOSGiAppProvider().addContext(contributor, pathInBundleToWebApp, context);
+
+            // support for patch resources. ideally this should be done inside a
+            // configurator.
+            List<Resource> patchResources = (List<Resource>) context.getAttribute(WebInfConfiguration.RESOURCE_URLS + ".patch");
             if (patchResources != null)
             {
-	            LinkedList<Resource> resourcesPath = new LinkedList<Resource>();
-	            //place the patch resources at the beginning of the lookup path.
-	            resourcesPath.addAll(patchResources);
-	            //then place the ones from the host web bundle.
-	            Resource hostResources = context.getBaseResource();
-	            if (hostResources instanceof ResourceCollection)
-	            {
-	            	for (Resource re : ((ResourceCollection)hostResources).getResources())
-	            	{
-	            		resourcesPath.add(re);
-	            	}
-	            }
-	            else
-	            {
-	            	resourcesPath.add(hostResources);
-	            }
-	            
-	            ResourceCollection rc = new ResourceCollection(resourcesPath.toArray(
-	                    new Resource[resourcesPath.size()]));
-	            context.setBaseResource(rc);
+                LinkedList<Resource> resourcesPath = new LinkedList<Resource>();
+                // place the patch resources at the beginning of the lookup
+                // path.
+                resourcesPath.addAll(patchResources);
+                // then place the ones from the host web bundle.
+                Resource hostResources = context.getBaseResource();
+                if (hostResources instanceof ResourceCollection)
+                {
+                    for (Resource re : ((ResourceCollection) hostResources).getResources())
+                    {
+                        resourcesPath.add(re);
+                    }
+                }
+                else
+                {
+                    resourcesPath.add(hostResources);
+                }
+
+                ResourceCollection rc = new ResourceCollection(resourcesPath.toArray(new Resource[resourcesPath.size()]));
+                context.setBaseResource(rc);
             }
-            
+
             return context;
         }
         finally
@@ -335,38 +341,41 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#unregister(org.eclipse.jetty.server.handler.ContextHandler)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#
+     * unregister(org.eclipse.jetty.server.handler.ContextHandler)
      */
     public void unregister(ContextHandler contextHandler) throws Exception
     {
         _wrapper.getOSGiAppProvider().removeContext(contextHandler);
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#registerContext(org.osgi.framework.Bundle, java.lang.String, java.lang.String, java.lang.String)
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.eclipse.jetty.osgi.boot.internal.webapp.IWebBundleDeployerHelper#
+     * registerContext(org.osgi.framework.Bundle, java.lang.String,
+     * java.lang.String, java.lang.String)
      */
-    public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath, String extraClasspath, 
-                String overrideBundleInstallLocation, String requireTldBundle, ContextHandler handler)
-            throws Exception
+    public ContextHandler registerContext(Bundle contributor, String contextFileRelativePath, String extraClasspath, String overrideBundleInstallLocation,
+                                          String requireTldBundle, ContextHandler handler) throws Exception
     {
         File contextsHome = _wrapper.getOSGiAppProvider().getContextXmlDirAsFile();
         if (contextsHome != null)
         {
-            File prodContextFile = new File(contextsHome,contributor.getSymbolicName() + "/" + contextFileRelativePath);
-            if (prodContextFile.exists())
-            {
-                return registerContext(contributor,contextFileRelativePath,prodContextFile,extraClasspath,
-                        overrideBundleInstallLocation,requireTldBundle,handler);
-            }
+            File prodContextFile = new File(contextsHome, contributor.getSymbolicName() + "/" + contextFileRelativePath);
+            if (prodContextFile.exists()) { return registerContext(contributor, contextFileRelativePath, prodContextFile, extraClasspath,
+                                                                   overrideBundleInstallLocation, requireTldBundle, handler); }
         }
-        File rootFolder = overrideBundleInstallLocation != null
-            ? Resource.newResource(overrideBundleInstallLocation).getFile()
-            : BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(contributor);
-        File contextFile = rootFolder != null?new File(rootFolder,contextFileRelativePath):null;
+        File rootFolder = overrideBundleInstallLocation != null ? Resource.newResource(overrideBundleInstallLocation).getFile() : BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(contributor);
+        File contextFile = rootFolder != null ? new File(rootFolder, contextFileRelativePath) : null;
         if (contextFile != null && contextFile.exists())
         {
-            return registerContext(contributor,contextFileRelativePath,contextFile,extraClasspath,overrideBundleInstallLocation,requireTldBundle,handler);
+            return registerContext(contributor, contextFileRelativePath, contextFile, extraClasspath, overrideBundleInstallLocation, requireTldBundle, handler);
         }
         else
         {
@@ -378,15 +387,19 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             {
                 contextFileRelativePath = "/" + contextFileRelativePath;
             }
-            
+
             URL contextURL = contributor.getEntry(contextFileRelativePath);
             if (contextURL != null)
             {
-                Resource r = Resource.newResource(contextURL);              
-                return registerContext(contributor,contextFileRelativePath,r.getInputStream(),extraClasspath,overrideBundleInstallLocation,requireTldBundle,handler);
+                Resource r = Resource.newResource(contextURL);
+                return registerContext(contributor, contextFileRelativePath, r.getInputStream(), extraClasspath, overrideBundleInstallLocation,
+                                       requireTldBundle, handler);
             }
-            throw new IllegalArgumentException("Could not find the context " + "file " + contextFileRelativePath + " for the bundle "
-                    + contributor.getSymbolicName() + (overrideBundleInstallLocation != null?" using the install location " + overrideBundleInstallLocation:""));
+            throw new IllegalArgumentException("Could not find the context " + "file "
+                                               + contextFileRelativePath
+                                               + " for the bundle "
+                                               + contributor.getSymbolicName()
+                                               + (overrideBundleInstallLocation != null ? " using the install location " + overrideBundleInstallLocation : ""));
         }
     }
 
@@ -400,22 +413,20 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @param classInBundle
      * @throws Exception
      */
-    private ContextHandler registerContext(Bundle contributor, String pathInBundle, File contextFile,
-            String extraClasspath, String overrideBundleInstallLocation,
-            String requireTldBundle, ContextHandler handler) throws Exception
+    private ContextHandler registerContext(Bundle contributor, String pathInBundle, File contextFile, String extraClasspath,
+                                           String overrideBundleInstallLocation, String requireTldBundle, ContextHandler handler) throws Exception
     {
         InputStream contextFileInputStream = null;
         try
         {
             contextFileInputStream = new BufferedInputStream(new FileInputStream(contextFile));
-            return registerContext(contributor, pathInBundle, contextFileInputStream,
-                    extraClasspath,overrideBundleInstallLocation,requireTldBundle,handler);
+            return registerContext(contributor, pathInBundle, contextFileInputStream, extraClasspath, overrideBundleInstallLocation, requireTldBundle, handler);
         }
         finally
         {
             IO.close(contextFileInputStream);
         }
-    }
+                                           }
 
     /**
      * @param contributor
@@ -424,11 +435,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      *         happen.
      * @throws Exception
      */
-    private ContextHandler registerContext(Bundle contributor,
-            String pathInsideBundle, InputStream contextFileInputStream,
-            String extraClasspath, String overrideBundleInstallLocation,
-            String requireTldBundle, ContextHandler handler)
-            throws Exception
+    private ContextHandler registerContext(Bundle contributor, String pathInsideBundle, InputStream contextFileInputStream, String extraClasspath,
+                                           String overrideBundleInstallLocation, String requireTldBundle, ContextHandler handler) throws Exception
     {
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         String[] oldServerClasses = null;
@@ -442,24 +450,23 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // classes
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
-            ContextHandler context = createContextHandler(handler, contributor,
-                    contextFileInputStream,extraClasspath,
-                    overrideBundleInstallLocation,requireTldBundle);
-            if (context == null)
-            {
+            ContextHandler context = createContextHandler(handler, contributor, contextFileInputStream, extraClasspath, overrideBundleInstallLocation,
+                                                          requireTldBundle);
+            if (context == null) 
+            { 
                 return null;// did not happen
             }
 
             // ok now register this webapp. we checked when we started jetty
             // that there
             // was at least one such handler for webapps.
-            //the actual registration must happen via the new Deployment API.
-//            _ctxtHandler.addHandler(context);
+            // the actual registration must happen via the new Deployment API.
+            // _ctxtHandler.addHandler(context);
 
-            configureWebappClassLoader(contributor,context,composite, requireTldBundle);
+            configureWebappClassLoader(contributor, context, composite, requireTldBundle);
             if (context instanceof WebAppContext)
             {
-                webAppContext = (WebAppContext)context;
+                webAppContext = (WebAppContext) context;
                 // @see
                 // org.eclipse.jetty.webapp.JettyWebXmlConfiguration#configure(WebAppContext)
                 oldServerClasses = webAppContext.getServerClasses();
@@ -485,60 +492,58 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @see {WebAppDeployer#scan} around the comment
      *      <code>// configure it</code>
      */
-    protected void configureWebAppContext(ContextHandler wah, Bundle contributor,
-            String requireTldBundle) throws IOException
+    protected void configureWebAppContext(ContextHandler wah, Bundle contributor, String requireTldBundle) throws IOException
     {
         // rfc66
-        wah.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT,contributor.getBundleContext());
+        wah.setAttribute(OSGiWebappConstants.RFC66_OSGI_BUNDLE_CONTEXT, contributor.getBundleContext());
 
-        //spring-dm-1.2.1 looks for the BundleContext as a different attribute.
-        //not a spec... but if we want to support 
-        //org.springframework.osgi.web.context.support.OsgiBundleXmlWebApplicationContext
-        //then we need to do this to:
-        wah.setAttribute("org.springframework.osgi.web." + BundleContext.class.getName(),
-                        contributor.getBundleContext());
-        
-        //also pass the bundle directly. sometimes a bundle does not have a bundlecontext.
-        //it is still useful to have access to the Bundle from the servlet context.
+        // spring-dm-1.2.1 looks for the BundleContext as a different attribute.
+        // not a spec... but if we want to support
+        // org.springframework.osgi.web.context.support.OsgiBundleXmlWebApplicationContext
+        // then we need to do this to:
+        wah.setAttribute("org.springframework.osgi.web." + BundleContext.class.getName(), contributor.getBundleContext());
+
+        // also pass the bundle directly. sometimes a bundle does not have a
+        // bundlecontext.
+        // it is still useful to have access to the Bundle from the servlet
+        // context.
         wah.setAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE, contributor);
-        
-        //pass the value of the require tld bundle so that the TagLibOSGiConfiguration
-        //can pick it up.
+
+        // pass the value of the require tld bundle so that the
+        // TagLibOSGiConfiguration
+        // can pick it up.
         wah.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundle);
 
-        if (wah instanceof WebAppContext)
-        {
-            if (_wrapper.getOSGiAppProvider().getConfigurationClasses() != null)
-            {
-                ((WebAppContext)wah).setConfigurationClasses(_wrapper.getOSGiAppProvider().getConfigurationClasses());
-            }
-        }
-        
         Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(contributor);
         if (fragments != null && fragments.length != 0)
         {
-            //sorted extra resource base found in the fragments.
-            //the resources are either overriding the resourcebase found in the web-bundle
-            //or appended.
-            //amongst each resource we sort them according to the alphabetical order
-            //of the name of the internal folder and the symbolic name of the fragment.
-            //this is useful to make sure that the lookup path of those
-            //resource base defined by fragments is always the same.
-            //This natural order could be abused to define the order in which the base resources are
-            //looked up.
-            TreeMap<String,Resource> patchResourcesPath = new TreeMap<String,Resource>();
-            TreeMap<String,Resource> appendedResourcesPath = new TreeMap<String,Resource>();
-            for (Bundle frag : fragments) {
-                String fragFolder = (String)frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_FRAGMENT_FOLDER_PATH);
-                String patchFragFolder = (String)frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH);
+            // sorted extra resource base found in the fragments.
+            // the resources are either overriding the resourcebase found in the
+            // web-bundle
+            // or appended.
+            // amongst each resource we sort them according to the alphabetical
+            // order
+            // of the name of the internal folder and the symbolic name of the
+            // fragment.
+            // this is useful to make sure that the lookup path of those
+            // resource base defined by fragments is always the same.
+            // This natural order could be abused to define the order in which
+            // the base resources are
+            // looked up.
+            TreeMap<String, Resource> patchResourcesPath = new TreeMap<String, Resource>();
+            TreeMap<String, Resource> appendedResourcesPath = new TreeMap<String, Resource>();
+            for (Bundle frag : fragments)
+            {
+                String fragFolder = (String) frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_FRAGMENT_FOLDER_PATH);
+                String patchFragFolder = (String) frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH);
                 if (fragFolder != null)
                 {
                     URL fragUrl = frag.getEntry(fragFolder);
-                    if (fragUrl == null)
-                    {
-                        throw new IllegalArgumentException("Unable to locate " + fragFolder + " inside "
-                                + " the fragment '" + frag.getSymbolicName() + "'");
-                    }
+                    if (fragUrl == null) { throw new IllegalArgumentException("Unable to locate " + fragFolder
+                                                                              + " inside "
+                                                                              + " the fragment '"
+                                                                              + frag.getSymbolicName()
+                                                                              + "'"); }
                     fragUrl = DefaultFileLocatorHelper.getLocalURL(fragUrl);
                     String key = fragFolder.startsWith("/") ? fragFolder.substring(1) : fragFolder;
                     appendedResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(fragUrl));
@@ -546,11 +551,11 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                 if (patchFragFolder != null)
                 {
                     URL patchFragUrl = frag.getEntry(patchFragFolder);
-                    if (patchFragUrl == null)
-                    {
-                        throw new IllegalArgumentException("Unable to locate " + patchFragUrl + " inside "
-                                + " the fragment '" + frag.getSymbolicName() + "'");
-                    }
+                    if (patchFragUrl == null) { throw new IllegalArgumentException("Unable to locate " + patchFragUrl
+                                                                                   + " inside "
+                                                                                   + " the fragment '"
+                                                                                   + frag.getSymbolicName()
+                                                                                   + "'"); }
                     patchFragUrl = DefaultFileLocatorHelper.getLocalURL(patchFragUrl);
                     String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
                     patchResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(patchFragUrl));
@@ -558,92 +563,92 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             }
             if (!appendedResourcesPath.isEmpty())
             {
-            	wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, new ArrayList<Resource>(appendedResourcesPath.values()));
+                wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, new ArrayList<Resource>(appendedResourcesPath.values()));
             }
             if (!patchResourcesPath.isEmpty())
             {
-            	wah.setAttribute(WebInfConfiguration.RESOURCE_URLS + ".patch", new ArrayList<Resource>(patchResourcesPath.values()));
+                wah.setAttribute(WebInfConfiguration.RESOURCE_URLS + ".patch", new ArrayList<Resource>(patchResourcesPath.values()));
             }
-            
+
             if (wah instanceof WebAppContext)
             {
-            	//This is the equivalent of what MetaInfConfiguration does. For OSGi bundles without the JarScanner
-            	WebAppContext webappCtxt = (WebAppContext)wah;
-	            //take care of the web-fragments, meta-inf resources and tld resources:
-	            //similar to what MetaInfConfiguration does.
-	            List<Resource> frags = (List<Resource>)wah.getAttribute(FragmentConfiguration.FRAGMENT_RESOURCES);
-	            List<Resource> resfrags = (List<Resource>)wah.getAttribute(WebInfConfiguration.RESOURCE_URLS);
-	            List<Resource> tldfrags = (List<Resource>)wah.getAttribute(TagLibConfiguration.TLD_RESOURCES);
-	            for (Bundle frag : fragments)
-	            {
-	            	URL webFrag = frag.getEntry("/META-INF/web-fragment.xml");
-	            	Enumeration<URL> resEnum = frag.findEntries("/META-INF/resources", "*", true);
-	            	Enumeration<URL> tldEnum = frag.findEntries("/META-INF", "*.tld", false);
-	            	if (webFrag != null || (resEnum != null && resEnum.hasMoreElements())
-	            			|| (tldEnum != null && tldEnum.hasMoreElements()))
-	                {
-	                    try
-	                    {
-	                        File fragFile = BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(frag);
-	                        //add it to the webinf jars collection:
-	                        //no need to check that it was not there yet: it was not there yet for sure.
-	                        Resource fragFileAsResource = Resource.newResource(fragFile.toURI());
-	                        webappCtxt.getMetaData().addWebInfJar(fragFileAsResource);
-	                        
-	                        if (webFrag != null)
-	                        {
-		                        if (frags == null)
-		                        {
-		                            frags = new ArrayList<Resource>();
-		                            wah.setAttribute(FragmentConfiguration.FRAGMENT_RESOURCES, frags);
-		                        }
-		                        frags.add(fragFileAsResource);
-	                        }
-	                        if (resEnum != null && resEnum.hasMoreElements())
-	                        {
-	                        	URL resourcesEntry = frag.getEntry("/META-INF/resources/");
-	                        	if (resourcesEntry == null)
-	                        	{
-	                        		//probably we found some fragments to a bundle.
-			                        //those are already contributed.
-	                        		//so we skip this.
-	                        	}
-	                        	else
-	                        	{
-			                        if (resfrags == null)
-			                        {
-			                        	resfrags = new ArrayList<Resource>();
-			                            wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, resfrags);
-			                        }
-	                        		resfrags.add(Resource.newResource(
-	                        				DefaultFileLocatorHelper.getLocalURL(resourcesEntry)));
-	                        	}
-	                        }
-	                        if (tldEnum != null && tldEnum.hasMoreElements())
-	                        {
-		                        if (tldfrags == null)
-		                        {
-		                        	tldfrags = new ArrayList<Resource>();
-		                            wah.setAttribute(TagLibConfiguration.TLD_RESOURCES, tldfrags);
-		                        }
-		                        while (tldEnum.hasMoreElements())
-		                        {
-		                            URL tldUrl = tldEnum.nextElement();	                            
-		                        	tldfrags.add(Resource.newResource(
-		                        			DefaultFileLocatorHelper.getLocalURL(tldUrl)));
-		                        }
-	                        }
-	                    }
-	                    catch (Exception e)
-	                    {
-	                        __logger.warn("Unable to locate the bundle " + frag.getBundleId(),e);
-	                    }
-	                }
-	            }
+                // This is the equivalent of what MetaInfConfiguration does. For
+                // OSGi bundles without the JarScanner
+                WebAppContext webappCtxt = (WebAppContext) wah;
+                // take care of the web-fragments, meta-inf resources and tld
+                // resources:
+                // similar to what MetaInfConfiguration does.
+                List<Resource> frags = (List<Resource>) wah.getAttribute(FragmentConfiguration.FRAGMENT_RESOURCES);
+                List<Resource> resfrags = (List<Resource>) wah.getAttribute(WebInfConfiguration.RESOURCE_URLS);
+                List<Resource> tldfrags = (List<Resource>) wah.getAttribute(TagLibConfiguration.TLD_RESOURCES);
+                for (Bundle frag : fragments)
+                {
+                    URL webFrag = frag.getEntry("/META-INF/web-fragment.xml");
+                    Enumeration<URL> resEnum = frag.findEntries("/META-INF/resources", "*", true);
+                    Enumeration<URL> tldEnum = frag.findEntries("/META-INF", "*.tld", false);
+                    if (webFrag != null || (resEnum != null && resEnum.hasMoreElements()) || (tldEnum != null && tldEnum.hasMoreElements()))
+                    {
+                        try
+                        {
+                            File fragFile = BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(frag);
+                            // add it to the webinf jars collection:
+                            // no need to check that it was not there yet: it
+                            // was not there yet for sure.
+                            Resource fragFileAsResource = Resource.newResource(fragFile.toURI());
+                            webappCtxt.getMetaData().addWebInfJar(fragFileAsResource);
+
+                            if (webFrag != null)
+                            {
+                                if (frags == null)
+                                {
+                                    frags = new ArrayList<Resource>();
+                                    wah.setAttribute(FragmentConfiguration.FRAGMENT_RESOURCES, frags);
+                                }
+                                frags.add(fragFileAsResource);
+                            }
+                            if (resEnum != null && resEnum.hasMoreElements())
+                            {
+                                URL resourcesEntry = frag.getEntry("/META-INF/resources/");
+                                if (resourcesEntry == null)
+                                {
+                                    // probably we found some fragments to a
+                                    // bundle.
+                                    // those are already contributed.
+                                    // so we skip this.
+                                }
+                                else
+                                {
+                                    if (resfrags == null)
+                                    {
+                                        resfrags = new ArrayList<Resource>();
+                                        wah.setAttribute(WebInfConfiguration.RESOURCE_URLS, resfrags);
+                                    }
+                                    resfrags.add(Resource.newResource(DefaultFileLocatorHelper.getLocalURL(resourcesEntry)));
+                                }
+                            }
+                            if (tldEnum != null && tldEnum.hasMoreElements())
+                            {
+                                if (tldfrags == null)
+                                {
+                                    tldfrags = new ArrayList<Resource>();
+                                    wah.setAttribute(TagLibConfiguration.TLD_RESOURCES, tldfrags);
+                                }
+                                while (tldEnum.hasMoreElements())
+                                {
+                                    URL tldUrl = tldEnum.nextElement();
+                                    tldfrags.add(Resource.newResource(DefaultFileLocatorHelper.getLocalURL(tldUrl)));
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            __logger.warn("Unable to locate the bundle " + frag.getBundleId(), e);
+                        }
+                    }
+                }
             }
         }
-        
-        
+
     }
 
     /**
@@ -651,19 +656,17 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @param contextFile
      * @return
      */
-    protected ContextHandler createContextHandler(ContextHandler handlerToConfigure,
-            Bundle bundle, File contextFile, String extraClasspath,
-            String overrideBundleInstallLocation, String requireTldBundle)
+    protected ContextHandler createContextHandler(ContextHandler handlerToConfigure, Bundle bundle, File contextFile, String extraClasspath,
+                                                  String overrideBundleInstallLocation, String requireTldBundle)
     {
         try
         {
-            return createContextHandler(handlerToConfigure,bundle,
-                    new BufferedInputStream(new FileInputStream(contextFile)),
-                    extraClasspath,overrideBundleInstallLocation,requireTldBundle);
+            return createContextHandler(handlerToConfigure, bundle, new BufferedInputStream(new FileInputStream(contextFile)), extraClasspath,
+                                        overrideBundleInstallLocation, requireTldBundle);
         }
         catch (FileNotFoundException e)
         {
-            e.printStackTrace();
+            __logger.warn(e);
         }
         return null;
     }
@@ -674,9 +677,8 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
      * @return
      */
     @SuppressWarnings("unchecked")
-    protected ContextHandler createContextHandler(ContextHandler handlerToConfigure,
-            Bundle bundle, InputStream contextInputStream, String extraClasspath,
-            String overrideBundleInstallLocation, String requireTldBundle)
+    protected ContextHandler createContextHandler(ContextHandler handlerToConfigure, Bundle bundle, InputStream contextInputStream, String extraClasspath,
+                                                  String overrideBundleInstallLocation, String requireTldBundle)
     {
         /*
          * Do something identical to what the ContextProvider would have done:
@@ -693,30 +695,30 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         {
             XmlConfiguration xmlConfiguration = new XmlConfiguration(contextInputStream);
             HashMap properties = new HashMap();
-            properties.put("Server",_wrapper.getServer());
-            
+            properties.put("Server", _wrapper.getServer());
+
             // insert the bundle's location as a property.
-            setThisBundleHomeProperty(bundle,properties,overrideBundleInstallLocation);
+            setThisBundleHomeProperty(bundle, properties, overrideBundleInstallLocation);
             xmlConfiguration.getProperties().putAll(properties);
 
             ContextHandler context = null;
             if (handlerToConfigure == null)
             {
-                context = (ContextHandler)xmlConfiguration.configure();
+                context = (ContextHandler) xmlConfiguration.configure();
             }
             else
             {
                 xmlConfiguration.configure(handlerToConfigure);
                 context = handlerToConfigure;
             }
-            
+
             if (context instanceof WebAppContext)
             {
-                ((WebAppContext)context).setExtraClasspath(extraClasspath);
-                ((WebAppContext)context).setParentLoaderPriority(_wrapper.getOSGiAppProvider().isParentLoaderPriority());
+                ((WebAppContext) context).setExtraClasspath(extraClasspath);
+                ((WebAppContext) context).setParentLoaderPriority(_wrapper.getOSGiAppProvider().isParentLoaderPriority());
                 if (_wrapper.getOSGiAppProvider().getDefaultsDescriptor() != null && _wrapper.getOSGiAppProvider().getDefaultsDescriptor().length() != 0)
                 {
-                    ((WebAppContext)context).setDefaultsDescriptor(_wrapper.getOSGiAppProvider().getDefaultsDescriptor());
+                    ((WebAppContext) context).setDefaultsDescriptor(_wrapper.getOSGiAppProvider().getDefaultsDescriptor());
                 }
             }
 
@@ -729,18 +731,15 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         }
         catch (SAXException e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            __logger.warn(e);
         }
         catch (IOException e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            __logger.warn(e);
         }
         catch (Throwable e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            __logger.warn(e);
         }
         finally
         {
@@ -782,13 +781,12 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
     {
         if (context instanceof WebAppContext)
         {
-            WebAppContext webappCtxt = (WebAppContext)context;
+            WebAppContext webappCtxt = (WebAppContext) context;
             context.setClassLoader(webappClassLoader);
             webappClassLoader.setWebappContext(webappCtxt);
 
             String pathsToRequiredBundles = getPathsToRequiredBundles(context, requireTldBundle);
-            if (pathsToRequiredBundles != null)
-                webappClassLoader.addClassPath(pathsToRequiredBundles);
+            if (pathsToRequiredBundles != null) webappClassLoader.addClassPath(pathsToRequiredBundles);
         }
         else
         {
@@ -804,23 +802,48 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         // we use a temporary WebAppContext object.
         // if this is a real webapp we will set it on it a bit later: once we
         // know.
-        OSGiWebappClassLoader webappClassLoader = new OSGiWebappClassLoader(
-            _wrapper.getParentClassLoaderForWebapps(),new WebAppContext(),contributor,BUNDLE_CLASS_LOADER_HELPER);
-        /* DEBUG
-        try {
-        Class c = webappClassLoader.loadClass("org.glassfish.jsp.api.ResourceInjector");
-        System.err.println("LOADED org.glassfish.jsp.api.ResourceInjector from "+c.getClassLoader());
-        }
-        catch (Exception e) {e.printStackTrace();}
-        try {
-            Class c = webappClassLoader.loadClass("org.apache.jasper.xmlparser.ParserUtils");
-            System.err.println("LOADED org.apache.jasper.xmlparser.ParserUtils from "+c.getClassLoader());
-            }
-            catch (Exception e) {e.printStackTrace();}
-        */
+        OSGiWebappClassLoader webappClassLoader = new OSGiWebappClassLoader(_wrapper.getParentClassLoaderForWebapps(), new WebAppContext(), contributor,
+                                                                            BUNDLE_CLASS_LOADER_HELPER);
         return webappClassLoader;
     }
 
+    
+    protected void applyMetaInfContextXml (Bundle bundle, ContextHandler contextHandler)
+    throws Exception
+    {
+        if (bundle == null)
+            return;
+        if (contextHandler == null)
+            return;
+
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        __logger.info("Context classloader = "+cl);
+        try
+        {
+            Thread.currentThread().setContextClassLoader(_wrapper.getParentClassLoaderForWebapps());
+
+            //find if there is a META-INF/context.xml file
+            URL contextXmlUrl = bundle.getEntry("/META-INF/jetty-webapp-context.xml");
+            if (contextXmlUrl == null)
+                return;
+
+            //Apply it just as the standard jetty ContextProvider would do
+            __logger.info("Applying "+contextXmlUrl+" to "+contextHandler);
+
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXmlUrl);
+            HashMap properties = new HashMap();
+            properties.put("Server", _wrapper.getServer());
+            xmlConfiguration.getProperties().putAll(properties);
+            xmlConfiguration.configure(contextHandler);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(cl);
+        }
+    }
+    
+    
+    
     /**
      * Set the property &quot;this.bundle.install&quot; to point to the location
      * of the bundle. Useful when <SystemProperty name="this.bundle.home"/> is
@@ -830,10 +853,9 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
     {
         try
         {
-            File location = overrideBundleInstallLocation != null?new File(overrideBundleInstallLocation):BUNDLE_FILE_LOCATOR_HELPER
-                    .getBundleInstallLocation(bundle);
-            properties.put("this.bundle.install",location.getCanonicalPath());
-            properties.put("this.bundle.install.url",bundle.getEntry("/").toString());
+            File location = overrideBundleInstallLocation != null ? new File(overrideBundleInstallLocation) : BUNDLE_FILE_LOCATOR_HELPER.getBundleInstallLocation(bundle);
+            properties.put("this.bundle.install", location.getCanonicalPath());
+            properties.put("this.bundle.install.url", bundle.getEntry("/").toString());
         }
         catch (Throwable t)
         {
@@ -841,36 +863,30 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         }
     }
 
-    
-    private String getPathsToRequiredBundles (ContextHandler context, String requireTldBundle) throws Exception
+    private String getPathsToRequiredBundles(ContextHandler context, String requireTldBundle) throws Exception
     {
-        if (requireTldBundle == null)
-            return null;
+        if (requireTldBundle == null) return null;
 
         StringBuilder paths = new StringBuilder();
-        Bundle bundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
+        Bundle bundle = (Bundle) context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         PackageAdmin packAdmin = getBundleAdmin();
         DefaultFileLocatorHelper fileLocatorHelper = new DefaultFileLocatorHelper();
-        
+
         String[] symbNames = requireTldBundle.split(", ");
 
         for (String symbName : symbNames)
         {
             Bundle[] bs = packAdmin.getBundles(symbName, null);
-            if (bs == null || bs.length == 0)
-            {
-                throw new IllegalArgumentException("Unable to locate the bundle '"
-                                                   + symbName + "' specified in the "
-                                                   + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
-                                                   + " of the manifest of "
-                                                   + bundle.getSymbolicName());
-            }
+            if (bs == null || bs.length == 0) { throw new IllegalArgumentException("Unable to locate the bundle '" + symbName
+                                                                                   + "' specified in the "
+                                                                                   + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
+                                                                                   + " of the manifest of "
+                                                                                   + bundle.getSymbolicName()); }
 
-            
             File f = fileLocatorHelper.getBundleInstallLocation(bs[0]);
-            if (paths.length() > 0)
+            if (paths.length() > 0) 
                 paths.append(", ");
-            System.err.println("getPathsToRequiredBundles: bundle path="+bs[0].getLocation()+" uri="+f.toURI());
+            __logger.debug("getPathsToRequiredBundles: bundle path=" + bs[0].getLocation() + " uri=" + f.toURI());
             paths.append(f.toURI().toURL().toString());
         }
 
@@ -879,13 +895,12 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
 
     private PackageAdmin getBundleAdmin()
     {
-        Bundle bootBundle = ((BundleReference)OSGiWebappConstants.class.getClassLoader()).getBundle();
+        Bundle bootBundle = ((BundleReference) OSGiWebappConstants.class.getClassLoader()).getBundle();
         ServiceTracker serviceTracker = new ServiceTracker(bootBundle.getBundleContext(), PackageAdmin.class.getName(), null);
         serviceTracker.open();
 
         return (PackageAdmin) serviceTracker.getService();
     }
-
 
 }
 

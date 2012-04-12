@@ -465,12 +465,16 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         {
             final StackTraceElement[] trace=thread.getStackTrace();
             boolean inIdleJobPoll=false;
-            for (StackTraceElement t : trace)
+            // trace can be null on early java 6 jvms
+            if (trace != null)
             {
-                if ("idleJobPoll".equals(t.getMethodName()))
+                for (StackTraceElement t : trace)
                 {
-                    inIdleJobPoll=true;
-                    break;
+                    if ("idleJobPoll".equals(t.getMethodName()))
+                    {
+                        inIdleJobPoll = true;
+                        break;
+                    }
                 }
             }
             final boolean idle=inIdleJobPoll;

@@ -159,7 +159,11 @@ public class MultiPartFilter implements Filter
                     {
                         request.setAttribute(mp.getName(),mp.getFile());
                         if (mp.getContentDispositionFilename() != null)
+                        {
                             params.add(mp.getName(), mp.getContentDispositionFilename());
+                            if (mp.getContentType() != null)
+                                params.add(mp.getName()+CONTENT_TYPE_SUFFIX, mp.getContentType());
+                        }
                         if (_deleteFiles)
                         {
                             mp.getFile().deleteOnExit();
@@ -178,6 +182,8 @@ public class MultiPartFilter implements Filter
                         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                         IO.copy(p.getInputStream(), bytes);
                         params.add(p.getName(), bytes.toByteArray());
+                        if (p.getContentType() != null)
+                            params.add(p.getName()+CONTENT_TYPE_SUFFIX, p.getContentType());
                     }
                 }
             }
@@ -330,7 +336,7 @@ public class MultiPartFilter implements Filter
                     }
                     catch(Exception e)
                     {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
                 }
                 else if (o instanceof String)

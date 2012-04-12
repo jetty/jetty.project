@@ -3,7 +3,6 @@ package org.eclipse.jetty.continuation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -16,7 +15,7 @@ import javax.servlet.ServletResponseWrapper;
 /* ------------------------------------------------------------ */
 /**
  * This implementation of Continuation is used by {@link ContinuationSupport}
- * when it detects that the application has been deployed in a non-jetty Servlet 3 
+ * when it detects that the application has been deployed in a non-jetty Servlet 3
  * server.
  */
 public class Servlet3Continuation implements Continuation
@@ -24,11 +23,11 @@ public class Servlet3Continuation implements Continuation
     // Exception reused for all continuations
     // Turn on debug in ContinuationFilter to see real stack trace.
     private final static ContinuationThrowable __exception = new ContinuationThrowable();
-    
+
     private final ServletRequest _request;
     private ServletResponse _response;
     private AsyncContext _context;
-    private List<AsyncListener> _listeners=new ArrayList<AsyncListener>(); 
+    private List<AsyncListener> _listeners=new ArrayList<AsyncListener>();
     private volatile boolean _initial=true;
     private volatile boolean _resumed=false;
     private volatile boolean _expired=false;
@@ -59,7 +58,6 @@ public class Servlet3Continuation implements Continuation
             public void onTimeout(AsyncEvent event) throws IOException
             {
                 _initial=false;
-                System.err.println("Doing dispatch on timed out continuation for "+_request.getAttribute("FOO"));
                 event.getAsyncContext().dispatch();
             }
         });
@@ -91,7 +89,7 @@ public class Servlet3Continuation implements Continuation
                 listener.onTimeout(Servlet3Continuation.this);
             }
         };
-        
+
         if (_context!=null)
             _context.addListener(wrapped);
         else
@@ -171,7 +169,7 @@ public class Servlet3Continuation implements Continuation
         _expired=false;
         _context=_request.startAsync();
         _context.setTimeout(_timeoutMs);
-        
+
         for (AsyncListener listener:_listeners)
             _context.addListener(listener);
         _listeners.clear();
@@ -184,7 +182,7 @@ public class Servlet3Continuation implements Continuation
         _expired=false;
         _context=_request.startAsync();
         _context.setTimeout(_timeoutMs);
-                
+
         for (AsyncListener listener:_listeners)
             _context.addListener(listener);
         _listeners.clear();

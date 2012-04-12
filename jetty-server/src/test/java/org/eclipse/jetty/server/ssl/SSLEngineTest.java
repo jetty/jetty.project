@@ -99,8 +99,6 @@ public class SSLEngineTest
         connector.setRequestHeaderSize(512);
 
         server.setConnectors(new Connector[]{connector });
-        server.setHandler(new HelloWorldHandler());
-        server.start();
     }
 
     @AfterClass
@@ -109,10 +107,15 @@ public class SSLEngineTest
         server.stop();
         server.join();
     }
+    
 
     @Test
     public void testBigResponse() throws Exception
     {
+        server.stop();
+        server.setHandler(new HelloWorldHandler());
+        server.start();
+        
         SSLContext ctx=SSLContext.getInstance("TLS");
         ctx.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
 
@@ -123,7 +126,7 @@ public class SSLEngineTest
 
         String request =
             "GET /?dump=102400 HTTP/1.1\r\n"+
-            "Host: localhost:8080\r\n"+
+            "Host: localhost:"+port+"\r\n"+
             "Connection: close\r\n"+
             "\r\n";
 
@@ -138,6 +141,10 @@ public class SSLEngineTest
     @Test
     public void testRequestJettyHttps() throws Exception
     {
+        server.stop();
+        server.setHandler(new HelloWorldHandler());
+        server.start();
+        
         final int loops=10;
         final int numConns=10;
 
@@ -204,8 +211,7 @@ public class SSLEngineTest
     @Test
     public void testServletPost() throws Exception
     {
-        stopServer();
-
+        server.stop();
         StreamHandler handler = new StreamHandler();
         server.setHandler(handler);
         server.start();
@@ -308,6 +314,7 @@ public class SSLEngineTest
             {
                 ServletOutputStream out=response.getOutputStream();
                 byte[] buf = new byte[Integer.valueOf(request.getParameter("dump"))];
+                // System.err.println("DUMP "+buf.length);
                 for (int i=0;i<buf.length;i++)
                     buf[i]=(byte)('0'+(i%10));
                 out.write(buf);

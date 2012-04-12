@@ -23,6 +23,7 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -41,6 +42,70 @@ import org.junit.Test;
 
 public class FlowControlTest extends AbstractTest
 {
+    @Test
+    public void testFlowControlWithConcurrentSettings() throws Exception
+    {
+        // Initial window is 64 KiB. We allow the client to send 1024 B
+        // then we change the window to 512 B. At this point, the client
+        // must stop sending data (although the initial window allows it)
+
+        final int size = 512;
+        final AtomicReference<DataInfo> dataInfoRef = new AtomicReference<>();
+        final CountDownLatch dataLatch = new CountDownLatch(2);
+        final CountDownLatch settingsLatch = new CountDownLatch(1);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                stream.reply(new ReplyInfo(true));
+                return new StreamFrameListener.Adapter()
+                {
+                    private final AtomicInteger dataFrames = new AtomicInteger();
+
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
+                    {
+                        int dataFrameCount = dataFrames.incrementAndGet();
+                        if (dataFrameCount == 1)
+                        {
+                            dataInfoRef.set(dataInfo);
+                            Settings settings = new Settings();
+                            settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, size));
+                            stream.getSession().settings(new SettingsInfo(settings));
+                        }
+                        else if (dataFrameCount > 1)
+                        {
+                            dataInfo.consume(dataInfo.length());
+                            dataLatch.countDown();
+                        }
+                    }
+                };
+            }
+        }), new SessionFrameListener.Adapter()
+        {
+            @Override
+            public void onSettings(Session session, SettingsInfo settingsInfo)
+            {
+                settingsLatch.countDown();
+            }
+        });
+
+        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
+        stream.data(new BytesDataInfo(new byte[size * 2], false));
+        settingsLatch.await(5, TimeUnit.SECONDS);
+
+        // Send the second chunk of data, must not arrive since we're flow control stalled now
+        stream.data(new BytesDataInfo(new byte[size * 2], true));
+        Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
+
+        // Consume the data arrived to server, this will resume flow control
+        DataInfo dataInfo = dataInfoRef.get();
+        dataInfo.consume(dataInfo.length());
+
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
+
     @Test
     public void testServerFlowControlOneBigWrite() throws Exception
     {
@@ -242,7 +307,7 @@ public class FlowControlTest extends AbstractTest
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         final int length = 5 * windowSize;
         stream.data(new BytesDataInfo(new byte[length], true));
 
@@ -292,6 +357,98 @@ public class FlowControlTest extends AbstractTest
         // Check that we are not flow control stalled
         dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
+    }
+
+    @Test
+    public void testStreamsStalledDoesNotStallOtherStreams() throws Exception
+    {
+        final int windowSize = 1024;
+        final CountDownLatch settingsLatch = new CountDownLatch(1);
+        Session session = startClient(startServer(new ServerSessionFrameListener.Adapter()
+        {
+            @Override
+            public void onSettings(Session session, SettingsInfo settingsInfo)
+            {
+                settingsLatch.countDown();
+            }
+
+            @Override
+            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            {
+                stream.reply(new ReplyInfo(false));
+                stream.data(new BytesDataInfo(new byte[windowSize * 2], true));
+                return null;
+            }
+        }), null);
+        Settings settings = new Settings();
+        settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowSize));
+        session.settings(new SettingsInfo(settings));
+
+        Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
+        final CountDownLatch latch = new CountDownLatch(3);
+        final AtomicReference<DataInfo> dataInfoRef1 = new AtomicReference<>();
+        final AtomicReference<DataInfo> dataInfoRef2 = new AtomicReference<>();
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        {
+            private final AtomicInteger dataFrames = new AtomicInteger();
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                int frames = dataFrames.incrementAndGet();
+                if (frames == 1)
+                {
+                    // Do not consume it to stall flow control
+                    dataInfoRef1.set(dataInfo);
+                }
+                else
+                {
+                    dataInfo.consume(dataInfo.length());
+                    if (dataInfo.isClose())
+                        latch.countDown();
+                }
+            }
+        }).get(5, TimeUnit.SECONDS);
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        {
+            private final AtomicInteger dataFrames = new AtomicInteger();
+
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                int frames = dataFrames.incrementAndGet();
+                if (frames == 1)
+                {
+                    // Do not consume it to stall flow control
+                    dataInfoRef2.set(dataInfo);
+                }
+                else
+                {
+                    dataInfo.consume(dataInfo.length());
+                    if (dataInfo.isClose())
+                        latch.countDown();
+                }
+            }
+        }).get(5, TimeUnit.SECONDS);
+        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                DataInfo dataInfo1 = dataInfoRef1.getAndSet(null);
+                if (dataInfo1 != null)
+                    dataInfo1.consume(dataInfo1.length());
+                DataInfo dataInfo2 = dataInfoRef2.getAndSet(null);
+                if (dataInfo2 != null)
+                    dataInfo2.consume(dataInfo2.length());
+                dataInfo.consume(dataInfo.length());
+                if (dataInfo.isClose())
+                    latch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     private void expectException(Class<? extends Exception> exception, Callable command)
