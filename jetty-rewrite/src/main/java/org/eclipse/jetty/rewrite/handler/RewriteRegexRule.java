@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 
 /**
@@ -89,14 +90,20 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     /* ------------------------------------------------------------ */
     public void applyURI(Request request, String oldTarget, String newTarget) throws IOException
     {
-        request.setRequestURI(newTarget);
-        if (_query!=null)
+        if (_query==null)
+        {
+            request.setRequestURI(newTarget);
+        }
+        else
         {
             String query=(String)request.getAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q");
-            if (_queryGroup||request.getQueryString()==null)
-                request.setQueryString(query);
-            else
-                request.setQueryString(request.getQueryString()+"&"+query);
+            
+            if (!_queryGroup && request.getQueryString()!=null)
+                query=request.getQueryString()+"&"+query;
+            HttpURI uri=new HttpURI(newTarget+"?"+query);
+            request.setUri(uri);
+            request.setRequestURI(newTarget);
+            request.setQueryString(query);
         }
     }
 

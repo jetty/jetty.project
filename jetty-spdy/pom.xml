@@ -12,13 +12,9 @@
     <packaging>pom</packaging>
     <name>Jetty :: SPDY :: Parent</name>
 
-  <properties>
-  <!-- 
-    npn version only needs to change when there are changes in that binary, not 
-    with each and every release.
-   -->
-    <npn.version>7.6.2.v20120308</npn.version>
-  </properties>
+    <properties>
+        <npn.version>1.0.0.v20120402</npn.version>
+    </properties>
 
     <modules>
         <module>spdy-core</module>

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http.gzip;
 
-import java.io.Closeable;
-import java.io.Flushable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -32,7 +30,7 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
 /**
  * Skeletal implementation of a CompressedStream. This class adds compression features to a ServletOutputStream and takes care of setting response headers, etc.
  * Major work and configuration is done here. Subclasses using different kinds of compression only have to implement the abstract methods doCompress() and
- * setContentEncoding() using the desired compression and setting the appropiate Content-Encoding header string.
+ * setContentEncoding() using the desired compression and setting the appropriate Content-Encoding header string.
  */
 public abstract class AbstractCompressedStream extends ServletOutputStream 
 {

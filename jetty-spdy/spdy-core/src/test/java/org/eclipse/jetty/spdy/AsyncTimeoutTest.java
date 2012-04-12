@@ -22,7 +22,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.SPDY;
@@ -94,17 +93,15 @@ public class AsyncTimeoutTest
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory.StandardCompressor());
         Session session = new StandardSession(SPDY.V2, bufferPool, threadPool, scheduler, new TestController(), null, 1, null, generator)
         {
-            private final AtomicInteger flushes = new AtomicInteger();
-
             @Override
-            public void flush()
+            protected void write(ByteBuffer buffer, Handler<FrameBytes> handler, FrameBytes frameBytes)
             {
                 try
                 {
-                    int flushes = this.flushes.incrementAndGet();
-                    if (flushes == 3)
+                    // Wait if we're writing the data frame (control frame's first byte is 0x80)
+                    if (buffer.get(0) == 0)
                         unit.sleep(2 * timeout);
-                    super.flush();
+                    super.write(buffer, handler, frameBytes);
                 }
                 catch (InterruptedException x)
                 {

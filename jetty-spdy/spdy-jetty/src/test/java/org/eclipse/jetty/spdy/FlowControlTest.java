@@ -307,7 +307,7 @@ public class FlowControlTest extends AbstractTest
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        Stream stream = session.syn(new SynInfo(true), null).get(5, TimeUnit.SECONDS);
+        Stream stream = session.syn(new SynInfo(false), null).get(5, TimeUnit.SECONDS);
         final int length = 5 * windowSize;
         stream.data(new BytesDataInfo(new byte[length], true));
 

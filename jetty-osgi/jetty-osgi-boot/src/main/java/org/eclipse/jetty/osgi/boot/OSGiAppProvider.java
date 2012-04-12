@@ -348,7 +348,7 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.warn(e);
             return null;
         }
     }
@@ -369,11 +369,11 @@ public class OSGiAppProvider extends ScanningAppProvider implements AppProvider
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.warn(e);
             return null;
         }
     }
-    
+
     public boolean isExtract()
     {
         return _extractWars;

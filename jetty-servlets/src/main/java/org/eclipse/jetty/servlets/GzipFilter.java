@@ -151,21 +151,6 @@ public class GzipFilter extends UserAgentFilter
     }
     
     /* ------------------------------------------------------------ */
-    public String selectCompression(String encodingHeader)
-    {
-        // TODO, this could be a little more robust.
-        // prefer gzip over deflate
-        if (encodingHeader!=null)
-        {
-            if (encodingHeader.toLowerCase().contains(GZIP))
-                return GZIP;
-            if (encodingHeader.toLowerCase().contains(DEFLATE))
-                return DEFLATE;
-        }
-        return null;
-    }
-    
-    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.servlets.UserAgentFilter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
      */
@@ -176,7 +161,6 @@ public class GzipFilter extends UserAgentFilter
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
 
-        String ae = request.getHeader("accept-encoding");
         String compressionType = selectCompression(request.getHeader("accept-encoding"));
         if (compressionType!=null && !response.containsHeader("Content-Encoding") && !HttpMethods.HEAD.equalsIgnoreCase(request.getMethod()))
         {
@@ -223,6 +207,21 @@ public class GzipFilter extends UserAgentFilter
         }
     }
 
+    /* ------------------------------------------------------------ */
+    private String selectCompression(String encodingHeader)
+    {
+        // TODO, this could be a little more robust.
+        // prefer gzip over deflate
+        if (encodingHeader!=null)
+        {
+            if (encodingHeader.toLowerCase().contains(GZIP))
+                return GZIP;
+            else if (encodingHeader.toLowerCase().contains(DEFLATE))
+                return DEFLATE;
+        }
+        return null;
+    }
+    
     protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
     {
         CompressedResponseWrapper wrappedResponse = null;
@@ -304,7 +303,7 @@ public class GzipFilter extends UserAgentFilter
     }
     
     /**
-     * Checks to see if the UserAgent is excluded
+     * Checks to see if the userAgent is excluded
      * 
      * @param ua
      *            the user agent
@@ -322,7 +321,7 @@ public class GzipFilter extends UserAgentFilter
                 return true;
             }
         }
-        else if (_excludedAgentPatterns != null)
+        if (_excludedAgentPatterns != null)
         {
             for (Pattern pattern : _excludedAgentPatterns)
             {
@@ -337,9 +336,9 @@ public class GzipFilter extends UserAgentFilter
     }
 
     /**
-     * Checks to see if the Path is excluded
+     * Checks to see if the path is excluded
      * 
-     * @param ua
+     * @param requestURI
      *            the request uri
      * @return boolean true if excluded
      */
@@ -347,6 +346,16 @@ public class GzipFilter extends UserAgentFilter
     {
         if (requestURI == null)
             return false;
+        if (_excludedPaths != null)
+        {
+            for (String excludedPath : _excludedPaths)
+            {
+                if (requestURI.startsWith(excludedPath))
+                {
+                    return true;
+                }
+            }
+        }
         if (_excludedPathPatterns != null)
         {
             for (Pattern pattern : _excludedPathPatterns)
