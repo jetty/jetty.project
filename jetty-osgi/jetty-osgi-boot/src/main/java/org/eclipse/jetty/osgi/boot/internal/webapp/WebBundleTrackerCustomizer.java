@@ -225,7 +225,7 @@ public class WebBundleTrackerCustomizer implements BundleTrackerCustomizer
         }
     }
 
-    private String getWebContextPath(Bundle bundle, Dictionary<?, ?> dic)
+    private String getWebContextPath(Bundle bundle, Dictionary<?, ?> dic, boolean webinfWebxmlExists)
     {
         String rfc66ContextPath = (String) dic.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
         if (rfc66ContextPath == null)
