@@ -293,7 +293,6 @@ public class HttpFields
     /* -------------------------------------------------------------- */
     private final ArrayList<Field> _fields = new ArrayList<Field>(20);
     private final HashMap<Buffer,Field> _names = new HashMap<Buffer,Field>(32);
-    private final int _maxCookieVersion;
     
     /* ------------------------------------------------------------ */
     /**
@@ -301,18 +300,7 @@ public class HttpFields
      */
     public HttpFields()
     {
-    	_maxCookieVersion=1;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Constructor.
-     */
-    public HttpFields(int maxCookieVersion)
-    {
-    	_maxCookieVersion=maxCookieVersion;
-    }
-    
 
     // TODO externalize this cache so it can be configurable
     private static ConcurrentMap<String, Buffer> __cache = new ConcurrentHashMap<String, Buffer>();
@@ -929,7 +917,7 @@ public class HttpFields
             final boolean isHttpOnly, 
             int version)
     {
-    	String delim=_maxCookieVersion==0?"":__COOKIE_DELIM;
+    	String delim=__COOKIE_DELIM;
     	
         // Check arguments
         if (name == null || name.length() == 0) 
@@ -938,29 +926,18 @@ public class HttpFields
         // Format value and params
         StringBuilder buf = new StringBuilder(128);
         String name_value_params;
-        boolean quoted = QuotedStringTokenizer.quoteIfNeeded(buf, name, delim);
+        QuotedStringTokenizer.quoteIfNeeded(buf, name, delim);
         buf.append('=');
         String start=buf.toString();
         if (value != null && value.length() > 0)
-            quoted|=QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);
-        
-        // upgrade to version 1 cookies if quoted.
-        if (quoted&&version==0 && _maxCookieVersion>=1)
-            version=1;
+            QuotedStringTokenizer.quoteIfNeeded(buf, value, delim);        
 
-        if (version>_maxCookieVersion)
-            version=_maxCookieVersion;
-        
-        if (version > 0)
+        if (comment != null && comment.length() > 0)
         {
-            buf.append(";Version=");
-            buf.append(version);
-            if (comment != null && comment.length() > 0)
-            {
-                buf.append(";Comment=");
-                QuotedStringTokenizer.quoteIfNeeded(buf, comment, delim);
-            }
+            buf.append(";Comment=");
+            QuotedStringTokenizer.quoteIfNeeded(buf, comment, delim);
         }
+
         if (path != null && path.length() > 0)
         {
             buf.append(";Path=");
@@ -977,22 +954,18 @@ public class HttpFields
 
         if (maxAge >= 0)
         {
-        	// Always add the expires param as some browsers still don't handle max-age
-        	buf.append(";Expires=");
-        	if (maxAge == 0)
-        		buf.append(__01Jan1970_COOKIE);
-        	else
-        		formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
-            
+            // Always add the expires param as some browsers still don't handle max-age
+            buf.append(";Expires=");
+            if (maxAge == 0)
+                buf.append(__01Jan1970_COOKIE);
+            else
+                formatCookieDate(buf, System.currentTimeMillis() + 1000L * maxAge);
+
             if (version >0)
             {
                 buf.append(";Max-Age=");
                 buf.append(maxAge);
             }
-        }
-        else if (version > 0)
-        {
-            buf.append(";Discard");
         }
 
         if (isSecure)

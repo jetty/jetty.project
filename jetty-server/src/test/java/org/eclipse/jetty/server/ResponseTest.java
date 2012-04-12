@@ -516,7 +516,7 @@ public class ResponseTest
         
         String set = response.getHttpFields().getStringField("Set-Cookie");
         
-        assertEquals("name=value;Path=/path;Domain=domain;Secure;HttpOnly",set);
+        assertEquals("name=value;Comment=comment;Path=/path;Domain=domain;Secure;HttpOnly",set);
     }
 
     private Response newResponse()

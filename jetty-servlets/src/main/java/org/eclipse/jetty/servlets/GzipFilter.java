@@ -63,7 +63,37 @@ import org.eclipse.jetty.util.log.Logger;
  * This filter extends {@link UserAgentFilter} and if the the initParameter <code>excludedAgents</code> 
  * is set to a comma separated list of user agents, then these agents will be excluded from gzip content.
  * </p>
+ * <p>Init Parameters:</p>
+ * <PRE>
+ * bufferSize                 The output buffer size. Defaults to 8192. Be careful as values <= 0 will lead to an 
+ *                            {@link IllegalArgumentException}. 
+ *                            @see java.util.zip.GZIPOutputStream#GZIPOutputStream(java.io.OutputStream, int)
+ *                            @see java.util.zip.DeflaterOutputStream#DeflaterOutputStream(java.io.OutputStream, Deflater, int)
+ *                      
+ * minGzipSize                Content will only be compressed if content length is either unknown or greater
+ *                            than <code>minGzipSize</code>.
+ *                      
+ * deflateCompressionLevel    The compression level used for deflate compression. (0-9).
+ *                            @see java.util.zip.Deflater#Deflater(int, boolean)
+ *                            
+ * deflateNoWrap              The noWrap setting for deflate compression. Defaults to true. (true/false)
+ *                            @see java.util.zip.Deflater#Deflater(int, boolean)
  *
+ * mimeTypes                  Comma separated list of mime types to compress. See description above.
+ * 
+ * excludedAgents             Comma separated list of user agents to exclude from compression. Does a 
+ *                            {@link String#contains(CharSequence)} to check if the excluded agent occurs
+ *                            in the user-agent header. If it does -> no compression
+ *                            
+ * excludeAgentPatterns       Same as excludedAgents, but accepts regex patterns for more complex matching.
+ * 
+ * excludePaths               Comma separated list of paths to exclude from compression. 
+ *                            Does a {@link String#startsWith(String)} comparison to check if the path matches.
+ *                            If it does match -> no compression. To match subpaths use <code>excludePathPatterns</code>
+ *                            instead.
+ * 
+ * excludePathPatterns        Same as excludePath, but accepts regex patterns for more complex matching.
+ * </PRE>
  */
 public class GzipFilter extends UserAgentFilter
 {
@@ -74,6 +104,8 @@ public class GzipFilter extends UserAgentFilter
     protected Set<String> _mimeTypes;
     protected int _bufferSize=8192;
     protected int _minGzipSize=256;
+    protected int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
+    protected boolean _deflateNoWrap = true;
     protected Set<String> _excludedAgents;
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
@@ -96,6 +128,14 @@ public class GzipFilter extends UserAgentFilter
         tmp=filterConfig.getInitParameter("minGzipSize");
         if (tmp!=null)
             _minGzipSize=Integer.parseInt(tmp);
+        
+        tmp=filterConfig.getInitParameter("deflateCompressionLevel");
+        if (tmp!=null)
+            _deflateCompressionLevel=Integer.parseInt(tmp);
+        
+        tmp=filterConfig.getInitParameter("deflateNoWrap");
+        if (tmp!=null)
+            _deflateNoWrap=Boolean.parseBoolean(tmp);
         
         tmp=filterConfig.getInitParameter("mimeTypes");
         if (tmp!=null)
@@ -256,7 +296,7 @@ public class GzipFilter extends UserAgentFilter
                         @Override
                         protected DeflaterOutputStream createStream() throws IOException
                         {
-                            return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(Deflater.DEFAULT_COMPRESSION));
+                            return new DeflaterOutputStream(_response.getOutputStream(),new Deflater(_deflateCompressionLevel,_deflateNoWrap));
                         }
                     };
                 }

@@ -1,7 +1,12 @@
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,6 +21,7 @@ import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import org.eclipse.jetty.server.Connector;
@@ -183,7 +189,7 @@ public class GzipWithPipeliningTest
             InputStream uncompressedStream = null;
             if (GzipFilter.DEFLATE.equals(encodingHeader))
             {
-                uncompressedStream = new InflaterInputStream(rawInputStream);
+                uncompressedStream = new InflaterInputStream(rawInputStream, new Inflater(true));
             }
             else
             {
