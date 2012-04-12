@@ -45,9 +45,11 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
+import org.eclipse.jetty.spdy.frames.DataFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -178,14 +180,26 @@ public class StandardSessionTest
     }
 
     @SuppressWarnings("unchecked")
-    @Test
+    @Test(expected=IllegalStateException.class)
     public void testSendDataOnHalfClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,(byte)1,1,0 ,(byte)0,null);
-        Stream stream = new StandardStream(synStreamFrame,sessionMock,8184,null);
+        IStream stream = new StandardStream(synStreamFrame,sessionMock,8184,null);
+        stream.updateCloseState(synStreamFrame.isClose(),true);
         assertThat("stream is half closed",stream.isHalfClosed(),is(true));
         stream.data(new StringDataInfo("data on half closed stream",true));
         verify(sessionMock, never()).data(any(IStream.class),any(DataInfo.class),anyInt(),any(TimeUnit.class),any(Handler.class),any(void.class));
+    }
+    
+    @Test
+    @Ignore("In V3 we need to rst the stream if we receive data on a remotely half closed stream.")
+    public void receiveDataOnRemotelyHalfClosedStream() throws InterruptedException, ExecutionException{
+        IStream stream = (IStream)session.syn(new SynInfo(false),new StreamFrameListener.Adapter(){
+            
+        }).get();
+        stream.updateCloseState(true,false);
+        assertThat("stream is half closed from remote side", stream.isHalfClosed(), is(true));
+        stream.process(new DataFrame(stream.getId(),(byte)0,256),ByteBuffer.allocate(256));
     }
 
     private Stream createStream() throws InterruptedException, ExecutionException, TimeoutException
