@@ -147,7 +147,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         HttpBuffers ab = (HttpBuffers)_connector;
         _parser = newHttpParser(ab.getRequestBuffers(), endpoint, new RequestHandler());
         _requestFields = new HttpFields();
-        _responseFields = new HttpFields(server.getMaxCookieVersion());
+        _responseFields = new HttpFields();
         _request = new Request(this);
         _response = new Response(this);
         _generator = newHttpGenerator(ab.getResponseBuffers(), endpoint);
@@ -165,7 +165,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
         _connector = connector;
         _parser = parser;
         _requestFields = new HttpFields();
-        _responseFields = new HttpFields(server.getMaxCookieVersion());
+        _responseFields = new HttpFields();
         _request = request;
         _response = new Response(this);
         _generator = generator;

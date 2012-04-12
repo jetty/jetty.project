@@ -137,7 +137,7 @@ public class Response implements HttpServletResponse
             if (i>=0)
             {
                 http_only=true;
-                comment=comment.substring(i,i+HTTP_ONLY_COMMENT.length()).trim();
+                comment=comment.replace(HTTP_ONLY_COMMENT,"").trim();
                 if (comment.length()==0)
                     comment=null;
             }
