@@ -525,13 +525,7 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
-      <activation>
-        <jdk>[1.7,)</jdk>
-      </activation>
-      <modules>
-        <module>jetty-spdy</module>
-      </modules>
-      <build>
+   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
