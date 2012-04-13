@@ -32,8 +32,7 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  */
 public class HttpOutput extends ServletOutputStream 
 {
-    private final HttpController _controller;
-    private final HttpProcessor _processor;
+    private final HttpChannel _channel;
     private boolean _closed;
     
     // These are held here for reuse by Writer
@@ -44,10 +43,9 @@ public class HttpOutput extends ServletOutputStream
     long _written;
 
     /* ------------------------------------------------------------ */
-    public HttpOutput(HttpController controller, HttpProcessor processor)
+    public HttpOutput(HttpChannel channel)
     {
-        _controller=controller;
-        _processor=processor;
+        _channel=channel;
     }
     
     /* ------------------------------------------------------------ */
@@ -77,7 +75,7 @@ public class HttpOutput extends ServletOutputStream
     public void close() throws IOException
     {
         if (!_closed)
-            _controller.completeResponse();
+            _channel.completeResponse();
         _closed=true;
     }
     
@@ -97,7 +95,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void flush() throws IOException
     {
-        _controller.flushResponse();
+        _channel.flushResponse();
     }
 
     /* ------------------------------------------------------------ */
@@ -107,8 +105,8 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _written+=_controller.write(ByteBuffer.wrap(b,off,len),true);
-        _processor.getResponse().checkAllContentWritten(_written);
+        _written+=_channel.write(ByteBuffer.wrap(b,off,len),true);
+        _channel.getResponse().checkAllContentWritten(_written);
     }
 
     /* ------------------------------------------------------------ */
@@ -121,8 +119,8 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _written+=_controller.write(ByteBuffer.wrap(b),true);
-        _processor.getResponse().checkAllContentWritten(_written);
+        _written+=_channel.write(ByteBuffer.wrap(b),true);
+        _channel.getResponse().checkAllContentWritten(_written);
     }
 
     /* ------------------------------------------------------------ */
@@ -135,8 +133,8 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _written+=_controller.write(ByteBuffer.wrap(new byte[]{(byte)b}),true);
-        _processor.getResponse().checkAllContentWritten(_written);
+        _written+=_channel.write(ByteBuffer.wrap(new byte[]{(byte)b}),true);
+        _channel.getResponse().checkAllContentWritten(_written);
     }
 
     /* ------------------------------------------------------------ */

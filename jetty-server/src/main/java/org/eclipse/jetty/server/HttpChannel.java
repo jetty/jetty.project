@@ -53,27 +53,26 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 /**
  *
  */
-public abstract class HttpProcessor
+public abstract class HttpChannel
 {
-    private static final Logger LOG = Log.getLogger(HttpProcessor.class);
+    private static final Logger LOG = Log.getLogger(HttpChannel.class);
 
-    private static final ThreadLocal<HttpProcessor> __currentChannel = new ThreadLocal<HttpProcessor>();
+    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<HttpChannel>();
 
     /* ------------------------------------------------------------ */
-    public static HttpProcessor getCurrentHttpChannel()
+    public static HttpChannel getCurrentHttpChannel()
     {
         return __currentChannel.get();
     }
 
     /* ------------------------------------------------------------ */
-    protected static void setCurrentHttpChannel(HttpProcessor channel)
+    protected static void setCurrentHttpChannel(HttpChannel channel)
     {
         __currentChannel.set(channel);
     }
     
     private int _requests;
 
-    private final HttpController _controller;
     private final Server _server;
     private final HttpURI _uri;
 
@@ -156,10 +155,9 @@ public abstract class HttpProcessor
     /** Constructor
      *
      */
-    public HttpProcessor(Server server, HttpController controller)
+    public HttpChannel(Server server)
     {
         _server = server;
-        _controller=controller;
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
@@ -186,12 +184,6 @@ public abstract class HttpProcessor
     public Server getServer()
     {
         return _server;
-    }
-
-    /* ------------------------------------------------------------ */
-    public HttpController getHttpTransport()
-    {
-        return _controller;
     }
     
     /* ------------------------------------------------------------ */
@@ -255,16 +247,16 @@ public abstract class HttpProcessor
             // is content missing?
             if (available()==0)
             {
-                if (_controller.isResponseCommitted())
+                if (isResponseCommitted())
                     throw new IllegalStateException("Committed before 100 Continues");
 
-                _controller.send1xx(HttpStatus.CONTINUE_100);
+                send1xx(HttpStatus.CONTINUE_100);
             }
             _expect100Continue=false;
         }
 
         if (_in == null)
-            _in = new HttpInput(HttpProcessor.this);
+            _in = new HttpInput(HttpChannel.this);
         return _in;
     }
 
@@ -377,7 +369,7 @@ public abstract class HttpProcessor
                     if (_async.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
-                        _controller.customize(_request);
+                        customize(_request);
                         server.handle(this);
                     }
                     else
@@ -417,7 +409,7 @@ public abstract class HttpProcessor
                     LOG.warn(String.valueOf(_uri),e);
                     error=true;
                     _request.setHandled(true);
-                    _controller.sendError(info==null?400:500, null, null, true);
+                    sendError(info==null?400:500, null, null, true);
                 }
                 finally
                 {
@@ -443,17 +435,17 @@ public abstract class HttpProcessor
                     // do anything special here other than make the connection not persistent
                     _expect100Continue = false;
                     if (!_response.isCommitted())
-                        _controller.setPersistent(false);
+                        setPersistent(false);
                 }
 
                 if (error)
-                    _controller.setPersistent(false);
+                    setPersistent(false);
                 else if (!_response.isCommitted() && !_request.isHandled())
                     _response.sendError(HttpServletResponse.SC_NOT_FOUND);
 
                 _response.complete();
-                if (_controller.isPersistent())
-                    _controller.persist();
+                if (isPersistent())
+                    persist();
 
                 _request.setHandled(true);
             }
@@ -551,6 +543,12 @@ public abstract class HttpProcessor
                         throw new SocketTimeoutException(">"+getMaxIdleTime()+"ms");
                     try
                     {
+                        // Alternate approach would be to 
+                        //   blockReadable
+                        //   read and then runParser
+                        //   runParser
+                        // This would be better for a client
+                        
                         setReadInterested(true);
                         _inputQ.wait(timeout);
                     }
@@ -714,7 +712,7 @@ public abstract class HttpProcessor
                 case HTTP_0_9:
                     break;
                 case HTTP_1_0:
-                    if (_controller.isPersistent())
+                    if (isPersistent())
                     {
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
                     }
@@ -725,7 +723,7 @@ public abstract class HttpProcessor
 
                 case HTTP_1_1:
 
-                    if (!_controller.isPersistent())
+                    if (!isPersistent())
                     {
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
                     }
@@ -736,7 +734,7 @@ public abstract class HttpProcessor
                     {
                         LOG.debug("!host {}",this);
                         _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        _controller.sendError(HttpStatus.BAD_REQUEST_400,null,null,true);
+                        sendError(HttpStatus.BAD_REQUEST_400,null,null,true);
                         return true;
                     }
 
@@ -744,7 +742,7 @@ public abstract class HttpProcessor
                     {
                         LOG.debug("!expectation {}",this);
                         _responseFields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        _controller.sendError(HttpStatus.EXPECTATION_FAILED_417,null,null,true);
+                        sendError(HttpStatus.EXPECTATION_FAILED_417,null,null,true);
                         return true;
                     }
 
@@ -797,7 +795,7 @@ public abstract class HttpProcessor
     {
         Output()
         {
-            super(_controller,HttpProcessor.this);
+            super(HttpChannel.this);
         }
 
         /* ------------------------------------------------------------ */
@@ -875,22 +873,40 @@ public abstract class HttpProcessor
     
     
 
-    public void asyncDispatch()
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    public void scheduleTimeout(Task timeout, long timeoutMs)
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    public void cancelTimeout(Task timeout)
-    {
-        // TODO Auto-generated method stub
-    }
-
+    public abstract void asyncDispatch();
     
+    public abstract void scheduleTimeout(Task timeout, long timeoutMs);
+
+    public abstract void cancelTimeout(Task timeout);
+    
+
+    protected abstract int write(ByteBuffer content,boolean volatileContent) throws IOException;
+        
+    protected abstract void sendError(int status, String reason, String content, boolean close)  throws IOException;
+    
+    protected abstract void send1xx(int processing102);
+    
+    protected abstract int getContentBufferSize();
+
+    protected abstract void increaseContentBufferSize(int size);
+
+    protected abstract void resetBuffer();
+
+    protected abstract boolean isResponseCommitted();
+
+    protected abstract boolean isPersistent();
+    
+    protected abstract void setPersistent(boolean persistent);
+
+    protected abstract void flushResponse() throws IOException;
+
+    protected abstract void completeResponse();
+    
+    protected abstract Connector getConnector();
+    
+    protected abstract void persist();
+
+    protected abstract void customize(Request request);
+
+    protected abstract void setReadInterested(boolean interested);
 }

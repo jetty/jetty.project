@@ -23,13 +23,13 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class HttpInput extends ServletInputStream
 {
-    protected final HttpProcessor _connection;
+    protected final HttpChannel _channel;
     protected final byte[] _byte=new byte[1];
     
     /* ------------------------------------------------------------ */
-    public HttpInput(HttpProcessor connection)
+    public HttpInput(HttpChannel channel)
     {
-        _connection=connection;
+        _channel=channel;
     }
     
     /* ------------------------------------------------------------ */
@@ -39,7 +39,7 @@ public class HttpInput extends ServletInputStream
     @Override
     public int read() throws IOException
     {
-        int len=_connection.read(_byte,0,1);
+        int len=_channel.read(_byte,0,1);
         return len<0?len:_byte[0];
     }
     
@@ -50,14 +50,14 @@ public class HttpInput extends ServletInputStream
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        return _connection.read(_byte,0,1);
+        return _channel.read(_byte,0,1);
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public int available() throws IOException
     {
-        return _connection.available();
+        return _channel.available();
     }
 
 }

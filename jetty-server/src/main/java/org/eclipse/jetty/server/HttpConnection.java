@@ -23,7 +23,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.io.SelectableEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /**
  */
@@ -49,7 +52,7 @@ public abstract class HttpConnection extends SelectableConnection
     private final Connector _connector;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
-    private final HttpProcessor _processor;
+    private final HttpChannel _channel;
 
     int _toFlush;
     ByteBuffer _requestBuffer=null;
@@ -81,10 +84,10 @@ public abstract class HttpConnection extends SelectableConnection
         _connector = connector;
         _server = server;
         
-        _processor = new HttpOverHttpProcessor(server,_controller);
+        _channel = new HttpOverHttpChannel(server);
        
-        _parser = new HttpParser(_processor.getRequestHandler());
-        _generator = new HttpGenerator(_processor.getResponseInfo());
+        _parser = new HttpParser(_channel.getRequestHandler());
+        _generator = new HttpGenerator();
         
     }
 
@@ -117,9 +120,9 @@ public abstract class HttpConnection extends SelectableConnection
     /**
      * @return Returns the HttpChannel.
      */
-    public HttpProcessor getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
-        return _processor;
+        return _channel;
     }
 
     /* ------------------------------------------------------------ */
@@ -127,7 +130,7 @@ public abstract class HttpConnection extends SelectableConnection
     {
         _parser.reset();
         _generator.reset();
-        _processor.reset();
+        _channel.reset();
         if (_requestBuffer!=null)
             _connector.getResponseBuffers().returnBuffer(_requestBuffer);
         _requestBuffer=null;
@@ -154,12 +157,6 @@ public abstract class HttpConnection extends SelectableConnection
     public boolean isIdle()
     {
         return _parser.isIdle() && _generator.isIdle();
-    }
-
-    /* ------------------------------------------------------------ */
-    public boolean isReadInterested()
-    {
-        return !_processor.getAsyncContinuation().isSuspended() && !_parser.isComplete();
     }
 
     /* ------------------------------------------------------------ */
@@ -197,7 +194,6 @@ public abstract class HttpConnection extends SelectableConnection
             // don't check for idle while dispatched (unless blocking IO is done).
             getSelectableEndPoint().setCheckForIdle(false);
 
-
             // While progress and the connection has not changed
             while (progress && connection==this)
             {
@@ -212,13 +208,13 @@ public abstract class HttpConnection extends SelectableConnection
                     
                     // If we parse to an event, call the connection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
-                        _processor.handleRequest();
+                        _channel.handleRequest();
 
                 }
                 catch (HttpException e)
                 {
                     progress=true;
-                    _controller.sendError(e.getStatus(), e.getReason(), null, true);
+                    _channel.sendError(e.getStatus(), e.getReason(), null, true);
                 }
                 finally
                 {
@@ -233,9 +229,9 @@ public abstract class HttpConnection extends SelectableConnection
                     if (_parser.isComplete() && _generator.isComplete())
                     {
                         // look for a switched connection instance?
-                        if (_processor.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
+                        if (_channel.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            Connection switched=(Connection)_processor.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
+                            Connection switched=(Connection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
                                 connection=switched;
                         }
@@ -244,7 +240,7 @@ public abstract class HttpConnection extends SelectableConnection
                         reset();
                         progress=true;
                     }
-                    else if (_processor.getRequest().getAsyncContinuation().isAsyncStarted())
+                    else if (_channel.getRequest().getAsyncContinuation().isAsyncStarted())
                     {
                         // The request is suspended, so even though progress has been made,
                         // exit the while loop by setting progress to false
@@ -263,7 +259,7 @@ public abstract class HttpConnection extends SelectableConnection
             setCurrentConnection(null);
 
             // If we are not suspended
-            if (!_processor.getRequest().getAsyncContinuation().isAsyncStarted())
+            if (!_channel.getRequest().getAsyncContinuation().isAsyncStarted())
             {
                 // reenable idle checking unless request is suspended
                 getSelectableEndPoint().setCheckForIdle(true);
@@ -294,7 +290,7 @@ public abstract class HttpConnection extends SelectableConnection
                     BufferUtil.toSummaryString(content),
                     action,_generator.getState());
             
-            HttpGenerator.Result result=_generator.generate(_responseHeader,_chunk,_responseBuffer,content,action);
+            HttpGenerator.Result result=_generator.generate(_channel.getResponseInfo(),_responseHeader,_chunk,_responseBuffer,content,action);
             if (LOG.isDebugEnabled())
                 LOG.debug("{}: {} ({},{},{},{},{})@{}",
                     this,
@@ -313,7 +309,6 @@ public abstract class HttpConnection extends SelectableConnection
 
                 case NEED_BUFFER:
                     _responseBuffer=_connector.getResponseBuffers().getBuffer();
-                    _responseBuffer=BufferUtil.allocate(8192);
                     break;
 
                 case NEED_CHUNK:
@@ -414,7 +409,7 @@ public abstract class HttpConnection extends SelectableConnection
     @Override
     public void onClose()
     {
-        _processor.onClose();
+        _channel.onClose();
     }
     
     /* ------------------------------------------------------------ */
@@ -422,7 +417,7 @@ public abstract class HttpConnection extends SelectableConnection
     public void onInputShutdown() throws IOException
     {
         // If we don't have a committed response and we are not suspended
-        if (_generator.isIdle() && !_processor.getRequest().getAsyncContinuation().isSuspended())
+        if (_generator.isIdle() && !_channel.getRequest().getAsyncContinuation().isSuspended())
         {
             // then no more can happen, so close.
             _endp.close();
@@ -436,11 +431,11 @@ public abstract class HttpConnection extends SelectableConnection
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    private final class HttpOverHttpProcessor extends HttpProcessor
+    private class HttpOverHttpChannel extends HttpChannel
     {
-        private HttpOverHttpProcessor(Server server, HttpController controller)
+        private HttpOverHttpChannel(Server server)
         {
-            super(server,controller);
+            super(server);
         }
 
         @Override
@@ -460,75 +455,136 @@ public abstract class HttpConnection extends SelectableConnection
         {
             return HttpConnection.this.getMaxIdleTime();
         }
-    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private final HttpController _controller = new HttpController()
-    {
+        @Override
+        public void asyncDispatch()
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void scheduleTimeout(Task timeout, long timeoutMs)
+        {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void cancelTimeout(Task timeout)
+        {
+            // TODO Auto-generated method stub
+            
+        }
         
         @Override
-        public int write(ByteBuffer content, boolean volatileContent) throws IOException
+        protected int write(ByteBuffer content, boolean volatileContent) throws IOException
         {
             return HttpConnection.this.generate(content,Action.PREPARE,volatileContent);
         }
         
         @Override
-        public void setPersistent(boolean persistent)
+        protected void setPersistent(boolean persistent)
         {
             _parser.setPersistent(persistent);
             _generator.setPersistent(persistent);
         }
         
         @Override
-        public void sendError(int status, String reason, String content, boolean close) throws IOException
+        protected void sendError(final int status, final String reason, String content, boolean close) throws IOException
+        {
+            if (_generator.isCommitted())
+                throw new IllegalStateException("Committed");
+            
+            HttpGenerator.ResponseInfo response =new HttpGenerator.ResponseInfo()
+            {
+                @Override
+                public HttpVersion getHttpVersion()
+                {
+                    return HttpVersion.HTTP_1_1;
+                }
+                @Override
+                public HttpFields getHttpFields()
+                {
+                    return getResponseFields();
+                }
+                @Override
+                public long getContentLength()
+                {
+                    return -1;
+                }
+                @Override
+                public boolean isHead()
+                {
+                    return getRequest().isHead();
+                }
+                @Override
+                public int getStatus()
+                {
+                    return status;
+                }
+                @Override
+                public String getReason()
+                {
+                    return reason;
+                }
+            };
+            
+            if (close)
+                _generator.setPersistent(false);
+            
+            ByteBuffer buf=BufferUtil.toBuffer(content);
+
+            if (_responseHeader==null)
+                _responseHeader=_connector.getResponseBuffers().getHeader();
+            if (_responseBuffer==null)
+                _responseBuffer=_connector.getResponseBuffers().getBuffer();
+            
+            _generator.generate(response,_responseHeader,null,_responseBuffer,buf,Action.COMPLETE);
+            
+        }
+        
+        @Override
+        protected void send1xx(int processing102)
         {
             // TODO Auto-generated method stub
             
         }
         
         @Override
-        public void send1xx(int processing102)
+        protected void resetBuffer()
         {
             // TODO Auto-generated method stub
             
         }
         
         @Override
-        public void resetBuffer()
+        protected void persist()
         {
             // TODO Auto-generated method stub
             
         }
         
         @Override
-        public void persist()
-        {
-            // TODO Auto-generated method stub
-            
-        }
-        
-        @Override
-        public boolean isResponseCommitted()
+        protected boolean isResponseCommitted()
         {
             return _generator.isCommitted();
         }
         
         @Override
-        public boolean isPersistent()
+        protected boolean isPersistent()
         {
             return _generator.isPersistent();
         }
         
         @Override
-        public void increaseContentBufferSize(int size)
+        protected void increaseContentBufferSize(int size)
         {
             // TODO Auto-generated method stub
         }
         
         @Override
-        public int getContentBufferSize()
+        protected int getContentBufferSize()
         {
             ByteBuffer buffer=_responseBuffer;
             if (buffer!=null)
@@ -538,29 +594,35 @@ public abstract class HttpConnection extends SelectableConnection
         }
         
         @Override
-        public Connector getConnector()
+        protected Connector getConnector()
         {
             return _connector;
         }
         
         @Override
-        public void flushResponse() throws IOException
+        protected void flushResponse() throws IOException
         {
             HttpConnection.this.generate(null,Action.FLUSH,false);
         }
         
         @Override
-        public void customize(Request request)
+        protected void customize(Request request)
         {
             // TODO Auto-generated method stub
             
         }
         
         @Override
-        public void completeResponse()
+        protected void completeResponse()
         {
             // TODO Auto-generated method stub
             
+        }
+
+        @Override
+        protected void setReadInterested(boolean interested)
+        {
+            _endp.setReadInterested(interested);
         }
     };
 }
