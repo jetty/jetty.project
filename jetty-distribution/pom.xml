@@ -421,6 +421,78 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.aggregate</groupId>
+      <artifactId>jetty-all</artifactId>
+      <classifier>javadoc</classifier>
+      <type>jar</type>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+  <profiles>
+    <profile>
+      <!-- Modules that are only for JDK7+ builds -->
+      <id>JDK7-plus-modules</id>
+      <activation>
+        <jdk>[1.7,)</jdk>
+      </activation>
+      <build>
+      <plugins>
+       <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+         <execution>
+            <id>copy-lib-spdy-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-spdy</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.spdy</groupId>
+                  <artifactId>spdy-jetty-http-webapp</artifactId>
+                  <version>${project.version}</version>
+                  <type>war</type>
+                  <overWrite>true</overWrite>
+                  <includes>**</includes>
+                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
+                  <destFileName>spdy.war</destFileName>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-spdy</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
+              <classifier>config</classifier>
+              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <excludes>META-INF/**</excludes>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+       </plugin>
+      </plugins>
+      </build>
+      <dependencies>
+          <dependency>
       <groupId>org.eclipse.jetty.spdy</groupId>
       <artifactId>spdy-core</artifactId>
       <version>${project.version}</version>
@@ -440,13 +512,8 @@
       <artifactId>spdy-jetty-http-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.aggregate</groupId>
-      <artifactId>jetty-all</artifactId>
-      <classifier>javadoc</classifier>
-      <type>jar</type>
-      <version>${project.version}</version>
-    </dependency>
-  </dependencies>
+      </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

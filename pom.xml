@@ -539,7 +539,7 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>1.7.0</version>
+                  <version>[1.7,)</version>
                 </requireJavaVersion>
               </rules>    
             </configuration>
