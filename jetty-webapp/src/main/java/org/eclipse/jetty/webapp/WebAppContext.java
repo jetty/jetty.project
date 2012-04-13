@@ -131,7 +131,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _distributable=false;
     private boolean _extractWAR=true;
     private boolean _copyDir=false;
-    private boolean _copyWebInf=true; // TODO change to false?
+    private boolean _copyWebInf=false; // TODO change to true?
     private boolean _logUrlOnStart =false;
     private boolean _parentLoaderPriority= Boolean.getBoolean("org.eclipse.jetty.server.webapp.parentLoaderPriority");
     private PermissionCollection _permissions;
