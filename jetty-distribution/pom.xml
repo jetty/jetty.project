@@ -202,6 +202,20 @@
             </configuration>
           </execution>
           <execution>
+            <id>unpack-config-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <classifier>config</classifier>
+              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <excludes>META-INF/**</excludes>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-monitor-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -406,7 +420,7 @@
         <executions>
          <execution>
             <id>copy-lib-spdy-deps</id>
-            <phase>generate-resources</phase>
+            <phase>process-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
@@ -418,7 +432,7 @@
           </execution>
           <execution>
             <id>copy-spdy</id>
-            <phase>generate-resources</phase>
+            <phase>process-resources</phase>
             <goals>
               <goal>copy</goal>
             </goals>
@@ -439,7 +453,7 @@
           </execution>
           <execution>
             <id>unpack-spdy</id>
-            <phase>generate-resources</phase>
+            <phase>process-resources</phase>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
