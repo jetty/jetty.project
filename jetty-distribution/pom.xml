@@ -104,16 +104,6 @@
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.spdy</groupId>
-                  <artifactId>spdy-jetty-http-webapp</artifactId>
-                  <version>${project.version}</version>
-                  <type>war</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/webapps</outputDirectory>
-                  <destFileName>spdy.war</destFileName>
-                </artifactItem>
-                <artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-start</artifactId>
                   <version>${project.version}</version>
@@ -138,18 +128,6 @@
               <excludeArtifactIds>jetty-all,jetty-start,jetty-monitor,jetty-jsp</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-spdy-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.spdy</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/spdy</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -235,20 +213,6 @@
               <includeTypes>jar</includeTypes>
               <excludeTransitive>true</excludeTransitive>
               <outputDirectory>${assembly-directory}/lib/monitor</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack-config-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.spdy</includeGroupIds>
-              <classifier>config</classifier>
-              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <excludes>META-INF/**</excludes>
-              <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
           <execution>
