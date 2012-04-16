@@ -1256,7 +1256,7 @@ jetty-7.0.2.RC0
  + Added IPAccessHandler
  + Updated Servlet3Continuation to final 3.0.20100224
  + 305997 Coalesce buffers in ChannelEndPoint.flush()
- + 306028 Enable TCP_NODELAY by default in client connectors <<<<<<< HEAD
+ + 306028 Enable TCP_NODELAY by default in client connectors
 
 jetty-8.0.0.M0 - 28 February 2010
  + Updated servlet 3.0 spec 20100224
@@ -1264,10 +1264,6 @@ jetty-8.0.0.M0 - 28 February 2010
  + Updated to cometd 1.0.1
 
 jetty-7.0.1.v20091125 - 25 November 2009
- + =======
-
-jetty-7.0.1.v20091125 - 25 November 2009
- + >>>>>>> origin/master
  + 274251 DefaultServlet supports exact match mode.
  + 288401 HttpExchange.cancel() Method Unimplemented
  + 289027 deobfuscate HttpClient SSL passwords
