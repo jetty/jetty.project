@@ -64,9 +64,9 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.mortbay.jetty</groupId> 
-      <artifactId>servlet-api</artifactId>
-      <version>3.0.20100224</version>
+      <groupId>org.eclipse.jetty.orbit</groupId> 
+      <artifactId>javax.servlet</artifactId>
+      <version>3.0.0.v201112011016</version>
       <scope>provided</scope>
     </dependency> 
     <dependency>
