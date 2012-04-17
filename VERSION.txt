@@ -1,6 +1,6 @@
-7.6.4-SNAPSHOT
+jetty-7.6.4-SNAPSHOT
 
-jetty-7.6.3.v20120412 - 12 April 2012
+jetty-7.6.3.v20120416 - 16 April 2012
  + 367172 Remove detection for slf4j NOPLogger
  + 373269 Make ServletHandler.notFound() method impl do nothing - override to
    send back 404.
