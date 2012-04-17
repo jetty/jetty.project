@@ -183,10 +183,9 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             int streamId = rstInfo.getStreamId();
             IStream stream = streams.get(streamId);
-            if (stream != null)
-                removeStream(stream);
             RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
-            control(null,frame,timeout,unit,handler,null);
+            control(stream,frame,timeout,unit,handler,null);
+            removeStream(stream);
         }
     }
 
@@ -436,18 +435,20 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         IStream stream = newStream(synStream,parentStream);
         stream.updateCloseState(synStream.isClose(), true);
         stream.setStreamFrameListener(listener);
-        if (streams.putIfAbsent(synStream.getStreamId(),stream) != null)
-        {
-            // If this happens we have a bug since we did not check that the peer's streamId was valid
-            // (if we're on server, then the client sent an odd streamId and we did not check that)
-            throw new IllegalStateException("StreamId: " + synStream.getStreamId() + " invalid.");
-        }
 
         if (synStream.isUnidirectional())
         {
             // unidirectional streams are implicitly half closed for the client
             stream.updateCloseState(true,false);
-            parentStream.associate(stream);
+            if(!stream.isClosed()) //TODO: right approach?
+                parentStream.associate(stream);
+        }
+        
+        if (streams.putIfAbsent(synStream.getStreamId(),stream) != null)
+        {
+            // If this happens we have a bug since we did not check that the peer's streamId was valid
+            // (if we're on server, then the client sent an odd streamId and we did not check that)
+            throw new IllegalStateException("StreamId: " + synStream.getStreamId() + " invalid."); //TODO: rst instead of throw
         }
 
         logger.debug("Created {}",stream);
@@ -478,16 +479,20 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             }
         }
     }
-
+    
     private void removeStream(IStream stream)
     {
+        if (stream.isUnidirectional())
+        {
+            stream.getParentStream().disassociate(stream); // TODO: probably stream.disassociateFromParent() is nicer?
+        }
+        
         IStream removed = streams.remove(stream.getId());
         if (removed != null)
-        {
             assert removed == stream;
-            logger.debug("Removed {}",stream);
-            notifyStreamClosed(stream);
-        }
+
+        logger.debug("Removed {}",stream);
+        notifyStreamClosed(stream);
     }
 
     private void notifyStreamClosed(IStream stream)
@@ -733,7 +738,11 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         try
         {
             if (stream != null)
+            {
                 updateLastStreamId(stream);
+                if ((frame.getFlags() & SynInfo.FLAG_CLOSE) == SynInfo.FLAG_CLOSE && stream.isClosed())
+                    removeStream(stream);
+            }
 
             // Synchronization is necessary, since we may have concurrent replies
             // and those needs to be generated and enqueued atomically in order
@@ -818,7 +827,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
                 if (buffer != null)
                 {
                     queue.remove(i);
-                    if (stream != null && !streams.containsValue(stream))
+                    if (stream != null && (!streams.containsValue(stream) && !stream.isUnidirectional()))
                         frameBytes.fail(new StreamException(stream.getId(), StreamStatus.INVALID_STREAM));
                     break;
                 }

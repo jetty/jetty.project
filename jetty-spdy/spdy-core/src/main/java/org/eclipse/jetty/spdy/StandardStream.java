@@ -57,6 +57,7 @@ public class StandardStream implements IStream
     private volatile StreamFrameListener listener;
     private volatile OpenState openState = OpenState.SYN_SENT;
     private volatile CloseState closeState = CloseState.OPENED;
+    private volatile boolean unidirectional = false;
 
     public StandardStream(SynStreamFrame frame, ISession session, int windowSize, IStream associatedStream)
     {
@@ -64,6 +65,8 @@ public class StandardStream implements IStream
         this.session = session;
         this.windowSize = new AtomicInteger(windowSize);
         this.associatedStream = associatedStream;
+        if(associatedStream!=null)
+            unidirectional = true;
     }
 
     @Override
@@ -91,7 +94,7 @@ public class StandardStream implements IStream
     }
     
     @Override
-    public void removeAssociation(IStream stream)
+    public void disassociate(IStream stream)
     {
         associatedStreams.remove(stream);
     }
@@ -177,17 +180,9 @@ public class StandardStream implements IStream
                 case REMOTELY_CLOSED:
                 {
                     if (local)
-                    {
-                        if (associatedStream != null)
-                        {
-                            associatedStream.removeAssociation(this);
-                        }
                         closeState = CloseState.CLOSED;
-                    }
                     else
-                    {
                         throw new IllegalStateException();
-                    }
                     break;
                 }
                 default:
@@ -430,6 +425,12 @@ public class StandardStream implements IStream
         session.control(this, frame, timeout, unit, handler, null);
     }
 
+    @Override
+    public boolean isUnidirectional()
+    {
+        return unidirectional;
+    }
+    
     @Override
     public boolean isClosed()
     {

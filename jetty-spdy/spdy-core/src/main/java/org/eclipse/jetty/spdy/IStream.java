@@ -103,5 +103,5 @@ public interface IStream extends Stream
      * 
      * @param stream the stream to be removed
      */
-    public void removeAssociation(IStream stream);
+    public void disassociate(IStream stream);
 }

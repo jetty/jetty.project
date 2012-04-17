@@ -188,6 +188,11 @@ public interface Stream
     public void headers(HeadersInfo headersInfo, long timeout, TimeUnit unit, Handler<Void> handler);
 
     /**
+     * @return whether this stream is unidirectional or not
+     */
+    public boolean isUnidirectional();
+    
+    /**
      * @return whether this stream has been closed by both parties
      * @see #isHalfClosed()
      */

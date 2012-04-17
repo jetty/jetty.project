@@ -38,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
+import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.SPDY;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.frames.DataFrame;
+import org.eclipse.jetty.spdy.frames.SynReplyFrame;
 import org.eclipse.jetty.spdy.frames.SynStreamFrame;
 import org.eclipse.jetty.spdy.generator.Generator;
 import org.junit.Before;
@@ -59,7 +61,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 public class StandardSessionTest
 {
 
-    @Mock private ISession sessionMock;
+    @Mock
+    private ISession sessionMock;
     private ByteBufferPool bufferPool;
     private Executor threadPool;
     private StandardSession session;
@@ -101,20 +104,20 @@ public class StandardSessionTest
     {
         IStream stream = (IStream)createStream();
         Stream pushStream = createPushStream(stream,true).get(1,TimeUnit.SECONDS);
-        assertThat("stream should not be halfClosed",stream.isHalfClosed(),is(false));
-        assertThat("stream should not be closed",stream.isClosed(),is(false));
-        assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
-        assertThat("pushStream expected to not be closed",pushStream.isClosed(),is(false));
+        assertThat("stream is not halfClosed",stream.isHalfClosed(),is(false));
+        assertThat("stream is not closed",stream.isClosed(),is(false));
+        assertThat("pushStream is halfClosed",pushStream.isHalfClosed(),is(true));
+        assertThat("pushStream is not closed",pushStream.isClosed(),is(false));
 
         stream.updateCloseState(true,true);
-        assertThat("stream should be halfClosed",stream.isHalfClosed(),is(true));
-        assertThat("stream should not be closed",stream.isClosed(),is(false));
-        assertThat("pushStream should be halfClosed",pushStream.isHalfClosed(),is(true));
-        assertThat("pushStream should not be closed",pushStream.isClosed(),is(false));
+        assertThat("stream is halfClosed",stream.isHalfClosed(),is(true));
+        assertThat("stream is not closed",stream.isClosed(),is(false));
+        assertThat("pushStream is halfClosed",pushStream.isHalfClosed(),is(true));
+        assertThat("pushStream is not closed",pushStream.isClosed(),is(false));
 
         stream.updateCloseState(true,false);
-        assertThat("stream should be closed",stream.isClosed(),is(true));
-        assertThat("pushStream should be closed",pushStream.isClosed(),is(false));
+        assertThat("stream is closed",stream.isClosed(),is(true));
+        assertThat("pushStream is not closed",pushStream.isClosed(),is(false));
     }
 
     @Test
@@ -122,9 +125,9 @@ public class StandardSessionTest
     {
         IStream stream = (IStream)createStream();
         stream.updateCloseState(true,true);
-        assertThat("stream should be halfClosed",stream.isHalfClosed(),is(true));
+        assertThat("stream is halfClosed",stream.isHalfClosed(),is(true));
         stream.updateCloseState(true,false);
-        assertThat("stream should be closed",stream.isClosed(),is(true));
+        assertThat("stream is closed",stream.isClosed(),is(true));
         createPushStreamAndMakeSureItFails(stream);
     }
 
@@ -145,28 +148,92 @@ public class StandardSessionTest
                 failedLatch.countDown();
             }
         });
-        assertThat("PushStream creation failed",failedLatch.getCount(),equalTo(0L));
+        assertThat("pushStream creation failed",failedLatch.getCount(),equalTo(0L));
     }
 
     @Test
-    public void testPushStreamIsAddedToParent() throws InterruptedException, ExecutionException, TimeoutException
+    public void testPushStreamIsAddedToParentAndSession() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = (IStream)createStream();
         Stream pushStream = createPushStream(stream,true).get(1,TimeUnit.SECONDS);
-        assertThat("PushStream has not been added to parent",stream.getAssociatedStreams().contains(pushStream),is(true));
+        assertThat("pushStream is added to parent",stream.getAssociatedStreams().contains(pushStream),is(true));
+        assertThat("pushStream is added to session", session.getStreams().containsValue(pushStream), is(true));
     }
 
     @Test
-    public void testPushStreamIsRemovedFromParentWhenClosed() throws InterruptedException, ExecutionException, TimeoutException
+    public void testStreamIsUnidirectional() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        IStream stream = (IStream)createStream();
+        assertThat("stream is not unidirectional",stream.isUnidirectional(),is(false));
+        Stream pushStream = createPushStream(stream,true).get(1,TimeUnit.SECONDS);
+        assertThat("pushStream is unidirectional",pushStream.isUnidirectional(),is(true));
+    }
+
+    @Test
+    public void testPushStreamIsRemovedFromParentAndSessionWhenClosed() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = (IStream)createStream();
         IStream pushStream = (IStream)createPushStream(stream,true).get(1,TimeUnit.SECONDS);
-        assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
-        assertThat("PushStream has not been added to parent",stream.getAssociatedStreams().contains(pushStream),is(true));
-        assertThat("pushStream expected to be halfClosed",pushStream.isHalfClosed(),is(true));
+        assertThat("pushStream is halfClosed",pushStream.isHalfClosed(),is(true));
+        assertThat("pushStream is added to parent",stream.getAssociatedStreams().contains(pushStream),is(true));
+        session.rst(new RstInfo(pushStream.getId(),StreamStatus.CANCEL_STREAM));
         pushStream.updateCloseState(true,true);
-        assertThat("pushStream expected to be closed",pushStream.isClosed(),is(true));
-        assertThat("PushStream expected to be removed from parent",stream.getAssociatedStreams().contains(pushStream),is(false));
+        assertThat("pushStream is closed",pushStream.isClosed(),is(true));
+        assertThat("pushStream is removed from parent",stream.getAssociatedStreams().contains(pushStream),is(false));
+        assertThat("pushStream is removed from session",session.getStreams().containsValue(pushStream),is(false));
+    }
+
+    @Test
+    public void testDataReceivedOnPushStreamResetsStream() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        // SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,SynInfo.FLAG_CLOSE,1,0 ,(byte)0,null);
+        // IStream stream = new StandardStream(synStreamFrame,sessionMock,8184,null);
+        // Promise<Stream> promise = new Promise<Stream>();
+        // promise.completed(new PushSt)
+        // when(sessionMock.syn(any(SynInfo.class),any(StreamFrameListener.class))).thenReturn(promise);
+        // IStream pushStream = (IStream)createPushStream(stream,true).get();
+        // session.rst(new RstInfo(pushStream.getId(),StreamStatus.INVALID_STREAM));
+        // assertThat("pushStream is closed after reeset from client",pushStream.isClosed(), is(true));
+        // assertThat("pushStream is not in session", session.getStreams().containsKey(pushStream.getId()), is(false));
+    }
+
+    @Test
+    public void testStreamIsAddedAndRemovedFromSession() throws InterruptedException, ExecutionException, TimeoutException{
+        IStream stream = (IStream)createStream();
+        assertThat("stream is in session", session.getStreams().containsValue(stream), is(true));
+        stream.updateCloseState(true,true);
+        session.onControlFrame(new SynReplyFrame(SPDY.V2,(byte)0,stream.getId(),null));
+        session.onDataFrame(new DataFrame(stream.getId(),SynInfo.FLAG_CLOSE,0),ByteBuffer.allocate(128));
+        assertThat("stream is closed", stream.isClosed(), is(true));
+        assertThat("stream is removed from session", session.getStreams().containsValue(stream), is(false));
+    }
+    
+    @Test
+    public void testStreamIsRemovedFromSessionWhenReset() throws InterruptedException, ExecutionException, TimeoutException{
+        IStream stream = (IStream)createStream();
+        assertThat("stream is added to session", session.getStreams().containsValue(stream),is(true));
+        session.rst(new RstInfo(stream.getId(),StreamStatus.CANCEL_STREAM));
+        assertThat("stream is removed from session", session.getStreams().containsValue(stream),is(false));
+    }
+    
+    @Test
+    public void testPushStreamIsAddedAndRemovedFromSession() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        IStream stream = (IStream)createStream();
+        IStream pushStream = (IStream)createPushStream(stream,true).get();
+        assertThat("pushStream is in session",session.getStreams().containsKey(pushStream.getId()),is(true));
+        session.onDataFrame(new DataFrame(pushStream.getId(),SynInfo.FLAG_CLOSE,0),ByteBuffer.allocate(128));
+        assertThat("pushStream is not in session",session.getStreams().containsKey(pushStream.getId()),is(false));
+    }
+
+    @Test
+    public void testPushStreamIsRemovedWhenReset() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        IStream stream = (IStream)createStream();
+        IStream pushStream = (IStream)stream.syn(new SynInfo(false)).get();
+        assertThat("pushStream is in session",session.getStreams().containsKey(pushStream.getId()),is(true));
+        session.rst(new RstInfo(pushStream.getId(),StreamStatus.INVALID_STREAM));
+        assertThat("pushStream is in session",session.getStreams().containsKey(pushStream.getId()),is(false));
     }
 
     @Test
@@ -177,28 +244,56 @@ public class StandardSessionTest
         Stream pushStream = stream.syn(synInfo).get(1,TimeUnit.SECONDS);
         assertThat("pushStream is half closed ",pushStream.isHalfClosed(),is(true));
         assertThat("pushStream is closed",pushStream.isClosed(),is(true));
+        assertThat("stream doesn't have associated streams", stream.getAssociatedStreams().size(),is(0));
     }
 
+    @Test
+    public void testPushStreamSendHeadersWithCloseFlag() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        IStream stream = (IStream)createStream();
+        SynInfo synInfo = new SynInfo(headers,false,stream.getPriority());
+        Stream pushStream = stream.syn(synInfo).get(1,TimeUnit.SECONDS);
+        assertThat("stream is associated with pushStream", stream.getAssociatedStreams().contains(pushStream),is(true));
+        pushStream.headers(new HeadersInfo(headers,true));
+        assertThat("pushStream is half closed ",pushStream.isHalfClosed(),is(true));
+        assertThat("pushStream is closed",pushStream.isClosed(),is(true));
+        assertThat("stream doesn't have associated streams", stream.getAssociatedStreams().size(),is(0));
+    }
+    
+    @Test
+    public void testStreamIsRemovedWhenHeadersWithCloseFlagAreSent() throws InterruptedException, ExecutionException, TimeoutException{
+        IStream stream = (IStream)createStream();
+        assertThat("stream is added to session", session.getStreams().containsValue(stream),is(true));
+        stream.updateCloseState(true,false);
+        stream.headers(new HeadersInfo(headers,true));
+        assertThat("stream is closed", stream.isClosed(),is(true));
+        assertThat("stream is removed from session",session.getStreams().containsValue(stream),is(false));
+        
+    }
+    //TODO: test with headers(close true) --> make sure stream is removed from session
+
     @SuppressWarnings("unchecked")
-    @Test(expected=IllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
     public void testSendDataOnHalfClosedStream() throws InterruptedException, ExecutionException, TimeoutException
     {
-        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,(byte)1,1,0 ,(byte)0,null);
+        SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,SynInfo.FLAG_CLOSE,1,0,(byte)0,null);
         IStream stream = new StandardStream(synStreamFrame,sessionMock,8184,null);
         stream.updateCloseState(synStreamFrame.isClose(),true);
         assertThat("stream is half closed",stream.isHalfClosed(),is(true));
         stream.data(new StringDataInfo("data on half closed stream",true));
-        verify(sessionMock, never()).data(any(IStream.class),any(DataInfo.class),anyInt(),any(TimeUnit.class),any(Handler.class),any(void.class));
+        verify(sessionMock,never()).data(any(IStream.class),any(DataInfo.class),anyInt(),any(TimeUnit.class),any(Handler.class),any(void.class));
     }
-    
+
     @Test
     @Ignore("In V3 we need to rst the stream if we receive data on a remotely half closed stream.")
-    public void receiveDataOnRemotelyHalfClosedStream() throws InterruptedException, ExecutionException{
-        IStream stream = (IStream)session.syn(new SynInfo(false),new StreamFrameListener.Adapter(){
-            
+    public void receiveDataOnRemotelyHalfClosedStream() throws InterruptedException, ExecutionException
+    {
+        IStream stream = (IStream)session.syn(new SynInfo(false),new StreamFrameListener.Adapter()
+        {
+
         }).get();
         stream.updateCloseState(true,false);
-        assertThat("stream is half closed from remote side", stream.isHalfClosed(), is(true));
+        assertThat("stream is half closed from remote side",stream.isHalfClosed(),is(true));
         stream.process(new DataFrame(stream.getId(),(byte)0,256),ByteBuffer.allocate(256));
     }
 

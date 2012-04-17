@@ -16,6 +16,8 @@
 
 package org.eclipse.jetty.spdy.frames;
 
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.spdy.StandardByteBufferPool;
@@ -38,7 +40,7 @@ public class RstStreamGenerateParseTest
         Generator generator = new Generator(new StandardByteBufferPool(), new StandardCompressionFactory().newCompressor());
         ByteBuffer buffer = generator.control(frame1);
 
-        Assert.assertNotNull(buffer);
+        assertThat("buffer is not null", buffer, not(nullValue()));
 
         TestSPDYParserListener listener = new TestSPDYParserListener();
         Parser parser = new Parser(new StandardCompressionFactory().newDecompressor());
@@ -46,13 +48,13 @@ public class RstStreamGenerateParseTest
         parser.parse(buffer);
         ControlFrame frame2 = listener.getControlFrame();
 
-        Assert.assertNotNull(frame2);
-        Assert.assertEquals(ControlFrameType.RST_STREAM, frame2.getType());
+        assertThat("frame2 is not null", frame2, not(nullValue()));
+        assertThat("frame2 is type RST_STREAM",ControlFrameType.RST_STREAM, equalTo(frame2.getType()));
         RstStreamFrame rstStream = (RstStreamFrame)frame2;
-        Assert.assertEquals(SPDY.V2, rstStream.getVersion());
-        Assert.assertEquals(streamId, rstStream.getStreamId());
-        Assert.assertEquals(0, rstStream.getFlags());
-        Assert.assertEquals(streamStatus, rstStream.getStatusCode());
+        assertThat("rstStream version is SPDY.V2",SPDY.V2, equalTo(rstStream.getVersion()));
+        assertThat("rstStream id is equal to streamId",streamId, equalTo(rstStream.getStreamId()));
+        assertThat("rstStream flags are 0",(byte)0, equalTo(rstStream.getFlags()));
+        assertThat("stream status is equal to rstStream statuscode",streamStatus, is(rstStream.getStatusCode()));
     }
 
     @Test
