@@ -16,7 +16,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import java.awt.Frame;
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
 import java.util.HashMap;
@@ -485,7 +484,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         if (stream.isUnidirectional())
         {
-            stream.getParentStream().disassociate(stream); // TODO: probably stream.disassociateFromParent() is nicer?
+            stream.getParentStream().disassociate(stream);
         }
 
         IStream removed = streams.remove(stream.getId());
