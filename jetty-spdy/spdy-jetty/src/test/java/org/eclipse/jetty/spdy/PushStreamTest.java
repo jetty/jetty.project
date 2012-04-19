@@ -260,7 +260,6 @@ public class PushStreamTest extends AbstractTest
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
                         dataInfo.consumeInto(receivedBytes);
-                        // System.out.println(receivedBytes.length + " " + dataSizeInBytes);
                         if (dataInfo.isClose())
                         {
                             allDataReceived.countDown();

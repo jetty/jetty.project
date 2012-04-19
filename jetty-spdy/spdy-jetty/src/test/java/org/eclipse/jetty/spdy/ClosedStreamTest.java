@@ -187,12 +187,10 @@ public class ClosedStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                System.out.println("server knows: " + stream.getSession().getStreams());
                 stream.reply(new ReplyInfo(false));
                 serverReplySentLatch.countDown();
                 try
                 {
-                    System.out.println("server: syn received, synreply sent");
                     clientReplyReceivedLatch.await(5,TimeUnit.SECONDS);
                 }
                 catch (InterruptedException e)
@@ -204,7 +202,6 @@ public class ClosedStreamTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        System.out.println("server: onData");
                         serverDataReceivedLatch.countDown();
                         super.onData(stream,dataInfo);
                     }
@@ -234,7 +231,6 @@ public class ClosedStreamTest extends AbstractTest
                     ByteBuffer data = generator.data(streamId,0,new StringDataInfo("data",false));
                     try
                     {
-                        System.out.println("sending data");
                         socketChannel.write(data);
                     }
                     catch (IOException e)
@@ -252,12 +248,11 @@ public class ClosedStreamTest extends AbstractTest
             @Override
             public void onDataFrame(DataFrame frame, ByteBuffer data)
             {
-                System.out.println("DATAFRAME ALTER: " + frame);
                 super.onDataFrame(frame,data);
             }
         });
         ByteBuffer response = ByteBuffer.allocate(28);
-        System.out.println("bytes read: " + socketChannel.read(response));
+        socketChannel.read(response);
         response.flip();
         parser.parse(response);
 
