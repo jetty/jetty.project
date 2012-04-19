@@ -19,6 +19,7 @@ package org.eclipse.jetty.spdy;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -61,7 +62,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class StandardSessionTest
 {
-
     @Mock
     private ISession sessionMock;
     private ByteBufferPool bufferPool;
@@ -185,20 +185,6 @@ public class StandardSessionTest
     }
 
     @Test
-    public void testDataReceivedOnPushStreamResetsStream() throws InterruptedException, ExecutionException, TimeoutException
-    {
-        // SynStreamFrame synStreamFrame = new SynStreamFrame(SPDY.V2,SynInfo.FLAG_CLOSE,1,0 ,(byte)0,null);
-        // IStream stream = new StandardStream(synStreamFrame,sessionMock,8184,null);
-        // Promise<Stream> promise = new Promise<Stream>();
-        // promise.completed(new PushSt)
-        // when(sessionMock.syn(any(SynInfo.class),any(StreamFrameListener.class))).thenReturn(promise);
-        // IStream pushStream = (IStream)createPushStream(stream,true).get();
-        // session.rst(new RstInfo(pushStream.getId(),StreamStatus.INVALID_STREAM));
-        // assertThat("pushStream is closed after reeset from client",pushStream.isClosed(), is(true));
-        // assertThat("pushStream is not in session", session.getStreams().containsKey(pushStream.getId()), is(false));
-    }
-
-    @Test
     public void testStreamIsAddedAndRemovedFromSession() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = (IStream)createStream();
@@ -225,8 +211,8 @@ public class StandardSessionTest
         IStream stream = (IStream)createStream();
         IStream pushStream = (IStream)createPushStream(stream,true).get();
         assertThat("pushStream is in session",session.getStreams().containsKey(pushStream.getId()),is(true));
-        session.onDataFrame(new DataFrame(pushStream.getId(),SynInfo.FLAG_CLOSE,0),ByteBuffer.allocate(128));
-        assertThat("pushStream is not in session",session.getStreams().containsKey(pushStream.getId()),is(false));
+        session.data(pushStream,new StringDataInfo("close",true),1,TimeUnit.SECONDS,null,null);
+        assertThat("pushStream is not in session",session.getStreams().containsKey(pushStream.getId()),not(true));
     }
 
     @Test
@@ -292,9 +278,9 @@ public class StandardSessionTest
         IStream stream = (IStream)createStream();
         session.onDataFrame(new DataFrame(stream.getId(),SynInfo.FLAG_CLOSE,128),ByteBuffer.allocate(128));
         session.data(stream,new StringDataInfo("close",true),1,TimeUnit.SECONDS,null,null);
-        assertThat("onStreamCreated listener has been called", createdListenerCalledLatch.await(500,TimeUnit.MILLISECONDS), is(true));
+        assertThat("onStreamCreated listener has been called",createdListenerCalledLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
-    
+
     @Test
     public void testListenerIsCalledForResetStream() throws InterruptedException, ExecutionException, TimeoutException
     {
@@ -310,7 +296,7 @@ public class StandardSessionTest
         });
         IStream stream = (IStream)createStream();
         session.rst(new RstInfo(stream.getId(),StreamStatus.CANCEL_STREAM));
-        assertThat("onStreamClosed listener has been called", closedListenerCalledLatch.await(500,TimeUnit.MILLISECONDS), is(true));
+        assertThat("onStreamClosed listener has been called",closedListenerCalledLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
 
     @Test
@@ -329,7 +315,7 @@ public class StandardSessionTest
         IStream stream = (IStream)createStream();
         session.onDataFrame(new DataFrame(stream.getId(),SynInfo.FLAG_CLOSE,128),ByteBuffer.allocate(128));
         session.data(stream,new StringDataInfo("close",true),1,TimeUnit.SECONDS,null,null);
-        assertThat("onStreamClosed listener has been called", closedListenerCalledLatch.await(500,TimeUnit.MILLISECONDS), is(true));
+        assertThat("onStreamClosed listener has been called",closedListenerCalledLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
 
     @Test
@@ -348,7 +334,8 @@ public class StandardSessionTest
         IStream stream = (IStream)createStream();
         IStream pushStream = (IStream)createPushStream(stream,true).get();
         session.data(pushStream,new StringDataInfo("close",true),1,TimeUnit.SECONDS,null,null);
-        assertThat("onStreamCreated listener has been called twice. Once for the stream and once for the pushStream", createdListenerCalledLatch.await(500,TimeUnit.MILLISECONDS), is(true));
+        assertThat("onStreamCreated listener has been called twice. Once for the stream and once for the pushStream",
+                createdListenerCalledLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
 
     @Test
@@ -367,9 +354,9 @@ public class StandardSessionTest
         IStream stream = (IStream)createStream();
         IStream pushStream = (IStream)createPushStream(stream,true).get();
         session.data(pushStream,new StringDataInfo("close",true),1,TimeUnit.SECONDS,null,null);
-        assertThat("onStreamClosed listener has been called", closedListenerCalledLatch.await(500,TimeUnit.MILLISECONDS), is(true));
+        assertThat("onStreamClosed listener has been called",closedListenerCalledLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
-    
+
     @Test
     public void testListenerIsCalledForResetPushStream() throws InterruptedException, ExecutionException, TimeoutException
     {
@@ -386,7 +373,7 @@ public class StandardSessionTest
         IStream stream = (IStream)createStream();
         IStream pushStream = (IStream)createPushStream(stream,true).get();
         session.rst(new RstInfo(pushStream.getId(),StreamStatus.CANCEL_STREAM));
-        assertThat("onStreamClosed listener has been called", closedListenerCalledLatch.await(500,TimeUnit.MILLISECONDS), is(true));
+        assertThat("onStreamClosed listener has been called",closedListenerCalledLatch.await(500,TimeUnit.MILLISECONDS),is(true));
     }
 
     @SuppressWarnings("unchecked")
@@ -403,7 +390,7 @@ public class StandardSessionTest
 
     @Test
     @Ignore("In V3 we need to rst the stream if we receive data on a remotely half closed stream.")
-    public void receiveDataOnRemotelyHalfClosedStream() throws InterruptedException, ExecutionException
+    public void receiveDataOnRemotelyHalfClosedStreamResetsStreamInV3() throws InterruptedException, ExecutionException
     {
         IStream stream = (IStream)session.syn(new SynInfo(false),new StreamFrameListener.Adapter()
         {
@@ -414,6 +401,24 @@ public class StandardSessionTest
         stream.process(new DataFrame(stream.getId(),(byte)0,256),ByteBuffer.allocate(256));
     }
 
+    @Test
+    public void testReceiveDataOnRemotelyClosedStreamIsIgnored() throws InterruptedException, ExecutionException, TimeoutException
+    {
+        final CountDownLatch onDataCalledLatch = new CountDownLatch(1);
+        Stream stream = session.syn(new SynInfo(false),new StreamFrameListener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataInfo dataInfo)
+            {
+                onDataCalledLatch.countDown();
+                super.onData(stream,dataInfo);
+            }
+        }).get(1,TimeUnit.SECONDS);
+        session.onControlFrame(new SynReplyFrame(SPDY.V2,SynInfo.FLAG_CLOSE,stream.getId(),headers));
+        session.onDataFrame(new DataFrame(stream.getId(),(byte)0,0),ByteBuffer.allocate(128));
+        assertThat("onData is never called",onDataCalledLatch.await(20,TimeUnit.MILLISECONDS),not(true));
+    }
+    
     private Stream createStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         SynInfo synInfo = new SynInfo(headers,false,(byte)0);

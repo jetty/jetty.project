@@ -34,12 +34,10 @@ import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
-import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Session;
 import org.eclipse.jetty.spdy.api.SessionFrameListener;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
-import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
@@ -48,7 +46,6 @@ import org.junit.Test;
 public class PushStreamTest extends AbstractTest
 {
     
-    //TODO: test for create/removeStreamNotifier
     @Test
     public void testSynPushStream() throws Exception
     {
@@ -69,7 +66,7 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 pushStreamSynLatch.countDown();
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(false));
                 return super.onSyn(stream,synInfo);
             }
         });
@@ -136,7 +133,7 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 pushStreamSynLatch.countDown();
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(false));
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
@@ -198,7 +195,6 @@ public class PushStreamTest extends AbstractTest
     @Test
     public void testSynPushStreamOnClosedStream() throws Exception
     {
-        final CountDownLatch synLatch = new CountDownLatch(1);
         final CountDownLatch pushStreamFailedLatch = new CountDownLatch(1);
 
         Session clientSession = startClient(startServer(new ServerSessionFrameListener.Adapter()
@@ -206,16 +202,9 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                Session serverSession = stream.getSession();
-                serverSession.rst(new RstInfo(stream.getId(),StreamStatus.REFUSED_STREAM));
-                synLatch.countDown();
-                stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Handler<Stream>()
+                stream.reply(new ReplyInfo(true));
+                stream.syn(new SynInfo(false),1,TimeUnit.SECONDS,new Handler.Adapter<Stream>()
                 {
-                    @Override
-                    public void completed(Stream context)
-                    {
-                    }
-
                     @Override
                     public void failed(Throwable x)
                     {
@@ -226,8 +215,7 @@ public class PushStreamTest extends AbstractTest
             }
         }),new SessionFrameListener.Adapter());
 
-        clientSession.syn(new SynInfo(false),null);
-        assertThat("onSyn has been called",synLatch.await(1,TimeUnit.SECONDS),is(true));
+        clientSession.syn(new SynInfo(true),null);
         assertThat("pushStream syn has failed",pushStreamFailedLatch.await(1,TimeUnit.SECONDS),is(true));
     }
 
@@ -335,7 +323,7 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(true));
+                stream.reply(new ReplyInfo(false));
                 assertStreamIdIsEven(stream);
                 pushStreamIdIsEvenLatch.countDown();
                 return super.onSyn(stream,synInfo);
