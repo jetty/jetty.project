@@ -98,13 +98,8 @@ public class StandardStreamTest
         stream.updateCloseState(true,false);
         assertThat("stream expected to be closed",stream.isClosed(),is(true));
         final CountDownLatch failedLatch = new CountDownLatch(1);
-        stream.syn(new SynInfo(false),0,TimeUnit.SECONDS,new Handler<Stream>()
+        stream.syn(new SynInfo(false),0,TimeUnit.SECONDS,new Handler.Adapter<Stream>()
         {
-            @Override
-            public void completed(Stream context)
-            {
-            }
-            
             @Override
             public void failed(Throwable x)
             {
