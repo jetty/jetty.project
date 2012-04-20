@@ -21,8 +21,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.spdy.IStream;
-
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
  * <p>Differently from socket streams, where the input and output streams are permanently associated
@@ -230,11 +228,11 @@ public interface Stream
     /**
      * @return the associated parent stream or null if this is not an associated stream
      */
-    public IStream getParentStream();
+    public Stream getAssociatedStream();
     
     /**
      * @return associated child streams or an empty set if no associated streams exist
      */
-    public Set<IStream> getAssociatedStreams();
+    public Set<Stream> getPushedStreams();
     
 }

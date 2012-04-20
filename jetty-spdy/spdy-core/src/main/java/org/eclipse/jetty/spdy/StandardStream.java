@@ -53,7 +53,7 @@ public class StandardStream implements IStream
     private final SynStreamFrame frame;
     private final ISession session;
     private final AtomicInteger windowSize;
-    private final Set<IStream> associatedStreams = Collections.newSetFromMap(new ConcurrentHashMap<IStream, Boolean>());
+    private final Set<Stream> associatedStreams = Collections.newSetFromMap(new ConcurrentHashMap<Stream, Boolean>());
     private volatile StreamFrameListener listener;
     private volatile OpenState openState = OpenState.SYN_SENT;
     private volatile CloseState closeState = CloseState.OPENED;
@@ -76,13 +76,13 @@ public class StandardStream implements IStream
     }
 
     @Override
-    public IStream getParentStream()
+    public IStream getAssociatedStream()
     {
         return associatedStream;
     }
 
     @Override
-    public Set<IStream> getAssociatedStreams()
+    public Set<Stream> getPushedStreams()
     {
         return associatedStreams;
     }
@@ -352,9 +352,14 @@ public class StandardStream implements IStream
     @Override
     public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler)
     {
-        if (isClosed() || !session.getStreams().containsKey(getId()))
+        if (!session.getStreams().containsKey(getId()))
         {
-            handler.failed(new StreamException(getId(),StreamStatus.INVALID_STREAM)); // TODO: use StreamStatus.alreadyClosed() for V3
+            handler.failed(new StreamException(getId(),StreamStatus.INVALID_STREAM));
+            return;
+        }
+        if (isClosed())
+        {
+            handler.failed(new StreamException(getId(),StreamStatus.STREAM_ALREADY_CLOSED));
             return;
         }
         PushSynInfo pushSynInfo = new PushSynInfo(getId(),synInfo);

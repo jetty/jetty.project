@@ -150,7 +150,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         synchronized (this)
         {
             int associatedStreamId = 0;
-            if ((synInfo.getFlags() & PushSynInfo.FLAG_UNIDIRECTIONAL) == PushSynInfo.FLAG_UNIDIRECTIONAL)
+            if (synInfo instanceof PushSynInfo)
             {
                 associatedStreamId = ((PushSynInfo)synInfo).getAssociatedStreamId();
             }
@@ -183,6 +183,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             int streamId = rstInfo.getStreamId();
             IStream stream = streams.get(streamId);
             RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
+            //TODO: set stream.isReset --> maybe by calling stream.process()
             control(stream,frame,timeout,unit,handler,null);
             if (stream != null)
                 removeStream(stream);
@@ -440,7 +441,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             // unidirectional streams are implicitly half closed for the client
             stream.updateCloseState(true,false);
-            if (!stream.isClosed()) // TODO: right approach?
+            if (!stream.isClosed())
                 parentStream.associate(stream);
         }
 
@@ -484,7 +485,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         if (stream.isUnidirectional())
         {
-            stream.getParentStream().disassociate(stream);
+            ((IStream)stream.getAssociatedStream()).disassociate(stream);
         }
 
         IStream removed = streams.remove(stream.getId());
@@ -740,7 +741,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             if (stream != null)
             {
                 updateLastStreamId(stream);
-                if ((frame.getFlags() & SynInfo.FLAG_CLOSE) == SynInfo.FLAG_CLOSE && stream.isClosed())
+                if (stream.isClosed())
                     removeStream(stream);
             }
 

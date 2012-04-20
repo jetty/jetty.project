@@ -155,7 +155,7 @@ public class ClosedStreamTest extends AbstractTest
         }).get();
         assertThat("reply has been received by client",replyReceivedLatch.await(5,TimeUnit.SECONDS),is(true));
         assertThat("stream is half closed from server",stream.isHalfClosed(),is(true));
-        assertThat("client has not received any data sent after stream was half closed by server",clientReceivedDataLatch.await(100,TimeUnit.MILLISECONDS),
+        assertThat("client has not received any data sent after stream was half closed by server",clientReceivedDataLatch.await(1,TimeUnit.SECONDS),
                 is(false));
         assertThat("sending data threw an exception",exceptionWhenSendingData.await(5,TimeUnit.SECONDS),is(true));
     }
@@ -164,7 +164,7 @@ public class ClosedStreamTest extends AbstractTest
     public void testV2ReceiveDataOnHalfClosedStream() throws Exception
     {
         final CountDownLatch clientResetReceivedLatch = runReceiveDataOnHalfClosedStream(SPDY.V2);
-        assertThat("server didn't receive data",clientResetReceivedLatch.await(100,TimeUnit.MILLISECONDS),not(true));
+        assertThat("server didn't receive data",clientResetReceivedLatch.await(1,TimeUnit.SECONDS),not(true));
     }
     
     @Test
@@ -172,7 +172,7 @@ public class ClosedStreamTest extends AbstractTest
     public void testV3ReceiveDataOnHalfClosedStream() throws Exception
     {
         final CountDownLatch clientResetReceivedLatch = runReceiveDataOnHalfClosedStream(SPDY.V3);
-        assertThat("server didn't receive data",clientResetReceivedLatch.await(100,TimeUnit.MILLISECONDS),is(true));
+        assertThat("server didn't receive data",clientResetReceivedLatch.await(1,TimeUnit.SECONDS),not(true));
     }
 
     private CountDownLatch runReceiveDataOnHalfClosedStream(short version) throws Exception, IOException, InterruptedException
@@ -215,7 +215,7 @@ public class ClosedStreamTest extends AbstractTest
 
         socketChannel.write(synData);
 
-        assertThat("server: syn reply is sent",serverReplySentLatch.await(1,TimeUnit.SECONDS),is(true));
+        assertThat("server: syn reply is sent",serverReplySentLatch.await(5,TimeUnit.SECONDS),is(true));
 
         Parser parser = new Parser(new StandardCompressionFactory.StandardDecompressor());
         parser.addListener(new Listener.Adapter()
@@ -256,7 +256,7 @@ public class ClosedStreamTest extends AbstractTest
         response.flip();
         parser.parse(response);
 
-        assertThat("server didn't receive data",serverDataReceivedLatch.await(100,TimeUnit.MILLISECONDS),not(true));
+        assertThat("server didn't receive data",serverDataReceivedLatch.await(1,TimeUnit.SECONDS),not(true));
         return clientResetReceivedLatch;
     }
 
