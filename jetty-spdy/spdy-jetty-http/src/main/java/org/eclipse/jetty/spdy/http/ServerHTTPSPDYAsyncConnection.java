@@ -22,6 +22,7 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +51,7 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -117,7 +119,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             {
                 dispatched = true;
                 logger.debug("Dispatching task {}", task);
-                getServer().getThreadPool().dispatch(new Runnable()
+                execute(new Runnable()
                 {
                     @Override
                     public void run()
@@ -131,6 +133,11 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 });
             }
         }
+    }
+
+    protected void execute(Runnable task)
+    {
+        getServer().getThreadPool().dispatch(task);
     }
 
     @Override
@@ -157,7 +164,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                     String m = method.value();
                     String u = uri.value();
                     String v = version.value();
-                    logger.debug("HTTP > {} {} {}", new Object[]{m, u, v});
+                    logger.debug("HTTP > {} {} {}", m, u, v);
                     startRequest(new ByteArrayBuffer(m), new ByteArrayBuffer(u), new ByteArrayBuffer(v));
 
                     updateState(State.HEADERS);
@@ -363,6 +370,31 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         });
     }
 
+    protected void reply(Stream stream, ReplyInfo replyInfo)
+    {
+        if (!stream.isUnidirectional())
+            stream.reply(replyInfo);
+        if (replyInfo.getHeaders().get("status").value().startsWith("200") && !stream.isClosed())
+        {
+            // We have a 200 OK with some content to send
+            Set<String> pushResources = pushStrategy.apply(stream, this.headers, replyInfo.getHeaders());
+            for (String url : pushResources)
+            {
+                Headers pushHeaders = new Headers();
+                pushHeaders.put("method", "GET");
+                pushHeaders.put("url", url);
+                pushHeaders.put("version", "HTTP/1.1");
+                Headers.Header acceptEncoding = headers.get("accept-encoding");
+                if (acceptEncoding != null)
+                    pushHeaders.put(acceptEncoding);
+                Stream pushStream = stream.syn(new SynInfo(pushHeaders, true));
+                Synchronous connection = new Synchronous(getConnector(), getEndPoint(), getServer(), , pushStream);
+                connection.beginRequest(pushHeaders);
+                connection.endRequest();
+            }
+        }
+    }
+
     private Buffer consumeContent(long maxIdleTime) throws IOException, InterruptedException
     {
         while (true)
@@ -566,7 +598,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             // We have to query the HttpGenerator and its buffers to know
             // whether there is content buffered; if so, send the data frame
             Buffer content = getContentBuffer();
-            stream.reply(new ReplyInfo(headers, content == null));
+            reply(stream, new ReplyInfo(headers, content == null));
             if (content != null)
             {
                 closed = allContentAdded || isAllContentWritten();
@@ -672,6 +704,20 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 // Send the data frame
                 stream.data(new ByteBufferDataInfo(ZERO_BYTES, true));
             }
+        }
+    }
+
+    private static class Synchronous extends ServerHTTPSPDYAsyncConnection
+    {
+        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
+        {
+            super(connector, endPoint, server, connection, stream);
+        }
+
+        @Override
+        protected void execute(Runnable task)
+        {
+            task.run();
         }
     }
 }
