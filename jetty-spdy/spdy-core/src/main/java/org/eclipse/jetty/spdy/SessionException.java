@@ -20,8 +20,7 @@ import org.eclipse.jetty.spdy.api.SessionStatus;
 
 public class SessionException extends RuntimeException
 {
-    private static final long serialVersionUID = 1L;
-    
+
     private final SessionStatus sessionStatus;
 
     public SessionException(SessionStatus sessionStatus)
