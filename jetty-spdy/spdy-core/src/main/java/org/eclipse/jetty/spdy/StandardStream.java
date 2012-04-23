@@ -346,11 +346,6 @@ public class StandardStream implements IStream
     @Override
     public void syn(SynInfo synInfo, long timeout, TimeUnit unit, Handler<Stream> handler)
     {
-        if (!session.getStreams().containsKey(getId()))
-        {
-            handler.failed(new StreamException(getId(),StreamStatus.INVALID_STREAM));
-            return;
-        }
         if (isClosed() || isReset())
         {
             handler.failed(new StreamException(getId(),StreamStatus.STREAM_ALREADY_CLOSED));
