@@ -81,13 +81,16 @@ public class StandardSessionTest
     }
 
     @Test
-    public void testStreamGetsRemovedFromSessionWhenReset() throws InterruptedException, ExecutionException, TimeoutException
+    public void testStreamIsRemovedFromSessionWhenReset() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = createStream();
         assertThatStreamIsInSession(stream);
+        assertThat("stream is not reset", stream.isReset(), is(false));
         session.rst(new RstInfo(stream.getId(),StreamStatus.STREAM_ALREADY_CLOSED));
         assertThatStreamIsNotInSession(stream);
+        assertThatStreamIsReset(stream);
     }
+    
 
     @Test
     public void testStreamIsAddedAndRemovedFromSession() throws InterruptedException, ExecutionException, TimeoutException
@@ -109,15 +112,6 @@ public class StandardSessionTest
         stream.headers(new HeadersInfo(headers,true));
         assertThatStreamIsClosed(stream);
         assertThat("stream is removed from session",session.getStreams().containsValue(stream),not(true));
-    }
-
-    @Test
-    public void testStreamIsRemovedFromSessionWhenReset() throws InterruptedException, ExecutionException, TimeoutException
-    {
-        IStream stream = createStream();
-        assertThatStreamIsInSession(stream);
-        session.rst(new RstInfo(stream.getId(),StreamStatus.CANCEL_STREAM));
-        assertThatStreamIsNotInSession(stream);
     }
 
     @Test
@@ -231,6 +225,7 @@ public class StandardSessionTest
         assertThatPushStreamIsInSession(pushStream);
         session.rst(new RstInfo(pushStream.getId(),StreamStatus.INVALID_STREAM));
         assertThatPushStreamIsNotInSession(pushStream);
+        assertThatStreamIsReset(pushStream);
     }
 
     @Test
@@ -261,14 +256,16 @@ public class StandardSessionTest
     }
 
     @Test
-    public void testListenerIsCalledForNewStream() throws InterruptedException, ExecutionException, TimeoutException
+    public void testCreatedAndClosedListenersAreCalledForNewStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         final CountDownLatch createdListenerCalledLatch = new CountDownLatch(1);
-        session.addListener(new TestStreamListener(createdListenerCalledLatch,null));
+        final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
+        session.addListener(new TestStreamListener(createdListenerCalledLatch,closedListenerCalledLatch));
         IStream stream = createStream();
         session.onDataFrame(new DataFrame(stream.getId(),SynInfo.FLAG_CLOSE,128),ByteBuffer.allocate(128));
         session.data(stream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
         assertThat("onStreamCreated listener has been called",createdListenerCalledLatch.await(5,TimeUnit.SECONDS),is(true));
+        assertThatOnStreamClosedListenerHasBeenCalled(closedListenerCalledLatch);
     }
 
     @Test
@@ -282,36 +279,16 @@ public class StandardSessionTest
     }
 
     @Test
-    public void testListenerIsCalledForClosedStream() throws InterruptedException, ExecutionException, TimeoutException
-    {
-        final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
-        session.addListener(new TestStreamListener(null,closedListenerCalledLatch));
-        IStream stream = createStream();
-        session.onDataFrame(new DataFrame(stream.getId(),SynInfo.FLAG_CLOSE,128),ByteBuffer.allocate(128));
-        session.data(stream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
-        assertThatOnStreamClosedListenerHasBeenCalled(closedListenerCalledLatch);
-    }
-
-    @Test
-    public void testListenerIsCalledForNewPushStream() throws InterruptedException, ExecutionException, TimeoutException
+    public void testCreatedAndClosedListenersAreCalledForNewPushStream() throws InterruptedException, ExecutionException, TimeoutException
     {
         final CountDownLatch createdListenerCalledLatch = new CountDownLatch(2);
-        session.addListener(new TestStreamListener(createdListenerCalledLatch,null));
+        final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
+        session.addListener(new TestStreamListener(createdListenerCalledLatch,closedListenerCalledLatch));
         IStream stream = createStream();
         IStream pushStream = createPushStream(stream);
         session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
         assertThat("onStreamCreated listener has been called twice. Once for the stream and once for the pushStream",
                 createdListenerCalledLatch.await(5,TimeUnit.SECONDS),is(true));
-    }
-
-    @Test
-    public void testListenerIsCalledForClosedPushStream() throws InterruptedException, ExecutionException, TimeoutException
-    {
-        final CountDownLatch closedListenerCalledLatch = new CountDownLatch(1);
-        session.addListener(new TestStreamListener(null,closedListenerCalledLatch));
-        IStream stream = createStream();
-        IStream pushStream = createPushStream(stream);
-        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
         assertThatOnStreamClosedListenerHasBeenCalled(closedListenerCalledLatch);
     }
 
@@ -426,6 +403,10 @@ public class StandardSessionTest
         assertThat("stream is closed",stream.isClosed(),is(true));
     }
 
+    private void assertThatStreamIsReset(IStream stream){
+        assertThat("stream is reset", stream.isReset(), is(true));
+    }
+    
     private void assertThatStreamIsNotInSession(IStream stream)
     {
         assertThat("stream is not in session",session.getStreams().containsValue(stream),not(true));

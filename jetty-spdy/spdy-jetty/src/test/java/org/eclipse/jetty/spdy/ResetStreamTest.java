@@ -60,7 +60,7 @@ public class ResetStreamTest extends AbstractTest
             }
         });
 
-        clientSession.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
+        Stream stream = clientSession.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
 
         assertTrue("syncLatch didn't count down",synLatch.await(5,TimeUnit.SECONDS));
         Session serverSession = serverSessionRef.get();
@@ -69,6 +69,7 @@ public class ResetStreamTest extends AbstractTest
         assertTrue("rstLatch didn't count down",rstLatch.await(5,TimeUnit.SECONDS));
         // Need to sleep a while to give the chance to the implementation to remove the stream
         TimeUnit.SECONDS.sleep(1);
+        assertTrue("stream is expected to be reset",stream.isReset());
         assertEquals("clientSession expected to contain 0 streams",0,clientSession.getStreams().size());
     }
 
@@ -123,6 +124,7 @@ public class ResetStreamTest extends AbstractTest
         });
 
         assertTrue("rstLatch didn't count down",rstLatch.await(5,TimeUnit.SECONDS));
+        assertTrue("stream is expected to be reset",stream.isReset());
         assertFalse("dataLatch shouln't be count down",dataLatch.await(1,TimeUnit.SECONDS));
     }
     
@@ -192,6 +194,7 @@ public class ResetStreamTest extends AbstractTest
         });
         
         assertTrue("failLatch didn't count down",failLatch.await(5,TimeUnit.SECONDS));
+        assertTrue("stream is expected to be reset",stream.isReset());
     }
     
     // TODO: If server already received 2nd dataframe after it rst, it should ignore it. Not easy to do.

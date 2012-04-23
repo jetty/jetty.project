@@ -183,10 +183,12 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
             int streamId = rstInfo.getStreamId();
             IStream stream = streams.get(streamId);
             RstStreamFrame frame = new RstStreamFrame(version,streamId,rstInfo.getStreamStatus().getCode(version));
-            //TODO: set stream.isReset --> maybe by calling stream.process()
             control(stream,frame,timeout,unit,handler,null);
             if (stream != null)
+            {
+                stream.process(frame);
                 removeStream(stream);
+            }
         }
     }
 
@@ -449,7 +451,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         {
             // If this happens we have a bug since we did not check that the peer's streamId was valid
             // (if we're on server, then the client sent an odd streamId and we did not check that)
-            throw new IllegalStateException("StreamId: " + synStream.getStreamId() + " invalid."); // TODO: rst instead of throw
+            throw new IllegalStateException("StreamId: " + synStream.getStreamId() + " invalid.");
         }
 
         logger.debug("Created {}",stream);

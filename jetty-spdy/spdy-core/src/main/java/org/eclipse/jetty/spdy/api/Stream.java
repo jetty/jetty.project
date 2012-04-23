@@ -191,6 +191,11 @@ public interface Stream
     public boolean isUnidirectional();
     
     /**
+     * @return whether this stream has been reset
+     */
+    public boolean isReset();
+    
+    /**
      * @return whether this stream has been closed by both parties
      * @see #isHalfClosed()
      */

@@ -57,7 +57,8 @@ public class StandardStream implements IStream
     private volatile StreamFrameListener listener;
     private volatile OpenState openState = OpenState.SYN_SENT;
     private volatile CloseState closeState = CloseState.OPENED;
-    private volatile boolean unidirectional = false;
+    private volatile boolean isUnidirectional = false;
+    private volatile boolean isReset = false;
 
     public StandardStream(SynStreamFrame frame, ISession session, int windowSize, IStream associatedStream)
     {
@@ -66,7 +67,7 @@ public class StandardStream implements IStream
         this.windowSize = new AtomicInteger(windowSize);
         this.associatedStream = associatedStream;
         if (associatedStream != null)
-            unidirectional = true;
+            isUnidirectional = true;
     }
 
     @Override
@@ -122,13 +123,6 @@ public class StandardStream implements IStream
     public Session getSession()
     {
         return session;
-    }
-
-    @Override
-    public boolean isHalfClosed()
-    {
-        CloseState closeState = this.closeState;
-        return closeState == CloseState.LOCALLY_CLOSED || closeState == CloseState.REMOTELY_CLOSED || closeState == CloseState.CLOSED;
     }
 
     @Override
@@ -226,7 +220,7 @@ public class StandardStream implements IStream
             }
             case RST_STREAM:
             {
-                // TODO:
+                isReset = true;
                 break;
             }
             default:
@@ -357,7 +351,7 @@ public class StandardStream implements IStream
             handler.failed(new StreamException(getId(),StreamStatus.INVALID_STREAM));
             return;
         }
-        if (isClosed())
+        if (isClosed() || isReset())
         {
             handler.failed(new StreamException(getId(),StreamStatus.STREAM_ALREADY_CLOSED));
             return;
@@ -440,7 +434,20 @@ public class StandardStream implements IStream
     @Override
     public boolean isUnidirectional()
     {
-        return unidirectional;
+        return isUnidirectional;
+    }
+    
+    @Override
+    public boolean isReset()
+    {
+        return isReset;
+    }
+
+    @Override
+    public boolean isHalfClosed()
+    {
+        CloseState closeState = this.closeState;
+        return closeState == CloseState.LOCALLY_CLOSED || closeState == CloseState.REMOTELY_CLOSED || closeState == CloseState.CLOSED;
     }
 
     @Override
