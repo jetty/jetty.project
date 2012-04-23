@@ -85,12 +85,11 @@ public class StandardSessionTest
     {
         IStream stream = createStream();
         assertThatStreamIsInSession(stream);
-        assertThat("stream is not reset", stream.isReset(), is(false));
+        assertThat("stream is not reset",stream.isReset(),is(false));
         session.rst(new RstInfo(stream.getId(),StreamStatus.STREAM_ALREADY_CLOSED));
         assertThatStreamIsNotInSession(stream);
         assertThatStreamIsReset(stream);
     }
-    
 
     @Test
     public void testStreamIsAddedAndRemovedFromSession() throws InterruptedException, ExecutionException, TimeoutException
@@ -200,11 +199,10 @@ public class StandardSessionTest
         IStream pushStream = createPushStream(stream);
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatStreamIsAssociatedWithPushStream(stream,pushStream);
-        session.rst(new RstInfo(pushStream.getId(),StreamStatus.CANCEL_STREAM));
-        pushStream.updateCloseState(true,true);
+        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
         assertThatPushStreamIsClosed(pushStream);
-        assertThatStreamIsNotAssociatedWithPushStream(stream,pushStream);
         assertThatPushStreamIsNotInSession(pushStream);
+        assertThatStreamIsNotAssociatedWithPushStream(stream,pushStream);
     }
 
     @Test
@@ -225,6 +223,7 @@ public class StandardSessionTest
         assertThatPushStreamIsInSession(pushStream);
         session.rst(new RstInfo(pushStream.getId(),StreamStatus.INVALID_STREAM));
         assertThatPushStreamIsNotInSession(pushStream);
+        assertThatStreamIsNotAssociatedWithPushStream(stream,pushStream);
         assertThatStreamIsReset(pushStream);
     }
 
@@ -263,7 +262,7 @@ public class StandardSessionTest
         session.addListener(new TestStreamListener(createdListenerCalledLatch,closedListenerCalledLatch));
         IStream stream = createStream();
         session.onDataFrame(new DataFrame(stream.getId(),SynInfo.FLAG_CLOSE,128),ByteBuffer.allocate(128));
-        session.data(stream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
+        stream.data(new StringDataInfo("close",true));
         assertThat("onStreamCreated listener has been called",createdListenerCalledLatch.await(5,TimeUnit.SECONDS),is(true));
         assertThatOnStreamClosedListenerHasBeenCalled(closedListenerCalledLatch);
     }
@@ -403,10 +402,11 @@ public class StandardSessionTest
         assertThat("stream is closed",stream.isClosed(),is(true));
     }
 
-    private void assertThatStreamIsReset(IStream stream){
-        assertThat("stream is reset", stream.isReset(), is(true));
+    private void assertThatStreamIsReset(IStream stream)
+    {
+        assertThat("stream is reset",stream.isReset(),is(true));
     }
-    
+
     private void assertThatStreamIsNotInSession(IStream stream)
     {
         assertThat("stream is not in session",session.getStreams().containsValue(stream),not(true));
@@ -444,7 +444,7 @@ public class StandardSessionTest
 
     private void assertThatPushStreamIsNotInSession(Stream pushStream)
     {
-        assertThat("pushStream is in session",session.getStreams().containsKey(pushStream.getId()),not(true));
+        assertThat("pushStream is not in session",session.getStreams().containsKey(pushStream.getId()),not(true));
     }
 
     private void assertThatPushStreamIsInSession(Stream pushStream)
