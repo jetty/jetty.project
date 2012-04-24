@@ -23,8 +23,8 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -57,8 +57,8 @@ public class StandardStreamTest
     public void testSyn()
     {
         Stream stream = new StandardStream(synStreamFrame,session,0,null);
-        Map<Integer,Stream> streams = new HashMap<>();
-        streams.put(stream.getId(),stream);
+        Set<Stream> streams = new HashSet<>();
+        streams.add(stream);
         when(synStreamFrame.isClose()).thenReturn(false);
         SynInfo synInfo = new SynInfo(false);
         when(session.getStreams()).thenReturn(streams);

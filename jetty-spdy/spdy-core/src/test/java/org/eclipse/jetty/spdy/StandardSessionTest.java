@@ -106,11 +106,11 @@ public class StandardSessionTest
     public void testStreamIsRemovedWhenHeadersWithCloseFlagAreSent() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = createStream();
-        assertThat("stream is added to session",session.getStreams().containsValue(stream),is(true));
+        assertThat("stream is added to session",session.getStreams().contains(stream),is(true));
         stream.updateCloseState(true,false);
         stream.headers(new HeadersInfo(headers,true));
         assertThatStreamIsClosed(stream);
-        assertThat("stream is removed from session",session.getStreams().containsValue(stream),not(true));
+        assertThat("stream is removed from session",session.getStreams().contains(stream),not(true));
     }
 
     @Test
@@ -409,12 +409,12 @@ public class StandardSessionTest
 
     private void assertThatStreamIsNotInSession(IStream stream)
     {
-        assertThat("stream is not in session",session.getStreams().containsValue(stream),not(true));
+        assertThat("stream is not in session",session.getStreams().contains(stream),not(true));
     }
 
     private void assertThatStreamIsInSession(IStream stream)
     {
-        assertThat("stream is in session",session.getStreams().containsValue(stream),is(true));
+        assertThat("stream is in session",session.getStreams().contains(stream),is(true));
     }
 
     private void assertThatStreamIsNotClosed(IStream stream)
@@ -444,12 +444,12 @@ public class StandardSessionTest
 
     private void assertThatPushStreamIsNotInSession(Stream pushStream)
     {
-        assertThat("pushStream is not in session",session.getStreams().containsKey(pushStream.getId()),not(true));
+        assertThat("pushStream is not in session",session.getStreams().contains(pushStream.getId()),not(true));
     }
 
     private void assertThatPushStreamIsInSession(Stream pushStream)
     {
-        assertThat("pushStream is in session",session.getStreams().containsKey(pushStream.getId()),is(true));
+        assertThat("pushStream is in session",session.getStreams().contains(pushStream),is(true));
     }
 
     private void assertThatStreamIsAssociatedWithPushStream(IStream stream, Stream pushStream)

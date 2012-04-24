@@ -18,11 +18,9 @@ package org.eclipse.jetty.spdy;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.InterruptedByTimeoutException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -258,10 +256,10 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     }
 
     @Override
-    public Map<Integer, Stream> getStreams()
+    public Set<Stream> getStreams()
     {
-        Map<Integer, Stream> result = new HashMap<>();
-        result.putAll(streams);
+        Set<Stream> result = new HashSet<>();
+        result.addAll(streams.values());
         return result;
     }
 
