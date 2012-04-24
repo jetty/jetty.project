@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,8 +43,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  */
 public class ConnectHandler extends HandlerWrapper
 {
-    private static final Logger LOG = Log.getLogger(ConnectHandler.class);
-
     private final Logger _logger = Log.getLogger(getClass().getName());
     private final SelectorManager _selectorManager = new Manager();
     private volatile int _connectTimeout = 5000;
@@ -220,7 +217,7 @@ public class ConnectHandler extends HandlerWrapper
 
         if (!validateDestination(host))
         {
-            LOG.info("ProxyHandler: Forbidden destination " + host);
+            _logger.info("ProxyHandler: Forbidden destination " + host);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             baseRequest.setHandled(true);
             return;
@@ -344,7 +341,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch (IOException xx)
             {
-                LOG.ignore(xx);
+                _logger.ignore(xx);
             }
             throw x;
         }
@@ -464,8 +461,8 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
-    
-    
+
+
     public class ProxyToServerConnection implements AsyncConnection
     {
         private final CountDownLatch _ready = new CountDownLatch(1);
@@ -550,7 +547,7 @@ public class ConnectHandler extends HandlerWrapper
         {
             // TODO
         }
-        
+
         private void writeData() throws IOException
         {
             // This method is called from handle() and closeServer()
@@ -675,7 +672,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch(Exception e)
             {
-                LOG.debug(e);
+                _logger.debug(e);
                 close();
             }
         }
@@ -768,7 +765,7 @@ public class ConnectHandler extends HandlerWrapper
                 _logger.debug("{}: end reading from client", this);
             }
         }
-        
+
         public void onInputShutdown() throws IOException
         {
             // TODO
@@ -842,7 +839,7 @@ public class ConnectHandler extends HandlerWrapper
             }
             catch(Exception e)
             {
-                LOG.debug(e);
+                _logger.debug(e);
                 close();
             }
         }
