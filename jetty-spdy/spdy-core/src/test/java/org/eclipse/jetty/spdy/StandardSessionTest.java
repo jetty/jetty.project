@@ -106,11 +106,11 @@ public class StandardSessionTest
     public void testStreamIsRemovedWhenHeadersWithCloseFlagAreSent() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = createStream();
-        assertThat("stream is added to session",session.getStreams().contains(stream),is(true));
+        assertThatStreamIsInSession(stream);
         stream.updateCloseState(true,false);
         stream.headers(new HeadersInfo(headers,true));
         assertThatStreamIsClosed(stream);
-        assertThat("stream is removed from session",session.getStreams().contains(stream),not(true));
+        assertThatStreamIsNotInSession(stream);
     }
 
     @Test
@@ -147,7 +147,7 @@ public class StandardSessionTest
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatPushStreamIsNotClosed(pushStream);
 
-        stream.updateCloseState(true,false);
+        session.onControlFrame(new SynReplyFrame(SPDY.V2,SynInfo.FLAG_CLOSE,stream.getId(),null));
         assertThatStreamIsClosed(stream);
         assertThatPushStreamIsNotClosed(pushStream);
     }
@@ -184,35 +184,17 @@ public class StandardSessionTest
     }
 
     @Test
-    public void testPushStreamIsAddedToParentAndSession() throws InterruptedException, ExecutionException, TimeoutException
-    {
-        IStream stream = createStream();
-        Stream pushStream = createPushStream(stream);
-        assertThatStreamIsAssociatedWithPushStream(stream,pushStream);
-        assertThatPushStreamIsInSession(pushStream);
-    }
-
-    @Test
-    public void testPushStreamIsRemovedFromParentAndSessionWhenClosed() throws InterruptedException, ExecutionException, TimeoutException
+    public void testPushStreamIsAddedAndRemovedFromParentAndSessionWhenClosed() throws InterruptedException, ExecutionException, TimeoutException
     {
         IStream stream = createStream();
         IStream pushStream = createPushStream(stream);
         assertThatPushStreamIsHalfClosed(pushStream);
+        assertThatPushStreamIsInSession(pushStream);
         assertThatStreamIsAssociatedWithPushStream(stream,pushStream);
         session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
         assertThatPushStreamIsClosed(pushStream);
         assertThatPushStreamIsNotInSession(pushStream);
         assertThatStreamIsNotAssociatedWithPushStream(stream,pushStream);
-    }
-
-    @Test
-    public void testPushStreamIsAddedAndRemovedFromSession() throws InterruptedException, ExecutionException, TimeoutException
-    {
-        IStream stream = createStream();
-        IStream pushStream = createPushStream(stream);
-        assertThatPushStreamIsInSession(pushStream);
-        session.data(pushStream,new StringDataInfo("close",true),5,TimeUnit.SECONDS,null,null);
-        assertThatPushStreamIsNotInSession(pushStream);
     }
 
     @Test
@@ -236,6 +218,7 @@ public class StandardSessionTest
         assertThatPushStreamIsHalfClosed(pushStream);
         assertThatPushStreamIsClosed(pushStream);
         assertThatStreamIsNotAssociatedWithPushStream(stream,pushStream);
+        assertThatStreamIsNotInSession(pushStream);
     }
 
     @Test
