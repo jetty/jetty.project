@@ -957,7 +957,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private void notifyHandlerFailed(Handler handler, Throwable x)
+    private <C> void notifyHandlerFailed(Handler<C> handler, Throwable x)
     {
         try
         {

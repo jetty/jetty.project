@@ -57,8 +57,8 @@ public class StandardStream implements IStream
     private volatile StreamFrameListener listener;
     private volatile OpenState openState = OpenState.SYN_SENT;
     private volatile CloseState closeState = CloseState.OPENED;
-    private volatile boolean isUnidirectional = false;
-    private volatile boolean isReset = false;
+    private volatile boolean reset = false;
+    private final boolean unidirectional;
 
     public StandardStream(SynStreamFrame frame, ISession session, int windowSize, IStream associatedStream)
     {
@@ -67,7 +67,9 @@ public class StandardStream implements IStream
         this.windowSize = new AtomicInteger(windowSize);
         this.associatedStream = associatedStream;
         if (associatedStream != null)
-            isUnidirectional = true;
+            unidirectional = true;
+        else
+            unidirectional = false;
     }
 
     @Override
@@ -220,7 +222,7 @@ public class StandardStream implements IStream
             }
             case RST_STREAM:
             {
-                isReset = true;
+                reset = true;
                 break;
             }
             default:
@@ -429,13 +431,13 @@ public class StandardStream implements IStream
     @Override
     public boolean isUnidirectional()
     {
-        return isUnidirectional;
+        return unidirectional;
     }
     
     @Override
     public boolean isReset()
     {
-        return isReset;
+        return reset;
     }
 
     @Override
