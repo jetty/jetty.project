@@ -241,7 +241,10 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             // classes
             // that the contributor gives access to.
             Thread.currentThread().setContextClassLoader(composite);
-
+            
+            //converts bundleentry: protocol 
+            baseWebappInstallURL = DefaultFileLocatorHelper.getLocalURL(baseWebappInstallURL);
+            
             context.setWar(baseWebappInstallURL.toString());
             context.setContextPath(contextPath);
             context.setExtraClasspath(extraClasspath);
