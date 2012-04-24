@@ -957,7 +957,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         }
     }
 
-    private void notifyHandlerFailed(@SuppressWarnings("rawtypes") Handler handler, Throwable x)
+    private void notifyHandlerFailed(Handler handler, Throwable x)
     {
         try
         {
