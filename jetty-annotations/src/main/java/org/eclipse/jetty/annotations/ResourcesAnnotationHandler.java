@@ -35,7 +35,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
         _wac = wac;
     }
     
-    public void doHandle (Class clazz)
+    public void doHandle (Class<?> clazz)
     {
         Resources resources = (Resources)clazz.getAnnotation(Resources.class);
         if (resources != null)
@@ -49,12 +49,8 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
 
             for (int j=0;j<resArray.length;j++)
             {
-
                 String name = resArray[j].name();
                 String mappedName = resArray[j].mappedName();
-                Resource.AuthenticationType auth = resArray[j].authenticationType();
-                Class type = resArray[j].type();
-                boolean shareable = resArray[j].shareable();
 
                 if (name==null || name.trim().equals(""))
                     throw new IllegalStateException ("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");

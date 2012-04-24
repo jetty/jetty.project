@@ -106,7 +106,8 @@ public class TagLibConfiguration extends AbstractConfiguration
                 //Get the system classpath tlds and tell jasper about them, if jasper is on the classpath
                 try
                 {
-                    Class clazz = getClass().getClassLoader().loadClass("org.apache.jasper.compiler.TldLocationsCache");
+                    Class<?> clazz = getClass().getClassLoader().loadClass("org.apache.jasper.compiler.TldLocationsCache");
+                    assert clazz!=null;
                     Collection<Resource> tld_resources = (Collection<Resource>)_context.getAttribute(TLD_RESOURCES);
                    
                     Map<URI, List<String>> tldMap = new HashMap<URI, List<String>>();
