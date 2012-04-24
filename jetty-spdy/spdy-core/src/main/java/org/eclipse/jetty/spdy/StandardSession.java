@@ -145,14 +145,14 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
         // have stream3 hit the network before stream1, not only to comply with the spec
         // but also because the compression context for the headers would be wrong, as the
         // frame with a compression history will come before the first compressed frame.
+        int associatedStreamId = 0;
+        if (synInfo instanceof PushSynInfo)
+        {
+            associatedStreamId = ((PushSynInfo)synInfo).getAssociatedStreamId();
+        }
+        
         synchronized (this)
         {
-            int associatedStreamId = 0;
-            if (synInfo instanceof PushSynInfo)
-            {
-                associatedStreamId = ((PushSynInfo)synInfo).getAssociatedStreamId();
-            }
-
             int streamId = streamIds.getAndAdd(2);
             SynStreamFrame synStream = new SynStreamFrame(version,synInfo.getFlags(),streamId,associatedStreamId,synInfo.getPriority(),synInfo.getHeaders());
             IStream stream = createStream(synStream,listener);
