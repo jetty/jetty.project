@@ -85,7 +85,7 @@ public class MultiPartInputStreamTest extends TestCase
             mpis.getParts();
             fail("Request should have exceeded maxRequestSize");
         }
-        catch (ServletException e)
+        catch (IllegalStateException e)
         {
             assertTrue(e.getMessage().startsWith("Request exceeds maxRequestSize"));
         }
@@ -105,7 +105,7 @@ public class MultiPartInputStreamTest extends TestCase
             mpis.getParts();
             fail("stuff.txt should have been larger than maxFileSize");
         }
-        catch (ServletException e)
+        catch (IllegalStateException e)
         {
             assertTrue(e.getMessage().startsWith("Multipart Mime part"));
         }
