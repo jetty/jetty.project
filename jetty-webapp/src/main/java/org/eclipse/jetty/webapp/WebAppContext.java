@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -271,11 +272,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    public String getResourceAlias(String alias)
+    public String getResourceAlias(String path)
     {
         if (_resourceAliases == null)
             return null;
-        return _resourceAliases.get(alias);
+        String alias = _resourceAliases.get(path);
+        
+        int slash=path.length();
+        while (alias==null)
+        {
+            slash=path.lastIndexOf("/",slash-1);
+            if (slash<0)
+                break;
+            String match=_resourceAliases.get(path.substring(0,slash+1));
+            if (match!=null)
+                alias=match+path.substring(slash+1);            
+        }
+        return alias;
     }
 
     /* ------------------------------------------------------------ */

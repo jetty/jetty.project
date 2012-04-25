@@ -16,6 +16,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -29,6 +30,8 @@ import junit.framework.Assert;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.junit.Test;
 
 public class WebAppContextTest
@@ -135,6 +138,34 @@ public class WebAppContextTest
         // context B has a contextWhiteList set and should only be able to get ones that are approved
         Assert.assertNull(contextB.getServletHandler().getServletContext().getContext("/A/s"));
         Assert.assertNotNull(contextB.getServletHandler().getServletContext().getContext("/B/s"));
+    }
+    
+
+    @Test 
+    public void testAlias() throws Exception
+    {
+        File dir = File.createTempFile("dir",null);
+        dir.delete();
+        dir.mkdir();
+        dir.deleteOnExit();
+        
+        File webinf = new File(dir,"WEB-INF");
+        webinf.mkdir();
+        
+        File classes = new File(dir,"classes");
+        classes.mkdir();
+        
+        File someclass = new File(classes,"SomeClass.class");
+        someclass.createNewFile();
+        
+        WebAppContext context = new WebAppContext();
+        context.setBaseResource(new ResourceCollection(dir.getAbsolutePath()));
+        
+        context.setResourceAlias("/WEB-INF/classes/", "/classes/");
+
+        assertTrue(Resource.newResource(context.getServletContext().getResource("/WEB-INF/classes/SomeClass.class")).exists());
+        assertTrue(Resource.newResource(context.getServletContext().getResource("/classes/SomeClass.class")).exists());
+
     }
     
     class ServletA extends GenericServlet
