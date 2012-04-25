@@ -45,11 +45,8 @@ public class GzipFilterDefaultTest
         this.compressionType = compressionType;
     }
     
-    
     public static class HttpStatusServlet extends HttpServlet
     {
-        private static final long serialVersionUID = 1L;
-        
         private int _status = 204;
         
         public HttpStatusServlet()
@@ -57,11 +54,6 @@ public class GzipFilterDefaultTest
             super();
         }
         
-        public void setStatus (int status)
-        {
-            _status = status;
-        }
-
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
@@ -69,6 +61,24 @@ public class GzipFilterDefaultTest
         }
         
     }
+    
+    public static class HttpErrorServlet extends HttpServlet
+    {
+        private int _status = 400;
+
+        public HttpErrorServlet()
+        {
+            super();
+        }
+
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.getOutputStream().write("error message".getBytes());
+            resp.setStatus(_status);
+        }
+    }
+    
     @Rule
     public TestingDir testingdir = new TestingDir();
 
@@ -153,13 +163,34 @@ public class GzipFilterDefaultTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed(null, -1, 204);
+            tester.assertIsResponseNotGzipCompressed(-1, 204);
         }
         finally
         {
             tester.stop();
         }
 
+    }
+    
+    @Test
+    public void testIsNotGzipCompressedHttpBadRequestStatus() throws Exception
+    { 
+        GzipTester tester = new GzipTester(testingdir, compressionType);
+        
+        // Test error code 400
+        FilterHolder holder = tester.setContentServlet(HttpErrorServlet.class);
+        holder.setInitParameter("mimeTypes","text/plain");
+        
+        try
+        {
+            tester.start();
+            tester.assertIsResponseNotGzipCompressedAndEqualToExpectedString("error message", -1, 400);
+        }
+        finally
+        {
+            tester.stop();
+        }
+        
     }
 
     @Test
