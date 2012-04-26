@@ -93,6 +93,7 @@ public class Dispatcher implements RequestDispatcher
     /* 
      * @see javax.servlet.RequestDispatcher#forward(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
+    @Override
     public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
         forward(request, response, DispatcherType.FORWARD);
@@ -111,9 +112,10 @@ public class Dispatcher implements RequestDispatcher
     /* 
      * @see javax.servlet.RequestDispatcher#include(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
      */
+    @Override
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentHttpChannel().getRequest();
+        Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
       
         
         if (!(request instanceof HttpServletRequest))
@@ -194,7 +196,7 @@ public class Dispatcher implements RequestDispatcher
      */
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
-        Request baseRequest=(request instanceof Request)?((Request)request):AbstractHttpConnection.getCurrentHttpChannel().getRequest();
+        Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
         Response base_response=baseRequest.getResponse();
         response.resetBuffer();
         base_response.fwdReset();

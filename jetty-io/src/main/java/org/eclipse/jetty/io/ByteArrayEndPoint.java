@@ -34,7 +34,6 @@ public class ByteArrayEndPoint implements EndPoint
     protected boolean _closed;
     protected boolean _growOutput;
     protected int _maxIdleTime;
-    protected Connection _connection;
 
     /* ------------------------------------------------------------ */
     /**

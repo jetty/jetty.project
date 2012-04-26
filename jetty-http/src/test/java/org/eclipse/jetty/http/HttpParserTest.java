@@ -504,7 +504,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean headerComplete()
+        public boolean headerComplete(boolean hasBody,boolean persistent)
         {
             //System.err.println("headerComplete");
             _content= null;

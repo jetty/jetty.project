@@ -485,7 +485,7 @@ public class NCSARequestLog extends AbstractLifeCycle implements RequestLog
             if (_logDateCache != null)
                 buf.append(_logDateCache.format(request.getTimeStamp()));
             else
-                buf.append(request.getTimeStampBuffer().toString());
+                buf.write(request.getTimeStampBuffer().toString());
 
             buf.append("] \"");
             buf.append(request.getMethod());

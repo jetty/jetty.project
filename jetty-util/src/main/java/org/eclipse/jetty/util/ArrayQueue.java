@@ -135,6 +135,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
         }
     }
 
+    /* ------------------------------------------------------------ */
     @SuppressWarnings("unchecked")
     private E at(int index)
     {

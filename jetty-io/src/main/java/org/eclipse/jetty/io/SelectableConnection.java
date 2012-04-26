@@ -20,7 +20,7 @@ public abstract class SelectableConnection implements Connection
     private final Condition _readable=_lock.newCondition();
     private final Condition _writeable=_lock.newCondition();
     private Thread _readBlocked;
-    private boolean _writeBlocked;
+    private Thread _writeBlocked;
 
     private final Runnable _reader=new Runnable()
     {
@@ -84,7 +84,7 @@ public abstract class SelectableConnection implements Connection
         try
         {
             if (_readBlocked!=null)
-                _readable.signalAll();
+                _readable.signal();
             else 
                 return _reader;
         }
@@ -100,8 +100,8 @@ public abstract class SelectableConnection implements Connection
         _lock.lock();
         try
         {
-            if (_writeBlocked)
-                _writeable.signalAll();
+            if (_writeBlocked!=null)
+                _writeable.signal();
             else 
                 return _writer;
         }
@@ -119,13 +119,8 @@ public abstract class SelectableConnection implements Connection
         try
         {
             if (_readBlocked!=null)
-            {
-                System.err.println("Already blocked by "+_readBlocked);
-                for (StackTraceElement e :_readBlocked.getStackTrace())
-                    System.err.println("    at "+e);
-                
-                throw new IllegalStateException();
-            }
+                throw new IllegalStateException("already blocked by "+_readBlocked);
+            
             _readBlocked=Thread.currentThread();
             _endp.setReadInterested(true);
             readable=_readable.await(getMaxIdleTime(),TimeUnit.SECONDS);
@@ -150,9 +145,9 @@ public abstract class SelectableConnection implements Connection
         boolean writeable=false;
         try
         {
-            if (_writeBlocked)
-                throw new IllegalStateException();
-            _writeBlocked=true;
+            if (_writeBlocked!=null)
+                throw new IllegalStateException("already blocked by "+_writeBlocked);
+            _writeBlocked=Thread.currentThread();
             _endp.setWriteInterested(true);
             writeable=_writeable.await(getMaxIdleTime(),TimeUnit.SECONDS);
         }
@@ -164,7 +159,7 @@ public abstract class SelectableConnection implements Connection
         {
             if (!writeable)
                 _endp.setWriteInterested(false);
-            _writeBlocked=false;
+            _writeBlocked=null;
             _lock.unlock();
         }
         return writeable;

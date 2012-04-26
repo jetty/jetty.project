@@ -482,8 +482,8 @@ public class ConnectHandler extends HandlerWrapper
         public String toString()
         {
             StringBuilder builder = new StringBuilder("ProxyToServer");
-            builder.append("(:").append(_endPoint.getLocalPort());
-            builder.append("<=>:").append(_endPoint.getRemotePort());
+            builder.append("(:").write(_endPoint.getLocalPort());
+            builder.append("<=>:").write(_endPoint.getRemotePort());
             return builder.append(")").toString();
         }
 
@@ -699,8 +699,8 @@ public class ConnectHandler extends HandlerWrapper
         public String toString()
         {
             StringBuilder builder = new StringBuilder("ClientToProxy");
-            builder.append("(:").append(_endPoint.getLocalPort());
-            builder.append("<=>:").append(_endPoint.getRemotePort());
+            builder.append("(:").write(_endPoint.getLocalPort());
+            builder.append("<=>:").write(_endPoint.getRemotePort());
             return builder.append(")").toString();
         }
 

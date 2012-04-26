@@ -19,7 +19,6 @@ public interface Connection
 {
     EndPoint getEndPoint();
     
-    
     int getMaxIdleTime();
 
     /**

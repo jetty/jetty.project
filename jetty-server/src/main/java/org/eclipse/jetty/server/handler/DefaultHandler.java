@@ -76,6 +76,7 @@ public class DefaultHandler extends AbstractHandler
     /* 
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
+    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {              
         if (response.isCommitted() || baseRequest.isHandled())
@@ -88,15 +89,15 @@ public class DefaultHandler extends AbstractHandler
         // little cheat for common request
         if (_serveIcon && _favicon!=null && method.equals(HttpMethod.GET) && request.getRequestURI().equals("/favicon.ico"))
         {
-            if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE)==_faviconModified)
+            if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.toString())==_faviconModified)
                 response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
             else
             {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("image/x-icon");
                 response.setContentLength(_favicon.length);
-                response.setDateHeader(HttpHeader.LAST_MODIFIED, _faviconModified);
-                response.setHeader(HttpHeader.CACHE_CONTROL,"max-age=360000,public");
+                response.setDateHeader(HttpHeader.LAST_MODIFIED.toString(), _faviconModified);
+                response.setHeader(HttpHeader.CACHE_CONTROL.toString(),"max-age=360000,public");
                 response.getOutputStream().write(_favicon);
             }
             return;
@@ -110,7 +111,7 @@ public class DefaultHandler extends AbstractHandler
         }
 
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        response.setContentType(MimeTypes.TEXT_HTML);
+        response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
         
         ByteArrayISO8859Writer writer = new ByteArrayISO8859Writer(1500);
         

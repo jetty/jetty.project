@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -109,12 +110,14 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /* ------------------------------------------------------------ */
     /*
      */
+    @Override
     public Server getServer()
     {
         return _server;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setServer(Server server)
     {
         _server = server;
@@ -128,7 +131,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
 
     /* ------------------------------------------------------------ */
     /** Set the ThreadPool.
-     * The threadpool passed is added via {@link #addBean(Object)} so that 
+     * The threadpool passed is added via {@link #addBean(Object)} so that
      * it's lifecycle may be managed as a {@link AggregateLifeCycle}.
      * @param threadPool the threadPool to set
      */
@@ -142,6 +145,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /* ------------------------------------------------------------ */
     /**
      */
+    @Override
     public void setHost(String host)
     {
         _host = host;
@@ -150,18 +154,21 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /* ------------------------------------------------------------ */
     /*
      */
+    @Override
     public String getHost()
     {
         return _host;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setPort(int port)
     {
         _port = port;
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public int getPort()
     {
         return _port;
@@ -171,6 +178,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Returns the maxIdleTime.
      */
+    @Override
     public int getMaxIdleTime()
     {
         return _maxIdleTime;
@@ -196,6 +204,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
      * @param maxIdleTime
      *            The maxIdleTime to set.
      */
+    @Override
     public void setMaxIdleTime(int maxIdleTime)
     {
         _maxIdleTime = maxIdleTime;
@@ -225,6 +234,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
      * @return Returns the maxIdleTime when resources are low.
      * @deprecated
      */
+    @Deprecated
+    @Override
     public final int getLowResourceMaxIdleTime()
     {
         return getLowResourcesMaxIdleTime();
@@ -236,6 +247,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
      *            The maxIdleTime to set when resources are low.
      * @deprecated
      */
+    @Deprecated
+    @Override
     public final void setLowResourceMaxIdleTime(int maxIdleTime)
     {
         setLowResourcesMaxIdleTime(maxIdleTime);
@@ -396,14 +409,15 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
-    public void customize(EndPoint endpoint, Request request) throws IOException
+    @Override
+    public void customize(Request request) throws IOException
     {
         if (isForwarded())
-            checkForwardedHeaders(endpoint,request);
+            checkForwardedHeaders(request);
     }
 
     /* ------------------------------------------------------------ */
-    protected void checkForwardedHeaders(EndPoint endpoint, Request request) throws IOException
+    protected void checkForwardedHeaders(Request request) throws IOException
     {
         HttpFields httpFields = request.getConnection().getRequestFields();
 
@@ -453,23 +467,8 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         }
 
         if (forwardedFor != null)
-        {
-            request.setRemoteAddr(forwardedFor);
-            InetAddress inetAddress = null;
-
-            if (_useDNS)
-            {
-                try
-                {
-                    inetAddress = InetAddress.getByName(forwardedFor);
-                }
-                catch (UnknownHostException e)
-                {
-                    LOG.ignore(e);
-                }
-            }
-
-            request.setRemoteHost(inetAddress == null?forwardedFor:inetAddress.getHostName());
+        {            
+            request.setRemoteAddr(new InetSocketAddress(forwardedFor,request.getRemotePort()));
         }
 
         if (forwardedProto != null)
@@ -502,6 +501,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void persist(EndPoint endpoint) throws IOException
     {
     }
@@ -510,6 +510,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /*
      * @see org.eclipse.jetty.server.Connector#getConfidentialPort()
      */
+    @Override
     public int getConfidentialPort()
     {
         return _confidentialPort;
@@ -520,6 +521,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /*
      * @see org.eclipse.jetty.server.Connector#getConfidentialScheme()
      */
+    @Override
     public String getConfidentialScheme()
     {
         return _confidentialScheme;
@@ -529,6 +531,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /*
      * @see org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server .Request)
      */
+    @Override
     public boolean isIntegral(Request request)
     {
         return false;
@@ -538,6 +541,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /*
      * @see org.eclipse.jetty.server.Connector#getConfidentialPort()
      */
+    @Override
     public int getIntegralPort()
     {
         return _integralPort;
@@ -547,6 +551,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /*
      * @see org.eclipse.jetty.server.Connector#getIntegralScheme()
      */
+    @Override
     public String getIntegralScheme()
     {
         return _integralScheme;
@@ -556,6 +561,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /*
      * @see org.eclipse.jetty.server.Connector#isConfidential(org.eclipse.jetty.server.Request)
      */
+    @Override
     public boolean isConfidential(Request request)
     {
         return _forwarded && request.getScheme().equalsIgnoreCase(HttpScheme.HTTPS.toString());
@@ -610,6 +616,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean getResolveNames()
     {
         return _useDNS;
@@ -795,91 +802,109 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         _forwardedSslSessionIdHeader = forwardedSslSessionId;
     }
 
+    @Override
     public int getRequestBufferSize()
     {
         return _buffers.getRequestBufferSize();
     }
 
+    @Override
     public void setRequestBufferSize(int requestBufferSize)
     {
         _buffers.setRequestBufferSize(requestBufferSize);
     }
 
+    @Override
     public int getRequestHeaderSize()
     {
         return _buffers.getRequestHeaderSize();
     }
 
+    @Override
     public void setRequestHeaderSize(int requestHeaderSize)
     {
         _buffers.setRequestHeaderSize(requestHeaderSize);
     }
 
+    @Override
     public int getResponseBufferSize()
     {
         return _buffers.getResponseBufferSize();
     }
 
+    @Override
     public void setResponseBufferSize(int responseBufferSize)
     {
         _buffers.setResponseBufferSize(responseBufferSize);
     }
 
+    @Override
     public int getResponseHeaderSize()
     {
         return _buffers.getResponseHeaderSize();
     }
 
+    @Override
     public void setResponseHeaderSize(int responseHeaderSize)
     {
         _buffers.setResponseHeaderSize(responseHeaderSize);
     }
 
+    @Override
     public Type getRequestBufferType()
     {
         return _buffers.getRequestBufferType();
     }
 
+    @Override
     public Type getRequestHeaderType()
     {
         return _buffers.getRequestHeaderType();
     }
 
+    @Override
     public Type getResponseBufferType()
     {
         return _buffers.getResponseBufferType();
     }
 
+    @Override
     public Type getResponseHeaderType()
     {
         return _buffers.getResponseHeaderType();
     }
 
+    @Override
     public void setRequestBuffers(Buffers requestBuffers)
     {
         _buffers.setRequestBuffers(requestBuffers);
     }
 
+    @Override
     public void setResponseBuffers(Buffers responseBuffers)
     {
         _buffers.setResponseBuffers(responseBuffers);
     }
 
+    @Override
     public Buffers getRequestBuffers()
     {
         return _buffers.getRequestBuffers();
     }
 
+    @Override
     public Buffers getResponseBuffers()
     {
         return _buffers.getResponseBuffers();
     }
 
+    @Override
     public void setMaxBuffers(int maxBuffers)
     {
         _buffers.setMaxBuffers(maxBuffers);
     }
 
+    @Override
     public int getMaxBuffers()
     {
         return _buffers.getMaxBuffers();
@@ -908,6 +933,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         }
 
         /* ------------------------------------------------------------ */
+        @Override
         public void run()
         {
             Thread current = Thread.currentThread();
@@ -966,6 +992,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public String getName()
     {
         if (_name == null)
@@ -983,6 +1010,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Get the number of requests handled by this connector since last call of statsReset(). If setStatsOn(false) then this is undefined.
      */
+    @Override
     public int getRequests()
     {
         return (int)_requestStats.getTotal();
@@ -992,6 +1020,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Returns the connectionsDurationTotal.
      */
+    @Override
     public long getConnectionsDurationTotal()
     {
         return _connectionDurationStats.getTotal();
@@ -1001,6 +1030,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Number of connections accepted by the server since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public int getConnections()
     {
         return (int)_connectionStats.getTotal();
@@ -1010,6 +1040,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Number of connections currently open that were opened since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public int getConnectionsOpen()
     {
         return (int)_connectionStats.getCurrent();
@@ -1019,6 +1050,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Maximum number of connections opened simultaneously since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public int getConnectionsOpenMax()
     {
         return (int)_connectionStats.getMax();
@@ -1028,6 +1060,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Mean duration in milliseconds of open connections since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public double getConnectionsDurationMean()
     {
         return _connectionDurationStats.getMean();
@@ -1037,6 +1070,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Maximum duration in milliseconds of an open connection since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public long getConnectionsDurationMax()
     {
         return _connectionDurationStats.getMax();
@@ -1046,6 +1080,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Standard deviation of duration in milliseconds of open connections since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public double getConnectionsDurationStdDev()
     {
         return _connectionDurationStats.getStdDev();
@@ -1055,6 +1090,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Mean number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public double getConnectionsRequestsMean()
     {
         return _requestStats.getMean();
@@ -1064,6 +1100,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Maximum number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public int getConnectionsRequestsMax()
     {
         return (int)_requestStats.getMax();
@@ -1073,6 +1110,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Standard deviation of number of requests per connection since statsReset() called. Undefined if setStatsOn(false).
      */
+    @Override
     public double getConnectionsRequestsStdDev()
     {
         return _requestStats.getStdDev();
@@ -1082,6 +1120,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * Reset statistics.
      */
+    @Override
     public void statsReset()
     {
         updateNotEqual(_statsStartedAt,-1,System.currentTimeMillis());
@@ -1092,6 +1131,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public void setStatsOn(boolean on)
     {
         if (on && _statsStartedAt.get() != -1)
@@ -1108,6 +1148,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return True if statistics collection is turned on.
      */
+    @Override
     public boolean getStatsOn()
     {
         return _statsStartedAt.get() != -1;
@@ -1117,6 +1158,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     /**
      * @return Timestamp stats were started at.
      */
+    @Override
     public long getStatsOnMs()
     {
         long start = _statsStartedAt.get();
@@ -1194,6 +1236,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public boolean isLowResources()
     {
         if (_threadPool != null)

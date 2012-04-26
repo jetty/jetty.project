@@ -60,6 +60,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
@@ -877,7 +878,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Server.
         // Check the connector
         if (_connectors != null && _connectors.size() > 0)
         {
-            String connector = AbstractHttpConnection.getCurrentHttpChannel().getConnector().getName();
+            String connector = HttpChannel.getCurrentHttpChannel().getConnector().getName();
             if (connector == null || !_connectors.contains(connector))
                 return false;
         }

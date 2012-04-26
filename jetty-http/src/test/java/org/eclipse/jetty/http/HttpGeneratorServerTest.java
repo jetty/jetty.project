@@ -51,7 +51,6 @@ public class HttpGeneratorServerTest
             return false;
         }
 
-
         @Override
         public boolean earlyEOF()
         {
@@ -59,7 +58,7 @@ public class HttpGeneratorServerTest
         }
 
         @Override
-        public boolean headerComplete() throws IOException
+        public boolean headerComplete(boolean hasBody,boolean persistent) throws IOException
         {
             _content= null;
             return false;

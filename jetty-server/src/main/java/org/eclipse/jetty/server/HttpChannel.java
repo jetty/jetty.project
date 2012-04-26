@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
@@ -74,6 +75,7 @@ public abstract class HttpChannel
     private int _requests;
 
     private final Server _server;
+    private final Connection _connection;
     private final HttpURI _uri;
 
     private final HttpFields _requestFields;
@@ -100,64 +102,19 @@ public abstract class HttpChannel
     private boolean _expect102Processing = false;
     private boolean _host = false;
 
-    public HttpParser.RequestHandler getRequestHandler()
-    {
-        return _handler;
-    }
-
-    public HttpGenerator.ResponseInfo getResponseInfo()
-    {
-        return _info;
-    }
     
     private final RequestHandler _handler = new RequestHandler();
-    private final HttpGenerator.ResponseInfo _info = new HttpGenerator.ResponseInfo()
-    {
-        @Override
-        public HttpVersion getHttpVersion()
-        {
-            return getRequest().getHttpVersion();
-        }
-        
-        @Override
-        public HttpFields getHttpFields()
-        {
-            return _responseFields;
-        }
-        
-        @Override
-        public long getContentLength()
-        {
-            return _response.getLongContentLength();
-        }
-        
-        @Override
-        public boolean isHead()
-        {
-            return getRequest().isHead();
-        }
-        
-        @Override
-        public int getStatus()
-        {
-            return _response.getStatus();
-        }
-        
-        @Override
-        public String getReason()
-        {
-            return _response.getReason();
-        }
-    };
+    private final HttpGenerator.ResponseInfo _info = new Info();
     
 
     /* ------------------------------------------------------------ */
     /** Constructor
      *
      */
-    public HttpChannel(Server server)
+    public HttpChannel(Server server,Connection connection)
     {
         _server = server;
+        _connection = connection;
         _uri = new HttpURI(URIUtil.__CHARSET);
         _requestFields = new HttpFields();
         _responseFields = new HttpFields(server.getMaxCookieVersion());
@@ -165,11 +122,24 @@ public abstract class HttpChannel
         _response = new Response(this);
         _async = _request.getAsyncContinuation();
     }
+    
+    /* ------------------------------------------------------------ */
+    public Connection getConnection()
+    {
+        return _connection;
+    }
 
     /* ------------------------------------------------------------ */
-    abstract public InetSocketAddress getLocalAddress();
-    abstract public InetSocketAddress getRemoteAddress();
-    abstract public long getMaxIdleTime();
+    public HttpParser.RequestHandler getRequestHandler()
+    {
+        return _handler;
+    }
+
+    /* ------------------------------------------------------------ */
+    public HttpGenerator.ResponseInfo getResponseInfo()
+    {
+        return _info;
+    }
     
     /* ------------------------------------------------------------ */
     /**
@@ -228,6 +198,18 @@ public abstract class HttpChannel
         return _response;
     }
 
+    /* ------------------------------------------------------------ */
+    public InetSocketAddress getLocalAddress()
+    {
+        return getConnection().getEndPoint().getLocalAddress();
+    }
+
+    /* ------------------------------------------------------------ */
+    public InetSocketAddress getRemoteAddress()
+    {
+        return getConnection().getEndPoint().getRemoteAddress();
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * Get the inputStream from the connection.
@@ -369,7 +351,7 @@ public abstract class HttpChannel
                     if (_async.isInitial())
                     {
                         _request.setDispatcherType(DispatcherType.REQUEST);
-                        customize(_request);
+                        getConnector().customize(_request);
                         server.handle(this);
                     }
                     else
@@ -435,18 +417,13 @@ public abstract class HttpChannel
                     // do anything special here other than make the connection not persistent
                     _expect100Continue = false;
                     if (!_response.isCommitted())
-                        setPersistent(false);
+                        _response.addHeader(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.toString());
                 }
 
-                if (error)
-                    setPersistent(false);
-                else if (!_response.isCommitted() && !_request.isHandled())
+                if (!error && !_response.isCommitted() && !_request.isHandled())
                     _response.sendError(HttpServletResponse.SC_NOT_FOUND);
 
                 _response.complete();
-                if (isPersistent())
-                    persist();
-
                 _request.setHandled(true);
             }
         }
@@ -508,10 +485,7 @@ public abstract class HttpChannel
     {
         synchronized (_inputQ.lock())
         {
-            ByteBuffer content=null;
-            long start=-1;
-            long timeout=-1;
-            
+            ByteBuffer content=null;            
             while(content==null)
             {
                 content=_inputQ.peekUnsafe();
@@ -526,41 +500,8 @@ public abstract class HttpChannel
                     // check for EOF
                     if (_inputEOF)
                         return -1;
-
-                    // block for content
-                    if (start<0)
-                    {
-                        start=System.currentTimeMillis();
-                        timeout=getMaxIdleTime();
-                    }
-                    else
-                    {
-                        long now=System.currentTimeMillis();
-                        timeout=timeout-(now-start);
-                        start=now;
-                    }
-                    if (timeout<=0)
-                        throw new SocketTimeoutException(">"+getMaxIdleTime()+"ms");
-                    try
-                    {
-                        // Alternate approach would be to 
-                        //   blockReadable
-                        //   read and then runParser
-                        //   runParser
-                        // This would be better for a client
-                        
-                        setReadInterested(true);
-                        _inputQ.wait(timeout);
-                    }
-                    catch(InterruptedException e)
-                    {
-                        LOG.ignore(e);
-                    }
-                    finally
-                    {
-                        setReadInterested(false);
-                    }
-                    content=_inputQ.peekUnsafe();
+                    
+                    blockForContent();
                 }
             }
 
@@ -586,11 +527,54 @@ public abstract class HttpChannel
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return String.format("%s r=%d",
                 super.toString(),
                 _requests);
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private final class Info implements HttpGenerator.ResponseInfo
+    {
+        @Override
+        public HttpVersion getHttpVersion()
+        {
+            return getRequest().getHttpVersion();
+        }
+
+        @Override
+        public HttpFields getHttpFields()
+        {
+            return _responseFields;
+        }
+
+        @Override
+        public long getContentLength()
+        {
+            return _response.getLongContentLength();
+        }
+
+        @Override
+        public boolean isHead()
+        {
+            return getRequest().isHead();
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return _response.getStatus();
+        }
+
+        @Override
+        public String getReason()
+        {
+            return _response.getReason();
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -704,7 +688,7 @@ public abstract class HttpChannel
         }
 
         @Override
-        public boolean headerComplete() throws IOException
+        public boolean headerComplete(boolean hasBody,boolean persistent) throws IOException
         {
             _requests++;
             switch (_version)
@@ -712,10 +696,8 @@ public abstract class HttpChannel
                 case HTTP_0_9:
                     break;
                 case HTTP_1_0:
-                    if (isPersistent())
-                    {
+                    if (persistent)
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.KEEP_ALIVE);
-                    }
 
                     if (_server.getSendDateHeader())
                         _responseFields.putDateField(HttpHeader.DATE.toString(),_request.getTimeStamp());
@@ -723,10 +705,9 @@ public abstract class HttpChannel
 
                 case HTTP_1_1:
 
-                    if (!isPersistent())
-                    {
+                    if (!persistent)
                         _responseFields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
-                    }
+                    
                     if (_server.getSendDateHeader())
                         _responseFields.putDateField(HttpHeader.DATE.toString(),_request.getTimeStamp());
 
@@ -760,18 +741,14 @@ public abstract class HttpChannel
         @Override
         public boolean content(ByteBuffer ref) throws IOException
         {
-            synchronized (_inputQ)
-            {
-                _inputQ.addUnsafe(ref);
-                _inputQ.notifyAll();
-            }
+            _inputQ.add(ref);
             return true;
         }
 
         @Override
         public boolean messageComplete(long contentLength) throws IOException
         {
-            synchronized (_inputQ)
+            synchronized (_inputQ.lock())
             {
                 _inputEOF=true;
             }
@@ -857,7 +834,7 @@ public abstract class HttpChannel
             // Process content.
             if (content instanceof ByteBuffer)
             {
-                throw new IllegalArgumentException("not implemented!");
+                send((ByteBuffer)content);
             }
             else if (content instanceof InputStream)
             {
@@ -871,16 +848,22 @@ public abstract class HttpChannel
     }
     
     
-    
 
+    public abstract Connector getConnector();
+
+    public abstract long getMaxIdleTime();
+    
     public abstract void asyncDispatch();
     
     public abstract void scheduleTimeout(Task timeout, long timeoutMs);
 
     public abstract void cancelTimeout(Task timeout);
-    
 
-    protected abstract int write(ByteBuffer content,boolean volatileContent) throws IOException;
+    protected abstract void blockForContent() throws IOException;
+    
+    protected abstract int write(ByteBuffer content) throws IOException;
+    
+    protected abstract int send(ByteBuffer content) throws IOException;
         
     protected abstract void sendError(int status, String reason, String content, boolean close)  throws IOException;
     
@@ -893,20 +876,10 @@ public abstract class HttpChannel
     protected abstract void resetBuffer();
 
     protected abstract boolean isResponseCommitted();
-
-    protected abstract boolean isPersistent();
     
-    protected abstract void setPersistent(boolean persistent);
-
     protected abstract void flushResponse() throws IOException;
 
-    protected abstract void completeResponse();
+    protected abstract void completeResponse() throws IOException;
     
-    protected abstract Connector getConnector();
-    
-    protected abstract void persist();
 
-    protected abstract void customize(Request request);
-
-    protected abstract void setReadInterested(boolean interested);
 }

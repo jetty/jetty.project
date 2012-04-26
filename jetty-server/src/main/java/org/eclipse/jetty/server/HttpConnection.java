@@ -14,13 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
@@ -31,7 +25,6 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.SelectableConnection;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.SelectableEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
@@ -41,7 +34,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /**
  */
-public abstract class HttpConnection extends SelectableConnection
+public class HttpConnection extends SelectableConnection
 {
 
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
@@ -182,7 +175,8 @@ public abstract class HttpConnection extends SelectableConnection
 
 
     /* ------------------------------------------------------------ */
-    public void processInput()
+    @Override
+    public void doRead()
     {
         Connection connection = this;
         boolean progress=true;
@@ -190,9 +184,6 @@ public abstract class HttpConnection extends SelectableConnection
         try
         {
             setCurrentConnection(this);
-
-            // don't check for idle while dispatched (unless blocking IO is done).
-            getSelectableEndPoint().setCheckForIdle(false);
 
             // While progress and the connection has not changed
             while (progress && connection==this)
@@ -208,7 +199,21 @@ public abstract class HttpConnection extends SelectableConnection
                     
                     // If we parse to an event, call the connection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
-                        _channel.handleRequest();
+                    {
+                        // don't check for idle while dispatched (unless blocking IO is done).
+                        getSelectableEndPoint().setCheckForIdle(false);
+                        try
+                        {
+                            _channel.handleRequest();
+                        }
+                        finally
+                        {
+                            // If we are not suspended
+                            if (!_channel.getRequest().getAsyncContinuation().isAsyncStarted())
+                                // reenable idle checking unless request is suspended
+                                getSelectableEndPoint().setCheckForIdle(true);
+                        }
+                    }
 
                 }
                 catch (HttpException e)
@@ -218,8 +223,8 @@ public abstract class HttpConnection extends SelectableConnection
                 }
                 finally
                 {
-                    // Return empty request buffer
-                    if (_requestBuffer!=null && !_requestBuffer.hasRemaining())
+                    // Return empty request buffer if all has been consumed
+                    if (_requestBuffer!=null && !_requestBuffer.hasRemaining() && _channel.available()==0)
                     {
                         _connector.getRequestBuffers().returnBuffer(_requestBuffer);
                         _requestBuffer=null;
@@ -252,26 +257,93 @@ public abstract class HttpConnection extends SelectableConnection
         }
         catch(IOException e)
         {
-            // TODO 
+            LOG.warn(e); 
         }
         finally
         {
             setCurrentConnection(null);
 
-            // If we are not suspended
-            if (!_channel.getRequest().getAsyncContinuation().isAsyncStarted())
-            {
-                // reenable idle checking unless request is suspended
-                getSelectableEndPoint().setCheckForIdle(true);
-            }
         }
     }
 
+
+    /* ------------------------------------------------------------ */
+    private int send(HttpGenerator.ResponseInfo info, ByteBuffer content) throws IOException
+    {
+        if (_generator.isCommitted() || BufferUtil.hasContent(_responseBuffer) || _toFlush!=0)
+            throw new IllegalStateException("!send after append");
+        if (_generator.isComplete())
+            throw new EofException();
+
+        long prepared=_generator.getContentPrepared();
+        
+        do
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}: send({},{},{})@{}",
+                    this,
+                    BufferUtil.toSummaryString(_responseHeader),
+                    BufferUtil.toSummaryString(_responseBuffer),
+                    BufferUtil.toSummaryString(content),
+                    _generator.getState());
+            
+            HttpGenerator.Result result=_generator.generate(info,_responseHeader,null,_responseBuffer,content,Action.COMPLETE);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}: {} ({},{},{})@{}",
+                    this,
+                    result,
+                    BufferUtil.toSummaryString(_responseHeader),
+                    BufferUtil.toSummaryString(_responseBuffer),
+                    BufferUtil.toSummaryString(content),
+                    _generator.getState());
+
+            switch(result)
+            {
+                case NEED_HEADER:
+                    _responseHeader=_connector.getResponseBuffers().getHeader();
+                    break;
+
+                case NEED_BUFFER:
+                    _responseBuffer=_connector.getResponseBuffers().getBuffer();
+                    break;
+
+                case NEED_CHUNK:
+                    throw new IllegalStateException("!chunk when content length known");
+                    
+                case FLUSH:
+                    _toFlush=
+                        (BufferUtil.hasContent(_responseHeader)?8:0)+
+                        (BufferUtil.hasContent(_chunk)?4:0)+
+                        (BufferUtil.hasContent(_responseBuffer)?2:0);
+                    flush(true);
+                    break;
+                
+                case FLUSH_CONTENT:
+                    _content=content;
+                    _toFlush=
+                        (BufferUtil.hasContent(_responseHeader)?8:0)+
+                        (BufferUtil.hasContent(_chunk)?4:0)+
+                        (BufferUtil.hasContent(_content)?1:0);
+                    flush(false);
+                    break;
+                
+                case SHUTDOWN_OUT:
+                    getEndPoint().shutdownOutput();
+                    break;
+                    
+                case OK:
+                    break;
+            }
+        }
+        while(BufferUtil.hasContent(content));
+        
+        return (int)(prepared-_generator.getContentPrepared());
+    }
     
     /* ------------------------------------------------------------ */
-    private int generate(ByteBuffer content, Action action, boolean volatileContent) throws IOException
+    private int write(HttpGenerator.ResponseInfo info, ByteBuffer content, Action action) throws IOException
     {
-        if (!_generator.isComplete())
+        if (_generator.isComplete())
             throw new EofException();
 
         long prepared=_generator.getContentPrepared();
@@ -290,7 +362,7 @@ public abstract class HttpConnection extends SelectableConnection
                     BufferUtil.toSummaryString(content),
                     action,_generator.getState());
             
-            HttpGenerator.Result result=_generator.generate(_channel.getResponseInfo(),_responseHeader,_chunk,_responseBuffer,content,action);
+            HttpGenerator.Result result=_generator.generate(info,_responseHeader,_chunk,_responseBuffer,content,action);
             if (LOG.isDebugEnabled())
                 LOG.debug("{}: {} ({},{},{},{},{})@{}",
                     this,
@@ -330,7 +402,7 @@ public abstract class HttpConnection extends SelectableConnection
                         (BufferUtil.hasContent(_responseHeader)?8:0)+
                         (BufferUtil.hasContent(_chunk)?4:0)+
                         (BufferUtil.hasContent(_content)?1:0);
-                    flush(volatileContent);
+                    flush(false);
                     break;
                 
                 case SHUTDOWN_OUT:
@@ -435,19 +507,7 @@ public abstract class HttpConnection extends SelectableConnection
     {
         private HttpOverHttpChannel(Server server)
         {
-            super(server);
-        }
-
-        @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            return _endp.getLocalAddress();
-        }
-
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            return _endp.getRemoteAddress();
+            super(server,HttpConnection.this);
         }
 
         @Override
@@ -478,16 +538,15 @@ public abstract class HttpConnection extends SelectableConnection
         }
         
         @Override
-        protected int write(ByteBuffer content, boolean volatileContent) throws IOException
+        protected int write(ByteBuffer content) throws IOException
         {
-            return HttpConnection.this.generate(content,Action.PREPARE,volatileContent);
+            return HttpConnection.this.write(getResponseInfo(),content,Action.PREPARE);
         }
         
         @Override
-        protected void setPersistent(boolean persistent)
+        protected int send(ByteBuffer content) throws IOException
         {
-            _parser.setPersistent(persistent);
-            _generator.setPersistent(persistent);
+            return HttpConnection.this.send(getResponseInfo(),content);
         }
         
         @Override
@@ -533,14 +592,8 @@ public abstract class HttpConnection extends SelectableConnection
             if (close)
                 _generator.setPersistent(false);
             
-            ByteBuffer buf=BufferUtil.toBuffer(content);
-
-            if (_responseHeader==null)
-                _responseHeader=_connector.getResponseBuffers().getHeader();
-            if (_responseBuffer==null)
-                _responseBuffer=_connector.getResponseBuffers().getBuffer();
-            
-            _generator.generate(response,_responseHeader,null,_responseBuffer,buf,Action.COMPLETE);
+            HttpConnection.this.send(response,BufferUtil.toBuffer(content));
+          
             
         }
         
@@ -559,23 +612,11 @@ public abstract class HttpConnection extends SelectableConnection
         }
         
         @Override
-        protected void persist()
-        {
-            // TODO Auto-generated method stub
-            
-        }
-        
-        @Override
         protected boolean isResponseCommitted()
         {
             return _generator.isCommitted();
         }
         
-        @Override
-        protected boolean isPersistent()
-        {
-            return _generator.isPersistent();
-        }
         
         @Override
         protected void increaseContentBufferSize(int size)
@@ -594,7 +635,7 @@ public abstract class HttpConnection extends SelectableConnection
         }
         
         @Override
-        protected Connector getConnector()
+        public Connector getConnector()
         {
             return _connector;
         }
@@ -602,27 +643,45 @@ public abstract class HttpConnection extends SelectableConnection
         @Override
         protected void flushResponse() throws IOException
         {
-            HttpConnection.this.generate(null,Action.FLUSH,false);
+            HttpConnection.this.write(getResponseInfo(),null,Action.FLUSH);
         }
         
         @Override
-        protected void customize(Request request)
+        protected void completeResponse() throws IOException
         {
-            // TODO Auto-generated method stub
-            
-        }
-        
-        @Override
-        protected void completeResponse()
-        {
-            // TODO Auto-generated method stub
-            
+            HttpConnection.this.write(getResponseInfo(),null,Action.COMPLETE);
         }
 
         @Override
-        protected void setReadInterested(boolean interested)
+        protected void blockForContent() throws IOException
         {
-            _endp.setReadInterested(interested);
+            // While progress and the connection has not changed
+            while (!_endp.isInputShutdown())
+            {
+                try
+                {
+                    // Wait until we can read
+                    blockReadable();
+
+                    // We will need a buffer to read into
+                    if (_requestBuffer==null)
+                        _requestBuffer=_connector.getRequestBuffers().getBuffer();   
+
+                    // If we parse to an event, return
+                    if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
+                        return;
+                }
+                finally
+                {
+                    // Return empty request buffer
+                    if (_requestBuffer!=null && !_requestBuffer.hasRemaining() && _channel.available()==0)
+                    {
+                        _connector.getRequestBuffers().returnBuffer(_requestBuffer);
+                        _requestBuffer=null;
+                    }
+                }
+            }
         }
+
     };
 }

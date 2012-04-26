@@ -24,9 +24,11 @@ import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
+import org.eclipse.jetty.io.SelectableConnection;
 import org.eclipse.jetty.io.SelectableEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.SelectSet;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -115,19 +117,10 @@ public class SelectChannelConnector extends AbstractNIOConnector
 
     /* ------------------------------------------------------------------------------- */
     @Override
-    public void customize(EndPoint endpoint, Request request) throws IOException
+    public void customize(Request request) throws IOException
     {
         request.setTimeStamp(System.currentTimeMillis());
-        endpoint.setMaxIdleTime(_maxIdleTime);
-        super.customize(endpoint, request);
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    @Override
-    public void persist(EndPoint endpoint) throws IOException
-    {
-        endpoint.setCheckForIdle(true);
-        super.persist(endpoint);
+        super.customize(request);
     }
 
     /* ------------------------------------------------------------ */
@@ -251,20 +244,20 @@ public class SelectChannelConnector extends AbstractNIOConnector
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
     {
         SelectChannelEndPoint endp= new SelectChannelEndPoint(channel,selectSet,key, SelectChannelConnector.this._maxIdleTime);
-        endp.setConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+        endp.setSelectableConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
         return endp;
     }
 
     /* ------------------------------------------------------------------------------- */
     protected void endPointClosed(SelectableEndPoint endpoint)
     {
-        connectionClosed(endpoint.getConnection());
+        connectionClosed(endpoint.getSelectableConnection());
     }
 
     /* ------------------------------------------------------------------------------- */
-    protected Connection newConnection(SocketChannel channel,final EndPoint endpoint)
+    protected SelectableConnection newConnection(SocketChannel channel,final SelectableEndPoint endpoint)
     {
-        return new AsyncHttpConnection(SelectChannelConnector.this,endpoint,getServer());
+        return new HttpConnection(SelectChannelConnector.this,endpoint,getServer());
     }
 
 
@@ -283,7 +276,7 @@ public class SelectChannelConnector extends AbstractNIOConnector
         }
 
         @Override
-        protected void endPointClosed(final SelectableEndPoint endpoint)
+        protected void endPointClosed(SelectChannelEndPoint endpoint)
         {
             SelectChannelConnector.this.endPointClosed(endpoint);
         }
@@ -292,25 +285,27 @@ public class SelectChannelConnector extends AbstractNIOConnector
         protected void endPointOpened(SelectChannelEndPoint endpoint)
         {
             // TODO handle max connections and low resources
-            connectionOpened(endpoint.getConnection());
+            connectionOpened(endpoint.getSelectableConnection());
         }
 
         @Override
-        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
-        {
-            connectionUpgraded(oldConnection,endpoint.getConnection());
+        protected void endPointUpgraded(SelectChannelEndPoint endpoint, Connection oldConnection)
+        {            
+            connectionUpgraded(oldConnection,endpoint.getSelectableConnection());
         }
 
         @Override
-        public Connection newConnection(SocketChannel channel,AsyncEndPoint endpoint, Object attachment)
-        {
+        public SelectableConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
+        {            
             return SelectChannelConnector.this.newConnection(channel,endpoint);
         }
 
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey sKey) throws IOException
-        {
+        {            
             return SelectChannelConnector.this.newEndPoint(channel,selectSet,sKey);
         }
+        
+        
     }
 }

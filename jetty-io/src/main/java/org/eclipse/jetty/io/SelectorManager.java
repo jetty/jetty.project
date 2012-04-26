@@ -605,7 +605,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         if (att instanceof SelectChannelEndPoint)
                         {
                             if (key.isReadable()||key.isWritable())
-                                ((SelectChannelEndPoint)att).selected();
+                                ((SelectChannelEndPoint)att).onSelected();
                         }
                         else if (key.isConnectable())
                         {
@@ -627,7 +627,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                                     key.interestOps(SelectionKey.OP_READ);
                                     SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                                     key.attach(endpoint);
-                                    endpoint.selected();
+                                    endpoint.onSelected();
                                 }
                                 else
                                 {
@@ -642,7 +642,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             SelectChannelEndPoint endpoint = createEndPoint(channel,key);
                             key.attach(endpoint);
                             if (key.isReadable())
-                                endpoint.selected();
+                                endpoint.onSelected();
                         }
                         key = null;
                     }

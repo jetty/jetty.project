@@ -342,7 +342,7 @@ public class HttpParser
                             return_from_parse|=_requestHandler.startRequest(_field0,_field1,null);
                             _persistent=false;
                             _state=State.SEEKING_EOF;
-                            return_from_parse|=_handler.headerComplete();
+                            return_from_parse|=_handler.headerComplete(false,false);
                             return_from_parse|=_handler.messageComplete(_contentPosition);
                         }
                         break;
@@ -369,7 +369,7 @@ public class HttpParser
                                 return_from_parse|=_requestHandler.startRequest(_field0, _field1, null);
                                 _persistent=false;
                                 _state=State.SEEKING_EOF;
-                                return_from_parse|=_handler.headerComplete();
+                                return_from_parse|=_handler.headerComplete(false,false);
                                 return_from_parse|=_handler.messageComplete(_contentPosition);
                             }
                         }
@@ -522,23 +522,23 @@ public class HttpParser
                                     {
                                         case EOF_CONTENT:
                                             _state=State.EOF_CONTENT;
-                                            return_from_parse|=_handler.headerComplete(); // May recurse here !
+                                            return_from_parse|=_handler.headerComplete(true,false); 
                                             break;
 
                                         case CHUNKED_CONTENT:
                                             _state=State.CHUNKED_CONTENT;
-                                            return_from_parse|=_handler.headerComplete(); // May recurse here !
+                                            return_from_parse|=_handler.headerComplete(true,_persistent); 
                                             break;
 
                                         case NO_CONTENT:
-                                            return_from_parse|=_handler.headerComplete();
+                                            return_from_parse|=_handler.headerComplete(false,_persistent);
                                             _state=_persistent||(_responseStatus>=100&&_responseStatus<200)?State.END:State.SEEKING_EOF;
                                             return_from_parse|=_handler.messageComplete(_contentPosition);
                                             break;
 
                                         default:
                                             _state=State.CONTENT;
-                                            return_from_parse|=_handler.headerComplete(); // May recurse here !
+                                            return_from_parse|=_handler.headerComplete(true,_persistent); 
                                             break;
                                     }
                                 }
@@ -942,7 +942,7 @@ public class HttpParser
     {
         public boolean content(ByteBuffer ref) throws IOException;
 
-        public boolean headerComplete() throws IOException;
+        public boolean headerComplete(boolean hasBody,boolean persistent) throws IOException;
 
         public boolean messageComplete(long contentLength) throws IOException;
 

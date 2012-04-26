@@ -105,7 +105,7 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _written+=_channel.write(ByteBuffer.wrap(b,off,len),true);
+        _written+=_channel.write(ByteBuffer.wrap(b,off,len));
         _channel.getResponse().checkAllContentWritten(_written);
     }
 
@@ -119,7 +119,7 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _written+=_channel.write(ByteBuffer.wrap(b),true);
+        _written+=_channel.write(ByteBuffer.wrap(b));
         _channel.getResponse().checkAllContentWritten(_written);
     }
 
@@ -133,7 +133,7 @@ public class HttpOutput extends ServletOutputStream
         if (_closed)
             throw new IOException("Closed");
 
-        _written+=_channel.write(ByteBuffer.wrap(new byte[]{(byte)b}),true);
+        _written+=_channel.write(ByteBuffer.wrap(new byte[]{(byte)b}));
         _channel.getResponse().checkAllContentWritten(_written);
     }
 

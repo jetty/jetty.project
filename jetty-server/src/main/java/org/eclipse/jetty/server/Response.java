@@ -4,11 +4,11 @@
 // All rights reserved. This program and the accompanying materials
 // are made available under the terms of the Eclipse Public License v1.0
 // and Apache License v2.0 which accompanies this distribution.
-// The Eclipse Public License is available at 
+// The Eclipse Public License is available at
 // http://www.eclipse.org/legal/epl-v10.html
 // The Apache License v2.0 is available at
 // http://www.opensource.org/licenses/apache2.0.php
-// You may elect to redistribute this code under either of these licenses. 
+// You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 
 package org.eclipse.jetty.server;
@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -60,11 +61,11 @@ public class Response implements HttpServletResponse
     public final static String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     /**
-     * If this string is found within the comment of a cookie added with {@link #addCookie(Cookie)}, then the cookie 
+     * If this string is found within the comment of a cookie added with {@link #addCookie(Cookie)}, then the cookie
      * will be set as HTTP ONLY.
      */
     public final static String HTTP_ONLY_COMMENT="__HTTP_ONLY__";
-    
+
     private final HttpChannel _channel;
     private final HttpFields _fields;
     private int _status=SC_OK;
@@ -77,8 +78,8 @@ public class Response implements HttpServletResponse
     private PrintWriter _writer;
     private long _contentLength=-1;
 
-    
-    
+
+
     /* ------------------------------------------------------------ */
     /**
      *
@@ -115,16 +116,17 @@ public class Response implements HttpServletResponse
     {
         _fields.addSetCookie(cookie);
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.http.HttpServletResponse#addCookie(javax.servlet.http.Cookie)
      */
+    @Override
     public void addCookie(Cookie cookie)
     {
         String comment=cookie.getComment();
         boolean http_only=false;
-        
+
         if (comment!=null)
         {
             int i=comment.indexOf(HTTP_ONLY_COMMENT);
@@ -151,6 +153,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#containsHeader(java.lang.String)
      */
+    @Override
     public boolean containsHeader(String name)
     {
         return _fields.containsKey(name);
@@ -160,13 +163,14 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#encodeURL(java.lang.String)
      */
+    @Override
     public String encodeURL(String url)
     {
         final Request request=_channel.getRequest();
         SessionManager sessionManager = request.getSessionManager();
         if (sessionManager==null)
             return url;
-        
+
         HttpURI uri = null;
         if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
         {
@@ -174,21 +178,21 @@ public class Response implements HttpServletResponse
             String path = uri.getPath();
             path = (path == null?"":path);
             int port=uri.getPort();
-            if (port<0) 
+            if (port<0)
                 port = HttpScheme.HTTPS.toString().equalsIgnoreCase(uri.getScheme())?443:80;
             if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
                 request.getServerPort()!=port ||
                 !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
                 return url;
         }
-        
+
         String sessionURLPrefix = sessionManager.getSessionIdPathParameterNamePrefix();
         if (sessionURLPrefix==null)
             return url;
 
         if (url==null)
             return null;
-        
+
         // should not encode if cookies in evidence
         if (request.isRequestedSessionIdFromCookie())
         {
@@ -221,8 +225,8 @@ public class Response implements HttpServletResponse
 
         if (uri == null)
                 uri = new HttpURI(url);
-     
-        
+
+
         // Already encoded
         int prefix=url.indexOf(sessionURLPrefix);
         if (prefix!=-1)
@@ -241,14 +245,14 @@ public class Response implements HttpServletResponse
         int suffix=url.indexOf('?');
         if (suffix<0)
             suffix=url.indexOf('#');
-        if (suffix<0) 
-        {          
-            return url+ 
+        if (suffix<0)
+        {
+            return url+
                    ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath()==null?"/":"") + //if no path, insert the root path
                    sessionURLPrefix+id;
         }
-     
-        
+
+
         return url.substring(0,suffix)+
             ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath()==null?"/":"")+ //if no path so insert the root path
             sessionURLPrefix+id+url.substring(suffix);
@@ -258,12 +262,14 @@ public class Response implements HttpServletResponse
     /**
      * @see javax.servlet.http.HttpServletResponse#encodeRedirectURL(java.lang.String)
      */
+    @Override
     public String encodeRedirectURL(String url)
     {
         return encodeURL(url);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     @Deprecated
     public String encodeUrl(String url)
     {
@@ -271,6 +277,7 @@ public class Response implements HttpServletResponse
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     @Deprecated
     public String encodeRedirectUrl(String url)
     {
@@ -281,6 +288,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#sendError(int, java.lang.String)
      */
+    @Override
     public void sendError(int code, String message) throws IOException
     {
     	if (_channel.isIncluding())
@@ -319,10 +327,10 @@ public class Response implements HttpServletResponse
                 error_handler = _channel.getServer().getBean(ErrorHandler.class);
             if (error_handler!=null)
             {
-                request.setAttribute(Dispatcher.ERROR_STATUS_CODE,new Integer(code));
-                request.setAttribute(Dispatcher.ERROR_MESSAGE, message);
-                request.setAttribute(Dispatcher.ERROR_REQUEST_URI, request.getRequestURI());
-                request.setAttribute(Dispatcher.ERROR_SERVLET_NAME,request.getServletName());
+                request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(code));
+                request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
+                request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
+                request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME,request.getServletName());
                 error_handler.handle(null,_channel.getRequest(),_channel.getRequest(),this );
             }
             else
@@ -385,6 +393,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#sendError(int)
      */
+    @Override
     public void sendError(int sc) throws IOException
     {
         if (sc==102)
@@ -411,6 +420,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#sendRedirect(java.lang.String)
      */
+    @Override
     public void sendRedirect(String location) throws IOException
     {
     	if (_channel.isIncluding())
@@ -459,7 +469,7 @@ public class Response implements HttpServletResponse
                 location=buf.toString();
             }
         }
-        
+
         resetBuffer();
         setHeader(HttpHeader.LOCATION,location);
         setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
@@ -471,6 +481,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#setDateHeader(java.lang.String, long)
      */
+    @Override
     public void setDateHeader(String name, long date)
     {
         if (!_channel.isIncluding())
@@ -481,6 +492,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#addDateHeader(java.lang.String, long)
      */
+    @Override
     public void addDateHeader(String name, long date)
     {
         if (!_channel.isIncluding())
@@ -499,9 +511,9 @@ public class Response implements HttpServletResponse
         {
             if (_channel.isIncluding())
                     return;
-            
+
             _fields.put(name, value);
-            
+
             if (HttpHeader.CONTENT_LENGTH==name)
             {
                 if (value==null)
@@ -515,6 +527,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#setHeader(java.lang.String, java.lang.String)
      */
+    @Override
     public void setHeader(String name, String value)
     {
         if (HttpHeader.CONTENT_TYPE.is(name))
@@ -541,15 +554,17 @@ public class Response implements HttpServletResponse
 
 
     /* ------------------------------------------------------------ */
+    @Override
     public Collection<String> getHeaderNames()
     {
         final HttpFields fields=_fields;
         return fields.getFieldNamesCollection();
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      */
+    @Override
     public String getHeader(String name)
     {
         return _fields.getStringField(name);
@@ -558,12 +573,13 @@ public class Response implements HttpServletResponse
     /* ------------------------------------------------------------ */
     /*
      */
+    @Override
     public Collection<String> getHeaders(String name)
     {
         final HttpFields fields=_fields;
         Collection<String> i = fields.getValuesCollection(name);
         if (i==null)
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         return i;
     }
 
@@ -571,6 +587,26 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#addHeader(java.lang.String, java.lang.String)
      */
+    public void addHeader(HttpHeader name, String value)
+    {
+        if (_channel.isIncluding())
+            return;
+
+        _fields.add(name, value);
+        if (HttpHeader.CONTENT_LENGTH==name)
+        {
+            if (value==null)
+                _contentLength=-1l;
+            else
+                _contentLength=Long.parseLong(value);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /*
+     * @see javax.servlet.http.HttpServletResponse#addHeader(java.lang.String, java.lang.String)
+     */
+    @Override
     public void addHeader(String name, String value)
     {
         if (_channel.isIncluding())
@@ -595,6 +631,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#setIntHeader(java.lang.String, int)
      */
+    @Override
     public void setIntHeader(String name, int value)
     {
         if (!_channel.isIncluding())
@@ -609,6 +646,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#addIntHeader(java.lang.String, int)
      */
+    @Override
     public void addIntHeader(String name, int value)
     {
         if (!_channel.isIncluding())
@@ -623,6 +661,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#setStatus(int)
      */
+    @Override
     public void setStatus(int sc)
     {
         setStatus(sc,null);
@@ -632,6 +671,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.http.HttpServletResponse#setStatus(int, java.lang.String)
      */
+    @Override
     public void setStatus(int sc, String sm)
     {
         if (sc<=0)
@@ -647,13 +687,14 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#getCharacterEncoding()
      */
+    @Override
     public String getCharacterEncoding()
     {
         if (_characterEncoding==null)
             _characterEncoding=StringUtil.__ISO_8859_1;
         return _characterEncoding;
     }
-    
+
     /* ------------------------------------------------------------ */
     String getSetCharacterEncoding()
     {
@@ -664,6 +705,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#getContentType()
      */
+    @Override
     public String getContentType()
     {
         return _contentType;
@@ -673,6 +715,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#getOutputStream()
      */
+    @Override
     public ServletOutputStream getOutputStream() throws IOException
     {
         if (_outputState==Output.WRITER)
@@ -699,6 +742,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#getWriter()
      */
+    @Override
     public PrintWriter getWriter() throws IOException
     {
         if (_outputState==Output.STREAM)
@@ -730,6 +774,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#setContentLength(int)
      */
+    @Override
     public void setContentLength(int len)
     {
         // Protect from setting after committed as default handling
@@ -738,12 +783,12 @@ public class Response implements HttpServletResponse
         if (isCommitted() || _channel.isIncluding())
             return;
         _contentLength=len;
-        _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), (long)len);
-        
+        _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
+
         if (_contentLength>0)
             checkAllContentWritten(_channel.getOutputStream().getWritten());
     }
-    
+
     /* ------------------------------------------------------------ */
     public void checkAllContentWritten(long written)
     {
@@ -792,6 +837,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#setCharacterEncoding(java.lang.String)
      */
+    @Override
     public void setCharacterEncoding(String encoding)
     {
         if (_channel.isIncluding())
@@ -824,11 +870,12 @@ public class Response implements HttpServletResponse
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#setContentType(java.lang.String)
      */
+    @Override
     public void setContentType(String contentType)
     {
         if (isCommitted() || _channel.isIncluding())
@@ -847,7 +894,7 @@ public class Response implements HttpServletResponse
             _contentType=contentType;
             _mimeType=MimeTypes.CACHE.get(contentType);
             String charset=_mimeType==null?MimeTypes.getCharsetFromContentType(contentType):_mimeType.getCharset().toString();
-            
+
             if (charset!=null)
                 _characterEncoding=charset;
             else if (_characterEncoding!=null)
@@ -855,7 +902,7 @@ public class Response implements HttpServletResponse
                 _contentType=contentType+";charset="+_characterEncoding;
                 _mimeType=null;
             }
-            
+
             _fields.put(HttpHeader.CONTENT_TYPE,_contentType);
         }
     }
@@ -864,6 +911,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#setBufferSize(int)
      */
+    @Override
     public void setBufferSize(int size)
     {
         if (isCommitted())
@@ -875,6 +923,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#getBufferSize()
      */
+    @Override
     public int getBufferSize()
     {
         return _channel.getContentBufferSize();
@@ -884,6 +933,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#flushBuffer()
      */
+    @Override
     public void flushBuffer() throws IOException
     {
         _channel.flushResponse();
@@ -893,6 +943,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#reset()
      */
+    @Override
     public void reset()
     {
         resetBuffer();
@@ -900,9 +951,9 @@ public class Response implements HttpServletResponse
         _status=200;
         _reason=null;
         _contentLength=-1;
-        
+
         HttpFields response_fields=_fields;
-        
+
         response_fields.clear();
         String connection=_channel.getRequestFields().getStringField(HttpHeader.CONNECTION);
         if (connection!=null)
@@ -932,7 +983,7 @@ public class Response implements HttpServletResponse
             }
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.ServletResponse#reset()
@@ -949,18 +1000,19 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#resetBuffer()
      */
+    @Override
     public void resetBuffer()
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        
+
         switch(_outputState)
         {
             case STREAM:
             case WRITER:
                 _channel.getOutputStream().reset();
         }
-        
+
         _channel.resetBuffer();
     }
 
@@ -968,6 +1020,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#isCommitted()
      */
+    @Override
     public boolean isCommitted()
     {
         return _channel.isResponseCommitted();
@@ -977,6 +1030,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#setLocale(java.util.Locale)
      */
+    @Override
     public void setLocale(Locale locale)
     {
         if (locale == null || isCommitted() ||_channel.isIncluding())
@@ -1001,6 +1055,7 @@ public class Response implements HttpServletResponse
     /*
      * @see javax.servlet.ServletResponse#getLocale()
      */
+    @Override
     public Locale getLocale()
     {
         if (_locale==null)
@@ -1013,6 +1068,7 @@ public class Response implements HttpServletResponse
      * @return The HTTP status code that has been set for this request. This will be <code>200<code>
      *    ({@link HttpServletResponse#SC_OK}), unless explicitly set through one of the <code>setStatus</code> methods.
      */
+    @Override
     public int getStatus()
     {
         return _status;
@@ -1050,7 +1106,7 @@ public class Response implements HttpServletResponse
         return "HTTP/1.1 "+_status+" "+ (_reason==null?"":_reason) +System.getProperty("line.separator")+
         _fields.toString();
     }
-    
+
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
