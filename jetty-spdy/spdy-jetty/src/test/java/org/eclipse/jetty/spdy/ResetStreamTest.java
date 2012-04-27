@@ -1,7 +1,9 @@
 package org.eclipse.jetty.spdy;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
@@ -127,9 +129,9 @@ public class ResetStreamTest extends AbstractTest
         assertTrue("stream is expected to be reset",stream.isReset());
         assertFalse("dataLatch shouln't be count down",dataLatch.await(1,TimeUnit.SECONDS));
     }
-    
+
     @Test
-    public void testResetAfterServerReceivedFirstDataFrame() throws Exception
+    public void testResetAfterServerReceivedFirstDataFrameAndSecondDataFrameFails() throws Exception
     {
         final CountDownLatch synLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
@@ -140,24 +142,16 @@ public class ResetStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                try
+                synLatch.countDown();
+                return new StreamFrameListener.Adapter()
                 {
-                    assertTrue(synLatch.await(5,TimeUnit.SECONDS));
-                    return new StreamFrameListener.Adapter()
+                    @Override
+                    public void onData(Stream stream, DataInfo dataInfo)
                     {
-                        @Override
-                        public void onData(Stream stream, DataInfo dataInfo)
-                        {
-                            dataLatch.countDown();
-                            stream.getSession().rst(new RstInfo(stream.getId(),StreamStatus.REFUSED_STREAM));
-                        }
-                    };
-                }
-                catch (InterruptedException x)
-                {
-                    x.printStackTrace();
-                    return null;
-                }
+                        dataLatch.countDown();
+                        stream.getSession().rst(new RstInfo(stream.getId(),StreamStatus.REFUSED_STREAM));
+                    }
+                };
             }
         }),new SessionFrameListener.Adapter()
         {
@@ -169,34 +163,22 @@ public class ResetStreamTest extends AbstractTest
         });
 
         Stream stream = session.syn(new SynInfo(false),null).get(5,TimeUnit.SECONDS);
-        stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,new Handler.Adapter<Void>()
-        {
-            @Override
-            public void completed(Void context)
-            {
-                synLatch.countDown();
-            }
-        });
-
-        assertTrue("rstLatch didn't count down",rstLatch.await(5,TimeUnit.SECONDS));
-        stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Handler<Void>()
+        assertThat("syn is received by server", synLatch.await(5,TimeUnit.SECONDS),is(true));
+        stream.data(new StringDataInfo("data",false),5,TimeUnit.SECONDS,null);
+        assertThat("stream is reset",rstLatch.await(5,TimeUnit.SECONDS),is(true));
+        stream.data(new StringDataInfo("2nd dataframe",false),5L,TimeUnit.SECONDS,new Handler.Adapter<Void>()
         {
             @Override
             public void failed(Throwable x)
             {
                 failLatch.countDown();
             }
-
-            @Override
-            public void completed(Void context)
-            {
-            }
         });
-        
-        assertTrue("failLatch didn't count down",failLatch.await(5,TimeUnit.SECONDS));
-        assertTrue("stream is expected to be reset",stream.isReset());
+
+        assertThat("2nd data call failed",failLatch.await(5,TimeUnit.SECONDS),is(true));
+        assertThat("stream is reset",stream.isReset(),is(true));
     }
-    
+
     // TODO: If server already received 2nd dataframe after it rst, it should ignore it. Not easy to do.
 
 }
