@@ -53,12 +53,11 @@ public class StandardStream implements IStream
     private final SynStreamFrame frame;
     private final ISession session;
     private final AtomicInteger windowSize;
-    private final Set<Stream> associatedStreams = Collections.newSetFromMap(new ConcurrentHashMap<Stream, Boolean>());
+    private final Set<Stream> pushedStreams = Collections.newSetFromMap(new ConcurrentHashMap<Stream, Boolean>());
     private volatile StreamFrameListener listener;
     private volatile OpenState openState = OpenState.SYN_SENT;
     private volatile CloseState closeState = CloseState.OPENED;
     private volatile boolean reset = false;
-    private final boolean unidirectional;
 
     public StandardStream(SynStreamFrame frame, ISession session, int windowSize, IStream associatedStream)
     {
@@ -66,10 +65,6 @@ public class StandardStream implements IStream
         this.session = session;
         this.windowSize = new AtomicInteger(windowSize);
         this.associatedStream = associatedStream;
-        if (associatedStream != null)
-            unidirectional = true;
-        else
-            unidirectional = false;
     }
 
     @Override
@@ -87,19 +82,19 @@ public class StandardStream implements IStream
     @Override
     public Set<Stream> getPushedStreams()
     {
-        return associatedStreams;
+        return pushedStreams;
     }
 
     @Override
     public void associate(IStream stream)
     {
-        associatedStreams.add(stream);
+        pushedStreams.add(stream);
     }
 
     @Override
     public void disassociate(IStream stream)
     {
-        associatedStreams.remove(stream);
+        pushedStreams.remove(stream);
     }
 
     @Override
@@ -431,7 +426,11 @@ public class StandardStream implements IStream
     @Override
     public boolean isUnidirectional()
     {
-        return unidirectional;
+        if (associatedStream != null)
+            return true;
+        else
+            return false;
+
     }
     
     @Override

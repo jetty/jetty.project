@@ -485,7 +485,7 @@ public class StandardSession implements ISession, Parser.Listener, Handler<Stand
     {
         if (stream.isUnidirectional())
         {
-            ((IStream)stream.getAssociatedStream()).disassociate(stream);
+            stream.getAssociatedStream().disassociate(stream);
         }
 
         IStream removed = streams.remove(stream.getId());

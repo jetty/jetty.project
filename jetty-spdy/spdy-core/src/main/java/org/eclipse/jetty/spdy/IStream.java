@@ -104,4 +104,12 @@ public interface IStream extends Stream
      * @param stream the stream to be removed
      */
     public void disassociate(IStream stream);
+    
+    /**
+     * <p>Overrides Stream.getAssociatedStream() to return an instance of IStream instead of Stream
+     * 
+     * @see Stream#getAssociatedStream()
+     */
+    @Override
+    public IStream getAssociatedStream();
 }
