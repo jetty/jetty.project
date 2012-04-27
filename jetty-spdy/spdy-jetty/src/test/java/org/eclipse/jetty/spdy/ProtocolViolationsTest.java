@@ -116,19 +116,20 @@ public class ProtocolViolationsTest extends AbstractTest
         stream.headers(new HeadersInfo(new Headers(), true));
     }
 
-    @Test
-    public void testDataSentAfterCloseIsDiscardedByRecipient() throws Exception
+    @Test //TODO: throws an ISException in StandardStream.updateCloseState(). But instead we should send a rst or something to the server probably?!
+    public void testServerClosesStreamTwice() throws Exception
     {
         ServerSocketChannel server = ServerSocketChannel.open();
         server.bind(new InetSocketAddress("localhost", 0));
 
         Session session = startClient(new InetSocketAddress("localhost", server.socket().getLocalPort()), null);
         final CountDownLatch dataLatch = new CountDownLatch(2);
-        session.syn(new SynInfo(true), new StreamFrameListener.Adapter()
+        session.syn(new SynInfo(false), new StreamFrameListener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataInfo dataInfo)
             {
+                System.out.println("ondata");
                 dataLatch.countDown();
             }
         });

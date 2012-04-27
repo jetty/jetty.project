@@ -16,6 +16,7 @@
 
 package org.eclipse.jetty.spdy.frames;
 
+import org.eclipse.jetty.spdy.PushSynInfo;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.SynInfo;
 
@@ -62,7 +63,7 @@ public class SynStreamFrame extends ControlFrame
 
     public boolean isUnidirectional()
     {
-        return (getFlags() & SynInfo.FLAG_UNIDIRECTIONAL) == SynInfo.FLAG_UNIDIRECTIONAL;
+        return (getFlags() & PushSynInfo.FLAG_UNIDIRECTIONAL) == PushSynInfo.FLAG_UNIDIRECTIONAL;
     }
 
     @Override
