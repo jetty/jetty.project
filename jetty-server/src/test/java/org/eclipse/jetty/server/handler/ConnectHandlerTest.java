@@ -19,6 +19,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.toolchain.test.OS;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -354,6 +355,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     @Test
     public void testCONNECTAndPOSTWithBigBody() throws Exception
     {
+        // Log.getLogger(ConnectHandler.class).setDebugEnabled(true);
         String hostPort = "localhost:" + serverConnector.getLocalPort();
         String request = "" +
                 "CONNECT " + hostPort + " HTTP/1.1\r\n" +

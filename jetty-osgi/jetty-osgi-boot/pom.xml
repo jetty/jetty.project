@@ -100,9 +100,11 @@
                 </executions>
                 <configuration>
                     <instructions>
-                        <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot</Bundle-SymbolicName>
-                        <Export-Package>org.eclipse.jetty.osgi.boot;version="${parsedVersion.osgiVersion}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${parsedVersion.osgiVersion}"</Export-Package> 
+                        <Bundle-SymbolicName>org.eclipse.jetty.osgi.boot;singleton:=true</Bundle-SymbolicName>
+                        <Bundle-Name>Jetty OSGi Boot</Bundle-Name>
                         <Bundle-Activator>org.eclipse.jetty.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
+                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>
+                        <Export-Package>org.eclipse.jetty.osgi.boot;version="${parsedVersion.osgiVersion}",org.eclipse.jetty.osgi.boot.utils,org.eclipse.jetty.osgi.nested;version="${parsedVersion.osgiVersion}"</Export-Package> 
                         <!-- disable the uses directive: jetty will accomodate pretty much any versions
                         of the packages it uses; no need to reflect some tight dependency determined at
                         compilation time. --> 
@@ -130,9 +132,9 @@
  org.eclipse.jetty.nested;resolution:=optional,
  *
                         </Import-Package>
-                        <DynamicImport-Package>org.eclipse.jetty.*;version="[7.3,8)"</DynamicImport-Package>
+                        <DynamicImport-Package>org.eclipse.jetty.*;version="[7.6,8)"</DynamicImport-Package>
                         <!--Require-Bundle/-->
-                        <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment> 
+                        <!-- Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment --> 
                     </instructions>
                 </configuration>
             </plugin>

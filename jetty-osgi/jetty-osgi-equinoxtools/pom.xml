@@ -48,7 +48,6 @@
             <phase>process-resources</phase>
             <configuration>
               <tasks>
-                <replace file="target/classes/META-INF/MANIFEST.MF" token="Bundle-Version: 7.4.2.qualifier" value="Bundle-Version: ${parsedVersion.osgiVersion}" />
                 <copy todir="target/classes/equinoxconsole">
                     <fileset dir="equinoxconsole" />
                 </copy>
@@ -82,6 +81,31 @@
             <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <executions>
+              <execution>
+                  <id>bundle-manifest</id>
+                  <phase>process-classes</phase>
+                  <goals>
+                      <goal>manifest</goal> 
+                  </goals>
+              </execution>
+          </executions>
+          <configuration>
+              <instructions>
+                <Bundle-SymbolicName>org.eclipse.jetty.osgi.equinoxtools</Bundle-SymbolicName>
+                <Bundle-Name>Console</Bundle-Name>
+                <Bundle-Activator>org.eclipse.jetty.osgi.equinoxtools.WebEquinoxToolsActivator</Bundle-Activator>
+                <Export-Package>org.eclipse.jetty.osgi.equinoxtools;x-internal:=true;version="${parsedVersion.osgiVersion}",
+                                org.eclipse.jetty.osgi.equinoxtools.console;x-internal:=true;version="${parsedVersion.osgiVersion}"
+                </Export-Package>
+                <_nouses>true</_nouses>
+              </instructions>
+          </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
