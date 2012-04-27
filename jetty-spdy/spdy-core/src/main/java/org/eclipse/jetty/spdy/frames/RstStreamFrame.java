@@ -29,17 +29,17 @@ public class RstStreamFrame extends ControlFrame
         this.streamId = streamId;
         this.statusCode = statusCode;
     }
-
+    
     public int getStreamId()
     {
         return streamId;
     }
-
+    
     public int getStatusCode()
     {
         return statusCode;
     }
-
+    
     @Override
     public String toString()
     {

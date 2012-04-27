@@ -99,7 +99,7 @@ public class ServerUsageTest
 
                 Session session = stream.getSession();
                 // Since it's unidirectional, no need to pass the listener
-                session.syn(new SynInfo(new Headers(), false, true, stream.getId(), (byte)0), null, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
+                session.syn(new SynInfo(new Headers(), false, (byte)0), null, 0, TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
                 {
                     @Override
                     public void completed(Stream pushStream)
