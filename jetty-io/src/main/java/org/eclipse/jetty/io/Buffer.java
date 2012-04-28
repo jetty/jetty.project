@@ -24,7 +24,7 @@ import java.io.OutputStream;
  * This is a byte buffer that is designed to work like a FIFO for bytes. Puts and Gets operate on different
  * pointers into the buffer and the valid _content of the buffer is always between the getIndex and the putIndex.
  * 
- * This buffer interface is designed to be similar, but not dependant on the java.nio buffers, which may
+ * This buffer interface is designed to be similar, but not dependent on the java.nio buffers, which may
  * be used to back an implementation of this Buffer. The main difference is that NIO buffer after a put have 
  * their valid _content before the position and a flip is required to access that data.
  *
@@ -56,14 +56,14 @@ public interface Buffer extends Cloneable
     byte[] asArray();
     
     /** 
-     * Get the unerlying buffer. If this buffer wraps a backing buffer.
+     * Get the underlying buffer. If this buffer wraps a backing buffer.
      * @return The root backing buffer or this if there is no backing buffer;
      */
     Buffer buffer();
     
     /**
      * 
-     * @return a non volitile version of this <code>Buffer</code> value
+     * @return a non volatile version of this <code>Buffer</code> value
      */
     Buffer asNonVolatileBuffer();
 

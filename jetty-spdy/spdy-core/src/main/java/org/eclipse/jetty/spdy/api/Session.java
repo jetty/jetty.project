@@ -75,7 +75,7 @@ public interface Session
      * @see #syn(SynInfo, StreamFrameListener, long, TimeUnit, Handler)
      */
     public Future<Stream> syn(SynInfo synInfo, StreamFrameListener listener);
-
+    
     /**
      * <p>Sends asynchronously a SYN_FRAME to create a new {@link Stream SPDY stream}.</p>
      * <p>Callers may pass a non-null completion handler to be notified of when the
@@ -90,6 +90,7 @@ public interface Session
      */
     public void syn(SynInfo synInfo, StreamFrameListener listener, long timeout, TimeUnit unit, Handler<Stream> handler);
 
+    
     /**
      * <p>Sends asynchronously a RST_STREAM to abort a stream.</p>
      * <p>Callers may use the returned future to wait for the reset to be sent.</p>

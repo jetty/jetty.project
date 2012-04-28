@@ -451,7 +451,7 @@ public class FlowControlTest extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    private void expectException(Class<? extends Exception> exception, Callable command)
+    private void expectException(Class<? extends Exception> exception, Callable<DataInfo> command)
     {
         try
         {
