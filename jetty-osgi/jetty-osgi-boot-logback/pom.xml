@@ -97,15 +97,18 @@
                 <Bundle-Name>Jetty-OSGi-Logback Integration</Bundle-Name>
                 <Fragment-Host>org.eclipse.jetty.osgi.boot</Fragment-Host>
                 <Import-Package>
-ch.qos.logback.classic,ch.qos.logback.classic.joran,
-ch.qos.logback.core,ch.qos.logback.core.joran,
-ch.qos.logback.core.joran.spi,ch.qos.logback.core.spi,
-ch.qos.logback.core.util,ch.qos.logback.access.jetty.v7;resolution:=optional,
-ch.qos.logback.access.jetty;resolution:=optional,org.apache.commons.logging;resolution:=optional,
+ch.qos.logback.classic;version="[0.9,1.1)",
+ch.qos.logback.classic.joran;version="[0.9,1.1)",
+ch.qos.logback.core,ch.qos.logback.core.joran;version="[0.9,1.1)",
+ch.qos.logback.core.joran.spi;version="[0.9,1.1)",
+ch.qos.logback.core.spi;version="[0.9,1.1)",
+ch.qos.logback.core.util;version="[0.9,1.1)",
+ch.qos.logback.access.jetty.v7;version="[0.9,1.1)";resolution:=optional,
+ch.qos.logback.access.jetty;version="[0.9,1.1)";resolution:=optional,
+org.apache.commons.logging;resolution:=optional,
 org.apache.log4j;resolution:=optional,
 org.osgi.framework,
-org.slf4j,
-*
+org.slf4j
                 </Import-Package>
                 <_nouses>true</_nouses>
               </instructions>
