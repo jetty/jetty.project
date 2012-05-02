@@ -369,10 +369,6 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (!isTempWorkDirectory(tmpDir))
             {
                 tmpDir.deleteOnExit();
-                //TODO why is this here?
-                File sentinel = new File(tmpDir, ".active");
-                if(!sentinel.exists())
-                    sentinel.mkdir();
             }
 
             if(LOG.isDebugEnabled())
@@ -448,24 +444,32 @@ public class WebInfConfiguration extends AbstractConfiguration
                 }
                 else
                 {
+                    //Use a sentinel file that will exist only whilst the extraction is taking place.
+                    //This will help us detect interrupted extractions.
+                    File extractionLock = new File (context.getTempDirectory(), ".extract_lock");
+                   
                     if (!extractedWebAppDir.exists())
                     {
                         //it hasn't been extracted before so extract it
+                        extractionLock.createNewFile();  
                         extractedWebAppDir.mkdir();
-                        LOG.info("Extract " + web_app + " to " + extractedWebAppDir);
+                        LOG.info("Extract " + web_app + " to " + extractedWebAppDir);                                     
                         Resource jar_web_app = JarResource.newJarResource(web_app);
                         jar_web_app.copyTo(extractedWebAppDir);
+                        extractionLock.delete();
                     }
                     else
                     {
-                        //only extract if the war file is newer
-                        if (web_app.lastModified() > extractedWebAppDir.lastModified())
+                        //only extract if the war file is newer, or a .extract_lock file is left behind meaning a possible partial extraction
+                        if (web_app.lastModified() > extractedWebAppDir.lastModified() || extractionLock.exists())
                         {
+                            extractionLock.createNewFile();
                             IO.delete(extractedWebAppDir);
                             extractedWebAppDir.mkdir();
                             LOG.info("Extract " + web_app + " to " + extractedWebAppDir);
                             Resource jar_web_app = JarResource.newJarResource(web_app);
                             jar_web_app.copyTo(extractedWebAppDir);
+                            extractionLock.delete();
                         }
                     }
                 } 
