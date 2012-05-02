@@ -11,7 +11,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SslConnection;
@@ -46,15 +46,14 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     }
 
     @Override
-    protected SelectableConnection newConnection(SocketChannel channel, SelectableEndPoint endpoint)
+    protected AbstractAsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
         SSLEngine engine = __sslCtxFactory.newSslEngine();
         engine.setUseClientMode(false);
         SslConnection connection = new SslConnection(engine,endpoint);
 
-        SelectableConnection delegate = super.newConnection(channel,connection.getAppEndPoint());
+        AbstractAsyncConnection delegate = super.newConnection(channel,connection.getAppEndPoint());
         connection.setAppConnection(delegate);
-        connection.getAppEndPoint().setReadInterested(endpoint.isReadInterested());
         return connection;
     }
 
@@ -73,12 +72,6 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
         // SSL does not do half closes
     }
 
-    @Override
-    public void testBlockIn() throws Exception
-    {
-        super.testBlockIn();
-    }
-    
     
     @Test
     public void testTcpClose() throws Exception

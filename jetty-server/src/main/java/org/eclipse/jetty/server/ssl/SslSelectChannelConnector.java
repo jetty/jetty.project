@@ -542,13 +542,13 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
 
     /* ------------------------------------------------------------------------------- */
     @Override
-    protected Connection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
+    protected AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
         try
         {
             SSLEngine engine = createSSLEngine(channel);
             SslConnection connection = newSslConnection(endpoint, engine);
-            Connection delegate = newPlainConnection(channel, connection.getAppEndPoint());
+            AsyncConnection delegate = newPlainConnection(channel, connection.getAppEndPoint());
             connection.getAppEndPoint().setConnection(delegate);
             connection.setAllowRenegotiate(_sslContextFactory.isAllowRenegotiate());
             return connection;
@@ -559,7 +559,7 @@ public class SslSelectChannelConnector extends SelectChannelConnector implements
         }
     }
 
-    protected Connection newPlainConnection(SocketChannel channel, AsyncEndPoint endPoint)
+    protected AsyncConnection newPlainConnection(SocketChannel channel, AsyncEndPoint endPoint)
     {
         return super.newConnection(channel, endPoint);
     }

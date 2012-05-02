@@ -25,19 +25,32 @@ import java.nio.ByteBuffer;
  */
 public interface EndPoint
 {
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
+     * if this <code>EndPoint</code> does not represent a network connection.
+     */
+    InetSocketAddress getLocalAddress();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The remote Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
+     * if this <code>EndPoint</code> does not represent a network connection.
+     */
+    InetSocketAddress getRemoteAddress();
+
+    /* ------------------------------------------------------------ */
+    boolean isOpen();
+    
+    /* ------------------------------------------------------------ */
+    long getCreatedTimeStamp();
+    
     /**
      * Shutdown any backing output stream associated with the endpoint
      */
     void shutdownOutput() throws IOException;
 
     boolean isOutputShutdown();
-
-    /**
-     * Shutdown any backing input stream associated with the endpoint
-     */
-    void shutdownInput() throws IOException;
-
-    boolean isInputShutdown();
 
     /**
      * Close any backing stream associated with the endpoint
@@ -68,38 +81,16 @@ public interface EndPoint
      */
     int flush(ByteBuffer... buffer) throws IOException;
     
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
-     */
-    InetSocketAddress getLocalAddress();
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The remote Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
-     */
-    InetSocketAddress getRemoteAddress();
-
-    /* ------------------------------------------------------------ */
-    boolean isOpen();
-
     /* ------------------------------------------------------------ */
     /**
      * @return The underlying transport object (socket, channel, etc.)
      */
     Object getTransport();
 
-
     /* ------------------------------------------------------------ */
     /** Get the max idle time in ms.
      * <p>The max idle time is the time the endpoint can be idle before
-     * extraordinary handling takes place.  This loosely corresponds to
-     * the {@link java.net.Socket#getSoTimeout()} for blocking connections,
-     * but {@link AsyncEndPoint} implementations must use other mechanisms
-     * to implement the max idle time.
+     * extraordinary handling takes place.  
      * @return the max idle time in ms or if ms <= 0 implies an infinite timeout
      */
     int getMaxIdleTime();

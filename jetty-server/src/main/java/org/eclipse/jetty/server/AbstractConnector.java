@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.Buffers;
 import org.eclipse.jetty.io.Buffers.Type;
-import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.component.AggregateLifeCycle;
@@ -1167,7 +1167,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
-    protected void connectionOpened(Connection connection)
+    protected void connectionOpened(AsyncConnection connection)
     {
         if (_statsStartedAt.get() == -1)
             return;
@@ -1176,13 +1176,13 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
     }
 
     /* ------------------------------------------------------------ */
-    protected void connectionUpgraded(Connection oldConnection, Connection newConnection)
+    protected void connectionUpgraded(AsyncConnection oldConnection, AsyncConnection newConnection)
     {
         _requestStats.set((oldConnection instanceof HttpConnection)?((HttpConnection)oldConnection).getHttpChannel().getRequests():0);
     }
 
     /* ------------------------------------------------------------ */
-    protected void connectionClosed(Connection connection)
+    protected void connectionClosed(AsyncConnection connection)
     {
         if (_statsStartedAt.get() == -1)
             return;

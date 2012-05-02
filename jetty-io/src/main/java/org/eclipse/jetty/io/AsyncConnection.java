@@ -14,17 +14,15 @@
 package org.eclipse.jetty.io;
 
 
-
-public interface Connection 
+public interface AsyncConnection 
 {
-    EndPoint getEndPoint();
+    AsyncEndPoint getEndPoint();
     
-    int getMaxIdleTime();
+    IOFuture scheduleOnReadable();
+    
+    void onReadable();
+    void onInputShutdown();
+    void onClose();
+    void onIdleExpired(long idleForMs);
 
-    /**
-     * @return the timestamp at which the connection was created
-     */
-    long getCreatedTimeStamp();
-
-    boolean isIdle();
 }

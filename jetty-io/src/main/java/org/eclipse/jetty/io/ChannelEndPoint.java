@@ -32,56 +32,24 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>Holds the channel and socket for an NIO endpoint.
  *
  */
-public class ChannelEndPoint implements EndPoint
+public class ChannelEndPoint extends AbstractEndPoint
 {
     private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
 
     private final ByteChannel _channel;
     private final Socket _socket;
-    private final InetSocketAddress _local;
-    private final InetSocketAddress _remote;
-    private volatile int _maxIdleTime;
     private volatile boolean _ishut;
     private volatile boolean _oshut;
 
-    public ChannelEndPoint(ByteChannel channel) throws IOException
+    public ChannelEndPoint(SocketChannel channel) throws IOException
     {
-        super();
-        this._channel = channel;
-        _socket=(channel instanceof SocketChannel)?((SocketChannel)channel).socket():null;
-        if (_socket!=null)
-        {
-            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
-            _maxIdleTime=_socket.getSoTimeout();
-        }
-        else
-        {
-            _local=_remote=null;
-        }
-    }
+        super((InetSocketAddress)channel.socket().getLocalSocketAddress(),
+              (InetSocketAddress)channel.socket().getRemoteSocketAddress() );
 
-    protected ChannelEndPoint(ByteChannel channel, int maxIdleTime) throws IOException
-    {
         this._channel = channel;
-        _maxIdleTime=maxIdleTime;
-        _socket=(channel instanceof SocketChannel)?((SocketChannel)channel).socket():null;
-        if (_socket!=null)
-        {
-            _local=(InetSocketAddress)_socket.getLocalSocketAddress();
-            _remote=(InetSocketAddress)_socket.getRemoteSocketAddress();
-            _socket.setSoTimeout(_maxIdleTime);
-        }
-        else
-        {
-            _local=_remote=null;
-        }
-    }
-
-    
-    public boolean isBlocking()
-    {
-        return  !(_channel instanceof SelectableChannel) || ((SelectableChannel)_channel).isBlocking();
+        _socket=channel.socket();
+        setMaxIdleTime(_socket.getSoTimeout());
+        _socket.setSoTimeout(0);
     }
 
     /*
@@ -131,7 +99,6 @@ public class ChannelEndPoint implements EndPoint
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
-    @Override
     public void shutdownInput() throws IOException
     {
         shutdownChannelInput();
@@ -183,7 +150,6 @@ public class ChannelEndPoint implements EndPoint
         return _oshut || !_channel.isOpen() || _socket != null && _socket.isOutputShutdown();
     }
 
-    @Override
     public boolean isInputShutdown()
     {
         return _ishut || !_channel.isOpen() || _socket != null && _socket.isInputShutdown();
@@ -269,20 +235,6 @@ public class ChannelEndPoint implements EndPoint
 
     /* ------------------------------------------------------------ */
     @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return _local;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return _remote;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
     public Object getTransport()
     {
         return _channel;
@@ -292,25 +244,6 @@ public class ChannelEndPoint implements EndPoint
     public Socket getSocket()
     {
         return _socket;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public int getMaxIdleTime()
-    {
-        return _maxIdleTime;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.io.bio.StreamEndPoint#setMaxIdleTime(int)
-     */
-    @Override
-    public void setMaxIdleTime(int timeMs) throws IOException
-    {
-        //if (_socket!=null && timeMs!=_maxIdleTime)
-        //    _socket.setSoTimeout(timeMs>0?timeMs:0);
-        _maxIdleTime=timeMs;
     }
     
 }

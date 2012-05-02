@@ -21,7 +21,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SelectableEndPoint;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -350,7 +350,7 @@ public class ConnectHandler extends HandlerWrapper
     {
     }
 
-    private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, Connection connection) throws IOException
+    private void upgradeConnection(HttpServletRequest request, HttpServletResponse response, AsyncConnection connection) throws IOException
     {
         // Set the new connection as request attribute and change the status to 101
         // so that Jetty understands that it has to upgrade the connection
@@ -428,7 +428,7 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        public Connection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
+        public AsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint, Object attachment)
         {
             ProxyToServerConnection proxyToServer = (ProxyToServerConnection)attachment;
             proxyToServer.setTimeStamp(System.currentTimeMillis());
@@ -450,19 +450,19 @@ public class ConnectHandler extends HandlerWrapper
         }
 
         @Override
-        protected void endPointClosed(SelectableEndPoint endpoint)
+        protected void endPointClosed(AsyncEndPoint endpoint)
         {
         }
 
         @Override
-        protected void endPointUpgraded(ConnectedEndPoint endpoint, Connection oldConnection)
+        protected void endPointUpgraded(ConnectedEndPoint endpoint, AsyncConnection oldConnection)
         {
         }
     }
 
     
     
-    public class ProxyToServerConnection implements Connection
+    public class ProxyToServerConnection implements AsyncConnection
     {
         private final CountDownLatch _ready = new CountDownLatch(1);
         private final ByteBuffer _buffer = new IndirectNIOBuffer(1024);
@@ -487,7 +487,7 @@ public class ConnectHandler extends HandlerWrapper
             return builder.append(")").toString();
         }
 
-        public Connection handle() throws IOException
+        public AsyncConnection handle() throws IOException
         {
             _logger.debug("{}: begin reading from server", this);
             try
@@ -677,7 +677,7 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
-    public class ClientToProxyConnection implements Connection
+    public class ClientToProxyConnection implements AsyncConnection
     {
         private final ByteBuffer _buffer = new IndirectNIOBuffer(1024);
         private final ConcurrentMap<String, Object> _context;
@@ -704,7 +704,7 @@ public class ConnectHandler extends HandlerWrapper
             return builder.append(")").toString();
         }
 
-        public Connection handle() throws IOException
+        public AsyncConnection handle() throws IOException
         {
             _logger.debug("{}: begin reading from client", this);
             try

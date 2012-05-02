@@ -39,7 +39,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.UncheckedPrintWriter;
@@ -75,7 +75,7 @@ public abstract class HttpChannel
     private int _requests;
 
     private final Server _server;
-    private final Connection _connection;
+    private final AsyncConnection _connection;
     private final HttpURI _uri;
 
     private final HttpFields _requestFields;
@@ -111,7 +111,7 @@ public abstract class HttpChannel
     /** Constructor
      *
      */
-    public HttpChannel(Server server,Connection connection)
+    public HttpChannel(Server server,AsyncConnection connection)
     {
         _server = server;
         _connection = connection;
@@ -124,7 +124,7 @@ public abstract class HttpChannel
     }
     
     /* ------------------------------------------------------------ */
-    public Connection getConnection()
+    public AsyncConnection getConnection()
     {
         return _connection;
     }
@@ -452,7 +452,7 @@ public abstract class HttpChannel
     
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.io.Connection#isSuspended()
+     * @see org.eclipse.jetty.io.AsyncConnection#isSuspended()
      */
     public boolean isSuspended()
     {

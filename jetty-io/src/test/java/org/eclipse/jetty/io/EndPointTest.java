@@ -36,10 +36,8 @@ public abstract class EndPointTest<T extends EndPoint>
 
         // Client and server are open
         assertTrue(c.client.isOpen());
-        assertFalse(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
         assertFalse(c.server.isOutputShutdown());
         
         // Server sends response and closes output
@@ -48,10 +46,8 @@ public abstract class EndPointTest<T extends EndPoint>
         
         // client server are open, server is oshut
         assertTrue(c.client.isOpen());
-        assertFalse(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
         
         // Client reads response
@@ -62,10 +58,8 @@ public abstract class EndPointTest<T extends EndPoint>
 
         // Client and server are open, server is oshut
         assertTrue(c.client.isOpen());
-        assertFalse(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
         
         // Client reads -1
@@ -75,10 +69,8 @@ public abstract class EndPointTest<T extends EndPoint>
 
         // Client and server are open, server is oshut, client is ishut
         assertTrue(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
         
         // Client shutsdown output, which is a close because already ishut
@@ -86,10 +78,8 @@ public abstract class EndPointTest<T extends EndPoint>
 
         // Client is closed. Server is open and oshut
         assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
         assertTrue(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
 
         // Server reads close
@@ -99,10 +89,8 @@ public abstract class EndPointTest<T extends EndPoint>
 
         // Client and Server are closed
         assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
         assertTrue(c.client.isOutputShutdown());
         assertFalse(c.server.isOpen());
-        assertTrue(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());
         
     }
@@ -121,38 +109,30 @@ public abstract class EndPointTest<T extends EndPoint>
         assertEquals("request",BufferUtil.toString(buffer));
 
         assertTrue(c.client.isOpen());
-        assertFalse(c.client.isInputShutdown());
         assertFalse(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
         assertFalse(c.server.isOutputShutdown());        
         
         c.client.close();
 
         assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
         assertTrue(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertFalse(c.server.isInputShutdown());
         assertFalse(c.server.isOutputShutdown());  
         
         len = c.server.fill(buffer);
         assertEquals(-1,len);
 
         assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
         assertTrue(c.client.isOutputShutdown());
         assertTrue(c.server.isOpen());
-        assertTrue(c.server.isInputShutdown());
         assertFalse(c.server.isOutputShutdown());  
         
         c.server.shutdownOutput();
 
         assertFalse(c.client.isOpen());
-        assertTrue(c.client.isInputShutdown());
         assertTrue(c.client.isOutputShutdown());
         assertFalse(c.server.isOpen());
-        assertTrue(c.server.isInputShutdown());
         assertTrue(c.server.isOutputShutdown());  
     }   
     

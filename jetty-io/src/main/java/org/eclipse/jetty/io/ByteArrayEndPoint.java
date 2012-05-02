@@ -20,20 +20,17 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 
 
-
 /* ------------------------------------------------------------ */
 /** ByteArrayEndPoint.
  *
- *
  */
-public class ByteArrayEndPoint implements EndPoint
+public class ByteArrayEndPoint extends AbstractEndPoint
 {
     protected byte[] _inBytes;
     protected ByteBuffer _in;
     protected ByteBuffer _out;
     protected boolean _closed;
     protected boolean _growOutput;
-    protected int _maxIdleTime;
 
     /* ------------------------------------------------------------ */
     /**
@@ -41,6 +38,7 @@ public class ByteArrayEndPoint implements EndPoint
      */
     public ByteArrayEndPoint()
     {
+        super(null,null);
     }
 
     /* ------------------------------------------------------------ */
@@ -49,6 +47,7 @@ public class ByteArrayEndPoint implements EndPoint
      */
     public ByteArrayEndPoint(byte[] input, int outputSize)
     {
+        super(null,null);
         _inBytes=input;
         _in=ByteBuffer.wrap(input);
         _out=ByteBuffer.allocate(outputSize);
@@ -102,16 +101,6 @@ public class ByteArrayEndPoint implements EndPoint
 
     /* ------------------------------------------------------------ */
     /*
-     *  @see org.eclipse.jetty.io.EndPoint#isInputShutdown()
-     */
-    @Override
-    public boolean isInputShutdown()
-    {
-        return _closed;
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
      *  @see org.eclipse.jetty.io.EndPoint#isOutputShutdown()
      */
     @Override
@@ -126,16 +115,6 @@ public class ByteArrayEndPoint implements EndPoint
      */
     @Override
     public void shutdownOutput() throws IOException
-    {
-        close();
-    }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.io.EndPoint#shutdownInput()
-     */
-    @Override
-    public void shutdownInput() throws IOException
     {
         close();
     }
@@ -160,7 +139,7 @@ public class ByteArrayEndPoint implements EndPoint
         if (_closed)
             throw new IOException("CLOSED");
         if (_in!=null)
-            return BufferUtil.flipPutFlip(_in,buffer);
+            return BufferUtil.append(_in,buffer);
         
         return 0;
     }
@@ -218,20 +197,6 @@ public class ByteArrayEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return null;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return null;
-    }
-
-    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#getConnection()
      */
@@ -258,27 +223,6 @@ public class ByteArrayEndPoint implements EndPoint
     {
         _growOutput=growOutput;
     }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.io.EndPoint#getMaxIdleTime()
-     */
-    @Override
-    public int getMaxIdleTime()
-    {
-        return _maxIdleTime;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.io.EndPoint#setMaxIdleTime(int)
-     */
-    @Override
-    public void setMaxIdleTime(int timeMs) throws IOException
-    {
-        _maxIdleTime=timeMs;
-    }
-
 
 
 }

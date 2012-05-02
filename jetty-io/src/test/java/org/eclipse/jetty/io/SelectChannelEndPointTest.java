@@ -19,10 +19,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.SelectableConnection;
+import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
@@ -36,7 +37,7 @@ import org.junit.Test;
 
 public class SelectChannelEndPointTest
 {
-    protected SelectableEndPoint _lastEndp;
+    protected volatile AsyncEndPoint _lastEndp;
     protected ServerSocketChannel _connector;
     protected QueuedThreadPool _threadPool = new QueuedThreadPool();
     protected SelectorManager _manager = new SelectorManager()
@@ -58,22 +59,22 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        protected void endPointUpgraded(SelectChannelEndPoint endpoint, Connection oldConnection)
+        protected void endPointUpgraded(SelectChannelEndPoint endpoint, AsyncConnection oldConnection)
         {
         }
 
         @Override
-        public SelectableConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
+        public AbstractAsyncConnection newConnection(SocketChannel channel, SelectChannelEndPoint endpoint, Object attachment)
         {
-            return SelectChannelEndPointTest.this.newConnection(channel,endpoint);
+            AbstractAsyncConnection connection = SelectChannelEndPointTest.this.newConnection(channel,endpoint);
+            return connection;
         }
 
         @Override
         protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key) throws IOException
         {
             SelectChannelEndPoint endp = new SelectChannelEndPoint(channel,selectSet,key,2000);
-            endp.setReadInterested(true);
-            endp.setSelectableConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
+            endp.setAsyncConnection(selectSet.getManager().newConnection(channel,endp, key.attachment()));
             _lastEndp=endp;
             return endp;
         }
@@ -81,10 +82,13 @@ public class SelectChannelEndPointTest
 
     // Must be volatile or the test may fail spuriously
     private volatile int _blockAt=0;
+    private volatile int _writeCount=1;
 
     @Before
     public void startManager() throws Exception
     {
+        _writeCount=1;
+        _lastEndp=null;
         _connector = ServerSocketChannel.open();
         _connector.socket().bind(null);
         _threadPool.start();
@@ -104,26 +108,29 @@ public class SelectChannelEndPointTest
         return new Socket(_connector.socket().getInetAddress(),_connector.socket().getLocalPort());
     }
 
-    protected SelectableConnection newConnection(SocketChannel channel, SelectableEndPoint endpoint)
+    protected AbstractAsyncConnection newConnection(SocketChannel channel, AsyncEndPoint endpoint)
     {
-        return new TestConnection(endpoint);
+        AbstractAsyncConnection connection = new TestConnection(endpoint);
+        connection.scheduleOnReadable();
+        return connection;
     }
 
-    public class TestConnection extends SelectableConnection
+    public class TestConnection extends AbstractAsyncConnection
     {
         ByteBuffer _in = BufferUtil.allocate(32*1024);
         ByteBuffer _out = BufferUtil.allocate(32*1024);
 
-        public TestConnection(SelectableEndPoint endp)
+        public TestConnection(AsyncEndPoint endp)
         {
             super(endp);
         }
 
         @Override
-        public void doRead()
+        public void onReadable()
         {
             try
             {
+                _endp.setCheckForIdle(false);
                 boolean progress=true;
                 while(progress)
                 {
@@ -132,37 +139,64 @@ public class SelectChannelEndPointTest
                     // Fill the input buffer with everything available
                     if (!BufferUtil.isFull(_in))
                         progress|=_endp.fill(_in)>0;
+                        
                     // If the tests wants to block, then block
-                    while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt && blockReadable())
-                        progress|=_endp.fill(_in)>0;
-
-                    // Copy to the out buffer
-                    if (BufferUtil.hasContent(_in) && BufferUtil.flipPutFlip(_in,_out)>0)
-                        progress=true;
-                    
-                    // Try non blocking write
-                    if (BufferUtil.hasContent(_out) && _endp.flush(_out)>0)
-                        progress=true;
-                    
-                    // Try blocking write
-                    while (!_endp.isOutputShutdown() && BufferUtil.hasContent(_out) && blockWriteable())
+                    while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
                     {
-                        if (_endp.flush(_out)>0)
-                            progress=true;
+                        _endp.read().await();
+                        progress|=_endp.fill(_in)>0;
+                    }
+                        
+                    // Copy to the out buffer
+                    if (BufferUtil.hasContent(_in) && BufferUtil.append(_in,_out)>0)
+                        progress=true;
+                    
+                    // Blocking writes
+                    if (BufferUtil.hasContent(_out))
+                    {
+                        ByteBuffer out=_out.duplicate();
+                        BufferUtil.clear(_out);
+                        for (int i=0;i<_writeCount;i++)
+                        {
+                            _endp.write(out.asReadOnlyBuffer()).await();
+                        }
+                        progress=true;
                     }
                 }
             }
             catch(ClosedChannelException e)
             {
-                System.err.println(e);
+                // System.err.println(e);
             }
-            catch(IOException e)
+            catch(ExecutionException e)
+            {
+                // Timeout does not close, so echo exception then shutdown
+                try
+                {
+                    // System.err.println("Execution Exception! "+e);
+                    _endp.write(BufferUtil.toBuffer("Timeout: "+BufferUtil.toString(_in))).await();
+                    _endp.shutdownOutput();
+                }
+                catch(Exception e2)
+                {
+                    e2.printStackTrace();
+                }
+            }
+            catch(InterruptedException e)
+            {
+                // System.err.println(e);
+            }
+            catch(Exception e)
             {
                 e.printStackTrace();
             }
             finally
             {
-                _endp.setReadInterested(true);
+                if (_endp.isOpen())
+                {
+                    _endp.setCheckForIdle(true);
+                    scheduleOnReadable();
+                }
             }
         }
 
@@ -185,12 +219,6 @@ public class SelectChannelEndPointTest
         public void onClose()
         {            
         }
-
-        @Override
-        public boolean isIdle()
-        {
-            return false;
-        }
         
         
     }
@@ -201,7 +229,7 @@ public class SelectChannelEndPointTest
     {
         Socket client = newClient();
 
-        client.setSoTimeout(500);
+        client.setSoTimeout(60000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
@@ -220,6 +248,7 @@ public class SelectChannelEndPointTest
         }
 
         // wait for read timeout
+        client.setSoTimeout(500);
         long start=System.currentTimeMillis();
         try
         {
@@ -310,7 +339,7 @@ public class SelectChannelEndPointTest
 
 
     @Test
-    public void testBlockIn() throws Exception
+    public void testBlockRead() throws Exception
     {
         Socket client = newClient();
 
@@ -330,6 +359,8 @@ public class SelectChannelEndPointTest
         clientOutputStream.write("12345678".getBytes("UTF-8"));
         clientOutputStream.flush();
 
+        while(_lastEndp==null);
+        
         _lastEndp.setMaxIdleTime(10*specifiedTimeout);
         Thread.sleep(2 * specifiedTimeout);
         
@@ -405,7 +436,64 @@ public class SelectChannelEndPointTest
         assertFalse(_lastEndp.isOpen());
         
     }
+    
+    
+    @Test
+    public void testBlockedReadIdle() throws Exception
+    {
+        Socket client = newClient();
+        OutputStream clientOutputStream = client.getOutputStream();
+        
+        client.setSoTimeout(5000);
 
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.register(server);
+        
+        // Write client to server
+        clientOutputStream.write("HelloWorld".getBytes("UTF-8"));
+
+        // Verify echo server to client
+        for (char c : "HelloWorld".toCharArray())
+        {
+            int b = client.getInputStream().read();
+            assertTrue(b>0);
+            assertEquals(c,(char)b);
+        }
+
+        // Set Max idle
+        _lastEndp.setMaxIdleTime(500);
+        
+        // Write 8 and cause block waiting for 10
+        _blockAt=10;
+        clientOutputStream.write("12345678".getBytes("UTF-8"));
+        clientOutputStream.flush();
+        
+        // read until idle shutdown received
+        long start=System.currentTimeMillis();
+        int b=client.getInputStream().read();
+        assertEquals('T',b);
+        long idle=System.currentTimeMillis()-start;
+        assertTrue(idle>400);
+        assertTrue(idle<2000);
+
+        for (char c : "imeout: 12345678".toCharArray())
+        {
+            b = client.getInputStream().read();
+            assertTrue(b>0);
+            assertEquals(c,(char)b);
+        }
+        
+        // But endpoint is still open.
+        assertTrue(_lastEndp.isOpen());
+       
+        // Wait for another idle callback
+        Thread.sleep(2000);
+        // endpoint is closed.
+        
+        assertFalse(_lastEndp.isOpen());
+    }
 
 
     @Test
@@ -478,4 +566,51 @@ public class SelectChannelEndPointTest
 
         assertTrue(latch.await(100,TimeUnit.SECONDS));
     }
+    
+
+    @Test
+    public void testWriteBlock() throws Exception
+    {
+        Socket client = newClient();
+
+        client.setSoTimeout(10000);
+
+        SocketChannel server = _connector.accept();
+        server.configureBlocking(false);
+
+        _manager.register(server);
+
+        // Write client to server
+        _writeCount=10000;
+        String data="Now is the time for all good men to come to the aid of the party";
+        client.getOutputStream().write(data.getBytes("UTF-8"));
+
+        for (int i=0;i<_writeCount;i++)
+        {
+            // Verify echo server to client
+            for (int j=0;j<data.length();j++)
+            {
+                char c=data.charAt(j);
+                int b = client.getInputStream().read();
+                assertTrue(b>0);
+                assertEquals("test-"+i+"/"+j,c,(char)b);
+            }
+            if (i==0)
+                _lastEndp.setMaxIdleTime(60000);
+            if (i%100==0)
+                TimeUnit.MILLISECONDS.sleep(10);
+        }
+
+        
+        client.close();
+
+        int i=0;
+        while (server.isOpen())
+        {
+            assert(i++<10);
+            Thread.sleep(10);
+        }
+
+    }
+
 }

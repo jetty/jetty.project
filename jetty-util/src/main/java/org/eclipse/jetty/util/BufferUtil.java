@@ -271,7 +271,7 @@ public class BufferUtil
      * @param to Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
      * @return number of bytes moved
      */
-    public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
+    public static int append(ByteBuffer from, ByteBuffer to)
     {
         int pos= flipToFill(to);
         try
@@ -636,6 +636,9 @@ public class BufferUtil
             return "null";
         
         StringBuilder buf = new StringBuilder();
+        buf.append(buffer.getClass().getSimpleName());
+        buf.append("@");
+        buf.append(Integer.toHexString(buffer.hashCode()));
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");

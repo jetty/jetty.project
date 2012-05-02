@@ -59,7 +59,7 @@ public class AbstractConnectorTest
         _server = new Server();
         _connector = new SelectChannelConnector()
         {
-            public void connectionClosed(Connection connection)
+            public void connectionClosed(AsyncConnection connection)
             {
                 super.connectionClosed(connection);
                 _closed.countDown();

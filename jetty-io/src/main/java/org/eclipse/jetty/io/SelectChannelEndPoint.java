@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,16 +26,18 @@ import org.eclipse.jetty.io.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout.Task;
+import static org.eclipse.jetty.io.CompleteIOFuture.COMPLETE;
 
 /* ------------------------------------------------------------ */
 /**
  * An Endpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements SelectableEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPoint
 {
     public static final Logger LOG=Log.getLogger(SelectChannelEndPoint.class);
-
+    
     private final Lock _lock = new ReentrantLock();
+    
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
     private  SelectionKey _key;
@@ -52,20 +55,78 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
 
     private volatile boolean _idlecheck;
     private volatile long _lastNotIdleTimestamp;
-    private volatile SelectableConnection _connection;
+    private volatile AbstractAsyncConnection _connection;
+    
+    private RecycledIOFuture _readFuture = new RecycledIOFuture(true,_lock)
+    {
+        @Override
+        protected void dispatch(Runnable task)
+        {
+            _manager.dispatch(task);
+        }
+        
+        @Override
+        public void cancel()
+        {
+            _lock.lock();
+            try
+            {
+                _interestOps=_interestOps&~SelectionKey.OP_READ;
+                updateKey();
+                cancelled();
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+    };
+
+    private ByteBuffer[] _writeBuffers;
+    private RecycledIOFuture _writeFuture = new RecycledIOFuture(true,_lock)
+    {
+        @Override
+        protected void dispatch(Runnable task)
+        {
+            _manager.dispatch(task);
+        }
+        
+        @Override
+        public void cancel()
+        {
+            _lock.lock();
+            try
+            {
+                _interestOps=_interestOps&~SelectionKey.OP_WRITE;
+                updateKey();
+                cancelled();
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+    };
     
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
         throws IOException
     {
-        super(channel, maxIdleTime);
-
+        super(channel);
         _manager = selectSet.getManager();
         _selectSet = selectSet;
         _open=true;
         _key = key;
 
+        setMaxIdleTime(maxIdleTime);
         setCheckForIdle(true);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public AsyncConnection getAsyncConnection()
+    {
+        return _connection;
     }
 
     /* ------------------------------------------------------------ */
@@ -85,9 +146,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
 
 
     /* ------------------------------------------------------------ */
-    public void setSelectableConnection(SelectableConnection connection)
+    public void setAsyncConnection(AbstractAsyncConnection connection)
     {
-        Connection old=getSelectableConnection();
+        AsyncConnection old=getAsyncConnection();
         _connection=connection;
         if (old!=null && old!=connection)
             _manager.endPointUpgraded(this,old);
@@ -95,7 +156,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
     
     /* ------------------------------------------------------------ */
     @Override
-    public long getLastNotIdleTimestamp()
+    public long getActivityTimestamp()
     {
         return _lastNotIdleTimestamp;
     }
@@ -104,7 +165,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
     /** Called by selectSet to schedule handling
      *
      */
-    public void onSelected() throws IOException
+    public void onSelected()
     {
         _lock.lock();
         _selected=true;
@@ -113,7 +174,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
             // If there is no key, then do nothing
             if (_key == null || !_key.isValid())
             {
-                this.notifyAll();
+                // TODO wake ups?
                 return;
             }
             
@@ -122,22 +183,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
             _interestOps=0;
 
             if (can_read)
-            {
-                Runnable task=getSelectableConnection().onReadable();
-                if (task!=null)
-                    _manager.dispatch(task);
-            }
-            if (can_write)
-            {
-                Runnable task=getSelectableConnection().onWriteable();
-                if (task!=null)
-                    _manager.dispatch(task);
-            }
+                _readFuture.ready();
+            
+            if (can_write && _writeBuffers!=null)
+                completeWrite();
             
             if (isInputShutdown() && !_ishutCalled)
             {
                 _ishutCalled=true;
-                getSelectableConnection().onInputShutdown();
+                getAsyncConnection().onInputShutdown();
             }
         }
         finally
@@ -148,71 +202,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
         }
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isReadInterested()
-    {
-        _lock.lock();
-        try
-        {
-            return (_interestOps&SelectionKey.OP_READ)!=0;
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setReadInterested(boolean interested)
-    {
-        _lock.lock();
-        try
-        {
-            _interestOps=interested?(_interestOps|SelectionKey.OP_READ):(_interestOps&~SelectionKey.OP_READ);
-            if (!_selected)
-                updateKey();
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isWriteInterested()
-    {
-        _lock.lock();
-        try
-        {
-            return (_interestOps&SelectionKey.OP_READ)!=0;
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setWriteInterested(boolean interested)
-    {
-        _lock.lock();
-        try
-        {
-            _interestOps=interested?(_interestOps|SelectionKey.OP_WRITE):(_interestOps&~SelectionKey.OP_WRITE);
-            if (!_selected)
-                updateKey();
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
-    
-    
     /* ------------------------------------------------------------ */
     public void cancelTimeout(Task task)
     {
@@ -229,7 +219,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
     @Override
     public void setCheckForIdle(boolean check)
     {
-        _idlecheck=true;
+        _idlecheck=check;
     }
 
     /* ------------------------------------------------------------ */
@@ -246,9 +236,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
     }
 
     /* ------------------------------------------------------------ */
-    public void checkForIdle(long now)
-    {
-        if (_idlecheck)
+    public void checkForIdleOrReadWriteTimeout(long now)
+    {        
+        if (_idlecheck || !_readFuture.isComplete() || !_writeFuture.isComplete())
         {
             long idleTimestamp=_lastNotIdleTimestamp;
             long max_idle_time=getMaxIdleTime();
@@ -259,18 +249,24 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
 
                 if (idleForMs>max_idle_time)
                 {
-                    onIdleExpired(idleForMs);
-                    _lastNotIdleTimestamp=now;
+                    _lock.lock();
+                    try
+                    {
+                        if (_idlecheck)
+                            _connection.onIdleExpired(idleForMs);
+                        if (!_readFuture.isComplete())
+                            _readFuture.fail(new TimeoutException());
+                        if (!_writeFuture.isComplete())
+                            _writeFuture.fail(new TimeoutException());
+                    }
+                    finally
+                    {
+                        _lastNotIdleTimestamp=now;
+                        _lock.unlock();
+                    }
                 }
             }
         }
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onIdleExpired(long idleForMs)
-    {
-        getSelectableConnection().onIdleExpired(idleForMs);
     }
 
     /* ------------------------------------------------------------ */
@@ -283,6 +279,96 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
         return fill;
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public IOFuture read() throws IllegalStateException
+    {
+        _lock.lock();
+        try
+        {
+            if (!_readFuture.isComplete())
+                throw new IllegalStateException("previous read not complete");
+                
+            _readFuture.recycle();
+            _interestOps=_interestOps|SelectionKey.OP_READ;
+            updateKey();
+            
+            return _readFuture;
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+    
+   
+    /* ------------------------------------------------------------ */
+    @Override
+    public IOFuture write(ByteBuffer... buffers)
+    {
+        _lock.lock();
+        try
+        {
+            if (!_writeFuture.isComplete())
+                throw new IllegalStateException("previous write not complete");
+
+            flush(buffers);
+
+            // Are we complete?
+            for (ByteBuffer b : buffers)
+            {
+                if (b.hasRemaining())
+                {
+                    _writeBuffers=buffers;
+                    _writeFuture.recycle();
+                    _interestOps=_interestOps|SelectionKey.OP_WRITE;
+                    updateKey();
+                    return _writeFuture;
+                }
+            }
+            return COMPLETE;
+        }
+        catch(IOException e)
+        {
+            return new CompleteIOFuture(e);
+        } 
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    private void completeWrite()
+    {
+        try
+        {
+            flush(_writeBuffers);
+            
+            // Are we complete?
+            for (ByteBuffer b : _writeBuffers)
+            {
+                if (b.hasRemaining())
+                {
+                    _interestOps=_interestOps|SelectionKey.OP_WRITE;
+                    return;
+                }
+            }
+            // we are complete and ready
+            _writeFuture.ready();
+        }
+        catch(final IOException e)
+        {
+            _writeBuffers=null;
+            if (!_writeFuture.isComplete())
+                _writeFuture.fail(e);
+        }
+        
+
+    }
+
+    
+    
     /* ------------------------------------------------------------ */
     @Override
     public int flush(ByteBuffer... buffers) throws IOException
@@ -299,24 +385,27 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
      */
     private void updateKey()
     {
-        int current_ops=-1;
-        if (getChannel().isOpen())
+        if (!_selected)
         {
-            try
+            int current_ops=-1;
+            if (getChannel().isOpen())
             {
-                current_ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
+                try
+                {
+                    current_ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
+                }
+                catch(Exception e)
+                {
+                    _key=null;
+                    LOG.ignore(e);
+                }
             }
-            catch(Exception e)
+            if (_interestOps!=current_ops && !_changing)
             {
-                _key=null;
-                LOG.ignore(e);
+                _changing=true;
+                _selectSet.addChange(this);
+                _selectSet.wakeup();
             }
-        }
-        if (_interestOps!=current_ops && !_changing)
-        {
-            _changing=true;
-            _selectSet.addChange(this);
-            _selectSet.wakeup();
         }
     }
 
@@ -457,7 +546,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
                 isOutputShutdown(),
                 _interestOps,
                 keyString,
-                getSelectableConnection());
+                getAsyncConnection());
     }
 
     /* ------------------------------------------------------------ */
@@ -466,12 +555,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements Selectable
         return _selectSet;
     }
     
-    /* ------------------------------------------------------------ */
-    @Override
-    public SelectableConnection getSelectableConnection()
-    {
-        return _connection;
-    }
-
+    
 
 }

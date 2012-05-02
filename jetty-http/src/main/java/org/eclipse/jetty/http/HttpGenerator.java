@@ -232,7 +232,7 @@ public class HttpGenerator
                     return Result.NEED_BUFFER;
 
                 // Copy the content
-                _contentPrepared+=BufferUtil.flipPutFlip(content,buffer);
+                _contentPrepared+=BufferUtil.append(content,buffer);
 
                 // are we full?
                 if (BufferUtil.isFull(buffer))

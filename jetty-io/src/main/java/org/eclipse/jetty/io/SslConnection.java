@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.io;
 
+import static org.eclipse.jetty.io.CompleteIOFuture.COMPLETE;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -40,27 +42,62 @@ import org.eclipse.jetty.util.log.Logger;
  * it's source/sink of encrypted data.   It then provides {@link #getAppEndPoint()} to
  * expose a source/sink of unencrypted data to another connection (eg HttpConnection).
  */
-public class SslConnection extends SelectableConnection
+public class SslConnection extends AbstractAsyncConnection
 {
     static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.nio.ssl");
 
     private static final ByteBuffer __ZERO_BUFFER=BufferUtil.allocate(0);
 
     private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<SslBuffers>();
+    
+    private final Lock _lock = new ReentrantLock();
+    
+    private final RecycledIOFuture _appReadFuture = new RecycledIOFuture(true,_lock)
+    {
+        @Override
+        protected void dispatch(Runnable callback)
+        {
+            if (_appReadTask!=null)
+                throw new IllegalStateException();
+            _appReadTask=callback;
+        }   
+    };
+    
+
+    private IOFuture.Callback _writeable = new IOFuture.Callback()
+    {
+        @Override
+        public void onReady()
+        {
+            _appEndPoint.completeWrite();
+        }
+        
+        @Override
+        public void onFail(Throwable cause)
+        {
+            LOG.warn("FAILED: "+cause);
+        }
+    };
+    
+    private final RecycledIOFuture _appWriteFuture = new RecycledIOFuture(true,_lock);
+    
+    private Runnable _appReadTask;
     private final SSLEngine _engine;
     private final SSLSession _session;
-    private SelectableConnection _appConnection;
+    private AbstractAsyncConnection _appConnection;
     private final AppEndPoint _appEndPoint;
     private int _allocations;
     private SslBuffers _buffers;
     private ByteBuffer _inNet;
     private ByteBuffer _inApp;
     private ByteBuffer _outNet;
-    private SelectableEndPoint _endp;
+    private AsyncEndPoint _endp;
     private boolean _allowRenegotiate=true;
     private boolean _handshook;
-    private boolean _ishut;
+    private boolean _eofIn;
     private boolean _oshut;
+    private IOFuture _netReadFuture;
+    private IOFuture _netWriteFuture;
 
     /* ------------------------------------------------------------ */
     /* this is a half baked buffer pool
@@ -81,13 +118,13 @@ public class SslConnection extends SelectableConnection
     }
     
     /* ------------------------------------------------------------ */
-    public SslConnection(SSLEngine engine,SelectableEndPoint endp)
+    public SslConnection(SSLEngine engine,AsyncEndPoint endp)
     {
         this(engine,endp,System.currentTimeMillis());
     }
 
     /* ------------------------------------------------------------ */
-    public SslConnection(SSLEngine engine,SelectableEndPoint endp, long timeStamp)
+    public SslConnection(SSLEngine engine,AsyncEndPoint endp, long timeStamp)
     {
         super(endp);
         _engine=engine;
@@ -98,7 +135,7 @@ public class SslConnection extends SelectableConnection
 
 
     /* ------------------------------------------------------------ */
-    public void setAppConnection(SelectableConnection connection)
+    public void setAppConnection(AbstractAsyncConnection connection)
     {        
         _appConnection=connection;
     }
@@ -192,12 +229,7 @@ public class SslConnection extends SelectableConnection
             _lock.unlock();
         }
     }
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isIdle()
-    {
-        return _appConnection.isIdle();
-    }
+   
 
     /* ------------------------------------------------------------ */
     @Override
@@ -228,49 +260,35 @@ public class SslConnection extends SelectableConnection
 
     /* ------------------------------------------------------------ */
     @Override
-    public void doRead()
+    public void onReadable()
     {
-        LOG.debug("do   Read {}",_endp); 
+        LOG.debug("onReadable {}",this); 
         
         _lock.lock();
         try
         {        
+            _netReadFuture=null;
             allocateBuffers();     
 
             boolean progress=true;
-            while(progress)
+            while(progress && _appReadTask==null)
             {
                 progress=false;
 
-                // Fill the input buffer with everything available
+                // Read into the input network buffer
                 if (!BufferUtil.isFull(_inNet))
-                    progress|=_endp.fill(_inNet)>0;
+                {
+                    int filled = _endp.fill(_inNet);
+                    LOG.debug("filled {}",filled);
+                    if (filled<0)
+                        _eofIn=true;
+                    else if (filled>0)
+                        progress=true;
+                }
                     
+                // process the data
                 progress|=process(null);
                 
-                if (BufferUtil.hasContent(_inApp) && _appEndPoint.isReadInterested())
-                {
-                    _appEndPoint._readInterested=false;
-                    progress=true;
-                    Runnable task =_appConnection.onReadable();
-                    
-                    if (task!=null)
-                    {
-                        // We have a task from the application connection.  We could
-                        // dispatch this to a thread, but we are likely just to return afterwards.
-                        // So we unlock (so another thread can call doRead if the app blocks) and 
-                        // call the app ourselves.
-                        try
-                        {
-                            _lock.unlock();
-                            task.run();
-                        }
-                        finally
-                        {
-                            _lock.lock();
-                        }
-                    }
-                }
             }
         }
         catch(IOException e)
@@ -280,41 +298,20 @@ public class SslConnection extends SelectableConnection
         finally
         {
             releaseBuffers();
-            _endp.setReadInterested(_appEndPoint.isReadInterested());
-            _endp.setWriteInterested(BufferUtil.hasContent(_outNet));
-            LOG.debug("done Read {}",_endp); 
+            if (!_appReadFuture.isComplete() && _netReadFuture==null)
+                _netReadFuture=scheduleOnReadable();
+            
+            LOG.debug("!onReadable {} {}",this,_netReadFuture); 
+            
             _lock.unlock();
         }
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void doWrite()
-    {
-        _lock.lock();
-        try
+        
+        // Run any ready callback from _appReadFuture in this thread.
+        if (_appReadTask!=null)
         {
-            while (BufferUtil.hasContent(_outNet))
-            {
-                int written = _endp.flush(_outNet);
-
-                if (written>0 && _appEndPoint.isWriteInterested())
-                {
-                    Runnable task =_appConnection.onWriteable();
-                    if (task!=null)
-                        task.run();
-                }
-            } 
-        }
-        catch(IOException e)
-        {
-            LOG.warn(e);
-        }
-        finally
-        {
-            if (BufferUtil.hasContent(_outNet))
-                _endp.setWriteInterested(true);
-            _lock.unlock();
+            Runnable task=_appReadTask;
+            _appReadTask=null;
+            task.run();
         }
     }
 
@@ -322,7 +319,10 @@ public class SslConnection extends SelectableConnection
     private boolean process(ByteBuffer appOut) throws IOException
     {
         boolean some_progress=false;
-        _lock.lock();
+        
+        if (!_lock.tryLock())
+            throw new IllegalStateException();
+            
         try
         {
             allocateBuffers();
@@ -346,12 +346,12 @@ public class SslConnection extends SelectableConnection
                     case NOT_HANDSHAKING:
                     {
                         // Try unwrapping some application data
-                        if (!BufferUtil.isFull(_inApp) && BufferUtil.hasContent(_inNet) && unwrap())
-                            progress=true;
+                        if (!BufferUtil.isFull(_inApp) && BufferUtil.hasContent(_inNet))
+                            progress|=unwrap();
 
                         // Try wrapping some application data
-                        if (BufferUtil.hasContent(appOut) && !BufferUtil.isFull(_outNet) && wrap(appOut))
-                            progress=true;
+                        if (BufferUtil.hasContent(appOut) && !BufferUtil.isFull(_outNet))
+                            progress|=wrap(appOut);
                     }
                     break;
 
@@ -372,8 +372,8 @@ public class SslConnection extends SelectableConnection
                         // The SSL needs to send some handshake data to the other side
                         if (_handshook && !_allowRenegotiate)
                             _endp.close();
-                        else if (wrap(appOut))
-                            progress=true;
+                        else
+                            progress|=wrap(appOut);
                     }
                     break;
 
@@ -382,18 +382,17 @@ public class SslConnection extends SelectableConnection
                         // The SSL needs to receive some handshake data from the other side
                         if (_handshook && !_allowRenegotiate)
                             _endp.close();
-                        else if (BufferUtil.isEmpty(_inNet) && _endp.isInputShutdown())
+                        else if (BufferUtil.isEmpty(_inNet) && _eofIn)
                             _endp.close();
-                        else if (unwrap())
-                            progress=true;
+                        else
+                            progress|=unwrap();
                     }
                     break;
                 }
 
                 // pass on ishut/oshut state
-                if (_endp.isOpen() && _endp.isInputShutdown() && BufferUtil.isEmpty(_inNet))
+                if (_endp.isOpen() && _eofIn && BufferUtil.isEmpty(_inNet))
                     _engine.closeInbound();
-
                 if (_endp.isOpen() && _engine.isOutboundDone() && BufferUtil.isEmpty(_outNet))
                     _endp.shutdownOutput();
 
@@ -417,6 +416,9 @@ public class SslConnection extends SelectableConnection
 
     private boolean wrap(final ByteBuffer outApp) throws IOException
     {
+        if (_netWriteFuture!=null && !_netWriteFuture.isComplete())
+            return false;
+        
         final SSLEngineResult result;
 
         int pos=BufferUtil.flipToFill(_outNet);
@@ -461,16 +463,29 @@ public class SslConnection extends SelectableConnection
             throw new IOException(result.toString());
         }
 
-        int flushed = _endp.flush(_outNet);
+        if (BufferUtil.hasContent(_outNet))
+        {
+            IOFuture write =_endp.write(_outNet);
+            if (write.isComplete())
+                return true;
+
+            _netWriteFuture=write;
+            _netWriteFuture.setCallback(_writeable);
+        }
         
-        return result.bytesConsumed()>0 || result.bytesProduced()>0 || flushed>0;
+        return result.bytesConsumed()>0 || result.bytesProduced()>0 ;
     }
 
     private boolean unwrap() throws IOException
     {
         if (BufferUtil.isEmpty(_inNet))
+        {
+            if (_netReadFuture==null)
+                _netReadFuture=scheduleOnReadable();
+            LOG.debug("{} unwrap read {}",_session,_netReadFuture);
             return false;
-
+        }
+        
         final SSLEngineResult result;
 
         int pos = BufferUtil.flipToFill(_inApp);
@@ -501,9 +516,11 @@ public class SslConnection extends SelectableConnection
         {
             case BUFFER_UNDERFLOW:
                 // need to wait for more net data
-                _inNet.compact().flip();
-                if (_endp.isInputShutdown())
+                if (_eofIn)
                     _inNet.clear().limit(0);
+                else if (_netReadFuture==null)
+                    _netReadFuture=scheduleOnReadable();
+                    
                 break;
 
             case BUFFER_OVERFLOW:
@@ -527,8 +544,9 @@ public class SslConnection extends SelectableConnection
             throw new IOException(result.toString());
         }
 
-        //if (LOG.isDebugEnabled() && result.bytesProduced()>0)
-        //    LOG.debug("{} unwrapped '{}'",_session,buffer);
+        // If any bytes were produced and we have an app read waiting, make it ready.
+        if (result.bytesProduced()>0 && !_appReadFuture.isComplete())
+            _appReadFuture.ready();
 
         return result.bytesConsumed()>0 || result.bytesProduced()>0;
     }
@@ -540,7 +558,7 @@ public class SslConnection extends SelectableConnection
     }
     
     /* ------------------------------------------------------------ */
-    public SelectableEndPoint getAppEndPoint()
+    public AsyncEndPoint getAppEndPoint()
     {
         return _appEndPoint;
     }
@@ -554,10 +572,14 @@ public class SslConnection extends SelectableConnection
 
     /* ------------------------------------------------------------ */
     /* ------------------------------------------------------------ */
-    public class AppEndPoint implements SelectableEndPoint
+    public class AppEndPoint extends AbstractEndPoint implements AsyncEndPoint
     {
-        boolean _readInterested;
-        boolean _writeInterested;
+        ByteBuffer[] _writeBuffers;
+        
+        AppEndPoint()
+        {
+            super(_endp.getLocalAddress(),_endp.getRemoteAddress());
+        }
         
         public SSLEngine getSslEngine()
         {
@@ -601,30 +623,6 @@ public class SslConnection extends SelectableConnection
         }
 
         @Override
-        public void shutdownInput() throws IOException
-        {
-            LOG.debug("{} ssl endp.ishut!",_session);
-            // We do not do a closeInput here, as SSL does not support half close.
-            // isInputShutdown works it out itself from buffer state and underlying endpoint state.
-        }
-
-        @Override
-        public boolean isInputShutdown()
-        {
-            _lock.lock();
-            try
-            {
-                return _endp.isInputShutdown() &&
-                !(_inApp!=null&&BufferUtil.hasContent(_inApp)) &&
-                !(_inNet!=null&&BufferUtil.hasContent(_inNet));
-            }
-            finally
-            {
-                _lock.unlock();
-            }
-        }
-
-        @Override
         public void close() throws IOException
         {
             LOG.debug("{} ssl endp.close",_session);
@@ -642,7 +640,7 @@ public class SslConnection extends SelectableConnection
                     process(null);
 
                 if (BufferUtil.hasContent(_inApp))
-                    BufferUtil.flipPutFlip(_inApp,buffer);
+                    BufferUtil.append(_inApp,buffer);
             }
             finally
             {
@@ -650,7 +648,7 @@ public class SslConnection extends SelectableConnection
             }
             int filled=buffer.remaining()-size;
 
-            if (filled==0 && isInputShutdown())
+            if (filled==0 && _eofIn)
                 return -1;
             return filled;
         }
@@ -689,17 +687,6 @@ public class SslConnection extends SelectableConnection
             return _endp;
         }
 
-        public void flush() throws IOException
-        {
-            process(null);
-        }
-
-        @Override
-        public void onIdleExpired(long idleForMs)
-        {
-            _endp.onIdleExpired(idleForMs);
-        }
-
         @Override
         public void setCheckForIdle(boolean check)
         {
@@ -712,40 +699,6 @@ public class SslConnection extends SelectableConnection
             return _endp.isCheckForIdle();
         }
 
-        @Override
-        public InetSocketAddress getLocalAddress()
-        {
-            return _endp.getLocalAddress();
-        }
-
-        @Override
-        public InetSocketAddress getRemoteAddress()
-        {
-            return _endp.getRemoteAddress();
-        }
-
-        @Override
-        public int getMaxIdleTime()
-        {
-            return _endp.getMaxIdleTime();
-        }
-
-        @Override
-        public void setMaxIdleTime(int timeMs) throws IOException
-        {
-            _endp.setMaxIdleTime(timeMs);
-        }
-
-        @Override
-        public SelectableConnection getSelectableConnection()
-        {
-            return _appConnection;
-        }
-
-        public void setSelectableConnection(SelectableConnection connection)
-        {
-            _appConnection=(SelectableConnection)connection;
-        }
 
         @Override
         public String toString()
@@ -759,23 +712,48 @@ public class SslConnection extends SelectableConnection
             int i = inbound == null? -1 : inbound.remaining();
             int o = outbound == null ? -1 : outbound.remaining();
             int u = unwrap == null ? -1 : unwrap.remaining();
-            return String.format("SSL %s %s i/o/u=%d/%d/%d ishut=%b oshut=%b {%s}",
+            return String.format("SSL %s %s i/o/u=%d/%d/%d eof=%b oshut=%b {%s}",
                     super.toString(),
                     _engine.getHandshakeStatus(),
                     i, o, u,
-                    _ishut, _oshut,
+                    _eofIn, _oshut,
                     _appConnection);
         }
+      
 
         @Override
-        public void setWriteInterested(boolean interested)
+        public long getActivityTimestamp()
         {
+            return _endp.getActivityTimestamp();
+        }
+
+        @Override
+        public long getCreatedTimeStamp()
+        {
+            return _endp.getCreatedTimeStamp();
+        }
+
+        @Override
+        public AsyncConnection getAsyncConnection()
+        {
+            return _appConnection;
+        }
+
+        @Override
+        public IOFuture read() throws IllegalStateException
+        {
+            LOG.debug("{} sslEndp.read()",_session);
             _lock.lock();
             try
             {
-                _writeInterested=interested;
-                if (interested)
-                    _endp.setWriteInterested(true);
+                // Do we already have application input data?
+                if (BufferUtil.hasContent(_inApp))
+                    return COMPLETE;
+                
+                // No, we need to schedule a network read
+                _appReadFuture.recycle();
+                scheduleOnReadable();
+                return _appReadFuture;
             }
             finally
             {
@@ -784,42 +762,64 @@ public class SslConnection extends SelectableConnection
         }
 
         @Override
-        public boolean isWriteInterested()
-        {
-            return _writeInterested;
-        }
-
-        @Override
-        public void setReadInterested(boolean interested)
+        public IOFuture write(ByteBuffer... buffers)
         {
             _lock.lock();
             try
             {
-                _readInterested=interested;
-                if (interested)
-                    _endp.setReadInterested(true);
+                if (!_appWriteFuture.isComplete())
+                    throw new IllegalStateException("previous write not complete");
+
+                // Try to process all 
+                for (ByteBuffer b : buffers)
+                {
+                    process(b);
+                    
+                    if (b.hasRemaining())
+                    {
+                        _writeBuffers=buffers;
+                        _appWriteFuture.recycle();
+                        return _appWriteFuture;
+                    }
+                }
+                return COMPLETE;
+            }
+            catch (IOException e)
+            {
+                return new CompleteIOFuture(e);
             }
             finally
             {
                 _lock.unlock();
             }
         }
-
-        @Override
-        public boolean isReadInterested()
+        
+        void completeWrite()
         {
-            return _readInterested;
-        }
+            _lock.lock();
+            try
+            {
+                if (!_appWriteFuture.isComplete())
+                    throw new IllegalStateException("previous write not complete");
 
-        @Override
-        public long getLastNotIdleTimestamp()
-        {
-            return _endp.getLastNotIdleTimestamp();
-        }
-
-        @Override
-        public void checkForIdle(long now)
-        {
+                // Try to process all 
+                for (ByteBuffer b : _writeBuffers)
+                {
+                    process(b);
+                    
+                    if (b.hasRemaining())
+                        return;
+                }
+                _appWriteFuture.ready();
+            }
+            catch (IOException e)
+            {
+                _appWriteFuture.fail(e);
+            }
+            finally
+            {
+                _lock.unlock();
+            }
         }
     }
 }

@@ -622,7 +622,7 @@ public class ResponseTest
         }
 
         @Override
-        public Connection handle() throws IOException
+        public AsyncConnection handle() throws IOException
         {
             return this;
         }

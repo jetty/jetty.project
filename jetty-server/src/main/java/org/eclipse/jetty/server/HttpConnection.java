@@ -23,10 +23,10 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.HttpGenerator.Action;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.SelectableConnection;
-import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.AbstractAsyncConnection;
+import org.eclipse.jetty.io.AsyncConnection;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.SelectableEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.thread.Timeout.Task;
 
 /**
  */
-public class HttpConnection extends SelectableConnection
+public class HttpConnection extends AbstractAsyncConnection
 {
 
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
@@ -71,7 +71,7 @@ public class HttpConnection extends SelectableConnection
     /** Constructor
      *
      */
-    public HttpConnection(Connector connector, SelectableEndPoint endpoint, Server server)
+    public HttpConnection(Connector connector, AsyncEndPoint endpoint, Server server)
     {
         super(endpoint);
         _connector = connector;
@@ -145,23 +145,6 @@ public class HttpConnection extends SelectableConnection
         return _generator;
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isIdle()
-    {
-        return _parser.isIdle() && _generator.isIdle();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public int getMaxIdleTime()
-    {
-        if (_connector.isLowResources() && _endp.getMaxIdleTime()==_connector.getMaxIdleTime())
-            return _connector.getLowResourceMaxIdleTime();
-        if (_endp.getMaxIdleTime()>0)
-            return _endp.getMaxIdleTime();
-        return _connector.getMaxIdleTime();
-    }
 
     /* ------------------------------------------------------------ */
     @Override
@@ -176,9 +159,9 @@ public class HttpConnection extends SelectableConnection
 
     /* ------------------------------------------------------------ */
     @Override
-    public void doRead()
+    public void onReadable()
     {
-        Connection connection = this;
+        AsyncConnection connection = this;
         boolean progress=true;
 
         try
@@ -201,7 +184,7 @@ public class HttpConnection extends SelectableConnection
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
                     {
                         // don't check for idle while dispatched (unless blocking IO is done).
-                        getSelectableEndPoint().setCheckForIdle(false);
+                        getEndPoint().setCheckForIdle(false);
                         try
                         {
                             _channel.handleRequest();
@@ -211,7 +194,7 @@ public class HttpConnection extends SelectableConnection
                             // If we are not suspended
                             if (!_channel.getRequest().getAsyncContinuation().isAsyncStarted())
                                 // reenable idle checking unless request is suspended
-                                getSelectableEndPoint().setCheckForIdle(true);
+                                getEndPoint().setCheckForIdle(true);
                         }
                     }
 
@@ -236,7 +219,7 @@ public class HttpConnection extends SelectableConnection
                         // look for a switched connection instance?
                         if (_channel.getResponse().getStatus()==HttpStatus.SWITCHING_PROTOCOLS_101)
                         {
-                            Connection switched=(Connection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
+                            AsyncConnection switched=(AsyncConnection)_channel.getRequest().getAttribute("org.eclipse.jetty.io.Connection");
                             if (switched!=null)
                                 connection=switched;
                         }
@@ -426,42 +409,31 @@ public class HttpConnection extends SelectableConnection
             switch(_toFlush)
             {
                 case 10:
-                    _endp.flush(_responseHeader,_responseBuffer); 
-                    _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0)+(BufferUtil.hasContent(_responseBuffer)?2:0);
+                    _endp.write(_responseHeader,_responseBuffer); 
                     break;
                 case 9: 
-                    _endp.flush(_responseHeader,_content); 
-                    _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0)+(BufferUtil.hasContent(_content)?1:0);
-                    if (_toFlush==0)
-                        _content=null;
+                    _endp.write(_responseHeader,_content); 
+                    _content=null;
                     break;
                 case 8: 
-                    _endp.flush(_responseHeader); 
-                    _toFlush=(BufferUtil.hasContent(_responseHeader)?8:0);
+                    _endp.write(_responseHeader); 
                     break;
                 case 6: 
-                    _endp.flush(_chunk,_responseBuffer);
-                    _toFlush=(BufferUtil.hasContent(_chunk)?4:0)+(BufferUtil.hasContent(_responseBuffer)?2:0);
+                    _endp.write(_chunk,_responseBuffer);
                     break;
                 case 5: 
-                    _endp.flush(_chunk,_content);
-                    _toFlush=(BufferUtil.hasContent(_chunk)?4:0)+(BufferUtil.hasContent(_content)?1:0);
-                    if (_toFlush==0)
-                        _content=null;
+                    _endp.write(_chunk,_content);
+                    _content=null;
                     break;
                 case 4: 
-                    _endp.flush(_chunk);
-                    _toFlush=(BufferUtil.hasContent(_chunk)?4:0);
+                    _endp.write(_chunk);
                     break;
                 case 2: 
-                    _endp.flush(_responseBuffer);
-                    _toFlush=(BufferUtil.hasContent(_responseBuffer)?2:0);
+                    _endp.write(_responseBuffer);
                     break;
                 case 1: 
-                    _endp.flush(_content);
-                    _toFlush=(BufferUtil.hasContent(_content)?1:0);
-                    if (_toFlush==0)
-                        _content=null;
+                    _endp.write(_content);
+                    _content=null;
                     break;
                 case 0:
                 default:
@@ -486,13 +458,20 @@ public class HttpConnection extends SelectableConnection
     
     /* ------------------------------------------------------------ */
     @Override
-    public void onInputShutdown() throws IOException
+    public void onInputShutdown()
     {
         // If we don't have a committed response and we are not suspended
         if (_generator.isIdle() && !_channel.getRequest().getAsyncContinuation().isSuspended())
         {
             // then no more can happen, so close.
-            _endp.close();
+            try
+            {
+                _endp.close();
+            }
+            catch (IOException e)
+            {
+                LOG.debug(e);
+            }
         }
         
         // Make idle parser seek EOF
@@ -513,7 +492,7 @@ public class HttpConnection extends SelectableConnection
         @Override
         public long getMaxIdleTime()
         {
-            return HttpConnection.this.getMaxIdleTime();
+            return getEndPoint().getMaxIdleTime();
         }
 
         @Override
@@ -661,7 +640,7 @@ public class HttpConnection extends SelectableConnection
                 try
                 {
                     // Wait until we can read
-                    blockReadable();
+                    getEndPoint().blockReadable();
 
                     // We will need a buffer to read into
                     if (_requestBuffer==null)

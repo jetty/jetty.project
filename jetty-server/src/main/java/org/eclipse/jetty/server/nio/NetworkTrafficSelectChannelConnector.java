@@ -23,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SelectableEndPoint;
+import org.eclipse.jetty.io.AsyncEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 
 /**
@@ -55,13 +55,13 @@ public class NetworkTrafficSelectChannelConnector extends SelectChannelConnector
     protected SelectChannelEndPoint newEndPoint(SocketChannel channel, SelectorManager.SelectSet selectSet, SelectionKey key) throws IOException
     {
         NetworkTrafficSelectChannelEndPoint endPoint = new NetworkTrafficSelectChannelEndPoint(channel, selectSet, key, _maxIdleTime, listeners);
-        endPoint.setSelectableConnection(selectSet.getManager().newConnection(channel,endPoint, key.attachment()));
+        endPoint.setAsyncConnection(selectSet.getManager().newConnection(channel,endPoint, key.attachment()));
         endPoint.notifyOpened();
         return endPoint;
     }
 
     @Override
-    protected void endPointClosed(SelectableEndPoint endpoint)
+    protected void endPointClosed(AsyncEndPoint endpoint)
     {
         super.endPointClosed(endpoint);
         ((NetworkTrafficSelectChannelEndPoint)endpoint).notifyClosed();
