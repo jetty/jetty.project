@@ -62,7 +62,6 @@ public class SslConnection extends AbstractAsyncConnection
             _appReadTask=callback;
         }   
     };
-    
 
     private IOFuture.Callback _writeable = new IOFuture.Callback()
     {
@@ -75,7 +74,11 @@ public class SslConnection extends AbstractAsyncConnection
         @Override
         public void onFail(Throwable cause)
         {
-            LOG.warn("FAILED: "+cause);
+            LOG.debug("write FAILED",cause);
+            if (!_appWriteFuture.isComplete())
+                _appWriteFuture.fail(cause);
+            else
+                LOG.warn("write FAILED",cause);
         }
     };
     
@@ -816,9 +819,6 @@ public class SslConnection extends AbstractAsyncConnection
             _lock.lock();
             try
             {
-                if (!_appWriteFuture.isComplete())
-                    throw new IllegalStateException("previous write not complete");
-
                 // Try to process all 
                 for (ByteBuffer b : _writeBuffers)
                 {
