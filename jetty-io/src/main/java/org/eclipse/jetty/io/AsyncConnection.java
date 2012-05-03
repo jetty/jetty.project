@@ -22,7 +22,6 @@ public interface AsyncConnection
     
     void onReadable();
     void onReadFail(Throwable cause);
-    void onInputShutdown();
     void onClose();
     void onIdleExpired(long idleForMs);
 

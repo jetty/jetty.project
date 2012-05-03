@@ -10,7 +10,7 @@ public abstract class AbstractEndPoint implements EndPoint
     private final InetSocketAddress _local;
     private final InetSocketAddress _remote;
     private int _maxIdleTime;    
-    private volatile long _lastNotIdleTimestamp;
+    private volatile long _idleTimestamp;
 
     
     protected AbstractEndPoint(InetSocketAddress local,InetSocketAddress remote)
@@ -53,15 +53,15 @@ public abstract class AbstractEndPoint implements EndPoint
     }
 
     /* ------------------------------------------------------------ */
-    public long getNotIdleTimestamp()
+    public long getIdleTimestamp()
     {
-        return _lastNotIdleTimestamp;
+        return _idleTimestamp;
     }
 
     /* ------------------------------------------------------------ */
     protected void notIdle()
     {
-        _lastNotIdleTimestamp=System.currentTimeMillis();
+        _idleTimestamp=System.currentTimeMillis();
     }
     
     /* ------------------------------------------------------------ */

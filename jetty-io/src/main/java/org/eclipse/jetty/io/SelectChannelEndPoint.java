@@ -47,8 +47,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     
     /** The desired value for {@link SelectionKey#interestOps()} */
     private int _interestOps;
-
-    private boolean _ishutCalled;
     
     /** true if {@link SelectSet#destroyEndPoint(SelectChannelEndPoint)} has not been called */
     private boolean _open;
@@ -181,11 +179,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             if (can_write && _writeBuffers!=null)
                 completeWrite();
             
-            if (isInputShutdown() && !_ishutCalled)
-            {
-                _ishutCalled=true;
-                getAsyncConnection().onInputShutdown();
-            }
         }
         finally
         {
@@ -228,7 +221,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     {        
         if (_idlecheck || !_readFuture.isComplete() || !_writeFuture.isComplete())
         {
-            long idleTimestamp=getNotIdleTimestamp();
+            long idleTimestamp=getIdleTimestamp();
             long max_idle_time=getMaxIdleTime();
 
             if (idleTimestamp!=0 && max_idle_time>0)

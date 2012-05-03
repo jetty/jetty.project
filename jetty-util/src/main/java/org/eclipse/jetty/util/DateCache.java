@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.nio.ByteBuffer;
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -281,4 +282,17 @@ public class DateCache
         return _formatString;
     }    
 
+    /* ------------------------------------------------------------ */
+    private volatile ByteBuffer _buffer;
+    private volatile String _last;
+    public synchronized ByteBuffer formatBuffer(long date)
+    {
+        String d = format(date);
+        if (d==_last)
+            return _buffer;
+        _last=d;
+        _buffer=BufferUtil.toBuffer(d);
+        
+        return _buffer;
+    }
 }

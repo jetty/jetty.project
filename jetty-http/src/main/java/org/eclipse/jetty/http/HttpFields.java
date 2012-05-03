@@ -32,8 +32,8 @@ import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
-import org.eclipse.jetty.io.BufferDateCache;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringMap;
@@ -57,7 +57,7 @@ public class HttpFields implements Iterable<HttpFields.Field>
     /* ------------------------------------------------------------ */
     public static final String __COOKIE_DELIM="\"\\\n\r\t\f\b%+ ;=";
     public static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
-    public static final BufferDateCache __dateCache = new BufferDateCache("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
+    public static final DateCache __dateCache = new DateCache("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
 
     /* -------------------------------------------------------------- */
     static

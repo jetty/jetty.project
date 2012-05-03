@@ -138,7 +138,11 @@ public class SelectChannelEndPointTest
 
                     // Fill the input buffer with everything available
                     if (!BufferUtil.isFull(_in))
-                        progress|=_endp.fill(_in)>0;
+                    {
+                        int filled=_endp.fill(_in);
+                        if (filled>0)
+                            progress=true;
+                    }
                         
                     // If the tests wants to block, then block
                     while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
@@ -163,6 +167,10 @@ public class SelectChannelEndPointTest
                         }
                         progress=true;
                     }
+                    
+                    // are we done?
+                    if (BufferUtil.isEmpty(_out) && _endp.isInputShutdown())
+                        _endp.shutdownOutput();
                 }
             }
             catch(ClosedChannelException e)
@@ -200,27 +208,10 @@ public class SelectChannelEndPointTest
             }
         }
 
-
-        @Override
-        public void onInputShutdown()
-        {
-            try
-            {
-                if (BufferUtil.isEmpty(_out))
-                    _endp.shutdownOutput();
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-
         @Override
         public void onClose()
         {            
         }
-        
-        
     }
 
     

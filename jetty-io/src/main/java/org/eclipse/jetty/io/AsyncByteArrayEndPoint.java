@@ -193,7 +193,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     {        
         if (_idlecheck || !_readFuture.isComplete() || !_writeFuture.isComplete())
         {
-            long idleTimestamp=getNotIdleTimestamp();
+            long idleTimestamp=getIdleTimestamp();
             long max_idle_time=getMaxIdleTime();
 
             if (idleTimestamp!=0 && max_idle_time>0)

@@ -97,7 +97,6 @@ public class SslConnection extends AbstractAsyncConnection
     private AsyncEndPoint _endp;
     private boolean _allowRenegotiate=true;
     private boolean _handshook;
-    private boolean _eofIn;
     private boolean _oshut;
     private IOFuture _netReadFuture;
     private IOFuture _netWriteFuture;
@@ -177,8 +176,8 @@ public class SslConnection extends AbstractAsyncConnection
     /* ------------------------------------------------------------ */
     private void allocateBuffers()
     {
-        // TODO remove this lock if always called with lock held?
-        _lock.lock();
+        if (!_lock.tryLock())
+            throw new IllegalStateException();
         try
         {
             if (_allocations++==0)
@@ -204,8 +203,8 @@ public class SslConnection extends AbstractAsyncConnection
     /* ------------------------------------------------------------ */
     private void releaseBuffers()
     {
-        // TODO remove this lock if always called with lock held?
-        _lock.lock();
+        if (!_lock.tryLock())
+            throw new IllegalStateException();
         try
         {
             if (--_allocations==0)
@@ -232,12 +231,12 @@ public class SslConnection extends AbstractAsyncConnection
             _lock.unlock();
         }
     }
-   
 
     /* ------------------------------------------------------------ */
     @Override
     public void onClose()
     {
+        // TODO is this right?
         _appConnection.onClose();
     }
 
@@ -283,9 +282,7 @@ public class SslConnection extends AbstractAsyncConnection
                 {
                     int filled = _endp.fill(_inNet);
                     LOG.debug("filled {}",filled);
-                    if (filled<0)
-                        _eofIn=true;
-                    else if (filled>0)
+                    if (filled>0)
                         progress=true;
                 }
                     
@@ -401,7 +398,7 @@ public class SslConnection extends AbstractAsyncConnection
                         // The SSL needs to receive some handshake data from the other side
                         if (_handshook && !_allowRenegotiate)
                             _endp.close();
-                        else if (BufferUtil.isEmpty(_inNet) && _eofIn)
+                        else if (BufferUtil.isEmpty(_inNet) && _endp.isInputShutdown())
                             _endp.close();
                         else
                             progress|=unwrap();
@@ -410,7 +407,7 @@ public class SslConnection extends AbstractAsyncConnection
                 }
 
                 // pass on ishut/oshut state
-                if (_endp.isOpen() && _eofIn && BufferUtil.isEmpty(_inNet))
+                if (_endp.isOpen() && _endp.isInputShutdown() && BufferUtil.isEmpty(_inNet))
                     _engine.closeInbound();
                 if (_endp.isOpen() && _engine.isOutboundDone() && BufferUtil.isEmpty(_outNet))
                     _endp.shutdownOutput();
@@ -535,7 +532,7 @@ public class SslConnection extends AbstractAsyncConnection
         {
             case BUFFER_UNDERFLOW:
                 // need to wait for more net data
-                if (_eofIn)
+                if (_endp.isInputShutdown())
                     _inNet.clear().limit(0);
                 else if (_netReadFuture==null)
                     _netReadFuture=scheduleOnReadable();
@@ -568,12 +565,6 @@ public class SslConnection extends AbstractAsyncConnection
             _appReadFuture.ready();
 
         return result.bytesConsumed()>0 || result.bytesProduced()>0;
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void onInputShutdown()
-    {        
     }
     
     /* ------------------------------------------------------------ */
@@ -681,7 +672,7 @@ public class SslConnection extends AbstractAsyncConnection
             }
             int filled=buffer.remaining()-size;
 
-            if (filled==0 && _eofIn)
+            if (filled==0 && _endp.isInputShutdown())
                 return -1;
             return filled;
         }
@@ -745,19 +736,19 @@ public class SslConnection extends AbstractAsyncConnection
             int i = inbound == null? -1 : inbound.remaining();
             int o = outbound == null ? -1 : outbound.remaining();
             int u = unwrap == null ? -1 : unwrap.remaining();
-            return String.format("SSL %s %s i/o/u=%d/%d/%d eof=%b oshut=%b {%s}",
+            return String.format("SSL %s %s i/o/u=%d/%d/%d ep.ishut=%b oshut=%b {%s}",
                     super.toString(),
                     _engine.getHandshakeStatus(),
                     i, o, u,
-                    _eofIn, _oshut,
+                    _endp.isInputShutdown(), _oshut,
                     _appConnection);
         }
       
 
         @Override
-        public long getNotIdleTimestamp()
+        public long getIdleTimestamp()
         {
-            return _endp.getNotIdleTimestamp();
+            return _endp.getIdleTimestamp();
         }
 
         @Override
