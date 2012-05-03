@@ -231,31 +231,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
 
     /* ------------------------------------------------------------ */
     /**
-     * @return Returns the maxIdleTime when resources are low.
-     * @deprecated
-     */
-    @Deprecated
-    @Override
-    public final int getLowResourceMaxIdleTime()
-    {
-        return getLowResourcesMaxIdleTime();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param maxIdleTime
-     *            The maxIdleTime to set when resources are low.
-     * @deprecated
-     */
-    @Deprecated
-    @Override
-    public final void setLowResourceMaxIdleTime(int maxIdleTime)
-    {
-        setLowResourcesMaxIdleTime(maxIdleTime);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * @return Returns the soLingerTime.
      */
     public int getSoLingerTime()
@@ -1187,7 +1162,7 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         if (_statsStartedAt.get() == -1)
             return;
 
-        long duration = System.currentTimeMillis() - connection.getCreatedTimeStamp();
+        long duration = System.currentTimeMillis() - connection.getEndPoint().getCreatedTimeStamp();
         int requests = (connection instanceof HttpConnection)?((HttpConnection)connection).getHttpChannel().getRequests():0;
         _requestStats.set(requests);
         _connectionStats.decrement();
@@ -1235,14 +1210,6 @@ public abstract class AbstractConnector extends AggregateLifeCycle implements Ht
         _reuseAddress = reuseAddress;
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public boolean isLowResources()
-    {
-        if (_threadPool != null)
-            return _threadPool.isLowOnThreads();
-        return _server.getThreadPool().isLowOnThreads();
-    }
 
     /* ------------------------------------------------------------ */
     private void updateNotEqual(AtomicLong valueHolder, long compare, long value)

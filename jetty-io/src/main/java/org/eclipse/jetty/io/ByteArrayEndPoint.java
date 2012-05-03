@@ -16,8 +16,10 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 
 
 /* ------------------------------------------------------------ */
@@ -26,9 +28,9 @@ import org.eclipse.jetty.util.BufferUtil;
  */
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
-    protected byte[] _inBytes;
     protected ByteBuffer _in;
     protected ByteBuffer _out;
+    protected boolean _oshut;
     protected boolean _closed;
     protected boolean _growOutput;
 
@@ -39,6 +41,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public ByteArrayEndPoint()
     {
         super(null,null);
+        _in=BufferUtil.EMPTY_BUFFER;
+        _out=BufferUtil.allocate(1024);
     }
 
     /* ------------------------------------------------------------ */
@@ -48,10 +52,21 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public ByteArrayEndPoint(byte[] input, int outputSize)
     {
         super(null,null);
-        _inBytes=input;
-        _in=ByteBuffer.wrap(input);
-        _out=ByteBuffer.allocate(outputSize);
+        _in=input==null?null:ByteBuffer.wrap(input);
+        _out=BufferUtil.allocate(outputSize);
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     *
+     */
+    public ByteArrayEndPoint(String input, int outputSize)
+    {
+        super(null,null);
+        setInput(input);
+        _out=BufferUtil.allocate(outputSize);
+    }
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -61,30 +76,68 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         return _in;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     */
+    public void setInputEOF()
+    {
+        _in = null;
+    }
     
     /* ------------------------------------------------------------ */
     /**
      * @param in The in to set.
      */
-    public void setIn(ByteBuffer in)
+    public void setInput(ByteBuffer in)
     {
         _in = in;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setInput(String s) 
+    {
+        setInput(BufferUtil.toBuffer(s,StringUtil.__UTF8_CHARSET));
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setInput(String s,Charset charset) 
+    {
+        setInput(BufferUtil.toBuffer(s,charset));
     }
     
     /* ------------------------------------------------------------ */
     /**
      * @return Returns the out.
      */
-    public ByteBuffer getOut()
+    public ByteBuffer getOutput()
     {
         return _out;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the out.
+     */
+    public String getOutputString()
+    {
+        return BufferUtil.toString(_out,StringUtil.__UTF8_CHARSET);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the out.
+     */
+    public String getOutputString(Charset charset)
+    {
+        return BufferUtil.toString(_out,charset);
     }
     
     /* ------------------------------------------------------------ */
     /**
      * @param out The out to set.
      */
-    public void setOut(ByteBuffer out)
+    public void setOutput(ByteBuffer out)
     {
         _out = out;
     }
@@ -106,7 +159,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public boolean isOutputShutdown()
     {
-        return _closed;
+        return _oshut||_closed;
     }
 
     /* ------------------------------------------------------------ */
@@ -116,7 +169,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public void shutdownOutput() throws IOException
     {
-        close();
+        _oshut=true;
     }
 
     /* ------------------------------------------------------------ */
@@ -128,7 +181,16 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         _closed=true;
     }
-
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return <code>true</code> if there are bytes remaining to be read from the encoded input
+     */
+    public boolean hasMore()
+    {
+        return getOutput().position()>0;
+    }   
+    
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
@@ -138,10 +200,9 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         if (_closed)
             throw new IOException("CLOSED");
-        if (_in!=null)
-            return BufferUtil.append(_in,buffer);
-        
-        return 0;
+        if (_in==null)
+            return -1;
+        return BufferUtil.append(_in,buffer);
     }
 
     /* ------------------------------------------------------------ */
@@ -151,34 +212,31 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public int flush(ByteBuffer... buffers) throws IOException
     {
+        if (_oshut)
+            throw new IOException("oshut");
         if (_closed)
             throw new IOException("CLOSED");
 
         int len=0;
+
         for (ByteBuffer b : buffers)
         {
-            if (b.hasRemaining())
+            if (BufferUtil.hasContent(b))
             {
-                if (_growOutput && b.remaining()>_out.remaining())
+                if (_growOutput && b.remaining()>BufferUtil.space(_out))
                 {
-                    _out.compact();
-
-                    if (b.remaining()>_out.remaining())
+                    BufferUtil.compact(_out);
+                    if (b.remaining()>BufferUtil.space(_out))
                     {
-                        ByteBuffer n = ByteBuffer.allocate(_out.capacity()+b.remaining()*2);
-                        n.put(_out);
+                        ByteBuffer n = BufferUtil.allocate(_out.capacity()+b.remaining()*2);
+                        BufferUtil.append(_out,n);
                         _out=n;
                     }
                 }
 
-                int put=b.remaining();
+                len+=BufferUtil.append(b,_out);
                 
-                if (put>0)
-                {
-                    _out.put(b);
-                    len+=put;
-                }
-                else
+                if (BufferUtil.hasContent(b))
                     break;
             }
         }
@@ -191,9 +249,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void reset()
     {
+        _oshut=false;
         _closed=false;
-        _in.rewind();
-        _out.clear();
+        _in=null;
+        BufferUtil.clear(_out);
     }
 
     /* ------------------------------------------------------------ */
@@ -203,7 +262,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public Object getTransport()
     {
-        return _inBytes;
+        return null;
     }
 
     /* ------------------------------------------------------------ */

@@ -863,7 +863,7 @@ public abstract class HttpChannel
     
     protected abstract int write(ByteBuffer content) throws IOException;
     
-    protected abstract int send(ByteBuffer content) throws IOException;
+    protected abstract void send(ByteBuffer content) throws IOException;
         
     protected abstract void sendError(int status, String reason, String content, boolean close)  throws IOException;
     

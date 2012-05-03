@@ -411,7 +411,7 @@ public class ResponseTest
 
             response.sendRedirect(tests[i][0]);
 
-            String location = out.getOut().toString();
+            String location = out.getOutput().toString();
             int l=location.indexOf("Location: ");
             int e=location.indexOf('\n',l);
             location=location.substring(l+10,e).trim();
@@ -504,7 +504,7 @@ public class ResponseTest
     private Response newResponse()
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
-        endPoint.setOut(new ByteArrayBuffer(1024));
+        endPoint.setOutput(new ByteArrayBuffer(1024));
         endPoint.setGrowOutput(true);
         AbstractHttpConnection connection=new TestHttpConnection(connector, endPoint, connector.getServer());
         connection.getGenerator().reset();

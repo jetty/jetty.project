@@ -57,7 +57,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private volatile long _lastNotIdleTimestamp;
     private volatile AbstractAsyncConnection _connection;
     
-    private RecycledIOFuture _readFuture = new RecycledIOFuture(true,_lock)
+    private DispatchedIOFuture _readFuture = new DispatchedIOFuture(true,_lock)
     {
         @Override
         protected void dispatch(Runnable task)
@@ -83,7 +83,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     };
 
     private ByteBuffer[] _writeBuffers;
-    private RecycledIOFuture _writeFuture = new RecycledIOFuture(true,_lock)
+    private DispatchedIOFuture _writeFuture = new DispatchedIOFuture(true,_lock)
     {
         @Override
         protected void dispatch(Runnable task)

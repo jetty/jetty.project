@@ -52,7 +52,7 @@ public class SslConnection extends AbstractAsyncConnection
     
     private final Lock _lock = new ReentrantLock();
     
-    private final RecycledIOFuture _appReadFuture = new RecycledIOFuture(true,_lock)
+    private final DispatchedIOFuture _appReadFuture = new DispatchedIOFuture(true,_lock)
     {
         @Override
         protected void dispatch(Runnable callback)
@@ -63,7 +63,7 @@ public class SslConnection extends AbstractAsyncConnection
         }   
     };
 
-    private IOFuture.Callback _writeable = new IOFuture.Callback()
+    private IOFuture.Callback _writeCallback = new IOFuture.Callback()
     {
         @Override
         public void onReady()
@@ -82,7 +82,7 @@ public class SslConnection extends AbstractAsyncConnection
         }
     };
     
-    private final RecycledIOFuture _appWriteFuture = new RecycledIOFuture(true,_lock);
+    private final DispatchedIOFuture _appWriteFuture = new DispatchedIOFuture(true,_lock);
     
     private Runnable _appReadTask;
     private final SSLEngine _engine;
@@ -489,7 +489,7 @@ public class SslConnection extends AbstractAsyncConnection
                 return true;
 
             _netWriteFuture=write;
-            _netWriteFuture.setCallback(_writeable);
+            _netWriteFuture.setCallback(_writeCallback);
         }
         
         return result.bytesConsumed()>0 || result.bytesProduced()>0 ;

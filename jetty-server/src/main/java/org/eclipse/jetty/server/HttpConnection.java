@@ -15,6 +15,9 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
@@ -26,7 +29,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
+import org.eclipse.jetty.io.CompleteIOFuture;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.IOFuture;
+import org.eclipse.jetty.io.DispatchedIOFuture;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -46,13 +52,14 @@ public class HttpConnection extends AbstractAsyncConnection
     private final HttpParser _parser;
     private final HttpGenerator _generator;
     private final HttpChannel _channel;
+    private final Lock _lock = new ReentrantLock();
+    
+    private IOFuture _writeFuture;
 
-    int _toFlush;
     ByteBuffer _requestBuffer=null;
     ByteBuffer _responseHeader=null;
     ByteBuffer _chunk=null;
     ByteBuffer _responseBuffer=null; 
-    ByteBuffer _content=null;    
     
     
     /* ------------------------------------------------------------ */
@@ -251,201 +258,208 @@ public class HttpConnection extends AbstractAsyncConnection
 
 
     /* ------------------------------------------------------------ */
-    private int send(HttpGenerator.ResponseInfo info, ByteBuffer content) throws IOException
+    private void send(HttpGenerator.ResponseInfo info, ByteBuffer content) throws IOException
     {
-        if (_generator.isCommitted() || BufferUtil.hasContent(_responseBuffer) || _toFlush!=0)
-            throw new IllegalStateException("!send after append");
-        if (_generator.isComplete())
-            throw new EofException();
-
-        long prepared=_generator.getContentPrepared();
-        
-        do
+        _lock.lock();
+        try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}: send({},{},{})@{}",
-                    this,
-                    BufferUtil.toSummaryString(_responseHeader),
-                    BufferUtil.toSummaryString(_responseBuffer),
-                    BufferUtil.toSummaryString(content),
-                    _generator.getState());
-            
-            HttpGenerator.Result result=_generator.generate(info,_responseHeader,null,_responseBuffer,content,Action.COMPLETE);
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}: {} ({},{},{})@{}",
-                    this,
-                    result,
-                    BufferUtil.toSummaryString(_responseHeader),
-                    BufferUtil.toSummaryString(_responseBuffer),
-                    BufferUtil.toSummaryString(content),
-                    _generator.getState());
+            if (_generator.isCommitted() || BufferUtil.hasContent(_responseBuffer))
+                throw new IllegalStateException("!send after append");
+            if (_generator.isComplete())
+                throw new EofException();
 
-            switch(result)
+            do
             {
-                case NEED_HEADER:
-                    _responseHeader=_connector.getResponseBuffers().getHeader();
-                    break;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{}: send({},{},{})@{}",
+                            this,
+                            BufferUtil.toSummaryString(_responseHeader),
+                            BufferUtil.toSummaryString(_responseBuffer),
+                            BufferUtil.toSummaryString(content),
+                            _generator.getState());
 
-                case NEED_BUFFER:
-                    _responseBuffer=_connector.getResponseBuffers().getBuffer();
-                    break;
+                HttpGenerator.Result result=_generator.generate(info,_responseHeader,null,_responseBuffer,content,Action.COMPLETE);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{}: {} ({},{},{})@{}",
+                            this,
+                            result,
+                            BufferUtil.toSummaryString(_responseHeader),
+                            BufferUtil.toSummaryString(_responseBuffer),
+                            BufferUtil.toSummaryString(content),
+                            _generator.getState());
 
-                case NEED_CHUNK:
-                    throw new IllegalStateException("!chunk when content length known");
-                    
-                case FLUSH:
-                    _toFlush=
-                        (BufferUtil.hasContent(_responseHeader)?8:0)+
-                        (BufferUtil.hasContent(_chunk)?4:0)+
-                        (BufferUtil.hasContent(_responseBuffer)?2:0);
-                    flush(true);
-                    break;
-                
-                case FLUSH_CONTENT:
-                    _content=content;
-                    _toFlush=
-                        (BufferUtil.hasContent(_responseHeader)?8:0)+
-                        (BufferUtil.hasContent(_chunk)?4:0)+
-                        (BufferUtil.hasContent(_content)?1:0);
-                    flush(false);
-                    break;
-                
-                case SHUTDOWN_OUT:
-                    getEndPoint().shutdownOutput();
-                    break;
-                    
-                case OK:
-                    break;
+                switch(result)
+                {
+                    case NEED_HEADER:
+                        _responseHeader=_connector.getResponseBuffers().getHeader();
+                        break;
+
+                    case NEED_BUFFER:
+                        _responseBuffer=_connector.getResponseBuffers().getBuffer();
+                        break;
+
+                    case NEED_CHUNK:
+                        throw new IllegalStateException("!chunk when content length known");
+
+                    case FLUSH:
+                        write(_responseHeader,_chunk,_responseBuffer).block();
+                        break;
+
+                    case FLUSH_CONTENT:
+                        _writeFuture=write(_responseHeader,_chunk,content);
+                        return;
+
+                    case SHUTDOWN_OUT:
+                        getEndPoint().shutdownOutput();
+                        break;
+
+                    case OK:
+                        break;
+                }
+            }
+            while(BufferUtil.hasContent(content));
+        }
+        catch(InterruptedException e)
+        {
+            LOG.debug(e);
+        }
+        catch(ExecutionException e)
+        {
+            LOG.debug(e);
+            DispatchedIOFuture.rethrow(e);
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    private int generate(HttpGenerator.ResponseInfo info, ByteBuffer content, Action action) throws IOException
+    {
+        boolean hasContent=BufferUtil.hasContent(content);
+        long preparedBefore=0;
+        long preparedAfter;
+        _lock.lock();
+        try
+        {
+            preparedBefore=_generator.getContentPrepared();
+            
+            if (_generator.isComplete())
+                throw new EofException();
+
+            do
+            {
+                // block if the last write is not complete
+                if (_writeFuture!=null && !_writeFuture.isComplete())
+                    _writeFuture.block();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{}: generate({},{},{},{},{})@{}",
+                            this,
+                            BufferUtil.toSummaryString(_responseHeader),
+                            BufferUtil.toSummaryString(_chunk),
+                            BufferUtil.toSummaryString(_responseBuffer),
+                            BufferUtil.toSummaryString(content),
+                            action,_generator.getState());
+
+                HttpGenerator.Result result=_generator.generate(info,_responseHeader,_chunk,_responseBuffer,content,action);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{}: {} ({},{},{},{},{})@{}",
+                            this,
+                            result,
+                            BufferUtil.toSummaryString(_responseHeader),
+                            BufferUtil.toSummaryString(_chunk),
+                            BufferUtil.toSummaryString(_responseBuffer),
+                            BufferUtil.toSummaryString(content),
+                            action,_generator.getState());
+
+                switch(result)
+                {
+                    case NEED_HEADER:
+                        _responseHeader=_connector.getResponseBuffers().getHeader();
+                        break;
+
+                    case NEED_BUFFER:
+                        _responseBuffer=_connector.getResponseBuffers().getBuffer();
+                        break;
+
+                    case NEED_CHUNK:
+                        _responseHeader=null;
+                        _chunk=_connector.getResponseBuffers().getBuffer(HttpGenerator.CHUNK_SIZE);
+                        break;
+
+                    case FLUSH:
+                        if (hasContent)
+                            write(_responseHeader,_chunk,_responseBuffer).block();
+                        else
+                            _writeFuture=write(_responseHeader,_chunk,_responseBuffer);
+                        break;
+
+                    case FLUSH_CONTENT:
+                        write(_responseHeader,_chunk,content).block();
+                        break;
+
+                    case SHUTDOWN_OUT:
+                        getEndPoint().shutdownOutput();
+                        break;
+
+                    case OK:
+                        break;
+                }
+            }
+            while(BufferUtil.hasContent(content));
+        }
+        catch(InterruptedException e)
+        {
+            LOG.debug(e);
+        }
+        catch(ExecutionException e)
+        {
+            LOG.debug(e);
+            if (e.getCause() instanceof IOException)
+                throw (IOException)e.getCause();
+            throw new RuntimeException(e);
+        }
+        finally
+        {
+            preparedAfter=_generator.getContentPrepared();
+            _lock.unlock();
+        }
+        return (int)(preparedAfter-preparedBefore);
+    }
+
+    private IOFuture write(ByteBuffer b0,ByteBuffer b1,ByteBuffer b2)
+    {
+        if (BufferUtil.hasContent(b0))
+        {
+            if (BufferUtil.hasContent(b1))
+            {
+                if (BufferUtil.hasContent(b2))
+                    return _endp.write(b0,b1,b2);
+                return _endp.write(b0,b1);
+            }
+            else
+            {
+                if (BufferUtil.hasContent(b2))
+                    return _endp.write(b0,b2);
+                return _endp.write(b0);
             }
         }
-        while(BufferUtil.hasContent(content));
-        
-        return (int)(prepared-_generator.getContentPrepared());
-    }
-    
-    /* ------------------------------------------------------------ */
-    private int write(HttpGenerator.ResponseInfo info, ByteBuffer content, Action action) throws IOException
-    {
-        if (_generator.isComplete())
-            throw new EofException();
-
-        long prepared=_generator.getContentPrepared();
-        
-        do
+        else
         {
-            if (_toFlush!=0)
-                flush(true);
-            
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}: generate({},{},{},{},{})@{}",
-                    this,
-                    BufferUtil.toSummaryString(_responseHeader),
-                    BufferUtil.toSummaryString(_chunk),
-                    BufferUtil.toSummaryString(_responseBuffer),
-                    BufferUtil.toSummaryString(content),
-                    action,_generator.getState());
-            
-            HttpGenerator.Result result=_generator.generate(info,_responseHeader,_chunk,_responseBuffer,content,action);
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}: {} ({},{},{},{},{})@{}",
-                    this,
-                    result,
-                    BufferUtil.toSummaryString(_responseHeader),
-                    BufferUtil.toSummaryString(_chunk),
-                    BufferUtil.toSummaryString(_responseBuffer),
-                    BufferUtil.toSummaryString(content),
-                    action,_generator.getState());
-
-            switch(result)
+            if (BufferUtil.hasContent(b1))
             {
-                case NEED_HEADER:
-                    _responseHeader=_connector.getResponseBuffers().getHeader();
-                    break;
-
-                case NEED_BUFFER:
-                    _responseBuffer=_connector.getResponseBuffers().getBuffer();
-                    break;
-
-                case NEED_CHUNK:
-                    _responseHeader=null;
-                    _chunk=_connector.getResponseBuffers().getBuffer(HttpGenerator.CHUNK_SIZE);
-                    break;
-
-                case FLUSH:
-                    _toFlush=
-                        (BufferUtil.hasContent(_responseHeader)?8:0)+
-                        (BufferUtil.hasContent(_chunk)?4:0)+
-                        (BufferUtil.hasContent(_responseBuffer)?2:0);
-                    flush(false);
-                    break;
-                
-                case FLUSH_CONTENT:
-                    _content=content;
-                    _toFlush=
-                        (BufferUtil.hasContent(_responseHeader)?8:0)+
-                        (BufferUtil.hasContent(_chunk)?4:0)+
-                        (BufferUtil.hasContent(_content)?1:0);
-                    flush(false);
-                    break;
-                
-                case SHUTDOWN_OUT:
-                    getEndPoint().shutdownOutput();
-                    break;
-                    
-                case OK:
-                    break;
+                if (BufferUtil.hasContent(b2))
+                    return _endp.write(b1,b2);
+                return _endp.write(b1);
             }
-        }
-        while(BufferUtil.hasContent(content));
-        
-        return (int)(prepared-_generator.getContentPrepared());
-    }
-    
-    /* ------------------------------------------------------------ */
-    private void flush(boolean block) throws IOException
-    {
-        while (_toFlush>0)
-        {
-            switch(_toFlush)
+            else
             {
-                case 10:
-                    _endp.write(_responseHeader,_responseBuffer); 
-                    break;
-                case 9: 
-                    _endp.write(_responseHeader,_content); 
-                    _content=null;
-                    break;
-                case 8: 
-                    _endp.write(_responseHeader); 
-                    break;
-                case 6: 
-                    _endp.write(_chunk,_responseBuffer);
-                    break;
-                case 5: 
-                    _endp.write(_chunk,_content);
-                    _content=null;
-                    break;
-                case 4: 
-                    _endp.write(_chunk);
-                    break;
-                case 2: 
-                    _endp.write(_responseBuffer);
-                    break;
-                case 1: 
-                    _endp.write(_content);
-                    _content=null;
-                    break;
-                case 0:
-                default:
-                    throw new IllegalStateException();
+                if (BufferUtil.hasContent(b2))
+                    return _endp.write(b2);
+                return CompleteIOFuture.COMPLETE;
             }
-            
-            if (!block)
-                break;
-            
-            if (_toFlush>0)
-                blockWriteable();
-
         }
     }
 
@@ -519,13 +533,13 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         protected int write(ByteBuffer content) throws IOException
         {
-            return HttpConnection.this.write(getResponseInfo(),content,Action.PREPARE);
+            return HttpConnection.this.generate(getResponseInfo(),content,Action.PREPARE);
         }
         
         @Override
-        protected int send(ByteBuffer content) throws IOException
+        protected void send(ByteBuffer content) throws IOException
         {
-            return HttpConnection.this.send(getResponseInfo(),content);
+             HttpConnection.this.send(getResponseInfo(),content);
         }
         
         @Override
@@ -622,25 +636,25 @@ public class HttpConnection extends AbstractAsyncConnection
         @Override
         protected void flushResponse() throws IOException
         {
-            HttpConnection.this.write(getResponseInfo(),null,Action.FLUSH);
+            HttpConnection.this.generate(getResponseInfo(),null,Action.FLUSH);
         }
         
         @Override
         protected void completeResponse() throws IOException
         {
-            HttpConnection.this.write(getResponseInfo(),null,Action.COMPLETE);
+            HttpConnection.this.generate(getResponseInfo(),null,Action.COMPLETE);
         }
 
         @Override
         protected void blockForContent() throws IOException
         {
             // While progress and the connection has not changed
-            while (!_endp.isInputShutdown())
+            while (_endp.isOpen())
             {
                 try
                 {
                     // Wait until we can read
-                    getEndPoint().blockReadable();
+                    getEndPoint().read().block();
 
                     // We will need a buffer to read into
                     if (_requestBuffer==null)
@@ -649,6 +663,15 @@ public class HttpConnection extends AbstractAsyncConnection
                     // If we parse to an event, return
                     if (BufferUtil.hasContent(_requestBuffer) && _parser.parseNext(_requestBuffer))
                         return;
+                }
+                catch (InterruptedException e)
+                {
+                    LOG.debug(e);
+                }
+                catch (ExecutionException e)
+                {
+                    LOG.debug(e);
+                    DispatchedIOFuture.rethrow(e);
                 }
                 finally
                 {

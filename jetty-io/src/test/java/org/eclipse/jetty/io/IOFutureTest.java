@@ -128,7 +128,7 @@ public class IOFutureTest
     @Test
     public void testInCompleted() throws Exception
     {
-        IOFuture future = new RecycledIOFuture();
+        IOFuture future = new DispatchedIOFuture();
         
         assertFalse(future.isComplete());
         assertFalse(future.isReady());
@@ -163,7 +163,7 @@ public class IOFutureTest
     @Test
     public void testReady() throws Exception
     {
-        final RecycledIOFuture future = new RecycledIOFuture();
+        final DispatchedIOFuture future = new DispatchedIOFuture();
         
         assertFalse(future.isComplete());
         assertFalse(future.isReady());
@@ -243,7 +243,7 @@ public class IOFutureTest
     @Test
     public void testFail() throws Exception
     {
-        final RecycledIOFuture future = new RecycledIOFuture();
+        final DispatchedIOFuture future = new DispatchedIOFuture();
         final Exception ex=new Exception("failed");
         
         assertFalse(future.isComplete());

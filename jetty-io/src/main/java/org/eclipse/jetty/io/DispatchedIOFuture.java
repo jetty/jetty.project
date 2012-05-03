@@ -1,12 +1,21 @@
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class RecycledIOFuture implements IOFuture
+
+/* ------------------------------------------------------------ */
+/** Dispatched IOFuture.
+ * <p>An implementation of IOFuture that can be extended to implement the
+ * {@link #dispatch(Runnable)} method so that callbacks can be dispatched.
+ * By default, the callbacks are called by the thread that called {@link #ready()} or 
+ * {@link #fail(Throwable)}
+ */
+public class DispatchedIOFuture implements IOFuture
 {
     private final Lock _lock;
     private final Condition _block;
@@ -17,21 +26,21 @@ public class RecycledIOFuture implements IOFuture
     
     private Callback _callback;
     
-    public RecycledIOFuture()
+    public DispatchedIOFuture()
     {
         // System.err.println(this);new Throwable().printStackTrace();
         _lock = new ReentrantLock();
         _block = _lock.newCondition();
     }
     
-    public RecycledIOFuture(Lock lock)
+    public DispatchedIOFuture(Lock lock)
     {
         // System.err.println(this);new Throwable().printStackTrace();
         _lock = lock;
         _block = _lock.newCondition();
     }
     
-    public RecycledIOFuture(boolean ready,Lock lock)
+    public DispatchedIOFuture(boolean ready,Lock lock)
     {
         _ready=ready;
         _complete=ready;
@@ -261,5 +270,12 @@ public class RecycledIOFuture implements IOFuture
                 _complete,
                 _ready,
                 _cause);
+    }
+
+    public static void rethrow(ExecutionException e) throws IOException
+    {
+        if (e.getCause() instanceof IOException)
+            throw (IOException)e.getCause();
+        throw new RuntimeException(e);
     }
 }

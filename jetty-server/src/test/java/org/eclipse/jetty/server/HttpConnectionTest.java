@@ -154,7 +154,7 @@ public class HttpConnectionTest
     {
         try
         {
-            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
 
             String response;
             
@@ -185,7 +185,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
         }
     }
 
@@ -335,7 +335,7 @@ public class HttpConnectionTest
         Logger logger=null;
         try
         {
-            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
             response=connector.getResponses(requests);
             offset = checkContains(response,offset,"HTTP/1.1 500");
             offset = checkContains(response,offset,"Connection: close");
@@ -343,7 +343,7 @@ public class HttpConnectionTest
         }
         finally
         {
-            ((StdErrLog)Log.getLogger(AbstractHttpConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(false);
         }
     }
 
@@ -443,7 +443,7 @@ public class HttpConnectionTest
                 try
                 {
                     baseRequest.setHandled(true);
-                    response.setHeader(HttpHeader.CONTENT_TYPE,MimeTypes.TEXT_HTML);
+                    response.setHeader(HttpHeader.CONTENT_TYPE.toString(),MimeTypes.Type.TEXT_HTML.toString());
                     response.setHeader("LongStr", longstr);
                     PrintWriter writer = response.getWriter();
                     writer.write("<html><h1>FOO</h1></html>");

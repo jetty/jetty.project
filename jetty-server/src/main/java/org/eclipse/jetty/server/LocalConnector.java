@@ -152,7 +152,7 @@ public class LocalConnector extends AbstractConnector
                 {
                     if (!leaveOpen)
                         connectionClosed(connection);
-                    _responsesBuffer = endPoint.getOut();
+                    _responsesBuffer = endPoint.getOutput();
                 }
             }
             finally

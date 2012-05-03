@@ -226,6 +226,27 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
+    /** Get the space from the limit to the capacity
+     * @param buffer
+     * @return space
+     */
+    public static int space(ByteBuffer buffer)
+    {
+        if (buffer==null)
+            return 0;
+        return buffer.capacity()-buffer.limit();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Compact the buffer
+     * @param buffer
+     */
+    public static void compact(ByteBuffer buffer)
+    {
+        buffer.compact().flip();
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * Put data from one buffer into another, avoiding over/under flows
      * @param from Buffer to take bytes from in flush mode
@@ -731,6 +752,7 @@ public class BufferUtil
                 return false;
         return true;
     }
+
 
 
 }

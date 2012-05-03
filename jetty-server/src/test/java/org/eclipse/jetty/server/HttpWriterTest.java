@@ -188,7 +188,7 @@ public class HttpWriterTest
 
         hb.completeHeader(fields,true);
         hb.flush(10000);
-        String response = new String(endp.getOut().asArray(),StringUtil.__UTF8);
+        String response = new String(endp.getOutput().asArray(),StringUtil.__UTF8);
         assertTrue(response.startsWith("HTTP/1.1 200 OK\r\nContent-Length: 1025\r\n\r\n\u05531234567890"));
     }
 
