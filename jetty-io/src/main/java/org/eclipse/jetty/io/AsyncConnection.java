@@ -21,6 +21,7 @@ public interface AsyncConnection
     IOFuture scheduleOnReadable();
     
     void onReadable();
+    void onReadFail(Throwable cause);
     void onInputShutdown();
     void onClose();
     void onIdleExpired(long idleForMs);

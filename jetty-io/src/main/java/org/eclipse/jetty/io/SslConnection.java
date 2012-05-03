@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SslConnection extends AbstractAsyncConnection
 {
-    static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.nio.ssl");
+    static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.ssl");
 
     private static final ByteBuffer __ZERO_BUFFER=BufferUtil.allocate(0);
 
@@ -315,6 +315,22 @@ public class SslConnection extends AbstractAsyncConnection
         }
     }
 
+    /* ------------------------------------------------------------ */
+    @Override
+    public void onReadFail(Throwable cause)
+    {
+        _lock.lock();
+        try
+        {     
+            if (!_appReadFuture.isComplete())
+                _appReadFuture.fail(cause);
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     private boolean process(ByteBuffer appOut) throws IOException
     {
@@ -600,12 +616,12 @@ public class SslConnection extends AbstractAsyncConnection
                 LOG.debug("{} ssl endp.oshut {}",_session,this);
                 _engine.closeOutbound();
                 _oshut=true;
+                process(null);
             }
             finally
             {
                 _lock.unlock();
             }
-            flush();
         }
 
         @Override
@@ -752,7 +768,8 @@ public class SslConnection extends AbstractAsyncConnection
                 
                 // No, we need to schedule a network read
                 _appReadFuture.recycle();
-                scheduleOnReadable();
+                if (_netReadFuture==null)
+                    _netReadFuture=scheduleOnReadable();
                 return _appReadFuture;
             }
             finally

@@ -26,9 +26,10 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         @Override
         public void onFail(Throwable cause)
         {
-            LOG.debug("FAILED: "+cause);
+            onReadFail(cause);
         }
     };
+    
 
     public AbstractAsyncConnection(AsyncEndPoint endp)
     {
@@ -75,6 +76,13 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
         read.setCallback(_readCallback);
         return read;
     }
+    
+    @Override
+    public void onReadFail(Throwable cause)
+    {
+        LOG.debug("read failed: "+cause);
+    }
+    
     
     @Override
     public String toString()

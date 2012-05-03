@@ -143,8 +143,9 @@ public class SelectChannelEndPointTest
                     // If the tests wants to block, then block
                     while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
                     {
-                        _endp.read().await();
-                        progress|=_endp.fill(_in)>0;
+                        _endp.read().block();
+                        int filled=_endp.fill(_in);
+                        progress|=filled>0;
                     }
                         
                     // Copy to the out buffer
@@ -158,7 +159,7 @@ public class SelectChannelEndPointTest
                         BufferUtil.clear(_out);
                         for (int i=0;i<_writeCount;i++)
                         {
-                            _endp.write(out.asReadOnlyBuffer()).await();
+                            _endp.write(out.asReadOnlyBuffer()).block();
                         }
                         progress=true;
                     }
@@ -173,8 +174,7 @@ public class SelectChannelEndPointTest
                 // Timeout does not close, so echo exception then shutdown
                 try
                 {
-                    // System.err.println("Execution Exception! "+e);
-                    _endp.write(BufferUtil.toBuffer("Timeout: "+BufferUtil.toString(_in))).await();
+                    _endp.write(BufferUtil.toBuffer("EE: "+BufferUtil.toString(_in))).block();
                     _endp.shutdownOutput();
                 }
                 catch(Exception e2)
@@ -473,12 +473,12 @@ public class SelectChannelEndPointTest
         // read until idle shutdown received
         long start=System.currentTimeMillis();
         int b=client.getInputStream().read();
-        assertEquals('T',b);
+        assertEquals('E',b);
         long idle=System.currentTimeMillis()-start;
         assertTrue(idle>400);
         assertTrue(idle<2000);
 
-        for (char c : "imeout: 12345678".toCharArray())
+        for (char c : "E: 12345678".toCharArray())
         {
             b = client.getInputStream().read();
             assertTrue(b>0);

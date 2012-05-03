@@ -1,8 +1,6 @@
 package org.eclipse.jetty.io;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
@@ -10,7 +8,7 @@ import java.util.concurrent.TimeoutException;
 /** Async IO Future interface.
  * <p>
  * This interface make the future status of an IO operation available via 
- * polling ({@link #isReady()}, blocking ({@link #await()} or callback ({@link #setCallback(Callback)}
+ * polling ({@link #isReady()}, blocking ({@link #block()} or callback ({@link #setCallback(Callback)}
  * 
  */
 public interface IOFuture
@@ -39,13 +37,13 @@ public interface IOFuture
     void cancel() throws UnsupportedOperationException;
     
     /* ------------------------------------------------------------ */
-    /** Wait until complete.
+    /** Block until complete.
      * <p>This call blocks the calling thread until this AsyncIO is ready or
      * an exception or until a timeout due to {@link EndPoint#getMaxIdleTime()}.
      * @throws InterruptedException if interrupted while blocking
      * @throws ExecutionException If any exception occurs during the IO operation
      */
-    void await() throws InterruptedException, ExecutionException;
+    void block() throws InterruptedException, ExecutionException;
     
     /* ------------------------------------------------------------ */
     /** Set an IOCallback.

@@ -39,7 +39,7 @@ public class CompleteIOFuture implements IOFuture
     }
 
     @Override
-    public void await() throws ExecutionException
+    public void block() throws ExecutionException
     {
         isReady();
     }

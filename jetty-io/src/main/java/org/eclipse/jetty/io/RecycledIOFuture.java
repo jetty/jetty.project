@@ -18,12 +18,14 @@ public class RecycledIOFuture implements IOFuture
     
     public RecycledIOFuture()
     {
+        // System.err.println(this);new Throwable().printStackTrace();
         _lock = new ReentrantLock();
         _block = _lock.newCondition();
     }
     
     public RecycledIOFuture(Lock lock)
     {
+        // System.err.println(this);new Throwable().printStackTrace();
         _lock = lock;
         _block = _lock.newCondition();
     }
@@ -38,6 +40,7 @@ public class RecycledIOFuture implements IOFuture
     
     public void fail(final Throwable cause)
     {
+        // System.err.println(this);new Throwable().printStackTrace();
         _lock.lock();
         try
         {
@@ -59,6 +62,7 @@ public class RecycledIOFuture implements IOFuture
     
     public void ready()
     {
+        // System.err.println(this);new Throwable().printStackTrace();
         _lock.lock();
         try
         {
@@ -79,6 +83,7 @@ public class RecycledIOFuture implements IOFuture
     
     protected void cancelled()
     {
+        // System.err.println(this);new Throwable().printStackTrace();
         _lock.lock();
         try
         {
@@ -96,6 +101,7 @@ public class RecycledIOFuture implements IOFuture
     
     public void recycle()
     {
+        // System.err.println(this);new Throwable().printStackTrace();
         _lock.lock();
         try
         {
@@ -154,7 +160,7 @@ public class RecycledIOFuture implements IOFuture
     }
 
     @Override
-    public void await() throws InterruptedException, ExecutionException
+    public void block() throws InterruptedException, ExecutionException
     {
         _lock.lock();
         try

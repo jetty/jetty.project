@@ -182,7 +182,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             boolean can_write=(_key.isWritable() && (_key.interestOps()|SelectionKey.OP_WRITE)!=0);
             _interestOps=0;
 
-            if (can_read)
+            if (can_read && !_readFuture.isComplete())
                 _readFuture.ready();
             
             if (can_write && _writeBuffers!=null)
