@@ -20,7 +20,7 @@ public class IOFutureTest
     @Test
     public void testReadyCompleted() throws Exception
     {
-        IOFuture future = new CompleteIOFuture();
+        IOFuture future = new CompletedIOFuture();
         
         assertTrue(future.isComplete());
         assertTrue(future.isReady());
@@ -60,7 +60,7 @@ public class IOFutureTest
     public void testFailedCompleted() throws Exception
     {
         Exception ex=new Exception("failed");
-        IOFuture future = new CompleteIOFuture(ex);
+        IOFuture future = new CompletedIOFuture(ex);
         
         assertTrue(future.isComplete());
         try

@@ -20,7 +20,6 @@ import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.GatheringByteChannel;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -150,6 +149,7 @@ public class ChannelEndPoint extends AbstractEndPoint
         return _oshut || !_channel.isOpen() || _socket != null && _socket.isOutputShutdown();
     }
 
+    @Override
     public boolean isInputShutdown()
     {
         return _ishut || !_channel.isOpen() || _socket != null && _socket.isInputShutdown();

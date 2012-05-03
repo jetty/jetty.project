@@ -26,7 +26,7 @@ import org.eclipse.jetty.io.SelectorManager.SelectSet;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Timeout.Task;
-import static org.eclipse.jetty.io.CompleteIOFuture.COMPLETE;
+import static org.eclipse.jetty.io.CompletedIOFuture.COMPLETE;
 
 /* ------------------------------------------------------------ */
 /**
@@ -54,7 +54,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private boolean _open;
 
     private volatile boolean _idlecheck;
-    private volatile long _lastNotIdleTimestamp;
     private volatile AbstractAsyncConnection _connection;
     
     private DispatchedIOFuture _readFuture = new DispatchedIOFuture(true,_lock)
@@ -154,12 +153,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             _manager.endPointUpgraded(this,old);
     }
     
-    /* ------------------------------------------------------------ */
-    @Override
-    public long getActivityTimestamp()
-    {
-        return _lastNotIdleTimestamp;
-    }
 
     /* ------------------------------------------------------------ */
     /** Called by selectSet to schedule handling
@@ -229,18 +222,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         return _idlecheck;
     }
 
-    /* ------------------------------------------------------------ */
-    protected void notIdle()
-    {
-        _lastNotIdleTimestamp=System.currentTimeMillis();
-    }
 
     /* ------------------------------------------------------------ */
     public void checkForIdleOrReadWriteTimeout(long now)
     {        
         if (_idlecheck || !_readFuture.isComplete() || !_writeFuture.isComplete())
         {
-            long idleTimestamp=_lastNotIdleTimestamp;
+            long idleTimestamp=getNotIdleTimestamp();
             long max_idle_time=getMaxIdleTime();
 
             if (idleTimestamp!=0 && max_idle_time>0)
@@ -261,7 +249,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                     }
                     finally
                     {
-                        _lastNotIdleTimestamp=now;
+                        notIdle();
                         _lock.unlock();
                     }
                 }
@@ -330,7 +318,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         catch(IOException e)
         {
-            return new CompleteIOFuture(e);
+            return new CompletedIOFuture(e);
         } 
         finally
         {

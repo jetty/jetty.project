@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.CompleteIOFuture;
+import org.eclipse.jetty.io.CompletedIOFuture;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.IOFuture;
 import org.eclipse.jetty.io.DispatchedIOFuture;
@@ -458,7 +458,7 @@ public class HttpConnection extends AbstractAsyncConnection
             {
                 if (BufferUtil.hasContent(b2))
                     return _endp.write(b2);
-                return CompleteIOFuture.COMPLETE;
+                return CompletedIOFuture.COMPLETE;
             }
         }
     }

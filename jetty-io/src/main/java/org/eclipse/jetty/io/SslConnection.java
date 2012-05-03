@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.io;
 
-import static org.eclipse.jetty.io.CompleteIOFuture.COMPLETE;
+import static org.eclipse.jetty.io.CompletedIOFuture.COMPLETE;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -642,6 +642,20 @@ public class SslConnection extends AbstractAsyncConnection
         }
 
         @Override
+        public boolean isInputShutdown()
+        {
+            _lock.lock();
+            try
+            {
+                return !isOpen()||_engine.isInboundDone();
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+
+        @Override
         public void close() throws IOException
         {
             LOG.debug("{} ssl endp.close",_session);
@@ -741,9 +755,9 @@ public class SslConnection extends AbstractAsyncConnection
       
 
         @Override
-        public long getActivityTimestamp()
+        public long getNotIdleTimestamp()
         {
-            return _endp.getActivityTimestamp();
+            return _endp.getNotIdleTimestamp();
         }
 
         @Override
@@ -806,7 +820,7 @@ public class SslConnection extends AbstractAsyncConnection
             }
             catch (IOException e)
             {
-                return new CompleteIOFuture(e);
+                return new CompletedIOFuture(e);
             }
             finally
             {

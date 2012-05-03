@@ -5,20 +5,20 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.thread.ThreadPool;
 
-public class CompleteIOFuture implements IOFuture
+public class CompletedIOFuture implements IOFuture
 {
     private final boolean _ready;
     private final Throwable _cause;
    
-    public final static CompleteIOFuture COMPLETE=new CompleteIOFuture(); 
+    public final static CompletedIOFuture COMPLETE=new CompletedIOFuture(); 
     
-    public CompleteIOFuture()
+    public CompletedIOFuture()
     {
         _ready=true;
         _cause=null;
     }
     
-    public CompleteIOFuture(Throwable cause)
+    public CompletedIOFuture(Throwable cause)
     {
         _ready=false;
         _cause=cause;

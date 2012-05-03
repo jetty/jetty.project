@@ -122,6 +122,6 @@ public interface AsyncEndPoint extends EndPoint
      * @return Timestamp in ms since epoch of when the last data was
      * filled or flushed from this endpoint.
      */
-    long getActivityTimestamp();
+    long getNotIdleTimestamp();
 
 }

@@ -28,8 +28,11 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
+    public final static InetSocketAddress NOIP=new InetSocketAddress(0);
+    
     protected ByteBuffer _in;
     protected ByteBuffer _out;
+    protected boolean _ishut;
     protected boolean _oshut;
     protected boolean _closed;
     protected boolean _growOutput;
@@ -40,7 +43,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint()
     {
-        super(null,null);
+        super(NOIP,NOIP);
         _in=BufferUtil.EMPTY_BUFFER;
         _out=BufferUtil.allocate(1024);
     }
@@ -51,7 +54,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(byte[] input, int outputSize)
     {
-        super(null,null);
+        super(NOIP,NOIP);
         _in=input==null?null:ByteBuffer.wrap(input);
         _out=BufferUtil.allocate(outputSize);
     }
@@ -62,7 +65,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(String input, int outputSize)
     {
-        super(null,null);
+        super(NOIP,NOIP);
         setInput(input);
         _out=BufferUtil.allocate(outputSize);
     }
@@ -176,7 +179,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     /* ------------------------------------------------------------ */
     /*
-     *  @see org.eclipse.jetty.io.EndPoint#isOutputShutdown()
+     */
+    public boolean isInputShutdown()
+    {
+        return _ishut||_closed;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
      */
     @Override
     public boolean isOutputShutdown()
@@ -223,6 +233,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         if (_closed)
             throw new IOException("CLOSED");
         if (_in==null)
+            _ishut=true;
+        if (_ishut)
             return -1;
         return BufferUtil.append(_in,buffer);
     }
@@ -234,10 +246,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public int flush(ByteBuffer... buffers) throws IOException
     {
-        if (_oshut)
-            throw new IOException("oshut");
         if (_closed)
             throw new IOException("CLOSED");
+        if (_oshut)
+            throw new IOException("OSHUT");
 
         int len=0;
 
@@ -271,6 +283,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void reset()
     {
+        _ishut=false;
         _oshut=false;
         _closed=false;
         _in=null;

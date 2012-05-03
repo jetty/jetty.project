@@ -51,6 +51,8 @@ public interface EndPoint
     void shutdownOutput() throws IOException;
 
     boolean isOutputShutdown();
+    
+    boolean isInputShutdown();
 
     /**
      * Close any backing stream associated with the endpoint
