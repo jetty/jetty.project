@@ -62,15 +62,17 @@ import java.util.concurrent.Future;
  * <h3>Hybrid write</h3>
  * <pre>
  * IOFuture write = endpoint.write(buffer);
- * if (write.isReady())
- *   // write next
- * else
+ * // wait a little bit
+ * if (!write.block(10,TimeUnit.MILLISECONDS))
+ * {
+ *   // still not ready, so organize a callback
  *   write.setHandler(new IOCallback()
  *   {
  *     public void onReady() { ... }
  *     public void onFail(IOException e) { ... }
  *     public void onTimeout() { ... }
- *   }
+ *   });
+ * ...
  * </pre>
  * 
  * <h2>Compatibility Notes</h2>

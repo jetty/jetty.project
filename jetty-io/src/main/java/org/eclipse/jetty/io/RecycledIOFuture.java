@@ -1,6 +1,7 @@
 package org.eclipse.jetty.io;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -175,6 +176,23 @@ public class RecycledIOFuture implements IOFuture
         }
     }
 
+
+    @Override
+    public boolean block(long timeout, TimeUnit units) throws InterruptedException, ExecutionException
+    {
+        _lock.lock();
+        try
+        {
+            if (!_complete)
+                _block.await(timeout,units);
+            return isReady();
+        }
+        finally
+        {
+            _lock.unlock();
+        }
+    }
+    
     @Override
     public void setCallback(Callback callback)
     {

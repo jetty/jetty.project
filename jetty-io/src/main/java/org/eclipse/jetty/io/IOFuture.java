@@ -1,6 +1,8 @@
 package org.eclipse.jetty.io;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /* ------------------------------------------------------------ */
 /* ------------------------------------------------------------ */
@@ -9,14 +11,17 @@ import java.util.concurrent.ExecutionException;
  * <p>
  * This interface make the future status of an IO operation available via 
  * polling ({@link #isReady()}, blocking ({@link #block()} or callback ({@link #setCallback(Callback)}
- * 
+ * <p>
+ * This interface does not directly support a timeout for blocking. If an IO operation times out, then 
+ * this will be indicated via this interface by an {@link ExecutionException} containing a 
+ * {@link TimeoutException} (or similar).
  */
 public interface IOFuture
 {
     /* ------------------------------------------------------------ */
     /** Indicate if this Future is complete.
      * If this future has completed by becoming ready, excepting or timeout.   
-     * @return True if this future has completed by becoming ready, excepting or timeout.
+     * @return True if this future has completed by becoming ready or excepting.
      */
     boolean isComplete();
     
@@ -39,11 +44,22 @@ public interface IOFuture
     /* ------------------------------------------------------------ */
     /** Block until complete.
      * <p>This call blocks the calling thread until this AsyncIO is ready or
-     * an exception or until a timeout due to {@link EndPoint#getMaxIdleTime()}.
+     * an exception.
      * @throws InterruptedException if interrupted while blocking
      * @throws ExecutionException If any exception occurs during the IO operation
      */
     void block() throws InterruptedException, ExecutionException;
+    
+    /* ------------------------------------------------------------ */
+    /** Block until complete or timeout
+     * <p>This call blocks the calling thread until this AsyncIO is ready or
+     * an exception or a timeout.   In the case of the timeout, the IO operation is not affected 
+     * and can still continue to completion and this IOFuture is still usable.
+     * @return true if the IOFuture completed or false if it timedout. 
+     * @throws InterruptedException if interrupted while blocking
+     * @throws ExecutionException If any exception occurs during the IO operation
+     */
+    boolean block(long timeout, TimeUnit units) throws InterruptedException, ExecutionException;
     
     /* ------------------------------------------------------------ */
     /** Set an IOCallback.

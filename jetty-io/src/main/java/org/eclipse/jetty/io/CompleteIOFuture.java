@@ -1,6 +1,7 @@
 package org.eclipse.jetty.io;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.thread.ThreadPool;
 
@@ -42,6 +43,12 @@ public class CompleteIOFuture implements IOFuture
     public void block() throws ExecutionException
     {
         isReady();
+    }
+    
+    @Override
+    public boolean block(long timeout, TimeUnit units) throws ExecutionException
+    {
+        return isReady();
     }
 
     @Override
