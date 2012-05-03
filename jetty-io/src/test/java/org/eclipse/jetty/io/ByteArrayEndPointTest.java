@@ -62,7 +62,7 @@ public class ByteArrayEndPointTest
     }
     
     @Test
-    public void testFlush() throws Exception
+    public void testGrowingFlush() throws Exception
     {
         ByteArrayEndPoint endp = new ByteArrayEndPoint((byte[])null,15);
         endp.setGrowOutput(true);
@@ -82,6 +82,14 @@ public class ByteArrayEndPointTest
         assertEquals(9,endp.flush(BufferUtil.EMPTY_BUFFER,BufferUtil.toBuffer(" and"),BufferUtil.toBuffer(" more")));
         assertEquals("some output some more and more",endp.getOutputString());
         
+        
+        
+    }
+    
+    @Test
+    public void testFlush() throws Exception
+    {
+        ByteArrayEndPoint endp = new ByteArrayEndPoint((byte[])null,15);
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(10));
 
@@ -89,6 +97,11 @@ public class ByteArrayEndPointTest
         assertEquals(10,endp.flush(data));
         assertEquals("Some more ",endp.getOutputString());
         assertEquals("data.",BufferUtil.toString(data));
+
+        assertEquals("Some more ",endp.takeOutputString());
+        
+        assertEquals(5,endp.flush(data));
+        assertEquals("data.",BufferUtil.toString(endp.takeOutput()));
         
         
     }

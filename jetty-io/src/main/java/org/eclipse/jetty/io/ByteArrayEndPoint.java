@@ -128,6 +128,28 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     /**
      * @return Returns the out.
      */
+    public ByteBuffer takeOutput()
+    {
+        ByteBuffer b=_out;
+        _out=BufferUtil.allocate(b.capacity());
+        return b;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the out.
+     */
+    public String takeOutputString()
+    {
+        String s=BufferUtil.toString(_out,StringUtil.__UTF8_CHARSET);
+        BufferUtil.clear(_out);
+        return s;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the out.
+     */
     public String getOutputString(Charset charset)
     {
         return BufferUtil.toString(_out,charset);
