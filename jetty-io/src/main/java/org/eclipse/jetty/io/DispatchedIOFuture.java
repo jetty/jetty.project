@@ -109,25 +109,6 @@ public class DispatchedIOFuture implements IOFuture
         }
     }
     
-    public void recycle()
-    {
-        // System.err.println(this);new Throwable().printStackTrace();
-        _lock.lock();
-        try
-        {
-            if (!_complete)
-                throw new IllegalStateException();
-            _ready=false;
-            _cause=null;
-            _complete=false;
-            _callback=null;
-        }
-        finally
-        {
-            _lock.unlock();
-        }
-    }
-    
     @Override
     public boolean isComplete()
     {

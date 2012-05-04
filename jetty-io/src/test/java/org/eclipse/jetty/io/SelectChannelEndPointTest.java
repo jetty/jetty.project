@@ -187,6 +187,10 @@ public class SelectChannelEndPointTest
                     e2.printStackTrace();
                 }
             }
+            catch(InterruptedException e)
+            {
+                // e.printStackTrace();
+            }
             catch(Exception e)
             {
                 e.printStackTrace();
@@ -204,11 +208,11 @@ public class SelectChannelEndPointTest
         @Override
         public void onIdleExpired(long idleForMs)
         {
-            System.err.println("IDLE "+idleForMs);
+            /*System.err.println("IDLE "+idleForMs);
             System.err.println("last "+(System.currentTimeMillis()-_last));
             System.err.println("ENDP "+_endp);
             System.err.println("tran "+_endp.getTransport());
-            System.err.println();
+            System.err.println();*/
             super.onIdleExpired(idleForMs);
         }
         
@@ -507,7 +511,7 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.register(server);
-        int writes = 1000;
+        int writes = 10000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);

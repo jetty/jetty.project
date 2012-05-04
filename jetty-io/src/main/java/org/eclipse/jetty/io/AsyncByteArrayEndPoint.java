@@ -13,6 +13,9 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEndPoint
 {
+
+
+
     public static final Logger LOG=Log.getLogger(AsyncByteArrayEndPoint.class);
     
     private final Lock _lock = new ReentrantLock();
@@ -20,54 +23,10 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
 
     private volatile AsyncConnection _connection;
 
-    private DispatchedIOFuture _readFuture = new DispatchedIOFuture(true,_lock)
-    {
-        @Override
-        protected void dispatch(Runnable task)
-        {
-            AsyncByteArrayEndPoint.this.dispatch(task);
-        }
-        
-        @Override
-        public void cancel()
-        {
-            _lock.lock();
-            try
-            {
-                // TODO ??
-                cancelled();
-            }
-            finally
-            {
-                _lock.unlock();
-            }
-        }
-    };
+    private DispatchedIOFuture _readFuture;
+    private DispatchedIOFuture _writeFuture;
 
     private ByteBuffer[] _writeBuffers;
-    private DispatchedIOFuture _writeFuture = new DispatchedIOFuture(true,_lock)
-    {
-        @Override
-        protected void dispatch(Runnable task)
-        {
-            AsyncByteArrayEndPoint.this.dispatch(task);
-        }
-        
-        @Override
-        public void cancel()
-        {
-            _lock.lock();
-            try
-            {
-                // TODO
-                cancelled();
-            }
-            finally
-            {
-                _lock.unlock();
-            }
-        }
-    };
     
     
     
@@ -93,10 +52,10 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
         _lock.lock();
         try
         {
-            if (!_readFuture.isComplete())
+            if (_readFuture!=null && !_readFuture.isComplete())
                 throw new IllegalStateException("previous read not complete");
                 
-            _readFuture.recycle();
+            _readFuture=new ReadFuture();
 
             // TODO
             
@@ -114,7 +73,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
         _lock.lock();
         try
         {
-            if (!_writeFuture.isComplete())
+            if (_writeFuture!=null && !_writeFuture.isComplete())
                 throw new IllegalStateException("previous write not complete");
 
             flush(buffers);
@@ -125,7 +84,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
                 if (b.hasRemaining())
                 {
                     _writeBuffers=buffers;
-                    _writeFuture.recycle();
+                    _writeFuture=new WriteFuture();
                     // TODO
                     return _writeFuture;
                 }
@@ -221,5 +180,68 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
             }
         }
     }
+    
+
+    private final class WriteFuture extends DispatchedIOFuture
+    {
+        private WriteFuture()
+        {
+            super(_lock);
+        }
+
+        @Override
+        protected void dispatch(Runnable task)
+        {
+            AsyncByteArrayEndPoint.this.dispatch(task);
+        }
+
+        @Override
+        public void cancel()
+        {
+            _lock.lock();
+            try
+            {
+                // TODO
+                cancelled();
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+    }
+
+
+
+
+    private final class ReadFuture extends DispatchedIOFuture
+    {
+        private ReadFuture()
+        {
+            super(_lock);
+        }
+
+        @Override
+        protected void dispatch(Runnable task)
+        {
+            AsyncByteArrayEndPoint.this.dispatch(task);
+        }
+
+        @Override
+        public void cancel()
+        {
+            _lock.lock();
+            try
+            {
+                // TODO ??
+                cancelled();
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+    }
+
 
 }

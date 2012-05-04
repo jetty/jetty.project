@@ -40,8 +40,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
-    private final DispatchedIOFuture _readFuture = new InterestedFuture(SelectionKey.OP_READ,true,_lock);
-    private final DispatchedIOFuture _writeFuture = new InterestedFuture(SelectionKey.OP_WRITE,true,_lock);
+    
+    private DispatchedIOFuture _readFuture=new DispatchedIOFuture(true,_lock);
+    private DispatchedIOFuture _writeFuture=new DispatchedIOFuture(true,_lock);
     
     private  SelectionKey _key;
 
@@ -221,10 +222,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _lock.lock();
         try
         {
-            if (!_readFuture.isComplete())
+            if (_readFuture!=null && !_readFuture.isComplete())
                 throw new IllegalStateException("previous read not complete");
                 
-            _readFuture.recycle();
+            _readFuture=new InterestedFuture(SelectionKey.OP_READ);
             _interestOps=_interestOps|SelectionKey.OP_READ;
             updateKey();
             
@@ -244,7 +245,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         _lock.lock();
         try
         {
-            if (!_writeFuture.isComplete())
+            if (_writeFuture!=null && !_writeFuture.isComplete())
                 throw new IllegalStateException("previous write not complete");
 
             flush(buffers);
@@ -255,7 +256,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 if (b.hasRemaining())
                 {
                     _writeBuffers=buffers;
-                    _writeFuture.recycle();
+                    _writeFuture=new InterestedFuture(SelectionKey.OP_WRITE);
                     _interestOps=_interestOps|SelectionKey.OP_WRITE;
                     updateKey();
                     return _writeFuture;
@@ -500,9 +501,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private class InterestedFuture extends DispatchedIOFuture
     {
         final int _interest;
-        private InterestedFuture(int interest,boolean ready, Lock lock)
+        private InterestedFuture(int interest)
         {
-            super(ready,lock);
+            super(_lock);
             _interest=interest;
         }
 

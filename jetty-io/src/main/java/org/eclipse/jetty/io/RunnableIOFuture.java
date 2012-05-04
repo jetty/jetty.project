@@ -16,6 +16,15 @@ final class RunnableIOFuture extends DispatchedIOFuture
     {
         super(ready,lock);
     }
+    
+    RunnableIOFuture(Lock lock)
+    {
+        super(lock);
+    }
+    
+    RunnableIOFuture()
+    {
+    }
 
     @Override
     protected void dispatch(Runnable callback)
@@ -44,11 +53,4 @@ final class RunnableIOFuture extends DispatchedIOFuture
         return _task!=null;
     }
     
-    @Override 
-    public void recycle()
-    {
-        if (_task!=null)
-            throw new IllegalStateException("unrun task");
-        super.recycle();
-    }
 }

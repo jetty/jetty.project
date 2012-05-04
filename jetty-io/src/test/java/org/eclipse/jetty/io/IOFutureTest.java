@@ -163,7 +163,7 @@ public class IOFutureTest
     @Test
     public void testReady() throws Exception
     {
-        final DispatchedIOFuture future = new DispatchedIOFuture();
+        DispatchedIOFuture future = new DispatchedIOFuture();
         
         assertFalse(future.isComplete());
         assertFalse(future.isReady());
@@ -195,13 +195,14 @@ public class IOFutureTest
         
 
         start=System.currentTimeMillis();
+        final DispatchedIOFuture f0=future;
         new Thread()
         {
             @Override
             public void run()
             {
                 try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){}
-                future.ready();
+                f0.ready();
             }
         }.start();
 
@@ -215,17 +216,20 @@ public class IOFutureTest
         assertEquals((Throwable)null,fail.get());
         
         ready.set(false);
-        future.recycle();
+        
+        
+        future = new DispatchedIOFuture();
         assertFalse(future.isComplete());
         assertFalse(future.isReady());
         start=System.currentTimeMillis();
+        final DispatchedIOFuture f1=future;
         new Thread()
         {
             @Override
             public void run()
             {
                 try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){}
-                future.ready();
+                f1.ready();
             }
         }.start();
 
@@ -236,14 +240,13 @@ public class IOFutureTest
         assertTrue(future.isReady());
         assertFalse(ready.get()); // no callback set
         assertEquals((Throwable)null,fail.get());
-        
     }
     
 
     @Test
     public void testFail() throws Exception
     {
-        final DispatchedIOFuture future = new DispatchedIOFuture();
+        DispatchedIOFuture future = new DispatchedIOFuture();
         final Exception ex=new Exception("failed");
         
         assertFalse(future.isComplete());
@@ -275,13 +278,14 @@ public class IOFutureTest
         assertEquals((Throwable)null,fail.get());
 
         start=System.currentTimeMillis();
+        final DispatchedIOFuture f0=future;
         new Thread()
         {
             @Override
             public void run()
             {
                 try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){}
-                future.fail(ex);
+                f0.fail(ex);
             }
         }.start();
 
@@ -309,20 +313,22 @@ public class IOFutureTest
         }
         assertFalse(ready.get());
         assertEquals(ex,fail.get());
-        
+
+        future=new DispatchedIOFuture();
         ready.set(false);
         fail.set(null);
-        future.recycle();
+        
         assertFalse(future.isComplete());
         assertFalse(future.isReady());
         start=System.currentTimeMillis();
+        final DispatchedIOFuture f1=future;
         new Thread()
         {
             @Override
             public void run()
             {
                 try{TimeUnit.MILLISECONDS.sleep(50);}catch(Exception e){}
-                future.fail(ex);
+                f1.fail(ex);
             }
         }.start();
 

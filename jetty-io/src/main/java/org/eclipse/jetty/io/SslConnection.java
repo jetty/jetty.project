@@ -16,10 +16,7 @@ package org.eclipse.jetty.io;
 import static org.eclipse.jetty.io.CompletedIOFuture.COMPLETE;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -50,10 +47,10 @@ public class SslConnection extends AbstractAsyncConnection
     private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<SslBuffers>();
     
     private final Lock _lock = new ReentrantLock();
-    
-    private final RunnableIOFuture _appReadFuture = new RunnableIOFuture(true,_lock);
-    private final RunnableIOFuture _appWriteFuture = new RunnableIOFuture(true,_lock);
     private final IOFuture.Callback _netWriteCallback = new NetWriteCallback();
+
+    private RunnableIOFuture _appReadFuture = new RunnableIOFuture(true,_lock);
+    private RunnableIOFuture _appWriteFuture = new RunnableIOFuture(true,_lock);
     
     private final SSLEngine _engine;
     private final SSLSession _session;
@@ -259,7 +256,7 @@ public class SslConnection extends AbstractAsyncConnection
             allocateBuffers();     
 
             boolean progress=true;
-            while(progress && !_appReadFuture.isDispatched())
+            while(progress && (_appReadFuture==null || !_appReadFuture.isDispatched()))
             {
                 progress=false;
 
@@ -284,7 +281,7 @@ public class SslConnection extends AbstractAsyncConnection
         finally
         {
             releaseBuffers();
-            if (!_appReadFuture.isComplete() && _netReadFuture==null && !BufferUtil.isFull(_inNet))
+            if (_appReadFuture!=null && !_appReadFuture.isComplete() && _netReadFuture==null && !BufferUtil.isFull(_inNet))
                 _netReadFuture=scheduleOnReadable();
             
             LOG.debug("!onReadable {} {}",this,_netReadFuture); 
@@ -778,7 +775,7 @@ public class SslConnection extends AbstractAsyncConnection
                     return COMPLETE;
                 
                 // No, we need to schedule a network read
-                _appReadFuture.recycle();
+                _appReadFuture=new RunnableIOFuture(_lock);
                 if (_netReadFuture==null)
                     _netReadFuture=scheduleOnReadable();
                 return _appReadFuture;
@@ -806,7 +803,7 @@ public class SslConnection extends AbstractAsyncConnection
                     if (b.hasRemaining())
                     {
                         _writeBuffers=buffers;
-                        _appWriteFuture.recycle();
+                        _appWriteFuture=new RunnableIOFuture(_lock);
                         return _appWriteFuture;
                     }
                 }
