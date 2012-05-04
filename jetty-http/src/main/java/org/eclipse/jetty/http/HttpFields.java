@@ -48,7 +48,6 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>This class is not synchronized as it is expected that modifications will only be performed by a
  * single thread.
  * 
- * 
  */
 public class HttpFields implements Iterable<HttpFields.Field>
 {

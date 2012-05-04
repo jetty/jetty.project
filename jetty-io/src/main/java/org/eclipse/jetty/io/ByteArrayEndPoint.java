@@ -180,6 +180,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     /* ------------------------------------------------------------ */
     /*
      */
+    @Override
     public boolean isInputShutdown()
     {
         return _ishut||_closed;
@@ -195,6 +196,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     /* ------------------------------------------------------------ */
+    private void shutdownInput() throws IOException
+    {
+        _ishut=true;
+        if (_oshut)
+            close();
+    }
+    
+    /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.io.EndPoint#shutdownOutput()
      */
@@ -202,6 +211,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void shutdownOutput() throws IOException
     {
         _oshut=true;
+        if (_ishut)
+            close();
     }
 
     /* ------------------------------------------------------------ */
@@ -233,7 +244,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         if (_closed)
             throw new IOException("CLOSED");
         if (_in==null)
-            _ishut=true;
+            shutdownInput();
         if (_ishut)
             return -1;
         return BufferUtil.append(_in,buffer);

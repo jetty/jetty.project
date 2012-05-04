@@ -45,46 +45,15 @@ import org.eclipse.jetty.util.log.Logger;
 public class SslConnection extends AbstractAsyncConnection
 {
     static final Logger LOG = Log.getLogger("org.eclipse.jetty.io.ssl");
-
     private static final ByteBuffer __ZERO_BUFFER=BufferUtil.allocate(0);
-
     private static final ThreadLocal<SslBuffers> __buffers = new ThreadLocal<SslBuffers>();
     
     private final Lock _lock = new ReentrantLock();
     
-    private final DispatchedIOFuture _appReadFuture = new DispatchedIOFuture(true,_lock)
-    {
-        @Override
-        protected void dispatch(Runnable callback)
-        {
-            if (_appReadTask!=null)
-                throw new IllegalStateException();
-            _appReadTask=callback;
-        }   
-    };
-
-    private IOFuture.Callback _writeCallback = new IOFuture.Callback()
-    {
-        @Override
-        public void onReady()
-        {
-            _appEndPoint.completeWrite();
-        }
-        
-        @Override
-        public void onFail(Throwable cause)
-        {
-            LOG.debug("write FAILED",cause);
-            if (!_appWriteFuture.isComplete())
-                _appWriteFuture.fail(cause);
-            else
-                LOG.warn("write FAILED",cause);
-        }
-    };
+    private final RunnableIOFuture _appReadFuture = new RunnableIOFuture(true,_lock);
+    private final RunnableIOFuture _appWriteFuture = new RunnableIOFuture(true,_lock);
+    private final IOFuture.Callback _netWriteCallback = new NetWriteCallback();
     
-    private final DispatchedIOFuture _appWriteFuture = new DispatchedIOFuture(true,_lock);
-    
-    private Runnable _appReadTask;
     private final SSLEngine _engine;
     private final SSLSession _session;
     private AbstractAsyncConnection _appConnection;
@@ -101,6 +70,31 @@ public class SslConnection extends AbstractAsyncConnection
     private IOFuture _netReadFuture;
     private IOFuture _netWriteFuture;
 
+
+
+    private final class NetWriteCallback implements IOFuture.Callback
+    {
+        @Override
+        public void onReady()
+        {
+            _appEndPoint.completeWrite();
+        }
+
+        @Override
+        public void onFail(Throwable cause)
+        {
+            LOG.debug("write FAILED",cause);
+            if (!_appWriteFuture.isComplete())
+            {
+                _appWriteFuture.fail(cause);
+                _appWriteFuture.run();
+            }
+            else
+                LOG.warn("write FAILED",cause);
+        }
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /* this is a half baked buffer pool
      */
@@ -273,7 +267,7 @@ public class SslConnection extends AbstractAsyncConnection
             allocateBuffers();     
 
             boolean progress=true;
-            while(progress && _appReadTask==null)
+            while(progress && !_appReadFuture.isDispatched())
             {
                 progress=false;
 
@@ -307,12 +301,8 @@ public class SslConnection extends AbstractAsyncConnection
         }
         
         // Run any ready callback from _appReadFuture in this thread.
-        if (_appReadTask!=null)
-        {
-            Runnable task=_appReadTask;
-            _appReadTask=null;
-            task.run();
-        }
+        if (_appReadFuture.isDispatched())
+            _appReadFuture.run();
     }
 
     /* ------------------------------------------------------------ */
@@ -486,7 +476,7 @@ public class SslConnection extends AbstractAsyncConnection
                 return true;
 
             _netWriteFuture=write;
-            _netWriteFuture.setCallback(_writeCallback);
+            _netWriteFuture.setCallback(_netWriteCallback);
         }
         
         return result.bytesConsumed()>0 || result.bytesProduced()>0 ;
@@ -841,6 +831,9 @@ public class SslConnection extends AbstractAsyncConnection
             finally
             {
                 _lock.unlock();
+                
+                if (_appWriteFuture.isDispatched())
+                    _appWriteFuture.run();
             }
         }
     }

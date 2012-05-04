@@ -60,47 +60,14 @@ public class ChannelEndPoint extends AbstractEndPoint
         return _channel.isOpen();
     }
 
-    /** Shutdown the channel Input.
-     * Cannot be overridden. To override, see {@link #shutdownInput()}
-     * @throws IOException
-     */
-    protected final void shutdownChannelInput() throws IOException
-    {
-        LOG.debug("ishut {}", this);
-        _ishut = true;
-        if (_channel.isOpen())
-        {
-            if (_socket != null)
-            {
-                try
-                {
-                    if (!_socket.isInputShutdown())
-                    {
-                        _socket.shutdownInput();
-                    }
-                }
-                catch (SocketException e)
-                {
-                    LOG.debug(e.toString());
-                    LOG.ignore(e);
-                }
-                finally
-                {
-                    if (_oshut)
-                    {
-                        close();
-                    }
-                }
-            }
-        }
-    }
-
     /* (non-Javadoc)
      * @see org.eclipse.io.EndPoint#close()
      */
-    public void shutdownInput() throws IOException
+    private void shutdownInput() throws IOException
     {
-        shutdownChannelInput();
+        _ishut=true;
+        if (_oshut)
+            close();
     }
 
     protected final void shutdownChannelOutput() throws IOException

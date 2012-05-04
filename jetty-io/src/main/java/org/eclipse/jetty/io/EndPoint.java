@@ -45,13 +45,35 @@ public interface EndPoint
     /* ------------------------------------------------------------ */
     long getCreatedTimeStamp();
     
-    /**
-     * Shutdown any backing output stream associated with the endpoint
+    /* ------------------------------------------------------------ */
+    /** Shutdown the output.
+     * <p>This call indicates that no more data will be sent on this endpoint that 
+     * that the remote end should read an EOF once all previously sent data has been 
+     * consumed. Shutdown may be done either at the TCP/IP level, as a protocol exchange (Eg
+     * TLS close handshake) or both.
+     * <p>
+     * If the endpoint has {@link #isInputShutdown()} true, then this call has the same effect
+     * as {@link #close()}.
+     * @throws IOException
      */
     void shutdownOutput() throws IOException;
 
+    /* ------------------------------------------------------------ */
+    /** Test if output is shutdown.
+     * The output is shutdown by a call to {@link #shutdownOutput()} 
+     * or {@link #close()}.
+     * @return true if the output is shutdown or the endpoint is closed.
+     */
     boolean isOutputShutdown();
     
+    /* ------------------------------------------------------------ */
+    /** Test if the input is shutdown.
+     * The input is shutdown if an EOF has been read while doing 
+     * a {@link #fill(ByteBuffer)}.   Once the input is shutdown, all calls to
+     * {@link #fill(ByteBuffer)} will  return -1, until such time as the 
+     * end point is close, when they will return {@link EofException}.
+     * @return True if the input is shutdown or the endpoint is closed.
+     */
     boolean isInputShutdown();
 
     /**
@@ -67,8 +89,8 @@ public interface EndPoint
      * @param buffer The buffer to fill. The position and limit are modified during the fill. After the 
      * operation, the position is unchanged and the limit is increased to reflect the new data filled.
      * @return an <code>int</code> value indicating the number of bytes
-     * filled or -1 if EOF is reached.
-     * @throws EofException If input is shutdown or the endpoint is closed.
+     * filled or -1 if EOF is read or the input is shutdown.
+     * @throws EofException If the endpoint is closed.
      */
     int fill(ByteBuffer buffer) throws IOException;
 
