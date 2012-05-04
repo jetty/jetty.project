@@ -81,9 +81,8 @@ public class CompletedIOFuture implements IOFuture
     @Override
     public String toString()
     {
-        return String.format("CIOF@%x{r=%b,c=%s}",
+        return String.format("CIOF@%x{%s}",
                 hashCode(),
-                _ready,
-                _cause);
+                _ready?"R":_cause);
     }
 }

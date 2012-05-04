@@ -15,20 +15,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     private static final Logger LOG = Log.getLogger(AbstractAsyncConnection.class);
     protected final AsyncEndPoint _endp;
     
-    private IOFuture.Callback _readCallback = new IOFuture.Callback()
-    {
-        @Override
-        public void onReady()
-        {
-            onReadable();
-        }
-        
-        @Override
-        public void onFail(Throwable cause)
-        {
-            onReadFail(cause);
-        }
-    };
+    private final IOFuture.Callback _readCallback = new ReadCallback();
     
 
     public AbstractAsyncConnection(AsyncEndPoint endp)
@@ -89,4 +76,27 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     {
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
+    
+
+    private class ReadCallback implements IOFuture.Callback
+    {
+        @Override
+        public void onReady()
+        {
+            onReadable();
+        }
+
+        @Override
+        public void onFail(Throwable cause)
+        {
+            onReadFail(cause);
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("AAC$ReadCB@%x",hashCode());
+        }
+    }
+
 }

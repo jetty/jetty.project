@@ -194,6 +194,6 @@ public class SelectChannelEndPointSslTest extends SelectChannelEndPointTest
     @Override
     public void testStress() throws Exception
     {
-        // super.testStress();
+        super.testStress();
     }
 }

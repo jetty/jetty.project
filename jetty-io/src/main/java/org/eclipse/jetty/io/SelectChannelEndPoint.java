@@ -40,6 +40,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     
     private final SelectorManager.SelectSet _selectSet;
     private final SelectorManager _manager;
+    private final DispatchedIOFuture _readFuture = new InterestedFuture(SelectionKey.OP_READ,true,_lock);
+    private final DispatchedIOFuture _writeFuture = new InterestedFuture(SelectionKey.OP_WRITE,true,_lock);
+    
     private  SelectionKey _key;
 
     private boolean _selected;
@@ -54,56 +57,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     private volatile boolean _idlecheck;
     private volatile AbstractAsyncConnection _connection;
     
-    private DispatchedIOFuture _readFuture = new DispatchedIOFuture(true,_lock)
-    {
-        @Override
-        protected void dispatch(Runnable task)
-        {
-            _manager.dispatch(task);
-        }
-        
-        @Override
-        public void cancel()
-        {
-            _lock.lock();
-            try
-            {
-                _interestOps=_interestOps&~SelectionKey.OP_READ;
-                updateKey();
-                cancelled();
-            }
-            finally
-            {
-                _lock.unlock();
-            }
-        }
-    };
-
     private ByteBuffer[] _writeBuffers;
-    private DispatchedIOFuture _writeFuture = new DispatchedIOFuture(true,_lock)
-    {
-        @Override
-        protected void dispatch(Runnable task)
-        {
-            _manager.dispatch(task);
-        }
-        
-        @Override
-        public void cancel()
-        {
-            _lock.lock();
-            try
-            {
-                _interestOps=_interestOps&~SelectionKey.OP_WRITE;
-                updateKey();
-                cancelled();
-            }
-            finally
-            {
-                _lock.unlock();
-            }
-        }
-    };
     
     /* ------------------------------------------------------------ */
     public SelectChannelEndPoint(SocketChannel channel, SelectSet selectSet, SelectionKey key, int maxIdleTime)
@@ -475,6 +429,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
     @Override
     public void close() throws IOException
     {
+        _lock.lock();
         try
         {
             super.close();
@@ -486,6 +441,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         finally
         {
             updateKey();
+            _lock.unlock();
         }
     }
     
@@ -518,7 +474,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         }
         
         
-        return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s}-{%s}",
+        return String.format("SCEP@%x{l(%s)<->r(%s),open=%b,ishut=%b,oshut=%b,i=%d%s,r=%s,w=%s}-{%s}",
                 hashCode(),
                 getRemoteAddress(),
                 getLocalAddress(),
@@ -527,6 +483,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 isOutputShutdown(),
                 _interestOps,
                 keyString,
+                _readFuture,
+                _writeFuture,
                 getAsyncConnection());
     }
 
@@ -536,6 +494,44 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
         return _selectSet;
     }
     
-    
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private class InterestedFuture extends DispatchedIOFuture
+    {
+        final int _interest;
+        private InterestedFuture(int interest,boolean ready, Lock lock)
+        {
+            super(ready,lock);
+            _interest=interest;
+        }
+
+        @Override
+        protected void dispatch(Runnable task)
+        {
+            if (!_manager.dispatch(task))
+            {
+                LOG.warn("Dispatch failed: i="+_interest);
+                throw new IllegalStateException();
+            }
+        }
+
+        @Override
+        public void cancel()
+        {
+            _lock.lock();
+            try
+            {
+                _interestOps=_interestOps&~_interest;
+                updateKey();
+                cancelled();
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+    }
+
 
 }

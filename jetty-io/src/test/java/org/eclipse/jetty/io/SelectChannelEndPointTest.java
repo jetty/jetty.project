@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,6 +22,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AbstractAsyncConnection;
@@ -119,6 +121,7 @@ public class SelectChannelEndPointTest
     {
         ByteBuffer _in = BufferUtil.allocate(32*1024);
         ByteBuffer _out = BufferUtil.allocate(32*1024);
+        long _last=-1;
 
         public TestConnection(AsyncEndPoint endp)
         {
@@ -126,10 +129,12 @@ public class SelectChannelEndPointTest
         }
 
         @Override
-        public void onReadable()
+        public synchronized void onReadable()
         {
+            System.err.println("APP onReadable");
             try
             {
+                _last=System.currentTimeMillis();
                 _endp.setCheckForIdle(false);
                 boolean progress=true;
                 while(progress)
@@ -137,18 +142,17 @@ public class SelectChannelEndPointTest
                     progress=false;
 
                     // Fill the input buffer with everything available
-                    if (!BufferUtil.isFull(_in))
-                    {
-                        int filled=_endp.fill(_in);
-                        if (filled>0)
-                            progress=true;
-                    }
-                        
+                    if (BufferUtil.isFull(_in))
+                        throw new IllegalStateException("FULL "+BufferUtil.toDetailString(_in));
+                    int filled=_endp.fill(_in);
+                    if (filled>0)
+                        progress=true;
+                                            
                     // If the tests wants to block, then block
                     while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
                     {
                         _endp.read().block();
-                        int filled=_endp.fill(_in);
+                        filled=_endp.fill(_in);
                         progress|=filled>0;
                     }
                         
@@ -162,20 +166,14 @@ public class SelectChannelEndPointTest
                         ByteBuffer out=_out.duplicate();
                         BufferUtil.clear(_out);
                         for (int i=0;i<_writeCount;i++)
-                        {
                             _endp.write(out.asReadOnlyBuffer()).block();
-                        }
                         progress=true;
                     }
                     
                     // are we done?
-                    if (BufferUtil.isEmpty(_out) && _endp.isInputShutdown())
+                    if (_endp.isInputShutdown())
                         _endp.shutdownOutput();
                 }
-            }
-            catch(ClosedChannelException e)
-            {
-                // System.err.println(e);
             }
             catch(ExecutionException e)
             {
@@ -189,10 +187,6 @@ public class SelectChannelEndPointTest
                 {
                     e2.printStackTrace();
                 }
-            }
-            catch(InterruptedException e)
-            {
-                // System.err.println(e);
             }
             catch(Exception e)
             {
@@ -209,8 +203,26 @@ public class SelectChannelEndPointTest
         }
 
         @Override
+        public void onIdleExpired(long idleForMs)
+        {
+            System.err.println("IDLE "+idleForMs);
+            System.err.println("last "+(System.currentTimeMillis()-_last));
+            System.err.println("ENDP "+_endp);
+            System.err.println("tran "+_endp.getTransport());
+            System.err.println();
+            super.onIdleExpired(idleForMs);
+        }
+        
+        @Override
         public void onClose()
         {            
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("%s{}",
+                    super.toString());
         }
     }
 
@@ -365,7 +377,6 @@ public class SelectChannelEndPointTest
         catch(SocketTimeoutException e)
         {
             int elapsed = Long.valueOf(System.currentTimeMillis() - start).intValue();
-            // System.err.println("blocked for " + elapsed+ "ms");
             Assert.assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3*specifiedTimeout/4));
         }
 
@@ -491,7 +502,7 @@ public class SelectChannelEndPointTest
     public void testStress() throws Exception
     {
         Socket client = newClient();
-        client.setSoTimeout(30000);
+        client.setSoTimeout(60000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);
@@ -501,17 +512,25 @@ public class SelectChannelEndPointTest
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);
+        BufferedOutputStream out = new BufferedOutputStream(client.getOutputStream());
         final CountDownLatch latch = new CountDownLatch(writes);
         final InputStream in = new BufferedInputStream(client.getInputStream());
         final long start = System.currentTimeMillis();
-        client.getOutputStream().write(bytes);
-        client.getOutputStream().write(count);
-        client.getOutputStream().flush();
+        out.write(bytes);
+        out.write(count);
+        out.flush();
+        
+        while (_lastEndp==null)
+            Thread.sleep(10);
+        _lastEndp.setMaxIdleTime(5000);
 
         new Thread()
         {
             public void run()
             {
+                Thread.currentThread().setPriority(MAX_PRIORITY);
+                long last=-1;
+                int count=-1;
                 try
                 {
                     while (latch.getCount()>0)
@@ -524,36 +543,42 @@ public class SelectChannelEndPointTest
                             assertEquals(0xff&b0,b);
                         }
                         
+                        count=0;
                         int b=in.read();
                         while(b>0 && b!='\n')
+                        {
+                            count=count*10+(b-'0');
                             b=in.read();
+                        }
+                        last=System.currentTimeMillis();
+                        
                         latch.countDown();
                     }
                 }
                 catch(Throwable e)
                 {
+                    long now = System.currentTimeMillis();
+                    System.err.println("count="+count);
                     System.err.println("latch="+latch.getCount());
-                    System.err.println("time="+(System.currentTimeMillis()-start));
+                    System.err.println("time="+(now-start));
+                    System.err.println("last="+(now-last));
+                    System.err.println("endp="+_lastEndp);
                     e.printStackTrace();
                 }
             }
         }.start();
-
-
-        PrintStream print = new PrintStream(client.getOutputStream());
         
         // Write client to server
         for (int i=1;i<writes;i++)
         {
-            print.write(bytes);
-            print.print(i);
-            print.print('\n');
+            out.write(bytes);
+            out.write(Integer.toString(i).getBytes(StringUtil.__ISO_8859_1_CHARSET));
+            out.write('\n');
             if (i%100==0)
-                print.flush();
+                out.flush();
             Thread.yield();
-            
         }
-        client.getOutputStream().flush();
+        out.flush();
 
         assertTrue(latch.await(100,TimeUnit.SECONDS));
     }

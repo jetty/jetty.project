@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -240,10 +241,13 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     /** Compact the buffer
      * @param buffer
+     * @return true if the compact made a full buffer have space
      */
-    public static void compact(ByteBuffer buffer)
+    public static boolean compact(ByteBuffer buffer)
     {
+        boolean full=buffer.limit()==buffer.capacity();
         buffer.compact().flip();
+        return full && buffer.limit()<buffer.capacity();
     }
     
     /* ------------------------------------------------------------ */
@@ -263,6 +267,8 @@ public class BufferUtil
             {
                 to.put(from);
                 put=remaining;
+                from.position(0);
+                from.limit(0);
             }
             else if (from.hasArray())
             {
@@ -659,7 +665,10 @@ public class BufferUtil
         StringBuilder buf = new StringBuilder();
         buf.append(buffer.getClass().getSimpleName());
         buf.append("@");
-        buf.append(Integer.toHexString(buffer.hashCode()));
+        if (buffer.hasArray())
+            buf.append(Integer.toHexString(buffer.array().hashCode()));
+        else
+            buf.append("?");        
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");

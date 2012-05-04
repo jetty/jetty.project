@@ -34,7 +34,9 @@ final class RunnableIOFuture extends DispatchedIOFuture
     
     public void run()
     {
-        takeTask().run();
+        Runnable task=takeTask();
+        if (task!=null)
+            task.run();
     }
     
     public boolean isDispatched()

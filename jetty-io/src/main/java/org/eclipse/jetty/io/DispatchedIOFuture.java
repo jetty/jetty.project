@@ -265,11 +265,10 @@ public class DispatchedIOFuture implements IOFuture
     @Override
     public String toString()
     {
-        return String.format("RIOF@%x{c=%b,r=%b,c=%s}",
+        return String.format("DIOF@%x{%s,%s}",
                 hashCode(),
-                _complete,
-                _ready,
-                _cause);
+                _complete?(_ready?"R":_cause):"-",
+                _callback==null?"-":_callback);
     }
 
     public static void rethrow(ExecutionException e) throws IOException
