@@ -175,7 +175,7 @@ public class DispatchedIOFuture implements IOFuture
         _lock.lock();
         try
         {
-            if (!_complete)
+            while (!_complete)
                 _block.await();
             isReady();
         }

@@ -131,7 +131,6 @@ public class SelectChannelEndPointTest
         @Override
         public synchronized void onReadable()
         {
-            System.err.println("APP onReadable");
             try
             {
                 _last=System.currentTimeMillis();
@@ -508,7 +507,7 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.register(server);
-        int writes = 10000;
+        int writes = 1000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);

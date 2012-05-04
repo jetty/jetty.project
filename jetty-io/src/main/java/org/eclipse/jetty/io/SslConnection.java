@@ -239,7 +239,6 @@ public class SslConnection extends AbstractAsyncConnection
     @Override
     public void onIdleExpired(long idleForMs)
     {
-        System.err.println("LAST "+(System.currentTimeMillis()-_last));
         _appConnection.onIdleExpired(idleForMs);
     }
 
@@ -253,7 +252,6 @@ public class SslConnection extends AbstractAsyncConnection
         _lock.lock();
         try
         {        
-            System.err.println("onReadable");
             _last=System.currentTimeMillis();
             LOG.debug("onReadable {}",this); 
             
@@ -296,6 +294,7 @@ public class SslConnection extends AbstractAsyncConnection
             // Run any ready callback from _appReadFuture in this thread.
             _appReadFuture.run();
             _appWriteFuture.run();
+            
         }
         
     }
