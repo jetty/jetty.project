@@ -72,7 +72,7 @@ public abstract class AbstractHTTPSPDYTest
             @Override
             protected AsyncConnectionFactory getDefaultAsyncConnectionFactory()
             {
-                return new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this);
+                return new ServerHTTPSPDYAsyncConnectionFactory(SPDY.V2, getByteBufferPool(), getExecutor(), getScheduler(), this, new PushStrategy.None());
             }
         };
     }

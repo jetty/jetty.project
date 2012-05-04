@@ -16,6 +16,7 @@
 
 package org.eclipse.jetty.spdy.http;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.eclipse.jetty.spdy.api.Headers;
@@ -27,4 +28,13 @@ import org.eclipse.jetty.spdy.api.Stream;
 public interface PushStrategy
 {
     public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders);
+
+    public static class None implements PushStrategy
+    {
+        @Override
+        public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
+        {
+            return Collections.emptySet();
+        }
+    }
 }

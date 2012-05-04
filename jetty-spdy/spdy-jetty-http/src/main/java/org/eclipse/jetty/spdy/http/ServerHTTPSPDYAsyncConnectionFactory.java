@@ -42,11 +42,13 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
     private static final Logger logger = Log.getLogger(ServerHTTPSPDYAsyncConnectionFactory.class);
 
     private final Connector connector;
+    private final PushStrategy pushStrategy;
 
-    public ServerHTTPSPDYAsyncConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, Connector connector)
+    public ServerHTTPSPDYAsyncConnectionFactory(short version, ByteBufferPool bufferPool, Executor threadPool, ScheduledExecutorService scheduler, Connector connector, PushStrategy pushStrategy)
     {
         super(version, bufferPool, threadPool, scheduler);
         this.connector = connector;
+        this.pushStrategy = pushStrategy;
     }
 
     @Override
@@ -77,8 +79,8 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
 
             HTTPSPDYAsyncEndPoint asyncEndPoint = new HTTPSPDYAsyncEndPoint(endPoint, stream);
             ServerHTTPSPDYAsyncConnection connection = new ServerHTTPSPDYAsyncConnection(connector,
-                    asyncEndPoint, connector.getServer(),
-                    (SPDYAsyncConnection)endPoint.getConnection(), stream);
+                    asyncEndPoint, connector.getServer(), (SPDYAsyncConnection)endPoint.getConnection(),
+                    pushStrategy, stream);
             asyncEndPoint.setConnection(connection);
             stream.setAttribute(CONNECTION_ATTRIBUTE, connection);
 

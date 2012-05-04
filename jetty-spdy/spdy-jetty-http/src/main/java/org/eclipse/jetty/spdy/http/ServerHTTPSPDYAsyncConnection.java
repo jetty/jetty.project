@@ -48,6 +48,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.spdy.SPDYAsyncConnection;
 import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
+import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -64,6 +65,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     private final Queue<Runnable> tasks = new LinkedList<>();
     private final BlockingQueue<DataInfo> dataInfos = new LinkedBlockingQueue<>();
     private final SPDYAsyncConnection connection;
+    private final PushStrategy pushStrategy;
     private final Stream stream;
     private Headers headers; // No need for volatile, guarded by state
     private DataInfo dataInfo; // No need for volatile, guarded by state
@@ -71,10 +73,11 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
     private volatile State state = State.INITIAL;
     private boolean dispatched; // Guarded by synchronization on tasks
 
-    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
+    public ServerHTTPSPDYAsyncConnection(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
     {
         super(connector, endPoint, server);
         this.connection = connection;
+        this.pushStrategy = pushStrategy;
         this.stream = stream;
         getParser().setPersistent(true);
     }
@@ -380,17 +383,23 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
             Set<String> pushResources = pushStrategy.apply(stream, this.headers, replyInfo.getHeaders());
             for (String url : pushResources)
             {
-                Headers pushHeaders = new Headers();
+                final Headers pushHeaders = new Headers();
                 pushHeaders.put("method", "GET");
                 pushHeaders.put("url", url);
                 pushHeaders.put("version", "HTTP/1.1");
                 Headers.Header acceptEncoding = headers.get("accept-encoding");
                 if (acceptEncoding != null)
                     pushHeaders.put(acceptEncoding);
-                Stream pushStream = stream.syn(new SynInfo(pushHeaders, true));
-                Synchronous connection = new Synchronous(getConnector(), getEndPoint(), getServer(), , pushStream);
-                connection.beginRequest(pushHeaders);
-                connection.endRequest();
+                stream.syn(new SynInfo(pushHeaders, false), getMaxIdleTime(), TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
+                {
+                    @Override
+                    public void completed(Stream pushStream)
+                    {
+                        Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), connection, pushStrategy, pushStream);
+                        pushConnection.beginRequest(pushHeaders);
+                        pushConnection.endRequest();
+                    }
+                });
             }
         }
     }
@@ -709,9 +718,9 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     private static class Synchronous extends ServerHTTPSPDYAsyncConnection
     {
-        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, Stream stream)
+        private Synchronous(Connector connector, AsyncEndPoint endPoint, Server server, SPDYAsyncConnection connection, PushStrategy pushStrategy, Stream stream)
         {
-            super(connector, endPoint, server, connection, stream);
+            super(connector, endPoint, server, connection, pushStrategy, stream);
         }
 
         @Override
