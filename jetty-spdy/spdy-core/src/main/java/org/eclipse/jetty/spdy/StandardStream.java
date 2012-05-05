@@ -363,6 +363,8 @@ public class StandardStream implements IStream
     @Override
     public void reply(ReplyInfo replyInfo, long timeout, TimeUnit unit, Handler<Void> handler)
     {
+        if (isUnidirectional())
+            throw new IllegalStateException("Protocol violation: cannot send SYN_REPLY frames in unidirectional streams");
         openState = OpenState.REPLY_SENT;
         updateCloseState(replyInfo.isClose(),true);
         SynReplyFrame frame = new SynReplyFrame(session.getVersion(),replyInfo.getFlags(),getId(),replyInfo.getHeaders());
@@ -426,13 +428,9 @@ public class StandardStream implements IStream
     @Override
     public boolean isUnidirectional()
     {
-        if (associatedStream != null)
-            return true;
-        else
-            return false;
-
+        return associatedStream != null;
     }
-    
+
     @Override
     public boolean isReset()
     {

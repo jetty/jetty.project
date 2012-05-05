@@ -16,9 +16,6 @@
 
 package org.eclipse.jetty.spdy;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
@@ -26,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.spdy.api.BytesDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
@@ -40,13 +38,19 @@ import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 public class PushStreamTest extends AbstractTest
 {
-
     @Test
     public void testSynPushStream() throws Exception
     {
-        final CountDownLatch pushStreamSynLatch = new CountDownLatch(1);
+        final AtomicReference<Stream> pushStreamRef = new AtomicReference<>();
+        final CountDownLatch pushStreamLatch = new CountDownLatch(1);
 
         Session clientSession = startClient(startServer(new ServerSessionFrameListener.Adapter()
         {
@@ -54,22 +58,37 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 stream.reply(new ReplyInfo(false));
-                stream.syn(new SynInfo(false));
+                stream.syn(new SynInfo(true));
                 return null;
             }
-        }),new SessionFrameListener.Adapter()
+        }), new SessionFrameListener.Adapter()
         {
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                pushStreamSynLatch.countDown();
-                stream.reply(new ReplyInfo(false));
-                return super.onSyn(stream,synInfo);
+                assertThat("streamId is even", stream.getId() % 2, is(0));
+                assertThat("stream is unidirectional", stream.isUnidirectional(), is(true));
+                assertThat("stream is closed", stream.isClosed(), is(true));
+                assertThat("stream has associated stream", stream.getAssociatedStream(), notNullValue());
+                try
+                {
+                    stream.reply(new ReplyInfo(false));
+                    fail("Cannot reply to push streams");
+                }
+                catch (IllegalStateException x)
+                {
+                    // Expected
+                }
+                pushStreamRef.set(stream);
+                pushStreamLatch.countDown();
+                return null;
             }
         });
 
-        clientSession.syn(new SynInfo(false),null).get();
-        assertThat("onSyn has been called",pushStreamSynLatch.await(5,TimeUnit.SECONDS),is(true));
+        Stream stream = clientSession.syn(new SynInfo(true), null).get();
+        assertThat("onSyn has been called", pushStreamLatch.await(5, TimeUnit.SECONDS), is(true));
+        Stream pushStream = pushStreamRef.get();
+        assertThat("main stream and associated stream are the same", stream, sameInstance(pushStream.getAssociatedStream()));
     }
 
     @Test
@@ -347,7 +366,7 @@ public class PushStreamTest extends AbstractTest
     {
         assertThat("streamId is odd",stream.getId() % 2,is(1));
     }
-    
+
     private void assertThatNoExceptionOccured(final CountDownLatch exceptionCountDownLatch) throws InterruptedException
     {
         assertThat("No exception occured", exceptionCountDownLatch.await(1,TimeUnit.SECONDS),is(false));

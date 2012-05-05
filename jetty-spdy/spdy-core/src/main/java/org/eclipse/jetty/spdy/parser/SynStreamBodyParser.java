@@ -131,8 +131,7 @@ public class SynStreamBodyParser extends ControlFrameBodyParser
                     if (headersBlockParser.parse(streamId, version, length, buffer))
                     {
                         byte flags = controlFrameParser.getFlags();
-                        // TODO: can it be both FIN and UNIDIRECTIONAL ?
-                        if (flags != 0 && flags != SynInfo.FLAG_CLOSE && flags != PushSynInfo.FLAG_UNIDIRECTIONAL)
+                        if (flags > (SynInfo.FLAG_CLOSE | PushSynInfo.FLAG_UNIDIRECTIONAL))
                             throw new IllegalArgumentException("Invalid flag " + flags + " for frame " + ControlFrameType.SYN_STREAM);
 
                         SynStreamFrame frame = new SynStreamFrame(version, flags, streamId, associatedStreamId, priority, new Headers(headers, true));
