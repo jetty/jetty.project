@@ -16,12 +16,14 @@
 
 package org.eclipse.jetty.spdy.http;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -44,77 +46,126 @@ import org.eclipse.jetty.util.log.Logger;
  * will have the CSS stylesheet as referrer, so there is some degree of recursion that
  * needs to be handled.</p>
  *
- *
  * TODO: this class is kind-of leaking since the resources map is always adding entries
  * TODO: although these entries will be limited by the number of application pages.
  * TODO: however, there is no ConcurrentLinkedHashMap yet in JDK (there is in Guava though)
  * TODO: so we cannot use the built-in LRU features of LinkedHashMap
+ *
+ * TODO: Wikipedia maps URLs like http://en.wikipedia.org/wiki/File:PNG-Gradient_hex.png
+ * TODO: to text/html, so perhaps we need to improve isPushResource() by looking at the
+ * TODO: response Content-Type header, and not only at the URL extension
  */
 public class ReferrerPushStrategy implements PushStrategy
 {
     private static final Logger logger = Log.getLogger(ReferrerPushStrategy.class);
     private final ConcurrentMap<String, Set<String>> resources = new ConcurrentHashMap<>();
-    private List<String> mainSuffixes = new ArrayList<>();
-    private List<String> pushSuffixes = new ArrayList<>();
+    private final Set<Pattern> pushRegexps = new LinkedHashSet<>();
+    private final Set<Pattern> allowedPushOrigins = new LinkedHashSet<>();
+
+    public ReferrerPushStrategy()
+    {
+        this(Arrays.asList(".*\\.css", ".*\\.js", ".*\\.png", ".*\\.jpg", ".*\\.gif"));
+    }
+
+    public ReferrerPushStrategy(List<String> pushRegexps)
+    {
+        this(pushRegexps, Collections.<String>emptyList());
+    }
+
+    public ReferrerPushStrategy(List<String> pushRegexps, List<String> allowedPushOrigins)
+    {
+        for (String pushRegexp : pushRegexps)
+            this.pushRegexps.add(Pattern.compile(pushRegexp));
+        for (String allowedPushOrigin : allowedPushOrigins)
+            this.allowedPushOrigins.add(Pattern.compile(allowedPushOrigin.replace(".", "\\.").replace("*", ".*")));
+    }
 
     @Override
     public Set<String> apply(Stream stream, Headers requestHeaders, Headers responseHeaders)
     {
+        Set<String> result = Collections.emptySet();
+        String scheme = requestHeaders.get("scheme").value();
+        String host = requestHeaders.get("host").value();
+        String origin = new StringBuilder(scheme).append("://").append(host).toString();
         String url = requestHeaders.get("url").value();
-        if (!hasQueryString(url))
+        String absoluteURL = new StringBuilder(origin).append(url).toString();
+        logger.debug("Applying push strategy for {}", absoluteURL);
+        if (isValidMethod(requestHeaders.get("method").value()))
         {
             if (isMainResource(url, responseHeaders))
             {
-                return pushResources(url);
+                result = pushResources(absoluteURL);
             }
             else if (isPushResource(url, responseHeaders))
             {
-                String referrer = requestHeaders.get("referer").value();
-                Set<String> pushResources = resources.get(referrer);
-                if (pushResources == null || !pushResources.contains(url))
+                Headers.Header referrerHeader = requestHeaders.get("referer");
+                if (referrerHeader != null)
                 {
-                    buildMetadata(url, referrer);
-                }
-                else
-                {
-                    return pushResources(url);
+                    String referrer = referrerHeader.value();
+                    Set<String> pushResources = resources.get(referrer);
+                    if (pushResources == null || !pushResources.contains(url))
+                        buildMetadata(origin, url, referrer);
+                    else
+                        result = pushResources(absoluteURL);
                 }
             }
         }
-        return Collections.emptySet();
+        logger.debug("Push resources for {}: {}", absoluteURL, result);
+        return result;
     }
 
-    private boolean hasQueryString(String url)
+    private boolean isValidMethod(String method)
     {
-        return url.contains("?");
+        return "GET".equalsIgnoreCase(method);
     }
 
     private boolean isMainResource(String url, Headers responseHeaders)
     {
-        // TODO
-        return false;
+        return !isPushResource(url, responseHeaders);
     }
 
     private boolean isPushResource(String url, Headers responseHeaders)
     {
-        // TODO
+        for (Pattern pushRegexp : pushRegexps)
+        {
+            if (pushRegexp.matcher(url).matches())
+                return true;
+        }
         return false;
     }
 
-    private Set<String> pushResources(String url)
+    private Set<String> pushResources(String absoluteURL)
     {
-        Set<String> pushResources = resources.get(url);
+        Set<String> pushResources = resources.get(absoluteURL);
         if (pushResources == null)
             return Collections.emptySet();
         return Collections.unmodifiableSet(pushResources);
     }
 
-    private void buildMetadata(String url, String referrer)
+    private void buildMetadata(String origin, String url, String referrer)
     {
-        Set<String> pushResources = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-        Set<String> existing = resources.putIfAbsent(referrer, pushResources);
-        if (existing != null)
-            pushResources = existing;
-        pushResources.add(url);
+        if (referrer.startsWith(origin) || isPushOriginAllowed(origin))
+        {
+            Set<String> pushResources = resources.get(referrer);
+            if (pushResources == null)
+            {
+                pushResources = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+                Set<String> existing = resources.putIfAbsent(referrer, pushResources);
+                if (existing != null)
+                    pushResources = existing;
+            }
+            pushResources.add(url);
+            logger.debug("Built push metadata for {}: {}", referrer, pushResources);
+        }
+    }
+
+    private boolean isPushOriginAllowed(String origin)
+    {
+        for (Pattern allowedPushOrigin : allowedPushOrigins)
+        {
+            if (allowedPushOrigin.matcher(origin).matches())
+                return true;
+        }
+        return false;
     }
 }

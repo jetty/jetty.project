@@ -85,7 +85,7 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             stream.setAttribute(CONNECTION_ATTRIBUTE, connection);
 
             Headers headers = synInfo.getHeaders();
-            connection.beginRequest(headers);
+            connection.beginRequest(headers, synInfo.isClose());
 
             if (headers.isEmpty())
             {
@@ -95,14 +95,9 @@ public class ServerHTTPSPDYAsyncConnectionFactory extends ServerSPDYAsyncConnect
             else
             {
                 if (synInfo.isClose())
-                {
-                    connection.endRequest();
                     return null;
-                }
                 else
-                {
                     return this;
-                }
             }
         }
 

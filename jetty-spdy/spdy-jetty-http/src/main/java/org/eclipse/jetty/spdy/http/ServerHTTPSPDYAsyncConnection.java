@@ -51,7 +51,9 @@ import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Handler;
 import org.eclipse.jetty.spdy.api.Headers;
 import org.eclipse.jetty.spdy.api.ReplyInfo;
+import org.eclipse.jetty.spdy.api.RstInfo;
 import org.eclipse.jetty.spdy.api.Stream;
+import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -255,10 +257,17 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
 
     private void respond(Stream stream, int status)
     {
-        Headers headers = new Headers();
-        headers.put("status", String.valueOf(status));
-        headers.put("version", "HTTP/1.1");
-        stream.reply(new ReplyInfo(headers, true));
+        if (stream.isUnidirectional())
+        {
+            stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.INTERNAL_ERROR));
+        }
+        else
+        {
+            Headers headers = new Headers();
+            headers.put("status", String.valueOf(status));
+            headers.put("version", "HTTP/1.1");
+            stream.reply(new ReplyInfo(headers, true));
+        }
     }
 
     private void close(Stream stream)
@@ -277,7 +286,7 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         state = newState;
     }
 
-    public void beginRequest(final Headers headers)
+    public void beginRequest(final Headers headers, final boolean endRequest)
     {
         this.headers = headers.isEmpty() ? null : headers;
         post(new Runnable()
@@ -288,6 +297,8 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
                 if (!headers.isEmpty())
                     updateState(State.REQUEST);
                 handle();
+                if (endRequest)
+                    performEndRequest();
             }
         });
     }
@@ -347,15 +358,20 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         {
             public void run()
             {
-                if (state == State.HEADERS)
-                {
-                    updateState(State.HEADERS_COMPLETE);
-                    handle();
-                }
-                updateState(State.FINAL);
-                handle();
+                performEndRequest();
             }
         });
+    }
+
+    private void performEndRequest()
+    {
+        if (state == State.HEADERS)
+        {
+            updateState(State.HEADERS_COMPLETE);
+            handle();
+        }
+        updateState(State.FINAL);
+        handle();
     }
 
     public void async()
@@ -380,24 +396,30 @@ public class ServerHTTPSPDYAsyncConnection extends AbstractHttpConnection implem
         if (replyInfo.getHeaders().get("status").value().startsWith("200") && !stream.isClosed())
         {
             // We have a 200 OK with some content to send
+
+            Headers.Header scheme = headers.get("scheme");
+            Headers.Header host = headers.get("host");
+            Headers.Header url = headers.get("url");
             Set<String> pushResources = pushStrategy.apply(stream, this.headers, replyInfo.getHeaders());
-            for (String url : pushResources)
+            String referrer = new StringBuilder(scheme.value()).append("://").append(host.value()).append(url.value()).toString();
+            for (String pushURL : pushResources)
             {
                 final Headers pushHeaders = new Headers();
                 pushHeaders.put("method", "GET");
-                pushHeaders.put("url", url);
+                pushHeaders.put("url", pushURL);
                 pushHeaders.put("version", "HTTP/1.1");
-                Headers.Header acceptEncoding = headers.get("accept-encoding");
-                if (acceptEncoding != null)
-                    pushHeaders.put(acceptEncoding);
+                pushHeaders.put(scheme);
+                pushHeaders.put(host);
+                pushHeaders.put("referer", referrer);
+                // Remember support for gzip encoding
+                pushHeaders.put(headers.get("accept-encoding"));
                 stream.syn(new SynInfo(pushHeaders, false), getMaxIdleTime(), TimeUnit.MILLISECONDS, new Handler.Adapter<Stream>()
                 {
                     @Override
                     public void completed(Stream pushStream)
                     {
                         Synchronous pushConnection = new Synchronous(getConnector(), getEndPoint(), getServer(), connection, pushStrategy, pushStream);
-                        pushConnection.beginRequest(pushHeaders);
-                        pushConnection.endRequest();
+                        pushConnection.beginRequest(pushHeaders, true);
                     }
                 });
             }
