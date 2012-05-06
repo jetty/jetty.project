@@ -150,7 +150,6 @@ public class PushStreamTest extends AbstractTest
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
                 pushStreamSynLatch.countDown();
-                stream.reply(new ReplyInfo(false));
                 return new StreamFrameListener.Adapter()
                 {
                     @Override
@@ -340,7 +339,6 @@ public class PushStreamTest extends AbstractTest
             @Override
             public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
             {
-                stream.reply(new ReplyInfo(false));
                 assertStreamIdIsEven(stream);
                 pushStreamIdIsEvenLatch.countDown();
                 return super.onSyn(stream,synInfo);
