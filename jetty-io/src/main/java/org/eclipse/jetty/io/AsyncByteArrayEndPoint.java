@@ -47,7 +47,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     }
 
     @Override
-    public IOFuture read() throws IllegalStateException
+    public IOFuture readable() throws IllegalStateException
     {
         _lock.lock();
         try

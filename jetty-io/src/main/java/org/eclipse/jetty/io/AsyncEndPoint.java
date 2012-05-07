@@ -19,44 +19,44 @@ import java.util.concurrent.Future;
  * ; in a callback mode (like {@link CompletionHandler} mode; or blocking mod;e or a hybrid mode
  * <h3>Blocking read</h3>
  * <pre>
- * endpoint.read().complete();
+ * endpoint.readable().block();
  * endpoint.fill(buffer);
  * </pre>
  * <h3>Polling read</h3>
  * <pre>
- * IOFuture read = endpoint.read();
+ * IOFuture read = endpoint.readable();
  * ...
- * if (read.isReady())
- *   endpoint.fill(buffer);
+ * while (!read.isReady()) 
+ *   Thread.sleep(10);
+ * endpoint.fill(buffer);
  * </pre>
  * <h3>Callback read</h3>
  * <pre>
- * endpoint.read().setHandler(new IOCallback()
+ * endpoint.readable().setCallback(new IOCallback()
  * {
  *   public void onReady() { endpoint.fill(buffer); ... }
  *   public void onFail(IOException e) { ... }
- *   public void onTimeout() { ... }
  * }
  * </pre>
  * 
  * <h3>Blocking write</h3>
  * <pre>
- * endpoint.write(buffer).complete();
+ * endpoint.write(buffer).block();
  * </pre>
  * <h3>Polling write</h3>
  * <pre>
  * IOFuture write = endpoint.write(buffer);
  * ...
- * if (write.isReady())
- *   // do next write
+ * while (!write.isReady())
+ *   Thread.sleep(10);
+ * 
  * </pre>
  * <h3>Callback write</h3>
  * <pre>
- * endpoint.write(buffer).setHandler(new IOCallback()
+ * endpoint.write(buffer0,buffer1).setCallback(new IOCallback()
  * {
  *   public void onReady() { ... }
  *   public void onFail(IOException e) { ... }
- *   public void onTimeout() { ... }
  * }
  * </pre>
  * <h3>Hybrid write</h3>
@@ -70,14 +70,13 @@ import java.util.concurrent.Future;
  *   {
  *     public void onReady() { ... }
  *     public void onFail(IOException e) { ... }
- *     public void onTimeout() { ... }
  *   });
  * ...
  * </pre>
  * 
  * <h2>Compatibility Notes</h2>
  * Some Async IO APIs have the concept of setting read interest.  With this 
- * API calling {@link #read()} is equivalent to setting read interest to true 
+ * API calling {@link #readable()} is equivalent to setting read interest to true 
  * and calling {@link IOFuture#cancel()} is equivalent to setting read interest 
  * to false. 
  */
@@ -95,7 +94,7 @@ public interface AsyncEndPoint extends EndPoint
      * return immediately with data without blocking. 
      * @throws IllegalStateException if another read operation has been scheduled and has not timedout, been cancelled or is ready.
      */
-    IOFuture read() throws IllegalStateException;
+    IOFuture readable() throws IllegalStateException;
     
     /* ------------------------------------------------------------ */
     /** Schedule a write operation.

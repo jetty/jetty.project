@@ -124,8 +124,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
                 return;
             }
             
-            boolean can_read=(_key.isReadable() && (_key.interestOps()|SelectionKey.OP_READ)!=0);
-            boolean can_write=(_key.isWritable() && (_key.interestOps()|SelectionKey.OP_WRITE)!=0);
+            //TODO do we need to test interest here ???
+            boolean can_read=(_key.isReadable() && (_key.interestOps()&SelectionKey.OP_READ)==SelectionKey.OP_READ);
+            boolean can_write=(_key.isWritable() && (_key.interestOps()&SelectionKey.OP_WRITE)==SelectionKey.OP_WRITE);
             _interestOps=0;
 
             if (can_read && !_readFuture.isComplete())
@@ -217,7 +218,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
 
     /* ------------------------------------------------------------ */
     @Override
-    public IOFuture read() throws IllegalStateException
+    public IOFuture readable() throws IllegalStateException
     {
         _lock.lock();
         try
@@ -321,27 +322,36 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
      */
     private void updateKey()
     {
-        if (!_selected)
+        if (!_lock.tryLock())
+            throw new IllegalStateException();
+        try
         {
-            int current_ops=-1;
-            if (getChannel().isOpen())
+            if (!_selected)
             {
-                try
+                int current_ops=-1;
+                if (getChannel().isOpen())
                 {
-                    current_ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
+                    try
+                    {
+                        current_ops = ((_key!=null && _key.isValid())?_key.interestOps():-1);
+                    }
+                    catch(Exception e)
+                    {
+                        _key=null;
+                        LOG.ignore(e);
+                    }
                 }
-                catch(Exception e)
+                if (_interestOps!=current_ops && !_changing)
                 {
-                    _key=null;
-                    LOG.ignore(e);
+                    _changing=true;
+                    _selectSet.addChange(this);
+                    _selectSet.wakeup();
                 }
             }
-            if (_interestOps!=current_ops && !_changing)
-            {
-                _changing=true;
-                _selectSet.addChange(this);
-                _selectSet.wakeup();
-            }
+        }
+        finally
+        {
+            _lock.unlock();
         }
     }
 

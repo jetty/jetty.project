@@ -150,7 +150,7 @@ public class SelectChannelEndPointTest
                     // If the tests wants to block, then block
                     while (_blockAt>0 && _endp.isOpen() && _in.remaining()<_blockAt)
                     {
-                        _endp.read().block();
+                        _endp.readable().block();
                         filled=_endp.fill(_in);
                         progress|=filled>0;
                     }
@@ -179,6 +179,7 @@ public class SelectChannelEndPointTest
                 // Timeout does not close, so echo exception then shutdown
                 try
                 {
+                    System.err.println(e);
                     _endp.write(BufferUtil.toBuffer("EE: "+BufferUtil.toString(_in))).block();
                     _endp.shutdownOutput();
                 }
@@ -208,11 +209,13 @@ public class SelectChannelEndPointTest
         @Override
         public void onIdleExpired(long idleForMs)
         {
-            /*System.err.println("IDLE "+idleForMs);
+            /*
+            System.err.println("IDLE "+idleForMs);
             System.err.println("last "+(System.currentTimeMillis()-_last));
             System.err.println("ENDP "+_endp);
             System.err.println("tran "+_endp.getTransport());
-            System.err.println();*/
+            System.err.println();
+            */
             super.onIdleExpired(idleForMs);
         }
         
@@ -511,7 +514,7 @@ public class SelectChannelEndPointTest
         server.configureBlocking(false);
 
         _manager.register(server);
-        int writes = 10000;
+        int writes = 100000;
 
         final byte[] bytes="HelloWorld-".getBytes(StringUtil.__UTF8_CHARSET);
         byte[] count="0\n".getBytes(StringUtil.__UTF8_CHARSET);
@@ -542,7 +545,7 @@ public class SelectChannelEndPointTest
                         for (byte b0 : bytes)
                         {
                             int b = in.read();
-                            assertTrue(b>0);
+                            Assert.assertThat(b,greaterThan(0));
                             assertEquals(0xff&b0,b);
                         }
                         

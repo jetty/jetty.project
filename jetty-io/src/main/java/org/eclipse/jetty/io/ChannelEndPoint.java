@@ -69,8 +69,12 @@ public class ChannelEndPoint extends AbstractEndPoint
         if (_oshut)
             close();
     }
-
-    protected final void shutdownChannelOutput() throws IOException
+    
+    /* (non-Javadoc)
+     * @see org.eclipse.io.EndPoint#close()
+     */
+    @Override
+    public void shutdownOutput() throws IOException
     {
         LOG.debug("oshut {}",this);
         _oshut = true;
@@ -99,15 +103,6 @@ public class ChannelEndPoint extends AbstractEndPoint
                 }
             }
         }
-    }
-
-    /* (non-Javadoc)
-     * @see org.eclipse.io.EndPoint#close()
-     */
-    @Override
-    public void shutdownOutput() throws IOException
-    {
-        shutdownChannelOutput();
     }
 
     @Override

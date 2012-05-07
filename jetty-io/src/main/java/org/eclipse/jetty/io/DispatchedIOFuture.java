@@ -209,7 +209,7 @@ public class DispatchedIOFuture implements IOFuture
     
     protected void dispatch(Runnable callback)
     {
-        callback.run();
+        new Thread(callback).run();
     }
 
     private void dispatchReady()

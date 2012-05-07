@@ -59,7 +59,7 @@ public abstract class AbstractAsyncConnection implements AsyncConnection
     @Override
     public IOFuture scheduleOnReadable()
     {
-        IOFuture read=getEndPoint().read();
+        IOFuture read=getEndPoint().readable();
         read.setCallback(_readCallback);
         return read;
     }
