@@ -36,6 +36,7 @@ public class SSLEngineLeakTest extends AbstractTest
 
         Field field = NextProtoNego.class.getDeclaredField("objects");
         field.setAccessible(true);
+        @SuppressWarnings("unchecked")
         Map<Object, NextProtoNego.Provider> objects = (Map<Object, NextProtoNego.Provider>)field.get(null);
         int initialSize = objects.size();
 

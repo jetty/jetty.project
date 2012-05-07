@@ -727,9 +727,16 @@ public class Response implements HttpServletResponse
                 {
                     _characterEncoding=null;
                     if (_cachedMimeType!=null)
-                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_cachedMimeType);
+                        _contentType=_cachedMimeType.toString();
+                    else if (_mimeType!=null)
+                        _contentType=_mimeType;
                     else
-                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_mimeType);
+                        _contentType=null;
+
+                    if (_contentType==null)
+                        _connection.getResponseFields().remove(HttpHeaders.CONTENT_TYPE_BUFFER);
+                    else
+                        _connection.getResponseFields().put(HttpHeaders.CONTENT_TYPE_BUFFER,_contentType);
                 }
             }
             else

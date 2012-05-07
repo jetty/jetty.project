@@ -28,11 +28,8 @@ public class SynInfo
      * @see #getFlags()
      */
     public static final byte FLAG_CLOSE = 1;
-    public static final byte FLAG_UNIDIRECTIONAL = 2;
 
     private final boolean close;
-    private final boolean unidirectional;
-    private final int associatedStreamId;
     private final byte priority;
     private final Headers headers;
 
@@ -56,50 +53,34 @@ public class SynInfo
      */
     public SynInfo(Headers headers, boolean close)
     {
-        this(headers, close, false, 0, (byte)0);
+        this(headers, close, (byte)0);
     }
 
     /**
-     * <p>Creates a {@link ReplyInfo} instance with the given headers and the given close flag,
-     * the given unidirectional flag, the given associated stream, and with the given priority.</p>
-     *
-     * @param headers the {@link Headers}
-     * @param close the value of the close flag
-     * @param unidirectional the value of the unidirectional flag
-     * @param associatedStreamId the associated stream id
-     * @param priority the priority
+     * <p>
+     * Creates a {@link ReplyInfo} instance with the given headers, the given close flag and with the given priority.
+     * </p>
+     * 
+     * @param headers
+     *            the {@link Headers}
+     * @param close
+     *            the value of the close flag
+     * @param priority
+     *            the priority
      */
-    public SynInfo(Headers headers, boolean close, boolean unidirectional, int associatedStreamId, byte priority)
+    public SynInfo(Headers headers, boolean close, byte priority)
     {
         this.close = close;
-        this.unidirectional = unidirectional;
-        this.associatedStreamId = associatedStreamId;
         this.priority = priority;
         this.headers = headers;
     }
-
+    
     /**
      * @return the value of the close flag
      */
     public boolean isClose()
     {
         return close;
-    }
-
-    /**
-     * @return the value of the unidirectional flag
-     */
-    public boolean isUnidirectional()
-    {
-        return unidirectional;
-    }
-
-    /**
-     * @return the associated stream id
-     */
-    public int getAssociatedStreamId()
-    {
-        return associatedStreamId;
     }
 
     /**
@@ -117,17 +98,14 @@ public class SynInfo
     {
         return headers;
     }
-
+    
     /**
-     * @return the close and unidirectional flags as integer
+     * @return the close flag as integer
      * @see #FLAG_CLOSE
-     * @see #FLAG_UNIDIRECTIONAL
      */
     public byte getFlags()
     {
-        byte flags = isClose() ? FLAG_CLOSE : 0;
-        flags += isUnidirectional() ? FLAG_UNIDIRECTIONAL : 0;
-        return flags;
+        return isClose() ? FLAG_CLOSE : 0;
     }
 
     @Override

@@ -290,25 +290,26 @@ public class URLResource extends Resource
     @Override
     public int hashCode()
     {
-        return _url.hashCode();
+        return _urlString.hashCode();
     }
     
     /* ------------------------------------------------------------ */
     @Override
     public boolean equals( Object o)
     {
-        return o instanceof URLResource &&
-            _url.equals(((URLResource)o)._url);
+        return o instanceof URLResource && _urlString.equals(((URLResource)o)._urlString);
     }
 
+    /* ------------------------------------------------------------ */
     public boolean getUseCaches ()
     {
         return _useCaches;
     }
-    
+
+    /* ------------------------------------------------------------ */
     @Override
     public boolean isContainedIn (Resource containingResource) throws MalformedURLException
     {
-        return false; //TODO gregw check this!
+        return false; //TODO check this!
     }
 }

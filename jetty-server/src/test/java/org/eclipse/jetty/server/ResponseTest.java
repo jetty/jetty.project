@@ -131,6 +131,39 @@ public class ResponseTest
         response.setContentType("text/json");
         response.getWriter();
         assertEquals("text/json;charset=UTF-8", response.getContentType());
+        
+        response.recycle();
+        response.setCharacterEncoding("xyz");
+        response.setContentType("foo/bar");
+        assertEquals("foo/bar;charset=xyz", response.getContentType());
+
+        response.recycle();
+        response.setContentType("foo/bar");
+        response.setCharacterEncoding("xyz");
+        assertEquals("foo/bar;charset=xyz", response.getContentType());
+
+        response.recycle();
+        response.setCharacterEncoding("xyz");
+        response.setContentType("foo/bar;charset=abc");
+        assertEquals("foo/bar;charset=abc", response.getContentType());
+
+        response.recycle();
+        response.setContentType("foo/bar;charset=abc");
+        response.setCharacterEncoding("xyz");
+        assertEquals("foo/bar;charset=xyz", response.getContentType());
+
+        response.recycle();
+        response.setCharacterEncoding("xyz");
+        response.setContentType("foo/bar");
+        response.setCharacterEncoding(null);
+        assertEquals("foo/bar", response.getContentType());
+        
+        response.recycle();
+        response.setCharacterEncoding("xyz");
+        response.setCharacterEncoding(null);
+        response.setContentType("foo/bar");
+        assertEquals("foo/bar", response.getContentType());
+
     }
 
     @Test

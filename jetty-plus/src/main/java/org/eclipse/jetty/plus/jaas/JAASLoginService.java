@@ -31,9 +31,12 @@ import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.plus.jaas.callback.ObjectCallback;
+import org.eclipse.jetty.plus.jaas.callback.RequestParameterCallback;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.server.AbstractHttpConnection;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -200,6 +203,19 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             {
                                 ((ObjectCallback)callback).setObject(credentials);
                             }
+                            else if (callback instanceof RequestParameterCallback)
+                            {
+                                AbstractHttpConnection connection = AbstractHttpConnection.getCurrentConnection();
+                                Request request = (connection == null? null : connection.getRequest());
+                                
+                                if (request != null)
+                                {
+                                    RequestParameterCallback rpc = (RequestParameterCallback)callback;
+                                    rpc.setParameterValues(Arrays.asList(request.getParameterValues(rpc.getParameterName())));
+                                }
+                            }
+                            else 
+                                throw new UnsupportedCallbackException(callback);
                         }
                     }
                 };

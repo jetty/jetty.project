@@ -89,11 +89,12 @@ public abstract class AbstractConnectHandlerTest
             headers.put(headerName.toLowerCase(), headerValue.toLowerCase());
         }
 
-        StringBuilder body = new StringBuilder();
+        StringBuilder body;
         if (headers.containsKey("content-length"))
         {
             int readLen = 0;
             int length = Integer.parseInt(headers.get("content-length"));
+            body=new StringBuilder(length);
             try
             {
                 for (int i = 0; i < length; ++i)
@@ -101,7 +102,9 @@ public abstract class AbstractConnectHandlerTest
                     char c = (char)reader.read();
                     body.append(c);
                     readLen++;
+                        
                 }
+                
             }
             catch (SocketTimeoutException e)
             {
@@ -111,6 +114,7 @@ public abstract class AbstractConnectHandlerTest
         }
         else if ("chunked".equals(headers.get("transfer-encoding")))
         {
+            body = new StringBuilder(64*1024);
             while ((line = reader.readLine()) != null)
             {
                 if ("0".equals(line))
@@ -120,6 +124,15 @@ public abstract class AbstractConnectHandlerTest
                     break;
                 }
 
+                try
+                {
+                    Thread.sleep(5);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+                
                 int length = Integer.parseInt(line, 16);
                 for (int i = 0; i < length; ++i)
                 {
@@ -130,6 +143,7 @@ public abstract class AbstractConnectHandlerTest
                 assertEquals("", line);
             }
         }
+        else throw new IllegalStateException();
 
         return new Response(code, headers, body.toString().trim());
     }

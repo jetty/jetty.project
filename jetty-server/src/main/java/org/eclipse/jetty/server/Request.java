@@ -1396,6 +1396,7 @@ public class Request implements HttpServletRequest
         if (_attributes != null)
             _attributes.clearAttributes();
         _characterEncoding = null;
+        _contextPath = null;
         if (_cookies != null)
             _cookies.reset();
         _cookiesExtracted = false;
