@@ -785,7 +785,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
             context.setClassLoader(webappClassLoader);
             webappClassLoader.setWebappContext(webappCtxt);
 
-            String pathsToRequiredBundles = getPathsToRequiredBundles(context, requireTldBundle);
+            String pathsToRequiredBundles = getPathsToRequiredBundles(context, contributor, requireTldBundle);
             if (pathsToRequiredBundles != null) webappClassLoader.addClassPath(pathsToRequiredBundles);
         }
         else
@@ -863,12 +863,11 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
         }
     }
 
-    private String getPathsToRequiredBundles(ContextHandler context, String requireTldBundle) throws Exception
+    private String getPathsToRequiredBundles(ContextHandler context, Bundle bundle, String requireTldBundle) throws Exception
     {
         if (requireTldBundle == null) return null;
 
         StringBuilder paths = new StringBuilder();
-        Bundle bundle = (Bundle) context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         PackageAdmin packAdmin = getBundleAdmin();
         DefaultFileLocatorHelper fileLocatorHelper = new DefaultFileLocatorHelper();
 
@@ -881,7 +880,7 @@ public class WebBundleDeployerHelper implements IWebBundleDeployerHelper
                                                                                    + "' specified in the "
                                                                                    + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
                                                                                    + " of the manifest of "
-                                                                                   + bundle.getSymbolicName()); }
+                                                                                   + (bundle==null?"unknown":bundle.getSymbolicName())); }
 
             File f = fileLocatorHelper.getBundleInstallLocation(bs[0]);
             if (paths.length() > 0) 
