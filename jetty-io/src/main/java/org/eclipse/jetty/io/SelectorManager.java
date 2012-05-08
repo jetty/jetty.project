@@ -880,14 +880,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     if (att instanceof EndPoint)
                     {
                         EndPoint endpoint = (EndPoint)att;
-                        try
-                        {
-                            endpoint.close();
-                        }
-                        catch(IOException e)
-                        {
-                            LOG.ignore(e);
-                        }
+                        endpoint.close();
                     }
                 }
 

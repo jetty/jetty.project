@@ -121,10 +121,18 @@ public class ChannelEndPoint extends AbstractEndPoint
      * @see org.eclipse.io.EndPoint#close()
      */
     @Override
-    public void close() throws IOException
+    public void close()
     {
-        LOG.debug("close {}",this);
-        _channel.close();
+        try
+        {
+            LOG.debug("close {}",this);
+            _channel.close();
+        }
+        catch(IOException e)
+        {
+            LOG.warn(e.toString());
+            LOG.debug(e);
+        }
     }
 
     /* (non-Javadoc)

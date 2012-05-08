@@ -220,7 +220,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      * @see org.eclipse.io.EndPoint#close()
      */
     @Override
-    public void close() throws IOException
+    public void close()
     {
         _closed=true;
     }

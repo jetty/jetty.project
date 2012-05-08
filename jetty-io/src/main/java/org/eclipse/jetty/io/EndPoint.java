@@ -79,7 +79,7 @@ public interface EndPoint
     /**
      * Close any backing stream associated with the endpoint
      */
-    void close() throws IOException;
+    void close();
 
     /**
      * Fill the passed buffer with data from this endpoint.  The bytes are appended to any 

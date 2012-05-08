@@ -613,7 +613,7 @@ public class SslConnection extends AbstractAsyncConnection
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             LOG.debug("{} ssl endp.close",_session);
             _endp.close();

@@ -438,7 +438,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
      * @see org.eclipse.io.nio.ChannelEndPoint#close()
      */
     @Override
-    public void close() throws IOException
+    public void close()
     {
         _lock.lock();
         try
@@ -447,11 +447,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements AsyncEndPo
             {
                 super.close();
             }
-            catch (IOException e)
+            finally
             {
-                LOG.ignore(e);
+                updateKey();
             }
-            updateKey();
         }
         finally
         {

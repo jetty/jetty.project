@@ -42,15 +42,7 @@ public abstract class AbstractAsyncConnection
         catch(IOException e)
         {
             LOG.ignore(e);
-
-            try
-            {
-                _endp.close();
-            }
-            catch(IOException e2)
-            {
-                LOG.ignore(e2);
-            }
+            _endp.close();
         }
     }
         
