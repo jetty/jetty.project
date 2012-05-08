@@ -47,8 +47,8 @@ public class SslConnection extends AbstractAsyncConnection
     private final Lock _lock = new ReentrantLock();
     private final NetWriteCallback _netWriteCallback = new NetWriteCallback();
 
-    private DispatchedIOFuture _appReadFuture = new DispatchedIOFuture(true,_lock);
-    private DispatchedIOFuture _appWriteFuture = new DispatchedIOFuture(true,_lock);
+    private DispatchingIOFuture _appReadFuture = new DispatchingIOFuture(true,_lock);
+    private DispatchingIOFuture _appWriteFuture = new DispatchingIOFuture(true,_lock);
 
     private final SSLEngine _engine;
     private final SSLSession _session;
@@ -748,7 +748,7 @@ public class SslConnection extends AbstractAsyncConnection
                     return DoneIOFuture.COMPLETE;
 
                 // No, we need to schedule a network read
-                _appReadFuture=new DispatchedIOFuture(_lock);
+                _appReadFuture=new DispatchingIOFuture(_lock);
                 if (_netReadFuture==null)
                     _netReadFuture=scheduleOnReadable();
                 return _appReadFuture;
@@ -776,7 +776,7 @@ public class SslConnection extends AbstractAsyncConnection
                     if (b.hasRemaining())
                     {
                         _writeBuffers=buffers;
-                        _appWriteFuture=new DispatchedIOFuture(_lock);
+                        _appWriteFuture=new DispatchingIOFuture(_lock);
                         return _appWriteFuture;
                     }
                 }

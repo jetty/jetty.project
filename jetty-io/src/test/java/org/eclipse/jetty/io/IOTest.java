@@ -345,10 +345,6 @@ public class IOTest
         reading.get();
         writing.get();
         read.flip();
-        System.err.println(BufferUtil.toString(read));
-        
-        
-        
-        
+                
     }
 }

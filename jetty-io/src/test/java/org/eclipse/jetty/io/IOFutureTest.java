@@ -130,7 +130,7 @@ public class IOFutureTest
     @Test
     public void testInCompleted() throws Exception
     {
-        IOFuture future = new DispatchedIOFuture();
+        IOFuture future = new DispatchingIOFuture();
 
         assertFalse(future.isDone());
         assertFalse(future.isComplete());
@@ -165,7 +165,7 @@ public class IOFutureTest
     @Test
     public void testReady() throws Exception
     {
-        DispatchedIOFuture future = new DispatchedIOFuture();
+        DispatchingIOFuture future = new DispatchingIOFuture();
 
         assertFalse(future.isDone());
         assertFalse(future.isComplete());
@@ -197,7 +197,7 @@ public class IOFutureTest
 
 
         start=System.currentTimeMillis();
-        final DispatchedIOFuture f0=future;
+        final DispatchingIOFuture f0=future;
         new Thread()
         {
             @Override
@@ -220,11 +220,11 @@ public class IOFutureTest
         ready.set(false);
 
 
-        future = new DispatchedIOFuture();
+        future = new DispatchingIOFuture();
         assertFalse(future.isDone());
         assertFalse(future.isComplete());
         start=System.currentTimeMillis();
-        final DispatchedIOFuture f1=future;
+        final DispatchingIOFuture f1=future;
         new Thread()
         {
             @Override
@@ -248,7 +248,7 @@ public class IOFutureTest
     @Test
     public void testFail() throws Exception
     {
-        DispatchedIOFuture future = new DispatchedIOFuture();
+        DispatchingIOFuture future = new DispatchingIOFuture();
         final Exception ex=new Exception("failed");
 
         assertFalse(future.isDone());
@@ -280,7 +280,7 @@ public class IOFutureTest
         assertNull(fail.get());
 
         start=System.currentTimeMillis();
-        final DispatchedIOFuture f0=future;
+        final DispatchingIOFuture f0=future;
         new Thread()
         {
             @Override
@@ -316,14 +316,14 @@ public class IOFutureTest
         assertFalse(ready.get());
         assertEquals(ex,fail.get());
 
-        future=new DispatchedIOFuture();
+        future=new DispatchingIOFuture();
         ready.set(false);
         fail.set(null);
 
         assertFalse(future.isDone());
         assertFalse(future.isComplete());
         start=System.currentTimeMillis();
-        final DispatchedIOFuture f1=future;
+        final DispatchingIOFuture f1=future;
         new Thread()
         {
             @Override

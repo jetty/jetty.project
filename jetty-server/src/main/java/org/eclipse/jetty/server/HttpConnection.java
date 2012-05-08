@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.AbstractAsyncConnection;
 import org.eclipse.jetty.io.AsyncConnection;
 import org.eclipse.jetty.io.AsyncEndPoint;
-import org.eclipse.jetty.io.DispatchedIOFuture;
+import org.eclipse.jetty.io.DispatchingIOFuture;
 import org.eclipse.jetty.io.DoneIOFuture;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.IOFuture;
@@ -326,7 +326,7 @@ public class HttpConnection extends AbstractAsyncConnection
         catch(ExecutionException e)
         {
             LOG.debug(e);
-            DispatchedIOFuture.rethrow(e);
+            DispatchingIOFuture.rethrow(e);
         }
         finally
         {
@@ -649,7 +649,7 @@ public class HttpConnection extends AbstractAsyncConnection
                 catch (ExecutionException e)
                 {
                     LOG.debug(e);
-                    DispatchedIOFuture.rethrow(e);
+                    DispatchingIOFuture.rethrow(e);
                 }
                 finally
                 {

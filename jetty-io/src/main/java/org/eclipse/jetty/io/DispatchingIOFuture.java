@@ -17,38 +17,35 @@ import org.eclipse.jetty.util.Callback;
  * By default, the callbacks are called by the thread that called {@link #complete()} or
  * {@link #fail(Throwable)}
  */
-public class DispatchedIOFuture implements IOFuture
+public class DispatchingIOFuture implements IOFuture
 {
-    private final Lock _lock;
-    private final Condition _block;
+    private final Object _lock;
     private boolean _done;
     private boolean _complete;
     private Throwable _cause;
     private Callback<?> _callback;
     private Object _context;
 
-    public DispatchedIOFuture()
+    public DispatchingIOFuture()
     {
-        this(new ReentrantLock());
+        this(null);
     }
 
-    public DispatchedIOFuture(Lock lock)
+    public DispatchingIOFuture(Object lock)
     {
         this(false, lock);
     }
 
-    public DispatchedIOFuture(boolean ready,Lock lock)
+    public DispatchingIOFuture(boolean ready,Object lock)
     {
         _complete=ready;
         _done=ready;
-        _lock = lock;
-        _block = _lock.newCondition();
+        _lock = lock==null?this:lock;
     }
 
     public void fail(final Throwable cause)
     {
-        _lock.lock();
-        try
+        synchronized(_lock)
         {
             if (_done)
                 throw new IllegalStateException("complete",cause);
@@ -58,18 +55,13 @@ public class DispatchedIOFuture implements IOFuture
 
             if (_callback!=null)
                 dispatchFailed();
-            _block.signal();
-        }
-        finally
-        {
-            _lock.unlock();
+            _lock.notifyAll();
         }
     }
 
     public void complete()
     {
-        _lock.lock();
-        try
+        synchronized(_lock)
         {
             if (_done)
                 throw new IllegalStateException();
@@ -78,50 +70,35 @@ public class DispatchedIOFuture implements IOFuture
 
             if (_callback!=null)
                 dispatchCompleted();
-            _block.signal();
-        }
-        finally
-        {
-            _lock.unlock();
+            _lock.notifyAll();
         }
     }
 
     protected void cancelled()
     {
-        _lock.lock();
-        try
+        synchronized(_lock)
         {
             if (_done)
                 throw new IllegalStateException();
             _complete=false;
             _done=true;
-            _block.signal();
-        }
-        finally
-        {
-            _lock.unlock();
+            _lock.notifyAll();
         }
     }
 
     @Override
     public boolean isDone()
     {
-        _lock.lock();
-        try
+        synchronized(_lock)
         {
             return _done;
-        }
-        finally
-        {
-            _lock.unlock();
         }
     }
 
     @Override
     public boolean isComplete() throws ExecutionException
     {
-        _lock.lock();
-        try
+        synchronized(_lock)
         {
             if (_done)
             {
@@ -131,10 +108,6 @@ public class DispatchedIOFuture implements IOFuture
             }
 
             return false;
-        }
-        finally
-        {
-            _lock.unlock();
         }
     }
 
@@ -147,16 +120,11 @@ public class DispatchedIOFuture implements IOFuture
     @Override
     public void block() throws InterruptedException, ExecutionException
     {
-        _lock.lock();
-        try
+        synchronized(_lock)
         {
             while (!_done)
-                _block.await();
+                _lock.wait();
             isComplete();
-        }
-        finally
-        {
-            _lock.unlock();
         }
     }
 
@@ -164,24 +132,18 @@ public class DispatchedIOFuture implements IOFuture
     @Override
     public boolean block(long timeout, TimeUnit units) throws InterruptedException, ExecutionException
     {
-        _lock.lock();
-        try
+        synchronized(_lock)
         {
             if (!_done)
-                _block.await(timeout,units);
+                _lock.wait(units.toMillis(timeout));
             return isComplete();
-        }
-        finally
-        {
-            _lock.unlock();
         }
     }
 
     @Override
     public <C> void setCallback(Callback<C> callback, C context)
     {
-        _lock.lock();
-        try
+        synchronized(_lock)
         {
             if (_callback!=null)
                 throw new IllegalStateException();
@@ -195,10 +157,6 @@ public class DispatchedIOFuture implements IOFuture
                 else
                     dispatchFailed();
             }
-        }
-        finally
-        {
-            _lock.unlock();
         }
     }
 

@@ -20,8 +20,8 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
 
     private volatile AbstractAsyncConnection _connection;
 
-    private DispatchedIOFuture _readFuture;
-    private DispatchedIOFuture _writeFuture;
+    private DispatchingIOFuture _readFuture;
+    private DispatchingIOFuture _writeFuture;
 
     private ByteBuffer[] _writeBuffers;
 
@@ -178,7 +178,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
     }
 
 
-    private final class WriteFuture extends DispatchedIOFuture
+    private final class WriteFuture extends DispatchingIOFuture
     {
         private WriteFuture()
         {
@@ -210,7 +210,7 @@ public class AsyncByteArrayEndPoint extends ByteArrayEndPoint implements AsyncEn
 
 
 
-    private final class ReadFuture extends DispatchedIOFuture
+    private final class ReadFuture extends DispatchingIOFuture
     {
         private ReadFuture()
         {
