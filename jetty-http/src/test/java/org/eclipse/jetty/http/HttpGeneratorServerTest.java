@@ -229,7 +229,7 @@ public class HttpGeneratorServerTest
             return _reason;
         }
 
-        private String build(HttpGenerator.Info info, int version,HttpGenerator gen,String reason, String connection, String te, int chunks) throws Exception
+        private String build(HttpGenerator.Info info, int version,HttpGenerator gen,String reason, String connection, String te, int nchunks) throws Exception
         {
             String response="";
             _connection=connection;
@@ -237,7 +237,6 @@ public class HttpGeneratorServerTest
             _version=HttpVersion.fromVersion(version);
             _reason=reason;
             
-
             if (_contentType!=null)
                 _fields.put("Content-Type",_contentType);
             if (_contentLength>=0)
@@ -249,49 +248,55 @@ public class HttpGeneratorServerTest
             if (_other!=null)
                 _fields.put("Other",_other);
 
-            ByteBuffer content=_body==null?null:BufferUtil.toBuffer(_body);
-            if (content!=null)
-                content.limit(0);
+            ByteBuffer source=_body==null?null:BufferUtil.toBuffer(_body);
+            ByteBuffer[] chunks=new ByteBuffer[nchunks];
+            ByteBuffer content=null;
+            int c=0;
+            if (source!=null)
+            {
+                for (int i=0;i<nchunks;i++)
+                {
+                    chunks[i]=source.duplicate();
+                    chunks[i].position(i*(source.capacity()/nchunks));
+                    if (i>0)
+                        chunks[i-1].limit(chunks[i].position());
+                }
+                content=chunks[c++];
+                // System.err.printf("content %d %s%n",c,BufferUtil.toDetailString(content));
+            }
             ByteBuffer header=null;
             ByteBuffer chunk=null;
             ByteBuffer buffer=null;
-
+            
 
             while(!gen.isComplete())
             {
                 // if we have unwritten content
-                if (content!=null && content.position()<content.capacity())
+                if (source!=null && content!=null && content.remaining()==0 && c<nchunks)
                 {
-                    // if we need a new chunk
-                    if (content.remaining()==0)
-                    {
-                        content.limit(content.capacity());
-                        if (chunks-->1)
-                            content.limit(content.position()+content.remaining()/2);
-
-                        if (chunks<0)
-                            throw new IllegalStateException();
-                        System.err.printf("content %d %s%n",chunks,BufferUtil.toDetailString(content));
-                    }
+                    content=chunks[c++];
+                    // System.err.printf("content %d %s%n",c,BufferUtil.toDetailString(content));
                 }
 
                 // Generate
                 Action action=BufferUtil.hasContent(content)?null:Action.COMPLETE;
 
+                /*
                 System.err.printf("generate(%s,%s,%s,%s,%s)@%s%n",
                         BufferUtil.toSummaryString(header),
                         BufferUtil.toSummaryString(chunk),
                         BufferUtil.toSummaryString(buffer),
                         BufferUtil.toSummaryString(content),
                         action,gen.getState());
+                */
                 HttpGenerator.Result result=gen.generate(info,header,chunk,buffer,content,action);
-                System.err.printf("%s (%s,%s,%s,%s,%s)@%s%n",
+                /*System.err.printf("%s (%s,%s,%s,%s,%s)@%s%n",
                         result,
                         BufferUtil.toSummaryString(header),
                         BufferUtil.toSummaryString(chunk),
                         BufferUtil.toSummaryString(buffer),
                         BufferUtil.toSummaryString(content),
-                        action,gen.getState());
+                        action,gen.getState());*/
 
                 switch(result)
                 {
